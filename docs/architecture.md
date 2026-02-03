@@ -116,10 +116,9 @@ Key type support is added via extension traits rather than monolithic API growth
 ```
 Factory (core)
   ├── RsaFactoryExt      (uselesskey-rsa)     → fx.rsa(label, spec)
-  ├── EcdsaFactoryExt    (uselesskey-ecdsa)   → fx.ecdsa(label, spec)
-  ├── Ed25519FactoryExt  (uselesskey-ed25519) → fx.ed25519(label)
-  ├── HmacFactoryExt     (uselesskey-hmac)    → fx.hmac(label, spec)
-  └── X509FactoryExt     (uselesskey-x509)    → fx.x509(label, spec)
+  ├── EcdsaFactoryExt    (uselesskey-ecdsa)   → fx.ecdsa(label, spec)  [planned]
+  ├── Ed25519FactoryExt  (uselesskey-ed25519) → fx.ed25519(label)      [planned]
+  └── X509FactoryExt     (uselesskey-x509)    → fx.x509(label, spec)   [planned]
 ```
 
 This pattern:
@@ -131,20 +130,14 @@ This pattern:
 
 Each extension crate depends on `uselesskey-core` and adds methods to `Factory` via its trait. The facade crate (`uselesskey`) re-exports enabled features.
 
-## Adapter crates
+## Adapter crates (planned)
 
-Adapter crates provide native integration with downstream libraries. They are separate crates (not features) to avoid coupling uselesskey's versioning to downstream crate versions.
+Beyond key type extensions, adapter crates will provide native integration:
 
 ```
-uselesskey-jsonwebtoken  → jsonwebtoken::EncodingKey / DecodingKey
-uselesskey-rustls        → rustls-pki-types + ServerConfig/ClientConfig builders
-uselesskey-ring          → ring 0.17 native signing key types
-uselesskey-rustcrypto    → RustCrypto native types (rsa, p256, p384, ed25519-dalek, hmac)
-uselesskey-aws-lc-rs     → aws-lc-rs native key types
+uselesskey-jsonwebtoken  → returns EncodingKey/DecodingKey directly
+uselesskey-rustls        → returns PrivateKeyDer/CertificateDer directly
+uselesskey-ring          → returns ring's native key types
 ```
 
-## CI scoping
-
-Pull requests run `cargo xtask pr`, which scopes tests based on `git diff` and runs
-the full suites relevant to changed areas. Pushes to `main` run the full `cargo xtask ci`
-pipeline.
+These are separate crates (not features) to avoid coupling uselesskey's versioning to downstream crate versions.

@@ -6,6 +6,40 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **uselesskey** is a Rust test utility library that generates deterministic and random cryptographic key fixtures for testing. It prevents committing secret-shaped blobs (PEM, DER, tokens) into version control while allowing tests to work with realistic key formats.
 
+## Strategic Positioning
+
+This is a **test-fixture layer**, not a crypto library. The positioning matters for API design and documentation tone.
+
+### The problem we solve
+
+Secret scanners (GitHub, GitGuardian) evaluate **each commit** in a PR. Even "commit then remove" triggers incidents. Path ignores exist but require ongoing maintenance. This crate replaces "security policy + docs + exceptions" with "one dev-dependency."
+
+### Why we exist (ecosystem gaps)
+
+| Existing solution | Gap uselesskey fills |
+|-------------------|---------------------|
+| `jwk_kit` | No deterministic-from-seed, no negative fixtures |
+| `rcgen` | Deterministic mode not first-class |
+| `test-cert-gen` | Shells out to OpenSSL |
+| `x509-test-certs` | Commits key material (triggers scanners) |
+
+### Core differentiators (preserve these)
+
+1. **Order-independent determinism** — `seed + artifact_id → derived_seed → artifact`. This is the most defensible feature; most seeded approaches break when test order changes.
+
+2. **Cache-by-identity** — Per-process cache keyed by `(domain, label, spec, variant)` makes RSA keygen cheap enough to avoid committed fixtures.
+
+3. **Shape-first outputs** — Users ask for PKCS#8/SPKI/JWK/tempfiles, not crypto primitives.
+
+4. **Negative fixtures first-class** — Corrupt PEM, truncated DER, mismatched keys, expired certs. This is the sticky feature.
+
+### Design principles
+
+- Keep the API ergonomic: one-liner creation (`fx.rsa("issuer", RsaSpec::rs256())`)
+- Avoid production crypto expectations: this is for tests only
+- Preserve derivation stability: bump version if algorithm changes
+- Extension traits for new key types (not monolithic API growth)
+
 ## Build Commands
 
 ```bash

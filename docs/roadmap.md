@@ -2,7 +2,7 @@
 
 This roadmap reflects the strategic direction for uselesskey as a **test-fixture layer** (not a crypto library).
 
-## Implemented
+## Current state (v0.1)
 
 - [x] Core factory with random and deterministic modes
 - [x] Order-independent derivation (BLAKE3 keyed hash)
@@ -11,33 +11,44 @@ This roadmap reflects the strategic direction for uselesskey as a **test-fixture
 - [x] Output formats: PKCS#8 PEM/DER, SPKI PEM/DER
 - [x] Tempfile outputs with restrictive permissions
 - [x] Negative fixtures: corrupt PEM, truncated DER, mismatched keypairs
-- [x] **ECDSA fixtures** (`uselesskey-ecdsa`)
+
+## v0.2 — Additional key types
+
+**Goal:** Cover the common asymmetric key types used in JWT/TLS testing.
+
+- [ ] **ECDSA fixtures** (`uselesskey-ecdsa`)
   - P-256 (ES256), P-384 (ES384) via `p256`/`p384` crates
   - PKCS#8/SEC1 private key, SPKI public key
   - Same extension pattern: `EcdsaFactoryExt` trait
-- [x] **Ed25519 fixtures** (`uselesskey-ed25519`)
+
+- [ ] **Ed25519 fixtures** (`uselesskey-ed25519`)
   - Via `ed25519-dalek`
   - PKCS#8 private key, SPKI public key
   - `Ed25519FactoryExt` trait
-- [x] **JWK output methods** on all key types
+
+## v0.3 — JWK/JWKS outputs
+
+**Goal:** First-class JWK support for JWT testing workflows.
+
+- [ ] **JWK output methods** on all key types
   - `private_key_jwk()`, `public_key_jwk()`
-  - Deterministic `kid` derived from key material (stable in deterministic mode)
+  - Deterministic `kid` derived from artifact identity
   - Symmetric keys (HS256/HS384/HS512) for completeness
-- [x] **JWKS builder**
+
+- [ ] **JWKS builder**
   - Combine multiple public keys into a JWKS
   - Stable key ordering in deterministic mode
-- [x] **HMAC fixtures** (`uselesskey-hmac`)
-  - HS256/HS384/HS512 secrets
-  - JWK/JWKS (`kty=oct`)
-- [x] **X.509 leaf certificates** (`uselesskey-x509`)
-  - Self-signed certs via `rcgen`
+
+## v0.4 — X.509 certificates
+
+**Goal:** Generate leaf certs and cert chains without OpenSSL.
+
+- [ ] **X.509 leaf certificates** (`uselesskey-x509`)
+  - Self-signed certs via `rcgen` or `x509-cert`
   - Configurable: CN, SANs, validity period, key usage
   - `X509FactoryExt` trait
-- [x] **`uselesskey-jsonwebtoken`**
-  - Returns `jsonwebtoken::EncodingKey` / `DecodingKey` directly
-  - Reduces boilerplate in JWT tests
 
-- [x] **X.509 cert chain fixtures** (`uselesskey-x509`)
+- [ ] **Cert chain fixtures**
   - Root CA → Intermediate → Leaf
   - Deterministic serial numbers and validity periods
   - Chain PEM (leaf + intermediate, no root) for standard TLS server usage
@@ -46,9 +57,17 @@ This roadmap reflects the strategic direction for uselesskey as a **test-fixture
   - Expired leaf/intermediate certificates
   - Hostname mismatch (wrong SAN)
   - Unknown CA (untrusted root)
-  - Revoked leaf with CRL signed by intermediate CA
-  - Self-signed leaf, reversed chain, wrong issuer
-- [x] **`uselesskey-rustls`**
+  - Revoked cert (with CRL/OCSP stub)
+
+## v0.5 — Adapter crates
+
+**Goal:** One-liner integration with popular Rust stacks.
+
+- [ ] **`uselesskey-jsonwebtoken`**
+  - Returns `jsonwebtoken::EncodingKey` / `DecodingKey` directly
+  - Reduces boilerplate in JWT tests
+
+- [ ] **`uselesskey-rustls`**
   - Returns `rustls::pki_types::PrivateKeyDer`, `CertificateDer`
   - `ServerConfig` / `ClientConfig` / mTLS config builders (with `tls-config` feature)
   - Pluggable crypto provider support (`rustls-ring` / `rustls-aws-lc-rs`)
@@ -80,7 +99,6 @@ These are explicitly out of scope:
 - Hardware-backed keys (HSM, TPM)
 - Rotation servers or key lifecycle management
 - Perfect scanner evasion (if a scanner flags runtime output, that's a downstream issue)
-- Signing/verification APIs (artifacts only)
 
 ## Versioning policy
 
