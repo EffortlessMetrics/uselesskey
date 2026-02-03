@@ -1,0 +1,21 @@
+# cargo-deny configuration (optional)
+# https://github.com/EmbarkStudios/cargo-deny
+
+[advisories]
+# default = "warn"
+yanked = "warn"
+unmaintained = "warn"
+ignore = []
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+skip = []
+
+[licenses]
+allow = ["MIT", "Apache-2.0", "BSD-3-Clause", "ISC", "CC0-1.0"]
+confidence-threshold = 0.8
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "warn"

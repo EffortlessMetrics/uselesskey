@@ -1,0 +1,15 @@
+# cargo-mutants configuration
+# https://github.com/sourcefrog/cargo-mutants
+
+[mutants]
+# Keep mutation testing focused on library code.
+exclude_globs = [
+  "xtask/**",
+  "crates/**/tests/**",
+  "crates/uselesskey-bdd/**",
+  "fuzz/**",
+  "**/*.md",
+]
+
+# Mutation testing is CPU-heavy; keep output readable.
+print_times = true

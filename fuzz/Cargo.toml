@@ -1,0 +1,33 @@
+[package]
+name = "uselesskey-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+# fuzz targets
+uselesskey = { path = "../crates/uselesskey" }
+rsa = { version = "0.9", features = ["pem", "pkcs8"] }
+
+[[bin]]
+name = "pem_corrupt"
+path = "fuzz_targets/pem_corrupt.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "der_ops"
+path = "fuzz_targets/der_ops.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "rsa_pkcs8_pem_parse"
+path = "fuzz_targets/rsa_pkcs8_pem_parse.rs"
+test = false
+doc = false

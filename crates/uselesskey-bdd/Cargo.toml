@@ -1,0 +1,17 @@
+[package]
+name = "uselesskey-bdd"
+version = "0.0.0"
+publish = false
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dev-dependencies]
+cucumber.workspace = true
+tokio.workspace = true
+rsa.workspace = true
+uselesskey = { path = "../uselesskey", features = ["jwk"] } # enable jwk in BDD for coverage
+
+[[test]]
+name = "bdd"
+harness = false

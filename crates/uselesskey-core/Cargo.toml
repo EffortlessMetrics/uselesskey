@@ -1,0 +1,21 @@
+[package]
+name = "uselesskey-core"
+version = "0.1.0"
+publish = false
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+thiserror.workspace = true
+blake3.workspace = true
+dashmap.workspace = true
+rand.workspace = true
+rand_core.workspace = true
+rand_chacha.workspace = true
+tempfile.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+rstest.workspace = true
