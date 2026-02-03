@@ -2,8 +2,8 @@ use std::fmt;
 use std::sync::Arc;
 
 use rsa::pkcs8::LineEnding;
-use rsa::{RsaPrivateKey, RsaPublicKey, pkcs8::EncodePrivateKey, pkcs8::EncodePublicKey};
-use uselesskey_core::negative::{CorruptPem, corrupt_pem, truncate_der};
+use rsa::{pkcs8::EncodePrivateKey, pkcs8::EncodePublicKey, RsaPrivateKey, RsaPublicKey};
+use uselesskey_core::negative::{corrupt_pem, truncate_der, CorruptPem};
 use uselesskey_core::sink::TempArtifact;
 use uselesskey_core::{Error, Factory};
 
@@ -49,7 +49,6 @@ pub struct RsaKeyPair {
 struct Inner {
     /// Kept for potential signing methods; not currently used.
     _private: RsaPrivateKey,
-    #[cfg(feature = "jwk")]
     public: RsaPublicKey,
     pkcs8_der: Arc<[u8]>,
     pkcs8_pem: String,
@@ -295,7 +294,6 @@ fn load_inner(factory: &Factory, label: &str, spec: RsaSpec, variant: &str) -> A
 
         Inner {
             _private: private,
-            #[cfg(feature = "jwk")]
             public,
             pkcs8_der,
             pkcs8_pem,
