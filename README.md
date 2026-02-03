@@ -1,29 +1,34 @@
 # uselesskey
 
-**Test key and certificate fixtures generated at runtime.**
+**Test key fixtures generated at runtime.**
 
-Outputs: PKCS#8, SPKI, JWK/JWKS, tempfiles. Deterministic mode for stable tests; not for production.
+Outputs: PKCS#8 PEM/DER, SPKI PEM/DER, tempfiles. JWK/JWKS with `--features jwk`. Deterministic mode for stable tests; not for production.
 
 ---
 
 This crate exists for one reason: **stop committing secrets-shaped blobs** (PEM, DER, tokens) into your repo just to make tests pass.
 
 - Generates keys **at runtime** (random or deterministic).
-- Emits the **shapes** other libraries want (PKCS#8 PEM/DER, SPKI PEM/DER, temp files).
+- Emits the **shapes** other libraries want (PKCS#8 PEM/DER, SPKI PEM/DER, tempfiles).
 - Includes **negative fixtures** (corrupt PEM, truncated DER, mismatched keypairs) without checking anything into git.
 
 > **Not for production.** Deterministic keys are predictable by design. Even random-mode keys are intended for tests and local dev.
 
 ## Why this crate?
 
+**Secret incidents aren't about the final state of the code — they're about any commit that contained the secret.**
+
 Secret scanning has shifted the ground under "just commit a dummy key":
 
-- Scanners like [GitHub secret scanning](https://docs.github.com/en/code-security/secret-scanning) and [GitGuardian](https://docs.gitguardian.com/) evaluate **each commit** in a PR, not just the final state. Even "commit then immediately remove" still triggers incidents.
+- [GitGuardian](https://docs.gitguardian.com/) scans **each commit** in a PR, not just the final state. Even "commit then immediately remove" still triggers incidents.
+- [GitHub push protection](https://docs.github.com/en/code-security/secret-scanning/push-protection-for-repositories-and-organizations/about-push-protection) requires removing blocked secrets from **all commits** before the push can proceed.
 - Both support path ignores and exclusions, but their guidance is "minimize exclusions; document why; review periodically."
 
 That combination creates a steady incentive to stop committing anything that *looks* like a key, even if it's fake. This crate turns "security team policy + docs + exceptions" into "one dev-dependency."
 
 ### What exists today (and why it's not enough)
+
+> Snapshot: last reviewed 2025-02-03. This is context, not a compatibility matrix.
 
 | Crate | What it does | Gap |
 |-------|--------------|-----|
@@ -50,7 +55,7 @@ The ecosystem has **keygen**, **certgen**, **JWK tooling**, and **fixture blobs*
 use uselesskey::{Factory, RsaSpec, RsaFactoryExt};
 
 let fx = Factory::deterministic_from_env("USELESSKEY_SEED")
-    .unwrap_or_else(Factory::random);
+    .unwrap_or_else(|_| Factory::random());
 
 let rsa = fx.rsa("issuer", RsaSpec::rs256());
 

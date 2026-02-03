@@ -10,7 +10,9 @@ rust-version.workspace = true
 cucumber.workspace = true
 tokio.workspace = true
 rsa.workspace = true
+serde_json.workspace = true
 uselesskey = { path = "../uselesskey", features = ["jwk"] } # enable jwk in BDD for coverage
+uselesskey-core = { path = "../uselesskey-core" } # for TempArtifact
 
 [[test]]
 name = "bdd"

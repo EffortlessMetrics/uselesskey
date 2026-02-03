@@ -1,3 +1,4 @@
+use std::fmt;
 use std::fs;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
@@ -13,6 +14,14 @@ pub struct TempArtifact {
     /// The temp file handle; kept to ensure cleanup on drop.
     _file: NamedTempFile,
     path: PathBuf,
+}
+
+impl fmt::Debug for TempArtifact {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("TempArtifact")
+            .field("path", &self.path)
+            .finish_non_exhaustive()
+    }
 }
 
 impl TempArtifact {
