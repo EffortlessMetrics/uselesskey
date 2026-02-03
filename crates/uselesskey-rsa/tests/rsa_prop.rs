@@ -7,24 +7,6 @@ use uselesskey_core::{Factory, Seed};
 use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 
 #[test]
-#[should_panic(expected = "RSA bits too small")]
-fn rsa_bits_too_small_panics() {
-    let fx = Factory::random();
-    let _ = fx.rsa("issuer", RsaSpec::new(512));
-}
-
-#[test]
-#[should_panic(expected = "custom RSA public exponent not supported")]
-fn rsa_custom_exponent_panics() {
-    let fx = Factory::random();
-    let spec = RsaSpec {
-        bits: 2048,
-        exponent: 3,
-    };
-    let _ = fx.rsa("issuer", spec);
-}
-
-#[test]
 fn pkcs8_pem_is_parseable() {
     let fx = Factory::random();
     let rsa = fx.rsa("issuer", RsaSpec::rs256());

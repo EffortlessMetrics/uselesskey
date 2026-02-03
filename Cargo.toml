@@ -57,11 +57,7 @@ cucumber = { version = "0.22.1", features = ["macros"] }
 tokio = { version = "1.49.0", features = ["macros", "rt-multi-thread"] }
 
 # RSA
-rsa = { version = "0.9.10", features = ["pem"] }
-
-# Ed25519
-ed25519-dalek = { version = "2.2.0", features = ["pkcs8", "pem", "rand_core"] }
-pkcs8 = { version = "0.10.2", features = ["pem"] }
+rsa = { version = "0.9", features = ["pem"] }
 
 # optional JWK helpers
 serde = { version = "1.0.228", features = ["derive"] }
