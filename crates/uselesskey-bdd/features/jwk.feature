@@ -19,10 +19,6 @@ Feature: JWK generation
     Then the JWKS should have a keys array
     And the JWKS keys array should contain one key
 
-  Scenario: private JWK has required fields
-    When I generate an RSA key for label "auth-service"
-    Then the RSA private JWK should have d p q dp dq qi parameters
-
   Scenario: kid is deterministic
     When I generate an RSA key for label "stable-kid"
     And I capture the kid

@@ -12,9 +12,15 @@ This is a **test-fixture layer**, not a crypto library. The positioning matters 
 
 ### The problem we solve
 
-Secret scanners (GitHub, GitGuardian) evaluate **each commit** in a PR. Even "commit then remove" triggers incidents. Path ignores exist but require ongoing maintenance. This crate replaces "security policy + docs + exceptions" with "one dev-dependency."
+Secret scanners have different behaviors that both cause friction:
+- **GitGuardian** scans each commit in a PR, so "add then remove" still trips detection
+- **GitHub push protection** requires removing a blocked secret from **all commits** before pushing again
+
+Path ignores exist but require ongoing maintenance. This crate replaces "security policy + docs + exceptions" with "one dev-dependency."
 
 ### Why we exist (ecosystem gaps)
+
+> Snapshot: last reviewed 2025-02-03. This is context, not a compatibility matrix.
 
 | Existing solution | Gap uselesskey fills |
 |-------------------|---------------------|
@@ -31,7 +37,7 @@ Secret scanners (GitHub, GitGuardian) evaluate **each commit** in a PR. Even "co
 
 3. **Shape-first outputs** — Users ask for PKCS#8/SPKI/JWK/tempfiles, not crypto primitives.
 
-4. **Negative fixtures first-class** — Corrupt PEM, truncated DER, mismatched keys, expired certs. This is the sticky feature.
+4. **Negative fixtures first-class** — Corrupt PEM, truncated DER, mismatched keys. This is the sticky feature. (X.509 negative fixtures like expired certs are on the roadmap.)
 
 ### Design principles
 

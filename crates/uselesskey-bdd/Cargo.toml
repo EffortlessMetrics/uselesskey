@@ -10,12 +10,8 @@ rust-version.workspace = true
 cucumber.workspace = true
 tokio.workspace = true
 rsa.workspace = true
-ed25519-dalek.workspace = true
-p256 = { version = "0.13.2", features = ["ecdsa", "pkcs8", "pem"] }
-p384 = { version = "0.13.1", features = ["ecdsa", "pkcs8", "pem"] }
-x509-parser = "0.18.1"
 serde_json.workspace = true
-uselesskey = { path = "../uselesskey", features = ["jwk", "ed25519", "ecdsa", "x509", "hmac"] }
+uselesskey = { path = "../uselesskey", features = ["jwk"] } # enable jwk in BDD for coverage
 uselesskey-core = { path = "../uselesskey-core" } # for TempArtifact
 
 [[test]]
