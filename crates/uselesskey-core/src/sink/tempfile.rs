@@ -10,7 +10,8 @@ use crate::Error;
 ///
 /// Useful when downstream libraries insist on `Path`-based APIs.
 pub struct TempArtifact {
-    file: NamedTempFile,
+    /// The temp file handle; kept to ensure cleanup on drop.
+    _file: NamedTempFile,
     path: PathBuf,
 }
 
@@ -33,7 +34,7 @@ impl TempArtifact {
         file.as_file_mut().flush()?;
 
         let path = file.path().to_path_buf();
-        Ok(Self { file, path })
+        Ok(Self { _file: file, path })
     }
 
     /// Create a new temporary artifact with the provided UTF-8 string.

@@ -1,10 +1,10 @@
 use proptest::prelude::*;
-use rsa::{pkcs8::DecodePrivateKey, pkcs8::DecodePublicKey};
 use rsa::traits::PublicKeyParts;
+use rsa::{pkcs8::DecodePrivateKey, pkcs8::DecodePublicKey};
 
+use uselesskey_core::negative::CorruptPem;
 use uselesskey_core::{Factory, Seed};
 use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
-use uselesskey_core::negative::CorruptPem;
 
 #[test]
 fn pkcs8_pem_is_parseable() {
@@ -31,7 +31,8 @@ fn mismatched_public_key_is_parseable_and_different() {
     let rsa = fx.rsa("issuer", RsaSpec::rs256());
 
     let good_pub = rsa::RsaPublicKey::from_public_key_der(rsa.public_key_spki_der()).unwrap();
-    let other_pub = rsa::RsaPublicKey::from_public_key_der(&rsa.mismatched_public_key_spki_der()).unwrap();
+    let other_pub =
+        rsa::RsaPublicKey::from_public_key_der(&rsa.mismatched_public_key_spki_der()).unwrap();
 
     // Extremely likely: modulus differs.
     assert_ne!(good_pub.n(), other_pub.n());

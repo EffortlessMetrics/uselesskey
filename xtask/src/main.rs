@@ -67,7 +67,7 @@ fn main() -> Result<()> {
     }
 }
 
-fn run(mut cmd: Command) -> Result<()> {
+fn run(cmd: &mut Command) -> Result<()> {
     eprintln!("+ {:?}", cmd);
     let status = cmd
         .stdout(Stdio::inherit())
@@ -119,9 +119,7 @@ fn mutants() -> Result<()> {
 
     match status {
         Ok(s) if s.success() => run(Command::new("cargo").args(["mutants"])),
-        _ => bail!(
-            "cargo-mutants is not installed. Install with: cargo install cargo-mutants"
-        ),
+        _ => bail!("cargo-mutants is not installed. Install with: cargo install cargo-mutants"),
     }
 }
 
@@ -148,14 +146,11 @@ fn fuzz(target: Option<&str>, extra: &[String]) -> Result<()> {
                 cmd.arg(a);
             }
 
-            run(cmd)
+            run(&mut cmd)
         }
-        _ => bail!(
-            "cargo-fuzz is not installed. Install with: cargo install cargo-fuzz"
-        ),
+        _ => bail!("cargo-fuzz is not installed. Install with: cargo install cargo-fuzz"),
     }
 }
-
 
 fn nextest() -> Result<()> {
     let status = Command::new("cargo")
@@ -165,7 +160,9 @@ fn nextest() -> Result<()> {
         .status();
 
     match status {
-        Ok(s) if s.success() => run(Command::new("cargo").args(["nextest", "run", "--workspace", "--all-features"])),
+        Ok(s) if s.success() => {
+            run(Command::new("cargo").args(["nextest", "run", "--workspace", "--all-features"]))
+        }
         _ => bail!("cargo-nextest is not installed. Install with: cargo install cargo-nextest"),
     }
 }

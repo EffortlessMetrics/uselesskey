@@ -1,10 +1,11 @@
 use std::any::Any;
+use std::fmt;
 use std::sync::Arc;
 
 use dashmap::DashMap;
 use rand::rngs::OsRng;
-use rand_core::{RngCore, SeedableRng};
 use rand_chacha::ChaCha20Rng;
+use rand_core::{RngCore, SeedableRng};
 
 use crate::derive;
 use crate::id::{ArtifactDomain, ArtifactId, DerivationVersion, Seed};
@@ -36,6 +37,15 @@ struct Inner {
 #[derive(Clone)]
 pub struct Factory {
     inner: Arc<Inner>,
+}
+
+impl fmt::Debug for Factory {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Factory")
+            .field("mode", &self.inner.mode)
+            .field("cache_size", &self.inner.cache.len())
+            .finish()
+    }
 }
 
 impl Factory {

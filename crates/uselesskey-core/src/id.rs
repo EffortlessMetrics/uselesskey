@@ -33,7 +33,7 @@ impl Seed {
         let hex = v.strip_prefix("0x").unwrap_or(v);
 
         if hex.len() == 64 {
-            return parse_hex_32(hex).map(Self).map_err(|msg| msg);
+            return parse_hex_32(hex).map(Self);
         }
 
         // Fallback: hash the string into 32 bytes.

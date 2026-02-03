@@ -1,6 +1,3 @@
-#[derive(Clone, Copy, Debug)]
-pub struct TruncateTo(pub usize);
-
 /// Truncate DER bytes to `len` bytes.
 ///
 /// If `len >= der.len()`, returns the original bytes.

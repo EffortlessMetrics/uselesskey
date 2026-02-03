@@ -46,7 +46,8 @@ fn replace_last_line(pem: &str, replacement: &str) -> String {
     if all.is_empty() {
         return replacement.to_string();
     }
-    all[all.len() - 1] = replacement;
+    let last_idx = all.len() - 1;
+    all[last_idx] = replacement;
 
     let mut out = String::new();
     for l in all {

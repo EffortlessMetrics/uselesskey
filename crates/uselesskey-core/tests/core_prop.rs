@@ -15,13 +15,21 @@ fn deterministic_is_order_independent_for_cache_keys() {
     let fx = Factory::deterministic(seed);
 
     // Two different artifact keys.
-    let a = fx.get_or_init("domain:a", "label", &spec_bytes(1, 2), "good", |_rng| 123u32);
-    let b = fx.get_or_init("domain:b", "label", &spec_bytes(3, 4), "good", |_rng| 456u32);
+    let a = fx.get_or_init("domain:a", "label", &spec_bytes(1, 2), "good", |_rng| {
+        123u32
+    });
+    let b = fx.get_or_init("domain:b", "label", &spec_bytes(3, 4), "good", |_rng| {
+        456u32
+    });
 
     // Clear cache and request in reverse order; values should match.
     fx.clear_cache();
-    let b2 = fx.get_or_init("domain:b", "label", &spec_bytes(3, 4), "good", |_rng| 456u32);
-    let a2 = fx.get_or_init("domain:a", "label", &spec_bytes(1, 2), "good", |_rng| 123u32);
+    let b2 = fx.get_or_init("domain:b", "label", &spec_bytes(3, 4), "good", |_rng| {
+        456u32
+    });
+    let a2 = fx.get_or_init("domain:a", "label", &spec_bytes(1, 2), "good", |_rng| {
+        123u32
+    });
 
     assert_eq!(*a, *a2);
     assert_eq!(*b, *b2);
