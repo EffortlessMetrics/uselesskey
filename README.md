@@ -1,6 +1,10 @@
 # uselesskey
 
-Runtime-generated key and certificate fixtures for tests.
+**Test key and certificate fixtures generated at runtime.**
+
+Outputs: PKCS#8, SPKI, JWK/JWKS, tempfiles. Deterministic mode for stable tests; not for production.
+
+---
 
 This crate exists for one reason: **stop committing secrets-shaped blobs** (PEM, DER, tokens) into your repo just to make tests pass.
 
@@ -9,6 +13,36 @@ This crate exists for one reason: **stop committing secrets-shaped blobs** (PEM,
 - Includes **negative fixtures** (corrupt PEM, truncated DER, mismatched keypairs) without checking anything into git.
 
 > **Not for production.** Deterministic keys are predictable by design. Even random-mode keys are intended for tests and local dev.
+
+## Why this crate?
+
+Secret scanning has shifted the ground under "just commit a dummy key":
+
+- Scanners like [GitHub secret scanning](https://docs.github.com/en/code-security/secret-scanning) and [GitGuardian](https://docs.gitguardian.com/) evaluate **each commit** in a PR, not just the final state. Even "commit then immediately remove" still triggers incidents.
+- Both support path ignores and exclusions, but their guidance is "minimize exclusions; document why; review periodically."
+
+That combination creates a steady incentive to stop committing anything that *looks* like a key, even if it's fake. This crate turns "security team policy + docs + exceptions" into "one dev-dependency."
+
+### What exists today (and why it's not enough)
+
+| Crate | What it does | Gap |
+|-------|--------------|-----|
+| [`jwk_kit`](https://docs.rs/jwk_kit) | Generate RSA/ES256 keypairs, export PKCS#8 PEM or JWK | No deterministic-from-seed, no negative fixtures |
+| [`rcgen`](https://docs.rs/rcgen) | Generate self-signed X.509 certs (pure Rust) | [Deterministic mode requested but not first-class](https://github.com/rustls/rcgen/issues/173) |
+| [`test-cert-gen`](https://docs.rs/crate/test-cert-gen) | Generate certs for tests | Shells out to OpenSSL CLI |
+| [`x509-test-certs`](https://docs.rs/x509-test-certs) | Ships realistic certs/keys as `const` byte arrays | Forces secret-scanner suppression |
+
+The ecosystem has **keygen**, **certgen**, **JWK tooling**, and **fixture blobs** — but not a "fixture factory" optimized around runtime generation + determinism + negative cases + tempfiles + scanner hygiene.
+
+### What makes uselesskey different
+
+1. **Order-independent determinism** — `seed + (domain, label, spec, variant) → derived seed → artifact`. Adding new fixtures doesn't perturb existing ones. Test order doesn't matter.
+
+2. **Cache-by-identity** — RSA keygen cost pushes teams toward committed fixtures. Per-process caching makes runtime generation cheap enough.
+
+3. **Shape-first outputs** — PKCS#8 PEM/DER, SPKI PEM/DER, tempfiles with sane permissions. Users shouldn't need to know crypto crate internals.
+
+4. **Negative fixtures as first-class** — Corrupt PEM (bad base64, wrong headers, truncation), truncated DER, mismatched keypairs. Teams love committed "broken" blobs because producing them is annoying; this crate makes them cheap and ephemeral.
 
 ## Quickstart
 
