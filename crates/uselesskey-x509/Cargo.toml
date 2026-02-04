@@ -1,0 +1,22 @@
+[package]
+name = "uselesskey-x509"
+version = "0.1.0"
+publish = false
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "X.509 certificate fixtures for testing"
+
+[dependencies]
+uselesskey-core = { path = "../uselesskey-core", version = "0.1.0" }
+uselesskey-rsa = { path = "../uselesskey-rsa", version = "0.1.0" }
+rcgen = "0.13"
+rustls-pki-types = "1"
+x509-parser = "0.16"
+time = "0.3"
+blake3.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+rstest.workspace = true

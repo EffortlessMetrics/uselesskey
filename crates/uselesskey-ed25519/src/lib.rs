@@ -1,20 +1,20 @@
 #![forbid(unsafe_code)]
 
-//! RSA fixtures built on `uselesskey-core`.
+//! Ed25519 fixtures built on `uselesskey-core`.
 //!
 //! This crate is used by the `uselesskey` facade crate.
 //!
 //! # Usage
 //!
-//! The main entry point is the [`RsaFactoryExt`] trait, which adds the `.rsa()` method
+//! The main entry point is the [`Ed25519FactoryExt`] trait, which adds the `.ed25519()` method
 //! to [`Factory`](uselesskey_core::Factory).
 //!
 //! ```
 //! use uselesskey_core::Factory;
-//! use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+//! use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
 //!
 //! let fx = Factory::random();
-//! let keypair = fx.rsa("my-service", RsaSpec::rs256());
+//! let keypair = fx.ed25519("my-service", Ed25519Spec::new());
 //!
 //! // Access key material in various formats
 //! let private_pem = keypair.private_key_pkcs8_pem();
@@ -31,18 +31,18 @@
 //!
 //! ```
 //! use uselesskey_core::{Factory, Seed};
-//! use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+//! use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
 //!
 //! let seed = Seed::from_env_value("test-seed").unwrap();
 //! let fx = Factory::deterministic(seed);
 //!
 //! // Same seed + label + spec = same key
-//! let key1 = fx.rsa("issuer", RsaSpec::rs256());
-//! let key2 = fx.rsa("issuer", RsaSpec::rs256());
+//! let key1 = fx.ed25519("issuer", Ed25519Spec::new());
+//! let key2 = fx.ed25519("issuer", Ed25519Spec::new());
 //! assert_eq!(key1.private_key_pkcs8_pem(), key2.private_key_pkcs8_pem());
 //!
 //! // Different labels produce different keys
-//! let key3 = fx.rsa("other", RsaSpec::rs256());
+//! let key3 = fx.ed25519("other", Ed25519Spec::new());
 //! assert_ne!(key1.private_key_pkcs8_pem(), key3.private_key_pkcs8_pem());
 //! ```
 //!
@@ -53,10 +53,10 @@
 //! ```
 //! use uselesskey_core::Factory;
 //! use uselesskey_core::negative::CorruptPem;
-//! use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+//! use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
 //!
 //! let fx = Factory::random();
-//! let keypair = fx.rsa("test", RsaSpec::rs256());
+//! let keypair = fx.ed25519("test", Ed25519Spec::new());
 //!
 //! // Corrupted PEM
 //! let bad_pem = keypair.private_key_pkcs8_pem_corrupt(CorruptPem::BadHeader);
@@ -71,5 +71,5 @@
 mod keypair;
 mod spec;
 
-pub use keypair::{RsaFactoryExt, RsaKeyPair, DOMAIN_RSA_KEYPAIR};
-pub use spec::RsaSpec;
+pub use keypair::{Ed25519FactoryExt, Ed25519KeyPair, DOMAIN_ED25519_KEYPAIR};
+pub use spec::Ed25519Spec;

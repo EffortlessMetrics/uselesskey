@@ -8,11 +8,37 @@ repository.workspace = true
 description = "Runtime-generated key fixtures for tests (no committed PEM blobs)."
 categories = ["development-tools::testing"]
 keywords = ["test", "fixtures", "pem", "pkcs8", "jwks"]
+readme = "../../README.md"
+documentation = "https://docs.rs/uselesskey"
+authors.workspace = true
 
 [dependencies]
 uselesskey-core = { path = "../uselesskey-core", version = "0.1.0" }
-uselesskey-rsa = { path = "../uselesskey-rsa", version = "0.1.0" }
+
+# Key type crates - all optional
+uselesskey-rsa = { path = "../uselesskey-rsa", version = "0.1.0", optional = true }
+uselesskey-ecdsa = { path = "../uselesskey-ecdsa", version = "0.1.0", optional = true }
+uselesskey-ed25519 = { path = "../uselesskey-ed25519", version = "0.1.0", optional = true }
+uselesskey-x509 = { path = "../uselesskey-x509", version = "0.1.0", optional = true }
 
 [features]
-default = []
-jwk = ["uselesskey-rsa/jwk"]
+default = ["rsa"]
+
+# Key types (additive)
+rsa = ["dep:uselesskey-rsa"]
+ecdsa = ["dep:uselesskey-ecdsa"]
+ed25519 = ["dep:uselesskey-ed25519"]
+
+# X.509 certificates (implies rsa for now)
+x509 = ["dep:uselesskey-x509", "rsa"]
+
+# Output formats (pass-through to enabled key crates)
+jwk = [
+    "uselesskey-rsa?/jwk",
+    "uselesskey-ecdsa?/jwk",
+    "uselesskey-ed25519?/jwk",
+]
+
+# Convenience bundles
+all-keys = ["rsa", "ecdsa", "ed25519"]
+full = ["all-keys", "x509", "jwk"]

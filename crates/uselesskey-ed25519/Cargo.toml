@@ -1,0 +1,28 @@
+[package]
+name = "uselesskey-ed25519"
+version = "0.1.0"
+publish = false
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+uselesskey-core = { path = "../uselesskey-core", version = "0.1.0" }
+ed25519-dalek.workspace = true
+pkcs8.workspace = true
+rand_core.workspace = true
+
+# Optional JWK/JWKS support
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+base64 = { workspace = true, optional = true }
+blake3.workspace = true
+
+[features]
+default = []
+jwk = ["dep:serde", "dep:serde_json", "dep:base64"]
+
+[dev-dependencies]
+proptest.workspace = true
+rstest.workspace = true

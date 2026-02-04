@@ -4,28 +4,96 @@ use crate::derive;
 
 /// Seed material used for deterministic fixture generation.
 ///
-/// The actual bytes are intentionally not printed in `Debug`.
+/// The actual bytes are intentionally not printed in `Debug` to prevent
+/// accidental leakage in test output.
+///
+/// # Examples
+///
+/// ```
+/// use uselesskey_core::Seed;
+///
+/// // Create from raw bytes
+/// let bytes = [0u8; 32];
+/// let seed = Seed::new(bytes);
+///
+/// // Create from a string (hashed to 32 bytes)
+/// let seed = Seed::from_env_value("my-ci-seed").unwrap();
+///
+/// // Debug output is redacted
+/// assert_eq!(format!("{:?}", seed), "Seed(**redacted**)");
+/// ```
 #[derive(Clone, Copy, Eq, PartialEq, Hash)]
 pub struct Seed(pub(crate) [u8; 32]);
 
 impl Seed {
     /// Create a seed from raw bytes.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core::Seed;
+    ///
+    /// let bytes = [42u8; 32];
+    /// let seed = Seed::new(bytes);
+    /// assert_eq!(seed.bytes(), &bytes);
+    /// ```
     pub fn new(bytes: [u8; 32]) -> Self {
         Self(bytes)
     }
 
     /// Access raw seed bytes.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core::Seed;
+    ///
+    /// let seed = Seed::from_env_value("test").unwrap();
+    /// let bytes: &[u8; 32] = seed.bytes();
+    /// assert_eq!(bytes.len(), 32);
+    /// ```
     pub fn bytes(&self) -> &[u8; 32] {
         &self.0
     }
 
     /// Derive a seed from a user-provided string.
     ///
-    /// - If the value looks like 32-byte hex, it is parsed as hex.
+    /// - If the value looks like 32-byte hex (64 chars), it is parsed as hex.
     /// - Otherwise we hash the string with BLAKE3 to obtain 32 bytes.
     ///
     /// This is intentionally forgiving because test runners and CI often pass
-    /// “human” seeds like `ci` or `local`.
+    /// "human" seeds like `ci` or `local`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core::Seed;
+    ///
+    /// // Simple string seed (hashed internally)
+    /// let seed = Seed::from_env_value("ci").unwrap();
+    ///
+    /// // 64-character hex seed
+    /// let hex = "0000000000000000000000000000000000000000000000000000000000000001";
+    /// let seed = Seed::from_env_value(hex).unwrap();
+    ///
+    /// // With 0x prefix
+    /// let seed = Seed::from_env_value("0x0000000000000000000000000000000000000000000000000000000000000001").unwrap();
+    ///
+    /// // Whitespace is trimmed
+    /// let seed = Seed::from_env_value("  my-seed  ").unwrap();
+    /// ```
+    ///
+    /// # Determinism
+    ///
+    /// The same input always produces the same seed:
+    ///
+    /// ```
+    /// use uselesskey_core::Seed;
+    ///
+    /// let seed1 = Seed::from_env_value("test").unwrap();
+    /// let seed2 = Seed::from_env_value("test").unwrap();
+    /// assert_eq!(seed1.bytes(), seed2.bytes());
+    /// ```
     pub fn from_env_value(value: &str) -> Result<Self, String> {
         let v = value.trim();
 

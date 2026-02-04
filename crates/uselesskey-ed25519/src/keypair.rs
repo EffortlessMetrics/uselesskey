@@ -1,83 +1,60 @@
 use std::fmt;
 use std::sync::Arc;
 
-use rsa::pkcs8::LineEnding;
-use rsa::{pkcs8::EncodePrivateKey, pkcs8::EncodePublicKey, RsaPrivateKey, RsaPublicKey};
+use ed25519_dalek::{pkcs8::EncodePrivateKey, pkcs8::EncodePublicKey, SigningKey, VerifyingKey};
+use pkcs8::LineEnding;
+use rand_core::RngCore;
 use uselesskey_core::negative::{corrupt_pem, truncate_der, CorruptPem};
 use uselesskey_core::sink::TempArtifact;
 use uselesskey_core::{Error, Factory};
 
-use crate::RsaSpec;
+use crate::Ed25519Spec;
 
-/// Cache domain for RSA keypair fixtures.
+/// Cache domain for Ed25519 keypair fixtures.
 ///
 /// Keep this stable: changing it changes deterministic outputs.
-pub const DOMAIN_RSA_KEYPAIR: &str = "uselesskey:rsa:keypair";
+pub const DOMAIN_ED25519_KEYPAIR: &str = "uselesskey:ed25519:keypair";
 
-/// An RSA keypair fixture with various output formats.
-///
-/// Created via [`RsaFactoryExt::rsa()`]. Provides access to:
-/// - Private key in PKCS#8 PEM and DER formats
-/// - Public key in SPKI PEM and DER formats
-/// - Negative fixtures (corrupted PEM, truncated DER, mismatched keys)
-/// - JWK output (with the `jwk` feature)
-///
-/// # Examples
-///
-/// ```
-/// use uselesskey_core::Factory;
-/// use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
-///
-/// let fx = Factory::random();
-/// let keypair = fx.rsa("my-service", RsaSpec::rs256());
-///
-/// // Access key material
-/// let private_pem = keypair.private_key_pkcs8_pem();
-/// let public_der = keypair.public_key_spki_der();
-///
-/// assert!(private_pem.contains("BEGIN PRIVATE KEY"));
-/// assert!(!public_der.is_empty());
-/// ```
 #[derive(Clone)]
-pub struct RsaKeyPair {
+pub struct Ed25519KeyPair {
     factory: Factory,
     label: String,
-    spec: RsaSpec,
+    spec: Ed25519Spec,
     inner: Arc<Inner>,
 }
 
 struct Inner {
     /// Kept for potential signing methods; not currently used.
-    _private: RsaPrivateKey,
-    public: RsaPublicKey,
+    _private: SigningKey,
+    public: VerifyingKey,
     pkcs8_der: Arc<[u8]>,
     pkcs8_pem: String,
     spki_der: Arc<[u8]>,
     spki_pem: String,
 }
 
-impl fmt::Debug for RsaKeyPair {
+impl fmt::Debug for Ed25519KeyPair {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("RsaKeyPair")
+        f.debug_struct("Ed25519KeyPair")
             .field("label", &self.label)
             .field("spec", &self.spec)
             .finish_non_exhaustive()
     }
 }
 
-/// Extension trait to hang RSA helpers off the core [`Factory`].
-pub trait RsaFactoryExt {
-    fn rsa(&self, label: impl AsRef<str>, spec: RsaSpec) -> RsaKeyPair;
+/// Extension trait to hang Ed25519 helpers off the core [`Factory`].
+pub trait Ed25519FactoryExt {
+    fn ed25519(&self, label: impl AsRef<str>, spec: Ed25519Spec) -> Ed25519KeyPair;
 }
 
-impl RsaFactoryExt for Factory {
-    fn rsa(&self, label: impl AsRef<str>, spec: RsaSpec) -> RsaKeyPair {
-        RsaKeyPair::new(self.clone(), label.as_ref(), spec)
+impl Ed25519FactoryExt for Factory {
+    fn ed25519(&self, label: impl AsRef<str>, spec: Ed25519Spec) -> Ed25519KeyPair {
+        Ed25519KeyPair::new(self.clone(), label.as_ref(), spec)
     }
 }
 
-impl RsaKeyPair {
-    fn new(factory: Factory, label: &str, spec: RsaSpec) -> Self {
+impl Ed25519KeyPair {
+    fn new(factory: Factory, label: &str, spec: Ed25519Spec) -> Self {
         let inner = load_inner(&factory, label, spec, "good");
         Self {
             factory,
@@ -148,25 +125,24 @@ impl RsaKeyPair {
         URL_SAFE_NO_PAD.encode(short)
     }
 
-    /// Public JWK for this keypair (kty=RSA, alg=RS256, use=sig, kid=...).
+    /// Public JWK for this keypair (kty=OKP, crv=Ed25519, use=sig, kid=...).
     ///
     /// Requires the `jwk` feature.
     #[cfg(feature = "jwk")]
     pub fn public_jwk(&self) -> serde_json::Value {
         use base64::engine::general_purpose::URL_SAFE_NO_PAD;
         use base64::Engine as _;
-        use rsa::traits::PublicKeyParts;
 
-        let n = self.inner.public.n().to_bytes_be();
-        let e = self.inner.public.e().to_bytes_be();
+        // Ed25519 public key is 32 bytes
+        let x = self.inner.public.as_bytes();
 
         serde_json::json!({
-            "kty": "RSA",
+            "kty": "OKP",
+            "crv": "Ed25519",
             "use": "sig",
-            "alg": "RS256",
+            "alg": "EdDSA",
             "kid": self.kid(),
-            "n": URL_SAFE_NO_PAD.encode(n),
-            "e": URL_SAFE_NO_PAD.encode(e),
+            "x": URL_SAFE_NO_PAD.encode(x),
         })
     }
 
@@ -177,44 +153,35 @@ impl RsaKeyPair {
     }
 }
 
-fn load_inner(factory: &Factory, label: &str, spec: RsaSpec, variant: &str) -> Arc<Inner> {
-    // Validate what we can, up front.
-    assert!(
-        spec.bits >= 1024,
-        "RSA bits too small for most parsers; got {}",
-        spec.bits
-    );
-    assert!(
-        spec.exponent == 65537,
-        "custom RSA public exponent not supported in v1; got {}",
-        spec.exponent
-    );
-
+fn load_inner(factory: &Factory, label: &str, spec: Ed25519Spec, variant: &str) -> Arc<Inner> {
     let spec_bytes = spec.stable_bytes();
 
-    factory.get_or_init(DOMAIN_RSA_KEYPAIR, label, &spec_bytes, variant, |rng| {
-        let private = RsaPrivateKey::new(rng, spec.bits).expect("RSA keygen failed");
-        let public = RsaPublicKey::from(&private);
+    factory.get_or_init(DOMAIN_ED25519_KEYPAIR, label, &spec_bytes, variant, |rng| {
+        // Generate 32 random bytes for Ed25519 secret key
+        let mut secret_bytes = [0u8; 32];
+        rng.fill_bytes(&mut secret_bytes);
+
+        let private = SigningKey::from_bytes(&secret_bytes);
+        let public = private.verifying_key();
 
         let pkcs8_der_doc = private
             .to_pkcs8_der()
-            .expect("failed to encode RSA private key as PKCS#8 DER");
+            .expect("failed to encode Ed25519 private key as PKCS#8 DER");
         let pkcs8_der: Arc<[u8]> = Arc::from(pkcs8_der_doc.as_bytes());
 
         let pkcs8_pem = private
             .to_pkcs8_pem(LineEnding::LF)
-            .expect("failed to encode RSA private key as PKCS#8 PEM")
+            .expect("failed to encode Ed25519 private key as PKCS#8 PEM")
             .to_string();
 
         let spki_der_doc = public
             .to_public_key_der()
-            .expect("failed to encode RSA public key as SPKI DER");
-        let spki_der: Arc<[u8]> = Arc::from(spki_der_doc.as_bytes());
+            .expect("failed to encode Ed25519 public key as SPKI DER");
+        let spki_der: Arc<[u8]> = Arc::from(spki_der_doc.as_ref());
 
         let spki_pem = public
             .to_public_key_pem(LineEnding::LF)
-            .expect("failed to encode RSA public key as SPKI PEM")
-            .to_string();
+            .expect("failed to encode Ed25519 public key as SPKI PEM");
 
         Inner {
             _private: private,
