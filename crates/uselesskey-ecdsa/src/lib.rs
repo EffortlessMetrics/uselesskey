@@ -78,5 +78,5 @@
 mod keypair;
 mod spec;
 
-pub use keypair::{DOMAIN_ECDSA_KEYPAIR, EcdsaFactoryExt, EcdsaKeyPair};
+pub use keypair::{EcdsaFactoryExt, EcdsaKeyPair, DOMAIN_ECDSA_KEYPAIR};
 pub use spec::EcdsaSpec;

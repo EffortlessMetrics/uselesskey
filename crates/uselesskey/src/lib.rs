@@ -8,17 +8,11 @@
 //!
 //! > Not for production. Deterministic keys are predictable by design.
 //!
-//! For integration with third-party crypto crates, see the adapter crates:
-//! `uselesskey-jsonwebtoken`, `uselesskey-rustls`, `uselesskey-ring`,
-//! `uselesskey-rustcrypto`, and `uselesskey-aws-lc-rs`.
-//!
 //! # Quick Start
 //!
 //! Create a factory and generate RSA key fixtures:
 //!
 //! ```
-//! # #[cfg(feature = "rsa")]
-//! # fn main() {
 //! use uselesskey::{Factory, RsaFactoryExt, RsaSpec};
 //!
 //! // Random mode: each run produces different keys (still cached per-process)
@@ -32,9 +26,6 @@
 //!
 //! assert!(pem.contains("-----BEGIN PRIVATE KEY-----"));
 //! assert!(!der.is_empty());
-//! # }
-//! # #[cfg(not(feature = "rsa"))]
-//! # fn main() {}
 //! ```
 //!
 //! # Deterministic Mode
@@ -42,8 +33,6 @@
 //! For reproducible test fixtures, use deterministic mode with a seed:
 //!
 //! ```
-//! # #[cfg(feature = "rsa")]
-//! # fn main() {
 //! use uselesskey::{Factory, RsaFactoryExt, RsaSpec, Seed};
 //!
 //! // Create a deterministic factory with a fixed seed
@@ -55,9 +44,6 @@
 //! let key2 = fx.rsa("issuer", RsaSpec::rs256());
 //!
 //! assert_eq!(key1.private_key_pkcs8_pem(), key2.private_key_pkcs8_pem());
-//! # }
-//! # #[cfg(not(feature = "rsa"))]
-//! # fn main() {}
 //! ```
 //!
 //! # Environment-Based Seeds
@@ -69,9 +55,9 @@
 //!
 //! // This reads from the environment variable and parses the seed
 //! // Returns Err if the variable is not set
-//! # unsafe { std::env::set_var("USELESSKEY_SEED", "ci-build-12345") };
+//! # std::env::set_var("USELESSKEY_SEED", "ci-build-12345");
 //! let fx = Factory::deterministic_from_env("USELESSKEY_SEED").unwrap();
-//! # unsafe { std::env::remove_var("USELESSKEY_SEED") };
+//! # std::env::remove_var("USELESSKEY_SEED");
 //! ```
 //!
 //! # Negative Fixtures
@@ -79,8 +65,6 @@
 //! Test error handling with intentionally corrupted keys:
 //!
 //! ```
-//! # #[cfg(feature = "rsa")]
-//! # fn main() {
 //! use uselesskey::{Factory, RsaFactoryExt, RsaSpec};
 //! use uselesskey::negative::CorruptPem;
 //!
@@ -98,9 +82,6 @@
 //! // Get a mismatched public key (valid but doesn't match the private key)
 //! let mismatched = keypair.mismatched_public_key_spki_der();
 //! assert!(!mismatched.is_empty());
-//! # }
-//! # #[cfg(not(feature = "rsa"))]
-//! # fn main() {}
 //! ```
 //!
 //! # Temporary Files
@@ -108,8 +89,6 @@
 //! Some libraries require file paths. Use `write_*` methods:
 //!
 //! ```
-//! # #[cfg(feature = "rsa")]
-//! # fn main() {
 //! use uselesskey::{Factory, RsaFactoryExt, RsaSpec};
 //!
 //! let fx = Factory::random();
@@ -121,9 +100,6 @@
 //!
 //! assert!(path.exists());
 //! // Pass `path` to libraries that need file paths
-//! # }
-//! # #[cfg(not(feature = "rsa"))]
-//! # fn main() {}
 //! ```
 //!
 //! # JWK Support
@@ -131,7 +107,7 @@
 //! With the `jwk` feature, generate JSON Web Keys:
 //!
 //! ```
-//! # #[cfg(all(feature = "jwk", feature = "rsa"))]
+//! # #[cfg(feature = "jwk")]
 //! # fn main() {
 //! use uselesskey::{Factory, RsaFactoryExt, RsaSpec};
 //!
@@ -143,16 +119,14 @@
 //!
 //! // Get the public JWK
 //! let jwk = keypair.public_jwk();
-//! let jwk_value = jwk.to_value();
-//! assert_eq!(jwk_value["kty"], "RSA");
-//! assert_eq!(jwk_value["alg"], "RS256");
+//! assert_eq!(jwk["kty"], "RSA");
+//! assert_eq!(jwk["alg"], "RS256");
 //!
 //! // Get a JWKS containing one key
 //! let jwks = keypair.public_jwks();
-//! let jwks_value = jwks.to_value();
-//! assert!(jwks_value["keys"].is_array());
+//! assert!(jwks["keys"].is_array());
 //! # }
-//! # #[cfg(not(all(feature = "jwk", feature = "rsa")))]
+//! # #[cfg(not(feature = "jwk"))]
 //! # fn main() {}
 //! ```
 
@@ -162,30 +136,19 @@ pub mod negative {
     pub use uselesskey_core::negative::*;
 }
 
-#[cfg(feature = "jwk")]
-pub mod jwk {
-    pub use uselesskey_jwk::*;
-}
-
 #[cfg(feature = "rsa")]
-pub use uselesskey_rsa::{DOMAIN_RSA_KEYPAIR, RsaFactoryExt, RsaKeyPair, RsaSpec};
+pub use uselesskey_rsa::{RsaFactoryExt, RsaKeyPair, RsaSpec, DOMAIN_RSA_KEYPAIR};
 
 #[cfg(feature = "ecdsa")]
-pub use uselesskey_ecdsa::{DOMAIN_ECDSA_KEYPAIR, EcdsaFactoryExt, EcdsaKeyPair, EcdsaSpec};
+pub use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaKeyPair, EcdsaSpec, DOMAIN_ECDSA_KEYPAIR};
 
 #[cfg(feature = "ed25519")]
 pub use uselesskey_ed25519::{
-    DOMAIN_ED25519_KEYPAIR, Ed25519FactoryExt, Ed25519KeyPair, Ed25519Spec,
+    Ed25519FactoryExt, Ed25519KeyPair, Ed25519Spec, DOMAIN_ED25519_KEYPAIR,
 };
-
-#[cfg(feature = "hmac")]
-pub use uselesskey_hmac::{DOMAIN_HMAC_SECRET, HmacFactoryExt, HmacSecret, HmacSpec};
 
 #[cfg(feature = "x509")]
-pub use uselesskey_x509::{
-    ChainNegative, ChainSpec, DOMAIN_X509_CERT, DOMAIN_X509_CHAIN, X509Cert, X509Chain,
-    X509FactoryExt, X509Spec,
-};
+pub use uselesskey_x509::{X509Cert, X509FactoryExt, X509Spec, DOMAIN_X509_CERT};
 
 /// Common imports for tests.
 ///
@@ -207,9 +170,6 @@ pub mod prelude {
     #[cfg(feature = "ed25519")]
     pub use crate::{Ed25519FactoryExt, Ed25519KeyPair, Ed25519Spec};
 
-    #[cfg(feature = "hmac")]
-    pub use crate::{HmacFactoryExt, HmacSecret, HmacSpec};
-
     #[cfg(feature = "x509")]
-    pub use crate::{ChainSpec, X509Cert, X509Chain, X509FactoryExt, X509Spec};
+    pub use crate::{X509Cert, X509FactoryExt, X509Spec};
 }

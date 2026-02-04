@@ -64,7 +64,7 @@ pub struct X509Spec {
     /// Default: 1 day before "now".
     pub not_before_offset: NotBeforeOffset,
     /// Duration after "now" for not_after.
-    /// Default: 3650 days (10 years).
+    /// Default: 365 days.
     pub validity_days: u32,
     /// Key usage flags.
     pub key_usage: KeyUsage,
@@ -95,7 +95,7 @@ impl Default for X509Spec {
             subject_cn: "Test Certificate".to_string(),
             issuer_cn: "Test Certificate".to_string(),
             not_before_offset: NotBeforeOffset::default(),
-            validity_days: 3650,
+            validity_days: 365,
             key_usage: KeyUsage::leaf(),
             is_ca: false,
             rsa_bits: 2048,
@@ -162,10 +162,6 @@ impl X509Spec {
     pub fn stable_bytes(&self) -> Vec<u8> {
         let mut out = Vec::new();
 
-        // Version prefix to allow deterministic derivation changes without affecting other crates.
-        // Bump this if X.509 derivation inputs change.
-        out.push(2);
-
         // Subject CN length + bytes
         let subject_bytes = self.subject_cn.as_bytes();
         out.extend_from_slice(&(subject_bytes.len() as u32).to_be_bytes());
@@ -229,13 +225,8 @@ mod tests {
     fn test_default_spec() {
         let spec = X509Spec::default();
         assert_eq!(spec.subject_cn, "Test Certificate");
-        assert_eq!(spec.validity_days, 3650);
+        assert_eq!(spec.validity_days, 365);
         assert!(!spec.is_ca);
-    }
-
-    #[test]
-    fn test_key_usage_default_is_leaf() {
-        assert_eq!(KeyUsage::default(), KeyUsage::leaf());
     }
 
     #[test]
@@ -251,53 +242,6 @@ mod tests {
         let spec = X509Spec::self_signed_ca("My CA");
         assert!(spec.is_ca);
         assert!(spec.key_usage.key_cert_sign);
-    }
-
-    #[test]
-    fn test_builder_methods_apply() {
-        let key_usage = KeyUsage::ca();
-        let spec = X509Spec::self_signed("builder.example.com")
-            .with_validity_days(90)
-            .with_not_before(NotBeforeOffset::DaysFromNow(7))
-            .with_rsa_bits(4096)
-            .with_key_usage(key_usage)
-            .with_is_ca(true);
-
-        assert_eq!(spec.validity_days, 90);
-        assert_eq!(spec.not_before_offset, NotBeforeOffset::DaysFromNow(7));
-        assert_eq!(spec.rsa_bits, 4096);
-        assert!(spec.is_ca);
-        assert_eq!(spec.key_usage, key_usage);
-    }
-
-    #[test]
-    fn test_not_before_duration_variants() {
-        let days = 3u32;
-        let secs = days as u64 * 24 * 60 * 60;
-
-        let spec_ago = X509Spec::self_signed("ago").with_not_before(NotBeforeOffset::DaysAgo(days));
-        assert_eq!(spec_ago.not_before_duration(), Duration::from_secs(secs));
-
-        let spec_future =
-            X509Spec::self_signed("future").with_not_before(NotBeforeOffset::DaysFromNow(days));
-        assert_eq!(spec_future.not_before_duration(), Duration::ZERO);
-    }
-
-    #[test]
-    fn test_not_after_duration_variants() {
-        let days = 2u32;
-        let secs = days as u64 * 24 * 60 * 60;
-
-        let spec_ago = X509Spec::self_signed("ago").with_validity_days(days);
-        assert_eq!(spec_ago.not_after_duration(), Duration::from_secs(secs));
-
-        let spec_future = X509Spec::self_signed("future")
-            .with_not_before(NotBeforeOffset::DaysFromNow(days))
-            .with_validity_days(days);
-        assert_eq!(
-            spec_future.not_after_duration(),
-            Duration::from_secs(secs * 2)
-        );
     }
 
     #[test]

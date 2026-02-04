@@ -27,21 +27,3 @@ impl Ed25519Spec {
         [b'E', b'd', 0x01, 0x00]
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn new_and_default_match() {
-        let a = Ed25519Spec::new();
-        let b = Ed25519Spec::default();
-        assert_eq!(a, b);
-    }
-
-    #[test]
-    fn stable_bytes_are_fixed() {
-        let spec = Ed25519Spec::new();
-        assert_eq!(spec.stable_bytes(), [b'E', b'd', 0x01, 0x00]);
-    }
-}

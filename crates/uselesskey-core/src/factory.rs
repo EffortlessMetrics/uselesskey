@@ -150,13 +150,12 @@ impl Factory {
     /// use uselesskey_core::Factory;
     ///
     /// // Set up the environment variable for this example
-    /// // SAFETY: this is a single-threaded doctest; no concurrent env access.
-    /// unsafe { std::env::set_var("MY_TEST_SEED", "reproducible-ci-seed") };
+    /// std::env::set_var("MY_TEST_SEED", "reproducible-ci-seed");
     ///
     /// let fx = Factory::deterministic_from_env("MY_TEST_SEED").unwrap();
     ///
     /// // Clean up
-    /// unsafe { std::env::remove_var("MY_TEST_SEED") };
+    /// std::env::remove_var("MY_TEST_SEED");
     /// ```
     ///
     /// ```

@@ -71,5 +71,5 @@
 mod keypair;
 mod spec;
 
-pub use keypair::{DOMAIN_ED25519_KEYPAIR, Ed25519FactoryExt, Ed25519KeyPair};
+pub use keypair::{Ed25519FactoryExt, Ed25519KeyPair, DOMAIN_ED25519_KEYPAIR};
 pub use spec::Ed25519Spec;
