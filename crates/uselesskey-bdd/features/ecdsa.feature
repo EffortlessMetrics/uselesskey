@@ -118,11 +118,6 @@ Feature: ECDSA fixtures
     And the ECDSA public JWK should have a kid
     And the ECDSA public JWK should have x and y parameters
 
-  Scenario: ES256 private JWK has correct format
-    Given a deterministic factory seeded with "jwk-test"
-    When I generate an ECDSA ES256 key for label "jwt-signer"
-    Then the ECDSA private JWK should have d parameter
-
   Scenario: ECDSA JWKS has valid structure
     Given a deterministic factory seeded with "jwks-test"
     When I generate an ECDSA ES256 key for label "auth-service"

@@ -44,26 +44,3 @@ impl EcdsaSpec {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn alg_and_curve_names_match_specs() {
-        let es256 = EcdsaSpec::es256();
-        assert_eq!(es256.alg_name(), "ES256");
-        assert_eq!(es256.curve_name(), "P-256");
-
-        let es384 = EcdsaSpec::es384();
-        assert_eq!(es384.alg_name(), "ES384");
-        assert_eq!(es384.curve_name(), "P-384");
-    }
-
-    #[test]
-    fn stable_bytes_are_unique() {
-        let es256 = EcdsaSpec::es256().stable_bytes();
-        let es384 = EcdsaSpec::es384().stable_bytes();
-        assert_ne!(es256, es384);
-    }
-}

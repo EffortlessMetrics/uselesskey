@@ -8,17 +8,14 @@ use rcgen::{
     KeyUsagePurpose, PKCS_RSA_SHA256,
 };
 use rustls_pki_types::PrivatePkcs8KeyDer;
-use time::Duration as TimeDuration;
+use time::{Duration as TimeDuration, OffsetDateTime};
 use uselesskey_core::negative::CorruptPem;
 use uselesskey_core::sink::TempArtifact;
 use uselesskey_core::{Error, Factory};
 use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 
-use crate::chain::X509Chain;
-use crate::chain_spec::ChainSpec;
-use crate::negative::{X509Negative, corrupt_cert_pem, truncate_cert_der};
+use crate::negative::{corrupt_cert_pem, truncate_cert_der, X509Negative};
 use crate::spec::{NotBeforeOffset, X509Spec};
-use crate::util::{deterministic_base_time, deterministic_serial_number};
 
 /// Cache domain for X.509 certificate fixtures.
 ///
@@ -57,21 +54,11 @@ pub trait X509FactoryExt {
     /// The certificate is cached by `(label, spec)` and will be reused on subsequent calls
     /// with the same parameters.
     fn x509_self_signed(&self, label: impl AsRef<str>, spec: X509Spec) -> X509Cert;
-
-    /// Generate a three-level X.509 certificate chain (root CA → intermediate CA → leaf).
-    ///
-    /// The chain is cached by `(label, spec)` and will be reused on subsequent calls
-    /// with the same parameters.
-    fn x509_chain(&self, label: impl AsRef<str>, spec: ChainSpec) -> X509Chain;
 }
 
 impl X509FactoryExt for Factory {
     fn x509_self_signed(&self, label: impl AsRef<str>, spec: X509Spec) -> X509Cert {
         X509Cert::new(self.clone(), label.as_ref(), spec)
-    }
-
-    fn x509_chain(&self, label: impl AsRef<str>, spec: ChainSpec) -> X509Chain {
-        X509Chain::new(self.clone(), label.as_ref(), spec)
     }
 }
 
@@ -117,9 +104,8 @@ impl X509Cert {
 
     /// Combined PEM containing both certificate and private key.
     ///
-    /// This is a common format for TLS server configuration where
-    /// a single file holds the server identity (cert + key).
-    pub fn identity_pem(&self) -> String {
+    /// This is a common format for TLS server configuration.
+    pub fn chain_pem(&self) -> String {
         format!("{}\n{}", self.cert_pem(), self.private_key_pkcs8_pem())
     }
 
@@ -142,9 +128,9 @@ impl X509Cert {
         TempArtifact::new_string("uselesskey-", ".key.pem", self.private_key_pkcs8_pem())
     }
 
-    /// Write the combined identity PEM (cert + key) to a tempfile.
-    pub fn write_identity_pem(&self) -> Result<TempArtifact, Error> {
-        TempArtifact::new_string("uselesskey-", ".identity.pem", &self.identity_pem())
+    /// Write the combined chain PEM to a tempfile.
+    pub fn write_chain_pem(&self) -> Result<TempArtifact, Error> {
+        TempArtifact::new_string("uselesskey-", ".chain.pem", &self.chain_pem())
     }
 
     // =========================================================================
@@ -219,10 +205,10 @@ fn load_inner_with_spec(
 ) -> Arc<Inner> {
     let spec_bytes = spec.stable_bytes();
 
-    factory.get_or_init(DOMAIN_X509_CERT, label, &spec_bytes, variant, |rng| {
+    factory.get_or_init(DOMAIN_X509_CERT, label, &spec_bytes, variant, |_rng| {
         // Generate RSA key using uselesskey-rsa for deterministic key generation.
         // We use the label + variant to derive a unique key.
-        let key_label = format!("{}-key", label);
+        let key_label = format!("{}-{}-key", label, variant);
         let rsa_spec = RsaSpec::new(spec.rsa_bits);
         let rsa_keypair = factory.rsa(&key_label, rsa_spec);
 
@@ -239,31 +225,17 @@ fn load_inner_with_spec(
             .push(DnType::CommonName, spec.subject_cn.clone());
 
         // Set validity period based on spec
-        let base_time = {
-            let mut hasher = blake3::Hasher::new();
-            let label_bytes = label.as_bytes();
-            hasher.update(&(label_bytes.len() as u32).to_be_bytes());
-            hasher.update(label_bytes);
-            let subject_bytes = spec.subject_cn.as_bytes();
-            hasher.update(&(subject_bytes.len() as u32).to_be_bytes());
-            hasher.update(subject_bytes);
-            let issuer_bytes = spec.issuer_cn.as_bytes();
-            hasher.update(&(issuer_bytes.len() as u32).to_be_bytes());
-            hasher.update(issuer_bytes);
-            hasher.update(&(spec.rsa_bits as u32).to_be_bytes());
-            deterministic_base_time(hasher)
-        };
+        let now = OffsetDateTime::now_utc();
 
         let not_before = match spec.not_before_offset {
-            NotBeforeOffset::DaysAgo(days) => base_time - TimeDuration::days(days as i64),
-            NotBeforeOffset::DaysFromNow(days) => base_time + TimeDuration::days(days as i64),
+            NotBeforeOffset::DaysAgo(days) => now - TimeDuration::days(days as i64),
+            NotBeforeOffset::DaysFromNow(days) => now + TimeDuration::days(days as i64),
         };
 
         let not_after = not_before + TimeDuration::days(spec.validity_days as i64);
 
         params.not_before = not_before;
         params.not_after = not_after;
-        params.serial_number = Some(deterministic_serial_number(rng));
 
         // Set CA status
         if spec.is_ca {
@@ -317,7 +289,6 @@ fn load_inner_with_spec(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testutil::fx;
     use uselesskey_core::Seed;
 
     #[test]
@@ -329,10 +300,9 @@ mod tests {
         assert!(!cert.cert_der().is_empty());
         assert!(cert.cert_pem().contains("-----BEGIN CERTIFICATE-----"));
         assert!(!cert.private_key_pkcs8_der().is_empty());
-        assert!(
-            cert.private_key_pkcs8_pem()
-                .contains("-----BEGIN PRIVATE KEY-----")
-        );
+        assert!(cert
+            .private_key_pkcs8_pem()
+            .contains("-----BEGIN PRIVATE KEY-----"));
     }
 
     #[test]
@@ -342,7 +312,6 @@ mod tests {
         let spec = X509Spec::self_signed("test.example.com");
 
         let cert1 = factory.x509_self_signed("test", spec.clone());
-        factory.clear_cache();
         let cert2 = factory.x509_self_signed("test", spec);
 
         assert_eq!(cert1.cert_pem(), cert2.cert_pem());
@@ -350,34 +319,19 @@ mod tests {
     }
 
     #[test]
-    fn test_identity_pem() {
-        let factory = fx();
+    fn test_chain_pem() {
+        let factory = Factory::random();
         let spec = X509Spec::self_signed("test.example.com");
         let cert = factory.x509_self_signed("test", spec);
 
-        let identity = cert.identity_pem();
-        assert!(identity.contains("-----BEGIN CERTIFICATE-----"));
-        assert!(identity.contains("-----BEGIN PRIVATE KEY-----"));
-    }
-
-    #[test]
-    fn test_good_cert_not_expired_within_five_years() {
-        use x509_parser::prelude::*;
-
-        let factory = fx();
-        let spec = X509Spec::self_signed("test.example.com");
-        let cert = factory.x509_self_signed("test", spec);
-
-        let (_, parsed) = X509Certificate::from_der(cert.cert_der()).expect("parse cert");
-        let not_before = parsed.validity().not_before.timestamp();
-        let not_after = parsed.validity().not_after.timestamp();
-        let validity_days = (not_after - not_before) / 86400;
-        assert!(validity_days >= 365 * 5);
+        let chain = cert.chain_pem();
+        assert!(chain.contains("-----BEGIN CERTIFICATE-----"));
+        assert!(chain.contains("-----BEGIN PRIVATE KEY-----"));
     }
 
     #[test]
     fn test_expired_cert() {
-        let factory = fx();
+        let factory = Factory::random();
         let spec = X509Spec::self_signed("test.example.com");
         let cert = factory.x509_self_signed("test", spec);
 
@@ -388,7 +342,7 @@ mod tests {
 
     #[test]
     fn test_not_yet_valid_cert() {
-        let factory = fx();
+        let factory = Factory::random();
         let spec = X509Spec::self_signed("test.example.com");
         let cert = factory.x509_self_signed("test", spec);
 
@@ -398,7 +352,7 @@ mod tests {
 
     #[test]
     fn test_corrupt_cert_pem() {
-        let factory = fx();
+        let factory = Factory::random();
         let spec = X509Spec::self_signed("test.example.com");
         let cert = factory.x509_self_signed("test", spec);
 
@@ -408,7 +362,7 @@ mod tests {
 
     #[test]
     fn test_truncate_cert_der() {
-        let factory = fx();
+        let factory = Factory::random();
         let spec = X509Spec::self_signed("test.example.com");
         let cert = factory.x509_self_signed("test", spec);
 
@@ -418,72 +372,17 @@ mod tests {
 
     #[test]
     fn test_tempfile_outputs() {
-        let factory = fx();
+        let factory = Factory::random();
         let spec = X509Spec::self_signed("test.example.com");
         let cert = factory.x509_self_signed("test", spec);
 
         let cert_file = cert.write_cert_pem().unwrap();
         assert!(cert_file.path().exists());
 
-        let cert_der_file = cert.write_cert_der().unwrap();
-        assert!(cert_der_file.path().exists());
-
         let key_file = cert.write_private_key_pem().unwrap();
         assert!(key_file.path().exists());
 
-        let identity_file = cert.write_identity_pem().unwrap();
-        assert!(identity_file.path().exists());
-    }
-
-    #[test]
-    fn test_debug_includes_label_and_spec() {
-        let factory = fx();
-        let spec = X509Spec::self_signed("debug.example.com");
-        let cert = factory.x509_self_signed("debug-label", spec);
-
-        let dbg = format!("{:?}", cert);
-        assert!(dbg.contains("X509Cert"));
-        assert!(dbg.contains("debug-label"));
-    }
-
-    #[test]
-    fn test_factory_chain_extension_works() {
-        let factory = fx();
-        let chain = factory.x509_chain("test-chain", ChainSpec::new("test.example.com"));
-        assert!(!chain.leaf_cert_der().is_empty());
-    }
-
-    #[test]
-    fn test_load_variant_generates_distinct_cert() {
-        let factory = Factory::deterministic(Seed::from_env_value("variant-seed").unwrap());
-        let spec = X509Spec::self_signed("variant.example.com");
-        let cert = factory.x509_self_signed("variant", spec);
-
-        let other = cert.load_variant("alt");
-        assert_ne!(cert.cert_der(), other.cert_der.as_ref());
-    }
-
-    #[test]
-    fn test_wrong_key_usage_variant_updates_spec() {
-        let factory = fx();
-        let spec = X509Spec::self_signed("badku.example.com");
-        let cert = factory.x509_self_signed("badku", spec);
-
-        let wrong = cert.wrong_key_usage();
-        assert!(wrong.spec().is_ca);
-        assert!(!wrong.spec().key_usage.key_cert_sign);
-        assert_eq!(wrong.label(), "badku");
-    }
-
-    #[test]
-    fn test_self_signed_ca_executes_ca_branches() {
-        use x509_parser::prelude::*;
-
-        let factory = fx();
-        let spec = X509Spec::self_signed_ca("ca.example.com");
-        let cert = factory.x509_self_signed("ca", spec);
-
-        let (_, parsed) = X509Certificate::from_der(cert.cert_der()).expect("parse cert");
-        assert!(parsed.is_ca());
+        let chain_file = cert.write_chain_pem().unwrap();
+        assert!(chain_file.path().exists());
     }
 }

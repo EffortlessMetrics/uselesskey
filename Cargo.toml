@@ -7,13 +7,7 @@ members = [
   "crates/uselesskey-rsa",
   "crates/uselesskey-ecdsa",
   "crates/uselesskey-ed25519",
-  "crates/uselesskey-hmac",
   "crates/uselesskey-x509",
-  "crates/uselesskey-jsonwebtoken",
-  "crates/uselesskey-rustls",
-  "crates/uselesskey-ring",
-  "crates/uselesskey-rustcrypto",
-  "crates/uselesskey-aws-lc-rs",
   "crates/uselesskey-bdd",
   "xtask",
 ]
@@ -58,6 +52,10 @@ tokio = { version = "1.49.0", features = ["macros", "rt-multi-thread"] }
 
 # RSA
 rsa = { version = "0.9", features = ["pem"] }
+
+# Ed25519
+ed25519-dalek = { version = "2", features = ["pkcs8", "pem", "rand_core"] }
+pkcs8 = { version = "0.10", features = ["pem"] }
 
 # optional JWK helpers
 serde = { version = "1.0.228", features = ["derive"] }
