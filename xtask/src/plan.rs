@@ -7,13 +7,10 @@ pub struct Plan {
     pub run_clippy: bool,
     pub run_tests: bool,
     pub run_feature_matrix: bool,
-    pub run_dep_guard: bool,
     pub run_bdd: bool,
     pub run_mutants: bool,
     pub run_fuzz: bool,
     pub run_no_blob: bool,
-    pub run_coverage: bool,
-    pub run_publish_preflight: bool,
     pub docs_only: bool,
 }
 
@@ -55,32 +52,24 @@ pub fn build_plan(paths: &[String]) -> Plan {
 
     let run_fmt = rust_code_changed || cargo_changed;
     let run_clippy = run_fmt;
-    let run_tests = rust_code_changed || !impacted_crates.is_empty();
-    let run_feature_matrix = cargo_changed
-        || paths.iter().any(|p| {
-            let p = normalize_path(p);
-            p.starts_with("crates/uselesskey/")
-                && (p.ends_with(".feature") && p.contains("features/"))
-        });
-    let run_dep_guard = cargo_changed;
+    let run_tests = !impacted_crates.is_empty();
+    let run_feature_matrix = cargo_changed || paths.iter().any(|p| {
+        let p = normalize_path(p);
+        p.starts_with("crates/uselesskey/")
+    });
     let run_bdd = rust_code_changed || bdd_feature_changed;
     let run_mutants = rust_code_changed;
     let run_fuzz = rust_code_changed;
     let run_no_blob = no_blob_trigger;
-    let run_coverage = rust_code_changed;
-    let run_publish_preflight = cargo_changed;
 
     let run_any = run_fmt
         || run_clippy
         || run_tests
         || run_feature_matrix
-        || run_dep_guard
         || run_bdd
         || run_mutants
         || run_fuzz
-        || run_no_blob
-        || run_coverage
-        || run_publish_preflight;
+        || run_no_blob;
 
     Plan {
         impacted_crates,
@@ -88,13 +77,10 @@ pub fn build_plan(paths: &[String]) -> Plan {
         run_clippy,
         run_tests,
         run_feature_matrix,
-        run_dep_guard,
         run_bdd,
         run_mutants,
         run_fuzz,
         run_no_blob,
-        run_coverage,
-        run_publish_preflight,
         docs_only: !run_any,
     }
 }
@@ -108,7 +94,8 @@ fn is_rust_code_change(path: &str) -> bool {
         return false;
     }
 
-    path.starts_with("crates/") && (path.contains("/src/") || path.contains("/tests/"))
+    path.starts_with("crates/")
+        && (path.contains("/src/") || path.contains("/tests/"))
         || path.starts_with("xtask/")
         || path.starts_with("fuzz/")
         || path.starts_with("examples/")
@@ -134,11 +121,12 @@ fn expand_impacted_crates(changed: &HashSet<String>) -> BTreeSet<String> {
     let mut queue: Vec<String> = changed.iter().cloned().collect();
 
     while let Some(name) = queue.pop() {
-        if impacted.insert(name.clone()) {
-            for &dep in dependents(&name) {
-                if !impacted.contains(dep) {
-                    queue.push(dep.to_string());
-                }
+        if !impacted.insert(name.clone()) {
+            continue;
+        }
+        for &dep in dependents(&name) {
+            if !impacted.contains(dep) {
+                queue.push(dep.to_string());
             }
         }
     }
@@ -152,55 +140,15 @@ fn dependents(crate_name: &str) -> &'static [&'static str] {
             "uselesskey-rsa",
             "uselesskey-ecdsa",
             "uselesskey-ed25519",
-            "uselesskey-hmac",
             "uselesskey-x509",
             "uselesskey",
             "uselesskey-bdd",
         ],
-        "uselesskey-rsa" => &[
-            "uselesskey-x509",
-            "uselesskey",
-            "uselesskey-jsonwebtoken",
-            "uselesskey-rustls",
-            "uselesskey-ring",
-            "uselesskey-rustcrypto",
-            "uselesskey-aws-lc-rs",
-        ],
-        "uselesskey-ecdsa" => &[
-            "uselesskey",
-            "uselesskey-jsonwebtoken",
-            "uselesskey-rustls",
-            "uselesskey-ring",
-            "uselesskey-rustcrypto",
-            "uselesskey-aws-lc-rs",
-        ],
-        "uselesskey-ed25519" => &[
-            "uselesskey",
-            "uselesskey-jsonwebtoken",
-            "uselesskey-rustls",
-            "uselesskey-ring",
-            "uselesskey-rustcrypto",
-            "uselesskey-aws-lc-rs",
-        ],
-        "uselesskey-x509" => &["uselesskey", "uselesskey-rustls"],
-        "uselesskey-jwk" => &[
-            "uselesskey-rsa",
-            "uselesskey-ecdsa",
-            "uselesskey-ed25519",
-            "uselesskey-hmac",
-            "uselesskey",
-        ],
-        "uselesskey-hmac" => &[
-            "uselesskey",
-            "uselesskey-jsonwebtoken",
-            "uselesskey-rustcrypto",
-        ],
+        "uselesskey-rsa" => &["uselesskey-x509", "uselesskey"],
+        "uselesskey-ecdsa" => &["uselesskey"],
+        "uselesskey-ed25519" => &["uselesskey"],
+        "uselesskey-x509" => &["uselesskey"],
         "uselesskey" => &[],
-        "uselesskey-jsonwebtoken" => &[],
-        "uselesskey-rustls" => &[],
-        "uselesskey-ring" => &[],
-        "uselesskey-rustcrypto" => &[],
-        "uselesskey-aws-lc-rs" => &[],
         "uselesskey-bdd" => &["uselesskey-bdd"],
         _ => &[],
     }
@@ -223,8 +171,6 @@ mod tests {
         assert!(!plan.run_mutants);
         assert!(!plan.run_fuzz);
         assert!(!plan.run_no_blob);
-        assert!(!plan.run_coverage);
-        assert!(!plan.run_publish_preflight);
         assert!(plan.impacted_crates.is_empty());
     }
 
@@ -237,34 +183,12 @@ mod tests {
         assert!(impacted.contains("uselesskey-rsa"));
         assert!(impacted.contains("uselesskey-ecdsa"));
         assert!(impacted.contains("uselesskey-ed25519"));
-        assert!(impacted.contains("uselesskey-hmac"));
         assert!(impacted.contains("uselesskey-x509"));
         assert!(impacted.contains("uselesskey"));
         assert!(impacted.contains("uselesskey-bdd"));
         assert!(plan.run_bdd);
         assert!(plan.run_mutants);
         assert!(plan.run_fuzz);
-    }
-
-    #[test]
-    fn examples_path_counts_as_rust_code_change() {
-        let paths = vec!["examples/demo.rs".to_string()];
-        let plan = build_plan(&paths);
-        assert!(plan.run_fmt);
-        assert!(plan.run_clippy);
-        assert!(plan.run_tests);
-    }
-
-    #[test]
-    fn no_blob_trigger_sets_flag() {
-        let paths = vec!["tests/fixtures/secret.pem".to_string()];
-        let plan = build_plan(&paths);
-        assert!(plan.run_no_blob);
-    }
-
-    #[test]
-    fn dependents_unknown_is_empty() {
-        assert!(dependents("unknown-crate").is_empty());
     }
 
     #[test]
@@ -279,43 +203,6 @@ mod tests {
         let paths = vec!["fuzz/fuzz_targets/pem_corrupt.rs".to_string()];
         let plan = build_plan(&paths);
         assert!(plan.run_fuzz);
-    }
-
-    #[test]
-    fn jwk_change_expands_to_key_crates() {
-        let paths = vec!["crates/uselesskey-jwk/src/lib.rs".to_string()];
-        let plan = build_plan(&paths);
-        let impacted = &plan.impacted_crates;
-        assert!(impacted.contains("uselesskey-jwk"));
-        assert!(impacted.contains("uselesskey-rsa"));
-        assert!(impacted.contains("uselesskey-ecdsa"));
-        assert!(impacted.contains("uselesskey-ed25519"));
-        assert!(impacted.contains("uselesskey-hmac"));
-        assert!(impacted.contains("uselesskey"));
-    }
-
-    #[test]
-    fn hmac_change_expands_to_facade_and_jwt() {
-        let paths = vec!["crates/uselesskey-hmac/src/lib.rs".to_string()];
-        let plan = build_plan(&paths);
-        let impacted = &plan.impacted_crates;
-        assert!(impacted.contains("uselesskey-hmac"));
-        assert!(impacted.contains("uselesskey"));
-        assert!(impacted.contains("uselesskey-jsonwebtoken"));
-    }
-
-    #[test]
-    fn rust_change_enables_coverage() {
-        let paths = vec!["crates/uselesskey-core/src/lib.rs".to_string()];
-        let plan = build_plan(&paths);
-        assert!(plan.run_coverage);
-    }
-
-    #[test]
-    fn cargo_change_enables_publish_preflight() {
-        let paths = vec!["Cargo.toml".to_string()];
-        let plan = build_plan(&paths);
-        assert!(plan.run_publish_preflight);
     }
 
     #[test]

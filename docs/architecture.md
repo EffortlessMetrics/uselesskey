@@ -141,3 +141,9 @@ uselesskey-ring          → returns ring's native key types
 ```
 
 These are separate crates (not features) to avoid coupling uselesskey's versioning to downstream crate versions.
+
+## CI scoping
+
+Pull requests run `cargo xtask pr`, which scopes tests based on `git diff` and runs
+the full suites relevant to changed areas. Pushes to `main` run the full `cargo xtask ci`
+pipeline.
