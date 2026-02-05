@@ -38,6 +38,7 @@ pub struct BddMatrixEntry {
 pub struct Runner {
     receipt: Receipt,
     path: PathBuf,
+    start: Instant,
 }
 
 impl Runner {
@@ -56,6 +57,7 @@ impl Runner {
                 bdd_counts: BTreeMap::new(),
             },
             path: path.as_ref().to_path_buf(),
+            start: Instant::now(),
         }
     }
 
@@ -63,9 +65,12 @@ impl Runner {
     where
         F: FnOnce() -> Result<()>,
     {
+        eprintln!("==> {name}");
         let start = Instant::now();
         match f() {
             Ok(()) => {
+                let secs = start.elapsed().as_secs_f64();
+                eprintln!("==> {name} [ok, {secs:.1}s]");
                 self.receipt.steps.push(StepReceipt {
                     name: name.to_string(),
                     status: "ok".to_string(),
@@ -75,6 +80,8 @@ impl Runner {
                 Ok(())
             }
             Err(err) => {
+                let secs = start.elapsed().as_secs_f64();
+                eprintln!("==> {name} [FAILED, {secs:.1}s]");
                 let mut detail = details.unwrap_or_default();
                 if !detail.is_empty() {
                     detail.push_str("; ");
@@ -93,6 +100,7 @@ impl Runner {
     }
 
     pub fn skip(&mut self, name: &str, details: Option<String>) {
+        eprintln!("==> {name} [skipped]");
         self.receipt.steps.push(StepReceipt {
             name: name.to_string(),
             status: "skipped".to_string(),
@@ -117,6 +125,22 @@ impl Runner {
 
     pub fn set_bdd_counts(&mut self, counts: BTreeMap<String, usize>) {
         self.receipt.bdd_counts = counts;
+    }
+
+    pub fn summary(&self) {
+        let mut ok = 0usize;
+        let mut failed = 0usize;
+        let mut skipped = 0usize;
+        for step in &self.receipt.steps {
+            match step.status.as_str() {
+                "ok" => ok += 1,
+                "failed" => failed += 1,
+                "skipped" => skipped += 1,
+                _ => {}
+            }
+        }
+        let total = self.start.elapsed().as_secs_f64();
+        eprintln!("{ok} passed, {failed} failed, {skipped} skipped ({total:.1}s total)");
     }
 
     pub fn write(&self) -> Result<()> {

@@ -182,6 +182,7 @@ fn bdd_matrix() -> Result<()> {
 fn ci() -> Result<()> {
     let mut runner = receipt::Runner::new("target/xtask/receipt.json");
     let result = run_ci_plan(&mut runner);
+    runner.summary();
     if let Err(err) = runner.write() {
         eprintln!("failed to write receipt: {err}");
         if result.is_ok() {
@@ -212,6 +213,7 @@ fn run_ci_plan(runner: &mut receipt::Runner) -> Result<()> {
 fn feature_matrix_cmd() -> Result<()> {
     let mut runner = receipt::Runner::new("target/xtask/receipt.json");
     let result = run_feature_matrix(&mut runner);
+    runner.summary();
     if let Err(err) = runner.write() {
         eprintln!("failed to write receipt: {err}");
         if result.is_ok() {
@@ -290,6 +292,7 @@ fn pr() -> Result<()> {
     let mut runner = receipt::Runner::new("target/xtask/receipt.json");
 
     let result = run_pr_plan(&base_ref, &changed_files, &plan, &mut runner);
+    runner.summary();
     if let Err(err) = runner.write() {
         eprintln!("failed to write receipt: {err}");
         if result.is_ok() {
