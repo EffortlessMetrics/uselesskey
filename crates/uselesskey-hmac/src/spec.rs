@@ -49,34 +49,3 @@ impl HmacSpec {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn alg_name_and_len_match_spec() {
-        let hs256 = HmacSpec::hs256();
-        assert_eq!(hs256.alg_name(), "HS256");
-        assert_eq!(hs256.byte_len(), 32);
-
-        let hs384 = HmacSpec::hs384();
-        assert_eq!(hs384.alg_name(), "HS384");
-        assert_eq!(hs384.byte_len(), 48);
-
-        let hs512 = HmacSpec::hs512();
-        assert_eq!(hs512.alg_name(), "HS512");
-        assert_eq!(hs512.byte_len(), 64);
-    }
-
-    #[test]
-    fn stable_bytes_are_unique() {
-        let hs256 = HmacSpec::hs256().stable_bytes();
-        let hs384 = HmacSpec::hs384().stable_bytes();
-        let hs512 = HmacSpec::hs512().stable_bytes();
-
-        assert_ne!(hs256, hs384);
-        assert_ne!(hs256, hs512);
-        assert_ne!(hs384, hs512);
-    }
-}

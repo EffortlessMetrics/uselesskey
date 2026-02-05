@@ -3,9 +3,10 @@
 use std::fmt;
 use std::sync::Arc;
 
+use rand_core::RngCore;
 use rcgen::{
     BasicConstraints, CertificateParams, DnType, ExtendedKeyUsagePurpose, IsCa, KeyPair,
-    KeyUsagePurpose, PKCS_RSA_SHA256,
+    KeyUsagePurpose, SerialNumber, PKCS_RSA_SHA256,
 };
 use rustls_pki_types::PrivatePkcs8KeyDer;
 use time::{Duration as TimeDuration, OffsetDateTime};
@@ -205,7 +206,7 @@ fn load_inner_with_spec(
 ) -> Arc<Inner> {
     let spec_bytes = spec.stable_bytes();
 
-    factory.get_or_init(DOMAIN_X509_CERT, label, &spec_bytes, variant, |_rng| {
+    factory.get_or_init(DOMAIN_X509_CERT, label, &spec_bytes, variant, |rng| {
         // Generate RSA key using uselesskey-rsa for deterministic key generation.
         // We use the label + variant to derive a unique key.
         let key_label = format!("{}-{}-key", label, variant);
@@ -225,17 +226,18 @@ fn load_inner_with_spec(
             .push(DnType::CommonName, spec.subject_cn.clone());
 
         // Set validity period based on spec
-        let now = OffsetDateTime::now_utc();
+        let base_time = deterministic_base_time(label, spec);
 
         let not_before = match spec.not_before_offset {
-            NotBeforeOffset::DaysAgo(days) => now - TimeDuration::days(days as i64),
-            NotBeforeOffset::DaysFromNow(days) => now + TimeDuration::days(days as i64),
+            NotBeforeOffset::DaysAgo(days) => base_time - TimeDuration::days(days as i64),
+            NotBeforeOffset::DaysFromNow(days) => base_time + TimeDuration::days(days as i64),
         };
 
         let not_after = not_before + TimeDuration::days(spec.validity_days as i64);
 
         params.not_before = not_before;
         params.not_after = not_after;
+        params.serial_number = Some(deterministic_serial_number(rng));
 
         // Set CA status
         if spec.is_ca {
@@ -286,6 +288,38 @@ fn load_inner_with_spec(
     })
 }
 
+fn deterministic_base_time(label: &str, spec: &X509Spec) -> OffsetDateTime {
+    // 2020-01-01T00:00:00Z
+    const EPOCH_UNIX: i64 = 1_577_836_800;
+    let epoch = OffsetDateTime::from_unix_timestamp(EPOCH_UNIX)
+        .expect("failed to construct deterministic epoch");
+
+    // Spread base times across ~10 years to avoid always-identical timestamps.
+    let mut hasher = blake3::Hasher::new();
+    let label_bytes = label.as_bytes();
+    hasher.update(&(label_bytes.len() as u32).to_be_bytes());
+    hasher.update(label_bytes);
+    let subject_bytes = spec.subject_cn.as_bytes();
+    hasher.update(&(subject_bytes.len() as u32).to_be_bytes());
+    hasher.update(subject_bytes);
+    let issuer_bytes = spec.issuer_cn.as_bytes();
+    hasher.update(&(issuer_bytes.len() as u32).to_be_bytes());
+    hasher.update(issuer_bytes);
+    hasher.update(&(spec.rsa_bits as u32).to_be_bytes());
+    let hash = hasher.finalize();
+    let bytes = hash.as_bytes();
+    let day_offset = u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]) % 3650;
+    epoch + TimeDuration::days(day_offset as i64)
+}
+
+fn deterministic_serial_number(rng: &mut impl RngCore) -> SerialNumber {
+    let mut bytes = [0u8; 16];
+    rng.fill_bytes(&mut bytes);
+    // Ensure positive serial number by clearing the high bit.
+    bytes[0] &= 0x7F;
+    SerialNumber::from_slice(&bytes)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -312,6 +346,7 @@ mod tests {
         let spec = X509Spec::self_signed("test.example.com");
 
         let cert1 = factory.x509_self_signed("test", spec.clone());
+        factory.clear_cache();
         let cert2 = factory.x509_self_signed("test", spec);
 
         assert_eq!(cert1.cert_pem(), cert2.cert_pem());

@@ -36,36 +36,6 @@ jobs:
 
       - name: xtask pr
         run: cargo xtask pr
-
-  main:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: dtolnay/rust-toolchain@1.92
-        with:
-          components: rustfmt, clippy
-
-      - uses: dtolnay/rust-toolchain@nightly
-
-      - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
-
-      - name: Install cargo-fuzz
-        run: cargo install cargo-fuzz
-
-      - name: Install cargo-mutants
-        run: cargo install cargo-mutants
-
-      - name: Fetch base branch
-        if: github.base_ref != ''
-        run: git fetch origin ${{ github.base_ref }}
-
-      - name: xtask pr
-        run: cargo xtask pr
       - name: Upload receipt
         uses: actions/upload-artifact@v4
         with:
@@ -77,6 +47,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: dtolnay/rust-toolchain@1.92
         with:

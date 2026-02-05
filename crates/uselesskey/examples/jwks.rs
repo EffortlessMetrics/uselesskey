@@ -12,7 +12,7 @@ fn main() {
     builder.push_public(ecdsa.public_jwk());
 
     let jwks = builder.build();
-    println!("{jwks}");
+    println!("{}", jwks.to_string());
 }
 
 #[cfg(not(all(feature = "jwk", feature = "rsa", feature = "ecdsa")))]

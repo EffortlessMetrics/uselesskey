@@ -104,6 +104,11 @@ Feature: Ed25519 fixtures
     And the Ed25519 public JWK should have a kid
     And the Ed25519 public JWK should have x parameter
 
+  Scenario: Ed25519 private JWK has correct format
+    Given a deterministic factory seeded with "jwk-test"
+    When I generate an Ed25519 key for label "jwt-signer"
+    Then the Ed25519 private JWK should have d parameter
+
   Scenario: Ed25519 JWKS has valid structure
     Given a deterministic factory seeded with "jwks-test"
     When I generate an Ed25519 key for label "auth-service"

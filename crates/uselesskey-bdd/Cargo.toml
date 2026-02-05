@@ -15,7 +15,7 @@ p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "pem"] }
 p384 = { version = "0.13", features = ["ecdsa", "pkcs8", "pem"] }
 x509-parser = "0.16"
 serde_json.workspace = true
-uselesskey = { path = "../uselesskey", features = ["jwk", "ed25519", "ecdsa", "x509"] }
+uselesskey = { path = "../uselesskey", features = ["jwk", "ed25519", "ecdsa", "x509", "hmac"] }
 uselesskey-core = { path = "../uselesskey-core" } # for TempArtifact
 
 [[test]]
