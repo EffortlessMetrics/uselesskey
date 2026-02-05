@@ -49,6 +49,7 @@ pub struct RsaKeyPair {
 struct Inner {
     /// Kept for potential signing methods; not currently used.
     _private: RsaPrivateKey,
+    #[cfg(feature = "jwk")]
     public: RsaPublicKey,
     pkcs8_der: Arc<[u8]>,
     pkcs8_pem: String,
@@ -161,6 +162,7 @@ impl RsaKeyPair {
     /// Requires the `jwk` feature.
     #[cfg(feature = "jwk")]
     pub fn public_jwk(&self) -> uselesskey_jwk::PublicJwk {
+        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
         use base64::Engine as _;
         use base64::engine::general_purpose::URL_SAFE_NO_PAD;
         use rsa::traits::PublicKeyParts;
@@ -184,8 +186,8 @@ impl RsaKeyPair {
     /// Requires the `jwk` feature.
     #[cfg(feature = "jwk")]
     pub fn private_key_jwk(&self) -> uselesskey_jwk::PrivateJwk {
-        use base64::Engine as _;
         use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+        use base64::Engine as _;
         use rsa::traits::{PrivateKeyParts, PublicKeyParts};
         use uselesskey_jwk::{PrivateJwk, RsaPrivateJwk};
 
@@ -294,6 +296,7 @@ fn load_inner(factory: &Factory, label: &str, spec: RsaSpec, variant: &str) -> A
 
         Inner {
             _private: private,
+            #[cfg(feature = "jwk")]
             public,
             pkcs8_der,
             pkcs8_pem,

@@ -53,10 +53,11 @@ pub fn build_plan(paths: &[String]) -> Plan {
     let run_fmt = rust_code_changed || cargo_changed;
     let run_clippy = run_fmt;
     let run_tests = !impacted_crates.is_empty();
-    let run_feature_matrix = cargo_changed || paths.iter().any(|p| {
-        let p = normalize_path(p);
-        p.starts_with("crates/uselesskey/")
-    });
+    let run_feature_matrix = cargo_changed
+        || paths.iter().any(|p| {
+            let p = normalize_path(p);
+            p.starts_with("crates/uselesskey/")
+        });
     let run_bdd = rust_code_changed || bdd_feature_changed;
     let run_mutants = rust_code_changed;
     let run_fuzz = rust_code_changed;
@@ -94,8 +95,7 @@ fn is_rust_code_change(path: &str) -> bool {
         return false;
     }
 
-    path.starts_with("crates/")
-        && (path.contains("/src/") || path.contains("/tests/"))
+    path.starts_with("crates/") && (path.contains("/src/") || path.contains("/tests/"))
         || path.starts_with("xtask/")
         || path.starts_with("fuzz/")
         || path.starts_with("examples/")

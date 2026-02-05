@@ -2,7 +2,8 @@ use cucumber::{given, then, when, World};
 use uselesskey::negative::CorruptPem;
 use uselesskey::{
     EcdsaFactoryExt, EcdsaKeyPair, EcdsaSpec, Ed25519FactoryExt, Ed25519KeyPair, Ed25519Spec,
-    Factory, RsaFactoryExt, RsaKeyPair, RsaSpec, X509Cert, X509FactoryExt, X509Spec,
+    Factory, HmacFactoryExt, HmacSecret, HmacSpec, RsaFactoryExt, RsaKeyPair, RsaSpec, X509Cert,
+    X509FactoryExt, X509Spec,
 };
 
 fn set_public_kid(jwk: &mut uselesskey::jwk::PublicJwk, kid: &str) {
@@ -57,6 +58,11 @@ struct UselessWorld {
     // JWK storage.
     kid_1: Option<String>,
     kid_2: Option<String>,
+
+    // HMAC-specific storage
+    hmac: Option<HmacSecret>,
+    hmac_secret_1: Option<Vec<u8>>,
+    hmac_secret_2: Option<Vec<u8>>,
 
     // Ed25519-specific storage
     ed25519_pkcs8_pem_1: Option<String>,
@@ -154,6 +160,22 @@ fn gen_rsa_second(world: &mut UselessWorld, label: String) {
     world.pkcs8_pem_2 = Some(rsa.private_key_pkcs8_pem().to_string());
     world.spki_der_2 = Some(rsa.public_key_spki_der().to_vec());
     world.rsa = Some(rsa);
+}
+
+#[when(regex = r#"^I generate an HMAC HS256 secret for label "([^"]+)"$"#)]
+fn gen_hmac(world: &mut UselessWorld, label: String) {
+    let fx = world.factory.as_ref().expect("factory not set");
+    let secret = fx.hmac(&label, HmacSpec::hs256());
+    world.hmac_secret_1 = Some(secret.secret_bytes().to_vec());
+    world.hmac = Some(secret);
+}
+
+#[when(regex = r#"^I generate an HMAC HS256 secret for label "([^"]+)" again$"#)]
+fn gen_hmac_again(world: &mut UselessWorld, label: String) {
+    let fx = world.factory.as_ref().expect("factory not set");
+    let secret = fx.hmac(&label, HmacSpec::hs256());
+    world.hmac_secret_2 = Some(secret.secret_bytes().to_vec());
+    world.hmac = Some(secret);
 }
 
 #[when("I clear the factory cache")]
@@ -412,28 +434,28 @@ fn tempfile_matches_public(world: &mut UselessWorld) {
 #[then(regex = r#"^the public JWK should have kty "([^"]+)"$"#)]
 fn jwk_has_kty(world: &mut UselessWorld, expected: String) {
     let rsa_key = world.rsa.as_ref().expect("rsa not set");
-    let jwk = rsa_key.public_jwk();
+    let jwk = rsa_key.public_jwk().to_value();
     assert_eq!(jwk["kty"].as_str(), Some(expected.as_str()));
 }
 
 #[then(regex = r#"^the public JWK should have alg "([^"]+)"$"#)]
 fn jwk_has_alg(world: &mut UselessWorld, expected: String) {
     let rsa_key = world.rsa.as_ref().expect("rsa not set");
-    let jwk = rsa_key.public_jwk();
+    let jwk = rsa_key.public_jwk().to_value();
     assert_eq!(jwk["alg"].as_str(), Some(expected.as_str()));
 }
 
 #[then(regex = r#"^the public JWK should have use "([^"]+)"$"#)]
 fn jwk_has_use(world: &mut UselessWorld, expected: String) {
     let rsa_key = world.rsa.as_ref().expect("rsa not set");
-    let jwk = rsa_key.public_jwk();
+    let jwk = rsa_key.public_jwk().to_value();
     assert_eq!(jwk["use"].as_str(), Some(expected.as_str()));
 }
 
 #[then("the public JWK should have a kid")]
 fn jwk_has_kid(world: &mut UselessWorld) {
     let rsa_key = world.rsa.as_ref().expect("rsa not set");
-    let jwk = rsa_key.public_jwk();
+    let jwk = rsa_key.public_jwk().to_value();
     assert!(jwk["kid"].is_string(), "kid should be present");
     assert!(
         !jwk["kid"].as_str().unwrap().is_empty(),
@@ -444,7 +466,7 @@ fn jwk_has_kid(world: &mut UselessWorld) {
 #[then("the public JWK should have n and e parameters")]
 fn jwk_has_n_and_e(world: &mut UselessWorld) {
     let rsa_key = world.rsa.as_ref().expect("rsa not set");
-    let jwk = rsa_key.public_jwk();
+    let jwk = rsa_key.public_jwk().to_value();
     assert!(jwk["n"].is_string(), "n should be present");
     assert!(jwk["e"].is_string(), "e should be present");
     assert!(
@@ -457,17 +479,31 @@ fn jwk_has_n_and_e(world: &mut UselessWorld) {
     );
 }
 
+#[then("the RSA private JWK should have d p q dp dq qi parameters")]
+fn rsa_private_jwk_has_params(world: &mut UselessWorld) {
+    let rsa_key = world.rsa.as_ref().expect("rsa not set");
+    let jwk = rsa_key.private_key_jwk().to_value();
+
+    for key in ["d", "p", "q", "dp", "dq", "qi"] {
+        assert!(
+            jwk.get(key).is_some(),
+            "private JWK should have '{key}' field"
+        );
+        assert!(jwk[key].is_string(), "{key} should be a string");
+    }
+}
+
 #[then("the JWKS should have a keys array")]
 fn jwks_has_keys(world: &mut UselessWorld) {
     let rsa_key = world.rsa.as_ref().expect("rsa not set");
-    let jwks = rsa_key.public_jwks();
+    let jwks = rsa_key.public_jwks().to_value();
     assert!(jwks["keys"].is_array(), "keys should be an array");
 }
 
 #[then("the JWKS keys array should contain one key")]
 fn jwks_has_one_key(world: &mut UselessWorld) {
     let rsa_key = world.rsa.as_ref().expect("rsa not set");
-    let jwks = rsa_key.public_jwks();
+    let jwks = rsa_key.public_jwks().to_value();
     let keys = jwks["keys"].as_array().expect("keys should be array");
     assert_eq!(keys.len(), 1);
 }
@@ -480,6 +516,69 @@ fn kids_identical(world: &mut UselessWorld) {
 #[then("the kids should differ")]
 fn kids_differ(world: &mut UselessWorld) {
     assert_ne!(world.kid_1, world.kid_2);
+}
+
+#[then("the HMAC secrets should be identical")]
+fn hmac_secrets_identical(world: &mut UselessWorld) {
+    assert_eq!(world.hmac_secret_1, world.hmac_secret_2);
+}
+
+#[then(regex = r#"^the HMAC JWK should have kty "([^"]+)"$"#)]
+fn hmac_jwk_has_kty(world: &mut UselessWorld, expected: String) {
+    let secret = world.hmac.as_ref().expect("hmac not set");
+    let jwk = secret.jwk().to_value();
+    assert_eq!(jwk["kty"].as_str(), Some(expected.as_str()));
+}
+
+#[then(regex = r#"^the HMAC JWK should have alg "([^"]+)"$"#)]
+fn hmac_jwk_has_alg(world: &mut UselessWorld, expected: String) {
+    let secret = world.hmac.as_ref().expect("hmac not set");
+    let jwk = secret.jwk().to_value();
+    assert_eq!(jwk["alg"].as_str(), Some(expected.as_str()));
+}
+
+#[then(regex = r#"^the HMAC JWK should have use "([^"]+)"$"#)]
+fn hmac_jwk_has_use(world: &mut UselessWorld, expected: String) {
+    let secret = world.hmac.as_ref().expect("hmac not set");
+    let jwk = secret.jwk().to_value();
+    assert_eq!(jwk["use"].as_str(), Some(expected.as_str()));
+}
+
+#[then("the HMAC JWK should have a kid")]
+fn hmac_jwk_has_kid(world: &mut UselessWorld) {
+    let secret = world.hmac.as_ref().expect("hmac not set");
+    let jwk = secret.jwk().to_value();
+    assert!(jwk["kid"].is_string(), "kid should be present");
+    assert!(
+        !jwk["kid"].as_str().unwrap().is_empty(),
+        "kid should not be empty"
+    );
+}
+
+#[then("the HMAC JWK should have k parameter")]
+fn hmac_jwk_has_k(world: &mut UselessWorld) {
+    let secret = world.hmac.as_ref().expect("hmac not set");
+    let jwk = secret.jwk().to_value();
+    assert!(jwk["k"].is_string(), "k should be present");
+    assert!(
+        !jwk["k"].as_str().unwrap().is_empty(),
+        "k should not be empty"
+    );
+}
+
+#[then("the HMAC JWKS should have a keys array")]
+fn hmac_jwks_has_keys(world: &mut UselessWorld) {
+    let secret = world.hmac.as_ref().expect("hmac not set");
+    let jwks = secret.jwks().to_value();
+    assert!(jwks["keys"].is_array(), "keys should be an array");
+}
+
+#[then("the HMAC JWKS keys array should contain one key")]
+fn hmac_jwks_has_one_key(world: &mut UselessWorld) {
+    let secret = world.hmac.as_ref().expect("hmac not set");
+    let jwks = secret.jwks().to_value();
+    let keys = jwks["keys"].as_array().expect("keys should be array");
+    assert_eq!(keys.len(), 1);
 }
 
 // =============================================================================
@@ -675,35 +774,35 @@ fn ed25519_truncated_der_fails(world: &mut UselessWorld) {
 #[then(regex = r#"^the Ed25519 public JWK should have kty "([^"]+)"$"#)]
 fn ed25519_jwk_has_kty(world: &mut UselessWorld, expected: String) {
     let ed25519_key = world.ed25519.as_ref().expect("ed25519 not set");
-    let jwk = ed25519_key.public_jwk();
+    let jwk = ed25519_key.public_jwk().to_value();
     assert_eq!(jwk["kty"].as_str(), Some(expected.as_str()));
 }
 
 #[then(regex = r#"^the Ed25519 public JWK should have crv "([^"]+)"$"#)]
 fn ed25519_jwk_has_crv(world: &mut UselessWorld, expected: String) {
     let ed25519_key = world.ed25519.as_ref().expect("ed25519 not set");
-    let jwk = ed25519_key.public_jwk();
+    let jwk = ed25519_key.public_jwk().to_value();
     assert_eq!(jwk["crv"].as_str(), Some(expected.as_str()));
 }
 
 #[then(regex = r#"^the Ed25519 public JWK should have alg "([^"]+)"$"#)]
 fn ed25519_jwk_has_alg(world: &mut UselessWorld, expected: String) {
     let ed25519_key = world.ed25519.as_ref().expect("ed25519 not set");
-    let jwk = ed25519_key.public_jwk();
+    let jwk = ed25519_key.public_jwk().to_value();
     assert_eq!(jwk["alg"].as_str(), Some(expected.as_str()));
 }
 
 #[then(regex = r#"^the Ed25519 public JWK should have use "([^"]+)"$"#)]
 fn ed25519_jwk_has_use(world: &mut UselessWorld, expected: String) {
     let ed25519_key = world.ed25519.as_ref().expect("ed25519 not set");
-    let jwk = ed25519_key.public_jwk();
+    let jwk = ed25519_key.public_jwk().to_value();
     assert_eq!(jwk["use"].as_str(), Some(expected.as_str()));
 }
 
 #[then("the Ed25519 public JWK should have a kid")]
 fn ed25519_jwk_has_kid(world: &mut UselessWorld) {
     let ed25519_key = world.ed25519.as_ref().expect("ed25519 not set");
-    let jwk = ed25519_key.public_jwk();
+    let jwk = ed25519_key.public_jwk().to_value();
     assert!(jwk["kid"].is_string(), "Ed25519 kid should be present");
     assert!(
         !jwk["kid"].as_str().unwrap().is_empty(),
@@ -714,7 +813,7 @@ fn ed25519_jwk_has_kid(world: &mut UselessWorld) {
 #[then("the Ed25519 public JWK should have x parameter")]
 fn ed25519_jwk_has_x(world: &mut UselessWorld) {
     let ed25519_key = world.ed25519.as_ref().expect("ed25519 not set");
-    let jwk = ed25519_key.public_jwk();
+    let jwk = ed25519_key.public_jwk().to_value();
     assert!(jwk["x"].is_string(), "Ed25519 x should be present");
     assert!(
         !jwk["x"].as_str().unwrap().is_empty(),
@@ -722,17 +821,28 @@ fn ed25519_jwk_has_x(world: &mut UselessWorld) {
     );
 }
 
+#[then("the Ed25519 private JWK should have d parameter")]
+fn ed25519_private_jwk_has_d(world: &mut UselessWorld) {
+    let ed25519_key = world.ed25519.as_ref().expect("ed25519 not set");
+    let jwk = ed25519_key.private_key_jwk().to_value();
+    assert!(jwk["d"].is_string(), "Ed25519 d should be present");
+    assert!(
+        !jwk["d"].as_str().unwrap().is_empty(),
+        "Ed25519 d should not be empty"
+    );
+}
+
 #[then("the Ed25519 JWKS should have a keys array")]
 fn ed25519_jwks_has_keys(world: &mut UselessWorld) {
     let ed25519_key = world.ed25519.as_ref().expect("ed25519 not set");
-    let jwks = ed25519_key.public_jwks();
+    let jwks = ed25519_key.public_jwks().to_value();
     assert!(jwks["keys"].is_array(), "Ed25519 keys should be an array");
 }
 
 #[then("the Ed25519 JWKS keys array should contain one key")]
 fn ed25519_jwks_has_one_key(world: &mut UselessWorld) {
     let ed25519_key = world.ed25519.as_ref().expect("ed25519 not set");
-    let jwks = ed25519_key.public_jwks();
+    let jwks = ed25519_key.public_jwks().to_value();
     let keys = jwks["keys"]
         .as_array()
         .expect("Ed25519 keys should be array");
@@ -881,24 +991,24 @@ fn ecdsa_mismatched_spki_should_parse_and_differ(world: &mut UselessWorld) {
         .expect("good ecdsa spki missing");
 
     // Try to parse as P-256 first, then P-384
-    let (good_bytes, mismatch_bytes) =
-        if let Ok(good_pub) = p256::PublicKey::from_public_key_der(good) {
-            let mismatch_pub =
-                p256::PublicKey::from_public_key_der(&mismatch).expect("mismatch should parse");
-            (
-                good_pub.to_sec1_bytes().to_vec(),
-                mismatch_pub.to_sec1_bytes().to_vec(),
-            )
-        } else {
-            let good_pub =
-                p384::PublicKey::from_public_key_der(good).expect("should parse as P-384");
-            let mismatch_pub =
-                p384::PublicKey::from_public_key_der(&mismatch).expect("mismatch should parse");
-            (
-                good_pub.to_sec1_bytes().to_vec(),
-                mismatch_pub.to_sec1_bytes().to_vec(),
-            )
-        };
+    let (good_bytes, mismatch_bytes) = if let Ok(good_pub) =
+        p256::PublicKey::from_public_key_der(good)
+    {
+        let mismatch_pub =
+            p256::PublicKey::from_public_key_der(&mismatch).expect("mismatch should parse");
+        (
+            good_pub.to_sec1_bytes().to_vec(),
+            mismatch_pub.to_sec1_bytes().to_vec(),
+        )
+    } else {
+        let good_pub = p384::PublicKey::from_public_key_der(good).expect("should parse as P-384");
+        let mismatch_pub =
+            p384::PublicKey::from_public_key_der(&mismatch).expect("mismatch should parse");
+        (
+            good_pub.to_sec1_bytes().to_vec(),
+            mismatch_pub.to_sec1_bytes().to_vec(),
+        )
+    };
 
     assert_ne!(good_bytes, mismatch_bytes);
 }
@@ -999,35 +1109,35 @@ fn ecdsa_truncated_der_fails(world: &mut UselessWorld) {
 #[then(regex = r#"^the ECDSA public JWK should have kty "([^"]+)"$"#)]
 fn ecdsa_jwk_has_kty(world: &mut UselessWorld, expected: String) {
     let ecdsa_key = world.ecdsa.as_ref().expect("ecdsa not set");
-    let jwk = ecdsa_key.public_jwk();
+    let jwk = ecdsa_key.public_jwk().to_value();
     assert_eq!(jwk["kty"].as_str(), Some(expected.as_str()));
 }
 
 #[then(regex = r#"^the ECDSA public JWK should have crv "([^"]+)"$"#)]
 fn ecdsa_jwk_has_crv(world: &mut UselessWorld, expected: String) {
     let ecdsa_key = world.ecdsa.as_ref().expect("ecdsa not set");
-    let jwk = ecdsa_key.public_jwk();
+    let jwk = ecdsa_key.public_jwk().to_value();
     assert_eq!(jwk["crv"].as_str(), Some(expected.as_str()));
 }
 
 #[then(regex = r#"^the ECDSA public JWK should have alg "([^"]+)"$"#)]
 fn ecdsa_jwk_has_alg(world: &mut UselessWorld, expected: String) {
     let ecdsa_key = world.ecdsa.as_ref().expect("ecdsa not set");
-    let jwk = ecdsa_key.public_jwk();
+    let jwk = ecdsa_key.public_jwk().to_value();
     assert_eq!(jwk["alg"].as_str(), Some(expected.as_str()));
 }
 
 #[then(regex = r#"^the ECDSA public JWK should have use "([^"]+)"$"#)]
 fn ecdsa_jwk_has_use(world: &mut UselessWorld, expected: String) {
     let ecdsa_key = world.ecdsa.as_ref().expect("ecdsa not set");
-    let jwk = ecdsa_key.public_jwk();
+    let jwk = ecdsa_key.public_jwk().to_value();
     assert_eq!(jwk["use"].as_str(), Some(expected.as_str()));
 }
 
 #[then("the ECDSA public JWK should have a kid")]
 fn ecdsa_jwk_has_kid(world: &mut UselessWorld) {
     let ecdsa_key = world.ecdsa.as_ref().expect("ecdsa not set");
-    let jwk = ecdsa_key.public_jwk();
+    let jwk = ecdsa_key.public_jwk().to_value();
     assert!(jwk["kid"].is_string(), "ECDSA kid should be present");
     assert!(
         !jwk["kid"].as_str().unwrap().is_empty(),
@@ -1038,7 +1148,7 @@ fn ecdsa_jwk_has_kid(world: &mut UselessWorld) {
 #[then("the ECDSA public JWK should have x and y parameters")]
 fn ecdsa_jwk_has_x_y(world: &mut UselessWorld) {
     let ecdsa_key = world.ecdsa.as_ref().expect("ecdsa not set");
-    let jwk = ecdsa_key.public_jwk();
+    let jwk = ecdsa_key.public_jwk().to_value();
     assert!(jwk["x"].is_string(), "ECDSA x should be present");
     assert!(jwk["y"].is_string(), "ECDSA y should be present");
     assert!(
@@ -1051,20 +1161,29 @@ fn ecdsa_jwk_has_x_y(world: &mut UselessWorld) {
     );
 }
 
+#[then("the ECDSA private JWK should have d parameter")]
+fn ecdsa_private_jwk_has_d(world: &mut UselessWorld) {
+    let ecdsa_key = world.ecdsa.as_ref().expect("ecdsa not set");
+    let jwk = ecdsa_key.private_key_jwk().to_value();
+    assert!(jwk["d"].is_string(), "ECDSA d should be present");
+    assert!(
+        !jwk["d"].as_str().unwrap().is_empty(),
+        "ECDSA d should not be empty"
+    );
+}
+
 #[then("the ECDSA JWKS should have a keys array")]
 fn ecdsa_jwks_has_keys(world: &mut UselessWorld) {
     let ecdsa_key = world.ecdsa.as_ref().expect("ecdsa not set");
-    let jwks = ecdsa_key.public_jwks();
+    let jwks = ecdsa_key.public_jwks().to_value();
     assert!(jwks["keys"].is_array(), "ECDSA keys should be an array");
 }
 
 #[then("the ECDSA JWKS keys array should contain one key")]
 fn ecdsa_jwks_has_one_key(world: &mut UselessWorld) {
     let ecdsa_key = world.ecdsa.as_ref().expect("ecdsa not set");
-    let jwks = ecdsa_key.public_jwks();
-    let keys = jwks["keys"]
-        .as_array()
-        .expect("ECDSA keys should be array");
+    let jwks = ecdsa_key.public_jwks().to_value();
+    let keys = jwks["keys"].as_array().expect("ECDSA keys should be array");
     assert_eq!(keys.len(), 1);
 }
 
@@ -1266,18 +1385,19 @@ fn x509_expired_parseable(world: &mut UselessWorld) {
 
 #[then("the expired X.509 certificate should have not_after in the past")]
 fn x509_expired_not_after_past(world: &mut UselessWorld) {
-    use x509_parser::time::ASN1Time;
-
     let expired = world.x509_expired.as_ref().expect("expired cert not set");
+    let valid = world.x509.as_ref().expect("x509 not set");
     let der = expired.cert_der();
-    let (_, cert) = x509_parser::parse_x509_certificate(der).expect("parse cert");
+    let (_, expired_cert) = x509_parser::parse_x509_certificate(der).expect("parse cert");
+    let (_, valid_cert) =
+        x509_parser::parse_x509_certificate(valid.cert_der()).expect("parse cert");
 
-    let not_after = cert.validity().not_after;
-    let now = ASN1Time::now();
+    let not_after = expired_cert.validity().not_after;
+    let valid_not_after = valid_cert.validity().not_after;
 
     assert!(
-        not_after < now,
-        "expired cert should have not_after in the past"
+        not_after < valid_not_after,
+        "expired cert should have not_after before the valid cert"
     );
 }
 
@@ -1293,21 +1413,22 @@ fn x509_not_yet_valid_parseable(world: &mut UselessWorld) {
 
 #[then("the not-yet-valid X.509 certificate should have not_before in the future")]
 fn x509_not_yet_valid_not_before_future(world: &mut UselessWorld) {
-    use x509_parser::time::ASN1Time;
-
     let nyv = world
         .x509_not_yet_valid
         .as_ref()
         .expect("not_yet_valid cert not set");
+    let valid = world.x509.as_ref().expect("x509 not set");
     let der = nyv.cert_der();
-    let (_, cert) = x509_parser::parse_x509_certificate(der).expect("parse cert");
+    let (_, nyv_cert) = x509_parser::parse_x509_certificate(der).expect("parse cert");
+    let (_, valid_cert) =
+        x509_parser::parse_x509_certificate(valid.cert_der()).expect("parse cert");
 
-    let not_before = cert.validity().not_before;
-    let now = ASN1Time::now();
+    let not_before = nyv_cert.validity().not_before;
+    let valid_not_before = valid_cert.validity().not_before;
 
     assert!(
-        not_before > now,
-        "not_yet_valid cert should have not_before in the future"
+        not_before > valid_not_before,
+        "not_yet_valid cert should have not_before after the valid cert"
     );
 }
 
@@ -1339,10 +1460,7 @@ fn x509_truncated_der_fails(world: &mut UselessWorld) {
         .as_ref()
         .expect("x509_truncated_der not set");
     let result = x509_parser::parse_x509_certificate(der);
-    assert!(
-        result.is_err(),
-        "truncated X.509 DER should fail to parse"
-    );
+    assert!(result.is_err(), "truncated X.509 DER should fail to parse");
 }
 
 #[then(regex = r#"^the X\.509 tempfile path should end with "([^"]+)"$"#)]

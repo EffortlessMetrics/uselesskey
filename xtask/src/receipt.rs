@@ -124,8 +124,8 @@ impl Runner {
             fs::create_dir_all(parent)
                 .with_context(|| format!("failed to create receipt dir {:?}", parent))?;
         }
-        let json = serde_json::to_string_pretty(&self.receipt)
-            .context("failed to serialize receipt")?;
+        let json =
+            serde_json::to_string_pretty(&self.receipt).context("failed to serialize receipt")?;
         fs::write(&self.path, json).context("failed to write receipt")?;
         Ok(())
     }

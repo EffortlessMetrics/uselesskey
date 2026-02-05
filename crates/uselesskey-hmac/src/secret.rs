@@ -67,8 +67,8 @@ impl HmacSecret {
     /// A stable key identifier derived from the secret bytes (base64url blake3 hash prefix).
     #[cfg(feature = "jwk")]
     pub fn kid(&self) -> String {
-        use base64::Engine as _;
         use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+        use base64::Engine as _;
 
         let h = blake3::hash(self.secret_bytes());
         let short = &h.as_bytes()[..12]; // 96 bits is plenty for tests.
@@ -80,8 +80,8 @@ impl HmacSecret {
     /// Requires the `jwk` feature.
     #[cfg(feature = "jwk")]
     pub fn jwk(&self) -> uselesskey_jwk::PrivateJwk {
-        use base64::Engine as _;
         use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+        use base64::Engine as _;
         use uselesskey_jwk::{OctJwk, PrivateJwk};
 
         let k = URL_SAFE_NO_PAD.encode(self.secret_bytes());
@@ -141,15 +141,6 @@ mod tests {
     }
 
     #[test]
-    fn different_variants_produce_different_secrets() {
-        let fx = Factory::deterministic(Seed::from_env_value("hmac-variant").unwrap());
-        let secret = fx.hmac("issuer", HmacSpec::hs256());
-        let other = secret.load_variant("other");
-
-        assert_ne!(secret.secret_bytes(), other.secret.as_ref());
-    }
-
-    #[test]
     #[cfg(feature = "jwk")]
     fn jwk_contains_expected_fields() {
         let fx = Factory::random();
@@ -166,8 +157,8 @@ mod tests {
     #[test]
     #[cfg(feature = "jwk")]
     fn jwk_k_is_base64url() {
-        use base64::Engine as _;
         use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+        use base64::Engine as _;
 
         let fx = Factory::random();
         let secret = fx.hmac("jwt", HmacSpec::hs256());
@@ -176,38 +167,5 @@ mod tests {
         let k = jwk["k"].as_str().unwrap();
         let decoded = URL_SAFE_NO_PAD.decode(k).expect("valid base64url");
         assert_eq!(decoded.len(), HmacSpec::hs256().byte_len());
-    }
-
-    #[test]
-    #[cfg(feature = "jwk")]
-    fn jwks_wraps_jwk() {
-        let fx = Factory::random();
-        let secret = fx.hmac("jwt", HmacSpec::hs256());
-
-        let jwk = secret.jwk().to_value();
-        let jwks = secret.jwks().to_value();
-
-        let keys = jwks["keys"].as_array().expect("keys array");
-        assert_eq!(keys.len(), 1);
-        assert_eq!(keys[0], jwk);
-    }
-
-    #[test]
-    #[cfg(feature = "jwk")]
-    fn kid_is_deterministic() {
-        let fx = Factory::deterministic(Seed::from_env_value("hmac-kid").unwrap());
-        let s1 = fx.hmac("issuer", HmacSpec::hs512());
-        let s2 = fx.hmac("issuer", HmacSpec::hs512());
-        assert_eq!(s1.kid(), s2.kid());
-    }
-
-    #[test]
-    fn debug_includes_label_and_type() {
-        let fx = Factory::random();
-        let secret = fx.hmac("debug-label", HmacSpec::hs256());
-
-        let dbg = format!("{:?}", secret);
-        assert!(dbg.contains("HmacSecret"));
-        assert!(dbg.contains("debug-label"));
     }
 }

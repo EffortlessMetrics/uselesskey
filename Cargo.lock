@@ -2084,6 +2084,8 @@ dependencies = [
  "uselesskey-core",
  "uselesskey-ecdsa",
  "uselesskey-ed25519",
+ "uselesskey-hmac",
+ "uselesskey-jwk",
  "uselesskey-rsa",
  "uselesskey-x509",
 ]
@@ -2131,9 +2133,9 @@ dependencies = [
  "proptest",
  "rand_core 0.6.4",
  "rstest",
- "serde",
  "serde_json",
  "uselesskey-core",
+ "uselesskey-jwk",
 ]
 
 [[package]]
@@ -2147,9 +2149,28 @@ dependencies = [
  "proptest",
  "rand_core 0.6.4",
  "rstest",
- "serde",
  "serde_json",
  "uselesskey-core",
+ "uselesskey-jwk",
+]
+
+[[package]]
+name = "uselesskey-hmac"
+version = "0.1.0"
+dependencies = [
+ "base64 0.21.7",
+ "blake3",
+ "rand_core 0.6.4",
+ "uselesskey-core",
+ "uselesskey-jwk",
+]
+
+[[package]]
+name = "uselesskey-jwk"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -2161,9 +2182,9 @@ dependencies = [
  "proptest",
  "rsa",
  "rstest",
- "serde",
  "serde_json",
  "uselesskey-core",
+ "uselesskey-jwk",
 ]
 
 [[package]]
@@ -2172,6 +2193,7 @@ version = "0.1.0"
 dependencies = [
  "blake3",
  "proptest",
+ "rand_core 0.6.4",
  "rcgen",
  "rstest",
  "rustls-pki-types",

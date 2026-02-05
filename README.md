@@ -2,7 +2,7 @@
 
 **Test key fixtures generated at runtime.**
 
-Outputs: PKCS#8 PEM/DER, SPKI PEM/DER, tempfiles. JWK/JWKS with `--features jwk`. Deterministic mode for stable tests; not for production.
+Outputs: PKCS#8 PEM/DER, SPKI PEM/DER, tempfiles, JWK/JWKS, and HMAC secrets. Deterministic mode for stable tests; not for production.
 
 ---
 
@@ -63,7 +63,31 @@ let jwk = rsa.public_jwk();
 let jwks = rsa.public_jwks();
 ```
 
-### Tempfiles
+### JWK / JWKS
+
+Enable the `jwk` feature for typed JWKs with JSON helpers.
+
+```rust
+# #[cfg(feature = "jwk")]
+# {
+use uselesskey::{Factory, RsaSpec, RsaFactoryExt};
+
+let fx = Factory::random();
+let rsa = fx.rsa("issuer", RsaSpec::rs256());
+
+let jwk = rsa.public_jwk();
+let jwk_value = jwk.to_value();
+assert_eq!(jwk_value["kty"], "RSA");
+
+let jwks = rsa.public_jwks();
+let jwks_value = jwks.to_value();
+assert!(jwks_value["keys"].is_array());
+# }
+```
+
+### Tempfile outputs
+
+Some libraries insist on `Path`.
 
 ```rust
 use uselesskey::{Factory, RsaSpec, RsaFactoryExt};
@@ -143,7 +167,16 @@ let truncated = rsa.private_key_pkcs8_der_truncated(32);
 let mismatched_pub = rsa.mismatched_public_key_spki_der();
 ```
 
-## Adapter Crates
+## Examples
+
+Run the examples with the `full` feature (all algorithms + JWK + X.509):
+
+```bash
+cargo run -p uselesskey --example jwks --features "full"
+cargo run -p uselesskey --example tempfiles --features "full"
+```
+
+## Determinism model
 
 Adapter crates bridge uselesskey fixtures to third-party library types. They are separate crates (not features) to avoid coupling versioning.
 
@@ -159,9 +192,15 @@ Adapter crates bridge uselesskey fixtures to third-party library types. They are
 
 With the `tls-config` feature, build rustls configs in one line:
 
-```toml
-[dev-dependencies]
-uselesskey-rustls = { version = "0.2", features = ["tls-config", "rustls-ring"] }
+This repo uses the `cargo xtask` pattern.
+
+```bash
+cargo xtask ci      # fmt + clippy + tests + feature-matrix + bdd + no-blob + mutants + fuzz
+cargo xtask nextest # tests via nextest (optional)
+cargo xtask deny    # cargo-deny license/advisory checks (optional)
+cargo xtask bdd     # cucumber features
+cargo xtask mutants # mutation testing (cargo-mutants)
+cargo xtask fuzz    # fuzz targets (cargo-fuzz)
 ```
 
 ```rust
@@ -178,104 +217,21 @@ let client_config = chain.client_config_rustls();    // ClientConfig (trusts roo
 
 ### ring Signing Keys (uselesskey-ring)
 
-```toml
-[dev-dependencies]
-uselesskey-ring = { version = "0.2", features = ["all"] }
-```
+- `crates/uselesskey-core` – factory, derivation, caching, sinks, generic corruption helpers
+- `crates/uselesskey-jwk` – typed JWK/JWKS helpers
+- `crates/uselesskey-rsa` – RSA fixtures (PKCS#8/SPKI/PEM/DER) built on the core
+- `crates/uselesskey-ecdsa` – ECDSA fixtures (ES256/ES384)
+- `crates/uselesskey-ed25519` – Ed25519 fixtures
+- `crates/uselesskey-hmac` – HMAC secret fixtures (HS256/HS384/HS512)
+- `crates/uselesskey-x509` – X.509 fixtures
+- `crates/uselesskey` – public facade crate
+- `crates/uselesskey-bdd` – cucumber BDD harness
+- `fuzz/` – `cargo fuzz` targets
+- `xtask/` – automation commands
 
-```rust
-use uselesskey_core::Factory;
-use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
-use uselesskey_ring::RingRsaKeyPairExt;
+## Requirements
 
-let fx = Factory::random();
-let rsa = fx.rsa("signer", RsaSpec::rs256());
-let ring_kp = rsa.rsa_key_pair_ring();  // ring::rsa::KeyPair
-```
-
-### RustCrypto Types (uselesskey-rustcrypto)
-
-```toml
-[dev-dependencies]
-uselesskey-rustcrypto = { version = "0.2", features = ["all"] }
-```
-
-```rust
-use uselesskey_core::Factory;
-use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
-use uselesskey_rustcrypto::RustCryptoRsaExt;
-
-let fx = Factory::random();
-let rsa = fx.rsa("signer", RsaSpec::rs256());
-let rsa_pk = rsa.rsa_private_key_rustcrypto(); // rsa::RsaPrivateKey
-```
-
-### aws-lc-rs Types (uselesskey-aws-lc-rs)
-
-```toml
-[dev-dependencies]
-uselesskey-aws-lc-rs = { version = "0.2" }
-```
-
-```rust
-use uselesskey_core::Factory;
-use uselesskey_ed25519::Ed25519FactoryExt;
-use uselesskey_aws_lc_rs::AwsLcEd25519Ext;
-
-let fx = Factory::random();
-let ed = fx.ed25519("signer");
-let lc_key = ed.ed25519_key_pair_aws_lc(); // aws_lc_rs::signature::Ed25519KeyPair
-```
-
-## Feature Flags
-
-| Feature | Description |
-|---------|-------------|
-| `rsa` | RSA keypairs (default) |
-| `ecdsa` | ECDSA P-256/P-384 keypairs |
-| `ed25519` | Ed25519 keypairs |
-| `hmac` | HMAC secrets |
-| `x509` | X.509 certificate generation (implies `rsa`) |
-| `jwk` | JWK/JWKS output for enabled key types |
-| `all-keys` | All key algorithms (`rsa` + `ecdsa` + `ed25519` + `hmac`) |
-| `full` | Everything (`all-keys` + `x509` + `jwk`) |
-
-Extension traits by feature:
-- `rsa`: `RsaFactoryExt`
-- `ecdsa`: `EcdsaFactoryExt`
-- `ed25519`: `Ed25519FactoryExt`
-- `hmac`: `HmacFactoryExt`
-- `x509`: `X509FactoryExt`
-
-## Why This Crate?
-
-### Order-independent determinism
-
-`seed + (domain, label, spec, variant) -> derived seed -> artifact`
-
-Adding new fixtures doesn't perturb existing ones. Test order doesn't matter.
-
-### Cache-by-identity
-
-RSA keygen is expensive. Per-process caching by `(domain, label, spec, variant)` makes runtime generation cheap enough to replace committed fixtures.
-
-### Shape-first outputs
-
-Ask for PKCS#8/SPKI/JWK, not crypto primitives. Users shouldn't need to know which crate does the encoding.
-
-### Negative fixtures first-class
-
-Corrupt PEM, truncated DER, mismatched keys, expired certs, revoked leaves with CRLs. These are annoying to produce manually, which is why teams commit them. This crate makes them cheap and ephemeral.
-
-### When NOT to use this crate
-
-- Production key generation or certificate management
-- Certificate validation logic (use `rustls`, `x509-parser`)
-- Runtime CA operations (use `rcgen` directly)
-
-## Ecosystem
-
-Use uselesskey when you need **test fixtures that don't trip secret scanners**. If you need runtime certificate generation for production (e.g., an internal CA), reach for [`rcgen`](https://docs.rs/rcgen) directly. If you need certificate validation logic, see [`rustls`](https://docs.rs/rustls) or [`x509-parser`](https://docs.rs/x509-parser).
+See `docs/requirements-v0.3.md` for the v0.3 acceptance spec.
 
 ## License
 

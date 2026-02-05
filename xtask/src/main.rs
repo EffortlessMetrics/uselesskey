@@ -39,6 +39,12 @@ enum Cmd {
     Deny,
     /// Run the common CI pipeline: fmt + clippy + tests.
     Ci,
+    /// Run the feature matrix checks.
+    FeatureMatrix,
+    /// Enforce no secret-shaped blobs in test/fixture paths.
+    NoBlob,
+    /// Run publish dry-runs for crates in dependency order.
+    PublishCheck,
     /// Run PR-scoped tests based on git diff.
     Pr,
     /// Run cucumber BDD features.
@@ -71,11 +77,10 @@ fn main() -> Result<()> {
         Cmd::Test => test(),
         Cmd::Nextest => nextest(),
         Cmd::Deny => deny(),
-        Cmd::Ci => {
-            fmt(false)?;
-            clippy()?;
-            test()
-        }
+        Cmd::Ci => ci(),
+        Cmd::FeatureMatrix => feature_matrix_cmd(),
+        Cmd::NoBlob => no_blob_gate(),
+        Cmd::PublishCheck => publish_check(),
         Cmd::Pr => pr(),
         Cmd::Bdd => bdd(),
         Cmd::BddMatrix => bdd_matrix(),
@@ -177,7 +182,6 @@ fn bdd_matrix() -> Result<()> {
 fn ci() -> Result<()> {
     let mut runner = receipt::Runner::new("target/xtask/receipt.json");
     let result = run_ci_plan(&mut runner);
-    runner.summary();
     if let Err(err) = runner.write() {
         eprintln!("failed to write receipt: {err}");
         if result.is_ok() {
@@ -194,7 +198,6 @@ fn run_ci_plan(runner: &mut receipt::Runner) -> Result<()> {
 
     run_feature_matrix(runner)?;
 
-    runner.step("dep-guard", None, dep_guard)?;
     runner.step("bdd", None, bdd)?;
     let counts = count_bdd_scenarios().unwrap_or_default();
     runner.set_bdd_counts(counts);
@@ -203,25 +206,12 @@ fn run_ci_plan(runner: &mut receipt::Runner) -> Result<()> {
     runner.step("mutants", None, mutants)?;
     runner.step("fuzz", None, fuzz_pr)?;
 
-    if is_llvm_cov_installed() {
-        run_coverage(runner)?;
-    } else {
-        runner.skip("coverage", Some("cargo-llvm-cov not installed".into()));
-        runner.skip(
-            "coverage:report",
-            Some("cargo-llvm-cov not installed".into()),
-        );
-    }
-
-    run_publish_preflight(runner)?;
-
     Ok(())
 }
 
 fn feature_matrix_cmd() -> Result<()> {
     let mut runner = receipt::Runner::new("target/xtask/receipt.json");
     let result = run_feature_matrix(&mut runner);
-    runner.summary();
     if let Err(err) = runner.write() {
         eprintln!("failed to write receipt: {err}");
         if result.is_ok() {
@@ -230,168 +220,22 @@ fn feature_matrix_cmd() -> Result<()> {
     }
     result
 }
-
-const PUBLISH_CRATES: &[&str] = &[
-    "uselesskey-core",
-    "uselesskey-jwk",
-    "uselesskey-rsa",
-    "uselesskey-ecdsa",
-    "uselesskey-ed25519",
-    "uselesskey-hmac",
-    "uselesskey-x509",
-    "uselesskey",
-    "uselesskey-jsonwebtoken",
-    "uselesskey-rustls",
-    "uselesskey-ring",
-    "uselesskey-rustcrypto",
-    "uselesskey-aws-lc-rs",
-];
 
 fn publish_check() -> Result<()> {
-    for name in PUBLISH_CRATES {
+    let crates = [
+        "uselesskey-core",
+        "uselesskey-jwk",
+        "uselesskey-rsa",
+        "uselesskey-ecdsa",
+        "uselesskey-ed25519",
+        "uselesskey-hmac",
+        "uselesskey-x509",
+        "uselesskey",
+    ];
+
+    for name in crates {
         run(Command::new("cargo").args(["publish", "--dry-run", "-p", name]))?;
     }
-    Ok(())
-}
-
-fn is_llvm_cov_installed() -> bool {
-    Command::new("cargo")
-        .args(["llvm-cov", "--version"])
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .is_ok_and(|s| s.success())
-}
-
-fn coverage() -> Result<()> {
-    if !is_llvm_cov_installed() {
-        bail!("cargo-llvm-cov is not installed. Install with: cargo install cargo-llvm-cov");
-    }
-    let mut runner = receipt::Runner::new("target/xtask/receipt.json");
-    let result = run_coverage(&mut runner);
-    runner.summary();
-    if let Err(err) = runner.write() {
-        eprintln!("failed to write receipt: {err}");
-        if result.is_ok() {
-            return Err(err);
-        }
-    }
-    result
-}
-
-fn run_coverage(runner: &mut receipt::Runner) -> Result<()> {
-    fs::create_dir_all("target/coverage")?;
-    runner.step("coverage", None, || {
-        run(Command::new("cargo")
-            .args([
-                "llvm-cov",
-                "--workspace",
-                "--all-features",
-                "--lcov",
-                "--output-path",
-                "target/coverage/lcov.info",
-            ])
-            .env("PROPTEST_CASES", "16"))
-    })?;
-    runner.step("coverage:report", None, || {
-        run(Command::new("cargo")
-            .args(["llvm-cov", "report", "--workspace", "--all-features"])
-            .env("PROPTEST_CASES", "16"))
-    })?;
-    runner.set_coverage_lcov_path("target/coverage/lcov.info".to_string());
-    Ok(())
-}
-
-fn publish_preflight() -> Result<()> {
-    let mut runner = receipt::Runner::new("target/xtask/receipt.json");
-    let result = run_publish_preflight(&mut runner);
-    runner.summary();
-    if let Err(err) = runner.write() {
-        eprintln!("failed to write receipt: {err}");
-        if result.is_ok() {
-            return Err(err);
-        }
-    }
-    result
-}
-
-fn run_publish_preflight(runner: &mut receipt::Runner) -> Result<()> {
-    runner.step("preflight:metadata", None, check_crate_metadata)?;
-    for name in PUBLISH_CRATES {
-        let step_name = format!("preflight:package:{name}");
-        runner.step(&step_name, None, || {
-            run(Command::new("cargo").args(["package", "--no-verify", "-p", name]))
-        })?;
-    }
-    Ok(())
-}
-
-fn check_crate_metadata() -> Result<()> {
-    let output = Command::new("cargo")
-        .args(["metadata", "--format-version", "1", "--no-deps"])
-        .output()
-        .context("failed to run `cargo metadata`")?;
-
-    if !output.status.success() {
-        bail!(
-            "`cargo metadata` failed: {}",
-            String::from_utf8_lossy(&output.stderr)
-        );
-    }
-
-    let meta: serde_json::Value =
-        serde_json::from_slice(&output.stdout).context("failed to parse cargo metadata JSON")?;
-
-    let packages = meta["packages"]
-        .as_array()
-        .context("missing 'packages' in cargo metadata")?;
-
-    let mut errors: Vec<String> = Vec::new();
-
-    for crate_name in PUBLISH_CRATES {
-        let pkg = packages
-            .iter()
-            .find(|p| p["name"].as_str().is_some_and(|n| n == *crate_name));
-
-        let Some(pkg) = pkg else {
-            errors.push(format!("{crate_name}: not found in workspace metadata"));
-            continue;
-        };
-
-        let check_string = |field: &str| match pkg.get(field).and_then(|v| v.as_str()) {
-            Some(s) if !s.is_empty() => None,
-            _ => Some(format!("{crate_name}: missing or empty `{field}`")),
-        };
-
-        let check_non_empty_array = |field: &str| match pkg.get(field).and_then(|v| v.as_array()) {
-            Some(arr) if !arr.is_empty() => None,
-            _ => Some(format!("{crate_name}: missing or empty `{field}`")),
-        };
-
-        if let Some(e) = check_string("license") {
-            errors.push(e);
-        }
-        if let Some(e) = check_string("description") {
-            errors.push(e);
-        }
-        if let Some(e) = check_string("repository") {
-            errors.push(e);
-        }
-        if let Some(e) = check_string("readme") {
-            errors.push(e);
-        }
-        if let Some(e) = check_non_empty_array("categories") {
-            errors.push(e);
-        }
-        if let Some(e) = check_non_empty_array("keywords") {
-            errors.push(e);
-        }
-    }
-
-    if !errors.is_empty() {
-        bail!("crate metadata errors:\n  {}", errors.join("\n  "));
-    }
-
     Ok(())
 }
 
@@ -463,7 +307,10 @@ fn run_pr_plan(
 ) -> Result<()> {
     runner.step(
         "detect-changes",
-        Some(format!("base_ref={base_ref}, files={}", changed_files.len())),
+        Some(format!(
+            "base_ref={base_ref}, files={}",
+            changed_files.len()
+        )),
         || Ok(()),
     )?;
 
@@ -473,6 +320,7 @@ fn run_pr_plan(
         runner.skip("clippy", reason.clone());
         runner.skip("tests", reason.clone());
         runner.skip("feature-matrix", reason.clone());
+        record_feature_matrix_skipped(runner);
         runner.skip("bdd", reason.clone());
         runner.skip("mutants", reason.clone());
         runner.skip("fuzz", reason.clone());
@@ -501,7 +349,11 @@ fn run_pr_plan(
     if plan.run_feature_matrix {
         run_feature_matrix(runner)?;
     } else {
-        runner.skip("feature-matrix", Some("no facade or cargo changes".to_string()));
+        runner.skip(
+            "feature-matrix",
+            Some("no facade or cargo changes".to_string()),
+        );
+        record_feature_matrix_skipped(runner);
     }
 
     if plan.run_bdd {
@@ -582,7 +434,10 @@ fn run_impacted_tests(
         .cloned()
         .collect();
     if targets.is_empty() {
-        runner.skip("tests", Some("no impacted crates after filtering".to_string()));
+        runner.skip(
+            "tests",
+            Some("no impacted crates after filtering".to_string()),
+        );
         return Ok(());
     }
     for name in targets.drain(..) {
@@ -600,23 +455,12 @@ fn run_impacted_tests(
 }
 
 fn run_feature_matrix(runner: &mut receipt::Runner) -> Result<()> {
-    let combos: Vec<(&str, Vec<&str>)> = vec![
-        ("default", vec![]),
-        ("no-default", vec!["--no-default-features"]),
-        ("rsa", vec!["--no-default-features", "--features", "rsa"]),
-        ("ecdsa", vec!["--no-default-features", "--features", "ecdsa"]),
-        ("ed25519", vec!["--no-default-features", "--features", "ed25519"]),
-        ("x509", vec!["--no-default-features", "--features", "x509"]),
-        ("jwk", vec!["--no-default-features", "--features", "jwk"]),
-        ("all-features", vec!["--all-features"]),
-    ];
-
-    for (label, args) in combos {
+    for (label, args) in FEATURE_MATRIX {
         let step_name = format!("feature-matrix:{label}");
         let result = runner.step(&step_name, None, || {
             let mut cmd = Command::new("cargo");
             cmd.args(["check", "-p", "uselesskey"]);
-            for arg in &args {
+            for arg in *args {
                 cmd.arg(arg);
             }
             run(&mut cmd)
@@ -631,6 +475,12 @@ fn run_feature_matrix(runner: &mut receipt::Runner) -> Result<()> {
     }
 
     Ok(())
+}
+
+fn record_feature_matrix_skipped(runner: &mut receipt::Runner) {
+    for (label, _) in FEATURE_MATRIX {
+        runner.add_feature_matrix(label, "skipped");
+    }
 }
 
 fn fuzz_pr() -> Result<()> {

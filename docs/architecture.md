@@ -38,27 +38,6 @@
   - Negative fixtures: expired, hostname mismatch, unknown CA, revoked leaf (with CRL)
   - deterministic validity/serial in deterministic mode
 
-- `crates/uselesskey-jsonwebtoken`
-  - adapter: returns `jsonwebtoken::EncodingKey` / `DecodingKey` directly
-  - optional features per key type (`rsa`, `ecdsa`, `ed25519`, `hmac`)
-
-- `crates/uselesskey-rustls`
-  - adapter: returns `rustls::pki_types::PrivateKeyDer`, `CertificateDer`
-  - `tls-config` feature: `ServerConfig` / `ClientConfig` / mTLS builders
-  - pluggable crypto provider (`rustls-ring` / `rustls-aws-lc-rs`)
-
-- `crates/uselesskey-ring`
-  - adapter: returns `ring` 0.17 native signing key types
-  - `RsaKeyPair`, `EcdsaKeyPair`, `Ed25519KeyPair`
-
-- `crates/uselesskey-rustcrypto`
-  - adapter: returns RustCrypto native types
-  - `rsa::RsaPrivateKey`, `p256::ecdsa::SigningKey`, `ed25519_dalek::SigningKey`, etc.
-
-- `crates/uselesskey-aws-lc-rs`
-  - adapter: returns `aws-lc-rs` native key types
-  - `native` feature for wasm-safe builds
-
 - `crates/uselesskey`
   - facade re-exporting the stable public API
 
@@ -116,9 +95,10 @@ Key type support is added via extension traits rather than monolithic API growth
 ```
 Factory (core)
   ├── RsaFactoryExt      (uselesskey-rsa)     → fx.rsa(label, spec)
-  ├── EcdsaFactoryExt    (uselesskey-ecdsa)   → fx.ecdsa(label, spec)  [planned]
-  ├── Ed25519FactoryExt  (uselesskey-ed25519) → fx.ed25519(label)      [planned]
-  └── X509FactoryExt     (uselesskey-x509)    → fx.x509(label, spec)   [planned]
+  ├── EcdsaFactoryExt    (uselesskey-ecdsa)   → fx.ecdsa(label, spec)
+  ├── Ed25519FactoryExt  (uselesskey-ed25519) → fx.ed25519(label)
+  ├── HmacFactoryExt     (uselesskey-hmac)    → fx.hmac(label, spec)
+  └── X509FactoryExt     (uselesskey-x509)    → fx.x509(label, spec)
 ```
 
 This pattern:

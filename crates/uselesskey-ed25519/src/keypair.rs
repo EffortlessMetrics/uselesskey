@@ -31,6 +31,9 @@ struct Inner {
     pkcs8_pem: String,
     spki_der: Arc<[u8]>,
     spki_pem: String,
+    /// Raw secret bytes (for private JWK).
+    #[cfg_attr(not(feature = "jwk"), allow(dead_code))]
+    secret_bytes: [u8; 32],
 }
 
 impl fmt::Debug for Ed25519KeyPair {
@@ -125,31 +128,91 @@ impl Ed25519KeyPair {
         URL_SAFE_NO_PAD.encode(short)
     }
 
+    /// Alias for [`public_jwk`].
+    ///
+    /// Requires the `jwk` feature.
+    #[cfg(feature = "jwk")]
+    pub fn public_key_jwk(&self) -> uselesskey_jwk::PublicJwk {
+        self.public_jwk()
+    }
+
     /// Public JWK for this keypair (kty=OKP, crv=Ed25519, use=sig, kid=...).
     ///
     /// Requires the `jwk` feature.
     #[cfg(feature = "jwk")]
-    pub fn public_jwk(&self) -> serde_json::Value {
+    pub fn public_jwk(&self) -> uselesskey_jwk::PublicJwk {
         use base64::engine::general_purpose::URL_SAFE_NO_PAD;
         use base64::Engine as _;
+        use uselesskey_jwk::{OkpPublicJwk, PublicJwk};
 
         // Ed25519 public key is 32 bytes
         let x = self.inner.public.as_bytes();
 
-        serde_json::json!({
-            "kty": "OKP",
-            "crv": "Ed25519",
-            "use": "sig",
-            "alg": "EdDSA",
-            "kid": self.kid(),
-            "x": URL_SAFE_NO_PAD.encode(x),
+        PublicJwk::Okp(OkpPublicJwk {
+            kty: "OKP",
+            crv: "Ed25519",
+            use_: "sig",
+            alg: "EdDSA",
+            kid: self.kid(),
+            x: URL_SAFE_NO_PAD.encode(x),
+        })
+    }
+
+    /// Private JWK for this keypair (kty=OKP, crv=Ed25519, d=...).
+    ///
+    /// Requires the `jwk` feature.
+    #[cfg(feature = "jwk")]
+    pub fn private_key_jwk(&self) -> uselesskey_jwk::PrivateJwk {
+        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+        use base64::Engine as _;
+        use uselesskey_jwk::{OkpPrivateJwk, PrivateJwk};
+
+        let x = self.inner.public.as_bytes();
+        let d = &self.inner.secret_bytes;
+
+        PrivateJwk::Okp(OkpPrivateJwk {
+            kty: "OKP",
+            crv: "Ed25519",
+            use_: "sig",
+            alg: "EdDSA",
+            kid: self.kid(),
+            x: URL_SAFE_NO_PAD.encode(x),
+            d: URL_SAFE_NO_PAD.encode(d),
         })
     }
 
     /// JWKS containing a single public key.
     #[cfg(feature = "jwk")]
-    pub fn public_jwks(&self) -> serde_json::Value {
-        serde_json::json!({ "keys": [ self.public_jwk() ] })
+    pub fn public_jwks(&self) -> uselesskey_jwk::Jwks {
+        use uselesskey_jwk::JwksBuilder;
+
+        let mut builder = JwksBuilder::new();
+        builder.push_public(self.public_jwk());
+        builder.build()
+    }
+
+    /// Public JWK serialized to `serde_json::Value`.
+    ///
+    /// Requires the `jwk` feature.
+    #[cfg(feature = "jwk")]
+    pub fn public_jwk_json(&self) -> serde_json::Value {
+        self.public_jwk().to_value()
+    }
+
+    /// JWKS serialized to `serde_json::Value`.
+    ///
+    /// Requires the `jwk` feature.
+    #[cfg(feature = "jwk")]
+    pub fn public_jwks_json(&self) -> serde_json::Value {
+        self.public_jwks().to_value()
+    }
+
+    /// Private JWK serialized to `serde_json::Value`.
+    ///
+    /// Requires the `jwk` feature.
+    #[cfg(feature = "jwk")]
+    pub fn private_key_jwk_json(&self) -> serde_json::Value {
+        self.private_key_jwk().to_value()
     }
 }
 
@@ -190,6 +253,7 @@ fn load_inner(factory: &Factory, label: &str, spec: Ed25519Spec, variant: &str) 
             pkcs8_pem,
             spki_der,
             spki_pem,
+            secret_bytes,
         }
     })
 }

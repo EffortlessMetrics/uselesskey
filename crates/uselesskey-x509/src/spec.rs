@@ -162,6 +162,10 @@ impl X509Spec {
     pub fn stable_bytes(&self) -> Vec<u8> {
         let mut out = Vec::new();
 
+        // Version prefix to allow deterministic derivation changes without affecting other crates.
+        // Bump this if X.509 derivation inputs change.
+        out.push(2);
+
         // Subject CN length + bytes
         let subject_bytes = self.subject_cn.as_bytes();
         out.extend_from_slice(&(subject_bytes.len() as u32).to_be_bytes());
