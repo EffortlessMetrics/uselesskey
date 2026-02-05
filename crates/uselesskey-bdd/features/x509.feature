@@ -11,14 +11,12 @@ Feature: X.509 certificate fixtures
     And I generate an X.509 certificate for domain "test.example.com" with label "server" again
     Then the X.509 certificate PEM should be identical
 
-  # NOTE: X.509 certs embed timestamps from now(), so cache-clear doesn't produce identical certs.
-  # Instead, we verify the private key (which is deterministic) remains stable.
-  Scenario: deterministic X.509 derivation survives cache clear (key stability)
+  Scenario: deterministic X.509 derivation survives cache clear
     Given a deterministic factory seeded with "x509-seed-alpha"
     When I generate an X.509 certificate for domain "api.example.com" with label "first"
     And I clear the factory cache
     And I generate an X.509 certificate for domain "api.example.com" with label "first" again
-    Then the X.509 private key should be identical
+    Then the X.509 certificate PEM should be identical
 
   Scenario: different labels produce different X.509 certificates
     Given a deterministic factory seeded with "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"

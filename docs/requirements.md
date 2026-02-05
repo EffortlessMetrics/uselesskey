@@ -1,5 +1,7 @@
 # Requirements
 
+For the executable v0.3 acceptance spec, see `docs/requirements-v0.3.md`.
+
 ## Problem
 
 Secret scanners (GitGuardian, GitHub secret scanning, etc.) are doing their job: they flag anything that *looks* like a key.

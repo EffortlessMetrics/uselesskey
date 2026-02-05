@@ -3,9 +3,11 @@ resolver = "2"
 members = [
   "crates/uselesskey",
   "crates/uselesskey-core",
+  "crates/uselesskey-jwk",
   "crates/uselesskey-rsa",
   "crates/uselesskey-ecdsa",
   "crates/uselesskey-ed25519",
+  "crates/uselesskey-hmac",
   "crates/uselesskey-x509",
   "crates/uselesskey-bdd",
   "xtask",

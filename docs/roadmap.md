@@ -16,12 +16,12 @@ This roadmap reflects the strategic direction for uselesskey as a **test-fixture
 
 **Goal:** Cover the common asymmetric key types used in JWT/TLS testing.
 
-- [ ] **ECDSA fixtures** (`uselesskey-ecdsa`)
+- [x] **ECDSA fixtures** (`uselesskey-ecdsa`)
   - P-256 (ES256), P-384 (ES384) via `p256`/`p384` crates
   - PKCS#8/SEC1 private key, SPKI public key
   - Same extension pattern: `EcdsaFactoryExt` trait
 
-- [ ] **Ed25519 fixtures** (`uselesskey-ed25519`)
+- [x] **Ed25519 fixtures** (`uselesskey-ed25519`)
   - Via `ed25519-dalek`
   - PKCS#8 private key, SPKI public key
   - `Ed25519FactoryExt` trait
@@ -30,20 +30,24 @@ This roadmap reflects the strategic direction for uselesskey as a **test-fixture
 
 **Goal:** First-class JWK support for JWT testing workflows.
 
-- [ ] **JWK output methods** on all key types
+- [x] **JWK output methods** on all key types
   - `private_key_jwk()`, `public_key_jwk()`
   - Deterministic `kid` derived from artifact identity
   - Symmetric keys (HS256/HS384/HS512) for completeness
 
-- [ ] **JWKS builder**
+- [x] **JWKS builder**
   - Combine multiple public keys into a JWKS
   - Stable key ordering in deterministic mode
+
+- [x] **HMAC fixtures** (`uselesskey-hmac`)
+  - HS256/HS384/HS512 secrets
+  - JWK/JWKS (`kty=oct`)
 
 ## v0.4 — X.509 certificates
 
 **Goal:** Generate leaf certs and cert chains without OpenSSL.
 
-- [ ] **X.509 leaf certificates** (`uselesskey-x509`)
+- [x] **X.509 leaf certificates** (`uselesskey-x509`)
   - Self-signed certs via `rcgen` or `x509-cert`
   - Configurable: CN, SANs, validity period, key usage
   - `X509FactoryExt` trait

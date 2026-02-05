@@ -39,6 +39,12 @@ enum Cmd {
     Deny,
     /// Run the common CI pipeline: fmt + clippy + tests.
     Ci,
+    /// Run the feature matrix checks.
+    FeatureMatrix,
+    /// Enforce no secret-shaped blobs in test/fixture paths.
+    NoBlob,
+    /// Run publish dry-runs for crates in dependency order.
+    PublishCheck,
     /// Run PR-scoped tests based on git diff.
     Pr,
     /// Run cucumber BDD features.
@@ -65,11 +71,10 @@ fn main() -> Result<()> {
         Cmd::Test => test(),
         Cmd::Nextest => nextest(),
         Cmd::Deny => deny(),
-        Cmd::Ci => {
-            fmt(false)?;
-            clippy()?;
-            test()
-        }
+        Cmd::Ci => ci(),
+        Cmd::FeatureMatrix => feature_matrix_cmd(),
+        Cmd::NoBlob => no_blob_gate(),
+        Cmd::PublishCheck => publish_check(),
         Cmd::Pr => pr(),
         Cmd::Bdd => bdd(),
         Cmd::Mutants => mutants(),
@@ -90,6 +95,21 @@ fn run(cmd: &mut Command) -> Result<()> {
     }
     Ok(())
 }
+
+const FEATURE_MATRIX: &[(&str, &[&str])] = &[
+    ("default", &[]),
+    ("no-default", &["--no-default-features"]),
+    ("rsa", &["--no-default-features", "--features", "rsa"]),
+    ("ecdsa", &["--no-default-features", "--features", "ecdsa"]),
+    (
+        "ed25519",
+        &["--no-default-features", "--features", "ed25519"],
+    ),
+    ("hmac", &["--no-default-features", "--features", "hmac"]),
+    ("x509", &["--no-default-features", "--features", "x509"]),
+    ("jwk", &["--no-default-features", "--features", "jwk"]),
+    ("all-features", &["--all-features"]),
+];
 
 fn fmt(fix: bool) -> Result<()> {
     if fix {
@@ -117,6 +137,66 @@ fn test() -> Result<()> {
 
 fn bdd() -> Result<()> {
     run(Command::new("cargo").args(["test", "-p", "uselesskey-bdd", "--test", "bdd"]))
+}
+
+fn ci() -> Result<()> {
+    let mut runner = receipt::Runner::new("target/xtask/receipt.json");
+    let result = run_ci_plan(&mut runner);
+    if let Err(err) = runner.write() {
+        eprintln!("failed to write receipt: {err}");
+        if result.is_ok() {
+            return Err(err);
+        }
+    }
+    result
+}
+
+fn run_ci_plan(runner: &mut receipt::Runner) -> Result<()> {
+    runner.step("fmt", None, || fmt(false))?;
+    runner.step("clippy", None, clippy)?;
+    runner.step("tests", None, test)?;
+
+    run_feature_matrix(runner)?;
+
+    runner.step("bdd", None, bdd)?;
+    let counts = count_bdd_scenarios().unwrap_or_default();
+    runner.set_bdd_counts(counts);
+
+    runner.step("no-blob", None, no_blob_gate)?;
+    runner.step("mutants", None, mutants)?;
+    runner.step("fuzz", None, fuzz_pr)?;
+
+    Ok(())
+}
+
+fn feature_matrix_cmd() -> Result<()> {
+    let mut runner = receipt::Runner::new("target/xtask/receipt.json");
+    let result = run_feature_matrix(&mut runner);
+    if let Err(err) = runner.write() {
+        eprintln!("failed to write receipt: {err}");
+        if result.is_ok() {
+            return Err(err);
+        }
+    }
+    result
+}
+
+fn publish_check() -> Result<()> {
+    let crates = [
+        "uselesskey-core",
+        "uselesskey-jwk",
+        "uselesskey-rsa",
+        "uselesskey-ecdsa",
+        "uselesskey-ed25519",
+        "uselesskey-hmac",
+        "uselesskey-x509",
+        "uselesskey",
+    ];
+
+    for name in crates {
+        run(Command::new("cargo").args(["publish", "--dry-run", "-p", name]))?;
+    }
+    Ok(())
 }
 
 fn mutants() -> Result<()> {
@@ -187,7 +267,10 @@ fn run_pr_plan(
 ) -> Result<()> {
     runner.step(
         "detect-changes",
-        Some(format!("base_ref={base_ref}, files={}", changed_files.len())),
+        Some(format!(
+            "base_ref={base_ref}, files={}",
+            changed_files.len()
+        )),
         || Ok(()),
     )?;
 
@@ -197,6 +280,7 @@ fn run_pr_plan(
         runner.skip("clippy", reason.clone());
         runner.skip("tests", reason.clone());
         runner.skip("feature-matrix", reason.clone());
+        record_feature_matrix_skipped(runner);
         runner.skip("bdd", reason.clone());
         runner.skip("mutants", reason.clone());
         runner.skip("fuzz", reason.clone());
@@ -225,7 +309,11 @@ fn run_pr_plan(
     if plan.run_feature_matrix {
         run_feature_matrix(runner)?;
     } else {
-        runner.skip("feature-matrix", Some("no facade or cargo changes".to_string()));
+        runner.skip(
+            "feature-matrix",
+            Some("no facade or cargo changes".to_string()),
+        );
+        record_feature_matrix_skipped(runner);
     }
 
     if plan.run_bdd {
@@ -306,7 +394,10 @@ fn run_impacted_tests(
         .cloned()
         .collect();
     if targets.is_empty() {
-        runner.skip("tests", Some("no impacted crates after filtering".to_string()));
+        runner.skip(
+            "tests",
+            Some("no impacted crates after filtering".to_string()),
+        );
         return Ok(());
     }
     for name in targets.drain(..) {
@@ -324,23 +415,12 @@ fn run_impacted_tests(
 }
 
 fn run_feature_matrix(runner: &mut receipt::Runner) -> Result<()> {
-    let combos: Vec<(&str, Vec<&str>)> = vec![
-        ("default", vec![]),
-        ("no-default", vec!["--no-default-features"]),
-        ("rsa", vec!["--no-default-features", "--features", "rsa"]),
-        ("ecdsa", vec!["--no-default-features", "--features", "ecdsa"]),
-        ("ed25519", vec!["--no-default-features", "--features", "ed25519"]),
-        ("x509", vec!["--no-default-features", "--features", "x509"]),
-        ("jwk", vec!["--no-default-features", "--features", "jwk"]),
-        ("all-features", vec!["--all-features"]),
-    ];
-
-    for (label, args) in combos {
+    for (label, args) in FEATURE_MATRIX {
         let step_name = format!("feature-matrix:{label}");
         let result = runner.step(&step_name, None, || {
             let mut cmd = Command::new("cargo");
             cmd.args(["check", "-p", "uselesskey"]);
-            for arg in &args {
+            for arg in *args {
                 cmd.arg(arg);
             }
             run(&mut cmd)
@@ -355,6 +435,12 @@ fn run_feature_matrix(runner: &mut receipt::Runner) -> Result<()> {
     }
 
     Ok(())
+}
+
+fn record_feature_matrix_skipped(runner: &mut receipt::Runner) {
+    for (label, _) in FEATURE_MATRIX {
+        runner.add_feature_matrix(label, "skipped");
+    }
 }
 
 fn fuzz_pr() -> Result<()> {

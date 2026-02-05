@@ -2,7 +2,7 @@
 
 **Test key fixtures generated at runtime.**
 
-Outputs: PKCS#8 PEM/DER, SPKI PEM/DER, tempfiles. JWK/JWKS with `--features jwk`. Deterministic mode for stable tests; not for production.
+Outputs: PKCS#8 PEM/DER, SPKI PEM/DER, tempfiles, JWK/JWKS, and HMAC secrets. Deterministic mode for stable tests; not for production.
 
 ---
 
@@ -63,6 +63,28 @@ let pkcs8_pem = rsa.private_key_pkcs8_pem();
 let spki_der  = rsa.public_key_spki_der();
 ```
 
+### JWK / JWKS
+
+Enable the `jwk` feature for typed JWKs with JSON helpers.
+
+```rust
+# #[cfg(feature = "jwk")]
+# {
+use uselesskey::{Factory, RsaSpec, RsaFactoryExt};
+
+let fx = Factory::random();
+let rsa = fx.rsa("issuer", RsaSpec::rs256());
+
+let jwk = rsa.public_jwk();
+let jwk_value = jwk.to_value();
+assert_eq!(jwk_value["kty"], "RSA");
+
+let jwks = rsa.public_jwks();
+let jwks_value = jwks.to_value();
+assert!(jwks_value["keys"].is_array());
+# }
+```
+
 ### Tempfile outputs
 
 Some libraries insist on `Path`.
@@ -89,6 +111,15 @@ let truncated = rsa.private_key_pkcs8_der_truncated(32);
 let mismatched_pub = rsa.mismatched_public_key_spki_der();
 ```
 
+## Examples
+
+Run the examples with the `full` feature (all algorithms + JWK + X.509):
+
+```bash
+cargo run -p uselesskey --example jwks --features "full"
+cargo run -p uselesskey --example tempfiles --features "full"
+```
+
 ## Determinism model
 
 Deterministic mode is **order-independent**:
@@ -103,7 +134,7 @@ That makes tests stable even as you add more fixtures over time.
 This repo uses the `cargo xtask` pattern.
 
 ```bash
-cargo xtask ci      # fmt + clippy + tests
+cargo xtask ci      # fmt + clippy + tests + feature-matrix + bdd + no-blob + mutants + fuzz
 cargo xtask nextest # tests via nextest (optional)
 cargo xtask deny    # cargo-deny license/advisory checks (optional)
 cargo xtask bdd     # cucumber features
@@ -122,11 +153,20 @@ cargo install cargo-nextest
 ## Layout
 
 - `crates/uselesskey-core` – factory, derivation, caching, sinks, generic corruption helpers
+- `crates/uselesskey-jwk` – typed JWK/JWKS helpers
 - `crates/uselesskey-rsa` – RSA fixtures (PKCS#8/SPKI/PEM/DER) built on the core
+- `crates/uselesskey-ecdsa` – ECDSA fixtures (ES256/ES384)
+- `crates/uselesskey-ed25519` – Ed25519 fixtures
+- `crates/uselesskey-hmac` – HMAC secret fixtures (HS256/HS384/HS512)
+- `crates/uselesskey-x509` – X.509 fixtures
 - `crates/uselesskey` – public facade crate
 - `crates/uselesskey-bdd` – cucumber BDD harness
 - `fuzz/` – `cargo fuzz` targets
 - `xtask/` – automation commands
+
+## Requirements
+
+See `docs/requirements-v0.3.md` for the v0.3 acceptance spec.
 
 ## License
 

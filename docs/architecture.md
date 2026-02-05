@@ -8,11 +8,33 @@
   - sinks (tempfile outputs)
   - generic negative-fixture helpers (PEM/DER mangling)
 
+- `crates/uselesskey-jwk`
+  - typed JWK/JWKS helpers
+  - stable key ordering via `JwksBuilder`
+
 - `crates/uselesskey-rsa`
   - RSA keypair generator (RustCrypto `rsa`)
   - encodings: PKCS#8 private, SPKI public
   - mismatch fixtures (variant-derived keypairs)
   - optional `jwk` feature
+
+- `crates/uselesskey-ecdsa`
+  - ECDSA keypair generator (P-256/P-384)
+  - encodings: PKCS#8 private, SPKI public
+  - optional `jwk` feature
+
+- `crates/uselesskey-ed25519`
+  - Ed25519 keypair generator
+  - encodings: PKCS#8 private, SPKI public
+  - optional `jwk` feature
+
+- `crates/uselesskey-hmac`
+  - HMAC secret generator (HS256/384/512)
+  - raw bytes + optional `jwk` feature
+
+- `crates/uselesskey-x509`
+  - X.509 certificate fixtures (self-signed for now)
+  - deterministic validity/serial in deterministic mode
 
 - `crates/uselesskey`
   - facade re-exporting the stable public API
@@ -71,9 +93,10 @@ Key type support is added via extension traits rather than monolithic API growth
 ```
 Factory (core)
   ├── RsaFactoryExt      (uselesskey-rsa)     → fx.rsa(label, spec)
-  ├── EcdsaFactoryExt    (uselesskey-ecdsa)   → fx.ecdsa(label, spec)  [planned]
-  ├── Ed25519FactoryExt  (uselesskey-ed25519) → fx.ed25519(label)      [planned]
-  └── X509FactoryExt     (uselesskey-x509)    → fx.x509(label, spec)   [planned]
+  ├── EcdsaFactoryExt    (uselesskey-ecdsa)   → fx.ecdsa(label, spec)
+  ├── Ed25519FactoryExt  (uselesskey-ed25519) → fx.ed25519(label)
+  ├── HmacFactoryExt     (uselesskey-hmac)    → fx.hmac(label, spec)
+  └── X509FactoryExt     (uselesskey-x509)    → fx.x509(label, spec)
 ```
 
 This pattern:

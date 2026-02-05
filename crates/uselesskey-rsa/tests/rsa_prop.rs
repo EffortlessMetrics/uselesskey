@@ -176,7 +176,7 @@ mod jwk_tests {
             let fx = Factory::deterministic(Seed::new(seed));
             let rsa = fx.rsa(&label, RsaSpec::rs256());
 
-            let jwk = rsa.public_jwk();
+            let jwk = rsa.public_jwk().to_value();
 
             // Check all required fields exist and have correct types.
             prop_assert!(jwk.get("kty").is_some(), "JWK should have 'kty' field");
@@ -207,8 +207,8 @@ mod jwk_tests {
             let fx = Factory::deterministic(Seed::new(seed));
             let rsa = fx.rsa(&label, RsaSpec::rs256());
 
-            let jwks = rsa.public_jwks();
-            let jwk = rsa.public_jwk();
+            let jwks = rsa.public_jwks().to_value();
+            let jwk = rsa.public_jwk().to_value();
 
             // JWKS should have a "keys" array.
             prop_assert!(jwks.get("keys").is_some(), "JWKS should have 'keys' field");
@@ -234,7 +234,7 @@ mod jwk_tests {
             let fx = Factory::deterministic(Seed::new(seed));
             let rsa = fx.rsa(&label, RsaSpec::rs256());
 
-            let jwk = rsa.public_jwk();
+            let jwk = rsa.public_jwk().to_value();
 
             let n_str = jwk["n"].as_str().unwrap();
             let e_str = jwk["e"].as_str().unwrap();
@@ -253,6 +253,43 @@ mod jwk_tests {
                 "n should be ~256 bytes for 2048-bit key, got {} bytes",
                 n_bytes.len()
             );
+        }
+
+        /// Private JWK contains required fields: d, p, q, dp, dq, qi.
+        #[test]
+        fn private_jwk_contains_required_fields(
+            seed in any::<[u8; 32]>(),
+            label in "[a-zA-Z0-9]{1,16}"
+        ) {
+            let fx = Factory::deterministic(Seed::new(seed));
+            let rsa = fx.rsa(&label, RsaSpec::rs256());
+
+            let jwk = rsa.private_key_jwk().to_value();
+
+            for key in ["d", "p", "q", "dp", "dq", "qi"] {
+                prop_assert!(jwk.get(key).is_some(), "JWK should have '{}' field", key);
+                prop_assert!(jwk[key].is_string(), "{} should be a string", key);
+            }
+        }
+
+        /// Private JWK fields are valid base64url encoded.
+        #[test]
+        fn private_jwk_fields_are_valid_base64url(
+            seed in any::<[u8; 32]>(),
+            label in "[a-zA-Z0-9]{1,16}"
+        ) {
+            use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+            use base64::Engine as _;
+
+            let fx = Factory::deterministic(Seed::new(seed));
+            let rsa = fx.rsa(&label, RsaSpec::rs256());
+            let jwk = rsa.private_key_jwk().to_value();
+
+            for key in ["d", "p", "q", "dp", "dq", "qi"] {
+                let val = jwk[key].as_str().unwrap();
+                let decoded = URL_SAFE_NO_PAD.decode(val);
+                prop_assert!(decoded.is_ok(), "{} should be valid base64url", key);
+            }
         }
     }
 }
