@@ -1,93 +1,86 @@
 # uselesskey
 
-**Test key fixtures generated at runtime.**
-
-Outputs: PKCS#8 PEM/DER, SPKI PEM/DER, tempfiles, JWK/JWKS, and HMAC secrets. Deterministic mode for stable tests; not for production.
-
----
-
 **Stop committing PEM/DER/JWK blobs into your repos.**
 
-- Generates keys **at runtime** (random or deterministic).
-- Emits the **shapes** other libraries want (PKCS#8 PEM/DER, SPKI PEM/DER, tempfiles).
-- Includes **negative fixtures** (corrupt PEM, truncated DER, mismatched keypairs) without checking anything into git.
+A test-fixture library that generates cryptographic key material at runtime. Not a crypto library.
 
 ## The Problem
 
-## Why this crate?
+Secret scanners have changed the game for test fixtures:
 
-**Secret incidents aren't about the final state of the code — they're about any commit that contained the secret.**
+- **GitGuardian** scans each commit in a PR. "Add then remove" still triggers incidents.
+- **GitHub push protection** blocks pushes until the secret is removed from all commits.
+- Path ignores exist but require ongoing maintenance and documentation.
 
-Secret scanning has shifted the ground under "just commit a dummy key":
+Even fake keys that look real cause friction. This crate replaces "security policy + docs + exceptions" with one dev-dependency.
 
-- [GitGuardian](https://docs.gitguardian.com/) scans **each commit** in a PR, not just the final state. Even "commit then immediately remove" still triggers incidents.
-- [GitHub push protection](https://docs.github.com/en/code-security/secret-scanning/push-protection-for-repositories-and-organizations/about-push-protection) requires removing blocked secrets from **all commits** before the push can proceed.
-- Both support path ignores and exclusions, but their guidance is "minimize exclusions; document why; review periodically."
+> **Do not use for production keys.** Deterministic keys are predictable by design. Even random-mode keys are intended for tests only.
 
-That combination creates a steady incentive to stop committing anything that *looks* like a key, even if it's fake. This crate turns "security team policy + docs + exceptions" into "one dev-dependency."
+## What You Get
 
-### What exists today (and why it's not enough)
+**Algorithms:**
+- RSA (2048, 3072, 4096 bits)
+- ECDSA (P-256, P-384)
+- Ed25519
+- HMAC (HS256, HS384, HS512)
 
-> Snapshot: last reviewed 2025-02-03. This is context, not a compatibility matrix.
+**Output formats:**
+- PKCS#8 PEM/DER (private keys)
+- SPKI PEM/DER (public keys)
+- JWK/JWKS (with `jwk` feature)
+- Tempfiles (for libraries that need paths)
+- X.509 certificates (with `x509` feature)
 
-| Crate | What it does | Gap |
-|-------|--------------|-----|
-| [`jwk_kit`](https://docs.rs/jwk_kit) | Generate RSA/ES256 keypairs, export PKCS#8 PEM or JWK | No deterministic-from-seed, no negative fixtures |
-| [`rcgen`](https://docs.rs/rcgen) | Generate self-signed X.509 certs (pure Rust) | [Deterministic mode requested but not first-class](https://github.com/rustls/rcgen/issues/173) |
-| [`test-cert-gen`](https://docs.rs/crate/test-cert-gen) | Generate certs for tests | Shells out to OpenSSL CLI |
-| [`x509-test-certs`](https://docs.rs/x509-test-certs) | Ships realistic certs/keys as `const` byte arrays | Forces secret-scanner suppression |
+**Negative fixtures:**
+- Corrupt PEM (bad base64, wrong headers, truncated)
+- Truncated DER
+- Mismatched keypairs (valid public key that doesn't match the private key)
 
-The ecosystem has **keygen**, **certgen**, **JWK tooling**, and **fixture blobs** — but not a "fixture factory" optimized around runtime generation + determinism + negative cases + tempfiles + scanner hygiene.
+## Quick Start
 
-### What makes uselesskey different
+Add to `Cargo.toml`:
 
-1. **Order-independent determinism** — `seed + (domain, label, spec, variant) → derived seed → artifact`. Adding new fixtures doesn't perturb existing ones. Test order doesn't matter.
+```toml
+[dev-dependencies]
+uselesskey = "0.1"
+```
 
-2. **Cache-by-identity** — RSA keygen cost pushes teams toward committed fixtures. Per-process caching makes runtime generation cheap enough.
-
-3. **Shape-first outputs** — PKCS#8 PEM/DER, SPKI PEM/DER, tempfiles with sane permissions. Users shouldn't need to know crypto crate internals.
-
-4. **Negative fixtures as first-class** — Corrupt PEM (bad base64, wrong headers, truncation), truncated DER, mismatched keypairs. Teams love committed "broken" blobs because producing them is annoying; this crate makes them cheap and ephemeral.
-
-## Quickstart
+Generate keys:
 
 ```rust
-use uselesskey::{Factory, RsaSpec, RsaFactoryExt};
+use uselesskey::{Factory, Seed, RsaSpec, RsaFactoryExt};
 
+// Random mode (different keys each run)
+let fx = Factory::random();
+
+// Deterministic mode (stable keys from seed)
+let seed = Seed::from_env_value("my-test-seed").unwrap();
+let fx = Factory::deterministic(seed);
+
+// Or fall back to random if env var not set
 let fx = Factory::deterministic_from_env("USELESSKEY_SEED")
     .unwrap_or_else(|_| Factory::random());
 
+// Generate RSA keypair
 let rsa = fx.rsa("issuer", RsaSpec::rs256());
 
-let jwk = rsa.public_jwk();
-let jwks = rsa.public_jwks();
+let pkcs8_pem = rsa.private_key_pkcs8_pem();
+let spki_der = rsa.public_key_spki_der();
 ```
 
 ### JWK / JWKS
 
-Enable the `jwk` feature for typed JWKs with JSON helpers.
-
 ```rust
-# #[cfg(feature = "jwk")]
-# {
 use uselesskey::{Factory, RsaSpec, RsaFactoryExt};
 
 let fx = Factory::random();
 let rsa = fx.rsa("issuer", RsaSpec::rs256());
 
 let jwk = rsa.public_jwk();
-let jwk_value = jwk.to_value();
-assert_eq!(jwk_value["kty"], "RSA");
-
 let jwks = rsa.public_jwks();
-let jwks_value = jwks.to_value();
-assert!(jwks_value["keys"].is_array());
-# }
 ```
 
-### Tempfile outputs
-
-Some libraries insist on `Path`.
+### Tempfiles
 
 ```rust
 use uselesskey::{Factory, RsaSpec, RsaFactoryExt};
@@ -99,61 +92,7 @@ let keyfile = rsa.write_private_key_pkcs8_pem().unwrap();
 assert!(keyfile.path().exists());
 ```
 
-### X.509 Certificates
-
-Self-signed certificates for simple TLS tests:
-
-```rust
-use uselesskey::{Factory, X509FactoryExt, X509Spec};
-
-let fx = Factory::random();
-let cert = fx.x509_self_signed("my-service", X509Spec::self_signed("test.example.com"));
-
-let cert_pem = cert.cert_pem();
-let key_pem = cert.private_key_pkcs8_pem();
-```
-
-Three-level certificate chains (root CA → intermediate CA → leaf):
-
-```rust
-use uselesskey::{Factory, X509FactoryExt, ChainSpec};
-
-let fx = Factory::random();
-let chain = fx.x509_chain("my-service", ChainSpec::new("test.example.com"));
-
-// Standard TLS server chain (leaf + intermediate, no root)
-let chain_pem = chain.chain_pem();
-
-// Individual certs for custom setups
-let root_pem = chain.root_cert_pem();
-let leaf_key = chain.leaf_private_key_pkcs8_pem();
-```
-
-### X.509 Negative Fixtures
-
-Generate intentionally invalid certificates for testing error-handling paths:
-
-```rust
-use uselesskey::{Factory, X509FactoryExt, ChainSpec};
-
-let fx = Factory::random();
-let chain = fx.x509_chain("my-service", ChainSpec::new("test.example.com"));
-
-// Expired leaf certificate
-let expired = chain.expired_leaf();
-
-// Hostname mismatch (SAN doesn't match expected hostname)
-let wrong_host = chain.hostname_mismatch("wrong.example.com");
-
-// Signed by an unknown CA (not in your trust store)
-let unknown = chain.unknown_ca();
-
-// Revoked leaf with CRL signed by the intermediate CA
-let revoked = chain.revoked_leaf();
-let crl_pem = revoked.crl_pem().expect("CRL present for revoked variant");
-```
-
-### Negative Fixtures (Keys)
+### Negative Fixtures
 
 ```rust
 use uselesskey::{Factory, RsaSpec, RsaFactoryExt};
@@ -167,71 +106,45 @@ let truncated = rsa.private_key_pkcs8_der_truncated(32);
 let mismatched_pub = rsa.mismatched_public_key_spki_der();
 ```
 
-## Examples
+## Feature Flags
 
-Run the examples with the `full` feature (all algorithms + JWK + X.509):
+| Feature | Description |
+|---------|-------------|
+| `rsa` | RSA keypairs (default) |
+| `ecdsa` | ECDSA P-256/P-384 keypairs |
+| `ed25519` | Ed25519 keypairs |
+| `hmac` | HMAC secrets |
+| `x509` | X.509 certificate generation (implies `rsa`) |
+| `jwk` | JWK/JWKS output for enabled key types |
+| `all-keys` | All key algorithms (`rsa` + `ecdsa` + `ed25519` + `hmac`) |
+| `full` | Everything (`all-keys` + `x509` + `jwk`) |
 
-```bash
-cargo run -p uselesskey --example jwks --features "full"
-cargo run -p uselesskey --example tempfiles --features "full"
-```
+Extension traits by feature:
+- `rsa`: `RsaFactoryExt`
+- `ecdsa`: `EcdsaFactoryExt`
+- `ed25519`: `Ed25519FactoryExt`
+- `hmac`: `HmacFactoryExt`
+- `x509`: `X509FactoryExt`
 
-## Determinism model
+## Why This Crate?
 
-Adapter crates bridge uselesskey fixtures to third-party library types. They are separate crates (not features) to avoid coupling versioning.
+### Order-independent determinism
 
-| Crate | Purpose |
-|-------|---------|
-| `uselesskey-jsonwebtoken` | Returns `jsonwebtoken::EncodingKey` / `DecodingKey` directly |
-| `uselesskey-rustls` | `rustls-pki-types` conversions + `ServerConfig` / `ClientConfig` builders |
-| `uselesskey-ring` | `ring` 0.17 native signing key types |
-| `uselesskey-rustcrypto` | RustCrypto native types (`rsa::RsaPrivateKey`, `p256::ecdsa::SigningKey`, etc.) |
-| `uselesskey-aws-lc-rs` | `aws-lc-rs` native types with `native` feature for wasm-safe builds |
+`seed + (domain, label, spec, variant) -> derived seed -> artifact`
 
-### TLS Config Builders (uselesskey-rustls)
+Adding new fixtures doesn't perturb existing ones. Test order doesn't matter.
 
-With the `tls-config` feature, build rustls configs in one line:
+### Cache-by-identity
 
-This repo uses the `cargo xtask` pattern.
+RSA keygen is expensive. Per-process caching by `(domain, label, spec, variant)` makes runtime generation cheap enough to replace committed fixtures.
 
-```bash
-cargo xtask ci      # fmt + clippy + tests + feature-matrix + bdd + no-blob + mutants + fuzz
-cargo xtask nextest # tests via nextest (optional)
-cargo xtask deny    # cargo-deny license/advisory checks (optional)
-cargo xtask bdd     # cucumber features
-cargo xtask mutants # mutation testing (cargo-mutants)
-cargo xtask fuzz    # fuzz targets (cargo-fuzz)
-```
+### Shape-first outputs
 
-```rust
-use uselesskey_core::Factory;
-use uselesskey_x509::{X509FactoryExt, ChainSpec};
-use uselesskey_rustls::{RustlsServerConfigExt, RustlsClientConfigExt};
+Ask for PKCS#8/SPKI/JWK, not crypto primitives. Users shouldn't need to know which crate does the encoding.
 
-let fx = Factory::random();
-let chain = fx.x509_chain("my-service", ChainSpec::new("test.example.com"));
+### Negative fixtures first-class
 
-let server_config = chain.server_config_rustls();   // ServerConfig (no client auth)
-let client_config = chain.client_config_rustls();    // ClientConfig (trusts root CA)
-```
-
-### ring Signing Keys (uselesskey-ring)
-
-- `crates/uselesskey-core` – factory, derivation, caching, sinks, generic corruption helpers
-- `crates/uselesskey-jwk` – typed JWK/JWKS helpers
-- `crates/uselesskey-rsa` – RSA fixtures (PKCS#8/SPKI/PEM/DER) built on the core
-- `crates/uselesskey-ecdsa` – ECDSA fixtures (ES256/ES384)
-- `crates/uselesskey-ed25519` – Ed25519 fixtures
-- `crates/uselesskey-hmac` – HMAC secret fixtures (HS256/HS384/HS512)
-- `crates/uselesskey-x509` – X.509 fixtures
-- `crates/uselesskey` – public facade crate
-- `crates/uselesskey-bdd` – cucumber BDD harness
-- `fuzz/` – `cargo fuzz` targets
-- `xtask/` – automation commands
-
-## Requirements
-
-See `docs/requirements-v0.3.md` for the v0.3 acceptance spec.
+Corrupt PEM, truncated DER, mismatched keys. These are annoying to produce manually, which is why teams commit them. This crate makes them cheap and ephemeral.
 
 ## License
 

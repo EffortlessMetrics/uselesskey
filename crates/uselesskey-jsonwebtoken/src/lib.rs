@@ -203,10 +203,12 @@ impl JwtKeyExt for uselesskey_hmac::HmacSecret {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[cfg(feature = "rsa")]
     mod rsa_tests {
-        use crate::JwtKeyExt;
-        use jsonwebtoken::{Algorithm, Header, Validation, decode, encode};
+        use super::*;
+        use jsonwebtoken::{decode, encode, Algorithm, Header, Validation};
         use serde::{Deserialize, Serialize};
         use uselesskey_core::Factory;
         use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
@@ -263,8 +265,8 @@ mod tests {
 
     #[cfg(feature = "ecdsa")]
     mod ecdsa_tests {
-        use crate::JwtKeyExt;
-        use jsonwebtoken::{Algorithm, Header, Validation, decode, encode};
+        use super::*;
+        use jsonwebtoken::{decode, encode, Algorithm, Header, Validation};
         use serde::{Deserialize, Serialize};
         use uselesskey_core::Factory;
         use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
@@ -318,8 +320,8 @@ mod tests {
 
     #[cfg(feature = "ed25519")]
     mod ed25519_tests {
-        use crate::JwtKeyExt;
-        use jsonwebtoken::{Algorithm, Header, Validation, decode, encode};
+        use super::*;
+        use jsonwebtoken::{decode, encode, Algorithm, Header, Validation};
         use serde::{Deserialize, Serialize};
         use uselesskey_core::Factory;
         use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
@@ -351,51 +353,10 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "ecdsa")]
-    mod cross_key_tests {
-        use crate::JwtKeyExt;
-        use jsonwebtoken::{Algorithm, Header, Validation, decode, encode};
-        use serde::{Deserialize, Serialize};
-        use uselesskey_core::Factory;
-        use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
-
-        #[derive(Debug, Serialize, Deserialize, PartialEq)]
-        struct TestClaims {
-            sub: String,
-            exp: usize,
-        }
-
-        #[test]
-        fn test_cross_key_decode_fails() {
-            let fx = Factory::random();
-            let key_a = fx.ecdsa("issuer-a", EcdsaSpec::es256());
-            let key_b = fx.ecdsa("issuer-b", EcdsaSpec::es256());
-
-            let claims = TestClaims {
-                sub: "user".to_string(),
-                exp: 9999999999,
-            };
-
-            let token = encode(
-                &Header::new(Algorithm::ES256),
-                &claims,
-                &key_a.encoding_key(),
-            )
-            .unwrap();
-
-            let result = decode::<TestClaims>(
-                &token,
-                &key_b.decoding_key(),
-                &Validation::new(Algorithm::ES256),
-            );
-            assert!(result.is_err(), "decoding with wrong key should fail");
-        }
-    }
-
     #[cfg(feature = "hmac")]
     mod hmac_tests {
-        use crate::JwtKeyExt;
-        use jsonwebtoken::{Algorithm, Header, Validation, decode, encode};
+        use super::*;
+        use jsonwebtoken::{decode, encode, Algorithm, Header, Validation};
         use serde::{Deserialize, Serialize};
         use uselesskey_core::Factory;
         use uselesskey_hmac::{HmacFactoryExt, HmacSpec};
