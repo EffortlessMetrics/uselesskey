@@ -50,3 +50,6 @@ jwk = [
 # Convenience bundles
 all-keys = ["rsa", "ecdsa", "ed25519", "hmac"]
 full = ["all-keys", "x509", "jwk"]
+
+[dev-dependencies]
+tempfile.workspace = true
