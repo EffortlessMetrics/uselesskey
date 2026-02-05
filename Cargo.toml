@@ -9,6 +9,7 @@ members = [
   "crates/uselesskey-ed25519",
   "crates/uselesskey-hmac",
   "crates/uselesskey-x509",
+  "crates/uselesskey-jsonwebtoken",
   "crates/uselesskey-bdd",
   "xtask",
 ]

@@ -13,9 +13,15 @@ impl Jwks {
     pub fn to_value(&self) -> Value {
         serde_json::to_value(self).expect("serialize JWKS")
     }
+}
 
-    pub fn to_string(&self) -> String {
-        serde_json::to_string(self).expect("serialize JWKS")
+impl fmt::Display for Jwks {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            serde_json::to_string(self).expect("serialize JWKS")
+        )
     }
 }
 
@@ -262,9 +268,11 @@ impl PublicJwk {
     pub fn to_value(&self) -> Value {
         serde_json::to_value(self).expect("serialize JWK")
     }
+}
 
-    pub fn to_string(&self) -> String {
-        serde_json::to_string(self).expect("serialize JWK")
+impl fmt::Display for PublicJwk {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", serde_json::to_string(self).expect("serialize JWK"))
     }
 }
 
@@ -290,9 +298,11 @@ impl PrivateJwk {
     pub fn to_value(&self) -> Value {
         serde_json::to_value(self).expect("serialize JWK")
     }
+}
 
-    pub fn to_string(&self) -> String {
-        serde_json::to_string(self).expect("serialize JWK")
+impl fmt::Display for PrivateJwk {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", serde_json::to_string(self).expect("serialize JWK"))
     }
 }
 
@@ -325,9 +335,11 @@ impl AnyJwk {
     pub fn to_value(&self) -> Value {
         serde_json::to_value(self).expect("serialize JWK")
     }
+}
 
-    pub fn to_string(&self) -> String {
-        serde_json::to_string(self).expect("serialize JWK")
+impl fmt::Display for AnyJwk {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", serde_json::to_string(self).expect("serialize JWK"))
     }
 }
 
