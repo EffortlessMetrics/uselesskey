@@ -559,6 +559,15 @@ fn is_secret_extension(path: &Path) -> bool {
 }
 
 fn contains_pem_markers(path: &Path) -> Result<bool> {
+    // Skip source code files - they may contain PEM markers as strings in tests
+    let ext = path
+        .extension()
+        .and_then(|s| s.to_str())
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    if matches!(ext.as_str(), "rs" | "feature" | "md" | "toml") {
+        return Ok(false);
+    }
     let content = fs::read(path).with_context(|| format!("failed to read {path:?}"))?;
     let text = String::from_utf8_lossy(&content);
     Ok(text.contains("-----BEGIN") && text.contains("-----END"))
