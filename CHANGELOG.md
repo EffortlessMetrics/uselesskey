@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- PR-scoped `cargo xtask pr` runner that selects suites based on `git diff` and emits a JSON receipt.
+
 ## [0.1.0] - 2025-02-03
 
 ### Added
