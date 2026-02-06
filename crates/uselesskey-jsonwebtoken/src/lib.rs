@@ -203,11 +203,9 @@ impl JwtKeyExt for uselesskey_hmac::HmacSecret {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[cfg(feature = "rsa")]
     mod rsa_tests {
-        use super::*;
+        use crate::JwtKeyExt;
         use jsonwebtoken::{Algorithm, Header, Validation, decode, encode};
         use serde::{Deserialize, Serialize};
         use uselesskey_core::Factory;
@@ -265,7 +263,7 @@ mod tests {
 
     #[cfg(feature = "ecdsa")]
     mod ecdsa_tests {
-        use super::*;
+        use crate::JwtKeyExt;
         use jsonwebtoken::{Algorithm, Header, Validation, decode, encode};
         use serde::{Deserialize, Serialize};
         use uselesskey_core::Factory;
@@ -320,7 +318,7 @@ mod tests {
 
     #[cfg(feature = "ed25519")]
     mod ed25519_tests {
-        use super::*;
+        use crate::JwtKeyExt;
         use jsonwebtoken::{Algorithm, Header, Validation, decode, encode};
         use serde::{Deserialize, Serialize};
         use uselesskey_core::Factory;
@@ -355,7 +353,7 @@ mod tests {
 
     #[cfg(feature = "hmac")]
     mod hmac_tests {
-        use super::*;
+        use crate::JwtKeyExt;
         use jsonwebtoken::{Algorithm, Header, Validation, decode, encode};
         use serde::{Deserialize, Serialize};
         use uselesskey_core::Factory;
