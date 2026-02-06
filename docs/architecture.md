@@ -50,7 +50,7 @@
   - cargo-fuzz targets (negative fixture functions + parser stress)
 
 - `xtask/`
-  - fmt/clippy/test/bdd/mutants/fuzz runners
+  - build automation: fmt, clippy, test, nextest, deny, feature-matrix, no-blob, publish-check, pr, bdd, mutants, fuzz
 
 ## Deterministic derivation
 
