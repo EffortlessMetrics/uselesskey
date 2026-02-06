@@ -65,8 +65,8 @@ serde_json = "1.0.149"
 base64 = "0.22.1"
 
 [profile.dev]
-# RSA keygen can be slow in debug; modest opt helps without full release build.
-opt-level = 1
+# RSA keygen can be slow in debug; opt-level 2 keeps BDD/RSA tests from looking hung.
+opt-level = 2
 
 [profile.test]
-opt-level = 1
+opt-level = 2
