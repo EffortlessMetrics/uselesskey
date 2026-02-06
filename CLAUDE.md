@@ -49,7 +49,7 @@ Path ignores exist but require ongoing maintenance. This crate replaces "securit
 ## Build Commands
 
 ```bash
-cargo xtask ci              # Main CI pipeline: fmt check + clippy + test (use this before commits)
+cargo xtask ci              # Full CI: fmt, clippy, test, feature-matrix, bdd, no-blob, mutants, fuzz
 cargo xtask pr              # PR-scoped tests based on git diff (emits JSON receipt)
 cargo xtask test            # Run all tests with all features
 cargo xtask fmt --fix       # Fix formatting

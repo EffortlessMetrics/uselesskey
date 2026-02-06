@@ -14,6 +14,8 @@ This is the publish order for the uselesskey workspace crates.
 8. `uselesskey`
 9. `uselesskey-jsonwebtoken` (adapter, depends on key type crates)
 
+This list matches the `cargo xtask publish-check` order.
+
 ## Dry run
 
 ```bash
