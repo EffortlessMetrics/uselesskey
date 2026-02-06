@@ -199,6 +199,7 @@ fn publish_check() -> Result<()> {
         "uselesskey-hmac",
         "uselesskey-x509",
         "uselesskey",
+        "uselesskey-jsonwebtoken",
     ];
 
     for name in crates {
