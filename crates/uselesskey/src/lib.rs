@@ -65,9 +65,9 @@
 //!
 //! // This reads from the environment variable and parses the seed
 //! // Returns Err if the variable is not set
-//! # std::env::set_var("USELESSKEY_SEED", "ci-build-12345");
+//! # unsafe { std::env::set_var("USELESSKEY_SEED", "ci-build-12345") };
 //! let fx = Factory::deterministic_from_env("USELESSKEY_SEED").unwrap();
-//! # std::env::remove_var("USELESSKEY_SEED");
+//! # unsafe { std::env::remove_var("USELESSKEY_SEED") };
 //! ```
 //!
 //! # Negative Fixtures
@@ -164,21 +164,21 @@ pub mod jwk {
 }
 
 #[cfg(feature = "rsa")]
-pub use uselesskey_rsa::{RsaFactoryExt, RsaKeyPair, RsaSpec, DOMAIN_RSA_KEYPAIR};
+pub use uselesskey_rsa::{DOMAIN_RSA_KEYPAIR, RsaFactoryExt, RsaKeyPair, RsaSpec};
 
 #[cfg(feature = "ecdsa")]
-pub use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaKeyPair, EcdsaSpec, DOMAIN_ECDSA_KEYPAIR};
+pub use uselesskey_ecdsa::{DOMAIN_ECDSA_KEYPAIR, EcdsaFactoryExt, EcdsaKeyPair, EcdsaSpec};
 
 #[cfg(feature = "ed25519")]
 pub use uselesskey_ed25519::{
-    Ed25519FactoryExt, Ed25519KeyPair, Ed25519Spec, DOMAIN_ED25519_KEYPAIR,
+    DOMAIN_ED25519_KEYPAIR, Ed25519FactoryExt, Ed25519KeyPair, Ed25519Spec,
 };
 
 #[cfg(feature = "hmac")]
-pub use uselesskey_hmac::{HmacFactoryExt, HmacSecret, HmacSpec, DOMAIN_HMAC_SECRET};
+pub use uselesskey_hmac::{DOMAIN_HMAC_SECRET, HmacFactoryExt, HmacSecret, HmacSpec};
 
 #[cfg(feature = "x509")]
-pub use uselesskey_x509::{X509Cert, X509FactoryExt, X509Spec, DOMAIN_X509_CERT};
+pub use uselesskey_x509::{DOMAIN_X509_CERT, X509Cert, X509FactoryExt, X509Spec};
 
 /// Common imports for tests.
 ///

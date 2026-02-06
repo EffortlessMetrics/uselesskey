@@ -2,8 +2,8 @@ use std::fmt;
 use std::sync::Arc;
 
 use rsa::pkcs8::LineEnding;
-use rsa::{pkcs8::EncodePrivateKey, pkcs8::EncodePublicKey, RsaPrivateKey, RsaPublicKey};
-use uselesskey_core::negative::{corrupt_pem, truncate_der, CorruptPem};
+use rsa::{RsaPrivateKey, RsaPublicKey, pkcs8::EncodePrivateKey, pkcs8::EncodePublicKey};
+use uselesskey_core::negative::{CorruptPem, corrupt_pem, truncate_der};
 use uselesskey_core::sink::TempArtifact;
 use uselesskey_core::{Error, Factory};
 
@@ -162,7 +162,6 @@ impl RsaKeyPair {
     /// Requires the `jwk` feature.
     #[cfg(feature = "jwk")]
     pub fn public_jwk(&self) -> uselesskey_jwk::PublicJwk {
-        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
         use base64::Engine as _;
         use base64::engine::general_purpose::URL_SAFE_NO_PAD;
         use rsa::traits::PublicKeyParts;
@@ -186,8 +185,8 @@ impl RsaKeyPair {
     /// Requires the `jwk` feature.
     #[cfg(feature = "jwk")]
     pub fn private_key_jwk(&self) -> uselesskey_jwk::PrivateJwk {
-        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
         use base64::Engine as _;
+        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
         use rsa::traits::{PrivateKeyParts, PublicKeyParts};
         use uselesskey_jwk::{PrivateJwk, RsaPrivateJwk};
 

@@ -1,6 +1,6 @@
 use proptest::prelude::*;
 
-use uselesskey_core::negative::{corrupt_pem, truncate_der, CorruptPem};
+use uselesskey_core::negative::{CorruptPem, corrupt_pem, truncate_der};
 use uselesskey_core::{ArtifactId, DerivationVersion, Factory, Seed};
 
 fn spec_bytes(bits: u32, e: u32) -> Vec<u8> {

@@ -50,6 +50,6 @@ mod cert;
 pub mod negative;
 mod spec;
 
-pub use cert::{X509Cert, X509FactoryExt, DOMAIN_X509_CERT};
+pub use cert::{DOMAIN_X509_CERT, X509Cert, X509FactoryExt};
 pub use negative::X509Negative;
 pub use spec::{KeyUsage, NotBeforeOffset, X509Spec};

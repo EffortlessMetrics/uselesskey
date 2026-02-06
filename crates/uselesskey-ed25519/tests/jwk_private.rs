@@ -1,7 +1,7 @@
 #[cfg(feature = "jwk")]
 mod jwk_private_tests {
-    use base64::engine::general_purpose::URL_SAFE_NO_PAD;
     use base64::Engine as _;
+    use base64::engine::general_purpose::URL_SAFE_NO_PAD;
     use uselesskey_core::{Factory, Seed};
     use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
 

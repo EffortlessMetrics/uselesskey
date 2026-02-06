@@ -1,4 +1,4 @@
-use cucumber::{given, then, when, World};
+use cucumber::{World, given, then, when};
 use uselesskey::negative::CorruptPem;
 use uselesskey::{
     EcdsaFactoryExt, EcdsaKeyPair, EcdsaSpec, Ed25519FactoryExt, Ed25519KeyPair, Ed25519Spec,
@@ -679,8 +679,8 @@ fn ed25519_keys_differ(world: &mut UselessWorld) {
 
 #[then("an Ed25519 mismatched SPKI DER should parse and differ")]
 fn ed25519_mismatched_spki_should_parse_and_differ(world: &mut UselessWorld) {
-    use ed25519_dalek::pkcs8::DecodePublicKey;
     use ed25519_dalek::VerifyingKey;
+    use ed25519_dalek::pkcs8::DecodePublicKey;
 
     let ed25519 = world.ed25519.as_ref().expect("ed25519 not set");
     let mismatch = ed25519.mismatched_public_key_spki_der();
@@ -702,8 +702,8 @@ fn ed25519_mismatch_identical(world: &mut UselessWorld) {
 
 #[then("the Ed25519 PKCS8 DER should be parseable")]
 fn ed25519_pkcs8_der_parseable(world: &mut UselessWorld) {
-    use ed25519_dalek::pkcs8::DecodePrivateKey;
     use ed25519_dalek::SigningKey;
+    use ed25519_dalek::pkcs8::DecodePrivateKey;
 
     let der = world
         .ed25519_pkcs8_der_original
@@ -714,8 +714,8 @@ fn ed25519_pkcs8_der_parseable(world: &mut UselessWorld) {
 
 #[then("the Ed25519 SPKI PEM should be parseable")]
 fn ed25519_spki_pem_parseable(world: &mut UselessWorld) {
-    use ed25519_dalek::pkcs8::DecodePublicKey;
     use ed25519_dalek::VerifyingKey;
+    use ed25519_dalek::pkcs8::DecodePublicKey;
 
     let ed25519_key = world.ed25519.as_ref().expect("ed25519 not set");
     let pem = ed25519_key.public_key_spki_pem();
@@ -724,8 +724,8 @@ fn ed25519_spki_pem_parseable(world: &mut UselessWorld) {
 
 #[then("the Ed25519 SPKI DER should be parseable")]
 fn ed25519_spki_der_parseable(world: &mut UselessWorld) {
-    use ed25519_dalek::pkcs8::DecodePublicKey;
     use ed25519_dalek::VerifyingKey;
+    use ed25519_dalek::pkcs8::DecodePublicKey;
 
     let der = world
         .ed25519_spki_der_1
@@ -757,8 +757,8 @@ fn ed25519_truncated_der_length(world: &mut UselessWorld, expected: usize) {
 
 #[then("the truncated Ed25519 DER should fail to parse")]
 fn ed25519_truncated_der_fails(world: &mut UselessWorld) {
-    use ed25519_dalek::pkcs8::DecodePrivateKey;
     use ed25519_dalek::SigningKey;
+    use ed25519_dalek::pkcs8::DecodePrivateKey;
 
     let der = world
         .ed25519_truncated_der
