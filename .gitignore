@@ -12,6 +12,7 @@ fuzz/corpus/
 
 # cargo-mutants
 mutants.out/
+mutants.out.old/
 
 # IDEs
 .idea/

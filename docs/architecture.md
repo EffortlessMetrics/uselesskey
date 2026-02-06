@@ -38,6 +38,10 @@
   - Negative fixtures: expired, hostname mismatch, unknown CA, revoked leaf (with CRL)
   - deterministic validity/serial in deterministic mode
 
+- `crates/uselesskey-jsonwebtoken`
+  - adapter: returns `jsonwebtoken::EncodingKey` / `DecodingKey` directly
+  - optional features per key type (`rsa`, `ecdsa`, `ed25519`, `hmac`)
+
 - `crates/uselesskey`
   - facade re-exporting the stable public API
 
@@ -110,17 +114,18 @@ This pattern:
 
 Each extension crate depends on `uselesskey-core` and adds methods to `Factory` via its trait. The facade crate (`uselesskey`) re-exports enabled features.
 
-## Adapter crates (planned)
+## Adapter crates
 
-Beyond key type extensions, adapter crates will provide native integration:
+Adapter crates provide native integration with downstream libraries. They are separate crates (not features) to avoid coupling uselesskey's versioning to downstream crate versions.
+
+- `uselesskey-jsonwebtoken` — returns `jsonwebtoken::EncodingKey` / `DecodingKey` directly
+
+### Planned adapters
 
 ```
-uselesskey-jsonwebtoken  → returns EncodingKey/DecodingKey directly
 uselesskey-rustls        → returns PrivateKeyDer/CertificateDer directly
 uselesskey-ring          → returns ring's native key types
 ```
-
-These are separate crates (not features) to avoid coupling uselesskey's versioning to downstream crate versions.
 
 ## CI scoping
 
