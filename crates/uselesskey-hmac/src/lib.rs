@@ -3,5 +3,5 @@
 mod secret;
 mod spec;
 
-pub use secret::{HmacFactoryExt, HmacSecret, DOMAIN_HMAC_SECRET};
+pub use secret::{DOMAIN_HMAC_SECRET, HmacFactoryExt, HmacSecret};
 pub use spec::HmacSpec;

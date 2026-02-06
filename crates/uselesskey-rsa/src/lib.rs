@@ -71,5 +71,5 @@
 mod keypair;
 mod spec;
 
-pub use keypair::{RsaFactoryExt, RsaKeyPair, DOMAIN_RSA_KEYPAIR};
+pub use keypair::{DOMAIN_RSA_KEYPAIR, RsaFactoryExt, RsaKeyPair};
 pub use spec::RsaSpec;

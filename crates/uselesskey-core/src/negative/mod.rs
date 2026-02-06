@@ -49,4 +49,4 @@ mod der;
 mod pem;
 
 pub use der::{flip_byte, truncate_der};
-pub use pem::{corrupt_pem, CorruptPem};
+pub use pem::{CorruptPem, corrupt_pem};

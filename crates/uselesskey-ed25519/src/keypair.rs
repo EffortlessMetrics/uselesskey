@@ -1,10 +1,10 @@
 use std::fmt;
 use std::sync::Arc;
 
-use ed25519_dalek::{pkcs8::EncodePrivateKey, pkcs8::EncodePublicKey, SigningKey, VerifyingKey};
+use ed25519_dalek::{SigningKey, VerifyingKey, pkcs8::EncodePrivateKey, pkcs8::EncodePublicKey};
 use pkcs8::LineEnding;
 use rand_core::RngCore;
-use uselesskey_core::negative::{corrupt_pem, truncate_der, CorruptPem};
+use uselesskey_core::negative::{CorruptPem, corrupt_pem, truncate_der};
 use uselesskey_core::sink::TempArtifact;
 use uselesskey_core::{Error, Factory};
 
@@ -120,8 +120,8 @@ impl Ed25519KeyPair {
     /// A stable key identifier derived from the public key (base64url blake3 hash prefix).
     #[cfg(feature = "jwk")]
     pub fn kid(&self) -> String {
-        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
         use base64::Engine as _;
+        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 
         let h = blake3::hash(self.public_key_spki_der());
         let short = &h.as_bytes()[..12]; // 96 bits is plenty for tests.
@@ -141,8 +141,8 @@ impl Ed25519KeyPair {
     /// Requires the `jwk` feature.
     #[cfg(feature = "jwk")]
     pub fn public_jwk(&self) -> uselesskey_jwk::PublicJwk {
-        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
         use base64::Engine as _;
+        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
         use uselesskey_jwk::{OkpPublicJwk, PublicJwk};
 
         // Ed25519 public key is 32 bytes
@@ -163,8 +163,8 @@ impl Ed25519KeyPair {
     /// Requires the `jwk` feature.
     #[cfg(feature = "jwk")]
     pub fn private_key_jwk(&self) -> uselesskey_jwk::PrivateJwk {
-        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
         use base64::Engine as _;
+        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
         use uselesskey_jwk::{OkpPrivateJwk, PrivateJwk};
 
         let x = self.inner.public.as_bytes();

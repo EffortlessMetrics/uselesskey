@@ -208,7 +208,7 @@ mod tests {
     #[cfg(feature = "rsa")]
     mod rsa_tests {
         use super::*;
-        use jsonwebtoken::{decode, encode, Algorithm, Header, Validation};
+        use jsonwebtoken::{Algorithm, Header, Validation, decode, encode};
         use serde::{Deserialize, Serialize};
         use uselesskey_core::Factory;
         use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
@@ -266,7 +266,7 @@ mod tests {
     #[cfg(feature = "ecdsa")]
     mod ecdsa_tests {
         use super::*;
-        use jsonwebtoken::{decode, encode, Algorithm, Header, Validation};
+        use jsonwebtoken::{Algorithm, Header, Validation, decode, encode};
         use serde::{Deserialize, Serialize};
         use uselesskey_core::Factory;
         use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
@@ -321,7 +321,7 @@ mod tests {
     #[cfg(feature = "ed25519")]
     mod ed25519_tests {
         use super::*;
-        use jsonwebtoken::{decode, encode, Algorithm, Header, Validation};
+        use jsonwebtoken::{Algorithm, Header, Validation, decode, encode};
         use serde::{Deserialize, Serialize};
         use uselesskey_core::Factory;
         use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
@@ -356,7 +356,7 @@ mod tests {
     #[cfg(feature = "hmac")]
     mod hmac_tests {
         use super::*;
-        use jsonwebtoken::{decode, encode, Algorithm, Header, Validation};
+        use jsonwebtoken::{Algorithm, Header, Validation, decode, encode};
         use serde::{Deserialize, Serialize};
         use uselesskey_core::Factory;
         use uselesskey_hmac::{HmacFactoryExt, HmacSpec};

@@ -150,12 +150,13 @@ impl Factory {
     /// use uselesskey_core::Factory;
     ///
     /// // Set up the environment variable for this example
-    /// std::env::set_var("MY_TEST_SEED", "reproducible-ci-seed");
+    /// // SAFETY: this is a single-threaded doctest; no concurrent env access.
+    /// unsafe { std::env::set_var("MY_TEST_SEED", "reproducible-ci-seed") };
     ///
     /// let fx = Factory::deterministic_from_env("MY_TEST_SEED").unwrap();
     ///
     /// // Clean up
-    /// std::env::remove_var("MY_TEST_SEED");
+    /// unsafe { std::env::remove_var("MY_TEST_SEED") };
     /// ```
     ///
     /// ```
@@ -272,7 +273,6 @@ impl Factory {
 
 fn random_seed() -> Seed {
     let mut bytes = [0u8; 32];
-    // OsRng implements CryptoRngCore; fill_bytes is fine here.
     OsRng.fill_bytes(&mut bytes);
     Seed(bytes)
 }

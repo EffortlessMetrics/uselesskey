@@ -4,7 +4,7 @@ use std::fs;
 use std::path::Path;
 use std::process::{Command, Stdio};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use clap::{Parser, Subcommand};
 
 mod plan;
@@ -350,16 +350,16 @@ fn run_pr_plan(
 }
 
 fn resolve_base_ref() -> String {
-    if let Ok(val) = env::var("XTASK_BASE_REF") {
-        if !val.trim().is_empty() {
-            return val;
-        }
+    if let Ok(val) = env::var("XTASK_BASE_REF")
+        && !val.trim().is_empty()
+    {
+        return val;
     }
 
-    if let Ok(val) = env::var("GITHUB_BASE_REF") {
-        if !val.trim().is_empty() {
-            return format!("origin/{val}");
-        }
+    if let Ok(val) = env::var("GITHUB_BASE_REF")
+        && !val.trim().is_empty()
+    {
+        return format!("origin/{val}");
     }
 
     "origin/main".to_string()

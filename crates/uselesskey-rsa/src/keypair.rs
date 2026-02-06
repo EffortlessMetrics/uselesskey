@@ -2,8 +2,8 @@ use std::fmt;
 use std::sync::Arc;
 
 use rsa::pkcs8::LineEnding;
-use rsa::{pkcs8::EncodePrivateKey, pkcs8::EncodePublicKey, RsaPrivateKey, RsaPublicKey};
-use uselesskey_core::negative::{corrupt_pem, truncate_der, CorruptPem};
+use rsa::{RsaPrivateKey, RsaPublicKey, pkcs8::EncodePrivateKey, pkcs8::EncodePublicKey};
+use uselesskey_core::negative::{CorruptPem, corrupt_pem, truncate_der};
 use uselesskey_core::sink::TempArtifact;
 use uselesskey_core::{Error, Factory};
 
@@ -141,8 +141,8 @@ impl RsaKeyPair {
     /// A stable key identifier derived from the public key (base64url blake3 hash prefix).
     #[cfg(feature = "jwk")]
     pub fn kid(&self) -> String {
-        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
         use base64::Engine as _;
+        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 
         let h = blake3::hash(self.public_key_spki_der());
         let short = &h.as_bytes()[..12]; // 96 bits is plenty for tests.
@@ -162,8 +162,8 @@ impl RsaKeyPair {
     /// Requires the `jwk` feature.
     #[cfg(feature = "jwk")]
     pub fn public_jwk(&self) -> uselesskey_jwk::PublicJwk {
-        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
         use base64::Engine as _;
+        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
         use rsa::traits::PublicKeyParts;
         use uselesskey_jwk::{PublicJwk, RsaPublicJwk};
 
@@ -185,8 +185,8 @@ impl RsaKeyPair {
     /// Requires the `jwk` feature.
     #[cfg(feature = "jwk")]
     pub fn private_key_jwk(&self) -> uselesskey_jwk::PrivateJwk {
-        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
         use base64::Engine as _;
+        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
         use rsa::traits::{PrivateKeyParts, PublicKeyParts};
         use uselesskey_jwk::{PrivateJwk, RsaPrivateJwk};
 
