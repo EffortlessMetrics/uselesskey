@@ -47,6 +47,8 @@ enum Cmd {
     PublishCheck,
     /// Run PR-scoped tests based on git diff.
     Pr,
+    /// Guard against multiple semver-major versions of pinned deps (e.g. rand_core).
+    DepGuard,
     /// Run cucumber BDD features.
     Bdd,
     /// Run mutation testing (requires `cargo-mutants` installed).
@@ -76,6 +78,7 @@ fn main() -> Result<()> {
         Cmd::NoBlob => no_blob_gate(),
         Cmd::PublishCheck => publish_check(),
         Cmd::Pr => pr(),
+        Cmd::DepGuard => dep_guard(),
         Cmd::Bdd => bdd(),
         Cmd::Mutants => mutants(),
         Cmd::Fuzz { target, args } => fuzz(target.as_deref(), &args),
@@ -159,6 +162,7 @@ fn run_ci_plan(runner: &mut receipt::Runner) -> Result<()> {
 
     run_feature_matrix(runner)?;
 
+    runner.step("dep-guard", None, dep_guard)?;
     runner.step("bdd", None, bdd)?;
     let counts = count_bdd_scenarios().unwrap_or_default();
     runner.set_bdd_counts(counts);
@@ -285,6 +289,7 @@ fn run_pr_plan(
         runner.skip("tests", reason.clone());
         runner.skip("feature-matrix", reason.clone());
         record_feature_matrix_skipped(runner);
+        runner.skip("dep-guard", reason.clone());
         runner.skip("bdd", reason.clone());
         runner.skip("mutants", reason.clone());
         runner.skip("fuzz", reason.clone());
@@ -318,6 +323,12 @@ fn run_pr_plan(
             Some("no facade or cargo changes".to_string()),
         );
         record_feature_matrix_skipped(runner);
+    }
+
+    if plan.run_dep_guard {
+        runner.step("dep-guard", None, dep_guard)?;
+    } else {
+        runner.skip("dep-guard", Some("no cargo changes".to_string()));
     }
 
     if plan.run_bdd {
@@ -634,4 +645,53 @@ fn deny() -> Result<()> {
         Ok(s) if s.success() => run(Command::new("cargo").args(["deny", "check"])),
         _ => bail!("cargo-deny is not installed. Install with: cargo install cargo-deny"),
     }
+}
+
+/// Verify that only one semver-major version of `rand_core` is resolved.
+///
+/// The RNG pin (`rand_core 0.6`) is a correctness invariant for deterministic
+/// derivation. If a transitive dep pulls in a second major version, builds may
+/// silently produce different key material.
+fn dep_guard() -> Result<()> {
+    let output = Command::new("cargo")
+        .args(["tree", "--depth", "0", "--duplicates", "--edges", "normal"])
+        .output()
+        .context("failed to run `cargo tree --duplicates`")?;
+
+    if !output.status.success() {
+        bail!(
+            "`cargo tree --duplicates` failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    let mut versions: Vec<String> = Vec::new();
+    for line in stdout.lines() {
+        let line = line.trim();
+        if let Some(rest) = line.strip_prefix("rand_core v") {
+            let version = rest.split_whitespace().next().unwrap_or(rest);
+            if !versions.contains(&version.to_string()) {
+                versions.push(version.to_string());
+            }
+        }
+    }
+
+    if versions.is_empty() {
+        eprintln!("dep-guard: rand_core has no duplicates (ok)");
+        return Ok(());
+    }
+
+    // Multiple versions found in duplicates output
+    bail!(
+        "dep-guard: multiple versions of rand_core resolved: {}. \
+         Only rand_core 0.6.x is allowed. \
+         A transitive dependency is pulling in a conflicting version.",
+        versions
+            .iter()
+            .map(|v| format!("v{v}"))
+            .collect::<Vec<_>>()
+            .join(", ")
+    );
 }

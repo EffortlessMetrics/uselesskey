@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.0] - 2026-02-03
 
+_Status: internal freeze (not yet published to crates.io)._
+
 ### Added
 
 - Initial release

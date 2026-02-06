@@ -7,6 +7,7 @@ pub struct Plan {
     pub run_clippy: bool,
     pub run_tests: bool,
     pub run_feature_matrix: bool,
+    pub run_dep_guard: bool,
     pub run_bdd: bool,
     pub run_mutants: bool,
     pub run_fuzz: bool,
@@ -58,6 +59,7 @@ pub fn build_plan(paths: &[String]) -> Plan {
             let p = normalize_path(p);
             p.starts_with("crates/uselesskey/")
         });
+    let run_dep_guard = cargo_changed;
     let run_bdd = rust_code_changed || bdd_feature_changed;
     let run_mutants = rust_code_changed;
     let run_fuzz = rust_code_changed;
@@ -67,6 +69,7 @@ pub fn build_plan(paths: &[String]) -> Plan {
         || run_clippy
         || run_tests
         || run_feature_matrix
+        || run_dep_guard
         || run_bdd
         || run_mutants
         || run_fuzz
@@ -78,6 +81,7 @@ pub fn build_plan(paths: &[String]) -> Plan {
         run_clippy,
         run_tests,
         run_feature_matrix,
+        run_dep_guard,
         run_bdd,
         run_mutants,
         run_fuzz,
