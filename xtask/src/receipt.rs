@@ -74,6 +74,7 @@ impl Runner {
             Err(err) => {
                 let secs = start.elapsed().as_secs_f64();
                 eprintln!("==> {name} [FAILED, {secs:.1}s]");
+                eprintln!("    {err}");
                 let mut detail = details.unwrap_or_default();
                 if !detail.is_empty() {
                     detail.push_str("; ");

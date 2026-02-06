@@ -12,6 +12,7 @@ This is the publish order for the uselesskey workspace crates.
 6. `uselesskey-hmac`
 7. `uselesskey-x509`
 8. `uselesskey`
+9. `uselesskey-jsonwebtoken` (adapter, depends on key type crates)
 
 ## Dry run
 
@@ -30,4 +31,5 @@ cargo publish -p uselesskey-ed25519
 cargo publish -p uselesskey-hmac
 cargo publish -p uselesskey-x509
 cargo publish -p uselesskey
+cargo publish -p uselesskey-jsonwebtoken
 ```

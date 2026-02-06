@@ -66,7 +66,7 @@ This roadmap reflects the strategic direction for uselesskey as a **test-fixture
 
 **Goal:** One-liner integration with popular Rust stacks.
 
-- [ ] **`uselesskey-jsonwebtoken`**
+- [x] **`uselesskey-jsonwebtoken`**
   - Returns `jsonwebtoken::EncodingKey` / `DecodingKey` directly
   - Reduces boilerplate in JWT tests
 
