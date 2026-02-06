@@ -67,8 +67,8 @@ impl HmacSecret {
     /// A stable key identifier derived from the secret bytes (base64url blake3 hash prefix).
     #[cfg(feature = "jwk")]
     pub fn kid(&self) -> String {
-        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
         use base64::Engine as _;
+        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 
         let h = blake3::hash(self.secret_bytes());
         let short = &h.as_bytes()[..12]; // 96 bits is plenty for tests.
@@ -80,8 +80,8 @@ impl HmacSecret {
     /// Requires the `jwk` feature.
     #[cfg(feature = "jwk")]
     pub fn jwk(&self) -> uselesskey_jwk::PrivateJwk {
-        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
         use base64::Engine as _;
+        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
         use uselesskey_jwk::{OctJwk, PrivateJwk};
 
         let k = URL_SAFE_NO_PAD.encode(self.secret_bytes());
@@ -157,8 +157,8 @@ mod tests {
     #[test]
     #[cfg(feature = "jwk")]
     fn jwk_k_is_base64url() {
-        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
         use base64::Engine as _;
+        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 
         let fx = Factory::random();
         let secret = fx.hmac("jwt", HmacSpec::hs256());

@@ -6,7 +6,7 @@ use std::sync::Arc;
 use rand_core::RngCore;
 use rcgen::{
     BasicConstraints, CertificateParams, DnType, ExtendedKeyUsagePurpose, IsCa, KeyPair,
-    KeyUsagePurpose, SerialNumber, PKCS_RSA_SHA256,
+    KeyUsagePurpose, PKCS_RSA_SHA256, SerialNumber,
 };
 use rustls_pki_types::PrivatePkcs8KeyDer;
 use time::{Duration as TimeDuration, OffsetDateTime};
@@ -15,7 +15,7 @@ use uselesskey_core::sink::TempArtifact;
 use uselesskey_core::{Error, Factory};
 use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 
-use crate::negative::{corrupt_cert_pem, truncate_cert_der, X509Negative};
+use crate::negative::{X509Negative, corrupt_cert_pem, truncate_cert_der};
 use crate::spec::{NotBeforeOffset, X509Spec};
 
 /// Cache domain for X.509 certificate fixtures.
@@ -334,9 +334,10 @@ mod tests {
         assert!(!cert.cert_der().is_empty());
         assert!(cert.cert_pem().contains("-----BEGIN CERTIFICATE-----"));
         assert!(!cert.private_key_pkcs8_der().is_empty());
-        assert!(cert
-            .private_key_pkcs8_pem()
-            .contains("-----BEGIN PRIVATE KEY-----"));
+        assert!(
+            cert.private_key_pkcs8_pem()
+                .contains("-----BEGIN PRIVATE KEY-----")
+        );
     }
 
     #[test]

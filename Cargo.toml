@@ -33,9 +33,9 @@ blake3 = "1.8.3"
 dashmap = "6.1.0"
 
 # RNG — pinned to 0.8/0.6/0.3: rsa 0.9 and ed25519-dalek 2 require rand_core 0.6
-rand = "0.8.5"
-rand_core = "0.6.4"
-rand_chacha = "0.3.1"
+rand = "0.8"
+rand_core = "0.6"
+rand_chacha = "0.3"
 
 # sinks
 tempfile = "3.24.0"
@@ -53,11 +53,11 @@ cucumber = { version = "0.22.1", features = ["macros"] }
 tokio = { version = "1.49.0", features = ["macros", "rt-multi-thread"] }
 
 # RSA
-rsa = { version = "0.9", features = ["pem"] }
+rsa = { version = "0.9.10", features = ["pem"] }
 
 # Ed25519
-ed25519-dalek = { version = "2", features = ["pkcs8", "pem", "rand_core"] }
-pkcs8 = { version = "0.10", features = ["pem"] }
+ed25519-dalek = { version = "2.2.0", features = ["pkcs8", "pem", "rand_core"] }
+pkcs8 = { version = "0.10.2", features = ["pem"] }
 
 # optional JWK helpers
 serde = { version = "1.0.228", features = ["derive"] }

@@ -1,6 +1,6 @@
 use proptest::prelude::*;
 
-use uselesskey_core::negative::{corrupt_pem, flip_byte, truncate_der, CorruptPem};
+use uselesskey_core::negative::{CorruptPem, corrupt_pem, flip_byte, truncate_der};
 
 /// Generate a minimal valid PEM string for testing.
 fn pem_strategy() -> impl Strategy<Value = String> {
