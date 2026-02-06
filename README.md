@@ -4,8 +4,6 @@
 
 A test-fixture library that generates cryptographic key material at runtime. Not a crypto library.
 
-**MSRV:** Rust 1.92
-
 ## The Problem
 
 Secret scanners have changed the game for test fixtures:
