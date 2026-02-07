@@ -45,13 +45,15 @@ impl ChainNegative {
                 spec.root_cn = format!("{} Unknown Root CA", spec.leaf_cn);
             }
             ChainNegative::ExpiredLeaf => {
-                // Leaf expired 30 days ago: valid for 365 days starting 395 days ago
-                // We can't directly set not_before on ChainSpec, so we use a very short validity
-                // and rely on the variant name to distinguish.
+                // Push not_before 730 days into the past with 1-day validity,
+                // so not_after = base_time - 729 days — unambiguously expired
+                // regardless of where base_time lands (2025–2026).
                 spec.leaf_validity_days = 1;
+                spec.leaf_not_before_offset_days = Some(730);
             }
             ChainNegative::ExpiredIntermediate => {
                 spec.intermediate_validity_days = 1;
+                spec.intermediate_not_before_offset_days = Some(730);
             }
         }
         spec
@@ -143,15 +145,21 @@ mod tests {
         let expired = chain.expired_leaf();
         assert_ne!(chain.leaf_cert_der(), expired.leaf_cert_der());
 
-        // Verify the leaf has a very short validity
+        // Verify the leaf is unambiguously expired: not_after should be in the past
         use x509_parser::prelude::*;
         let (_, leaf) = X509Certificate::from_der(expired.leaf_cert_der()).expect("parse leaf");
         let validity = leaf.validity();
-        // not_after should be very close to not_before (1 day validity)
         let not_before = validity.not_before.timestamp();
         let not_after = validity.not_after.timestamp();
         let diff_days = (not_after - not_before) / 86400;
-        assert!(diff_days <= 1);
+        assert!(diff_days <= 1, "validity period should be 1 day");
+
+        // not_after should be well in the past (at least 365 days ago)
+        let now = ::time::OffsetDateTime::now_utc().unix_timestamp();
+        assert!(
+            not_after < now - 86400 * 365,
+            "expired leaf not_after ({not_after}) should be >365 days before now ({now})"
+        );
     }
 
     #[test]
@@ -164,6 +172,17 @@ mod tests {
         assert_ne!(
             chain.intermediate_cert_der(),
             expired.intermediate_cert_der()
+        );
+
+        // Verify the intermediate is unambiguously expired
+        use x509_parser::prelude::*;
+        let (_, int) =
+            X509Certificate::from_der(expired.intermediate_cert_der()).expect("parse intermediate");
+        let not_after = int.validity().not_after.timestamp();
+        let now = ::time::OffsetDateTime::now_utc().unix_timestamp();
+        assert!(
+            not_after < now - 86400 * 365,
+            "expired intermediate not_after ({not_after}) should be >365 days before now ({now})"
         );
     }
 

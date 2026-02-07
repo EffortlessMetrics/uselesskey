@@ -318,7 +318,8 @@ fn load_chain_inner(
             KeyUsagePurpose::CrlSign,
             KeyUsagePurpose::DigitalSignature,
         ];
-        int_params.not_before = base_time - TimeDuration::days(1);
+        let int_offset = spec.intermediate_not_before_offset_days.unwrap_or(1);
+        int_params.not_before = base_time - TimeDuration::days(int_offset);
         int_params.not_after =
             int_params.not_before + TimeDuration::days(spec.intermediate_validity_days as i64);
         int_params.serial_number = Some(deterministic_serial_number(rng));
@@ -351,7 +352,8 @@ fn load_chain_inner(
             ));
         }
 
-        leaf_params.not_before = base_time - TimeDuration::days(1);
+        let leaf_offset = spec.leaf_not_before_offset_days.unwrap_or(1);
+        leaf_params.not_before = base_time - TimeDuration::days(leaf_offset);
         leaf_params.not_after =
             leaf_params.not_before + TimeDuration::days(spec.leaf_validity_days as i64);
         leaf_params.serial_number = Some(deterministic_serial_number(rng));
