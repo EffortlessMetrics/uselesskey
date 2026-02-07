@@ -7,11 +7,11 @@ fn main() {
 
     let cert_file = cert.write_cert_pem().expect("write cert");
     let key_file = cert.write_private_key_pem().expect("write key");
-    let chain_file = cert.write_chain_pem().expect("write chain");
+    let identity_file = cert.write_identity_pem().expect("write identity");
 
-    println!("cert:  {}", cert_file.path().display());
-    println!("key:   {}", key_file.path().display());
-    println!("chain: {}", chain_file.path().display());
+    println!("cert:     {}", cert_file.path().display());
+    println!("key:      {}", key_file.path().display());
+    println!("identity: {}", identity_file.path().display());
 }
 
 #[cfg(not(feature = "x509"))]
