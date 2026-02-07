@@ -3,20 +3,22 @@
 use std::fmt;
 use std::sync::Arc;
 
-use rand_core::RngCore;
 use rcgen::{
     BasicConstraints, CertificateParams, DnType, ExtendedKeyUsagePurpose, IsCa, KeyPair,
-    KeyUsagePurpose, PKCS_RSA_SHA256, SerialNumber,
+    KeyUsagePurpose, PKCS_RSA_SHA256,
 };
 use rustls_pki_types::PrivatePkcs8KeyDer;
-use time::{Duration as TimeDuration, OffsetDateTime};
+use time::Duration as TimeDuration;
 use uselesskey_core::negative::CorruptPem;
 use uselesskey_core::sink::TempArtifact;
 use uselesskey_core::{Error, Factory};
 use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 
+use crate::chain::X509Chain;
+use crate::chain_spec::ChainSpec;
 use crate::negative::{X509Negative, corrupt_cert_pem, truncate_cert_der};
 use crate::spec::{NotBeforeOffset, X509Spec};
+use crate::util::{deterministic_base_time, deterministic_serial_number};
 
 /// Cache domain for X.509 certificate fixtures.
 ///
@@ -55,11 +57,21 @@ pub trait X509FactoryExt {
     /// The certificate is cached by `(label, spec)` and will be reused on subsequent calls
     /// with the same parameters.
     fn x509_self_signed(&self, label: impl AsRef<str>, spec: X509Spec) -> X509Cert;
+
+    /// Generate a three-level X.509 certificate chain (root CA → intermediate CA → leaf).
+    ///
+    /// The chain is cached by `(label, spec)` and will be reused on subsequent calls
+    /// with the same parameters.
+    fn x509_chain(&self, label: impl AsRef<str>, spec: ChainSpec) -> X509Chain;
 }
 
 impl X509FactoryExt for Factory {
     fn x509_self_signed(&self, label: impl AsRef<str>, spec: X509Spec) -> X509Cert {
         X509Cert::new(self.clone(), label.as_ref(), spec)
+    }
+
+    fn x509_chain(&self, label: impl AsRef<str>, spec: ChainSpec) -> X509Chain {
+        X509Chain::new(self.clone(), label.as_ref(), spec)
     }
 }
 
@@ -226,7 +238,20 @@ fn load_inner_with_spec(
             .push(DnType::CommonName, spec.subject_cn.clone());
 
         // Set validity period based on spec
-        let base_time = deterministic_base_time(label, spec);
+        let base_time = {
+            let mut hasher = blake3::Hasher::new();
+            let label_bytes = label.as_bytes();
+            hasher.update(&(label_bytes.len() as u32).to_be_bytes());
+            hasher.update(label_bytes);
+            let subject_bytes = spec.subject_cn.as_bytes();
+            hasher.update(&(subject_bytes.len() as u32).to_be_bytes());
+            hasher.update(subject_bytes);
+            let issuer_bytes = spec.issuer_cn.as_bytes();
+            hasher.update(&(issuer_bytes.len() as u32).to_be_bytes());
+            hasher.update(issuer_bytes);
+            hasher.update(&(spec.rsa_bits as u32).to_be_bytes());
+            deterministic_base_time(hasher)
+        };
 
         let not_before = match spec.not_before_offset {
             NotBeforeOffset::DaysAgo(days) => base_time - TimeDuration::days(days as i64),
@@ -286,38 +311,6 @@ fn load_inner_with_spec(
             private_key_pkcs8_pem,
         }
     })
-}
-
-fn deterministic_base_time(label: &str, spec: &X509Spec) -> OffsetDateTime {
-    // 2020-01-01T00:00:00Z
-    const EPOCH_UNIX: i64 = 1_577_836_800;
-    let epoch = OffsetDateTime::from_unix_timestamp(EPOCH_UNIX)
-        .expect("failed to construct deterministic epoch");
-
-    // Spread base times across ~10 years to avoid always-identical timestamps.
-    let mut hasher = blake3::Hasher::new();
-    let label_bytes = label.as_bytes();
-    hasher.update(&(label_bytes.len() as u32).to_be_bytes());
-    hasher.update(label_bytes);
-    let subject_bytes = spec.subject_cn.as_bytes();
-    hasher.update(&(subject_bytes.len() as u32).to_be_bytes());
-    hasher.update(subject_bytes);
-    let issuer_bytes = spec.issuer_cn.as_bytes();
-    hasher.update(&(issuer_bytes.len() as u32).to_be_bytes());
-    hasher.update(issuer_bytes);
-    hasher.update(&(spec.rsa_bits as u32).to_be_bytes());
-    let hash = hasher.finalize();
-    let bytes = hash.as_bytes();
-    let day_offset = u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]) % 3650;
-    epoch + TimeDuration::days(day_offset as i64)
-}
-
-fn deterministic_serial_number(rng: &mut impl RngCore) -> SerialNumber {
-    let mut bytes = [0u8; 16];
-    rng.fill_bytes(&mut bytes);
-    // Ensure positive serial number by clearing the high bit.
-    bytes[0] &= 0x7F;
-    SerialNumber::from_slice(&bytes)
 }
 
 #[cfg(test)]

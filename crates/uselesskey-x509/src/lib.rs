@@ -2,8 +2,9 @@
 
 //! X.509 certificate fixtures built on `uselesskey-core`.
 //!
-//! This crate provides self-signed certificate generation for testing TLS and
-//! X.509-related functionality without committing certificate files to version control.
+//! This crate provides self-signed certificate generation and certificate chain
+//! generation for testing TLS and X.509-related functionality without committing
+//! certificate files to version control.
 //!
 //! # Quick Start
 //!
@@ -21,6 +22,27 @@
 //!
 //! assert!(cert_pem.contains("-----BEGIN CERTIFICATE-----"));
 //! assert!(key_pem.contains("-----BEGIN PRIVATE KEY-----"));
+//! ```
+//!
+//! # Certificate Chains
+//!
+//! Generate a three-level chain (root CA → intermediate CA → leaf):
+//!
+//! ```
+//! use uselesskey_core::Factory;
+//! use uselesskey_x509::{X509FactoryExt, ChainSpec};
+//!
+//! let factory = Factory::random();
+//! let spec = ChainSpec::new("test.example.com");
+//! let chain = factory.x509_chain("my-service", spec);
+//!
+//! // Standard TLS chain (leaf + intermediate)
+//! let chain_pem = chain.chain_pem();
+//! assert_eq!(chain_pem.matches("-----BEGIN CERTIFICATE-----").count(), 2);
+//!
+//! // Individual certs
+//! let leaf_pem = chain.leaf_cert_pem();
+//! let root_pem = chain.root_cert_pem();
 //! ```
 //!
 //! # Negative Fixtures
@@ -47,9 +69,16 @@
 //! ```
 
 mod cert;
+mod chain;
+mod chain_negative;
+mod chain_spec;
 pub mod negative;
 mod spec;
+mod util;
 
 pub use cert::{DOMAIN_X509_CERT, X509Cert, X509FactoryExt};
+pub use chain::{DOMAIN_X509_CHAIN, X509Chain};
+pub use chain_negative::ChainNegative;
+pub use chain_spec::ChainSpec;
 pub use negative::X509Negative;
 pub use spec::{KeyUsage, NotBeforeOffset, X509Spec};

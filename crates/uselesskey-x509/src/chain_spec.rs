@@ -20,16 +20,6 @@ pub struct ChainSpec {
     pub intermediate_validity_days: u32,
     /// Leaf certificate validity period in days.
     pub leaf_validity_days: u32,
-    /// Override for leaf `not_before` as days before base_time.
-    ///
-    /// When `None`, `not_before = base_time - 1 day` (the default).
-    /// When `Some(730)`, `not_before = base_time - 730 days`, which combined
-    /// with a short `leaf_validity_days` produces an unambiguously expired leaf.
-    pub leaf_not_before_offset_days: Option<i64>,
-    /// Override for intermediate `not_before` as days before base_time.
-    ///
-    /// Same semantics as `leaf_not_before_offset_days` but for the intermediate CA.
-    pub intermediate_not_before_offset_days: Option<i64>,
 }
 
 impl ChainSpec {
@@ -49,9 +39,7 @@ impl ChainSpec {
             rsa_bits: 2048,
             root_validity_days: 3650,
             intermediate_validity_days: 1825,
-            leaf_validity_days: 3650,
-            leaf_not_before_offset_days: None,
-            intermediate_not_before_offset_days: None,
+            leaf_validity_days: 365,
         }
     }
 
@@ -141,22 +129,6 @@ impl ChainSpec {
         out.extend_from_slice(&self.intermediate_validity_days.to_be_bytes());
         out.extend_from_slice(&self.leaf_validity_days.to_be_bytes());
 
-        // not_before offsets (version 1 extension — optional fields encoded as 0/1 tag + value)
-        match self.leaf_not_before_offset_days {
-            None => out.push(0),
-            Some(v) => {
-                out.push(1);
-                out.extend_from_slice(&v.to_be_bytes());
-            }
-        }
-        match self.intermediate_not_before_offset_days {
-            None => out.push(0),
-            Some(v) => {
-                out.push(1);
-                out.extend_from_slice(&v.to_be_bytes());
-            }
-        }
-
         out
     }
 }
@@ -175,7 +147,7 @@ mod tests {
         assert_eq!(spec.rsa_bits, 2048);
         assert_eq!(spec.root_validity_days, 3650);
         assert_eq!(spec.intermediate_validity_days, 1825);
-        assert_eq!(spec.leaf_validity_days, 3650);
+        assert_eq!(spec.leaf_validity_days, 365);
     }
 
     #[test]

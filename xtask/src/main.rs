@@ -204,6 +204,7 @@ fn publish_check() -> Result<()> {
         "uselesskey-x509",
         "uselesskey",
         "uselesskey-jsonwebtoken",
+        "uselesskey-rustls",
     ];
 
     for name in crates {
