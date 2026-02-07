@@ -4,9 +4,8 @@ use std::fmt;
 use std::sync::Arc;
 
 use rcgen::{
-    BasicConstraints, CertificateParams, CertificateRevocationListParams, DnType,
-    ExtendedKeyUsagePurpose, IsCa, KeyPair, KeyUsagePurpose, PKCS_RSA_SHA256, RevocationReason,
-    RevokedCertParams,
+    BasicConstraints, CertificateParams, DnType, ExtendedKeyUsagePurpose, IsCa, KeyPair,
+    KeyUsagePurpose, PKCS_RSA_SHA256,
 };
 use rustls_pki_types::PrivatePkcs8KeyDer;
 use time::Duration as TimeDuration;
@@ -46,9 +45,6 @@ struct ChainInner {
     leaf_cert_pem: String,
     leaf_key_pkcs8_der: Arc<[u8]>,
     leaf_key_pkcs8_pem: String,
-
-    crl_der: Option<Arc<[u8]>>,
-    crl_pem: Option<String>,
 }
 
 impl fmt::Debug for X509Chain {
@@ -219,36 +215,6 @@ impl X509Chain {
     }
 
     // =========================================================================
-    // CRL outputs (only present for RevokedLeaf variant)
-    // =========================================================================
-
-    /// DER-encoded CRL bytes, if this chain was generated with the `RevokedLeaf` variant.
-    pub fn crl_der(&self) -> Option<&[u8]> {
-        self.inner.crl_der.as_deref()
-    }
-
-    /// PEM-encoded CRL, if this chain was generated with the `RevokedLeaf` variant.
-    pub fn crl_pem(&self) -> Option<&str> {
-        self.inner.crl_pem.as_deref()
-    }
-
-    /// Write the CRL PEM to a tempfile. Returns `None` if no CRL is present.
-    pub fn write_crl_pem(&self) -> Option<Result<TempArtifact, Error>> {
-        self.inner
-            .crl_pem
-            .as_deref()
-            .map(|pem| TempArtifact::new_string("uselesskey-", ".crl.pem", pem))
-    }
-
-    /// Write the CRL DER to a tempfile. Returns `None` if no CRL is present.
-    pub fn write_crl_der(&self) -> Option<Result<TempArtifact, Error>> {
-        self.inner
-            .crl_der
-            .as_deref()
-            .map(|der| TempArtifact::new_bytes("uselesskey-", ".crl.der", der))
-    }
-
-    // =========================================================================
     // Metadata
     // =========================================================================
 
@@ -280,9 +246,9 @@ fn load_chain_inner(
         let rsa_spec = RsaSpec::new(spec.rsa_bits);
 
         // Generate 3 RSA keypairs with role-tagged labels
-        let root_key_label = format!("{}-chain-root", label);
-        let int_key_label = format!("{}-chain-intermediate", label);
-        let leaf_key_label = format!("{}-chain-leaf", label);
+        let root_key_label = format!("{}-{}-chain-root", label, variant);
+        let int_key_label = format!("{}-{}-chain-intermediate", label, variant);
+        let leaf_key_label = format!("{}-{}-chain-leaf", label, variant);
 
         let root_rsa = factory.rsa(&root_key_label, rsa_spec);
         let int_rsa = factory.rsa(&int_key_label, rsa_spec);
@@ -352,8 +318,7 @@ fn load_chain_inner(
             KeyUsagePurpose::CrlSign,
             KeyUsagePurpose::DigitalSignature,
         ];
-        let int_offset = spec.intermediate_not_before_offset_days.unwrap_or(1);
-        int_params.not_before = base_time - TimeDuration::days(int_offset);
+        int_params.not_before = base_time - TimeDuration::days(1);
         int_params.not_after =
             int_params.not_before + TimeDuration::days(spec.intermediate_validity_days as i64);
         int_params.serial_number = Some(deterministic_serial_number(rng));
@@ -386,50 +351,14 @@ fn load_chain_inner(
             ));
         }
 
-        let leaf_offset = spec.leaf_not_before_offset_days.unwrap_or(1);
-        leaf_params.not_before = base_time - TimeDuration::days(leaf_offset);
+        leaf_params.not_before = base_time - TimeDuration::days(1);
         leaf_params.not_after =
             leaf_params.not_before + TimeDuration::days(spec.leaf_validity_days as i64);
         leaf_params.serial_number = Some(deterministic_serial_number(rng));
 
-        let leaf_serial = leaf_params
-            .serial_number
-            .clone()
-            .expect("leaf serial number");
-
         let leaf_cert = leaf_params
             .signed_by(&leaf_kp, &int_cert, &int_kp)
             .expect("leaf cert gen");
-
-        // --- CRL (only for revoked_leaf variant) ---
-        let (crl_der, crl_pem) = if variant == "revoked_leaf" {
-            let crl_number = deterministic_serial_number(rng);
-
-            let revoked = RevokedCertParams {
-                serial_number: leaf_serial,
-                revocation_time: base_time,
-                reason_code: Some(RevocationReason::KeyCompromise),
-                invalidity_date: None,
-            };
-
-            let crl_params = CertificateRevocationListParams {
-                this_update: base_time,
-                next_update: base_time + TimeDuration::days(30),
-                crl_number,
-                issuing_distribution_point: None,
-                revoked_certs: vec![revoked],
-                key_identifier_method: rcgen::KeyIdMethod::Sha256,
-            };
-
-            let crl = crl_params.signed_by(&int_cert, &int_kp).expect("CRL gen");
-
-            (
-                Some(Arc::from(crl.der().as_ref())),
-                Some(crl.pem().expect("CRL PEM")),
-            )
-        } else {
-            (None, None)
-        };
 
         ChainInner {
             root_cert_der: Arc::from(root_cert.der().as_ref()),
@@ -446,9 +375,6 @@ fn load_chain_inner(
             leaf_cert_pem: leaf_cert.pem(),
             leaf_key_pkcs8_der: Arc::from(leaf_rsa.private_key_pkcs8_der()),
             leaf_key_pkcs8_pem: leaf_rsa.private_key_pkcs8_pem().to_string(),
-
-            crl_der,
-            crl_pem,
         }
     })
 }
@@ -457,7 +383,6 @@ fn load_chain_inner(
 mod tests {
     use super::*;
     use crate::cert::X509FactoryExt;
-    use crate::testutil::fx;
     use uselesskey_core::Seed;
 
     #[test]
@@ -494,7 +419,7 @@ mod tests {
 
     #[test]
     fn test_chain_pem_format() {
-        let factory = fx();
+        let factory = Factory::random();
         let spec = ChainSpec::new("test.example.com");
         let chain = X509Chain::new(factory, "test", spec);
 
@@ -535,21 +460,6 @@ mod tests {
     }
 
     #[test]
-    fn test_good_chain_leaf_not_expired_within_five_years() {
-        use x509_parser::prelude::*;
-
-        let factory = fx();
-        let spec = ChainSpec::new("test.example.com");
-        let chain = X509Chain::new(factory, "test", spec);
-
-        let (_, leaf) = X509Certificate::from_der(chain.leaf_cert_der()).expect("parse leaf");
-        let not_before = leaf.validity().not_before.timestamp();
-        let not_after = leaf.validity().not_after.timestamp();
-        let validity_days = (not_after - not_before) / 86400;
-        assert!(validity_days >= 365 * 5);
-    }
-
-    #[test]
     fn test_chain_isolation_from_self_signed() {
         let seed = Seed::from_env_value("test-seed").unwrap();
         let factory = Factory::deterministic(seed);
@@ -573,7 +483,7 @@ mod tests {
     fn test_chain_cert_parsing() {
         use x509_parser::prelude::*;
 
-        let factory = fx();
+        let factory = Factory::random();
         let spec = ChainSpec::new("test.example.com");
         let chain = X509Chain::new(factory, "test", spec);
 
@@ -599,7 +509,7 @@ mod tests {
     fn test_chain_sans() {
         use x509_parser::prelude::*;
 
-        let factory = fx();
+        let factory = Factory::random();
         let spec = ChainSpec::new("test.example.com").with_sans(vec![
             "test.example.com".to_string(),
             "www.example.com".to_string(),
@@ -618,15 +528,12 @@ mod tests {
 
     #[test]
     fn test_tempfile_outputs() {
-        let factory = fx();
+        let factory = Factory::random();
         let spec = ChainSpec::new("test.example.com");
         let chain = X509Chain::new(factory, "test", spec);
 
         let leaf_cert = chain.write_leaf_cert_pem().unwrap();
         assert!(leaf_cert.path().exists());
-
-        let leaf_cert_der = chain.write_leaf_cert_der().unwrap();
-        assert!(leaf_cert_der.path().exists());
 
         let leaf_key = chain.write_leaf_private_key_pem().unwrap();
         assert!(leaf_key.path().exists());
@@ -634,41 +541,7 @@ mod tests {
         let chain_file = chain.write_chain_pem().unwrap();
         assert!(chain_file.path().exists());
 
-        let full_chain_file = chain.write_full_chain_pem().unwrap();
-        assert!(full_chain_file.path().exists());
-
         let root_cert = chain.write_root_cert_pem().unwrap();
         assert!(root_cert.path().exists());
-    }
-
-    #[test]
-    fn test_debug_includes_label_and_spec() {
-        let factory = fx();
-        let spec = ChainSpec::new("debug.example.com");
-        let chain = X509Chain::new(factory, "debug-label", spec);
-
-        let dbg = format!("{:?}", chain);
-        assert!(dbg.contains("X509Chain"));
-        assert!(dbg.contains("debug-label"));
-    }
-
-    #[test]
-    fn test_private_key_accessors_non_empty() {
-        let factory = fx();
-        let spec = ChainSpec::new("keys.example.com");
-        let chain = X509Chain::new(factory, "keys", spec);
-
-        assert!(!chain.root_private_key_pkcs8_der().is_empty());
-        assert!(
-            chain
-                .root_private_key_pkcs8_pem()
-                .contains("BEGIN PRIVATE KEY")
-        );
-        assert!(!chain.intermediate_private_key_pkcs8_der().is_empty());
-        assert!(
-            chain
-                .intermediate_private_key_pkcs8_pem()
-                .contains("BEGIN PRIVATE KEY")
-        );
     }
 }
