@@ -1276,10 +1276,10 @@ fn write_x509_key_tempfile(world: &mut UselessWorld) {
     world.x509_key_tempfile = Some(x509.write_private_key_pem().expect("write failed"));
 }
 
-#[when("I write the X.509 chain PEM to a tempfile")]
-fn write_x509_chain_tempfile(world: &mut UselessWorld) {
+#[when("I write the X.509 identity PEM to a tempfile")]
+fn write_x509_identity_tempfile(world: &mut UselessWorld) {
     let x509 = world.x509.as_ref().expect("x509 not set");
-    world.x509_chain_tempfile = Some(x509.write_chain_pem().expect("write failed"));
+    world.x509_chain_tempfile = Some(x509.write_identity_pem().expect("write failed"));
 }
 
 // =============================================================================
@@ -1349,13 +1349,13 @@ fn x509_key_pem_contains(world: &mut UselessWorld, needle: String) {
     );
 }
 
-#[then(regex = r#"^the X\.509 chain PEM should contain "([^"]+)"$"#)]
-fn x509_chain_pem_contains(world: &mut UselessWorld, needle: String) {
+#[then(regex = r#"^the X\.509 identity PEM should contain "([^"]+)"$"#)]
+fn x509_identity_pem_contains(world: &mut UselessWorld, needle: String) {
     let x509 = world.x509.as_ref().expect("x509 not set");
-    let chain = x509.chain_pem();
+    let identity = x509.identity_pem();
     assert!(
-        chain.contains(&needle),
-        "expected X.509 chain PEM to contain '{needle}'"
+        identity.contains(&needle),
+        "expected X.509 identity PEM to contain '{needle}'"
     );
 }
 

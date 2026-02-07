@@ -117,8 +117,9 @@ impl X509Cert {
 
     /// Combined PEM containing both certificate and private key.
     ///
-    /// This is a common format for TLS server configuration.
-    pub fn chain_pem(&self) -> String {
+    /// This is a common format for TLS server configuration where
+    /// a single file holds the server identity (cert + key).
+    pub fn identity_pem(&self) -> String {
         format!("{}\n{}", self.cert_pem(), self.private_key_pkcs8_pem())
     }
 
@@ -141,9 +142,9 @@ impl X509Cert {
         TempArtifact::new_string("uselesskey-", ".key.pem", self.private_key_pkcs8_pem())
     }
 
-    /// Write the combined chain PEM to a tempfile.
-    pub fn write_chain_pem(&self) -> Result<TempArtifact, Error> {
-        TempArtifact::new_string("uselesskey-", ".chain.pem", &self.chain_pem())
+    /// Write the combined identity PEM (cert + key) to a tempfile.
+    pub fn write_identity_pem(&self) -> Result<TempArtifact, Error> {
+        TempArtifact::new_string("uselesskey-", ".identity.pem", &self.identity_pem())
     }
 
     // =========================================================================
@@ -348,14 +349,14 @@ mod tests {
     }
 
     #[test]
-    fn test_chain_pem() {
+    fn test_identity_pem() {
         let factory = Factory::random();
         let spec = X509Spec::self_signed("test.example.com");
         let cert = factory.x509_self_signed("test", spec);
 
-        let chain = cert.chain_pem();
-        assert!(chain.contains("-----BEGIN CERTIFICATE-----"));
-        assert!(chain.contains("-----BEGIN PRIVATE KEY-----"));
+        let identity = cert.identity_pem();
+        assert!(identity.contains("-----BEGIN CERTIFICATE-----"));
+        assert!(identity.contains("-----BEGIN PRIVATE KEY-----"));
     }
 
     #[test]
@@ -411,7 +412,7 @@ mod tests {
         let key_file = cert.write_private_key_pem().unwrap();
         assert!(key_file.path().exists());
 
-        let chain_file = cert.write_chain_pem().unwrap();
-        assert!(chain_file.path().exists());
+        let identity_file = cert.write_identity_pem().unwrap();
+        assert!(identity_file.path().exists());
     }
 }
