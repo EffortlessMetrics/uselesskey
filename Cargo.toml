@@ -10,6 +10,7 @@ members = [
   "crates/uselesskey-hmac",
   "crates/uselesskey-x509",
   "crates/uselesskey-jsonwebtoken",
+  "crates/uselesskey-rustls",
   "crates/uselesskey-bdd",
   "xtask",
 ]
@@ -33,9 +34,9 @@ blake3 = "1.8.3"
 dashmap = "6.1.0"
 
 # RNG — pinned to 0.8/0.6/0.3: rsa 0.9 and ed25519-dalek 2 require rand_core 0.6
-rand = "0.8"
-rand_core = "0.6"
-rand_chacha = "0.3"
+rand = "0.9.2"
+rand_core = "0.10.0"
+rand_chacha = "0.10.0"
 
 # sinks
 tempfile = "3.24.0"

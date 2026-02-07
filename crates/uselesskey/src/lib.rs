@@ -178,7 +178,10 @@ pub use uselesskey_ed25519::{
 pub use uselesskey_hmac::{DOMAIN_HMAC_SECRET, HmacFactoryExt, HmacSecret, HmacSpec};
 
 #[cfg(feature = "x509")]
-pub use uselesskey_x509::{DOMAIN_X509_CERT, X509Cert, X509FactoryExt, X509Spec};
+pub use uselesskey_x509::{
+    ChainNegative, ChainSpec, DOMAIN_X509_CERT, DOMAIN_X509_CHAIN, X509Cert, X509Chain,
+    X509FactoryExt, X509Spec,
+};
 
 /// Common imports for tests.
 ///
@@ -204,5 +207,5 @@ pub mod prelude {
     pub use crate::{HmacFactoryExt, HmacSecret, HmacSpec};
 
     #[cfg(feature = "x509")]
-    pub use crate::{X509Cert, X509FactoryExt, X509Spec};
+    pub use crate::{ChainSpec, X509Cert, X509Chain, X509FactoryExt, X509Spec};
 }
