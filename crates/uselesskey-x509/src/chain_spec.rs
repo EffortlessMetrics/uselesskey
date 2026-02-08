@@ -49,7 +49,7 @@ impl ChainSpec {
             rsa_bits: 2048,
             root_validity_days: 3650,
             intermediate_validity_days: 1825,
-            leaf_validity_days: 365,
+            leaf_validity_days: 3650,
             leaf_not_before_offset_days: None,
             intermediate_not_before_offset_days: None,
         }
@@ -175,7 +175,7 @@ mod tests {
         assert_eq!(spec.rsa_bits, 2048);
         assert_eq!(spec.root_validity_days, 3650);
         assert_eq!(spec.intermediate_validity_days, 1825);
-        assert_eq!(spec.leaf_validity_days, 365);
+        assert_eq!(spec.leaf_validity_days, 3650);
     }
 
     #[test]
