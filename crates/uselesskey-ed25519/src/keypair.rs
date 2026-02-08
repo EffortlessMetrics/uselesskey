@@ -26,6 +26,7 @@ pub struct Ed25519KeyPair {
 struct Inner {
     /// Kept for potential signing methods; not currently used.
     _private: SigningKey,
+    #[cfg_attr(not(feature = "jwk"), allow(dead_code))]
     public: VerifyingKey,
     pkcs8_der: Arc<[u8]>,
     pkcs8_pem: String,

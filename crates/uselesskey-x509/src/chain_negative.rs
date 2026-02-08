@@ -41,7 +41,7 @@ impl ChainNegative {
                 spec.leaf_sans = vec![wrong_hostname.clone()];
             }
             ChainNegative::UnknownCa => {
-                // Use a different root CA CN so a different root key is generated
+                // Use a different root CA CN so the root cert is issued by an unrecognized authority
                 spec.root_cn = format!("{} Unknown Root CA", spec.leaf_cn);
             }
             ChainNegative::ExpiredLeaf => {
@@ -184,6 +184,35 @@ mod tests {
             not_after < now - 86400 * 365,
             "expired intermediate not_after ({not_after}) should be >365 days before now ({now})"
         );
+    }
+
+    #[test]
+    fn test_negative_variants_reuse_keys() {
+        let factory = Factory::random();
+        let spec = ChainSpec::new("test.example.com");
+        let good = X509Chain::new(factory.clone(), "test", spec);
+
+        let variants: Vec<X509Chain> = vec![
+            good.expired_leaf(),
+            good.expired_intermediate(),
+            good.unknown_ca(),
+            good.hostname_mismatch("wrong.example.com"),
+        ];
+
+        for variant in &variants {
+            // Keys should match the good chain (same underlying RSA keys)
+            assert_eq!(
+                good.leaf_private_key_pkcs8_der(),
+                variant.leaf_private_key_pkcs8_der(),
+                "leaf key should be reused"
+            );
+            // But certs should differ (different cert-level parameters)
+            assert_ne!(
+                good.leaf_cert_der(),
+                variant.leaf_cert_der(),
+                "leaf cert should differ"
+            );
+        }
     }
 
     #[test]
