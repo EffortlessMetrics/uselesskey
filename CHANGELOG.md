@@ -9,8 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.0] - 2026-02-03
 
-_Status: internal freeze (not yet published to crates.io)._
-
 ### Added
 
 - Initial release
@@ -21,6 +19,12 @@ _Status: internal freeze (not yet published to crates.io)._
 - Ed25519 key fixture generation via `uselesskey-ed25519`
 - HMAC secret fixture generation (HS256/HS384/HS512) via `uselesskey-hmac`
 - X.509 self-signed certificate generation via `uselesskey-x509`
+- X.509 certificate chain generation with root CA, intermediate CA, and leaf certificates
+- Chain-level negative test fixtures (expired CA, wrong issuer, self-signed leaf, unknown CA, reversed chain)
+- `uselesskey-rustls` adapter crate for `rustls-pki-types` integration
+- 10-year default certificate validity for X.509 fixtures
+- Key reuse optimization across negative fixture variants
+- Identity PEM methods on X.509 chain fixtures
 - JWK/JWKS output support with `JwksBuilder` (via `jwk` feature)
 - Negative fixtures (corrupt PEM, truncated DER, mismatched keys)
 - Tempfile output for libraries requiring file paths
