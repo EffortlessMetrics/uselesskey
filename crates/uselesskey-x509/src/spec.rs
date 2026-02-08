@@ -64,7 +64,7 @@ pub struct X509Spec {
     /// Default: 1 day before "now".
     pub not_before_offset: NotBeforeOffset,
     /// Duration after "now" for not_after.
-    /// Default: 365 days.
+    /// Default: 3650 days (10 years).
     pub validity_days: u32,
     /// Key usage flags.
     pub key_usage: KeyUsage,
@@ -95,7 +95,7 @@ impl Default for X509Spec {
             subject_cn: "Test Certificate".to_string(),
             issuer_cn: "Test Certificate".to_string(),
             not_before_offset: NotBeforeOffset::default(),
-            validity_days: 365,
+            validity_days: 3650,
             key_usage: KeyUsage::leaf(),
             is_ca: false,
             rsa_bits: 2048,
@@ -229,7 +229,7 @@ mod tests {
     fn test_default_spec() {
         let spec = X509Spec::default();
         assert_eq!(spec.subject_cn, "Test Certificate");
-        assert_eq!(spec.validity_days, 365);
+        assert_eq!(spec.validity_days, 3650);
         assert!(!spec.is_ca);
     }
 

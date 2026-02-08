@@ -222,7 +222,7 @@ fn load_inner_with_spec(
     factory.get_or_init(DOMAIN_X509_CERT, label, &spec_bytes, variant, |rng| {
         // Generate RSA key using uselesskey-rsa for deterministic key generation.
         // We use the label + variant to derive a unique key.
-        let key_label = format!("{}-{}-key", label, variant);
+        let key_label = format!("{}-key", label);
         let rsa_spec = RsaSpec::new(spec.rsa_bits);
         let rsa_keypair = factory.rsa(&key_label, rsa_spec);
 
@@ -357,6 +357,24 @@ mod tests {
         let identity = cert.identity_pem();
         assert!(identity.contains("-----BEGIN CERTIFICATE-----"));
         assert!(identity.contains("-----BEGIN PRIVATE KEY-----"));
+    }
+
+    #[test]
+    fn test_good_cert_not_expired_within_five_years() {
+        use x509_parser::prelude::*;
+
+        let factory = Factory::random();
+        let spec = X509Spec::self_signed("test.example.com");
+        let cert = factory.x509_self_signed("test", spec);
+
+        let (_, parsed) = X509Certificate::from_der(cert.cert_der()).expect("parse cert");
+        let not_before = parsed.validity().not_before.timestamp();
+        let not_after = parsed.validity().not_after.timestamp();
+        let validity_days = (not_after - not_before) / 86400;
+        assert!(
+            validity_days >= 365 * 5,
+            "good cert validity should be >= 5 years, got {validity_days} days"
+        );
     }
 
     #[test]

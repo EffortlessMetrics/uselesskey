@@ -246,9 +246,9 @@ fn load_chain_inner(
         let rsa_spec = RsaSpec::new(spec.rsa_bits);
 
         // Generate 3 RSA keypairs with role-tagged labels
-        let root_key_label = format!("{}-{}-chain-root", label, variant);
-        let int_key_label = format!("{}-{}-chain-intermediate", label, variant);
-        let leaf_key_label = format!("{}-{}-chain-leaf", label, variant);
+        let root_key_label = format!("{}-chain-root", label);
+        let int_key_label = format!("{}-chain-intermediate", label);
+        let leaf_key_label = format!("{}-chain-leaf", label);
 
         let root_rsa = factory.rsa(&root_key_label, rsa_spec);
         let int_rsa = factory.rsa(&int_key_label, rsa_spec);
@@ -458,6 +458,24 @@ mod tests {
         assert_eq!(
             chain1.leaf_private_key_pkcs8_pem(),
             chain2.leaf_private_key_pkcs8_pem()
+        );
+    }
+
+    #[test]
+    fn test_good_chain_leaf_not_expired_within_five_years() {
+        use x509_parser::prelude::*;
+
+        let factory = Factory::random();
+        let spec = ChainSpec::new("test.example.com");
+        let chain = X509Chain::new(factory, "test", spec);
+
+        let (_, leaf) = X509Certificate::from_der(chain.leaf_cert_der()).expect("parse leaf");
+        let not_before = leaf.validity().not_before.timestamp();
+        let not_after = leaf.validity().not_after.timestamp();
+        let validity_days = (not_after - not_before) / 86400;
+        assert!(
+            validity_days >= 365 * 5,
+            "good chain leaf validity should be >= 5 years, got {validity_days} days"
         );
     }
 
