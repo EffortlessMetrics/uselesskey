@@ -144,6 +144,7 @@ fn dependents(crate_name: &str) -> &'static [&'static str] {
             "uselesskey-rsa",
             "uselesskey-ecdsa",
             "uselesskey-ed25519",
+            "uselesskey-hmac",
             "uselesskey-x509",
             "uselesskey",
             "uselesskey-bdd",
@@ -157,6 +158,14 @@ fn dependents(crate_name: &str) -> &'static [&'static str] {
         "uselesskey-ecdsa" => &["uselesskey", "uselesskey-jsonwebtoken", "uselesskey-rustls"],
         "uselesskey-ed25519" => &["uselesskey", "uselesskey-jsonwebtoken", "uselesskey-rustls"],
         "uselesskey-x509" => &["uselesskey", "uselesskey-rustls"],
+        "uselesskey-jwk" => &[
+            "uselesskey-rsa",
+            "uselesskey-ecdsa",
+            "uselesskey-ed25519",
+            "uselesskey-hmac",
+            "uselesskey",
+        ],
+        "uselesskey-hmac" => &["uselesskey", "uselesskey-jsonwebtoken"],
         "uselesskey" => &[],
         "uselesskey-jsonwebtoken" => &[],
         "uselesskey-rustls" => &[],
@@ -194,6 +203,7 @@ mod tests {
         assert!(impacted.contains("uselesskey-rsa"));
         assert!(impacted.contains("uselesskey-ecdsa"));
         assert!(impacted.contains("uselesskey-ed25519"));
+        assert!(impacted.contains("uselesskey-hmac"));
         assert!(impacted.contains("uselesskey-x509"));
         assert!(impacted.contains("uselesskey"));
         assert!(impacted.contains("uselesskey-bdd"));
@@ -214,6 +224,29 @@ mod tests {
         let paths = vec!["fuzz/fuzz_targets/pem_corrupt.rs".to_string()];
         let plan = build_plan(&paths);
         assert!(plan.run_fuzz);
+    }
+
+    #[test]
+    fn jwk_change_expands_to_key_crates() {
+        let paths = vec!["crates/uselesskey-jwk/src/lib.rs".to_string()];
+        let plan = build_plan(&paths);
+        let impacted = &plan.impacted_crates;
+        assert!(impacted.contains("uselesskey-jwk"));
+        assert!(impacted.contains("uselesskey-rsa"));
+        assert!(impacted.contains("uselesskey-ecdsa"));
+        assert!(impacted.contains("uselesskey-ed25519"));
+        assert!(impacted.contains("uselesskey-hmac"));
+        assert!(impacted.contains("uselesskey"));
+    }
+
+    #[test]
+    fn hmac_change_expands_to_facade_and_jwt() {
+        let paths = vec!["crates/uselesskey-hmac/src/lib.rs".to_string()];
+        let plan = build_plan(&paths);
+        let impacted = &plan.impacted_crates;
+        assert!(impacted.contains("uselesskey-hmac"));
+        assert!(impacted.contains("uselesskey"));
+        assert!(impacted.contains("uselesskey-jsonwebtoken"));
     }
 
     #[test]
