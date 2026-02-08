@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `ChainNegative::RevokedLeaf` variant with CRL signed by intermediate CA (`uselesskey-x509`)
+- `RustlsServerConfigExt` / `RustlsClientConfigExt` / `RustlsMtlsExt` config builders (`uselesskey-rustls`)
+- `uselesskey-ring` adapter crate for `ring` 0.17 native signing key types
+- README: X.509, adapter crates, TLS config builder, and ecosystem sections
+
 ## [0.1.0] - 2026-02-03
 
 ### Added

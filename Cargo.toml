@@ -11,6 +11,7 @@ members = [
   "crates/uselesskey-x509",
   "crates/uselesskey-jsonwebtoken",
   "crates/uselesskey-rustls",
+  "crates/uselesskey-ring",
   "crates/uselesskey-bdd",
   "tests",
   "xtask",
