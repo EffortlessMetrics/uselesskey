@@ -41,7 +41,9 @@ impl ChainNegative {
                 spec.leaf_sans = vec![wrong_hostname.clone()];
             }
             ChainNegative::UnknownCa => {
-                // Use a different root CA CN so the root cert is issued by an unrecognized authority
+                // Use a different root CA CN so the chain anchors to a different root certificate
+                // identity (a different trust anchor). Keys are reused across variants;
+                // only cert-level identity/validity/SANs change.
                 spec.root_cn = format!("{} Unknown Root CA", spec.leaf_cn);
             }
             ChainNegative::ExpiredLeaf => {
