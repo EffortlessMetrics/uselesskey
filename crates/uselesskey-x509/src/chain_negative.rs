@@ -17,6 +17,8 @@ pub enum ChainNegative {
     ExpiredLeaf,
     /// Intermediate certificate is expired.
     ExpiredIntermediate,
+    /// Leaf certificate is listed as revoked in a CRL signed by the intermediate CA.
+    RevokedLeaf,
 }
 
 impl ChainNegative {
@@ -29,6 +31,7 @@ impl ChainNegative {
             ChainNegative::UnknownCa => "unknown_ca".to_string(),
             ChainNegative::ExpiredLeaf => "expired_leaf".to_string(),
             ChainNegative::ExpiredIntermediate => "expired_intermediate".to_string(),
+            ChainNegative::RevokedLeaf => "revoked_leaf".to_string(),
         }
     }
 
@@ -56,6 +59,11 @@ impl ChainNegative {
             ChainNegative::ExpiredIntermediate => {
                 spec.intermediate_validity_days = 1;
                 spec.intermediate_not_before_offset_days = Some(730);
+            }
+            ChainNegative::RevokedLeaf => {
+                // No spec changes needed. The chain is structurally valid;
+                // the CRL listing the leaf as revoked is generated as a side-effect
+                // in load_chain_inner when variant == "revoked_leaf".
             }
         }
         spec
@@ -97,6 +105,15 @@ impl X509Chain {
     /// Get a chain where the intermediate certificate has a very short validity period.
     pub fn expired_intermediate(&self) -> X509Chain {
         self.negative(ChainNegative::ExpiredIntermediate)
+    }
+
+    /// Get a chain with a CRL listing the leaf certificate as revoked.
+    ///
+    /// The chain itself is structurally valid. The CRL is signed by the
+    /// intermediate CA and lists the leaf serial as revoked with reason
+    /// `KeyCompromise`.
+    pub fn revoked_leaf(&self) -> X509Chain {
+        self.negative(ChainNegative::RevokedLeaf)
     }
 }
 
@@ -199,6 +216,7 @@ mod tests {
             good.expired_intermediate(),
             good.unknown_ca(),
             good.hostname_mismatch("wrong.example.com"),
+            good.revoked_leaf(),
         ];
 
         for variant in &variants {
@@ -230,5 +248,101 @@ mod tests {
             ChainNegative::ExpiredIntermediate.variant_name(),
             "expired_intermediate"
         );
+        assert_eq!(ChainNegative::RevokedLeaf.variant_name(), "revoked_leaf");
+    }
+
+    #[test]
+    fn test_revoked_leaf_crl_present() {
+        let factory = Factory::random();
+        let spec = ChainSpec::new("test.example.com");
+        let good = X509Chain::new(factory, "test", spec);
+
+        // Good chain should have no CRL
+        assert!(good.crl_der().is_none());
+        assert!(good.crl_pem().is_none());
+
+        // Revoked leaf chain should have a CRL
+        let revoked = good.revoked_leaf();
+        assert!(revoked.crl_der().is_some());
+        assert!(revoked.crl_pem().is_some());
+        let crl_pem = revoked.crl_pem().unwrap();
+        assert!(crl_pem.contains("-----BEGIN X509 CRL-----"));
+    }
+
+    #[test]
+    fn test_revoked_leaf_crl_contains_leaf_serial() {
+        use x509_parser::prelude::*;
+
+        let factory = Factory::random();
+        let spec = ChainSpec::new("test.example.com");
+        let good = X509Chain::new(factory, "test", spec);
+        let revoked = good.revoked_leaf();
+
+        // Parse the leaf cert to get its serial number
+        let (_, leaf) =
+            X509Certificate::from_der(revoked.leaf_cert_der()).expect("parse leaf cert");
+        let leaf_serial = &leaf.serial;
+
+        // Parse the CRL and verify it lists the leaf serial
+        let crl_der = revoked.crl_der().expect("CRL should be present");
+        let (_, crl) = x509_parser::revocation_list::CertificateRevocationList::from_der(crl_der)
+            .expect("parse CRL");
+
+        let revoked_certs: Vec<_> = crl.iter_revoked_certificates().collect();
+        assert_eq!(
+            revoked_certs.len(),
+            1,
+            "CRL should contain exactly one revoked cert"
+        );
+        assert_eq!(
+            revoked_certs[0].raw_serial(),
+            leaf_serial.to_bytes_be(),
+            "CRL should list the leaf serial number"
+        );
+    }
+
+    #[test]
+    fn test_revoked_leaf_determinism() {
+        use uselesskey_core::Seed;
+
+        let seed = Seed::from_env_value("test-seed").unwrap();
+        let factory = Factory::deterministic(seed);
+        let spec = ChainSpec::new("test.example.com");
+        let good = X509Chain::new(factory.clone(), "test", spec.clone());
+        let revoked1 = good.revoked_leaf();
+
+        factory.clear_cache();
+        let good2 = X509Chain::new(factory, "test", spec);
+        let revoked2 = good2.revoked_leaf();
+
+        assert_eq!(
+            revoked1.crl_der().unwrap(),
+            revoked2.crl_der().unwrap(),
+            "CRL DER should be deterministic"
+        );
+        assert_eq!(
+            revoked1.crl_pem().unwrap(),
+            revoked2.crl_pem().unwrap(),
+            "CRL PEM should be deterministic"
+        );
+    }
+
+    #[test]
+    fn test_revoked_leaf_crl_tempfile() {
+        let factory = Factory::random();
+        let spec = ChainSpec::new("test.example.com");
+        let good = X509Chain::new(factory, "test", spec);
+
+        // Good chain should return None for CRL tempfiles
+        assert!(good.write_crl_pem().is_none());
+        assert!(good.write_crl_der().is_none());
+
+        // Revoked leaf chain should write CRL tempfiles
+        let revoked = good.revoked_leaf();
+        let crl_pem_file = revoked.write_crl_pem().unwrap().unwrap();
+        assert!(crl_pem_file.path().exists());
+
+        let crl_der_file = revoked.write_crl_der().unwrap().unwrap();
+        assert!(crl_der_file.path().exists());
     }
 }

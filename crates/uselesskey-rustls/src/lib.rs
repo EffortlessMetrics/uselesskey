@@ -6,6 +6,10 @@
 //! `rustls-pki-types` types (`PrivateKeyDer`, `CertificateDer`), making it easy
 //! to set up TLS test scenarios.
 //!
+//! With the `server-config` and `client-config` features, it also provides
+//! convenience builders for `rustls::ServerConfig` and `rustls::ClientConfig`,
+//! including mutual TLS (mTLS) support.
+//!
 //! # Features
 //!
 //! Enable the key types you need:
@@ -15,6 +19,11 @@
 //! - `ecdsa` - ECDSA keypairs
 //! - `ed25519` - Ed25519 keypairs
 //! - `all` - All of the above
+//! - `server-config` - `rustls::ServerConfig` builders (implies `x509`)
+//! - `client-config` - `rustls::ClientConfig` builders (implies `x509`)
+//! - `tls-config` - Both server and client config builders
+//! - `rustls-ring` - Use ring as the rustls crypto provider
+//! - `rustls-aws-lc-rs` - Use aws-lc-rs as the rustls crypto provider
 //!
 //! # Example: X.509 Chain
 //!
@@ -36,6 +45,18 @@
 //! ```
 
 use rustls_pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
+
+#[cfg(any(feature = "server-config", feature = "client-config"))]
+mod config;
+
+#[cfg(feature = "server-config")]
+pub use config::RustlsServerConfigExt;
+
+#[cfg(feature = "client-config")]
+pub use config::RustlsClientConfigExt;
+
+#[cfg(all(feature = "server-config", feature = "client-config"))]
+pub use config::RustlsMtlsExt;
 
 /// Extension trait to convert uselesskey fixtures into `PrivateKeyDer`.
 ///

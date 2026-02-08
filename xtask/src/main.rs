@@ -199,6 +199,7 @@ fn publish_check() -> Result<()> {
         "uselesskey",
         "uselesskey-jsonwebtoken",
         "uselesskey-rustls",
+        "uselesskey-ring",
     ];
 
     for name in crates {

@@ -4,8 +4,9 @@ use std::fmt;
 use std::sync::Arc;
 
 use rcgen::{
-    BasicConstraints, CertificateParams, DnType, ExtendedKeyUsagePurpose, IsCa, KeyPair,
-    KeyUsagePurpose, PKCS_RSA_SHA256,
+    BasicConstraints, CertificateParams, CertificateRevocationListParams, DnType,
+    ExtendedKeyUsagePurpose, IsCa, KeyPair, KeyUsagePurpose, PKCS_RSA_SHA256, RevocationReason,
+    RevokedCertParams,
 };
 use rustls_pki_types::PrivatePkcs8KeyDer;
 use time::Duration as TimeDuration;
@@ -45,6 +46,9 @@ struct ChainInner {
     leaf_cert_pem: String,
     leaf_key_pkcs8_der: Arc<[u8]>,
     leaf_key_pkcs8_pem: String,
+
+    crl_der: Option<Arc<[u8]>>,
+    crl_pem: Option<String>,
 }
 
 impl fmt::Debug for X509Chain {
@@ -215,6 +219,36 @@ impl X509Chain {
     }
 
     // =========================================================================
+    // CRL outputs (only present for RevokedLeaf variant)
+    // =========================================================================
+
+    /// DER-encoded CRL bytes, if this chain was generated with the `RevokedLeaf` variant.
+    pub fn crl_der(&self) -> Option<&[u8]> {
+        self.inner.crl_der.as_deref()
+    }
+
+    /// PEM-encoded CRL, if this chain was generated with the `RevokedLeaf` variant.
+    pub fn crl_pem(&self) -> Option<&str> {
+        self.inner.crl_pem.as_deref()
+    }
+
+    /// Write the CRL PEM to a tempfile. Returns `None` if no CRL is present.
+    pub fn write_crl_pem(&self) -> Option<Result<TempArtifact, Error>> {
+        self.inner
+            .crl_pem
+            .as_deref()
+            .map(|pem| TempArtifact::new_string("uselesskey-", ".crl.pem", pem))
+    }
+
+    /// Write the CRL DER to a tempfile. Returns `None` if no CRL is present.
+    pub fn write_crl_der(&self) -> Option<Result<TempArtifact, Error>> {
+        self.inner
+            .crl_der
+            .as_deref()
+            .map(|der| TempArtifact::new_bytes("uselesskey-", ".crl.der", der))
+    }
+
+    // =========================================================================
     // Metadata
     // =========================================================================
 
@@ -358,9 +392,44 @@ fn load_chain_inner(
             leaf_params.not_before + TimeDuration::days(spec.leaf_validity_days as i64);
         leaf_params.serial_number = Some(deterministic_serial_number(rng));
 
+        let leaf_serial = leaf_params
+            .serial_number
+            .clone()
+            .expect("leaf serial number");
+
         let leaf_cert = leaf_params
             .signed_by(&leaf_kp, &int_cert, &int_kp)
             .expect("leaf cert gen");
+
+        // --- CRL (only for revoked_leaf variant) ---
+        let (crl_der, crl_pem) = if variant == "revoked_leaf" {
+            let crl_number = deterministic_serial_number(rng);
+
+            let revoked = RevokedCertParams {
+                serial_number: leaf_serial,
+                revocation_time: base_time,
+                reason_code: Some(RevocationReason::KeyCompromise),
+                invalidity_date: None,
+            };
+
+            let crl_params = CertificateRevocationListParams {
+                this_update: base_time,
+                next_update: base_time + TimeDuration::days(30),
+                crl_number,
+                issuing_distribution_point: None,
+                revoked_certs: vec![revoked],
+                key_identifier_method: rcgen::KeyIdMethod::Sha256,
+            };
+
+            let crl = crl_params.signed_by(&int_cert, &int_kp).expect("CRL gen");
+
+            (
+                Some(Arc::from(crl.der().as_ref())),
+                Some(crl.pem().expect("CRL PEM")),
+            )
+        } else {
+            (None, None)
+        };
 
         ChainInner {
             root_cert_der: Arc::from(root_cert.der().as_ref()),
@@ -377,6 +446,9 @@ fn load_chain_inner(
             leaf_cert_pem: leaf_cert.pem(),
             leaf_key_pkcs8_der: Arc::from(leaf_rsa.private_key_pkcs8_der()),
             leaf_key_pkcs8_pem: leaf_rsa.private_key_pkcs8_pem().to_string(),
+
+            crl_der,
+            crl_pem,
         }
     })
 }

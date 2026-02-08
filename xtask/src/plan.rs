@@ -154,9 +154,20 @@ fn dependents(crate_name: &str) -> &'static [&'static str] {
             "uselesskey",
             "uselesskey-jsonwebtoken",
             "uselesskey-rustls",
+            "uselesskey-ring",
         ],
-        "uselesskey-ecdsa" => &["uselesskey", "uselesskey-jsonwebtoken", "uselesskey-rustls"],
-        "uselesskey-ed25519" => &["uselesskey", "uselesskey-jsonwebtoken", "uselesskey-rustls"],
+        "uselesskey-ecdsa" => &[
+            "uselesskey",
+            "uselesskey-jsonwebtoken",
+            "uselesskey-rustls",
+            "uselesskey-ring",
+        ],
+        "uselesskey-ed25519" => &[
+            "uselesskey",
+            "uselesskey-jsonwebtoken",
+            "uselesskey-rustls",
+            "uselesskey-ring",
+        ],
         "uselesskey-x509" => &["uselesskey", "uselesskey-rustls"],
         "uselesskey-jwk" => &[
             "uselesskey-rsa",
@@ -169,6 +180,7 @@ fn dependents(crate_name: &str) -> &'static [&'static str] {
         "uselesskey" => &[],
         "uselesskey-jsonwebtoken" => &[],
         "uselesskey-rustls" => &[],
+        "uselesskey-ring" => &[],
         "uselesskey-bdd" => &["uselesskey-bdd"],
         _ => &[],
     }
