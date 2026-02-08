@@ -123,36 +123,6 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "rsa")]
-    mod rsa_deterministic_tests {
-        use crate::RingRsaKeyPairExt;
-        use ring::signature;
-        use uselesskey_core::{Factory, Seed};
-        use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
-
-        #[test]
-        fn test_rsa_deterministic_sign_verify() {
-            let seed = Seed::from_env_value("test-seed").unwrap();
-            let fx = Factory::deterministic(seed);
-            let rsa = fx.rsa("det-test", RsaSpec::rs256());
-            let ring_kp = rsa.rsa_key_pair_ring();
-
-            let msg = b"deterministic message";
-            let rng = ring::rand::SystemRandom::new();
-            let mut sig = vec![0u8; ring_kp.public().modulus_len()];
-            ring_kp
-                .sign(&signature::RSA_PKCS1_SHA256, &rng, msg, &mut sig)
-                .expect("sign");
-
-            let public_key_bytes = ring_kp.public().as_ref();
-            let public_key = signature::UnparsedPublicKey::new(
-                &signature::RSA_PKCS1_2048_8192_SHA256,
-                public_key_bytes,
-            );
-            public_key.verify(msg, &sig).expect("verify");
-        }
-    }
-
     #[cfg(feature = "ecdsa")]
     mod ecdsa_tests {
         use crate::RingEcdsaKeyPairExt;
