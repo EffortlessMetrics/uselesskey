@@ -503,7 +503,9 @@ mod tests {
 
     #[test]
     fn jwks_to_value_contains_keys() {
-        let jwks = JwksBuilder::new().add_public(sample_rsa_public("kid", "n")).build();
+        let jwks = JwksBuilder::new()
+            .add_public(sample_rsa_public("kid", "n"))
+            .build();
         let v = jwks.to_value();
         assert!(v["keys"].is_array());
         assert_eq!(v["keys"].as_array().unwrap().len(), 1);

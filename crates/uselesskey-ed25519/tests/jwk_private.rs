@@ -47,10 +47,7 @@ mod jwk_private_tests {
     fn public_key_jwk_alias_matches_public_jwk() {
         let fx = Factory::deterministic(Seed::from_env_value("ed25519-alias").unwrap());
         let key = fx.ed25519("issuer", Ed25519Spec::new());
-        assert_eq!(
-            key.public_key_jwk().to_value(),
-            key.public_jwk().to_value()
-        );
+        assert_eq!(key.public_key_jwk().to_value(), key.public_jwk().to_value());
     }
 
     #[test]
@@ -79,9 +76,6 @@ mod jwk_private_tests {
         let key = fx.ed25519("issuer", Ed25519Spec::new());
         assert_eq!(key.public_jwk_json(), key.public_jwk().to_value());
         assert_eq!(key.public_jwks_json(), key.public_jwks().to_value());
-        assert_eq!(
-            key.private_key_jwk_json(),
-            key.private_key_jwk().to_value()
-        );
+        assert_eq!(key.private_key_jwk_json(), key.private_key_jwk().to_value());
     }
 }

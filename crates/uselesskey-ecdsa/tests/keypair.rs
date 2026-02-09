@@ -75,11 +75,7 @@ fn pkcs8_and_spki_are_parseable_for_both_specs() {
             key.private_key_pkcs8_pem(),
             key.private_key_pkcs8_der(),
         );
-        assert_public_key_parseable(
-            spec,
-            key.public_key_spki_pem(),
-            key.public_key_spki_der(),
-        );
+        assert_public_key_parseable(spec, key.public_key_spki_pem(), key.public_key_spki_der());
     }
 }
 
