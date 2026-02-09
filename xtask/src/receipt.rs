@@ -13,6 +13,8 @@ pub struct Receipt {
     pub feature_matrix: Vec<FeatureMatrixEntry>,
     pub bdd_matrix: Vec<BddMatrixEntry>,
     pub bdd_counts: BTreeMap<String, usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub coverage_lcov_path: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -55,6 +57,7 @@ impl Runner {
                 feature_matrix: Vec::new(),
                 bdd_matrix: Vec::new(),
                 bdd_counts: BTreeMap::new(),
+                coverage_lcov_path: None,
             },
             path: path.as_ref().to_path_buf(),
             start: Instant::now(),
@@ -126,6 +129,10 @@ impl Runner {
 
     pub fn set_bdd_counts(&mut self, counts: BTreeMap<String, usize>) {
         self.receipt.bdd_counts = counts;
+    }
+
+    pub fn set_coverage_lcov_path(&mut self, path: String) {
+        self.receipt.coverage_lcov_path = Some(path);
     }
 
     pub fn summary(&self) {
