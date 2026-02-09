@@ -12,6 +12,8 @@ pub struct Plan {
     pub run_mutants: bool,
     pub run_fuzz: bool,
     pub run_no_blob: bool,
+    pub run_coverage: bool,
+    pub run_publish_preflight: bool,
     pub docs_only: bool,
 }
 
@@ -64,6 +66,8 @@ pub fn build_plan(paths: &[String]) -> Plan {
     let run_mutants = rust_code_changed;
     let run_fuzz = rust_code_changed;
     let run_no_blob = no_blob_trigger;
+    let run_coverage = rust_code_changed;
+    let run_publish_preflight = cargo_changed;
 
     let run_any = run_fmt
         || run_clippy
@@ -73,7 +77,9 @@ pub fn build_plan(paths: &[String]) -> Plan {
         || run_bdd
         || run_mutants
         || run_fuzz
-        || run_no_blob;
+        || run_no_blob
+        || run_coverage
+        || run_publish_preflight;
 
     Plan {
         impacted_crates,
@@ -86,6 +92,8 @@ pub fn build_plan(paths: &[String]) -> Plan {
         run_mutants,
         run_fuzz,
         run_no_blob,
+        run_coverage,
+        run_publish_preflight,
         docs_only: !run_any,
     }
 }
@@ -215,6 +223,8 @@ mod tests {
         assert!(!plan.run_mutants);
         assert!(!plan.run_fuzz);
         assert!(!plan.run_no_blob);
+        assert!(!plan.run_coverage);
+        assert!(!plan.run_publish_preflight);
         assert!(plan.impacted_crates.is_empty());
     }
 
@@ -271,6 +281,20 @@ mod tests {
         assert!(impacted.contains("uselesskey-hmac"));
         assert!(impacted.contains("uselesskey"));
         assert!(impacted.contains("uselesskey-jsonwebtoken"));
+    }
+
+    #[test]
+    fn rust_change_enables_coverage() {
+        let paths = vec!["crates/uselesskey-core/src/lib.rs".to_string()];
+        let plan = build_plan(&paths);
+        assert!(plan.run_coverage);
+    }
+
+    #[test]
+    fn cargo_change_enables_publish_preflight() {
+        let paths = vec!["Cargo.toml".to_string()];
+        let plan = build_plan(&paths);
+        assert!(plan.run_publish_preflight);
     }
 
     #[test]
