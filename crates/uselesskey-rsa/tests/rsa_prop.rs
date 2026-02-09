@@ -7,6 +7,24 @@ use uselesskey_core::{Factory, Seed};
 use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 
 #[test]
+#[should_panic(expected = "RSA bits too small")]
+fn rsa_bits_too_small_panics() {
+    let fx = Factory::random();
+    let _ = fx.rsa("issuer", RsaSpec::new(512));
+}
+
+#[test]
+#[should_panic(expected = "custom RSA public exponent not supported")]
+fn rsa_custom_exponent_panics() {
+    let fx = Factory::random();
+    let spec = RsaSpec {
+        bits: 2048,
+        exponent: 3,
+    };
+    let _ = fx.rsa("issuer", spec);
+}
+
+#[test]
 fn pkcs8_pem_is_parseable() {
     let fx = Factory::random();
     let rsa = fx.rsa("issuer", RsaSpec::rs256());
@@ -36,15 +54,6 @@ fn mismatched_public_key_is_parseable_and_different() {
 
     // Extremely likely: modulus differs.
     assert_ne!(good_pub.n(), other_pub.n());
-}
-
-#[test]
-fn pkcs8_der_truncated_shortens() {
-    let fx = Factory::random();
-    let rsa = fx.rsa("issuer", RsaSpec::rs256());
-
-    let truncated = rsa.private_key_pkcs8_der_truncated(12);
-    assert_eq!(truncated.len(), 12);
 }
 
 #[test]

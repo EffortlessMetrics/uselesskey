@@ -8,6 +8,10 @@
 //!
 //! > Not for production. Deterministic keys are predictable by design.
 //!
+//! For integration with third-party crypto crates, see the adapter crates:
+//! `uselesskey-jsonwebtoken`, `uselesskey-rustls`, `uselesskey-ring`,
+//! `uselesskey-rustcrypto`, and `uselesskey-aws-lc-rs`.
+//!
 //! # Quick Start
 //!
 //! Create a factory and generate RSA key fixtures:

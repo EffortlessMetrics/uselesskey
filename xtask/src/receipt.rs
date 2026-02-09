@@ -140,3 +140,40 @@ impl Runner {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use anyhow::anyhow;
+
+    #[test]
+    fn runner_records_steps_and_writes_receipt() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let path = dir.path().join("receipt.json");
+
+        let mut runner = Runner::new(&path);
+        runner
+            .step("ok-step", Some("details".to_string()), || Ok(()))
+            .expect("ok step");
+
+        let err = runner.step("fail-step", None, || Err(anyhow!("boom")));
+        assert!(err.is_err());
+
+        runner.skip("skipped-step", Some("not needed".to_string()));
+        runner.add_feature_matrix("default", "ok");
+
+        let mut counts = BTreeMap::new();
+        counts.insert("rsa.feature".to_string(), 2);
+        runner.set_bdd_counts(counts);
+
+        runner.summary();
+
+        assert_eq!(runner.receipt.steps.len(), 3);
+        assert_eq!(runner.receipt.feature_matrix.len(), 1);
+        assert_eq!(runner.receipt.bdd_counts.get("rsa.feature"), Some(&2));
+
+        runner.write().expect("write receipt");
+        let json = fs::read_to_string(&path).expect("read receipt");
+        assert!(json.contains("\"steps\""));
+    }
+}

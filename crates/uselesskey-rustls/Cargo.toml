@@ -8,7 +8,7 @@ repository.workspace = true
 description = "rustls-pki-types integration for uselesskey test fixtures."
 categories = ["development-tools::testing"]
 keywords = ["rustls", "tls", "fixtures", "testing"]
-readme = "../../README.md"
+readme = "README.md"
 authors.workspace = true
 
 [dependencies]

@@ -168,4 +168,37 @@ mod tests {
         let decoded = URL_SAFE_NO_PAD.decode(k).expect("valid base64url");
         assert_eq!(decoded.len(), HmacSpec::hs256().byte_len());
     }
+
+    #[test]
+    #[cfg(feature = "jwk")]
+    fn jwks_wraps_jwk() {
+        let fx = Factory::random();
+        let secret = fx.hmac("jwt", HmacSpec::hs256());
+
+        let jwk = secret.jwk().to_value();
+        let jwks = secret.jwks().to_value();
+
+        let keys = jwks["keys"].as_array().expect("keys array");
+        assert_eq!(keys.len(), 1);
+        assert_eq!(keys[0], jwk);
+    }
+
+    #[test]
+    #[cfg(feature = "jwk")]
+    fn kid_is_deterministic() {
+        let fx = Factory::deterministic(Seed::from_env_value("hmac-kid").unwrap());
+        let s1 = fx.hmac("issuer", HmacSpec::hs512());
+        let s2 = fx.hmac("issuer", HmacSpec::hs512());
+        assert_eq!(s1.kid(), s2.kid());
+    }
+
+    #[test]
+    fn debug_includes_label_and_type() {
+        let fx = Factory::random();
+        let secret = fx.hmac("debug-label", HmacSpec::hs256());
+
+        let dbg = format!("{:?}", secret);
+        assert!(dbg.contains("HmacSecret"));
+        assert!(dbg.contains("debug-label"));
+    }
 }
