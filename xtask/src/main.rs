@@ -177,6 +177,18 @@ fn run_ci_plan(runner: &mut receipt::Runner) -> Result<()> {
     runner.step("mutants", None, mutants)?;
     runner.step("fuzz", None, fuzz_pr)?;
 
+    if is_llvm_cov_installed() {
+        run_coverage(runner)?;
+    } else {
+        runner.skip("coverage", Some("cargo-llvm-cov not installed".into()));
+        runner.skip(
+            "coverage:report",
+            Some("cargo-llvm-cov not installed".into()),
+        );
+    }
+
+    run_publish_preflight(runner)?;
+
     Ok(())
 }
 
@@ -193,26 +205,175 @@ fn feature_matrix_cmd() -> Result<()> {
     result
 }
 
-fn publish_check() -> Result<()> {
-    let crates = [
-        "uselesskey-core",
-        "uselesskey-jwk",
-        "uselesskey-rsa",
-        "uselesskey-ecdsa",
-        "uselesskey-ed25519",
-        "uselesskey-hmac",
-        "uselesskey-x509",
-        "uselesskey",
-        "uselesskey-jsonwebtoken",
-        "uselesskey-rustls",
-        "uselesskey-ring",
-        "uselesskey-rustcrypto",
-        "uselesskey-aws-lc-rs",
-    ];
+const PUBLISH_CRATES: &[&str] = &[
+    "uselesskey-core",
+    "uselesskey-jwk",
+    "uselesskey-rsa",
+    "uselesskey-ecdsa",
+    "uselesskey-ed25519",
+    "uselesskey-hmac",
+    "uselesskey-x509",
+    "uselesskey",
+    "uselesskey-jsonwebtoken",
+    "uselesskey-rustls",
+    "uselesskey-ring",
+    "uselesskey-rustcrypto",
+    "uselesskey-aws-lc-rs",
+];
 
-    for name in crates {
+fn publish_check() -> Result<()> {
+    for name in PUBLISH_CRATES {
         run(Command::new("cargo").args(["publish", "--dry-run", "-p", name]))?;
     }
+    Ok(())
+}
+
+fn is_llvm_cov_installed() -> bool {
+    Command::new("cargo")
+        .args(["llvm-cov", "--version"])
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .is_ok_and(|s| s.success())
+}
+
+fn coverage() -> Result<()> {
+    if !is_llvm_cov_installed() {
+        bail!(
+            "cargo-llvm-cov is not installed. Install with: cargo install cargo-llvm-cov"
+        );
+    }
+    let mut runner = receipt::Runner::new("target/xtask/receipt.json");
+    let result = run_coverage(&mut runner);
+    runner.summary();
+    if let Err(err) = runner.write() {
+        eprintln!("failed to write receipt: {err}");
+        if result.is_ok() {
+            return Err(err);
+        }
+    }
+    result
+}
+
+fn run_coverage(runner: &mut receipt::Runner) -> Result<()> {
+    fs::create_dir_all("target/coverage")?;
+    runner.step("coverage", None, || {
+        run(Command::new("cargo")
+            .args([
+                "llvm-cov",
+                "--workspace",
+                "--all-features",
+                "--lcov",
+                "--output-path",
+                "target/coverage/lcov.info",
+            ])
+            .env("PROPTEST_CASES", "16"))
+    })?;
+    runner.step("coverage:report", None, || {
+        run(Command::new("cargo")
+            .args(["llvm-cov", "report", "--workspace", "--all-features"])
+            .env("PROPTEST_CASES", "16"))
+    })?;
+    runner.set_coverage_lcov_path("target/coverage/lcov.info".to_string());
+    Ok(())
+}
+
+fn publish_preflight() -> Result<()> {
+    let mut runner = receipt::Runner::new("target/xtask/receipt.json");
+    let result = run_publish_preflight(&mut runner);
+    runner.summary();
+    if let Err(err) = runner.write() {
+        eprintln!("failed to write receipt: {err}");
+        if result.is_ok() {
+            return Err(err);
+        }
+    }
+    result
+}
+
+fn run_publish_preflight(runner: &mut receipt::Runner) -> Result<()> {
+    runner.step("preflight:metadata", None, check_crate_metadata)?;
+    for name in PUBLISH_CRATES {
+        let step_name = format!("preflight:package:{name}");
+        runner.step(&step_name, None, || {
+            run(Command::new("cargo").args(["package", "--no-verify", "-p", name]))
+        })?;
+    }
+    Ok(())
+}
+
+fn check_crate_metadata() -> Result<()> {
+    let output = Command::new("cargo")
+        .args(["metadata", "--format-version", "1", "--no-deps"])
+        .output()
+        .context("failed to run `cargo metadata`")?;
+
+    if !output.status.success() {
+        bail!(
+            "`cargo metadata` failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    let meta: serde_json::Value =
+        serde_json::from_slice(&output.stdout).context("failed to parse cargo metadata JSON")?;
+
+    let packages = meta["packages"]
+        .as_array()
+        .context("missing 'packages' in cargo metadata")?;
+
+    let mut errors: Vec<String> = Vec::new();
+
+    for crate_name in PUBLISH_CRATES {
+        let pkg = packages.iter().find(|p| {
+            p["name"]
+                .as_str()
+                .is_some_and(|n| n == *crate_name)
+        });
+
+        let Some(pkg) = pkg else {
+            errors.push(format!("{crate_name}: not found in workspace metadata"));
+            continue;
+        };
+
+        let check_string = |field: &str| {
+            match pkg.get(field).and_then(|v| v.as_str()) {
+                Some(s) if !s.is_empty() => None,
+                _ => Some(format!("{crate_name}: missing or empty `{field}`")),
+            }
+        };
+
+        let check_non_empty_array = |field: &str| {
+            match pkg.get(field).and_then(|v| v.as_array()) {
+                Some(arr) if !arr.is_empty() => None,
+                _ => Some(format!("{crate_name}: missing or empty `{field}`")),
+            }
+        };
+
+        if let Some(e) = check_string("license") {
+            errors.push(e);
+        }
+        if let Some(e) = check_string("description") {
+            errors.push(e);
+        }
+        if let Some(e) = check_string("repository") {
+            errors.push(e);
+        }
+        if let Some(e) = check_string("readme") {
+            errors.push(e);
+        }
+        if let Some(e) = check_non_empty_array("categories") {
+            errors.push(e);
+        }
+        if let Some(e) = check_non_empty_array("keywords") {
+            errors.push(e);
+        }
+    }
+
+    if !errors.is_empty() {
+        bail!("crate metadata errors:\n  {}", errors.join("\n  "));
+    }
+
     Ok(())
 }
 
@@ -304,6 +465,12 @@ fn run_pr_plan(
         runner.skip("mutants", reason.clone());
         runner.skip("fuzz", reason.clone());
         runner.skip("no-blob", reason.clone());
+        runner.skip("coverage", reason.clone());
+        runner.skip("coverage:report", reason.clone());
+        runner.skip("preflight:metadata", reason.clone());
+        for name in PUBLISH_CRATES {
+            runner.skip(&format!("preflight:package:{name}"), reason.clone());
+        }
         return Ok(());
     }
 
@@ -365,6 +532,33 @@ fn run_pr_plan(
         runner.step("no-blob", None, no_blob_gate)?;
     } else {
         runner.skip("no-blob", Some("no test/fixture changes".to_string()));
+    }
+
+    if plan.run_coverage {
+        if is_llvm_cov_installed() {
+            run_coverage(runner)?;
+        } else {
+            runner.skip("coverage", Some("cargo-llvm-cov not installed".into()));
+            runner.skip(
+                "coverage:report",
+                Some("cargo-llvm-cov not installed".into()),
+            );
+        }
+    } else {
+        runner.skip("coverage", Some("no rust changes".into()));
+        runner.skip("coverage:report", Some("no rust changes".into()));
+    }
+
+    if plan.run_publish_preflight {
+        run_publish_preflight(runner)?;
+    } else {
+        runner.skip("preflight:metadata", Some("no cargo changes".into()));
+        for name in PUBLISH_CRATES {
+            runner.skip(
+                &format!("preflight:package:{name}"),
+                Some("no cargo changes".into()),
+            );
+        }
     }
 
     Ok(())

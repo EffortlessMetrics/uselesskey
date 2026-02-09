@@ -60,6 +60,8 @@ cargo xtask mutants         # Mutation testing (requires cargo-mutants)
 cargo xtask deny            # License/advisory checks (requires cargo-deny)
 cargo xtask feature-matrix  # Run feature matrix checks (default, no-default, each feature, all-features)
 cargo xtask publish-check   # Run publish dry-runs in dependency order
+cargo xtask coverage          # Run code coverage via cargo-llvm-cov
+cargo xtask publish-preflight # Validate metadata + cargo package --no-verify
 cargo xtask no-blob         # Enforce no secret-shaped blobs in test/fixture paths
 cargo xtask nextest         # Run tests via cargo-nextest (requires cargo-nextest)
 ```
