@@ -17,7 +17,7 @@ Converts uselesskey keypairs into ring native signing key types for direct use i
 
 ```toml
 [dev-dependencies]
-uselesskey-ring = { version = "0.2", features = ["all"] }
+uselesskey-ring = { version = "0.1", features = ["all"] }
 ```
 
 ```rust

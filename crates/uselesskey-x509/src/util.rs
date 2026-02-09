@@ -31,3 +31,33 @@ pub fn deterministic_serial_number(rng: &mut impl RngCore) -> SerialNumber {
     bytes[0] &= 0x7F;
     SerialNumber::from_slice(&bytes)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rand_chacha::ChaCha20Rng;
+    use rand_core::SeedableRng;
+
+    #[test]
+    fn deterministic_base_time_is_within_one_year() {
+        // 2025-01-01T00:00:00Z
+        const EPOCH_UNIX: i64 = 1_735_689_600;
+        let epoch = OffsetDateTime::from_unix_timestamp(EPOCH_UNIX).unwrap();
+
+        let base = deterministic_base_time(blake3::Hasher::new());
+        let max = epoch + time::Duration::days(364);
+
+        assert!(base >= epoch, "base time should be after epoch");
+        assert!(base <= max, "base time should be within 365 days");
+    }
+
+    #[test]
+    fn deterministic_serial_number_is_positive_and_16_bytes() {
+        let mut rng = ChaCha20Rng::from_seed([7u8; 32]);
+        let serial = deterministic_serial_number(&mut rng);
+        let bytes = serial.to_bytes();
+
+        assert_eq!(bytes.len(), 16);
+        assert_eq!(bytes[0] & 0x80, 0, "high bit should be cleared");
+    }
+}

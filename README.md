@@ -1,5 +1,7 @@
 # uselesskey
 
+*Terraform for test credentials.*
+
 **Stop committing PEM/DER/JWK blobs into your repos.**
 
 A test-fixture factory that generates cryptographic key material and X.509 certificates at runtime. Not a crypto library.
@@ -15,6 +17,15 @@ Secret scanners have changed the game for test fixtures:
 Even fake keys that look real cause friction. This crate replaces "security policy + docs + exceptions" with one dev-dependency.
 
 > **Do not use for production keys.** Deterministic keys are predictable by design. Even random-mode keys are intended for tests only.
+
+## Why Not Just...
+
+| Approach | Drawback |
+|----------|----------|
+| Check in PEM files | Triggers GitGuardian/GitHub push protection |
+| Generate keys ad-hoc in tests | No caching, slow RSA keygen, no determinism |
+| Use raw crypto crates directly | Boilerplate for PEM/DER encoding, no negative fixtures |
+| Use `rcgen` directly | Not test-fixture-focused; no deterministic mode, no negative fixtures |
 
 ## What You Get
 
@@ -169,7 +180,9 @@ Adapter crates bridge uselesskey fixtures to third-party library types. They are
 |-------|---------|
 | `uselesskey-jsonwebtoken` | Returns `jsonwebtoken::EncodingKey` / `DecodingKey` directly |
 | `uselesskey-rustls` | `rustls-pki-types` conversions + `ServerConfig` / `ClientConfig` builders |
-| `uselesskey-ring` | `ring` 0.17 native signing key types (`rsa::KeyPair`, `EcdsaKeyPair`, `Ed25519KeyPair`) |
+| `uselesskey-ring` | `ring` 0.17 native signing key types |
+| `uselesskey-rustcrypto` | RustCrypto native types (`rsa::RsaPrivateKey`, `p256::ecdsa::SigningKey`, etc.) |
+| `uselesskey-aws-lc-rs` | `aws-lc-rs` native types with `native` feature for wasm-safe builds |
 
 ### TLS Config Builders (uselesskey-rustls)
 
@@ -248,6 +261,12 @@ Ask for PKCS#8/SPKI/JWK, not crypto primitives. Users shouldn't need to know whi
 ### Negative fixtures first-class
 
 Corrupt PEM, truncated DER, mismatched keys, expired certs, revoked leaves with CRLs. These are annoying to produce manually, which is why teams commit them. This crate makes them cheap and ephemeral.
+
+### When NOT to use this crate
+
+- Production key generation or certificate management
+- Certificate validation logic (use `rustls`, `x509-parser`)
+- Runtime CA operations (use `rcgen` directly)
 
 ## Ecosystem
 

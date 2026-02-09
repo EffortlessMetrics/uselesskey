@@ -9,9 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `uselesskey-rustcrypto` adapter crate for RustCrypto native types (`rsa`, `p256`, `p384`, `ed25519-dalek`, `hmac`)
+- `uselesskey-aws-lc-rs` adapter crate for `aws-lc-rs` native types with `native` feature for wasm-safe builds
 - `ChainNegative::RevokedLeaf` variant with CRL signed by intermediate CA (`uselesskey-x509`)
 - `RustlsServerConfigExt` / `RustlsClientConfigExt` / `RustlsMtlsExt` config builders (`uselesskey-rustls`)
+- `server_config_mtls_rustls_with_provider()` / `client_config_mtls_rustls_with_provider()` for mTLS with explicit crypto provider (`uselesskey-rustls`)
 - `uselesskey-ring` adapter crate for `ring` 0.17 native signing key types
+- Cross-key failure test in `uselesskey-jsonwebtoken`
+- Deterministic-mode test in `uselesskey-ring`
+- Per-crate README files for all adapter crates
+- Crate-level `//!` docs for `uselesskey-hmac` and `uselesskey-jwk`
+- "Why not just..." comparison section in root README
 - README: X.509, adapter crates, TLS config builder, and ecosystem sections
 
 ## [0.1.0] - 2026-02-03

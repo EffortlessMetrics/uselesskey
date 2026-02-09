@@ -1,5 +1,10 @@
 #![forbid(unsafe_code)]
 
+//! Typed JWK and JWKS helpers for uselesskey test fixtures.
+//!
+//! Provides structured JWK types ([`RsaPublicJwk`], [`EcPublicJwk`], [`OkpPublicJwk`], etc.)
+//! and a [`JwksBuilder`] for composing JWKS documents with stable key ordering.
+
 use serde::Serialize;
 use serde_json::Value;
 use std::fmt;
@@ -367,6 +372,27 @@ impl From<PrivateJwk> for AnyJwk {
 mod tests {
     use super::*;
 
+    fn sample_rsa_public(kid: &str, n: &str) -> PublicJwk {
+        PublicJwk::Rsa(RsaPublicJwk {
+            kty: "RSA",
+            use_: "sig",
+            alg: "RS256",
+            kid: kid.to_string(),
+            n: n.to_string(),
+            e: "AQAB".to_string(),
+        })
+    }
+
+    fn sample_oct_private(kid: &str, k: &str) -> PrivateJwk {
+        PrivateJwk::Oct(OctJwk {
+            kty: "oct",
+            use_: "sig",
+            alg: "HS256",
+            kid: kid.to_string(),
+            k: k.to_string(),
+        })
+    }
+
     #[test]
     fn jwks_builder_orders_by_kid() {
         let jwk1 = PublicJwk::Rsa(RsaPublicJwk {
@@ -421,5 +447,65 @@ mod tests {
         let second = jwks.keys[1].to_value();
         assert_eq!(first["n"], "n1");
         assert_eq!(second["n"], "n2");
+    }
+
+    #[test]
+    fn display_outputs_json() {
+        let jwk = sample_rsa_public("kid-1", "n1");
+        let json = jwk.to_string();
+        let v: Value = serde_json::from_str(&json).expect("valid JSON");
+        assert_eq!(v["kty"], "RSA");
+
+        let private = sample_oct_private("kid-2", "secret");
+        let json = private.to_string();
+        let v: Value = serde_json::from_str(&json).expect("valid JSON");
+        assert_eq!(v["kty"], "oct");
+    }
+
+    #[test]
+    fn debug_omits_private_material() {
+        let secret = "super-secret-value";
+        let jwk = sample_oct_private("kid-3", secret);
+        let dbg = format!("{:?}", jwk);
+        assert!(dbg.contains("OctJwk"));
+        assert!(!dbg.contains(secret));
+    }
+
+    #[test]
+    fn any_jwk_from_conversions_work() {
+        let pub_jwk = sample_rsa_public("kid-4", "n4");
+        let any_pub = AnyJwk::from(pub_jwk.clone());
+        assert_eq!(any_pub.kid(), pub_jwk.kid());
+
+        let priv_jwk = sample_oct_private("kid-5", "k5");
+        let any_priv = AnyJwk::from(priv_jwk.clone());
+        assert_eq!(any_priv.kid(), priv_jwk.kid());
+    }
+
+    #[test]
+    fn jwks_builder_push_methods_and_display() {
+        let jwk_pub = sample_rsa_public("kid-b", "nb");
+        let jwk_priv = sample_oct_private("kid-a", "ka");
+
+        let mut builder = JwksBuilder::new();
+        builder.push_public(jwk_pub.clone());
+        builder.push_private(jwk_priv.clone());
+        builder.push_any(AnyJwk::from(jwk_pub.clone()));
+
+        let jwks = builder.build();
+        let json = jwks.to_string();
+        let v: Value = serde_json::from_str(&json).expect("valid JSON");
+
+        let keys = v["keys"].as_array().expect("keys array");
+        assert_eq!(keys.len(), 3);
+        assert_eq!(jwks.keys.len(), 3);
+    }
+
+    #[test]
+    fn jwks_to_value_contains_keys() {
+        let jwks = JwksBuilder::new().add_public(sample_rsa_public("kid", "n")).build();
+        let v = jwks.to_value();
+        assert!(v["keys"].is_array());
+        assert_eq!(v["keys"].as_array().unwrap().len(), 1);
     }
 }

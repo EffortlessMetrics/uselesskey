@@ -20,7 +20,7 @@ When the `native` feature is disabled, this crate compiles as a no-op with no tr
 
 ```toml
 [dev-dependencies]
-uselesskey-aws-lc-rs = { version = "0.2", features = ["all"] }
+uselesskey-aws-lc-rs = { version = "0.1", features = ["all"] }
 ```
 
 ```rust

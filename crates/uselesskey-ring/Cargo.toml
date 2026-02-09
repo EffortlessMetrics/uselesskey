@@ -8,7 +8,7 @@ repository.workspace = true
 description = "ring 0.17 integration for uselesskey test fixtures."
 categories = ["development-tools::testing"]
 keywords = ["ring", "fixtures", "testing", "crypto"]
-readme = "../../README.md"
+readme = "README.md"
 authors.workspace = true
 
 [dependencies]
