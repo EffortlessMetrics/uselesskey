@@ -39,7 +39,7 @@ mod tests {
             "failed to parse seed from environment variable `MY_VAR`: bad seed"
         );
 
-        let io_err: Error = std::io::Error::new(std::io::ErrorKind::Other, "io-fail").into();
+        let io_err: Error = std::io::Error::other("io-fail").into();
         assert_eq!(io_err.to_string(), "io-fail");
     }
 }

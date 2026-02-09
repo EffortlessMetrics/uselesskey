@@ -273,9 +273,7 @@ fn is_llvm_cov_installed() -> bool {
 
 fn coverage() -> Result<()> {
     if !is_llvm_cov_installed() {
-        bail!(
-            "cargo-llvm-cov is not installed. Install with: cargo install cargo-llvm-cov"
-        );
+        bail!("cargo-llvm-cov is not installed. Install with: cargo install cargo-llvm-cov");
     }
     let mut runner = receipt::Runner::new("target/xtask/receipt.json");
     let result = run_coverage(&mut runner);
@@ -359,29 +357,23 @@ fn check_crate_metadata() -> Result<()> {
     let mut errors: Vec<String> = Vec::new();
 
     for crate_name in PUBLISH_CRATES {
-        let pkg = packages.iter().find(|p| {
-            p["name"]
-                .as_str()
-                .is_some_and(|n| n == *crate_name)
-        });
+        let pkg = packages
+            .iter()
+            .find(|p| p["name"].as_str().is_some_and(|n| n == *crate_name));
 
         let Some(pkg) = pkg else {
             errors.push(format!("{crate_name}: not found in workspace metadata"));
             continue;
         };
 
-        let check_string = |field: &str| {
-            match pkg.get(field).and_then(|v| v.as_str()) {
-                Some(s) if !s.is_empty() => None,
-                _ => Some(format!("{crate_name}: missing or empty `{field}`")),
-            }
+        let check_string = |field: &str| match pkg.get(field).and_then(|v| v.as_str()) {
+            Some(s) if !s.is_empty() => None,
+            _ => Some(format!("{crate_name}: missing or empty `{field}`")),
         };
 
-        let check_non_empty_array = |field: &str| {
-            match pkg.get(field).and_then(|v| v.as_array()) {
-                Some(arr) if !arr.is_empty() => None,
-                _ => Some(format!("{crate_name}: missing or empty `{field}`")),
-            }
+        let check_non_empty_array = |field: &str| match pkg.get(field).and_then(|v| v.as_array()) {
+            Some(arr) if !arr.is_empty() => None,
+            _ => Some(format!("{crate_name}: missing or empty `{field}`")),
         };
 
         if let Some(e) = check_string("license") {
