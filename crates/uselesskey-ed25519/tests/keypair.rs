@@ -33,10 +33,7 @@ fn pkcs8_and_spki_are_parseable() {
     let fx = Factory::deterministic(Seed::from_env_value("ed25519-parse").unwrap());
     let key = fx.ed25519("issuer", Ed25519Spec::new());
 
-    assert_private_key_parseable(
-        key.private_key_pkcs8_pem(),
-        key.private_key_pkcs8_der(),
-    );
+    assert_private_key_parseable(key.private_key_pkcs8_pem(), key.private_key_pkcs8_der());
     assert_public_key_parseable(key.public_key_spki_pem(), key.public_key_spki_der());
 }
 
