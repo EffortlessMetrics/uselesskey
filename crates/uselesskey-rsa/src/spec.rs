@@ -78,3 +78,37 @@ impl RsaSpec {
         out
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rs256_defaults_are_expected() {
+        let spec = RsaSpec::rs256();
+        assert_eq!(spec.bits, 2048);
+        assert_eq!(spec.exponent, 65537);
+    }
+
+    #[test]
+    fn new_sets_bits_and_default_exponent() {
+        let spec = RsaSpec::new(4096);
+        assert_eq!(spec.bits, 4096);
+        assert_eq!(spec.exponent, 65537);
+    }
+
+    #[test]
+    fn stable_bytes_encodes_bits_and_exponent() {
+        let spec = RsaSpec::rs256();
+        let bytes = spec.stable_bytes();
+        assert_eq!(&bytes[..4], &2048u32.to_be_bytes());
+        assert_eq!(&bytes[4..], &65537u32.to_be_bytes());
+    }
+
+    #[test]
+    fn stable_bytes_clamps_large_bits() {
+        let spec = RsaSpec::new(usize::MAX);
+        let bytes = spec.stable_bytes();
+        assert_eq!(&bytes[..4], &u32::MAX.to_be_bytes());
+    }
+}

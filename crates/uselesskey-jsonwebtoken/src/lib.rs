@@ -351,6 +351,47 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "ecdsa")]
+    mod cross_key_tests {
+        use crate::JwtKeyExt;
+        use jsonwebtoken::{Algorithm, Header, Validation, decode, encode};
+        use serde::{Deserialize, Serialize};
+        use uselesskey_core::Factory;
+        use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
+
+        #[derive(Debug, Serialize, Deserialize, PartialEq)]
+        struct TestClaims {
+            sub: String,
+            exp: usize,
+        }
+
+        #[test]
+        fn test_cross_key_decode_fails() {
+            let fx = Factory::random();
+            let key_a = fx.ecdsa("issuer-a", EcdsaSpec::es256());
+            let key_b = fx.ecdsa("issuer-b", EcdsaSpec::es256());
+
+            let claims = TestClaims {
+                sub: "user".to_string(),
+                exp: 9999999999,
+            };
+
+            let token = encode(
+                &Header::new(Algorithm::ES256),
+                &claims,
+                &key_a.encoding_key(),
+            )
+            .unwrap();
+
+            let result = decode::<TestClaims>(
+                &token,
+                &key_b.decoding_key(),
+                &Validation::new(Algorithm::ES256),
+            );
+            assert!(result.is_err(), "decoding with wrong key should fail");
+        }
+    }
+
     #[cfg(feature = "hmac")]
     mod hmac_tests {
         use crate::JwtKeyExt;

@@ -141,3 +141,63 @@ fn inject_blank_line(pem: &str) -> String {
     }
     out
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bad_header_replaces_first_line() {
+        let pem = "-----BEGIN TEST-----\nAAA=\n-----END TEST-----\n";
+        let out = corrupt_pem(pem, CorruptPem::BadHeader);
+        assert!(out.starts_with("-----BEGIN CORRUPTED KEY-----\n"));
+    }
+
+    #[test]
+    fn bad_footer_replaces_last_line() {
+        let pem = "-----BEGIN TEST-----\nAAA=\n-----END TEST-----\n";
+        let out = corrupt_pem(pem, CorruptPem::BadFooter);
+        assert!(out.contains("-----END CORRUPTED KEY-----\n"));
+    }
+
+    #[test]
+    fn bad_footer_on_empty_input_returns_replacement() {
+        let out = corrupt_pem("", CorruptPem::BadFooter);
+        assert_eq!(out, "-----END CORRUPTED KEY-----");
+    }
+
+    #[test]
+    fn bad_base64_short_input_inserts_line() {
+        let out = corrupt_pem("x", CorruptPem::BadBase64);
+        assert_eq!(out, "x\nTHIS_IS_NOT_BASE64!!!\n");
+    }
+
+    #[test]
+    fn extra_blank_line_short_input_appends_newlines() {
+        let out = corrupt_pem("x", CorruptPem::ExtraBlankLine);
+        assert_eq!(out, "x\n\n");
+    }
+
+    #[test]
+    fn truncate_variant_limits_length() {
+        let pem = "-----BEGIN TEST-----\nAAA=\n-----END TEST-----\n";
+        let out = corrupt_pem(pem, CorruptPem::Truncate { bytes: 10 });
+        assert_eq!(out.len(), 10);
+    }
+
+    #[test]
+    fn bad_base64_inserts_line_after_header() {
+        let pem = "-----BEGIN TEST-----\nAAA=\n-----END TEST-----\n";
+        let out = corrupt_pem(pem, CorruptPem::BadBase64);
+        let lines: Vec<_> = out.lines().collect();
+        assert_eq!(lines[1], "THIS_IS_NOT_BASE64!!!");
+    }
+
+    #[test]
+    fn extra_blank_line_inserts_blank_line_after_header() {
+        let pem = "-----BEGIN TEST-----\nAAA=\n-----END TEST-----\n";
+        let out = corrupt_pem(pem, CorruptPem::ExtraBlankLine);
+        let lines: Vec<_> = out.lines().collect();
+        assert_eq!(lines[1], "");
+    }
+}

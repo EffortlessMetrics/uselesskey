@@ -56,3 +56,38 @@ pub fn flip_byte(der: &[u8], offset: usize) -> Vec<u8> {
     out[offset] ^= 0x01;
     out
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn flip_byte_changes_only_target_offset() {
+        let der = vec![0x30, 0x82, 0x01, 0x22];
+        let flipped = flip_byte(&der, 0);
+
+        assert_eq!(flipped[0], 0x31);
+        assert_eq!(&flipped[1..], &der[1..]);
+    }
+
+    #[test]
+    fn flip_byte_out_of_range_is_noop() {
+        let der = vec![0x30, 0x82, 0x01, 0x22];
+        let flipped = flip_byte(&der, 100);
+        assert_eq!(flipped, der);
+    }
+
+    #[test]
+    fn truncate_der_shortens_when_len_smaller() {
+        let der = vec![0x30, 0x82, 0x01, 0x22];
+        let truncated = truncate_der(&der, 2);
+        assert_eq!(truncated, vec![0x30, 0x82]);
+    }
+
+    #[test]
+    fn truncate_der_len_ge_returns_original() {
+        let der = vec![0x30, 0x82, 0x01, 0x22];
+        assert_eq!(truncate_der(&der, der.len()), der);
+        assert_eq!(truncate_der(&der, der.len() + 10), der);
+    }
+}

@@ -164,9 +164,21 @@ pub trait RustlsMtlsExt {
     /// the chain's root CA.
     fn server_config_mtls_rustls(&self) -> rustls::ServerConfig;
 
+    /// Build a `ServerConfig` for mTLS with an explicit `CryptoProvider`.
+    fn server_config_mtls_rustls_with_provider(
+        &self,
+        provider: Arc<CryptoProvider>,
+    ) -> rustls::ServerConfig;
+
     /// Build a `ClientConfig` that presents the leaf certificate as a client
     /// certificate and trusts the root CA.
     fn client_config_mtls_rustls(&self) -> rustls::ClientConfig;
+
+    /// Build a `ClientConfig` for mTLS with an explicit `CryptoProvider`.
+    fn client_config_mtls_rustls_with_provider(
+        &self,
+        provider: Arc<CryptoProvider>,
+    ) -> rustls::ClientConfig;
 }
 
 #[cfg(all(feature = "x509", feature = "server-config", feature = "client-config"))]
@@ -190,6 +202,30 @@ impl RustlsMtlsExt for uselesskey_x509::X509Chain {
             .expect("valid mTLS server config")
     }
 
+    fn server_config_mtls_rustls_with_provider(
+        &self,
+        provider: Arc<CryptoProvider>,
+    ) -> rustls::ServerConfig {
+        let mut root_store = rustls::RootCertStore::empty();
+        root_store
+            .add(self.root_certificate_der_rustls())
+            .expect("valid root cert");
+
+        let client_verifier = rustls::server::WebPkiClientVerifier::builder(root_store.into())
+            .build()
+            .expect("valid client verifier");
+
+        let private_key = self.private_key_der_rustls();
+        let cert_chain = self.chain_der_rustls();
+
+        rustls::ServerConfig::builder_with_provider(provider)
+            .with_safe_default_protocol_versions()
+            .expect("valid protocol versions")
+            .with_client_cert_verifier(client_verifier)
+            .with_single_cert(cert_chain, private_key)
+            .expect("valid mTLS server config")
+    }
+
     fn client_config_mtls_rustls(&self) -> rustls::ClientConfig {
         let mut root_store = rustls::RootCertStore::empty();
         root_store
@@ -200,6 +236,26 @@ impl RustlsMtlsExt for uselesskey_x509::X509Chain {
         let cert_chain = self.chain_der_rustls();
 
         rustls::ClientConfig::builder()
+            .with_root_certificates(root_store)
+            .with_client_auth_cert(cert_chain, private_key)
+            .expect("valid mTLS client config")
+    }
+
+    fn client_config_mtls_rustls_with_provider(
+        &self,
+        provider: Arc<CryptoProvider>,
+    ) -> rustls::ClientConfig {
+        let mut root_store = rustls::RootCertStore::empty();
+        root_store
+            .add(self.root_certificate_der_rustls())
+            .expect("valid root cert");
+
+        let private_key = self.private_key_der_rustls();
+        let cert_chain = self.chain_der_rustls();
+
+        rustls::ClientConfig::builder_with_provider(provider)
+            .with_safe_default_protocol_versions()
+            .expect("valid protocol versions")
             .with_root_certificates(root_store)
             .with_client_auth_cert(cert_chain, private_key)
             .expect("valid mTLS client config")
@@ -226,6 +282,10 @@ mod tests {
                 .install_default()
                 .expect("install ring provider");
         });
+    }
+
+    fn ring_provider() -> Arc<CryptoProvider> {
+        Arc::new(rustls::crypto::ring::default_provider())
     }
 
     #[test]
@@ -293,6 +353,54 @@ mod tests {
             }
 
             // server -> client
+            buf.clear();
+            if server.wants_write() {
+                server.write_tls(&mut buf).unwrap();
+                if !buf.is_empty() {
+                    client.read_tls(&mut &buf[..]).unwrap();
+                    client.process_new_packets().unwrap();
+                    progress = true;
+                }
+            }
+
+            if !progress {
+                break;
+            }
+        }
+
+        assert!(!client.is_handshaking());
+        assert!(!server.is_handshaking());
+    }
+
+    #[test]
+    fn mtls_with_provider_roundtrip() {
+        let fx = Factory::random();
+        let chain = fx.x509_chain("mtls-provider-test", ChainSpec::new("test.example.com"));
+
+        let provider = ring_provider();
+        let server_config =
+            Arc::new(chain.server_config_mtls_rustls_with_provider(provider.clone()));
+        let client_config = Arc::new(chain.client_config_mtls_rustls_with_provider(provider));
+
+        let server_name: rustls::pki_types::ServerName<'_> = "test.example.com".try_into().unwrap();
+        let mut server = rustls::ServerConnection::new(server_config).unwrap();
+        let mut client =
+            rustls::ClientConnection::new(client_config, server_name.to_owned()).unwrap();
+
+        let mut buf = Vec::new();
+        loop {
+            let mut progress = false;
+
+            buf.clear();
+            if client.wants_write() {
+                client.write_tls(&mut buf).unwrap();
+                if !buf.is_empty() {
+                    server.read_tls(&mut &buf[..]).unwrap();
+                    server.process_new_packets().unwrap();
+                    progress = true;
+                }
+            }
+
             buf.clear();
             if server.wants_write() {
                 server.write_tls(&mut buf).unwrap();

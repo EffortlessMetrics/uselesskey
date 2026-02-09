@@ -200,6 +200,8 @@ fn publish_check() -> Result<()> {
         "uselesskey-jsonwebtoken",
         "uselesskey-rustls",
         "uselesskey-ring",
+        "uselesskey-rustcrypto",
+        "uselesskey-aws-lc-rs",
     ];
 
     for name in crates {
@@ -696,4 +698,169 @@ fn dep_guard() -> Result<()> {
             .collect::<Vec<_>>()
             .join(", ")
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::env;
+    use std::path::PathBuf;
+    use std::sync::Mutex;
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
+
+    struct CwdGuard {
+        prev: PathBuf,
+    }
+
+    impl CwdGuard {
+        fn new(path: &Path) -> Self {
+            let prev = env::current_dir().expect("current dir");
+            env::set_current_dir(path).expect("set current dir");
+            Self { prev }
+        }
+    }
+
+    impl Drop for CwdGuard {
+        fn drop(&mut self) {
+            let _ = env::set_current_dir(&self.prev);
+        }
+    }
+
+    fn restore_env(key: &str, prev: Option<String>) {
+        match prev {
+            Some(val) => unsafe { env::set_var(key, val) },
+            None => unsafe { env::remove_var(key) },
+        }
+    }
+
+    #[test]
+    fn resolve_base_ref_prefers_xtask_base_ref() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        let prev_xtask = env::var("XTASK_BASE_REF").ok();
+        let prev_gh = env::var("GITHUB_BASE_REF").ok();
+
+        unsafe { env::set_var("XTASK_BASE_REF", "origin/feature-branch") };
+        unsafe { env::set_var("GITHUB_BASE_REF", "main") };
+        assert_eq!(resolve_base_ref(), "origin/feature-branch");
+
+        restore_env("XTASK_BASE_REF", prev_xtask);
+        restore_env("GITHUB_BASE_REF", prev_gh);
+    }
+
+    #[test]
+    fn resolve_base_ref_uses_github_base_ref() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        let prev_xtask = env::var("XTASK_BASE_REF").ok();
+        let prev_gh = env::var("GITHUB_BASE_REF").ok();
+
+        unsafe { env::remove_var("XTASK_BASE_REF") };
+        unsafe { env::set_var("GITHUB_BASE_REF", "dev") };
+        assert_eq!(resolve_base_ref(), "origin/dev");
+
+        restore_env("XTASK_BASE_REF", prev_xtask);
+        restore_env("GITHUB_BASE_REF", prev_gh);
+    }
+
+    #[test]
+    fn resolve_base_ref_defaults_to_origin_main() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        let prev_xtask = env::var("XTASK_BASE_REF").ok();
+        let prev_gh = env::var("GITHUB_BASE_REF").ok();
+
+        unsafe { env::remove_var("XTASK_BASE_REF") };
+        unsafe { env::remove_var("GITHUB_BASE_REF") };
+        assert_eq!(resolve_base_ref(), "origin/main");
+
+        restore_env("XTASK_BASE_REF", prev_xtask);
+        restore_env("GITHUB_BASE_REF", prev_gh);
+    }
+
+    #[test]
+    fn should_scan_path_matches_expected() {
+        assert!(should_scan_path("tests/fixture.pem"));
+        assert!(should_scan_path("fixtures/key.pem"));
+        assert!(should_scan_path("testdata/key.pem"));
+        assert!(should_scan_path("crates/uselesskey-core/tests/basic.rs"));
+        assert!(!should_scan_path("crates/uselesskey-core/src/lib.rs"));
+        assert!(!should_scan_path("docs/guide.md"));
+    }
+
+    #[test]
+    fn is_secret_extension_is_case_insensitive() {
+        assert!(is_secret_extension(Path::new("key.PEM")));
+        assert!(is_secret_extension(Path::new("cert.CRT")));
+        assert!(!is_secret_extension(Path::new("readme.txt")));
+    }
+
+    #[test]
+    fn contains_pem_markers_skips_source_extensions() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let path = dir.path().join("notes.md");
+        fs::write(&path, "-----BEGIN TEST-----\nX\n-----END TEST-----\n").unwrap();
+        let has = contains_pem_markers(&path).expect("read file");
+        assert!(!has);
+    }
+
+    #[test]
+    fn contains_pem_markers_detects_markers_in_non_source_files() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let yes = dir.path().join("key.txt");
+        let no = dir.path().join("note.txt");
+        fs::write(&yes, "-----BEGIN TEST-----\nX\n-----END TEST-----\n").unwrap();
+        fs::write(&no, "just text").unwrap();
+
+        assert!(contains_pem_markers(&yes).expect("read file"));
+        assert!(!contains_pem_markers(&no).expect("read file"));
+    }
+
+    #[test]
+    fn contains_pem_markers_errors_on_missing_file() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let missing = dir.path().join("missing.txt");
+        let err = contains_pem_markers(&missing).unwrap_err();
+        let msg = err.to_string();
+        assert!(msg.contains("failed to read"));
+    }
+
+    #[test]
+    fn list_fuzz_targets_returns_sorted_rs_stems() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let root = dir.path();
+        let fuzz_dir = root.join("fuzz").join("fuzz_targets");
+        fs::create_dir_all(&fuzz_dir).expect("create fuzz_targets");
+        fs::write(fuzz_dir.join("b.rs"), "fn main() {}").unwrap();
+        fs::write(fuzz_dir.join("a.rs"), "fn main() {}").unwrap();
+        fs::write(fuzz_dir.join("README.md"), "ignore").unwrap();
+
+        let _cwd = CwdGuard::new(root);
+        let targets = list_fuzz_targets().expect("list targets");
+        assert_eq!(targets, vec!["a".to_string(), "b".to_string()]);
+    }
+
+    #[test]
+    fn list_fuzz_targets_missing_dir_is_empty() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let _cwd = CwdGuard::new(dir.path());
+        let targets = list_fuzz_targets().expect("list targets");
+        assert!(targets.is_empty());
+    }
+
+    #[test]
+    fn count_bdd_scenarios_counts_scenarios_and_outlines() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let root = dir.path();
+        let features_dir = root.join("crates").join("uselesskey-bdd").join("features");
+        fs::create_dir_all(&features_dir).expect("create features dir");
+        let feature = features_dir.join("sample.feature");
+        fs::write(
+            &feature,
+            "Feature: demo\n  Scenario: one\n  Scenario Outline: two\n",
+        )
+        .unwrap();
+
+        let _cwd = CwdGuard::new(root);
+        let counts = count_bdd_scenarios().expect("count scenarios");
+        assert_eq!(counts.get("sample.feature"), Some(&2));
+    }
 }

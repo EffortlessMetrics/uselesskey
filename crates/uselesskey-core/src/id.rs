@@ -191,3 +191,75 @@ impl ArtifactId {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn seed_debug_is_redacted() {
+        let seed = Seed::new([7u8; 32]);
+        assert_eq!(format!("{:?}", seed), "Seed(**redacted**)");
+    }
+
+    #[test]
+    fn parse_hex_32_rejects_wrong_length() {
+        let err = parse_hex_32("abcd").unwrap_err();
+        assert!(err.contains("expected 64 hex chars"));
+    }
+
+    #[test]
+    fn parse_hex_32_rejects_invalid_char() {
+        let mut s = "0".repeat(64);
+        s.replace_range(10..11, "g");
+
+        let err = parse_hex_32(&s).unwrap_err();
+        assert!(err.contains("invalid hex char"));
+    }
+
+    #[test]
+    fn artifact_id_fingerprints_spec_bytes() {
+        let spec = [1u8, 2, 3, 4, 5];
+        let id = ArtifactId::new(
+            "domain:test",
+            "label",
+            &spec,
+            "variant",
+            DerivationVersion::V1,
+        );
+
+        let expected = *crate::derive::hash32(&spec).as_bytes();
+        assert_eq!(id.spec_fingerprint, expected);
+    }
+
+    #[test]
+    fn artifact_id_preserves_fields() {
+        let id = ArtifactId::new(
+            "domain:test",
+            "my-label",
+            b"spec",
+            "my-variant",
+            DerivationVersion::V1,
+        );
+
+        assert_eq!(id.domain, "domain:test");
+        assert_eq!(id.label, "my-label");
+        assert_eq!(id.variant, "my-variant");
+        assert_eq!(id.derivation_version, DerivationVersion::V1);
+    }
+
+    #[test]
+    fn seed_from_env_value_parses_hex_with_prefix_and_whitespace() {
+        let hex = "0x0000000000000000000000000000000000000000000000000000000000000001";
+        let seed = Seed::from_env_value(&format!("  {hex}  ")).unwrap();
+        assert_eq!(seed.bytes()[31], 1);
+        assert!(seed.bytes()[..31].iter().all(|b| *b == 0));
+    }
+
+    #[test]
+    fn seed_from_env_value_parses_uppercase_hex() {
+        let hex = "F".repeat(64);
+        let seed = Seed::from_env_value(&hex).unwrap();
+        assert!(seed.bytes().iter().all(|b| *b == 0xFF));
+    }
+}

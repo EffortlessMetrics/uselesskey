@@ -158,3 +158,63 @@ impl TempArtifact {
         Ok(String::from_utf8_lossy(&bytes).to_string())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::thread;
+    use std::time::Duration;
+
+    #[test]
+    fn new_bytes_round_trip() {
+        let data = vec![1u8, 2, 3, 4, 5];
+        let temp = TempArtifact::new_bytes("uk-test-", ".bin", &data).unwrap();
+
+        let read_back = temp.read_to_bytes().unwrap();
+        assert_eq!(read_back, data);
+    }
+
+    #[test]
+    fn new_string_round_trip() {
+        let text = "hello temp";
+        let temp = TempArtifact::new_string("uk-test-", ".txt", text).unwrap();
+
+        let read_back = temp.read_to_string().unwrap();
+        assert_eq!(read_back, text);
+    }
+
+    #[test]
+    fn read_to_string_replaces_invalid_utf8() {
+        let bytes = [0xff, 0xfe, 0xfd];
+        let temp = TempArtifact::new_bytes("uk-test-", ".bin", &bytes).unwrap();
+
+        let read_back = temp.read_to_string().unwrap();
+        assert!(read_back.contains('\u{FFFD}'));
+    }
+
+    #[test]
+    fn tempfile_deleted_on_drop() {
+        let path = {
+            let temp = TempArtifact::new_string("uk-test-", ".txt", "cleanup").unwrap();
+            let path = temp.path().to_path_buf();
+            assert!(path.exists());
+            path
+        };
+
+        for _ in 0..5 {
+            if !path.exists() {
+                return;
+            }
+            thread::sleep(Duration::from_millis(10));
+        }
+
+        assert!(!path.exists(), "tempfile should be deleted on drop");
+    }
+
+    #[test]
+    fn debug_includes_type_name() {
+        let temp = TempArtifact::new_string("uk-test-", ".txt", "dbg").unwrap();
+        let dbg = format!("{:?}", temp);
+        assert!(dbg.contains("TempArtifact"));
+    }
+}
