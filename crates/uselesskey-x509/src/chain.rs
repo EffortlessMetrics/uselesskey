@@ -457,6 +457,7 @@ fn load_chain_inner(
 mod tests {
     use super::*;
     use crate::cert::X509FactoryExt;
+    use crate::testutil::fx;
     use uselesskey_core::Seed;
 
     #[test]
@@ -493,7 +494,7 @@ mod tests {
 
     #[test]
     fn test_chain_pem_format() {
-        let factory = Factory::random();
+        let factory = fx();
         let spec = ChainSpec::new("test.example.com");
         let chain = X509Chain::new(factory, "test", spec);
 
@@ -537,7 +538,7 @@ mod tests {
     fn test_good_chain_leaf_not_expired_within_five_years() {
         use x509_parser::prelude::*;
 
-        let factory = Factory::random();
+        let factory = fx();
         let spec = ChainSpec::new("test.example.com");
         let chain = X509Chain::new(factory, "test", spec);
 
@@ -572,7 +573,7 @@ mod tests {
     fn test_chain_cert_parsing() {
         use x509_parser::prelude::*;
 
-        let factory = Factory::random();
+        let factory = fx();
         let spec = ChainSpec::new("test.example.com");
         let chain = X509Chain::new(factory, "test", spec);
 
@@ -598,7 +599,7 @@ mod tests {
     fn test_chain_sans() {
         use x509_parser::prelude::*;
 
-        let factory = Factory::random();
+        let factory = fx();
         let spec = ChainSpec::new("test.example.com").with_sans(vec![
             "test.example.com".to_string(),
             "www.example.com".to_string(),
@@ -617,7 +618,7 @@ mod tests {
 
     #[test]
     fn test_tempfile_outputs() {
-        let factory = Factory::random();
+        let factory = fx();
         let spec = ChainSpec::new("test.example.com");
         let chain = X509Chain::new(factory, "test", spec);
 
@@ -642,7 +643,7 @@ mod tests {
 
     #[test]
     fn test_debug_includes_label_and_spec() {
-        let factory = Factory::random();
+        let factory = fx();
         let spec = ChainSpec::new("debug.example.com");
         let chain = X509Chain::new(factory, "debug-label", spec);
 
@@ -653,7 +654,7 @@ mod tests {
 
     #[test]
     fn test_private_key_accessors_non_empty() {
-        let factory = Factory::random();
+        let factory = fx();
         let spec = ChainSpec::new("keys.example.com");
         let chain = X509Chain::new(factory, "keys", spec);
 
