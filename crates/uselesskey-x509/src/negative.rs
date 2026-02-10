@@ -106,10 +106,10 @@ mod tests {
         let modified = X509Negative::Expired.apply_to_spec(&base);
 
         // Should have not_before far in the past
-        match modified.not_before_offset {
-            NotBeforeOffset::DaysAgo(d) => assert!(d > 365),
-            _ => panic!("expected DaysAgo"),
-        }
+        assert!(matches!(
+            modified.not_before_offset,
+            NotBeforeOffset::DaysAgo(d) if d > 365
+        ));
     }
 
     #[test]
@@ -117,10 +117,10 @@ mod tests {
         let base = X509Spec::self_signed("test");
         let modified = X509Negative::NotYetValid.apply_to_spec(&base);
 
-        match modified.not_before_offset {
-            NotBeforeOffset::DaysFromNow(d) => assert!(d > 0),
-            _ => panic!("expected DaysFromNow"),
-        }
+        assert!(matches!(
+            modified.not_before_offset,
+            NotBeforeOffset::DaysFromNow(d) if d > 0
+        ));
     }
 
     #[test]
@@ -130,5 +130,35 @@ mod tests {
 
         assert!(modified.is_ca);
         assert!(!modified.key_usage.key_cert_sign);
+    }
+
+    #[test]
+    fn test_self_signed_ca_variant_modifies_spec() {
+        let base = X509Spec::self_signed("test");
+        let modified = X509Negative::SelfSignedButClaimsCA.apply_to_spec(&base);
+
+        assert!(modified.is_ca);
+        assert!(modified.key_usage.key_cert_sign);
+        assert!(modified.key_usage.crl_sign);
+    }
+
+    #[test]
+    fn test_description_and_variant_name_cover_all() {
+        let variants = [
+            X509Negative::Expired,
+            X509Negative::NotYetValid,
+            X509Negative::WrongKeyUsage,
+            X509Negative::SelfSignedButClaimsCA,
+        ];
+
+        for variant in &variants {
+            assert!(!variant.description().is_empty());
+            assert!(!variant.variant_name().is_empty());
+        }
+
+        assert_eq!(
+            X509Negative::SelfSignedButClaimsCA.variant_name(),
+            "self_signed_ca"
+        );
     }
 }

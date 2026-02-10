@@ -57,6 +57,15 @@ fn mismatched_public_key_is_parseable_and_different() {
 }
 
 #[test]
+fn pkcs8_der_truncated_shortens() {
+    let fx = Factory::random();
+    let rsa = fx.rsa("issuer", RsaSpec::rs256());
+
+    let truncated = rsa.private_key_pkcs8_der_truncated(12);
+    assert_eq!(truncated.len(), 12);
+}
+
+#[test]
 fn debug_includes_label_and_type() {
     let fx = Factory::random();
     let rsa = fx.rsa("debug-label", RsaSpec::rs256());
@@ -319,5 +328,22 @@ mod jwk_tests {
                 prop_assert!(decoded.is_ok(), "{} should be valid base64url", key);
             }
         }
+    }
+
+    #[test]
+    fn public_key_jwk_alias_matches_public_jwk() {
+        let fx = Factory::deterministic(Seed::from_env_value("rsa-alias").unwrap());
+        let rsa = fx.rsa("issuer", RsaSpec::rs256());
+        assert_eq!(rsa.public_key_jwk().to_value(), rsa.public_jwk().to_value());
+    }
+
+    #[test]
+    fn json_helpers_match_to_value() {
+        let fx = Factory::deterministic(Seed::from_env_value("rsa-json").unwrap());
+        let rsa = fx.rsa("issuer", RsaSpec::rs256());
+
+        assert_eq!(rsa.public_jwk_json(), rsa.public_jwk().to_value());
+        assert_eq!(rsa.public_jwks_json(), rsa.public_jwks().to_value());
+        assert_eq!(rsa.private_key_jwk_json(), rsa.private_key_jwk().to_value());
     }
 }

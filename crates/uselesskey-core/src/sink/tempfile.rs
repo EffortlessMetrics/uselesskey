@@ -201,11 +201,13 @@ mod tests {
             path
         };
 
-        for _ in 0..5 {
-            if !path.exists() {
-                return;
-            }
+        let mut attempts = 0;
+        loop {
             thread::sleep(Duration::from_millis(10));
+            attempts += 1;
+            if !path.exists() || attempts >= 5 {
+                break;
+            }
         }
 
         assert!(!path.exists(), "tempfile should be deleted on drop");

@@ -201,12 +201,7 @@ mod tests {
             let cert = fx.x509_self_signed("test", X509Spec::self_signed("test.example.com"));
 
             let key = cert.private_key_der_rustls();
-            match &key {
-                rustls_pki_types::PrivateKeyDer::Pkcs8(der) => {
-                    assert_eq!(der.secret_pkcs8_der(), cert.private_key_pkcs8_der());
-                }
-                _ => panic!("expected Pkcs8 variant"),
-            }
+            assert_eq!(key.secret_der(), cert.private_key_pkcs8_der());
         }
 
         #[test]
@@ -224,12 +219,7 @@ mod tests {
             let chain = fx.x509_chain("test", ChainSpec::new("test.example.com"));
 
             let key = chain.private_key_der_rustls();
-            match &key {
-                rustls_pki_types::PrivateKeyDer::Pkcs8(der) => {
-                    assert_eq!(der.secret_pkcs8_der(), chain.leaf_private_key_pkcs8_der());
-                }
-                _ => panic!("expected Pkcs8 variant"),
-            }
+            assert_eq!(key.secret_der(), chain.leaf_private_key_pkcs8_der());
         }
 
         #[test]
@@ -274,12 +264,7 @@ mod tests {
             let keypair = fx.rsa("test", RsaSpec::rs256());
 
             let key = keypair.private_key_der_rustls();
-            match &key {
-                rustls_pki_types::PrivateKeyDer::Pkcs8(der) => {
-                    assert_eq!(der.secret_pkcs8_der(), keypair.private_key_pkcs8_der());
-                }
-                _ => panic!("expected Pkcs8 variant"),
-            }
+            assert_eq!(key.secret_der(), keypair.private_key_pkcs8_der());
         }
     }
 
@@ -295,12 +280,7 @@ mod tests {
             let keypair = fx.ecdsa("test", EcdsaSpec::es256());
 
             let key = keypair.private_key_der_rustls();
-            match &key {
-                rustls_pki_types::PrivateKeyDer::Pkcs8(der) => {
-                    assert_eq!(der.secret_pkcs8_der(), keypair.private_key_pkcs8_der());
-                }
-                _ => panic!("expected Pkcs8 variant"),
-            }
+            assert_eq!(key.secret_der(), keypair.private_key_pkcs8_der());
         }
 
         #[test]
@@ -309,12 +289,7 @@ mod tests {
             let keypair = fx.ecdsa("test", EcdsaSpec::es384());
 
             let key = keypair.private_key_der_rustls();
-            match &key {
-                rustls_pki_types::PrivateKeyDer::Pkcs8(der) => {
-                    assert_eq!(der.secret_pkcs8_der(), keypair.private_key_pkcs8_der());
-                }
-                _ => panic!("expected Pkcs8 variant"),
-            }
+            assert_eq!(key.secret_der(), keypair.private_key_pkcs8_der());
         }
     }
 
@@ -330,12 +305,7 @@ mod tests {
             let keypair = fx.ed25519("test", Ed25519Spec::new());
 
             let key = keypair.private_key_der_rustls();
-            match &key {
-                rustls_pki_types::PrivateKeyDer::Pkcs8(der) => {
-                    assert_eq!(der.secret_pkcs8_der(), keypair.private_key_pkcs8_der());
-                }
-                _ => panic!("expected Pkcs8 variant"),
-            }
+            assert_eq!(key.secret_der(), keypair.private_key_pkcs8_der());
         }
     }
 }

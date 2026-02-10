@@ -22,10 +22,8 @@ impl Jwks {
 
 impl fmt::Display for Jwks {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match serde_json::to_string(self) {
-            Ok(s) => f.write_str(&s),
-            Err(_) => Err(fmt::Error),
-        }
+        let s = serde_json::to_string(self).expect("serialize JWKS");
+        f.write_str(&s)
     }
 }
 
@@ -276,10 +274,8 @@ impl PublicJwk {
 
 impl fmt::Display for PublicJwk {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match serde_json::to_string(self) {
-            Ok(s) => f.write_str(&s),
-            Err(_) => Err(fmt::Error),
-        }
+        let s = serde_json::to_string(self).expect("serialize JWK");
+        f.write_str(&s)
     }
 }
 
@@ -309,10 +305,8 @@ impl PrivateJwk {
 
 impl fmt::Display for PrivateJwk {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match serde_json::to_string(self) {
-            Ok(s) => f.write_str(&s),
-            Err(_) => Err(fmt::Error),
-        }
+        let s = serde_json::to_string(self).expect("serialize JWK");
+        f.write_str(&s)
     }
 }
 
@@ -349,10 +343,8 @@ impl AnyJwk {
 
 impl fmt::Display for AnyJwk {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match serde_json::to_string(self) {
-            Ok(s) => f.write_str(&s),
-            Err(_) => Err(fmt::Error),
-        }
+        let s = serde_json::to_string(self).expect("serialize JWK");
+        f.write_str(&s)
     }
 }
 
@@ -391,6 +383,59 @@ mod tests {
             kid: kid.to_string(),
             k: k.to_string(),
         })
+    }
+
+    fn sample_rsa_private(kid: &str, d: &str) -> RsaPrivateJwk {
+        RsaPrivateJwk {
+            kty: "RSA",
+            use_: "sig",
+            alg: "RS256",
+            kid: kid.to_string(),
+            n: "n".to_string(),
+            e: "e".to_string(),
+            d: d.to_string(),
+            p: "p".to_string(),
+            q: "q".to_string(),
+            dp: "dp".to_string(),
+            dq: "dq".to_string(),
+            qi: "qi".to_string(),
+        }
+    }
+
+    fn sample_ec_private(kid: &str, d: &str) -> EcPrivateJwk {
+        EcPrivateJwk {
+            kty: "EC",
+            use_: "sig",
+            alg: "ES256",
+            crv: "P-256",
+            kid: kid.to_string(),
+            x: "x".to_string(),
+            y: "y".to_string(),
+            d: d.to_string(),
+        }
+    }
+
+    fn sample_okp_public(kid: &str, x: &str) -> OkpPublicJwk {
+        OkpPublicJwk {
+            kty: "OKP",
+            use_: "sig",
+            alg: "EdDSA",
+            crv: "Ed25519",
+            kid: kid.to_string(),
+            x: x.to_string(),
+        }
+    }
+
+    fn sample_okp_private(kid: &str, d: &str) -> OkpPrivateJwk {
+        OkpPrivateJwk {
+            kty: "OKP",
+            use_: "sig",
+            alg: "EdDSA",
+            crv: "Ed25519",
+            kid: kid.to_string(),
+            x: "x".to_string(),
+            d: d.to_string(),
+        }
     }
 
     #[test]
@@ -509,5 +554,175 @@ mod tests {
         let v = jwks.to_value();
         assert!(v["keys"].is_array());
         assert_eq!(v["keys"].as_array().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn jwks_builder_add_methods_work() {
+        let jwk_priv = sample_oct_private("kid-a", "ka");
+        let jwk_any = AnyJwk::from(sample_rsa_public("kid-b", "nb"));
+
+        let jwks = JwksBuilder::new()
+            .add_private(jwk_priv)
+            .add_any(jwk_any)
+            .build();
+
+        assert_eq!(jwks.keys.len(), 2);
+    }
+
+    #[test]
+    fn kid_helpers_return_expected_kid() {
+        let rsa = sample_rsa_private("kid-rsa", "d-rsa");
+        assert_eq!(rsa.kid(), "kid-rsa");
+
+        let ec = sample_ec_private("kid-ec", "d-ec");
+        assert_eq!(ec.kid(), "kid-ec");
+
+        let okp_pub = sample_okp_public("kid-okp", "x-okp");
+        assert_eq!(okp_pub.kid(), "kid-okp");
+
+        let okp_priv = sample_okp_private("kid-okp-priv", "d-okp");
+        assert_eq!(okp_priv.kid(), "kid-okp-priv");
+
+        let oct = OctJwk {
+            kty: "oct",
+            use_: "sig",
+            alg: "HS256",
+            kid: "kid-oct".to_string(),
+            k: "secret".to_string(),
+        };
+        assert_eq!(oct.kid(), "kid-oct");
+    }
+
+    #[test]
+    fn enum_kid_and_to_value_cover_all_variants() {
+        let okp_pub = PublicJwk::Okp(sample_okp_public("kid-okp", "x-okp"));
+        assert_eq!(okp_pub.kid(), "kid-okp");
+        assert_eq!(okp_pub.to_value()["kty"], "OKP");
+
+        let okp_priv = PrivateJwk::Okp(sample_okp_private("kid-okp-priv", "d-okp"));
+        assert_eq!(okp_priv.kid(), "kid-okp-priv");
+        assert_eq!(okp_priv.to_value()["kty"], "OKP");
+
+        let oct = PrivateJwk::Oct(OctJwk {
+            kty: "oct",
+            use_: "sig",
+            alg: "HS256",
+            kid: "kid-oct".to_string(),
+            k: "secret".to_string(),
+        });
+        assert_eq!(oct.kid(), "kid-oct");
+        assert_eq!(oct.to_value()["kty"], "oct");
+    }
+
+    #[test]
+    fn enum_kid_covers_all_variants() {
+        let rsa_pub = PublicJwk::Rsa(RsaPublicJwk {
+            kty: "RSA",
+            use_: "sig",
+            alg: "RS256",
+            kid: "kid-rsa".to_string(),
+            n: "n".to_string(),
+            e: "e".to_string(),
+        });
+        assert_eq!(rsa_pub.kid(), "kid-rsa");
+
+        let ec_pub = PublicJwk::Ec(EcPublicJwk {
+            kty: "EC",
+            use_: "sig",
+            alg: "ES256",
+            crv: "P-256",
+            kid: "kid-ec".to_string(),
+            x: "x".to_string(),
+            y: "y".to_string(),
+        });
+        assert_eq!(ec_pub.kid(), "kid-ec");
+
+        let okp_pub = PublicJwk::Okp(sample_okp_public("kid-okp", "x-okp"));
+        assert_eq!(okp_pub.kid(), "kid-okp");
+
+        let rsa_priv = PrivateJwk::Rsa(sample_rsa_private("kid-rsa-priv", "d"));
+        assert_eq!(rsa_priv.kid(), "kid-rsa-priv");
+
+        let ec_priv = PrivateJwk::Ec(sample_ec_private("kid-ec-priv", "d"));
+        assert_eq!(ec_priv.kid(), "kid-ec-priv");
+
+        let okp_priv = PrivateJwk::Okp(sample_okp_private("kid-okp-priv", "d"));
+        assert_eq!(okp_priv.kid(), "kid-okp-priv");
+
+        let oct = PrivateJwk::Oct(OctJwk {
+            kty: "oct",
+            use_: "sig",
+            alg: "HS256",
+            kid: "kid-oct".to_string(),
+            k: "secret".to_string(),
+        });
+        assert_eq!(oct.kid(), "kid-oct");
+    }
+
+    #[test]
+    fn any_jwk_to_value_round_trips() {
+        let pub_any = AnyJwk::from(sample_rsa_public("kid-a", "n"));
+        assert_eq!(pub_any.to_value()["kid"], "kid-a");
+
+        let priv_any = AnyJwk::from(sample_oct_private("kid-b", "secret"));
+        assert_eq!(priv_any.to_value()["kid"], "kid-b");
+    }
+
+    #[test]
+    fn any_jwk_display_round_trips() {
+        let pub_any = AnyJwk::from(sample_rsa_public("kid-a", "n"));
+        let json = pub_any.to_string();
+        let v: Value = serde_json::from_str(&json).expect("valid JSON");
+        assert_eq!(v["kid"], "kid-a");
+
+        let priv_any = AnyJwk::from(sample_oct_private("kid-b", "secret"));
+        let json = priv_any.to_string();
+        let v: Value = serde_json::from_str(&json).expect("valid JSON");
+        assert_eq!(v["kid"], "kid-b");
+    }
+
+    #[test]
+    fn private_jwk_enum_debug_uses_inner_formatters() {
+        let rsa = PrivateJwk::Rsa(sample_rsa_private("kid-rsa", "secret"));
+        let dbg = format!("{:?}", rsa);
+        assert!(dbg.contains("RsaPrivateJwk"));
+
+        let ec = PrivateJwk::Ec(sample_ec_private("kid-ec", "secret"));
+        let dbg = format!("{:?}", ec);
+        assert!(dbg.contains("EcPrivateJwk"));
+
+        let okp = PrivateJwk::Okp(sample_okp_private("kid-okp", "secret"));
+        let dbg = format!("{:?}", okp);
+        assert!(dbg.contains("OkpPrivateJwk"));
+
+        let oct = PrivateJwk::Oct(OctJwk {
+            kty: "oct",
+            use_: "sig",
+            alg: "HS256",
+            kid: "kid-oct".to_string(),
+            k: "secret".to_string(),
+        });
+        let dbg = format!("{:?}", oct);
+        assert!(dbg.contains("OctJwk"));
+    }
+
+    #[test]
+    fn private_jwk_debug_omits_private_material() {
+        let secret = "super-secret";
+
+        let rsa = sample_rsa_private("kid-rsa", secret);
+        let dbg = format!("{:?}", rsa);
+        assert!(dbg.contains("RsaPrivateJwk"));
+        assert!(!dbg.contains(secret));
+
+        let ec = sample_ec_private("kid-ec", secret);
+        let dbg = format!("{:?}", ec);
+        assert!(dbg.contains("EcPrivateJwk"));
+        assert!(!dbg.contains(secret));
+
+        let okp = sample_okp_private("kid-okp", secret);
+        let dbg = format!("{:?}", okp);
+        assert!(dbg.contains("OkpPrivateJwk"));
+        assert!(!dbg.contains(secret));
     }
 }

@@ -175,10 +175,7 @@ mod tests {
 
         // not_after should be well in the past (at least 365 days ago)
         let now = ::time::OffsetDateTime::now_utc().unix_timestamp();
-        assert!(
-            not_after < now - 86400 * 365,
-            "expired leaf not_after ({not_after}) should be >365 days before now ({now})"
-        );
+        assert!(not_after < now - 86400 * 365);
     }
 
     #[test]
@@ -199,10 +196,7 @@ mod tests {
             X509Certificate::from_der(expired.intermediate_cert_der()).expect("parse intermediate");
         let not_after = int.validity().not_after.timestamp();
         let now = ::time::OffsetDateTime::now_utc().unix_timestamp();
-        assert!(
-            not_after < now - 86400 * 365,
-            "expired intermediate not_after ({not_after}) should be >365 days before now ({now})"
-        );
+        assert!(not_after < now - 86400 * 365);
     }
 
     #[test]
@@ -223,15 +217,10 @@ mod tests {
             // Keys should match the good chain (same underlying RSA keys)
             assert_eq!(
                 good.leaf_private_key_pkcs8_der(),
-                variant.leaf_private_key_pkcs8_der(),
-                "leaf key should be reused"
+                variant.leaf_private_key_pkcs8_der()
             );
             // But certs should differ (different cert-level parameters)
-            assert_ne!(
-                good.leaf_cert_der(),
-                variant.leaf_cert_der(),
-                "leaf cert should differ"
-            );
+            assert_ne!(good.leaf_cert_der(), variant.leaf_cert_der());
         }
     }
 
@@ -289,16 +278,8 @@ mod tests {
             .expect("parse CRL");
 
         let revoked_certs: Vec<_> = crl.iter_revoked_certificates().collect();
-        assert_eq!(
-            revoked_certs.len(),
-            1,
-            "CRL should contain exactly one revoked cert"
-        );
-        assert_eq!(
-            revoked_certs[0].raw_serial(),
-            leaf_serial.to_bytes_be(),
-            "CRL should list the leaf serial number"
-        );
+        assert_eq!(revoked_certs.len(), 1);
+        assert_eq!(revoked_certs[0].raw_serial(), leaf_serial.to_bytes_be());
     }
 
     #[test]
@@ -315,16 +296,8 @@ mod tests {
         let good2 = X509Chain::new(factory, "test", spec);
         let revoked2 = good2.revoked_leaf();
 
-        assert_eq!(
-            revoked1.crl_der().unwrap(),
-            revoked2.crl_der().unwrap(),
-            "CRL DER should be deterministic"
-        );
-        assert_eq!(
-            revoked1.crl_pem().unwrap(),
-            revoked2.crl_pem().unwrap(),
-            "CRL PEM should be deterministic"
-        );
+        assert_eq!(revoked1.crl_der().unwrap(), revoked2.crl_der().unwrap());
+        assert_eq!(revoked1.crl_pem().unwrap(), revoked2.crl_pem().unwrap());
     }
 
     #[test]

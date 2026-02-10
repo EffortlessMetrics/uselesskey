@@ -234,6 +234,11 @@ mod tests {
     }
 
     #[test]
+    fn test_key_usage_default_is_leaf() {
+        assert_eq!(KeyUsage::default(), KeyUsage::leaf());
+    }
+
+    #[test]
     fn test_self_signed_spec() {
         let spec = X509Spec::self_signed("example.com");
         assert_eq!(spec.subject_cn, "example.com");
@@ -246,6 +251,53 @@ mod tests {
         let spec = X509Spec::self_signed_ca("My CA");
         assert!(spec.is_ca);
         assert!(spec.key_usage.key_cert_sign);
+    }
+
+    #[test]
+    fn test_builder_methods_apply() {
+        let key_usage = KeyUsage::ca();
+        let spec = X509Spec::self_signed("builder.example.com")
+            .with_validity_days(90)
+            .with_not_before(NotBeforeOffset::DaysFromNow(7))
+            .with_rsa_bits(4096)
+            .with_key_usage(key_usage)
+            .with_is_ca(true);
+
+        assert_eq!(spec.validity_days, 90);
+        assert_eq!(spec.not_before_offset, NotBeforeOffset::DaysFromNow(7));
+        assert_eq!(spec.rsa_bits, 4096);
+        assert!(spec.is_ca);
+        assert_eq!(spec.key_usage, key_usage);
+    }
+
+    #[test]
+    fn test_not_before_duration_variants() {
+        let days = 3u32;
+        let secs = days as u64 * 24 * 60 * 60;
+
+        let spec_ago = X509Spec::self_signed("ago").with_not_before(NotBeforeOffset::DaysAgo(days));
+        assert_eq!(spec_ago.not_before_duration(), Duration::from_secs(secs));
+
+        let spec_future =
+            X509Spec::self_signed("future").with_not_before(NotBeforeOffset::DaysFromNow(days));
+        assert_eq!(spec_future.not_before_duration(), Duration::ZERO);
+    }
+
+    #[test]
+    fn test_not_after_duration_variants() {
+        let days = 2u32;
+        let secs = days as u64 * 24 * 60 * 60;
+
+        let spec_ago = X509Spec::self_signed("ago").with_validity_days(days);
+        assert_eq!(spec_ago.not_after_duration(), Duration::from_secs(secs));
+
+        let spec_future = X509Spec::self_signed("future")
+            .with_not_before(NotBeforeOffset::DaysFromNow(days))
+            .with_validity_days(days);
+        assert_eq!(
+            spec_future.not_after_duration(),
+            Duration::from_secs(secs * 2)
+        );
     }
 
     #[test]
