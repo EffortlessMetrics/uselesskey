@@ -1,6 +1,6 @@
 [package]
 name = "uselesskey-ring"
-version = "0.1.0"
+version = "0.2.0"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
@@ -15,9 +15,9 @@ authors.workspace = true
 ring = "0.17"
 
 # Key type crates (all optional)
-uselesskey-rsa = { path = "../uselesskey-rsa", version = "0.1.0", optional = true }
-uselesskey-ecdsa = { path = "../uselesskey-ecdsa", version = "0.1.0", optional = true }
-uselesskey-ed25519 = { path = "../uselesskey-ed25519", version = "0.1.0", optional = true }
+uselesskey-rsa = { path = "../uselesskey-rsa", version = "0.2.0", optional = true }
+uselesskey-ecdsa = { path = "../uselesskey-ecdsa", version = "0.2.0", optional = true }
+uselesskey-ed25519 = { path = "../uselesskey-ed25519", version = "0.2.0", optional = true }
 
 [features]
 default = []
@@ -27,4 +27,4 @@ ed25519 = ["dep:uselesskey-ed25519"]
 all = ["rsa", "ecdsa", "ed25519"]
 
 [dev-dependencies]
-uselesskey-core = { path = "../uselesskey-core", version = "0.1.0" }
+uselesskey-core = { path = "../uselesskey-core", version = "0.2.0" }

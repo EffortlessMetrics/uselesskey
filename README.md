@@ -54,7 +54,7 @@ Add to `Cargo.toml`:
 
 ```toml
 [dev-dependencies]
-uselesskey = "0.1"
+uselesskey = "0.2"
 ```
 
 Generate keys:
@@ -190,7 +190,7 @@ With the `tls-config` feature, build rustls configs in one line:
 
 ```toml
 [dev-dependencies]
-uselesskey-rustls = { version = "0.1", features = ["tls-config", "rustls-ring"] }
+uselesskey-rustls = { version = "0.2", features = ["tls-config", "rustls-ring"] }
 ```
 
 ```rust
@@ -209,7 +209,7 @@ let client_config = chain.client_config_rustls();    // ClientConfig (trusts roo
 
 ```toml
 [dev-dependencies]
-uselesskey-ring = { version = "0.1", features = ["all"] }
+uselesskey-ring = { version = "0.2", features = ["all"] }
 ```
 
 ```rust
@@ -220,6 +220,40 @@ use uselesskey_ring::RingRsaKeyPairExt;
 let fx = Factory::random();
 let rsa = fx.rsa("signer", RsaSpec::rs256());
 let ring_kp = rsa.rsa_key_pair_ring();  // ring::rsa::KeyPair
+```
+
+### RustCrypto Types (uselesskey-rustcrypto)
+
+```toml
+[dev-dependencies]
+uselesskey-rustcrypto = { version = "0.2", features = ["all"] }
+```
+
+```rust
+use uselesskey_core::Factory;
+use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+use uselesskey_rustcrypto::RustCryptoRsaExt;
+
+let fx = Factory::random();
+let rsa = fx.rsa("signer", RsaSpec::rs256());
+let rsa_pk = rsa.rsa_private_key_rustcrypto(); // rsa::RsaPrivateKey
+```
+
+### aws-lc-rs Types (uselesskey-aws-lc-rs)
+
+```toml
+[dev-dependencies]
+uselesskey-aws-lc-rs = { version = "0.2" }
+```
+
+```rust
+use uselesskey_core::Factory;
+use uselesskey_ed25519::Ed25519FactoryExt;
+use uselesskey_aws_lc_rs::AwsLcEd25519Ext;
+
+let fx = Factory::random();
+let ed = fx.ed25519("signer");
+let lc_key = ed.ed25519_key_pair_aws_lc(); // aws_lc_rs::signature::Ed25519KeyPair
 ```
 
 ## Feature Flags

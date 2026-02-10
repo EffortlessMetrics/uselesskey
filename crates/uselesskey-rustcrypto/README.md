@@ -18,7 +18,7 @@ Converts uselesskey keypairs into native RustCrypto types (`rsa::RsaPrivateKey`,
 
 ```toml
 [dev-dependencies]
-uselesskey-rustcrypto = { version = "0.1", features = ["all"] }
+uselesskey-rustcrypto = { version = "0.2", features = ["all"] }
 ```
 
 ```rust

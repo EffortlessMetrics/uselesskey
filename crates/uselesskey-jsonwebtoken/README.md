@@ -18,7 +18,7 @@ Returns `jsonwebtoken::EncodingKey` and `DecodingKey` directly from uselesskey k
 
 ```toml
 [dev-dependencies]
-uselesskey-jsonwebtoken = { version = "0.1", features = ["all"] }
+uselesskey-jsonwebtoken = { version = "0.2", features = ["all"] }
 jsonwebtoken = { version = "10", features = ["use_pem", "rust_crypto"] }
 ```
 
