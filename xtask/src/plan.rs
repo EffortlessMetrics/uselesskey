@@ -133,12 +133,11 @@ fn expand_impacted_crates(changed: &HashSet<String>) -> BTreeSet<String> {
     let mut queue: Vec<String> = changed.iter().cloned().collect();
 
     while let Some(name) = queue.pop() {
-        if !impacted.insert(name.clone()) {
-            continue;
-        }
-        for &dep in dependents(&name) {
-            if !impacted.contains(dep) {
-                queue.push(dep.to_string());
+        if impacted.insert(name.clone()) {
+            for &dep in dependents(&name) {
+                if !impacted.contains(dep) {
+                    queue.push(dep.to_string());
+                }
             }
         }
     }
@@ -244,6 +243,27 @@ mod tests {
         assert!(plan.run_bdd);
         assert!(plan.run_mutants);
         assert!(plan.run_fuzz);
+    }
+
+    #[test]
+    fn examples_path_counts_as_rust_code_change() {
+        let paths = vec!["examples/demo.rs".to_string()];
+        let plan = build_plan(&paths);
+        assert!(plan.run_fmt);
+        assert!(plan.run_clippy);
+        assert!(plan.run_tests);
+    }
+
+    #[test]
+    fn no_blob_trigger_sets_flag() {
+        let paths = vec!["tests/fixtures/secret.pem".to_string()];
+        let plan = build_plan(&paths);
+        assert!(plan.run_no_blob);
+    }
+
+    #[test]
+    fn dependents_unknown_is_empty() {
+        assert!(dependents("unknown-crate").is_empty());
     }
 
     #[test]

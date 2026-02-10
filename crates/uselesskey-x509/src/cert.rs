@@ -371,10 +371,7 @@ mod tests {
         let not_before = parsed.validity().not_before.timestamp();
         let not_after = parsed.validity().not_after.timestamp();
         let validity_days = (not_after - not_before) / 86400;
-        assert!(
-            validity_days >= 365 * 5,
-            "good cert validity should be >= 5 years, got {validity_days} days"
-        );
+        assert!(validity_days >= 365 * 5);
     }
 
     #[test]
@@ -427,10 +424,65 @@ mod tests {
         let cert_file = cert.write_cert_pem().unwrap();
         assert!(cert_file.path().exists());
 
+        let cert_der_file = cert.write_cert_der().unwrap();
+        assert!(cert_der_file.path().exists());
+
         let key_file = cert.write_private_key_pem().unwrap();
         assert!(key_file.path().exists());
 
         let identity_file = cert.write_identity_pem().unwrap();
         assert!(identity_file.path().exists());
+    }
+
+    #[test]
+    fn test_debug_includes_label_and_spec() {
+        let factory = Factory::random();
+        let spec = X509Spec::self_signed("debug.example.com");
+        let cert = factory.x509_self_signed("debug-label", spec);
+
+        let dbg = format!("{:?}", cert);
+        assert!(dbg.contains("X509Cert"));
+        assert!(dbg.contains("debug-label"));
+    }
+
+    #[test]
+    fn test_factory_chain_extension_works() {
+        let factory = Factory::random();
+        let chain = factory.x509_chain("test-chain", ChainSpec::new("test.example.com"));
+        assert!(!chain.leaf_cert_der().is_empty());
+    }
+
+    #[test]
+    fn test_load_variant_generates_distinct_cert() {
+        let factory = Factory::deterministic(Seed::from_env_value("variant-seed").unwrap());
+        let spec = X509Spec::self_signed("variant.example.com");
+        let cert = factory.x509_self_signed("variant", spec);
+
+        let other = cert.load_variant("alt");
+        assert_ne!(cert.cert_der(), other.cert_der.as_ref());
+    }
+
+    #[test]
+    fn test_wrong_key_usage_variant_updates_spec() {
+        let factory = Factory::random();
+        let spec = X509Spec::self_signed("badku.example.com");
+        let cert = factory.x509_self_signed("badku", spec);
+
+        let wrong = cert.wrong_key_usage();
+        assert!(wrong.spec().is_ca);
+        assert!(!wrong.spec().key_usage.key_cert_sign);
+        assert_eq!(wrong.label(), "badku");
+    }
+
+    #[test]
+    fn test_self_signed_ca_executes_ca_branches() {
+        use x509_parser::prelude::*;
+
+        let factory = Factory::random();
+        let spec = X509Spec::self_signed_ca("ca.example.com");
+        let cert = factory.x509_self_signed("ca", spec);
+
+        let (_, parsed) = X509Certificate::from_der(cert.cert_der()).expect("parse cert");
+        assert!(parsed.is_ca());
     }
 }

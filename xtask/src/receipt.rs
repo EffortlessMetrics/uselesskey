@@ -171,28 +171,42 @@ mod tests {
     #[test]
     fn runner_records_steps_and_writes_receipt() {
         let dir = tempfile::tempdir().expect("tempdir");
-        let path = dir.path().join("receipt.json");
+        let path = dir.path().join("nested").join("receipt.json");
 
         let mut runner = Runner::new(&path);
         runner
             .step("ok-step", Some("details".to_string()), || Ok(()))
             .expect("ok step");
 
-        let err = runner.step("fail-step", None, || Err(anyhow!("boom")));
+        let err = runner.step("fail-step", Some("extra".to_string()), || {
+            Err(anyhow!("boom"))
+        });
         assert!(err.is_err());
 
         runner.skip("skipped-step", Some("not needed".to_string()));
         runner.add_feature_matrix("default", "ok");
+        runner.set_coverage_lcov_path("coverage/lcov.info".to_string());
 
         let mut counts = BTreeMap::new();
         counts.insert("rsa.feature".to_string(), 2);
         runner.set_bdd_counts(counts);
 
+        runner.receipt.steps.push(StepReceipt {
+            name: "other-step".to_string(),
+            status: "other".to_string(),
+            duration_ms: 0,
+            details: None,
+        });
+
         runner.summary();
 
-        assert_eq!(runner.receipt.steps.len(), 3);
+        assert_eq!(runner.receipt.steps.len(), 4);
         assert_eq!(runner.receipt.feature_matrix.len(), 1);
         assert_eq!(runner.receipt.bdd_counts.get("rsa.feature"), Some(&2));
+        assert_eq!(
+            runner.receipt.coverage_lcov_path.as_deref(),
+            Some("coverage/lcov.info")
+        );
 
         runner.write().expect("write receipt");
         let json = fs::read_to_string(&path).expect("read receipt");

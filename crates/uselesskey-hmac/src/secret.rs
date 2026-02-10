@@ -141,6 +141,15 @@ mod tests {
     }
 
     #[test]
+    fn different_variants_produce_different_secrets() {
+        let fx = Factory::deterministic(Seed::from_env_value("hmac-variant").unwrap());
+        let secret = fx.hmac("issuer", HmacSpec::hs256());
+        let other = secret.load_variant("other");
+
+        assert_ne!(secret.secret_bytes(), other.secret.as_ref());
+    }
+
+    #[test]
     #[cfg(feature = "jwk")]
     fn jwk_contains_expected_fields() {
         let fx = Factory::random();

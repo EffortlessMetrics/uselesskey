@@ -545,10 +545,7 @@ mod tests {
         let not_before = leaf.validity().not_before.timestamp();
         let not_after = leaf.validity().not_after.timestamp();
         let validity_days = (not_after - not_before) / 86400;
-        assert!(
-            validity_days >= 365 * 5,
-            "good chain leaf validity should be >= 5 years, got {validity_days} days"
-        );
+        assert!(validity_days >= 365 * 5);
     }
 
     #[test]
@@ -627,13 +624,50 @@ mod tests {
         let leaf_cert = chain.write_leaf_cert_pem().unwrap();
         assert!(leaf_cert.path().exists());
 
+        let leaf_cert_der = chain.write_leaf_cert_der().unwrap();
+        assert!(leaf_cert_der.path().exists());
+
         let leaf_key = chain.write_leaf_private_key_pem().unwrap();
         assert!(leaf_key.path().exists());
 
         let chain_file = chain.write_chain_pem().unwrap();
         assert!(chain_file.path().exists());
 
+        let full_chain_file = chain.write_full_chain_pem().unwrap();
+        assert!(full_chain_file.path().exists());
+
         let root_cert = chain.write_root_cert_pem().unwrap();
         assert!(root_cert.path().exists());
+    }
+
+    #[test]
+    fn test_debug_includes_label_and_spec() {
+        let factory = Factory::random();
+        let spec = ChainSpec::new("debug.example.com");
+        let chain = X509Chain::new(factory, "debug-label", spec);
+
+        let dbg = format!("{:?}", chain);
+        assert!(dbg.contains("X509Chain"));
+        assert!(dbg.contains("debug-label"));
+    }
+
+    #[test]
+    fn test_private_key_accessors_non_empty() {
+        let factory = Factory::random();
+        let spec = ChainSpec::new("keys.example.com");
+        let chain = X509Chain::new(factory, "keys", spec);
+
+        assert!(!chain.root_private_key_pkcs8_der().is_empty());
+        assert!(
+            chain
+                .root_private_key_pkcs8_pem()
+                .contains("BEGIN PRIVATE KEY")
+        );
+        assert!(!chain.intermediate_private_key_pkcs8_der().is_empty());
+        assert!(
+            chain
+                .intermediate_private_key_pkcs8_pem()
+                .contains("BEGIN PRIVATE KEY")
+        );
     }
 }
