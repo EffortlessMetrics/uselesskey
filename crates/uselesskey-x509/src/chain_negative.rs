@@ -11,7 +11,10 @@ pub enum ChainNegative {
         /// The wrong hostname to put in the leaf SAN.
         wrong_hostname: String,
     },
-    /// Chain is signed by a different (unknown) root CA.
+    /// Chain is anchored to a different (unknown) root certificate identity.
+    ///
+    /// This variant intentionally reuses the same underlying RSA key material
+    /// and changes certificate-level identity fields for the root certificate.
     UnknownCa,
     /// Leaf certificate is expired.
     ExpiredLeaf,
@@ -44,9 +47,9 @@ impl ChainNegative {
                 spec.leaf_sans = vec![wrong_hostname.clone()];
             }
             ChainNegative::UnknownCa => {
-                // Use a different root CA CN so the chain anchors to a different root certificate
-                // identity (a different trust anchor). Keys are reused across variants;
-                // only cert-level identity/validity/SANs change.
+                // Use a different root CA CN so the chain anchors to a different root
+                // certificate identity (a different trust anchor). Keys are reused
+                // across variants; only cert-level identity/validity/SANs change.
                 spec.root_cn = format!("{} Unknown Root CA", spec.leaf_cn);
             }
             ChainNegative::ExpiredLeaf => {
@@ -92,7 +95,9 @@ impl X509Chain {
         })
     }
 
-    /// Get a chain signed by a different (unknown) root CA.
+    /// Get a chain anchored to a different (unknown) root certificate identity.
+    ///
+    /// This keeps key material stable and changes root certificate identity fields.
     pub fn unknown_ca(&self) -> X509Chain {
         self.negative(ChainNegative::UnknownCa)
     }
@@ -120,11 +125,12 @@ impl X509Chain {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::testutil::fx;
     use uselesskey_core::Factory;
 
     #[test]
     fn test_hostname_mismatch() {
-        let factory = Factory::random();
+        let factory = fx();
         let spec = ChainSpec::new("test.example.com");
         let chain = X509Chain::new(factory, "test", spec);
 
@@ -146,18 +152,35 @@ mod tests {
 
     #[test]
     fn test_unknown_ca() {
-        let factory = Factory::random();
+        use x509_parser::prelude::*;
+
+        let factory = fx();
         let spec = ChainSpec::new("test.example.com");
         let chain = X509Chain::new(factory, "test", spec);
 
         let unknown = chain.unknown_ca();
         // Root cert should be different (different CA)
         assert_ne!(chain.root_cert_der(), unknown.root_cert_der());
+
+        let (_, good_root) = X509Certificate::from_der(chain.root_cert_der()).expect("parse root");
+        let (_, unknown_root) =
+            X509Certificate::from_der(unknown.root_cert_der()).expect("parse unknown root");
+        let (_, unknown_int) = X509Certificate::from_der(unknown.intermediate_cert_der())
+            .expect("parse unknown intermediate");
+
+        // UnknownCa changes root certificate identity, not key material.
+        assert_ne!(good_root.subject(), unknown_root.subject());
+        assert_eq!(unknown_int.issuer(), unknown_root.subject());
+        assert_ne!(unknown_int.issuer(), good_root.subject());
+        assert_eq!(
+            chain.root_private_key_pkcs8_der(),
+            unknown.root_private_key_pkcs8_der()
+        );
     }
 
     #[test]
     fn test_expired_leaf() {
-        let factory = Factory::random();
+        let factory = fx();
         let spec = ChainSpec::new("test.example.com");
         let chain = X509Chain::new(factory, "test", spec);
 
@@ -180,7 +203,7 @@ mod tests {
 
     #[test]
     fn test_expired_intermediate() {
-        let factory = Factory::random();
+        let factory = fx();
         let spec = ChainSpec::new("test.example.com");
         let chain = X509Chain::new(factory, "test", spec);
 
@@ -201,7 +224,7 @@ mod tests {
 
     #[test]
     fn test_negative_variants_reuse_keys() {
-        let factory = Factory::random();
+        let factory = fx();
         let spec = ChainSpec::new("test.example.com");
         let good = X509Chain::new(factory.clone(), "test", spec);
 
@@ -242,7 +265,7 @@ mod tests {
 
     #[test]
     fn test_revoked_leaf_crl_present() {
-        let factory = Factory::random();
+        let factory = fx();
         let spec = ChainSpec::new("test.example.com");
         let good = X509Chain::new(factory, "test", spec);
 
@@ -262,7 +285,7 @@ mod tests {
     fn test_revoked_leaf_crl_contains_leaf_serial() {
         use x509_parser::prelude::*;
 
-        let factory = Factory::random();
+        let factory = fx();
         let spec = ChainSpec::new("test.example.com");
         let good = X509Chain::new(factory, "test", spec);
         let revoked = good.revoked_leaf();
@@ -302,7 +325,7 @@ mod tests {
 
     #[test]
     fn test_revoked_leaf_crl_tempfile() {
-        let factory = Factory::random();
+        let factory = fx();
         let spec = ChainSpec::new("test.example.com");
         let good = X509Chain::new(factory, "test", spec);
 

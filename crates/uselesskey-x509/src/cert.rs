@@ -317,6 +317,7 @@ fn load_inner_with_spec(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::testutil::fx;
     use uselesskey_core::Seed;
 
     #[test]
@@ -350,7 +351,7 @@ mod tests {
 
     #[test]
     fn test_identity_pem() {
-        let factory = Factory::random();
+        let factory = fx();
         let spec = X509Spec::self_signed("test.example.com");
         let cert = factory.x509_self_signed("test", spec);
 
@@ -363,7 +364,7 @@ mod tests {
     fn test_good_cert_not_expired_within_five_years() {
         use x509_parser::prelude::*;
 
-        let factory = Factory::random();
+        let factory = fx();
         let spec = X509Spec::self_signed("test.example.com");
         let cert = factory.x509_self_signed("test", spec);
 
@@ -376,7 +377,7 @@ mod tests {
 
     #[test]
     fn test_expired_cert() {
-        let factory = Factory::random();
+        let factory = fx();
         let spec = X509Spec::self_signed("test.example.com");
         let cert = factory.x509_self_signed("test", spec);
 
@@ -387,7 +388,7 @@ mod tests {
 
     #[test]
     fn test_not_yet_valid_cert() {
-        let factory = Factory::random();
+        let factory = fx();
         let spec = X509Spec::self_signed("test.example.com");
         let cert = factory.x509_self_signed("test", spec);
 
@@ -397,7 +398,7 @@ mod tests {
 
     #[test]
     fn test_corrupt_cert_pem() {
-        let factory = Factory::random();
+        let factory = fx();
         let spec = X509Spec::self_signed("test.example.com");
         let cert = factory.x509_self_signed("test", spec);
 
@@ -407,7 +408,7 @@ mod tests {
 
     #[test]
     fn test_truncate_cert_der() {
-        let factory = Factory::random();
+        let factory = fx();
         let spec = X509Spec::self_signed("test.example.com");
         let cert = factory.x509_self_signed("test", spec);
 
@@ -417,7 +418,7 @@ mod tests {
 
     #[test]
     fn test_tempfile_outputs() {
-        let factory = Factory::random();
+        let factory = fx();
         let spec = X509Spec::self_signed("test.example.com");
         let cert = factory.x509_self_signed("test", spec);
 
@@ -436,7 +437,7 @@ mod tests {
 
     #[test]
     fn test_debug_includes_label_and_spec() {
-        let factory = Factory::random();
+        let factory = fx();
         let spec = X509Spec::self_signed("debug.example.com");
         let cert = factory.x509_self_signed("debug-label", spec);
 
@@ -447,7 +448,7 @@ mod tests {
 
     #[test]
     fn test_factory_chain_extension_works() {
-        let factory = Factory::random();
+        let factory = fx();
         let chain = factory.x509_chain("test-chain", ChainSpec::new("test.example.com"));
         assert!(!chain.leaf_cert_der().is_empty());
     }
@@ -464,7 +465,7 @@ mod tests {
 
     #[test]
     fn test_wrong_key_usage_variant_updates_spec() {
-        let factory = Factory::random();
+        let factory = fx();
         let spec = X509Spec::self_signed("badku.example.com");
         let cert = factory.x509_self_signed("badku", spec);
 
@@ -478,7 +479,7 @@ mod tests {
     fn test_self_signed_ca_executes_ca_branches() {
         use x509_parser::prelude::*;
 
-        let factory = Factory::random();
+        let factory = fx();
         let spec = X509Spec::self_signed_ca("ca.example.com");
         let cert = factory.x509_self_signed("ca", spec);
 
