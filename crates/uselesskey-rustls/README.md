@@ -23,7 +23,7 @@ Converts uselesskey X.509 certificates and keypairs into rustls types, with opti
 
 ```toml
 [dev-dependencies]
-uselesskey-rustls = { version = "0.1", features = ["tls-config", "rustls-ring"] }
+uselesskey-rustls = { version = "0.2", features = ["tls-config", "rustls-ring"] }
 ```
 
 ```rust

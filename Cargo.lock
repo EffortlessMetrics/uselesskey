@@ -2265,7 +2265,7 @@ checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
 
 [[package]]
 name = "uselesskey"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "tempfile",
  "uselesskey-core",
@@ -2279,7 +2279,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-aws-lc-rs"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "aws-lc-rs",
  "uselesskey-core",
@@ -2306,7 +2306,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "blake3",
  "dashmap",
@@ -2321,7 +2321,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-ecdsa"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "base64",
  "blake3",
@@ -2338,7 +2338,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-ed25519"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "base64",
  "blake3",
@@ -2354,7 +2354,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-hmac"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "base64",
  "blake3",
@@ -2365,7 +2365,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-jsonwebtoken"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "jsonwebtoken",
  "serde",
@@ -2378,7 +2378,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-jwk"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -2386,7 +2386,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-ring"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "ring",
  "uselesskey-core",
@@ -2397,7 +2397,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-rsa"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "base64",
  "blake3",
@@ -2411,7 +2411,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-rustcrypto"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "ed25519-dalek",
  "hmac",
@@ -2428,7 +2428,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-rustls"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "rustls",
  "rustls-pki-types",
@@ -2441,7 +2441,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-x509"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "blake3",
  "proptest",
