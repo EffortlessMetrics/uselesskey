@@ -41,3 +41,6 @@ pub mod sink;
 pub use crate::error::Error;
 pub use crate::factory::{Factory, Mode};
 pub use crate::id::{ArtifactDomain, ArtifactId, DerivationVersion, Seed};
+
+#[cfg(test)]
+mod factory_tests;

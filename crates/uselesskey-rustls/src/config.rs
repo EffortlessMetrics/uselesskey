@@ -298,11 +298,27 @@ mod tests {
     }
 
     #[test]
+    fn server_config_from_chain_with_provider() {
+        install_provider();
+        let fx = Factory::random();
+        let chain = fx.x509_chain("test-provider", ChainSpec::new("test.example.com"));
+        let _cfg = chain.server_config_rustls_with_provider(ring_provider());
+    }
+
+    #[test]
     fn client_config_from_chain() {
         install_provider();
         let fx = Factory::random();
         let chain = fx.x509_chain("test", ChainSpec::new("test.example.com"));
         let _cfg = chain.client_config_rustls();
+    }
+
+    #[test]
+    fn client_config_from_chain_with_provider() {
+        install_provider();
+        let fx = Factory::random();
+        let chain = fx.x509_chain("test-provider", ChainSpec::new("test.example.com"));
+        let _cfg = chain.client_config_rustls_with_provider(ring_provider());
     }
 
     #[test]
@@ -314,11 +330,27 @@ mod tests {
     }
 
     #[test]
+    fn server_config_from_self_signed_with_provider() {
+        install_provider();
+        let fx = Factory::random();
+        let cert = fx.x509_self_signed("test-provider", X509Spec::self_signed("test.example.com"));
+        let _cfg = cert.server_config_rustls_with_provider(ring_provider());
+    }
+
+    #[test]
     fn client_config_from_self_signed() {
         install_provider();
         let fx = Factory::random();
         let cert = fx.x509_self_signed("test", X509Spec::self_signed("test.example.com"));
         let _cfg = cert.client_config_rustls();
+    }
+
+    #[test]
+    fn client_config_from_self_signed_with_provider() {
+        install_provider();
+        let fx = Factory::random();
+        let cert = fx.x509_self_signed("test-provider", X509Spec::self_signed("test.example.com"));
+        let _cfg = cert.client_config_rustls_with_provider(ring_provider());
     }
 
     #[test]

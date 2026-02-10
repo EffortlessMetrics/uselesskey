@@ -251,16 +251,7 @@ impl Factory {
             }
         };
 
-        match arc_any.downcast::<T>() {
-            Ok(v) => v,
-            Err(_) => {
-                // This is a bug: it means two different types used the same artifact id.
-                panic!(
-                    "uselesskey-core: artifact type mismatch for domain={} label={} variant={}",
-                    id.domain, id.label, id.variant
-                );
-            }
-        }
+        downcast_or_panic::<T>(arc_any, &id)
     }
 
     fn seed_for(&self, id: &ArtifactId) -> Seed {
@@ -270,66 +261,23 @@ impl Factory {
         }
     }
 }
-
-fn random_seed() -> Seed {
+pub(crate) fn random_seed() -> Seed {
     let mut bytes = [0u8; 32];
     OsRng.fill_bytes(&mut bytes);
     Seed(bytes)
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::panic::{AssertUnwindSafe, catch_unwind};
-    use std::sync::atomic::{AtomicUsize, Ordering};
-
-    #[test]
-    fn clear_cache_forces_reinit() {
-        let fx = Factory::random();
-        let hits = AtomicUsize::new(0);
-
-        let _ = fx.get_or_init("domain:test", "label", b"spec", "good", |_rng| {
-            hits.fetch_add(1, Ordering::SeqCst);
-            42u8
-        });
-
-        let _ = fx.get_or_init("domain:test", "label", b"spec", "good", |_rng| {
-            hits.fetch_add(1, Ordering::SeqCst);
-            43u8
-        });
-
-        assert_eq!(hits.load(Ordering::SeqCst), 1);
-
-        fx.clear_cache();
-
-        let _ = fx.get_or_init("domain:test", "label", b"spec", "good", |_rng| {
-            hits.fetch_add(1, Ordering::SeqCst);
-            44u8
-        });
-
-        assert_eq!(hits.load(Ordering::SeqCst), 2);
-    }
-
-    #[test]
-    fn get_or_init_type_mismatch_panics() {
-        let fx = Factory::random();
-        let _ = fx.get_or_init("domain:test", "label", b"spec", "good", |_rng| 123u32);
-
-        let result = catch_unwind(AssertUnwindSafe(|| {
-            let _ = fx.get_or_init("domain:test", "label", b"spec", "good", |_rng| {
-                "not a u32".to_string()
-            });
-        }));
-
-        assert!(result.is_err(), "expected panic on type mismatch");
-    }
-
-    #[test]
-    fn debug_includes_cache_size() {
-        let fx = Factory::random();
-        let _ = fx.get_or_init("domain:test", "label", b"spec", "good", |_rng| 7u8);
-
-        let dbg = format!("{:?}", fx);
-        assert!(dbg.contains("cache_size"), "debug output was: {dbg}");
+pub(crate) fn downcast_or_panic<T>(arc_any: Arc<dyn Any + Send + Sync>, id: &ArtifactId) -> Arc<T>
+where
+    T: Any + Send + Sync + 'static,
+{
+    match arc_any.downcast::<T>() {
+        Ok(v) => v,
+        Err(_) => {
+            // This is a bug: it means two different types used the same artifact id.
+            panic!(
+                "uselesskey-core: artifact type mismatch for domain={} label={} variant={}",
+                id.domain, id.label, id.variant
+            );
+        }
     }
 }
