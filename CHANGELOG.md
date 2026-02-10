@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-02-10
+
 ### Added
 
 - `uselesskey-rustcrypto` adapter crate for RustCrypto native types (`rsa`, `p256`, `p384`, `ed25519-dalek`, `hmac`)
