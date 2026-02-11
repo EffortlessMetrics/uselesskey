@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- New examples demonstrating library capabilities:
+  - `jwt_signing` - JWT signing with RSA/ECDSA/HMAC keys and JWK/JWKS outputs
+  - `tls_server` - Certificate chain generation (Root CA → Intermediate → Leaf)
+  - `negative_fixtures` - Invalid certificates/keys for testing error handling
+
 ## [0.2.0] - 2026-02-10
 
 ### Added
