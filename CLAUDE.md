@@ -49,7 +49,7 @@ Path ignores exist but require ongoing maintenance. This crate replaces "securit
 ## Build Commands
 
 ```bash
-cargo xtask ci              # Full CI: fmt, clippy, test, feature-matrix, bdd, no-blob, mutants, fuzz
+cargo xtask ci              # Main CI pipeline: fmt + clippy + tests + matrix + guard + bdd + no-blob + mutants + fuzz
 cargo xtask pr              # PR-scoped tests based on git diff (emits JSON receipt)
 cargo xtask test            # Run all tests with all features
 cargo xtask fmt --fix       # Fix formatting
@@ -60,9 +60,10 @@ cargo xtask mutants         # Mutation testing (requires cargo-mutants)
 cargo xtask deny            # License/advisory checks (requires cargo-deny)
 cargo xtask feature-matrix  # Run feature matrix checks (default, no-default, each feature, all-features)
 cargo xtask publish-check   # Run publish dry-runs in dependency order
-cargo xtask coverage          # Run code coverage via cargo-llvm-cov
 cargo xtask publish-preflight # Validate metadata + cargo package --no-verify
 cargo xtask no-blob         # Enforce no secret-shaped blobs in test/fixture paths
+cargo xtask dep-guard       # Guard against multiple versions of pinned deps
+cargo xtask coverage        # Run code coverage (requires cargo-llvm-cov)
 cargo xtask nextest         # Run tests via cargo-nextest (requires cargo-nextest)
 ```
 
@@ -83,8 +84,12 @@ cargo test -p uselesskey-rsa test_name
 - **`crates/uselesskey-ecdsa`** - ECDSA (P-256/P-384) fixtures via `EcdsaFactoryExt` trait
 - **`crates/uselesskey-ed25519`** - Ed25519 fixtures via `Ed25519FactoryExt` trait
 - **`crates/uselesskey-hmac`** - HMAC (HS256/HS384/HS512) fixtures via `HmacFactoryExt` trait
-- **`crates/uselesskey-x509`** - X.509 self-signed certificate fixtures via `X509FactoryExt` trait
-- **`crates/uselesskey-jsonwebtoken`** - Adapter: returns `jsonwebtoken` `EncodingKey`/`DecodingKey` directly
+- **`crates/uselesskey-x509`** - X.509 certificate fixtures via `X509FactoryExt` trait
+- **`crates/uselesskey-jsonwebtoken`** - Adapter: `jsonwebtoken` integration
+- **`crates/uselesskey-rustls`** - Adapter: `rustls` / `rustls-pki-types` integration
+- **`crates/uselesskey-ring`** - Adapter: `ring` integration
+- **`crates/uselesskey-rustcrypto`** - Adapter: RustCrypto integration
+- **`crates/uselesskey-aws-lc-rs`** - Adapter: `aws-lc-rs` integration
 - **`crates/uselesskey-bdd`** - Cucumber BDD tests
 - **`xtask`** - Build automation commands
 
