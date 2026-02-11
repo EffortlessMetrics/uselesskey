@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `jwt_signing` - JWT signing with RSA/ECDSA/HMAC keys and JWK/JWKS outputs
   - `tls_server` - Certificate chain generation (Root CA → Intermediate → Leaf)
   - `negative_fixtures` - Invalid certificates/keys for testing error handling
+- Expanded BDD test coverage with new feature files:
+  - `chain.feature` - X.509 certificate chain scenarios (determinism, structure, SANs, negative fixtures)
+  - `jwks.feature` - JWKS builder scenarios (multi-key, deterministic ordering, field validation)
+  - `cross_key.feature` - Cross-key validation scenarios (algorithm mismatch, key type differences)
 
 ## [0.2.0] - 2026-02-10
 
