@@ -51,6 +51,8 @@ enum Cmd {
     DepGuard,
     /// Run cucumber BDD features.
     Bdd,
+    /// Run cucumber BDD matrix with feature sets.
+    BddMatrix,
     /// Run mutation testing (requires `cargo-mutants` installed).
     Mutants,
     /// Run code coverage via cargo-llvm-cov (requires `cargo-llvm-cov` installed).
@@ -84,6 +86,7 @@ fn main() -> Result<()> {
         Cmd::Pr => pr(),
         Cmd::DepGuard => dep_guard(),
         Cmd::Bdd => bdd(),
+        Cmd::BddMatrix => bdd_matrix(),
         Cmd::Coverage => coverage(),
         Cmd::PublishPreflight => publish_preflight(),
         Cmd::Mutants => mutants(),
@@ -146,6 +149,37 @@ fn test() -> Result<()> {
 
 fn bdd() -> Result<()> {
     run(Command::new("cargo").args(["test", "-p", "uselesskey-bdd", "--test", "bdd"]))
+}
+
+fn bdd_matrix() -> Result<()> {
+    let mut runner = receipt::Runner::new("target/xtask/receipt.json");
+
+    // Define the feature sets to run
+    // Note: BDD tests require all features to be enabled
+    let feature_sets = vec![("all-features", vec!["--features", "uk-all"])];
+
+    for (name, args) in feature_sets {
+        let step_name = format!("bdd-matrix:{name}");
+        let result = runner.step(&step_name, None, || {
+            let mut cmd = Command::new("cargo");
+            cmd.args(["test", "-p", "uselesskey-bdd", "--test", "bdd"]);
+            for arg in args {
+                cmd.arg(arg);
+            }
+            run(&mut cmd)
+        });
+
+        match result {
+            Ok(()) => runner.add_bdd_matrix(name, "ok"),
+            Err(err) => {
+                runner.add_bdd_matrix(name, "failed");
+                return Err(err);
+            }
+        }
+    }
+
+    runner.summary();
+    runner.write()
 }
 
 fn ci() -> Result<()> {

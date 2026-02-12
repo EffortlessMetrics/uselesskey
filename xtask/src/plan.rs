@@ -60,6 +60,7 @@ pub fn build_plan(paths: &[String]) -> Plan {
         || paths.iter().any(|p| {
             let p = normalize_path(p);
             p.starts_with("crates/uselesskey/")
+                && (p.ends_with(".feature") && p.contains("features/"))
         });
     let run_dep_guard = cargo_changed;
     let run_bdd = rust_code_changed || bdd_feature_changed;

@@ -17,6 +17,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `chain.feature` - X.509 certificate chain scenarios (determinism, structure, SANs, negative fixtures)
   - `jwks.feature` - JWKS builder scenarios (multi-key, deterministic ordering, field validation)
   - `cross_key.feature` - Cross-key validation scenarios (algorithm mismatch, key type differences)
+  - `edge_cases.feature` - Label edge cases, cache behavior, determinism edge cases
+- Expanded existing BDD feature files with additional scenarios:
+  - `rsa.feature` - RS384/RS512 variant scenarios
+  - `hmac.feature` - HS384/HS512 variant scenarios
+  - `x509.feature` - CRL/revoked leaf and hostname mismatch scenarios
+  - `jwks.feature` - Rotation and additional field validation scenarios
+- Comprehensive test suites for adapter crates:
+  - `uselesskey-jsonwebtoken` - JWT signing/verification with all key types
+  - `uselesskey-ring` - ring 0.17 key type conversion tests
+  - `uselesskey-aws-lc-rs` - aws-lc-rs key type conversion tests
+  - `uselesskey-rustcrypto` - RustCrypto type conversion tests
+- BDD test runner expanded with step definitions for all new features
+- Updated roadmap: moved completed items (cert chains, X.509 negatives, all adapter crates) from Planned to Implemented
 
 ## [0.2.0] - 2026-02-10
 

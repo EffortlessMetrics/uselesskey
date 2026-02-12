@@ -288,7 +288,7 @@ mod tests {
             let fx = crate::testutil::fx();
             let keypair = fx.ecdsa("test", EcdsaSpec::es384());
 
-            let key = keypair.private_key_derustls();
+            let key = keypair.private_key_der_rustls();
             assert_eq!(key.secret_der(), keypair.private_key_pkcs8_der());
         }
     }

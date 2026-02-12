@@ -201,8 +201,29 @@ fn test_jwks_endpoint() {
 
 ### TLS/mTLS testing
 
+With X.509 certificate chains and the `uselesskey-rustls` adapter:
+
 ```rust
-fn test_mtls_handshake() {
+use uselesskey::{Factory, X509FactoryExt, ChainSpec};
+use uselesskey_rustls::{RustlsServerConfigExt, RustlsClientConfigExt};
+
+fn test_tls_handshake() {
+    let fx = Factory::random();
+    let chain = fx.x509_chain("my-service", ChainSpec::new("test.example.com"));
+
+    // One-liner config builders
+    let server_config = chain.server_config_rustls();
+    let client_config = chain.client_config_rustls();
+
+    // Test handshake
+    assert!(handshake(&server_config, &client_config).is_ok());
+}
+```
+
+Or with raw key files for libraries that need paths:
+
+```rust
+fn test_tls_with_files() {
     let fx = Factory::random();
 
     let server = fx.rsa("server", RsaSpec::rs256());
@@ -220,7 +241,50 @@ fn test_mtls_handshake() {
 }
 ```
 
-### Certificate validation testing (error paths)
+### X.509 certificate validation testing
+
+```rust
+use uselesskey::{Factory, X509FactoryExt, ChainSpec};
+
+fn test_expired_cert_rejected() {
+    let fx = Factory::random();
+    let chain = fx.x509_chain("my-service", ChainSpec::new("test.example.com"));
+
+    let expired = chain.expired_leaf();
+    // Use expired cert in TLS setup — handshake should fail
+    assert!(verify_cert(expired.leaf_cert_pem()).is_err());
+}
+
+fn test_hostname_mismatch_rejected() {
+    let fx = Factory::random();
+    let chain = fx.x509_chain("my-service", ChainSpec::new("test.example.com"));
+
+    let wrong = chain.hostname_mismatch("wrong.example.com");
+    // SAN doesn't match expected hostname
+    assert!(verify_hostname(wrong.leaf_cert_pem(), "test.example.com").is_err());
+}
+
+fn test_unknown_ca_rejected() {
+    let fx = Factory::random();
+    let chain = fx.x509_chain("my-service", ChainSpec::new("test.example.com"));
+
+    let unknown = chain.unknown_ca();
+    // Root CA not in trust store
+    assert!(verify_chain(unknown.chain_pem(), &trusted_roots).is_err());
+}
+
+fn test_revoked_cert_rejected() {
+    let fx = Factory::random();
+    let chain = fx.x509_chain("my-service", ChainSpec::new("test.example.com"));
+
+    let revoked = chain.revoked_leaf();
+    let crl = revoked.crl_pem().expect("CRL present");
+    // Leaf appears in CRL
+    assert!(check_revocation(revoked.leaf_cert_pem(), &crl).is_err());
+}
+```
+
+### Key corruption testing (error paths)
 
 ```rust
 use uselesskey::negative::CorruptPem;

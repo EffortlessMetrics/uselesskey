@@ -15,8 +15,19 @@ p256 = { version = "0.13.2", features = ["ecdsa", "pkcs8", "pem"] }
 p384 = { version = "0.13.1", features = ["ecdsa", "pkcs8", "pem"] }
 x509-parser = "0.18.1"
 serde_json.workspace = true
-uselesskey = { path = "../uselesskey", features = ["jwk", "ed25519", "ecdsa", "x509", "hmac"] }
-uselesskey-core = { path = "../uselesskey-core" } # for TempArtifact
+uselesskey = { path = "../uselesskey", default-features = false, features = [] }
+uselesskey-core = { path = "../uselesskey-core" }
+
+[features]
+default = ["uk-default"]
+uk-default = ["uselesskey/default"]
+uk-all = ["uselesskey/full"]
+uk-rsa = ["uselesskey/rsa"]
+uk-ecdsa = ["uselesskey/ecdsa"]
+uk-ed25519 = ["uselesskey/ed25519"]
+uk-hmac = ["uselesskey/hmac"]
+uk-x509 = ["uselesskey/x509"]
+uk-jwk = ["uselesskey/jwk"]
 
 [[test]]
 name = "bdd"

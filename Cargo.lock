@@ -961,6 +961,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
+name = "hex"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
+
+[[package]]
 name = "hkdf"
 version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2364,6 +2370,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "uselesskey-integration-tests"
+version = "0.0.0"
+dependencies = [
+ "jsonwebtoken",
+ "ring",
+ "rustls",
+ "serde",
+ "serde_json",
+ "uselesskey-core",
+ "uselesskey-ecdsa",
+ "uselesskey-ed25519",
+ "uselesskey-hmac",
+ "uselesskey-jsonwebtoken",
+ "uselesskey-jwk",
+ "uselesskey-ring",
+ "uselesskey-rsa",
+ "uselesskey-rustls",
+ "uselesskey-x509",
+]
+
+[[package]]
 name = "uselesskey-jsonwebtoken"
 version = "0.2.0"
 dependencies = [
@@ -2388,6 +2415,7 @@ dependencies = [
 name = "uselesskey-ring"
 version = "0.2.0"
 dependencies = [
+ "hex",
  "ring",
  "uselesskey-core",
  "uselesskey-ecdsa",
@@ -2443,15 +2471,18 @@ dependencies = [
 name = "uselesskey-x509"
 version = "0.2.0"
 dependencies = [
+ "base64",
  "blake3",
  "proptest",
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
  "rcgen",
+ "rsa",
  "rstest",
  "rustls-pki-types",
  "time",
  "uselesskey-core",
+ "uselesskey-jwk",
  "uselesskey-rsa",
  "x509-parser 0.16.0",
 ]
