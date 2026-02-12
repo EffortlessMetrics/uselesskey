@@ -49,6 +49,9 @@ use rustls_pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
 #[cfg(any(feature = "server-config", feature = "client-config"))]
 mod config;
 
+#[cfg(test)]
+mod testutil;
+
 #[cfg(feature = "server-config")]
 pub use config::RustlsServerConfigExt;
 
@@ -192,12 +195,11 @@ mod tests {
     #[cfg(feature = "x509")]
     mod x509_tests {
         use crate::{RustlsCertExt, RustlsChainExt, RustlsPrivateKeyExt};
-        use uselesskey_core::Factory;
         use uselesskey_x509::{ChainSpec, X509FactoryExt, X509Spec};
 
         #[test]
         fn test_self_signed_private_key() {
-            let fx = Factory::random();
+            let fx = crate::testutil::fx();
             let cert = fx.x509_self_signed("test", X509Spec::self_signed("test.example.com"));
 
             let key = cert.private_key_der_rustls();
@@ -206,7 +208,7 @@ mod tests {
 
         #[test]
         fn test_self_signed_certificate() {
-            let fx = Factory::random();
+            let fx = crate::testutil::fx();
             let cert = fx.x509_self_signed("test", X509Spec::self_signed("test.example.com"));
 
             let cert_der = cert.certificate_der_rustls();
@@ -215,7 +217,7 @@ mod tests {
 
         #[test]
         fn test_chain_private_key() {
-            let fx = Factory::random();
+            let fx = crate::testutil::fx();
             let chain = fx.x509_chain("test", ChainSpec::new("test.example.com"));
 
             let key = chain.private_key_der_rustls();
@@ -224,7 +226,7 @@ mod tests {
 
         #[test]
         fn test_chain_certificate() {
-            let fx = Factory::random();
+            let fx = crate::testutil::fx();
             let chain = fx.x509_chain("test", ChainSpec::new("test.example.com"));
 
             let cert_der = chain.certificate_der_rustls();
@@ -233,7 +235,7 @@ mod tests {
 
         #[test]
         fn test_chain_der_rustls() {
-            let fx = Factory::random();
+            let fx = crate::testutil::fx();
             let chain = fx.x509_chain("test", ChainSpec::new("test.example.com"));
 
             let chain_certs = chain.chain_der_rustls();
@@ -244,7 +246,7 @@ mod tests {
 
         #[test]
         fn test_root_certificate() {
-            let fx = Factory::random();
+            let fx = crate::testutil::fx();
             let chain = fx.x509_chain("test", ChainSpec::new("test.example.com"));
 
             let root = chain.root_certificate_der_rustls();
@@ -255,12 +257,11 @@ mod tests {
     #[cfg(feature = "rsa")]
     mod rsa_tests {
         use crate::RustlsPrivateKeyExt;
-        use uselesskey_core::Factory;
         use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 
         #[test]
         fn test_rsa_private_key() {
-            let fx = Factory::random();
+            let fx = crate::testutil::fx();
             let keypair = fx.rsa("test", RsaSpec::rs256());
 
             let key = keypair.private_key_der_rustls();
@@ -271,12 +272,11 @@ mod tests {
     #[cfg(feature = "ecdsa")]
     mod ecdsa_tests {
         use crate::RustlsPrivateKeyExt;
-        use uselesskey_core::Factory;
         use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
 
         #[test]
         fn test_ecdsa_es256_private_key() {
-            let fx = Factory::random();
+            let fx = crate::testutil::fx();
             let keypair = fx.ecdsa("test", EcdsaSpec::es256());
 
             let key = keypair.private_key_der_rustls();
@@ -285,10 +285,10 @@ mod tests {
 
         #[test]
         fn test_ecdsa_es384_private_key() {
-            let fx = Factory::random();
+            let fx = crate::testutil::fx();
             let keypair = fx.ecdsa("test", EcdsaSpec::es384());
 
-            let key = keypair.private_key_der_rustls();
+            let key = keypair.private_key_derustls();
             assert_eq!(key.secret_der(), keypair.private_key_pkcs8_der());
         }
     }
@@ -296,12 +296,11 @@ mod tests {
     #[cfg(feature = "ed25519")]
     mod ed25519_tests {
         use crate::RustlsPrivateKeyExt;
-        use uselesskey_core::Factory;
         use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
 
         #[test]
         fn test_ed25519_private_key() {
-            let fx = Factory::random();
+            let fx = crate::testutil::fx();
             let keypair = fx.ed25519("test", Ed25519Spec::new());
 
             let key = keypair.private_key_der_rustls();
