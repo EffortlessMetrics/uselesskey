@@ -23,8 +23,7 @@ uselesskey-jwk = { path = "../crates/uselesskey-jwk", version = "0.2.0", optiona
 # Adapters
 uselesskey-jsonwebtoken = { path = "../crates/uselesskey-jsonwebtoken", version = "0.2.0", optional = true, features = ["all"] }
 uselesskey-rustls = { path = "../crates/uselesskey-rustls", version = "0.2.0", optional = true, features = ["server-config", "client-config"] }
-uselesskey-ring = { path = "../crates/uselesskey-ring", version = "0.2.0", optional = true }
-uselesskey-aws-lc-rs = { path = "../crates/uselesskey-aws-lc-rs", version = "0.2.0", optional = true }
+uselesskey-ring = { path = "../crates/uselesskey-ring", version = "0.2.0", optional = true, features = ["all"] }
 
 # External dependencies
 jsonwebtoken = { workspace = true, optional = true }
@@ -61,7 +60,6 @@ crypto-backend = [
     "dep:uselesskey-ecdsa",
     "dep:uselesskey-ed25519",
     "dep:uselesskey-ring",
-    "dep:uselesskey-aws-lc-rs",
     "ring",
 ]
 
@@ -75,6 +73,7 @@ e2e = [
     "dep:uselesskey-jwk",
     "dep:uselesskey-jsonwebtoken",
     "dep:uselesskey-rustls",
+    "dep:jsonwebtoken",
 ]
 
 # All integration tests

@@ -2378,7 +2378,6 @@ dependencies = [
  "rustls",
  "serde",
  "serde_json",
- "uselesskey-aws-lc-rs",
  "uselesskey-core",
  "uselesskey-ecdsa",
  "uselesskey-ed25519",
