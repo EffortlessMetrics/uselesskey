@@ -12,9 +12,7 @@ use rustls::crypto::CryptoProvider;
 use std::sync::Arc;
 use testutil::fx;
 use uselesskey_core::Factory;
-use uselesskey_rustls::{
-    RustlsClientConfigExt, RustlsMtlsExt, RustlsServerConfigExt,
-};
+use uselesskey_rustls::{RustlsClientConfigExt, RustlsMtlsExt, RustlsServerConfigExt};
 use uselesskey_x509::{ChainSpec, X509FactoryExt};
 
 // =========================================================================
@@ -221,7 +219,8 @@ mod rsa_tls_tests {
             let rsa_keypair = fx.rsa(&format!("rsa-{}-bit", bits), RsaSpec::new(bits));
 
             let spec = uselesskey_x509::X509Spec::self_signed(&format!("rsa-{}.example.com", bits));
-            let cert = fx.x509_self_signed_with_key(&format!("rsa-cert-{}", bits), spec, &rsa_keypair);
+            let cert =
+                fx.x509_self_signed_with_key(&format!("rsa-cert-{}", bits), spec, &rsa_keypair);
 
             let server_config = cert.server_config_rustls();
 
@@ -362,12 +361,11 @@ mod chain_tests {
     fn test_chain_with_sans() {
         let fx = fx();
 
-        let chain_spec = ChainSpec::new("sans.example.com")
-            .with_sans(vec![
-                "localhost".to_string(),
-                "127.0.0.1".to_string(),
-                "*.example.com".to_string(),
-            ]);
+        let chain_spec = ChainSpec::new("sans.example.com").with_sans(vec![
+            "localhost".to_string(),
+            "127.0.0.1".to_string(),
+            "*.example.com".to_string(),
+        ]);
         let chain = fx.x509_chain("sans-test", chain_spec);
 
         // Build server config
