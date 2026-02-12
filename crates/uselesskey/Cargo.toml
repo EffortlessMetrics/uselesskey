@@ -36,7 +36,7 @@ ed25519 = ["dep:uselesskey-ed25519"]
 hmac = ["dep:uselesskey-hmac"]
 
 # X.509 certificates (implies rsa for now)
-x509 = ["dep:uselesskey-x509", "rsa"]
+x509 = ["dep:uselesskey-x509", "rsa", "uselesskey-x509/jwk"]
 
 # Output formats (pass-through to enabled key crates)
 jwk = [

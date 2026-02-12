@@ -11,6 +11,7 @@ pub struct Receipt {
     pub timestamp: u64,
     pub steps: Vec<StepReceipt>,
     pub feature_matrix: Vec<FeatureMatrixEntry>,
+    pub bdd_matrix: Vec<BddMatrixEntry>,
     pub bdd_counts: BTreeMap<String, usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub coverage_lcov_path: Option<String>,
@@ -27,6 +28,12 @@ pub struct StepReceipt {
 #[derive(Debug, Serialize)]
 pub struct FeatureMatrixEntry {
     pub features: String,
+    pub status: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct BddMatrixEntry {
+    pub feature_set: String,
     pub status: String,
 }
 
@@ -48,6 +55,7 @@ impl Runner {
                 timestamp: now,
                 steps: Vec::new(),
                 feature_matrix: Vec::new(),
+                bdd_matrix: Vec::new(),
                 bdd_counts: BTreeMap::new(),
                 coverage_lcov_path: None,
             },
@@ -108,6 +116,13 @@ impl Runner {
     pub fn add_feature_matrix(&mut self, features: &str, status: &str) {
         self.receipt.feature_matrix.push(FeatureMatrixEntry {
             features: features.to_string(),
+            status: status.to_string(),
+        });
+    }
+
+    pub fn add_bdd_matrix(&mut self, feature_set: &str, status: &str) {
+        self.receipt.bdd_matrix.push(BddMatrixEntry {
+            feature_set: feature_set.to_string(),
             status: status.to_string(),
         });
     }

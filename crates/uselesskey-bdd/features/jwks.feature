@@ -117,3 +117,119 @@ Feature: JWKS (JSON Web Key Set) builder
     When I build an empty JWKS
     Then the JWKS should contain 0 keys
     And the JWKS JSON should have an empty "keys" array
+
+  # --- Multi-Key Same Type ---
+
+  Scenario: JWKS with multiple RSA keys
+    Given a deterministic factory seeded with "multi-rsa-test"
+    When I generate an RSA key for label "rsa-1" with spec RS256
+    And I generate an RSA key for label "rsa-2" with spec RS256
+    And I build a JWKS with the RSA keys with kids "key-1" and "key-2"
+    Then the JWKS should contain 2 keys
+    And each key in the JWKS should have kty "RSA"
+    And each key in the JWKS should have a unique kid
+
+  Scenario: JWKS with multiple ECDSA keys
+    Given a deterministic factory seeded with "multi-ecdsa-test"
+    When I generate an ECDSA ES256 key for label "ecdsa-1"
+    And I generate an ECDSA ES256 key for label "ecdsa-2"
+    And I build a JWKS with the ECDSA keys with kids "es256-1" and "es256-2"
+    Then the JWKS should contain 2 keys
+    And each key in the JWKS should have kty "EC"
+    And each key in the JWKS should have a unique kid
+
+  Scenario: JWKS with multiple Ed25519 keys
+    Given a deterministic factory seeded with "multi-ed25519-test"
+    When I generate an Ed25519 key for label "ed25519-1"
+    And I generate an Ed25519 key for label "ed25519-2"
+    And I build a JWKS with the Ed25519 keys with kids "eddsa-1" and "eddsa-2"
+    Then the JWKS should contain 2 keys
+    And each key in the JWKS should have kty "OKP"
+    And each key in the JWKS should have a unique kid
+
+  Scenario: JWKS with multiple HMAC keys
+    Given a deterministic factory seeded with "multi-hmac-test"
+    When I generate an HMAC HS256 secret for label "hmac-1"
+    And I generate an HMAC HS256 secret for label "hmac-2"
+    And I build a JWKS with the HMAC secrets with kids "hs256-1" and "hs256-2"
+    Then the JWKS should contain 2 keys
+    And each key in the JWKS should have kty "oct"
+    And each key in the JWKS should have a unique kid
+
+  # --- JWKS Rotation ---
+
+  Scenario: JWKS rotation adds new key
+    Given a deterministic factory seeded with "rotation-test"
+    When I generate an RSA key for label "key-v1" with spec RS256
+    And I build a JWKS containing the RSA key with kid "v1"
+    Then the JWKS should contain 1 key
+    When I generate an RSA key for label "key-v2" with spec RS256
+    And I build a JWKS containing both keys with kids "v1" and "v2"
+    Then the JWKS should contain 2 keys
+    And the JWKS should contain a key with kid "v1"
+    And the JWKS should contain a key with kid "v2"
+
+  Scenario: JWKS rotation removes old key
+    Given a deterministic factory seeded with "rotation-remove-test"
+    When I generate an RSA key for label "key-v1" with spec RS256
+    And I generate an RSA key for label "key-v2" with spec RS256
+    And I build a JWKS with both keys with kids "v1" and "v2"
+    Then the JWKS should contain 2 keys
+    When I build a JWKS with only the second key with kid "v2"
+    Then the JWKS should contain 1 key
+    And the JWKS should contain a key with kid "v2"
+    And the JWKS should not contain a key with kid "v1"
+
+  Scenario: JWKS rotation preserves key identity
+    Given a deterministic factory seeded with "rotation-preserve-test"
+    When I generate an RSA key for label "key-stable" with spec RS256
+    And I build a JWKS containing the RSA key with kid "stable-key"
+    And I generate an RSA key for label "key-new" with spec RS256
+    And I build a JWKS containing both keys with kids "stable-key" and "new-key"
+    Then the JWKS should contain a key with kid "stable-key"
+    And the JWKS key with kid "stable-key" should have the same modulus as the original
+
+  # --- JWKS Filtering ---
+
+  Scenario: JWKS filtering by algorithm
+    Given a deterministic factory seeded with "filter-test"
+    When I generate an RSA key for label "rsa-key" with spec RS256
+    And I generate an ECDSA ES256 key for label "ecdsa-key"
+    And I generate an HMAC HS256 secret for label "hmac-key"
+    And I build a JWKS containing all keys
+    Then the JWKS should contain 3 keys
+    And the JWKS should contain a key with alg "RS256"
+    And the JWKS should contain a key with alg "ES256"
+    And the JWKS should contain a key with alg "HS256"
+
+  Scenario: JWKS filtering by key type
+    Given a deterministic factory seeded with "filter-kty-test"
+    When I generate an RSA key for label "rsa-filter" with spec RS256
+    And I generate an ECDSA ES256 key for label "ecdsa-filter"
+    And I generate an Ed25519 key for label "ed25519-filter"
+    And I build a JWKS containing all keys
+    Then the JWKS should contain 3 keys
+    And the JWKS should contain a key with kty "RSA"
+    And the JWKS should contain a key with kty "EC"
+    And the JWKS should contain a key with kty "OKP"
+
+  Scenario: JWKS filtering by kid
+    Given a deterministic factory seeded with "filter-kid-test"
+    When I generate an RSA key for label "rsa-a" with spec RS256
+    And I generate an RSA key for label "rsa-b" with spec RS256
+    And I generate an RSA key for label "rsa-c" with spec RS256
+    And I build a JWKS containing all keys with kids "key-a", "key-b", "key-c"
+    Then the JWKS should contain 3 keys
+    When I filter the JWKS by kid "key-b"
+    Then the filtered JWKS should contain 1 key
+    And the filtered JWKS should contain a key with kid "key-b"
+
+  # --- JWKS from X.509 ---
+  # X.509 certificate JWK scenarios are disabled because X509Cert does not
+  # currently expose a private_key_jwk() method.
+  # Scenario: JWKS from X.509 certificate
+  #   Given a deterministic factory seeded with "x509-jwks-test"
+  #   When I generate an X.509 certificate for domain "test.example.com" with label "x509-jwks"
+  #   Then the X.509 certificate should have a JWK representation
+  #   And the X.509 certificate JWK should have kty "RSA"
+  #   And the X.509 certificate JWK should have a kid
