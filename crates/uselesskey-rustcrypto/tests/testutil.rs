@@ -1,5 +1,3 @@
-#![allow(unused)]
-
 use std::sync::OnceLock;
 
 use uselesskey_core::{Factory, Seed};

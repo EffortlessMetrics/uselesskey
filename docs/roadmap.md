@@ -37,11 +37,7 @@ This roadmap reflects the strategic direction for uselesskey as a **test-fixture
   - Returns `jsonwebtoken::EncodingKey` / `DecodingKey` directly
   - Reduces boilerplate in JWT tests
 
-## Planned
-
-### X.509 — cert chains and negative fixtures
-
-- [ ] **Cert chain fixtures**
+- [x] **X.509 cert chain fixtures** (`uselesskey-x509`)
   - Root CA → Intermediate → Leaf
   - Deterministic serial numbers and validity periods
   - Chain PEM (leaf + intermediate, no root) for standard TLS server usage
@@ -50,11 +46,9 @@ This roadmap reflects the strategic direction for uselesskey as a **test-fixture
   - Expired leaf/intermediate certificates
   - Hostname mismatch (wrong SAN)
   - Unknown CA (untrusted root)
-  - Revoked cert (with CRL/OCSP stub)
-
-### Adapter crates
-
-- [ ] **`uselesskey-rustls`**
+  - Revoked leaf with CRL signed by intermediate CA
+  - Self-signed leaf, reversed chain, wrong issuer
+- [x] **`uselesskey-rustls`**
   - Returns `rustls::pki_types::PrivateKeyDer`, `CertificateDer`
   - `ServerConfig` / `ClientConfig` / mTLS config builders (with `tls-config` feature)
   - Pluggable crypto provider support (`rustls-ring` / `rustls-aws-lc-rs`)

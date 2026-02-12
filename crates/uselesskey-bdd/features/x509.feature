@@ -143,3 +143,86 @@ Feature: X.509 certificate fixtures
     When I generate an X.509 certificate for domain "test.example.com" with label "temp-chain"
     And I write the X.509 identity PEM to a tempfile
     Then the X.509 chain tempfile path should end with ".identity.pem"
+
+  # --- Certificate Chains ---
+
+  Scenario: generate X.509 certificate chain
+    Given a deterministic factory seeded with "chain-test"
+    When I generate a certificate chain for domain "test.example.com" with label "test-chain"
+    Then the certificate chain should contain a leaf certificate
+    And the certificate chain should contain an intermediate certificate
+    And the certificate chain should contain a root certificate
+
+  Scenario: certificate chain is deterministic
+    Given a deterministic factory seeded with "chain-deterministic"
+    When I generate a certificate chain for domain "api.example.com" with label "chain-1"
+    And I generate a certificate chain for domain "api.example.com" with label "chain-1" again
+    Then the certificate chains should have identical DER
+
+  # --- CRL and Revoked Certs ---
+
+  Scenario: X.509 certificate chain with revoked leaf
+    Given a deterministic factory seeded with "crl-test"
+    When I generate a certificate chain for domain "test.example.com" with label "revoked-chain"
+    And I get the revoked leaf variant of the certificate chain
+    Then the revoked leaf certificate should be parseable
+    And the revoked leaf certificate should have a CRL distribution point
+
+  Scenario: revoked leaf certificate is different from valid
+    Given a deterministic factory seeded with "revoked-diff-test"
+    When I generate a certificate chain for domain "test.example.com" with label "revoked-check"
+    And I get the revoked leaf variant of the certificate chain
+    Then the revoked leaf certificate should differ from the valid leaf certificate
+
+  # --- Hostname Mismatch ---
+
+  Scenario: X.509 certificate chain with hostname mismatch
+    Given a deterministic factory seeded with "hostname-mismatch-test"
+    When I generate a certificate chain for domain "test.example.com" with label "mismatch-chain"
+    And I get the hostname mismatch variant with "wrong.example.com"
+    Then the leaf certificate should have common name "wrong.example.com"
+    And the leaf certificate should not contain SAN "test.example.com"
+
+  Scenario: hostname mismatch chain is different from valid
+    Given a deterministic factory seeded with "hostname-diff-test"
+    When I generate a certificate chain for domain "test.example.com" with label "hostname-check"
+    And I get the hostname mismatch variant with "wrong.example.com"
+    Then the hostname mismatch leaf certificate should differ from the valid leaf certificate
+
+  # --- Chain Negative Variants ---
+
+  Scenario: X.509 certificate chain with expired leaf
+    Given a deterministic factory seeded with "expired-leaf-test"
+    When I generate a certificate chain for domain "test.example.com" with label "expired-leaf-chain"
+    And I get the expired leaf variant of the certificate chain
+    Then the expired leaf certificate should have not_after in the past
+    And the intermediate certificate should be valid
+
+  Scenario: X.509 certificate chain with expired intermediate
+    Given a deterministic factory seeded with "expired-int-test"
+    When I generate a certificate chain for domain "test.example.com" with label "expired-int-chain"
+    And I get the expired intermediate variant of the certificate chain
+    Then the expired intermediate certificate should have not_after in the past
+    And the leaf certificate should be valid
+
+  # --- SAN Validation ---
+
+  Scenario: X.509 certificate with multiple SANs
+    Given a deterministic factory seeded with "san-test"
+    When I generate an X.509 certificate for domain "test.example.com" with label "multi-san"
+    And I add SAN "localhost" to the X.509 certificate
+    And I add SAN "127.0.0.1" to the X.509 certificate
+    And I add SAN "*.example.com" to the X.509 certificate
+    Then the X.509 certificate should contain SAN "test.example.com"
+    And the X.509 certificate should contain SAN "localhost"
+    And the X.509 certificate should contain SAN "127.0.0.1"
+    And the X.509 certificate should contain SAN "*.example.com"
+
+  Scenario: X.509 certificate chain SANs are in leaf only
+    Given a deterministic factory seeded with "chain-san-test"
+    When I generate a certificate chain for domain "test.example.com" with label "san-chain"
+    And I add SAN "localhost" to the certificate chain
+    Then the leaf certificate should contain SAN "test.example.com"
+    And the leaf certificate should contain SAN "localhost"
+    And the intermediate certificate should not contain SAN "localhost"
+    And the root certificate should not contain SAN "localhost"

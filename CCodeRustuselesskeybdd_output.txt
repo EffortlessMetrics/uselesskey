@@ -1,0 +1,1043 @@
+Feature: X.509 certificate chain fixtures
+  Scenario: deterministic certificate chains are stable
+   ✔  Given a deterministic factory seeded with "0x0000000000000000000000000000000000000000000000000000000000000042"
+   ✔  When I generate a certificate chain for domain "test.example.com" with label "chain-server"
+   ✔  And I generate a certificate chain for domain "test.example.com" with label "chain-server" again
+   ?  Then the leaf certificate PEM should be identical
+      Step skipped: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\chain.feature:12:5
+  Scenario: certificate chain derivation survives cache clear
+   ✔  Given a deterministic factory seeded with "chain-seed-alpha"
+   ✔  When I generate a certificate chain for domain "api.example.com" with label "first-chain"
+   ✔  And I clear the factory cache
+   ✔  And I generate a certificate chain for domain "api.example.com" with label "first-chain" again
+   ?  Then the leaf certificate PEM should be identical
+      Step skipped: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\chain.feature:21:5
+  Scenario: different labels produce different certificate chains
+   ✔  Given a deterministic factory seeded with "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+   ✔  When I generate a certificate chain for domain "test.example.com" with label "chain-a"
+   ?  And I generate another certificate chain for domain "test.example.com" with label "chain-b"
+      Step skipped: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\chain.feature:26:5
+  Scenario: certificate chain contains three certificates
+   ✔  Given a deterministic factory seeded with "structure-test"
+   ✔  When I generate a certificate chain for domain "test.example.com" with label "three-tier"
+   ?  Then the certificate chain should have a leaf certificate
+      Step skipped: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\chain.feature:35:5
+  Scenario: certificate chain PEM contains leaf and intermediate
+   ✔  Given a deterministic factory seeded with "pem-test"
+   ✔  When I generate a certificate chain for domain "test.example.com" with label "pem-check"
+   ?  Then the chain PEM should contain 2 "-----BEGIN CERTIFICATE-----" markers
+      Step skipped: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\chain.feature:42:5
+  Scenario: certificate chain components are different
+   ✔  Given a deterministic factory seeded with "different-test"
+   ✔  When I generate a certificate chain for domain "test.example.com" with label "diff-check"
+   ?  Then the leaf certificate DER should differ from the intermediate certificate DER
+      Step skipped: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\chain.feature:47:5
+  Scenario: certificate chain has correct common names
+   ✔  Given a deterministic factory seeded with "cn-chain-test"
+   ✔  When I generate a certificate chain for domain "myservice.example.com" with label "cn-check"
+   ✔  Then the leaf certificate should have common name "myservice.example.com"
+   ?  And the intermediate certificate should have a common name
+      Step skipped: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\chain.feature:56:5
+  Scenario: certificate chain supports multiple SANs
+   ✔  Given a deterministic factory seeded with "san-chain-test"
+   ✔  When I generate a certificate chain for domain "test.example.com" with label "san-check"
+   ✘  And I add SAN "localhost" to the certificate chain
+      Step failed:
+      Defined: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\chain.feature:64:5
+      Matched: crates\uselesskey-bdd\tests\bdd.rs:1608:1
+      Step panicked. Captured output: label not set
+  Scenario: certificate chain has matching private key
+   ✔  Given a deterministic factory seeded with "key-match-test"
+   ✔  When I generate a certificate chain for domain "test.example.com" with label "key-check"
+   ?  Then the leaf private key should be a valid PKCS#8 key
+      Step skipped: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\chain.feature:75:5
+  Scenario: certificate chain writes to tempfiles
+   ✔  Given a deterministic factory seeded with "tempfile-chain-test"
+   ✔  When I generate a certificate chain for domain "test.example.com" with label "temp-chain"
+   ?  And I write the leaf certificate PEM to a tempfile
+      Step skipped: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\chain.feature:83:5
+  Scenario: expired intermediate CA chain variant
+   ✔  Given a deterministic factory seeded with "expired-intermediate-test"
+   ✔  When I generate a certificate chain for domain "test.example.com" with label "exp-int-check"
+   ✔  And I get the expired intermediate variant of the certificate chain
+   ✔  Then the expired intermediate certificate should have not_after in the past
+  Scenario: unknown CA chain variant
+   ✔  Given a deterministic factory seeded with "unknown-ca-test"
+   ✔  When I generate a certificate chain for domain "test.example.com" with label "unknown-check"
+   ?  And I get the unknown CA variant of the certificate chain
+      Step skipped: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\chain.feature:101:5
+Feature: Cross-key validation failures
+  Scenario: RSA key has different JWK kty than ECDSA key
+   ✔  Given a deterministic factory seeded with "cross-rsa-ecdsa-test"
+   ✔  When I generate an RSA key for label "cross-rsa" with spec RS256
+   ✔  And I generate an ECDSA ES256 key for label "cross-ecdsa"
+   ?  Then the RSA JWK should have kty "RSA"
+      Step skipped: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\cross_key.feature:12:5
+  Scenario: ECDSA key has different curve than expected
+   ✔  Given a deterministic factory seeded with "cross-curve-test"
+   ✔  When I generate an ECDSA ES256 key for label "p256-key"
+   ✔  And I generate an ECDSA ES384 key for label "p384-key"
+   ?  Then the ES256 JWK should have crv "P-256"
+      Step skipped: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\cross_key.feature:20:5
+  Scenario: different key types have different kids
+   ✔  Given a deterministic factory seeded with "cross-kid-test"
+   ✔  When I generate an RSA key for label "kid-rsa" with spec RS256
+   ✔  And I generate an ECDSA ES256 key for label "kid-ecdsa"
+   ✔  And I generate an Ed25519 key for label "kid-ed25519"
+   ✔  And I generate an HMAC HS256 secret for label "kid-hmac"
+   ✔  Then each key should have a unique kid
+  Scenario: RSA key with RS256 spec has correct alg in JWK
+   ✔  Given a deterministic factory seeded with "cross-alg-test"
+   ✔  When I generate an RSA key for label "alg-rsa256" with spec RS256
+   ✔  And I generate an RSA key for label "alg-rsa384" with spec RS384
+   ?  Then the RS256 JWK should have alg "RS256"
+      Step skipped: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\cross_key.feature:40:5
+  Scenario: HMAC key with HS256 spec has correct alg in JWK
+   ✔  Given a deterministic factory seeded with "cross-hmac-alg-test"
+   ✔  When I generate an HMAC HS256 secret for label "hmac256"
+   ✔  And I generate an HMAC HS384 secret for label "hmac384"
+   ✔  And I generate an HMAC HS512 secret for label "hmac512"
+   ?  Then the HS256 JWK should have alg "HS256"
+      Step skipped: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\cross_key.feature:49:5
+  Scenario: different RSA key sizes produce different JWK n values
+   ✔  Given a deterministic factory seeded with "cross-rsa-size-test"
+   ✔  When I generate an RSA key for label "rsa-2048" with spec 2048
+   ✔  And I generate an RSA key for label "rsa-3072" with spec 3072
+   ✔  And I generate an RSA key for label "rsa-4096" with spec 4096
+   ?  Then the RSA 2048 n value should have different length than RSA 4096 n value
+      Step skipped: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\cross_key.feature:60:5
+  Scenario: generating one key type does not affect another
+   ✔  Given a deterministic factory seeded with "cross-isolation-test"
+   ✔  When I generate an RSA key for label "isolation-rsa" with spec RS256
+   ✔  And I generate an ECDSA ES256 key for label "isolation-ecdsa"
+   ✔  And I generate an Ed25519 key for label "isolation-ed25519"
+   ✔  And I clear the factory cache
+   ?  And I generate the same keys again in reverse order
+      Step skipped: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\cross_key.feature:70:5
+  Scenario: JWKS can contain mixed key types
+   ✔  Given a deterministic factory seeded with "cross-jwks-mixed-test"
+   ✔  When I generate an RSA key for label "mixed-rsa" with spec RS256
+   ✔  And I generate an ECDSA ES256 key for label "mixed-ecdsa"
+   ✔  And I generate an Ed25519 key for label "mixed-ed25519"
+   ?  And I build a JWKS containing all three keys
+      Step skipped: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\cross_key.feature:80:5
+Feature: ECDSA fixtures
+  Scenario: deterministic ES256 fixtures are stable
+   ✔  Given a deterministic factory seeded with "0x0000000000000000000000000000000000000000000000000000000000000042"
+   ✔  When I generate an ECDSA ES256 key for label "signer"
+   ✔  And I generate an ECDSA ES256 key for label "signer" again
+   ✔  Then the ECDSA PKCS8 PEM should be identical
+  Scenario: deterministic ECDSA derivation survives cache clear
+   ✔  Given a deterministic factory seeded with "ecdsa-seed-alpha"
+   ✔  When I generate an ECDSA ES256 key for label "first"
+   ✔  And I clear the factory cache
+   ✔  And I generate an ECDSA ES256 key for label "first" again
+   ✔  Then the ECDSA PKCS8 PEM should be identical
+  Scenario: different labels produce different ECDSA keys
+   ✔  Given a deterministic factory seeded with "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+   ✔  When I generate an ECDSA ES256 key for label "alice"
+   ✔  And I generate another ECDSA ES256 key for label "bob"
+   ✔  Then the ECDSA keys should have different public keys
+  Scenario: different seeds produce different ECDSA keys
+   ✔  Given a deterministic factory seeded with "seed-one"
+   ✔  When I generate an ECDSA ES256 key for label "service"
+   ✔  And I switch to a deterministic factory seeded with "seed-two"
+   ✔  And I generate another ECDSA ES256 key for label "service"
+   ✔  Then the ECDSA keys should have different public keys
+  Scenario: random factory produces different ECDSA keys each time
+   ✔  Given a random factory
+   ✔  When I generate an ECDSA ES256 key for label "ephemeral"
+   ✔  And I clear the factory cache
+   ✔  And I generate an ECDSA ES256 key for label "ephemeral" again
+   ✔  Then the ECDSA keys should have different public keys
+  Scenario: random factory caches ECDSA within same session
+   ✔  Given a random factory
+   ✔  When I generate an ECDSA ES256 key for label "cached"
+   ✔  And I generate an ECDSA ES256 key for label "cached" again
+   ✔  Then the ECDSA PKCS8 PEM should be identical
+  Scenario: deterministic ES384 fixtures are stable
+   ✔  Given a deterministic factory seeded with "es384-seed"
+   ✔  When I generate an ECDSA ES384 key for label "p384-signer"
+   ✔  And I generate an ECDSA ES384 key for label "p384-signer" again
+   ✔  Then the ECDSA PKCS8 PEM should be identical
+  Scenario: ES256 and ES384 produce different keys for same label
+   ✔  Given a deterministic factory seeded with "curve-test"
+   ✔  When I generate an ECDSA ES256 key for label "shared-label"
+   ✔  And I generate another ECDSA ES384 key for label "shared-label"
+   ✔  Then the ECDSA keys should have different public keys
+  Scenario: ECDSA PKCS8 DER private key is valid
+   ✔  Given a deterministic factory seeded with "format-test"
+   ✔  When I generate an ECDSA ES256 key for label "der-test"
+   ✔  Then the ECDSA PKCS8 DER should be parseable
+  Scenario: ECDSA SPKI PEM public key is valid
+   ✔  Given a deterministic factory seeded with "format-test"
+   ✔  When I generate an ECDSA ES256 key for label "spki-test"
+   ✔  Then the ECDSA SPKI PEM should be parseable
+  Scenario: ECDSA SPKI DER public key is valid
+   ✔  Given a deterministic factory seeded with "format-test"
+   ✔  When I generate an ECDSA ES256 key for label "spki-der-test"
+   ✔  Then the ECDSA SPKI DER should be parseable
+  Scenario: mismatched ECDSA public key is different
+   ✔  Given a random factory
+   ✔  When I generate an ECDSA ES256 key for label "signer"
+   ✔  Then an ECDSA mismatched SPKI DER should parse and differ
+  Scenario: mismatched ECDSA key is deterministic
+   ✔  Given a deterministic factory seeded with "mismatch-test"
+   ✔  When I generate an ECDSA ES256 key for label "victim"
+   ✔  And I get the mismatched ECDSA public key
+   ✔  And I get the mismatched ECDSA public key again
+   ✔  Then the mismatched ECDSA keys should be identical
+  Scenario: ECDSA corrupted PEM with BadHeader
+   ✔  Given a deterministic factory seeded with "corrupt-test"
+   ✔  When I generate an ECDSA ES256 key for label "corrupted"
+   ✔  And I corrupt the ECDSA PKCS8 PEM with BadHeader
+   ✔  Then the corrupted ECDSA PEM should contain "-----BEGIN CORRUPTED KEY-----"
+  Scenario: ECDSA truncated DER fails to parse
+   ✔  Given a deterministic factory seeded with "truncate-test"
+   ✔  When I generate an ECDSA ES256 key for label "truncated"
+   ✔  And I truncate the ECDSA PKCS8 DER to 10 bytes
+   ✔  Then the truncated ECDSA DER should have length 10
+   ✔  And the truncated ECDSA DER should fail to parse
+  Scenario: ES256 public JWK has correct format
+   ✔  Given a deterministic factory seeded with "jwk-test"
+   ✔  When I generate an ECDSA ES256 key for label "jwt-signer"
+   ✔  Then the ECDSA public JWK should have kty "EC"
+   ✔  And the ECDSA public JWK should have crv "P-256"
+   ✔  And the ECDSA public JWK should have alg "ES256"
+   ✔  And the ECDSA public JWK should have use "sig"
+   ✔  And the ECDSA public JWK should have a kid
+   ✔  And the ECDSA public JWK should have x and y parameters
+  Scenario: ES256 private JWK has correct format
+   ✔  Given a deterministic factory seeded with "jwk-test"
+   ✔  When I generate an ECDSA ES256 key for label "jwt-signer"
+   ✔  Then the ECDSA private JWK should have d parameter
+  Scenario: ECDSA JWKS has valid structure
+   ✔  Given a deterministic factory seeded with "jwks-test"
+   ✔  When I generate an ECDSA ES256 key for label "auth-service"
+   ✔  Then the ECDSA JWKS should have a keys array
+   ✔  And the ECDSA JWKS keys array should contain one key
+  Scenario: ECDSA kid is deterministic
+   ✔  Given a deterministic factory seeded with "kid-test"
+   ✔  When I generate an ECDSA ES256 key for label "issuer"
+   ✔  And I capture the ECDSA kid
+   ✔  And I clear the factory cache
+   ✔  And I generate an ECDSA ES256 key for label "issuer" again
+   ✔  And I capture the ECDSA kid again
+   ✔  Then the ECDSA kids should be identical
+  Scenario: ES384 public JWK has correct format
+   ✔  Given a deterministic factory seeded with "jwk-es384-test"
+   ✔  When I generate an ECDSA ES384 key for label "jwt-signer-384"
+   ✔  Then the ECDSA public JWK should have kty "EC"
+   ✔  And the ECDSA public JWK should have crv "P-384"
+   ✔  And the ECDSA public JWK should have alg "ES384"
+   ✔  And the ECDSA public JWK should have use "sig"
+Feature: Ed25519 fixtures
+  Scenario: deterministic Ed25519 fixtures are stable
+   ✔  Given a deterministic factory seeded with "0x0000000000000000000000000000000000000000000000000000000000000042"
+   ✔  When I generate an Ed25519 key for label "signer"
+   ✔  And I generate an Ed25519 key for label "signer" again
+   ✔  Then the Ed25519 PKCS8 PEM should be identical
+  Scenario: deterministic Ed25519 derivation survives cache clear
+   ✔  Given a deterministic factory seeded with "ed25519-seed-alpha"
+   ✔  When I generate an Ed25519 key for label "first"
+   ✔  And I clear the factory cache
+   ✔  And I generate an Ed25519 key for label "first" again
+   ✔  Then the Ed25519 PKCS8 PEM should be identical
+  Scenario: different labels produce different Ed25519 keys
+   ✔  Given a deterministic factory seeded with "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+   ✔  When I generate an Ed25519 key for label "alice"
+   ✔  And I generate another Ed25519 key for label "bob"
+   ✔  Then the Ed25519 keys should have different public keys
+  Scenario: different seeds produce different Ed25519 keys
+   ✔  Given a deterministic factory seeded with "seed-one"
+   ✔  When I generate an Ed25519 key for label "service"
+   ✔  And I switch to a deterministic factory seeded with "seed-two"
+   ✔  And I generate another Ed25519 key for label "service"
+   ✔  Then the Ed25519 keys should have different public keys
+  Scenario: random factory produces different Ed25519 keys each time
+   ✔  Given a random factory
+   ✔  When I generate an Ed25519 key for label "ephemeral"
+   ✔  And I clear the factory cache
+   ✔  And I generate an Ed25519 key for label "ephemeral" again
+   ✔  Then the Ed25519 keys should have different public keys
+  Scenario: random factory caches Ed25519 within same session
+   ✔  Given a random factory
+   ✔  When I generate an Ed25519 key for label "cached"
+   ✔  And I generate an Ed25519 key for label "cached" again
+   ✔  Then the Ed25519 PKCS8 PEM should be identical
+  Scenario: Ed25519 PKCS8 DER private key is valid
+   ✔  Given a deterministic factory seeded with "format-test"
+   ✔  When I generate an Ed25519 key for label "der-test"
+   ✔  Then the Ed25519 PKCS8 DER should be parseable
+  Scenario: Ed25519 SPKI PEM public key is valid
+   ✔  Given a deterministic factory seeded with "format-test"
+   ✔  When I generate an Ed25519 key for label "spki-test"
+   ✔  Then the Ed25519 SPKI PEM should be parseable
+  Scenario: Ed25519 SPKI DER public key is valid
+   ✔  Given a deterministic factory seeded with "format-test"
+   ✔  When I generate an Ed25519 key for label "spki-der-test"
+   ✔  Then the Ed25519 SPKI DER should be parseable
+  Scenario: mismatched Ed25519 public key is different
+   ✔  Given a random factory
+   ✔  When I generate an Ed25519 key for label "signer"
+   ✔  Then an Ed25519 mismatched SPKI DER should parse and differ
+  Scenario: mismatched Ed25519 key is deterministic
+   ✔  Given a deterministic factory seeded with "mismatch-test"
+   ✔  When I generate an Ed25519 key for label "victim"
+   ✔  And I get the mismatched Ed25519 public key
+   ✔  And I get the mismatched Ed25519 public key again
+   ✔  Then the mismatched Ed25519 keys should be identical
+  Scenario: Ed25519 corrupted PEM with BadHeader
+   ✔  Given a deterministic factory seeded with "corrupt-test"
+   ✔  When I generate an Ed25519 key for label "corrupted"
+   ✔  And I corrupt the Ed25519 PKCS8 PEM with BadHeader
+   ✔  Then the corrupted Ed25519 PEM should contain "-----BEGIN CORRUPTED KEY-----"
+  Scenario: Ed25519 truncated DER fails to parse
+   ✔  Given a deterministic factory seeded with "truncate-test"
+   ✔  When I generate an Ed25519 key for label "truncated"
+   ✔  And I truncate the Ed25519 PKCS8 DER to 10 bytes
+   ✔  Then the truncated Ed25519 DER should have length 10
+   ✔  And the truncated Ed25519 DER should fail to parse
+  Scenario: Ed25519 public JWK has correct format
+   ✔  Given a deterministic factory seeded with "jwk-test"
+   ✔  When I generate an Ed25519 key for label "jwt-signer"
+   ✔  Then the Ed25519 public JWK should have kty "OKP"
+   ✔  And the Ed25519 public JWK should have crv "Ed25519"
+   ✔  And the Ed25519 public JWK should have alg "EdDSA"
+   ✔  And the Ed25519 public JWK should have use "sig"
+   ✔  And the Ed25519 public JWK should have a kid
+   ✔  And the Ed25519 public JWK should have x parameter
+  Scenario: Ed25519 private JWK has correct format
+   ✔  Given a deterministic factory seeded with "jwk-test"
+   ✔  When I generate an Ed25519 key for label "jwt-signer"
+   ✔  Then the Ed25519 private JWK should have d parameter
+  Scenario: Ed25519 JWKS has valid structure
+   ✔  Given a deterministic factory seeded with "jwks-test"
+   ✔  When I generate an Ed25519 key for label "auth-service"
+   ✔  Then the Ed25519 JWKS should have a keys array
+   ✔  And the Ed25519 JWKS keys array should contain one key
+  Scenario: Ed25519 kid is deterministic
+   ✔  Given a deterministic factory seeded with "kid-test"
+   ✔  When I generate an Ed25519 key for label "issuer"
+   ✔  And I capture the Ed25519 kid
+   ✔  And I clear the factory cache
+   ✔  And I generate an Ed25519 key for label "issuer" again
+   ✔  And I capture the Ed25519 kid again
+   ✔  Then the Ed25519 kids should be identical
+Feature: Edge cases and error handling
+  Scenario: empty label generates valid key
+   ✔  Given a deterministic factory seeded with "empty-label-test"
+   ?  When I generate an RSA key for label "" with spec RS256
+      Step skipped: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\edge_cases.feature:10:5
+  Scenario: label with special characters generates valid key
+   ✔  Given a deterministic factory seeded with "special-chars-test"
+   ✔  When I generate an RSA key for label "test-label_123!@#$%" with spec RS256
+   ✔  Then the PKCS8 PEM should be parseable
+  Scenario: very long label generates valid key
+   ✔  Given a deterministic factory seeded with "long-label-test"
+   ✔  When I generate an RSA key for label "this-is-a-very-long-label-that-exceeds-normal-lengths" with spec RS256
+   ✔  Then the PKCS8 PEM should be parseable
+  Scenario: factory cache isolates different labels
+   ✔  Given a deterministic factory seeded with "cache-isolation-test"
+   ✔  When I generate an RSA key for label "label-a" with spec RS256
+   ✔  And I generate an RSA key for label "label-b" with spec RS256
+   ✔  And I clear the factory cache
+   ✔  And I generate the same keys again
+   ✔  Then each regenerated key should be identical to the original
+  Scenario: deterministic order independence across key types
+   ✔  Given a deterministic factory seeded with "order-indep-test"
+   ✔  When I generate an RSA key for label "rsa" with spec RS256
+   ✔  And I generate an ECDSA ES256 key for label "ecdsa"
+   ✔  And I generate an Ed25519 key for label "ed25519"
+   ✔  And I clear the factory cache
+   ✔  And I generate the same keys in reverse order
+   ✔  Then each regenerated key should be identical to the original
+  Scenario: truncating DER to 0 bytes returns empty
+   ✔  Given a deterministic factory seeded with "truncate-zero-test"
+   ✔  When I generate an RSA key for label "truncate-zero" with spec RS256
+   ✔  And I truncate the PKCS8 DER to 0 bytes
+   ✔  Then the truncated DER should have length 0
+  Scenario: truncating DER beyond length returns original
+   ✔  Given a deterministic factory seeded with "truncate-beyond-test"
+   ✔  When I generate an RSA key for label "truncate-beyond" with spec RS256
+   ✔  And I truncate the PKCS8 DER to 99999 bytes
+   ✔  Then the truncated DER should equal the original
+  Scenario: kid is unique across key types
+   ✔  Given a deterministic factory seeded with "kid-unique-test"
+   ✔  When I generate an RSA key for label "kid-rsa" with spec RS256
+   ✔  And I generate an ECDSA ES256 key for label "kid-ecdsa"
+   ✔  And I generate an Ed25519 key for label "kid-ed25519"
+   ✔  And I generate an HMAC HS256 secret for label "kid-hmac"
+   ✔  Then each key should have a unique kid
+Feature: HMAC fixtures
+  Scenario: deterministic HMAC secrets are stable
+   ✔  Given a deterministic factory seeded with "hmac-seed"
+   ✔  When I generate an HMAC HS256 secret for label "issuer"
+   ✔  And I generate an HMAC HS256 secret for label "issuer" again
+   ✔  Then the HMAC secrets should be identical
+  Scenario: HMAC JWK has required fields
+   ✔  Given a deterministic factory seeded with "hmac-jwk"
+   ✔  When I generate an HMAC HS256 secret for label "jwt-signer"
+   ✔  Then the HMAC JWK should have kty "oct"
+   ✔  And the HMAC JWK should have alg "HS256"
+   ✔  And the HMAC JWK should have use "sig"
+   ✔  And the HMAC JWK should have a kid
+   ✔  And the HMAC JWK should have k parameter
+  Scenario: HMAC JWKS has valid structure
+   ✔  Given a deterministic factory seeded with "hmac-jwks"
+   ✔  When I generate an HMAC HS256 secret for label "issuer"
+   ✔  Then the HMAC JWKS should have a keys array
+   ✔  And the HMAC JWKS keys array should contain one key
+  Scenario: deterministic HS384 secrets are stable
+   ✔  Given a deterministic factory seeded with "hs384-seed"
+   ✔  When I generate an HMAC HS384 secret for label "hs384-issuer"
+   ✔  And I generate an HMAC HS384 secret for label "hs384-issuer" again
+   ✔  Then the HMAC secrets should be identical
+  Scenario: deterministic HS512 secrets are stable
+   ✔  Given a deterministic factory seeded with "hs512-seed"
+   ✔  When I generate an HMAC HS512 secret for label "hs512-issuer"
+   ✔  And I generate an HMAC HS512 secret for label "hs512-issuer" again
+   ✔  Then the HMAC secrets should be identical
+  Scenario: HMAC HS256 and HS384 produce different secrets for same label
+   ✔  Given a deterministic factory seeded with "hmac-variant-test"
+   ✔  When I generate an HMAC HS256 secret for label "shared-label"
+   ✔  And I generate another HMAC HS384 secret for label "shared-label"
+   ✔  Then the HMAC secrets should be different
+  Scenario: HMAC HS384 and HS512 produce different secrets for same label
+   ✔  Given a deterministic factory seeded with "hmac-variant-test-2"
+   ✔  When I generate an HMAC HS384 secret for label "shared-label"
+   ✔  And I generate another HMAC HS512 secret for label "shared-label"
+   ✔  Then the HMAC secrets should be different
+  Scenario: HMAC secret bytes are accessible
+   ✔  Given a deterministic factory seeded with "hmac-bytes-test"
+   ✔  When I generate an HMAC HS256 secret for label "hmac-bytes"
+   ✔  Then the HMAC secret bytes should have length 32
+  Scenario: HMAC HS384 secret bytes have correct length
+   ✔  Given a deterministic factory seeded with "hmac-hs384-bytes-test"
+   ✔  When I generate an HMAC HS384 secret for label "hmac-hs384"
+   ✔  Then the HMAC secret bytes should have length 48
+  Scenario: HMAC HS512 secret bytes have correct length
+   ✔  Given a deterministic factory seeded with "hmac-hs512-bytes-test"
+   ✔  When I generate an HMAC HS512 secret for label "hmac-hs512"
+   ✔  Then the HMAC secret bytes should have length 64
+  Scenario: HMAC HS384 JWK has required fields
+   ✔  Given a deterministic factory seeded with "hmac-hs384-jwk"
+   ✔  When I generate an HMAC HS384 secret for label "hs384-signer"
+   ✔  Then the HMAC JWK should have kty "oct"
+   ✔  And the HMAC JWK should have alg "HS384"
+   ✔  And the HMAC JWK should have use "sig"
+   ✔  And the HMAC JWK should have a kid
+   ✔  And the HMAC JWK should have k parameter
+  Scenario: HMAC HS512 JWK has required fields
+   ✔  Given a deterministic factory seeded with "hmac-hs512-jwk"
+   ✔  When I generate an HMAC HS512 secret for label "hs512-signer"
+   ✔  Then the HMAC JWK should have kty "oct"
+   ✔  And the HMAC JWK should have alg "HS512"
+   ✔  And the HMAC JWK should have use "sig"
+   ✔  And the HMAC JWK should have a kid
+   ✔  And the HMAC JWK should have k parameter
+Feature: JWK generation
+  Scenario: public JWK has required fields
+   ✔> Given a deterministic factory seeded with "jwk-test-seed"
+   ✔  When I generate an RSA key for label "auth-service"
+   ✔  Then the public JWK should have kty "RSA"
+   ✔  And the public JWK should have alg "RS256"
+   ✔  And the public JWK should have use "sig"
+   ✔  And the public JWK should have a kid
+   ✔  And the public JWK should have n and e parameters
+  Scenario: JWKS wraps the JWK in keys array
+   ✔> Given a deterministic factory seeded with "jwk-test-seed"
+   ✔  When I generate an RSA key for label "auth-service"
+   ✔  Then the JWKS should have a keys array
+   ✔  And the JWKS keys array should contain one key
+  Scenario: private JWK has required fields
+   ✔> Given a deterministic factory seeded with "jwk-test-seed"
+   ✔  When I generate an RSA key for label "auth-service"
+   ✔  Then the RSA private JWK should have d p q dp dq qi parameters
+  Scenario: kid is deterministic
+   ✔> Given a deterministic factory seeded with "jwk-test-seed"
+   ✔  When I generate an RSA key for label "stable-kid"
+   ✔  And I capture the kid
+   ✔  And I clear the factory cache
+   ✔  And I generate an RSA key for label "stable-kid"
+   ✔  And I capture the kid again
+   ✔  Then the kids should be identical
+  Scenario: kid differs for different keys
+   ✔> Given a deterministic factory seeded with "jwk-test-seed"
+   ✔  When I generate an RSA key for label "key-one"
+   ✔  And I capture the kid
+   ✔  And I generate an RSA key for label "key-two"
+   ✔  And I capture the kid again
+   ✔  Then the kids should differ
+Feature: JWKS (JSON Web Key Set) builder
+  Scenario: build JWKS from RSA key
+   ✔  Given a deterministic factory seeded with "jwks-rsa-test"
+   ✔  When I generate an RSA key for label "rsa-signer" with spec RS256
+   ✔  And I build a JWKS containing the RSA key with kid "key-1"
+   ✔  Then the JWKS should contain 1 key
+   ✘  And the JWKS should contain a key with kid "key-1"
+      Step failed:
+      Defined: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\jwks.feature:13:5
+      Matched: crates\uselesskey-bdd\tests\bdd.rs:2113:1
+      Step panicked. Captured output: JWKS should contain key with kid 'key-1'
+  Scenario: build JWKS from ECDSA key
+   ✔  Given a deterministic factory seeded with "jwks-ecdsa-test"
+   ✔  When I generate an ECDSA ES256 key for label "ecdsa-signer"
+   ✔  And I build a JWKS containing the ECDSA key with kid "es256-key"
+   ✔  Then the JWKS should contain 1 key
+   ✘  And the JWKS should contain a key with kid "es256-key"
+      Step failed:
+      Defined: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\jwks.feature:21:5
+      Matched: crates\uselesskey-bdd\tests\bdd.rs:2113:1
+      Step panicked. Captured output: JWKS should contain key with kid 'es256-key'
+  Scenario: build JWKS from Ed25519 key
+   ✔  Given a deterministic factory seeded with "jwks-ed25519-test"
+   ✔  When I generate an Ed25519 key for label "ed25519-signer"
+   ✔  And I build a JWKS containing the Ed25519 key with kid "eddsa-key"
+   ✔  Then the JWKS should contain 1 key
+   ✘  And the JWKS should contain a key with kid "eddsa-key"
+      Step failed:
+      Defined: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\jwks.feature:29:5
+      Matched: crates\uselesskey-bdd\tests\bdd.rs:2113:1
+      Step panicked. Captured output: JWKS should contain key with kid 'eddsa-key'
+  Scenario: build JWKS from HMAC secret
+   ✔  Given a deterministic factory seeded with "jwks-hmac-test"
+   ✔  When I generate an HMAC HS256 secret for label "hmac-signer"
+   ✔  And I build a JWKS containing the HMAC secret with kid "hs256-key"
+   ✔  Then the JWKS should contain 1 key
+   ✘  And the JWKS should contain a key with kid "hs256-key"
+      Step failed:
+      Defined: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\jwks.feature:37:5
+      Matched: crates\uselesskey-bdd\tests\bdd.rs:2113:1
+      Step panicked. Captured output: JWKS should contain key with kid 'hs256-key'
+  Scenario: build JWKS with multiple key types
+   ✔  Given a deterministic factory seeded with "jwks-multi-test"
+   ✔  When I generate an RSA key for label "rsa-multi" with spec RS256
+   ✔  And I generate an ECDSA ES256 key for label "ecdsa-multi"
+   ✔  And I generate an Ed25519 key for label "ed25519-multi"
+   ✔  And I generate an HMAC HS256 secret for label "hmac-multi"
+   ✔  And I build a JWKS containing all keys
+   ✔  Then the JWKS should contain 4 keys
+   ✔  And the JWKS should contain a key with kty "RSA"
+   ✔  And the JWKS should contain a key with kty "EC"
+   ✔  And the JWKS should contain a key with kty "OKP"
+   ✔  And the JWKS should contain a key with kty "oct"
+  Scenario: JWKS keys have unique kids
+   ✔  Given a deterministic factory seeded with "jwks-unique-test"
+   ✔  When I generate an RSA key for label "rsa-1" with spec RS256
+   ✔  And I generate an RSA key for label "rsa-2" with spec RS256
+   ✔  And I build a JWKS with the RSA keys with kids "key-a" and "key-b"
+   ✔  Then the JWKS should contain 2 keys
+   ✔  And each key in the JWKS should have a unique kid
+  Scenario: JWKS has deterministic ordering in deterministic mode
+   ✔  Given a deterministic factory seeded with "jwks-order-test"
+   ✔  When I generate an RSA key for label "rsa-order" with spec RS256
+   ✔  And I generate an ECDSA ES256 key for label "ecdsa-order"
+   ✔  And I generate an Ed25519 key for label "ed25519-order"
+   ?  And I build a JWKS containing all keys with kids "z-key", "a-key", "m-key"
+      Step skipped: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\jwks.feature:70:5
+  Scenario: JWKS JSON structure is valid
+   ✔  Given a deterministic factory seeded with "jwks-json-test"
+   ✔  When I generate an RSA key for label "rsa-json" with spec RS256
+   ✔  And I build a JWKS containing the RSA key with kid "json-key"
+   ✔  Then the JWKS JSON should have a "keys" array
+   ✔  And the JWKS JSON should be parseable
+  Scenario: RSA JWKS key contains required fields
+   ✔  Given a deterministic factory seeded with "jwks-rsa-fields-test"
+   ✔  When I generate an RSA key for label "rsa-fields" with spec RS256
+   ✔  And I build a JWKS containing the RSA key with kid "rsa-fields-key"
+   ✔  Then the JWKS RSA key should contain field "n"
+   ✔  And the JWKS RSA key should contain field "e"
+   ✔  And the JWKS RSA key should contain field "kty"
+   ✔  And the JWKS RSA key should contain field "kid"
+   ✔  And the JWKS RSA key should contain field "alg"
+  Scenario: ECDSA JWKS key contains required fields
+   ✔  Given a deterministic factory seeded with "jwks-ecdsa-fields-test"
+   ✔  When I generate an ECDSA ES256 key for label "ecdsa-fields"
+   ✔  And I build a JWKS containing the ECDSA key with kid "ecdsa-fields-key"
+   ✔  Then the JWKS EC key should contain field "x"
+   ✔  And the JWKS EC key should contain field "y"
+   ✔  And the JWKS EC key should contain field "crv"
+   ✔  And the JWKS EC key should contain field "kty"
+   ✔  And the JWKS EC key should contain field "kid"
+  Scenario: JWKS contains only public keys
+   ✔  Given a deterministic factory seeded with "jwks-public-test"
+   ✔  When I generate an RSA key for label "rsa-pub" with spec RS256
+   ✔  And I build a JWKS containing the RSA public key with kid "pub-key"
+   ✔  Then the JWKS RSA key should not contain field "d"
+   ✔  And the JWKS RSA key should not contain field "p"
+   ✔  And the JWKS RSA key should not contain field "q"
+  Scenario: empty JWKS is valid
+   ✔  Given a deterministic factory seeded with "jwks-empty-test"
+   ✔  When I build an empty JWKS
+   ✔  Then the JWKS should contain 0 keys
+   ✔  And the JWKS JSON should have an empty "keys" array
+  Scenario: JWKS with multiple RSA keys
+   ✔  Given a deterministic factory seeded with "multi-rsa-test"
+   ✔  When I generate an RSA key for label "rsa-1" with spec RS256
+   ✔  And I generate an RSA key for label "rsa-2" with spec RS256
+   ✔  And I build a JWKS with the RSA keys with kids "key-1" and "key-2"
+   ✔  Then the JWKS should contain 2 keys
+   ✔  And each key in the JWKS should have kty "RSA"
+   ✔  And each key in the JWKS should have a unique kid
+  Scenario: JWKS with multiple ECDSA keys
+   ✔  Given a deterministic factory seeded with "multi-ecdsa-test"
+   ✔  When I generate an ECDSA ES256 key for label "ecdsa-1"
+   ✔  And I generate an ECDSA ES256 key for label "ecdsa-2"
+   ✔  And I build a JWKS with the ECDSA keys with kids "es256-1" and "es256-2"
+   ✔  Then the JWKS should contain 2 keys
+   ✔  And each key in the JWKS should have kty "EC"
+   ✔  And each key in the JWKS should have a unique kid
+  Scenario: JWKS with multiple Ed25519 keys
+   ✔  Given a deterministic factory seeded with "multi-ed25519-test"
+   ✔  When I generate an Ed25519 key for label "ed25519-1"
+   ✔  And I generate an Ed25519 key for label "ed25519-2"
+   ✔  And I build a JWKS with the Ed25519 keys with kids "eddsa-1" and "eddsa-2"
+   ✔  Then the JWKS should contain 2 keys
+   ✔  And each key in the JWKS should have kty "OKP"
+   ✔  And each key in the JWKS should have a unique kid
+  Scenario: JWKS with multiple HMAC keys
+   ✔  Given a deterministic factory seeded with "multi-hmac-test"
+   ✔  When I generate an HMAC HS256 secret for label "hmac-1"
+   ✔  And I generate an HMAC HS256 secret for label "hmac-2"
+   ✔  And I build a JWKS with the HMAC secrets with kids "hs256-1" and "hs256-2"
+   ✔  Then the JWKS should contain 2 keys
+   ✔  And each key in the JWKS should have kty "oct"
+   ✔  And each key in the JWKS should have a unique kid
+  Scenario: JWKS rotation adds new key
+   ✔  Given a deterministic factory seeded with "rotation-test"
+   ✔  When I generate an RSA key for label "key-v1" with spec RS256
+   ✔  And I build a JWKS containing the RSA key with kid "v1"
+   ✔  Then the JWKS should contain 1 key
+   ✔  When I generate an RSA key for label "key-v2" with spec RS256
+   ✔  And I build a JWKS containing both keys with kids "v1" and "v2"
+   ✔  Then the JWKS should contain 2 keys
+   ✘  And the JWKS should contain a key with kid "v1"
+      Step failed:
+      Defined: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\jwks.feature:169:5
+      Matched: crates\uselesskey-bdd\tests\bdd.rs:2113:1
+      Step panicked. Captured output: JWKS should contain key with kid 'v1'
+  Scenario: JWKS rotation removes old key
+   ✔  Given a deterministic factory seeded with "rotation-remove-test"
+   ✔  When I generate an RSA key for label "key-v1" with spec RS256
+   ✔  And I generate an RSA key for label "key-v2" with spec RS256
+   ✔  And I build a JWKS with both keys with kids "v1" and "v2"
+   ✔  Then the JWKS should contain 2 keys
+   ✔  When I build a JWKS with only the second key with kid "v2"
+   ✔  Then the JWKS should contain 1 key
+   ✘  And the JWKS should contain a key with kid "v2"
+      Step failed:
+      Defined: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\jwks.feature:180:5
+      Matched: crates\uselesskey-bdd\tests\bdd.rs:2113:1
+      Step panicked. Captured output: JWKS should contain key with kid 'v2'
+  Scenario: JWKS rotation preserves key identity
+   ✔  Given a deterministic factory seeded with "rotation-preserve-test"
+   ✔  When I generate an RSA key for label "key-stable" with spec RS256
+   ✔  And I build a JWKS containing the RSA key with kid "stable-key"
+   ✔  And I generate an RSA key for label "key-new" with spec RS256
+   ✔  And I build a JWKS containing both keys with kids "stable-key" and "new-key"
+   ✘  Then the JWKS should contain a key with kid "stable-key"
+      Step failed:
+      Defined: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\jwks.feature:189:5
+      Matched: crates\uselesskey-bdd\tests\bdd.rs:2113:1
+      Step panicked. Captured output: JWKS should contain key with kid 'stable-key'
+  Scenario: JWKS filtering by algorithm
+   ✔  Given a deterministic factory seeded with "filter-test"
+   ✔  When I generate an RSA key for label "rsa-key" with spec RS256
+   ✔  And I generate an ECDSA ES256 key for label "ecdsa-key"
+   ✔  And I generate an HMAC HS256 secret for label "hmac-key"
+   ✔  And I build a JWKS containing all keys
+   ✔  Then the JWKS should contain 3 keys
+   ✔  And the JWKS should contain a key with alg "RS256"
+   ✔  And the JWKS should contain a key with alg "ES256"
+   ✔  And the JWKS should contain a key with alg "HS256"
+  Scenario: JWKS filtering by key type
+   ✔  Given a deterministic factory seeded with "filter-kty-test"
+   ✔  When I generate an RSA key for label "rsa-filter" with spec RS256
+   ✔  And I generate an ECDSA ES256 key for label "ecdsa-filter"
+   ✔  And I generate an Ed25519 key for label "ed25519-filter"
+   ✔  And I build a JWKS containing all keys
+   ✔  Then the JWKS should contain 3 keys
+   ✔  And the JWKS should contain a key with kty "RSA"
+   ✔  And the JWKS should contain a key with kty "EC"
+   ✔  And the JWKS should contain a key with kty "OKP"
+  Scenario: JWKS filtering by kid
+   ✔  Given a deterministic factory seeded with "filter-kid-test"
+   ✔  When I generate an RSA key for label "rsa-a" with spec RS256
+   ✔  And I generate an RSA key for label "rsa-b" with spec RS256
+   ✔  And I generate an RSA key for label "rsa-c" with spec RS256
+   ?  And I build a JWKS containing all keys with kids "key-a", "key-b", "key-c"
+      Step skipped: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\jwks.feature:221:5
+Feature: Negative fixtures
+  Scenario: BadHeader corruption replaces the BEGIN line
+   ✔> Given a deterministic factory seeded with "negative-fixtures-test"
+   ✔> And I generate an RSA key for label "test-key"
+   ✔  When I corrupt the PKCS8 PEM with BadHeader
+   ✔  Then the corrupted PEM should contain "BEGIN CORRUPTED KEY"
+   ✔  And the corrupted PEM should fail to parse
+  Scenario: BadFooter corruption replaces the END line
+   ✔> Given a deterministic factory seeded with "negative-fixtures-test"
+   ✔> And I generate an RSA key for label "test-key"
+   ✔  When I corrupt the PKCS8 PEM with BadFooter
+   ✔  Then the corrupted PEM should contain "END CORRUPTED KEY"
+   ✔  And the corrupted PEM should fail to parse
+  Scenario: BadBase64 corruption injects invalid characters
+   ✔> Given a deterministic factory seeded with "negative-fixtures-test"
+   ✔> And I generate an RSA key for label "test-key"
+   ✔  When I corrupt the PKCS8 PEM with BadBase64
+   ✔  Then the corrupted PEM should contain "THIS_IS_NOT_BASE64"
+   ✔  And the corrupted PEM should fail to parse
+  Scenario: Truncate corruption cuts the PEM short
+   ✔> Given a deterministic factory seeded with "negative-fixtures-test"
+   ✔> And I generate an RSA key for label "test-key"
+   ✔  When I corrupt the PKCS8 PEM with Truncate to 50 bytes
+   ✔  Then the corrupted PEM should have length 50
+   ✔  And the corrupted PEM should fail to parse
+  Scenario: ExtraBlankLine corruption adds whitespace
+   ✔> Given a deterministic factory seeded with "negative-fixtures-test"
+   ✔> And I generate an RSA key for label "test-key"
+   ✔  When I corrupt the PKCS8 PEM with ExtraBlankLine
+   ✔  Then the corrupted PEM should fail to parse
+  Scenario: truncated DER is shorter than original
+   ✔> Given a deterministic factory seeded with "negative-fixtures-test"
+   ✔> And I generate an RSA key for label "test-key"
+   ✔  When I truncate the PKCS8 DER to 100 bytes
+   ✔  Then the truncated DER should have length 100
+   ✔  And the truncated DER should fail to parse
+  Scenario: truncating beyond length returns original
+   ✔> Given a deterministic factory seeded with "negative-fixtures-test"
+   ✔> And I generate an RSA key for label "test-key"
+   ✔  When I truncate the PKCS8 DER to 99999 bytes
+   ✔  Then the truncated DER should equal the original
+Feature: RSA fixtures
+  Scenario: deterministic RSA fixtures are stable
+   ✔  Given a deterministic factory seeded with "0x0000000000000000000000000000000000000000000000000000000000000042"
+   ✔  When I generate an RSA key for label "issuer"
+   ✔  And I generate an RSA key for label "issuer" again
+   ✔  Then the PKCS8 PEM should be identical
+  Scenario: deterministic derivation survives cache clear
+   ✔  Given a deterministic factory seeded with "test-seed-alpha"
+   ✔  When I generate an RSA key for label "first"
+   ✔  And I clear the factory cache
+   ✔  And I generate an RSA key for label "first" again
+   ✔  Then the PKCS8 PEM should be identical
+  Scenario: different labels produce different keys
+   ✔  Given a deterministic factory seeded with "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+   ✔  When I generate an RSA key for label "alice"
+   ✔  And I generate another RSA key for label "bob"
+   ✔  Then the keys should have different moduli
+  Scenario: different seeds produce different keys
+   ✔  Given a deterministic factory seeded with "seed-one"
+   ✔  When I generate an RSA key for label "service"
+   ✔  And I switch to a deterministic factory seeded with "seed-two"
+   ✔  And I generate another RSA key for label "service"
+   ✔  Then the keys should have different moduli
+  Scenario: random factory produces different keys each time
+   ✔  Given a random factory
+   ✔  When I generate an RSA key for label "ephemeral"
+   ✔  And I clear the factory cache
+   ✔  And I generate an RSA key for label "ephemeral" again
+   ✔  Then the keys should have different moduli
+  Scenario: random factory caches within same session
+   ✔  Given a random factory
+   ✔  When I generate an RSA key for label "cached"
+   ✔  And I generate an RSA key for label "cached" again
+   ✔  Then the PKCS8 PEM should be identical
+  Scenario: PKCS8 DER private key is valid
+   ✔  Given a deterministic factory seeded with "format-test"
+   ✔  When I generate an RSA key for label "der-test"
+   ✔  Then the PKCS8 DER should be parseable
+  Scenario: SPKI PEM public key is valid
+   ✔  Given a deterministic factory seeded with "format-test"
+   ✔  When I generate an RSA key for label "spki-test"
+   ✔  Then the SPKI PEM should be parseable
+  Scenario: SPKI DER public key is valid
+   ✔  Given a deterministic factory seeded with "format-test"
+   ✔  When I generate an RSA key for label "spki-der-test"
+   ✔  Then the SPKI DER should be parseable
+  Scenario: mismatched public key is different
+   ✔  Given a random factory
+   ✔  When I generate an RSA key for label "issuer"
+   ✔  Then a mismatched SPKI DER should parse and differ
+  Scenario: mismatched key is deterministic
+   ✔  Given a deterministic factory seeded with "mismatch-test"
+   ✔  When I generate an RSA key for label "victim"
+   ✔  And I get the mismatched public key
+   ✔  And I get the mismatched public key again
+   ✔  Then the mismatched keys should be identical
+  Scenario: deterministic RS384 fixtures are stable
+   ✔  Given a deterministic factory seeded with "rs384-seed"
+   ✔  When I generate an RSA key for label "rs384-issuer" with spec RS384
+   ✔  And I generate an RSA key for label "rs384-issuer" with spec RS384 again
+   ✔  Then the PKCS8 PEM should be identical
+  Scenario: deterministic RS512 fixtures are stable
+   ✔  Given a deterministic factory seeded with "rs512-seed"
+   ✔  When I generate an RSA key for label "rs512-issuer" with spec RS512
+   ✔  And I generate an RSA key for label "rs512-issuer" with spec RS512 again
+   ✔  Then the PKCS8 PEM should be identical
+  Scenario: RSA RS256 and RS384 produce different keys for same label
+   ✔  Given a deterministic factory seeded with "rsa-variant-test"
+   ✔  When I generate an RSA key for label "shared-label" with spec RS256
+   ✔  And I generate another RSA key for label "shared-label" with spec RS384
+   ✔  Then the keys should have different moduli
+  Scenario: RSA RS384 and RS512 produce different keys for same label
+   ✔  Given a deterministic factory seeded with "rsa-variant-test-2"
+   ✔  When I generate an RSA key for label "shared-label" with spec RS384
+   ✔  And I generate another RSA key for label "shared-label" with spec RS512
+   ✔  Then the keys should have different moduli
+  Scenario: RSA 2048-bit key has correct modulus size
+   ✔  Given a deterministic factory seeded with "rsa-size-test"
+   ✔  When I generate an RSA key for label "rsa-2048" with spec 2048
+   ✔  Then the RSA modulus should have 256 bytes
+  Scenario: RSA 3072-bit key has correct modulus size
+   ✔  Given a deterministic factory seeded with "rsa-size-test"
+   ✔  When I generate an RSA key for label "rsa-3072" with spec 3072
+   ✔  Then the RSA modulus should have 384 bytes
+  Scenario: RSA 4096-bit key has correct modulus size
+   ✔  Given a deterministic factory seeded with "rsa-size-test"
+   ✔  When I generate an RSA key for label "rsa-4096" with spec 4096
+   ✔  Then the RSA modulus should have 512 bytes
+  Scenario: RSA private JWK has all required parameters
+   ✔  Given a deterministic factory seeded with "rsa-jwk-priv-test"
+   ✔  When I generate an RSA key for label "rsa-priv"
+   ✔  Then the RSA private JWK should have d parameter
+   ✔  And the RSA private JWK should have p parameter
+   ✔  And the RSA private JWK should have q parameter
+   ✔  And the RSA private JWK should have dp parameter
+   ✔  And the RSA private JWK should have dq parameter
+   ✔  And the RSA private JWK should have qi parameter
+  Scenario: RSA corrupted PEM with BadBase64
+   ✔  Given a deterministic factory seeded with "rsa-badbase64-test"
+   ✔  When I generate an RSA key for label "rsa-corrupt"
+   ✔  And I corrupt the PKCS8 PEM with BadBase64
+   ✔  Then the corrupted PEM should contain "THIS_IS_NOT_BASE64"
+   ✔  And the corrupted PEM should fail to parse
+  Scenario: RSA corrupted PEM with Truncate
+   ✔  Given a deterministic factory seeded with "rsa-truncate-test"
+   ✔  When I generate an RSA key for label "rsa-truncate"
+   ✔  And I corrupt the PKCS8 PEM with Truncate to 50 bytes
+   ✔  Then the corrupted PEM should have length 50
+   ✔  And the corrupted PEM should fail to parse
+  Scenario: RSA corrupted PEM with ExtraBlankLine
+   ✔  Given a deterministic factory seeded with "rsa-blankline-test"
+   ✔  When I generate an RSA key for label "rsa-blankline"
+   ✔  And I corrupt the PKCS8 PEM with ExtraBlankLine
+   ✔  Then the corrupted PEM should fail to parse
+Feature: Seed parsing
+  Scenario: hex seed with 0x prefix
+   ✔  Given a deterministic factory seeded with "0x0000000000000000000000000000000000000000000000000000000000000001"
+   ✔  When I generate an RSA key for label "hex-test"
+   ✔  Then the PKCS8 DER should be parseable
+  Scenario: hex seed without 0x prefix
+   ✔  Given a deterministic factory seeded with "0000000000000000000000000000000000000000000000000000000000000002"
+   ✔  When I generate an RSA key for label "hex-test"
+   ✔  Then the PKCS8 DER should be parseable
+  Scenario: string seed is hashed to 32 bytes
+   ✔  Given a deterministic factory seeded with "my-simple-seed"
+   ✔  When I generate an RSA key for label "string-test"
+   ✔  Then the PKCS8 DER should be parseable
+  Scenario: same string seed produces same keys
+   ✔  Given a deterministic factory seeded with "reproducible"
+   ✔  When I generate an RSA key for label "test"
+   ✔  And I switch to a deterministic factory seeded with "reproducible"
+   ✔  And I generate an RSA key for label "test" again
+   ✔  Then the PKCS8 PEM should be identical
+  Scenario: short string seeds work
+   ✔  Given a deterministic factory seeded with "ci"
+   ✔  When I generate an RSA key for label "short-seed"
+   ✔  Then the PKCS8 DER should be parseable
+  Scenario: long string seeds work
+   ✔  Given a deterministic factory seeded with "this-is-a-very-long-seed-value-that-exceeds-32-characters-significantly"
+   ✔  When I generate an RSA key for label "long-seed"
+   ✔  Then the PKCS8 DER should be parseable
+Feature: Tempfile artifacts
+  Scenario: write private key PKCS8 PEM to tempfile
+   ✔> Given a deterministic factory seeded with "tempfile-test"
+   ✔> And I generate an RSA key for label "file-test"
+   ✔  When I write the private key to a tempfile
+   ✔  Then the tempfile path should end with ".pkcs8.pem"
+   ✔  And reading the tempfile should match the private key PEM
+  Scenario: write public key SPKI PEM to tempfile
+   ✔> Given a deterministic factory seeded with "tempfile-test"
+   ✔> And I generate an RSA key for label "file-test"
+   ✔  When I write the public key to a tempfile
+   ✔  Then the tempfile path should end with ".spki.pem"
+   ✔  And reading the tempfile should match the public key PEM
+Feature: X.509 certificate fixtures
+  Scenario: deterministic X.509 certificates are stable
+   ✔  Given a deterministic factory seeded with "0x0000000000000000000000000000000000000000000000000000000000000042"
+   ✔  When I generate an X.509 certificate for domain "test.example.com" with label "server"
+   ✔  And I generate an X.509 certificate for domain "test.example.com" with label "server" again
+   ✔  Then the X.509 certificate PEM should be identical
+  Scenario: deterministic X.509 derivation survives cache clear
+   ✔  Given a deterministic factory seeded with "x509-seed-alpha"
+   ✔  When I generate an X.509 certificate for domain "api.example.com" with label "first"
+   ✔  And I clear the factory cache
+   ✔  And I generate an X.509 certificate for domain "api.example.com" with label "first" again
+   ✔  Then the X.509 certificate PEM should be identical
+  Scenario: different labels produce different X.509 certificates
+   ✔  Given a deterministic factory seeded with "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+   ✔  When I generate an X.509 certificate for domain "test.example.com" with label "server-a"
+   ✔  And I generate another X.509 certificate for domain "test.example.com" with label "server-b"
+   ✔  Then the X.509 certificates should have different DER
+  Scenario: different seeds produce different X.509 certificates
+   ✔  Given a deterministic factory seeded with "seed-one"
+   ✔  When I generate an X.509 certificate for domain "test.example.com" with label "service"
+   ✔  And I switch to a deterministic factory seeded with "seed-two"
+   ✔  And I generate another X.509 certificate for domain "test.example.com" with label "service"
+   ✔  Then the X.509 certificates should have different DER
+  Scenario: random factory produces different X.509 certificates each time
+   ✔  Given a random factory
+   ✔  When I generate an X.509 certificate for domain "test.example.com" with label "ephemeral"
+   ✔  And I clear the factory cache
+   ✔  And I generate an X.509 certificate for domain "test.example.com" with label "ephemeral" again
+   ✔  Then the X.509 certificates should have different DER
+  Scenario: random factory caches X.509 within same session
+   ✔  Given a random factory
+   ✔  When I generate an X.509 certificate for domain "test.example.com" with label "cached"
+   ✔  And I generate an X.509 certificate for domain "test.example.com" with label "cached" again
+   ✔  Then the X.509 certificate PEM should be identical
+  Scenario: X.509 certificate PEM is valid
+   ✔  Given a deterministic factory seeded with "format-test"
+   ✔  When I generate an X.509 certificate for domain "test.example.com" with label "pem-test"
+   ✔  Then the X.509 certificate PEM should contain "-----BEGIN CERTIFICATE-----"
+   ✔  And the X.509 certificate PEM should be parseable
+  Scenario: X.509 certificate DER is valid
+   ✔  Given a deterministic factory seeded with "format-test"
+   ✔  When I generate an X.509 certificate for domain "test.example.com" with label "der-test"
+   ✔  Then the X.509 certificate DER should be parseable
+  Scenario: X.509 private key PEM is valid
+   ✔  Given a deterministic factory seeded with "format-test"
+   ✔  When I generate an X.509 certificate for domain "test.example.com" with label "key-test"
+   ✔  Then the X.509 private key PEM should contain "-----BEGIN PRIVATE KEY-----"
+  Scenario: X.509 identity PEM contains both certificate and key
+   ✔  Given a deterministic factory seeded with "format-test"
+   ✔  When I generate an X.509 certificate for domain "test.example.com" with label "chain-test"
+   ✔  Then the X.509 identity PEM should contain "-----BEGIN CERTIFICATE-----"
+   ✔  And the X.509 identity PEM should contain "-----BEGIN PRIVATE KEY-----"
+  Scenario: X.509 certificate has correct common name
+   ✔  Given a deterministic factory seeded with "cn-test"
+   ✔  When I generate an X.509 certificate for domain "myservice.example.com" with label "cn-check"
+   ✔  Then the X.509 certificate should have common name "myservice.example.com"
+  Scenario: expired X.509 certificate is different from valid
+   ✔  Given a deterministic factory seeded with "expired-test"
+   ✔  When I generate an X.509 certificate for domain "test.example.com" with label "expired-check"
+   ✔  And I get the expired variant of the X.509 certificate
+   ✔  Then the X.509 certificates should have different DER
+  Scenario: expired X.509 certificate is parseable but invalid
+   ✔  Given a deterministic factory seeded with "expired-parse-test"
+   ✔  When I generate an X.509 certificate for domain "test.example.com" with label "expired-parse"
+   ✔  And I get the expired variant of the X.509 certificate
+   ✔  Then the expired X.509 certificate should be parseable
+   ✔  And the expired X.509 certificate should have not_after in the past
+  Scenario: not-yet-valid X.509 certificate is different from valid
+   ✔  Given a deterministic factory seeded with "not-yet-valid-test"
+   ✔  When I generate an X.509 certificate for domain "test.example.com" with label "future-check"
+   ✔  And I get the not-yet-valid variant of the X.509 certificate
+   ✔  Then the X.509 certificates should have different DER
+  Scenario: not-yet-valid X.509 certificate is parseable but not yet active
+   ✔  Given a deterministic factory seeded with "not-yet-valid-parse-test"
+   ✔  When I generate an X.509 certificate for domain "test.example.com" with label "future-parse"
+   ✔  And I get the not-yet-valid variant of the X.509 certificate
+   ✔  Then the not-yet-valid X.509 certificate should be parseable
+   ✔  And the not-yet-valid X.509 certificate should have not_before in the future
+  Scenario: X.509 corrupted PEM with BadHeader
+   ✔  Given a deterministic factory seeded with "corrupt-test"
+   ✔  When I generate an X.509 certificate for domain "test.example.com" with label "corrupted"
+   ✔  And I corrupt the X.509 certificate PEM with BadHeader
+   ✔  Then the corrupted X.509 PEM should contain "-----BEGIN CORRUPTED KEY-----"
+  Scenario: X.509 truncated DER fails to parse
+   ✔  Given a deterministic factory seeded with "truncate-test"
+   ✔  When I generate an X.509 certificate for domain "test.example.com" with label "truncated"
+   ✔  And I truncate the X.509 certificate DER to 10 bytes
+   ✔  Then the truncated X.509 DER should have length 10
+   ✔  And the truncated X.509 DER should fail to parse
+  Scenario: X.509 certificate writes to tempfile
+   ✔  Given a deterministic factory seeded with "tempfile-test"
+   ✔  When I generate an X.509 certificate for domain "test.example.com" with label "temp-cert"
+   ✔  And I write the X.509 certificate PEM to a tempfile
+   ✔  Then the X.509 tempfile path should end with ".crt.pem"
+   ✔  And reading the X.509 tempfile should match the certificate PEM
+  Scenario: X.509 private key writes to tempfile
+   ✔  Given a deterministic factory seeded with "tempfile-test"
+   ✔  When I generate an X.509 certificate for domain "test.example.com" with label "temp-key"
+   ✔  And I write the X.509 private key PEM to a tempfile
+   ✔  Then the X.509 key tempfile path should end with ".key.pem"
+   ✔  And reading the X.509 key tempfile should match the private key PEM
+  Scenario: X.509 identity PEM writes to tempfile
+   ✔  Given a deterministic factory seeded with "tempfile-test"
+   ✔  When I generate an X.509 certificate for domain "test.example.com" with label "temp-chain"
+   ✔  And I write the X.509 identity PEM to a tempfile
+   ✔  Then the X.509 chain tempfile path should end with ".identity.pem"
+  Scenario: generate X.509 certificate chain
+   ✔  Given a deterministic factory seeded with "chain-test"
+   ✔  When I generate a certificate chain for domain "test.example.com" with label "test-chain"
+   ✔  Then the certificate chain should contain a leaf certificate
+   ✔  And the certificate chain should contain an intermediate certificate
+   ✔  And the certificate chain should contain a root certificate
+  Scenario: certificate chain is deterministic
+   ✔  Given a deterministic factory seeded with "chain-deterministic"
+   ✔  When I generate a certificate chain for domain "api.example.com" with label "chain-1"
+   ✔  And I generate a certificate chain for domain "api.example.com" with label "chain-1" again
+   ✔  Then the certificate chains should have identical DER
+  Scenario: X.509 certificate chain with revoked leaf
+   ✔  Given a deterministic factory seeded with "crl-test"
+   ✔  When I generate a certificate chain for domain "test.example.com" with label "revoked-chain"
+   ✔  And I get the revoked leaf variant of the certificate chain
+   ✔  Then the revoked leaf certificate should be parseable
+   ✘  And the revoked leaf certificate should have a CRL distribution point
+      Step failed:
+      Defined: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\x509.feature:169:5
+      Matched: crates\uselesskey-bdd\tests\bdd.rs:1664:1
+      Step panicked. Captured output: revoked leaf should have CRL distribution point
+  Scenario: revoked leaf certificate is different from valid
+   ✔  Given a deterministic factory seeded with "revoked-diff-test"
+   ✔  When I generate a certificate chain for domain "test.example.com" with label "revoked-check"
+   ✔  And I get the revoked leaf variant of the certificate chain
+   ✔  Then the revoked leaf certificate should differ from the valid leaf certificate
+  Scenario: X.509 certificate chain with hostname mismatch
+   ✔  Given a deterministic factory seeded with "hostname-mismatch-test"
+   ✔  When I generate a certificate chain for domain "test.example.com" with label "mismatch-chain"
+   ✔  And I get the hostname mismatch variant with "wrong.example.com"
+   ✔  Then the leaf certificate should have common name "wrong.example.com"
+   ✔  And the leaf certificate should not contain SAN "test.example.com"
+  Scenario: hostname mismatch chain is different from valid
+   ✔  Given a deterministic factory seeded with "hostname-diff-test"
+   ✔  When I generate a certificate chain for domain "test.example.com" with label "hostname-check"
+   ✔  And I get the hostname mismatch variant with "wrong.example.com"
+   ✔  Then the hostname mismatch leaf certificate should differ from the valid leaf certificate
+  Scenario: X.509 certificate chain with expired leaf
+   ✔  Given a deterministic factory seeded with "expired-leaf-test"
+   ✔  When I generate a certificate chain for domain "test.example.com" with label "expired-leaf-chain"
+   ✔  And I get the expired leaf variant of the certificate chain
+   ✔  Then the expired leaf certificate should have not_after in the past
+   ✔  And the intermediate certificate should be valid
+  Scenario: X.509 certificate chain with expired intermediate
+   ✔  Given a deterministic factory seeded with "expired-int-test"
+   ✔  When I generate a certificate chain for domain "test.example.com" with label "expired-int-chain"
+   ✔  And I get the expired intermediate variant of the certificate chain
+   ✔  Then the expired intermediate certificate should have not_after in the past
+   ✔  And the leaf certificate should be valid
+  Scenario: X.509 certificate with multiple SANs
+   ✔  Given a deterministic factory seeded with "san-test"
+   ✔  When I generate an X.509 certificate for domain "test.example.com" with label "multi-san"
+   ✔  And I add SAN "localhost" to the X.509 certificate
+   ✔  And I add SAN "127.0.0.1" to the X.509 certificate
+   ✔  And I add SAN "*.example.com" to the X.509 certificate
+   ✘  Then the X.509 certificate should contain SAN "test.example.com"
+      Step failed:
+      Defined: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\x509.feature:216:5
+      Matched: crates\uselesskey-bdd\tests\bdd.rs:1802:1
+      Step panicked. Captured output: cert should contain SAN 'test.example.com'
+  Scenario: X.509 certificate chain SANs are in leaf only
+   ✔  Given a deterministic factory seeded with "chain-san-test"
+   ✔  When I generate a certificate chain for domain "test.example.com" with label "san-chain"
+   ✘  And I add SAN "localhost" to the certificate chain
+      Step failed:
+      Defined: ?\C:\Code\Rust\uselesskey\crates\uselesskey-bdd\features\x509.feature:224:5
+      Matched: crates\uselesskey-bdd\tests\bdd.rs:1608:1
+      Step panicked. Captured output: label not set
+[Summary]
+13 features
+171 scenarios (140 passed, 20 skipped, 11 failed)
+791 steps (760 passed, 20 skipped, 11 failed)

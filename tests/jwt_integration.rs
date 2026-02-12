@@ -8,13 +8,18 @@
 
 mod testutil;
 
+use jsonwebtoken::{
+    decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation,
+};
 use jsonwebtoken::jwk::Jwk;
-use jsonwebtoken::{Algorithm, DecodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 use testutil::fx;
-use uselesskey_ed25519::Ed25519Spec;
+use uselesskey_core::Factory;
+use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
+use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
+use uselesskey_hmac::{HmacFactoryExt, HmacSpec};
 use uselesskey_jsonwebtoken::JwtKeyExt;
-use uselesskey_jwk::JwksBuilder;
+use uselesskey_jwk::{AnyJwk, JwksBuilder};
 use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -64,7 +69,11 @@ mod rsa_jwt_tests {
 
     #[test]
     fn test_rsa_custom_key_sizes() {
-        let test_cases = [(2048, "rsa-2048"), (3072, "rsa-3072"), (4096, "rsa-4096")];
+        let test_cases = [
+            (2048, "rsa-2048"),
+            (3072, "rsa-3072"),
+            (4096, "rsa-4096"),
+        ];
 
         for (bits, label) in test_cases {
             let fx = fx();
@@ -80,11 +89,7 @@ mod rsa_jwt_tests {
             let decoded = decode::<JwtClaims>(&token, &keypair.decoding_key(), &validation)
                 .unwrap_or_else(|e| panic!("Failed to decode with {}-bit key: {:?}", bits, e));
 
-            assert_eq!(
-                decoded.claims, claims,
-                "Claims mismatch for {}-bit key",
-                bits
-            );
+            assert_eq!(decoded.claims, claims, "Claims mismatch for {}-bit key", bits);
         }
     }
 
@@ -96,8 +101,8 @@ mod rsa_jwt_tests {
         let claims = JwtClaims::new("user000", 9999999999, 1234567890, "mismatch-test");
         let header = Header::new(Algorithm::RS256);
 
-        let token =
-            encode(&header, &claims, &keypair.encoding_key()).expect("Failed to encode JWT");
+        let token = encode(&header, &claims, &keypair.encoding_key())
+            .expect("Failed to encode JWT");
 
         // Try to decode with wrong algorithm
         let validation = Validation::new(Algorithm::RS384);
@@ -160,8 +165,8 @@ mod ecdsa_jwt_tests {
         let claims = JwtClaims::new("user000", 9999999999, 1234567890, "es256-mismatch");
         let header = Header::new(Algorithm::ES256);
 
-        let token =
-            encode(&header, &claims, &keypair.encoding_key()).expect("Failed to encode JWT");
+        let token = encode(&header, &claims, &keypair.encoding_key())
+            .expect("Failed to encode JWT");
 
         // Try to decode with wrong algorithm
         let validation = Validation::new(Algorithm::ES384);
@@ -271,8 +276,8 @@ mod hmac_jwt_tests {
         let claims = JwtClaims::new("user000", 9999999999, 1234567890, "secret1");
         let header = Header::new(Algorithm::HS256);
 
-        let token =
-            encode(&header, &claims, &secret1.encoding_key()).expect("Failed to encode JWT");
+        let token = encode(&header, &claims, &secret1.encoding_key())
+            .expect("Failed to encode JWT");
 
         // Try to decode with wrong secret
         let validation = Validation::new(Algorithm::HS256);
@@ -301,9 +306,9 @@ mod jwks_integration_tests {
 
         // Build JWKS with all keys
         let jwks = JwksBuilder::new()
-            .add_public(issuer1.public_jwk())
-            .add_public(issuer2.public_jwk())
-            .add_public(issuer3.public_jwk())
+            .add_public(issuer1.public_jwk().into())
+            .add_public(issuer2.public_jwk().into())
+            .add_public(issuer3.public_jwk().into())
             .build();
 
         // Verify all keys are in JWKS
@@ -314,8 +319,8 @@ mod jwks_integration_tests {
         let mut header = Header::new(Algorithm::RS256);
         header.kid = Some(issuer2.kid().to_string());
 
-        let token =
-            encode(&header, &claims, &issuer2.encoding_key()).expect("Failed to encode JWT");
+        let token = encode(&header, &claims, &issuer2.encoding_key())
+            .expect("Failed to encode JWT");
 
         // Find correct key from JWKS by kid
         let jwk = jwks
@@ -326,11 +331,12 @@ mod jwks_integration_tests {
 
         // Convert AnyJwk to jsonwebtoken::Jwk
         let jwk_value = serde_json::to_value(jwk).expect("Failed to serialize JWK");
-        let jwk_json: Jwk = serde_json::from_value(jwk_value).expect("Failed to deserialize JWK");
+        let jwk_json: Jwk = serde_json::from_value(jwk_value)
+            .expect("Failed to deserialize JWK");
 
         // Convert JWK to DecodingKey
-        let decoding_key =
-            DecodingKey::from_jwk(&jwk_json).expect("Failed to create DecodingKey from JWK");
+        let decoding_key = DecodingKey::from_jwk(&jwk_json)
+            .expect("Failed to create DecodingKey from JWK");
 
         let validation = Validation::new(Algorithm::RS256);
         let decoded = decode::<JwtClaims>(&token, &decoding_key, &validation)
@@ -351,8 +357,8 @@ mod jwks_integration_tests {
 
         // Build JWKS with both keys
         let jwks = JwksBuilder::new()
-            .add_public(old_key.public_jwk())
-            .add_public(new_key.public_jwk())
+            .add_public(old_key.public_jwk().into())
+            .add_public(new_key.public_jwk().into())
             .build();
 
         // Sign JWT with new key
@@ -360,8 +366,8 @@ mod jwks_integration_tests {
         let mut header = Header::new(Algorithm::RS256);
         header.kid = Some(new_key.kid().to_string());
 
-        let token =
-            encode(&header, &claims, &new_key.encoding_key()).expect("Failed to encode JWT");
+        let token = encode(&header, &claims, &new_key.encoding_key())
+            .expect("Failed to encode JWT");
 
         // Verify with JWKS (should find new key)
         let jwk = jwks
@@ -372,10 +378,11 @@ mod jwks_integration_tests {
 
         // Convert AnyJwk to jsonwebtoken::Jwk
         let jwk_value = serde_json::to_value(jwk).expect("Failed to serialize JWK");
-        let jwk_json: Jwk = serde_json::from_value(jwk_value).expect("Failed to deserialize JWK");
+        let jwk_json: Jwk = serde_json::from_value(jwk_value)
+            .expect("Failed to deserialize JWK");
 
-        let decoding_key =
-            DecodingKey::from_jwk(&jwk_json).expect("Failed to create DecodingKey from JWK");
+        let decoding_key = DecodingKey::from_jwk(&jwk_json)
+            .expect("Failed to create DecodingKey from JWK");
 
         let validation = Validation::new(Algorithm::RS256);
         let decoded = decode::<JwtClaims>(&token, &decoding_key, &validation)
@@ -438,7 +445,7 @@ mod cross_crate_compatibility_tests {
                 }
                 _ => panic!("Unknown key type: {}", key_type),
             }
-            .unwrap_or_else(|e| panic!("Failed to encode JWT with {}: {:?}", key_type, e));
+            .expect(&format!("Failed to encode JWT with {}", key_type));
 
             // Verify token can be decoded
             let validation = Validation::new(alg);
@@ -461,7 +468,7 @@ mod cross_crate_compatibility_tests {
                 }
                 _ => panic!("Unknown key type: {}", key_type),
             }
-            .unwrap_or_else(|e| panic!("Failed to decode JWT with {}: {:?}", key_type, e));
+            .expect(&format!("Failed to decode JWT with {}", key_type));
 
             assert_eq!(decoded.claims, claims);
         }
@@ -505,16 +512,13 @@ mod determinism_tests {
         let claims = JwtClaims::new("user123", 9999999999, 1234567890, "deterministic-jwt");
         let header = Header::new(Algorithm::RS256);
 
-        let token1 =
-            encode(&header, &claims, &keypair1.encoding_key()).expect("Failed to encode JWT 1");
-        let token2 =
-            encode(&header, &claims, &keypair2.encoding_key()).expect("Failed to encode JWT 2");
+        let token1 = encode(&header, &claims, &keypair1.encoding_key())
+            .expect("Failed to encode JWT 1");
+        let token2 = encode(&header, &claims, &keypair2.encoding_key())
+            .expect("Failed to encode JWT 2");
 
         // Tokens should be identical (same key + same claims)
-        assert_eq!(
-            token1, token2,
-            "Deterministic keys should produce identical JWTs"
-        );
+        assert_eq!(token1, token2, "Deterministic keys should produce identical JWTs");
 
         // Verify both tokens decode correctly
         let validation = Validation::new(Algorithm::RS256);
@@ -539,15 +543,12 @@ mod determinism_tests {
         let claims = JwtClaims::new("user123", 9999999999, 1234567890, "test");
         let header = Header::new(Algorithm::RS256);
 
-        let token1 =
-            encode(&header, &claims, &keypair1.encoding_key()).expect("Failed to encode JWT 1");
-        let token2 =
-            encode(&header, &claims, &keypair2.encoding_key()).expect("Failed to encode JWT 2");
+        let token1 = encode(&header, &claims, &keypair1.encoding_key())
+            .expect("Failed to encode JWT 1");
+        let token2 = encode(&header, &claims, &keypair2.encoding_key())
+            .expect("Failed to encode JWT 2");
 
         // Tokens should be different (different keys)
-        assert_ne!(
-            token1, token2,
-            "Different labels should produce different JWTs"
-        );
+        assert_ne!(token1, token2, "Different labels should produce different JWTs");
     }
 }

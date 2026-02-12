@@ -42,6 +42,23 @@
   - adapter: returns `jsonwebtoken::EncodingKey` / `DecodingKey` directly
   - optional features per key type (`rsa`, `ecdsa`, `ed25519`, `hmac`)
 
+- `crates/uselesskey-rustls`
+  - adapter: returns `rustls::pki_types::PrivateKeyDer`, `CertificateDer`
+  - `tls-config` feature: `ServerConfig` / `ClientConfig` / mTLS builders
+  - pluggable crypto provider (`rustls-ring` / `rustls-aws-lc-rs`)
+
+- `crates/uselesskey-ring`
+  - adapter: returns `ring` 0.17 native signing key types
+  - `RsaKeyPair`, `EcdsaKeyPair`, `Ed25519KeyPair`
+
+- `crates/uselesskey-rustcrypto`
+  - adapter: returns RustCrypto native types
+  - `rsa::RsaPrivateKey`, `p256::ecdsa::SigningKey`, `ed25519_dalek::SigningKey`, etc.
+
+- `crates/uselesskey-aws-lc-rs`
+  - adapter: returns `aws-lc-rs` native key types
+  - `native` feature for wasm-safe builds
+
 - `crates/uselesskey`
   - facade re-exporting the stable public API
 
@@ -118,13 +135,12 @@ Each extension crate depends on `uselesskey-core` and adds methods to `Factory` 
 
 Adapter crates provide native integration with downstream libraries. They are separate crates (not features) to avoid coupling uselesskey's versioning to downstream crate versions.
 
-- `uselesskey-jsonwebtoken` — returns `jsonwebtoken::EncodingKey` / `DecodingKey` directly
-
-### Planned adapters
-
 ```
-uselesskey-rustls        → returns PrivateKeyDer/CertificateDer directly
-uselesskey-ring          → returns ring's native key types
+uselesskey-jsonwebtoken  → jsonwebtoken::EncodingKey / DecodingKey
+uselesskey-rustls        → rustls-pki-types + ServerConfig/ClientConfig builders
+uselesskey-ring          → ring 0.17 native signing key types
+uselesskey-rustcrypto    → RustCrypto native types (rsa, p256, p384, ed25519-dalek, hmac)
+uselesskey-aws-lc-rs     → aws-lc-rs native key types
 ```
 
 ## CI scoping

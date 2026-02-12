@@ -9,10 +9,11 @@
 mod testutil;
 
 use rustls::crypto::CryptoProvider;
+use std::sync::Arc;
 use testutil::fx;
+use uselesskey_core::Factory;
 use uselesskey_rustls::{
-    RustlsChainExt, RustlsClientConfigExt, RustlsMtlsExt, RustlsPrivateKeyExt,
-    RustlsServerConfigExt,
+    RustlsClientConfigExt, RustlsMtlsExt, RustlsServerConfigExt,
 };
 use uselesskey_x509::{ChainSpec, X509FactoryExt};
 
@@ -184,6 +185,118 @@ mod mtls_config_tests {
 }
 
 // =========================================================================
+// Cross-Key Type Tests
+// =========================================================================
+
+#[cfg(feature = "tls")]
+mod rsa_tls_tests {
+    use super::*;
+    use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+
+    #[test]
+    fn test_tls_with_rsa_key() {
+        let fx = fx();
+
+        // Create RSA keypair
+        let rsa_keypair = fx.rsa("rsa-server", RsaSpec::rs256());
+
+        // Create X.509 cert with RSA key
+        let spec = uselesskey_x509::X509Spec::self_signed("rsa.example.com");
+        let cert = fx.x509_self_signed_with_key("rsa-cert", spec, &rsa_keypair);
+
+        // Build server config
+        let server_config = cert.server_config_rustls();
+
+        // Verify config was created successfully
+        assert_eq!(server_config.alpn_protocols.len(), 0);
+    }
+
+    #[test]
+    fn test_tls_with_rsa_different_key_sizes() {
+        let fx = fx();
+
+        let key_sizes = [2048, 3072, 4096];
+
+        for bits in key_sizes {
+            let rsa_keypair = fx.rsa(&format!("rsa-{}-bit", bits), RsaSpec::new(bits));
+
+            let spec = uselesskey_x509::X509Spec::self_signed(&format!("rsa-{}.example.com", bits));
+            let cert = fx.x509_self_signed_with_key(&format!("rsa-cert-{}", bits), spec, &rsa_keypair);
+
+            let server_config = cert.server_config_rustls();
+
+            assert_eq!(server_config.alpn_protocols.len(), 0);
+        }
+    }
+}
+
+#[cfg(feature = "tls")]
+mod ecdsa_tls_tests {
+    use super::*;
+    use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
+
+    #[test]
+    fn test_tls_with_ecdsa_p256_key() {
+        let fx = fx();
+
+        // Create ECDSA P-256 keypair
+        let ecdsa_keypair = fx.ecdsa("ecdsa-p256-server", EcdsaSpec::Es256);
+
+        // Create X.509 cert with ECDSA key
+        let spec = uselesskey_x509::X509Spec::self_signed("ecdsa-p256.example.com");
+        let cert = fx.x509_self_signed_with_key("ecdsa-p256-cert", spec, &ecdsa_keypair);
+
+        // Build server config
+        let server_config = cert.server_config_rustls();
+
+        // Verify config was created successfully
+        assert_eq!(server_config.alpn_protocols.len(), 0);
+    }
+
+    #[test]
+    fn test_tls_with_ecdsa_p384_key() {
+        let fx = fx();
+
+        // Create ECDSA P-384 keypair
+        let ecdsa_keypair = fx.ecdsa("ecdsa-p384-server", EcdsaSpec::Es384);
+
+        // Create X.509 cert with ECDSA key
+        let spec = uselesskey_x509::X509Spec::self_signed("ecdsa-p384.example.com");
+        let cert = fx.x509_self_signed_with_key("ecdsa-p384-cert", spec, &ecdsa_keypair);
+
+        // Build server config
+        let server_config = cert.server_config_rustls();
+
+        // Verify config was created successfully
+        assert_eq!(server_config.alpn_protocols.len(), 0);
+    }
+}
+
+#[cfg(feature = "tls")]
+mod ed25519_tls_tests {
+    use super::*;
+    use uselesskey_ed25519::Ed25519FactoryExt;
+
+    #[test]
+    fn test_tls_with_ed25519_key() {
+        let fx = fx();
+
+        // Create Ed25519 keypair
+        let ed25519_keypair = fx.ed25519("ed25519-server", uselesskey_ed25519::Ed25519Spec::new());
+
+        // Create X.509 cert with Ed25519 key
+        let spec = uselesskey_x509::X509Spec::self_signed("ed25519.example.com");
+        let cert = fx.x509_self_signed_with_key("ed25519-cert", spec, &ed25519_keypair);
+
+        // Build server config
+        let server_config = cert.server_config_rustls();
+
+        // Verify config was created successfully
+        assert_eq!(server_config.alpn_protocols.len(), 0);
+    }
+}
+
+// =========================================================================
 // Certificate Chain Tests
 // =========================================================================
 
@@ -216,12 +329,14 @@ mod chain_tests {
         let leaf_der = chain.leaf_cert_der();
         let intermediate_der = chain.intermediate_cert_der();
         let root_der = chain.root_cert_der();
+        let chain_der = chain.chain_der();
         let private_key_der = chain.leaf_private_key_pkcs8_der();
 
         // Verify DER conversions
         assert!(!leaf_der.is_empty());
         assert!(!intermediate_der.is_empty());
         assert!(!root_der.is_empty());
+        assert_eq!(chain_der.len(), 2); // leaf + intermediate
         assert!(!private_key_der.is_empty());
     }
 
@@ -240,18 +355,19 @@ mod chain_tests {
         // Verify rustls conversions
         assert_eq!(cert_chain.len(), 2); // leaf + intermediate
         assert!(!root_cert.as_ref().is_empty());
-        assert!(!private_key.secret_der().is_empty());
+        assert!(!private_key.secret_bytes().is_empty());
     }
 
     #[test]
     fn test_chain_with_sans() {
         let fx = fx();
 
-        let chain_spec = ChainSpec::new("sans.example.com").with_sans(vec![
-            "localhost".to_string(),
-            "127.0.0.1".to_string(),
-            "*.example.com".to_string(),
-        ]);
+        let chain_spec = ChainSpec::new("sans.example.com")
+            .with_sans(vec![
+                "localhost".to_string(),
+                "127.0.0.1".to_string(),
+                "*.example.com".to_string(),
+            ]);
         let chain = fx.x509_chain("sans-test", chain_spec);
 
         // Build server config
@@ -266,7 +382,11 @@ mod chain_tests {
 // Determinism Tests
 // =========================================================================
 
-#[cfg(feature = "tls")]
+#[cfg(all(
+    feature = "uselesskey-x509",
+    feature = "uselesskey-rustls",
+    feature = "server-config"
+))]
 mod tls_determinism_tests {
     use super::*;
 

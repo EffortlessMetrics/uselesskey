@@ -153,11 +153,13 @@ fn bdd() -> Result<()> {
 
 fn bdd_matrix() -> Result<()> {
     let mut runner = receipt::Runner::new("target/xtask/receipt.json");
-
+    
     // Define the feature sets to run
     // Note: BDD tests require all features to be enabled
-    let feature_sets = vec![("all-features", vec!["--features", "uk-all"])];
-
+    let feature_sets = vec![
+        ("all-features", vec!["--features", "uk-all"]),
+    ];
+    
     for (name, args) in feature_sets {
         let step_name = format!("bdd-matrix:{name}");
         let result = runner.step(&step_name, None, || {
@@ -168,7 +170,7 @@ fn bdd_matrix() -> Result<()> {
             }
             run(&mut cmd)
         });
-
+        
         match result {
             Ok(()) => runner.add_bdd_matrix(name, "ok"),
             Err(err) => {
@@ -177,7 +179,7 @@ fn bdd_matrix() -> Result<()> {
             }
         }
     }
-
+    
     runner.summary();
     runner.write()
 }
