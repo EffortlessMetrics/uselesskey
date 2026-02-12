@@ -15,7 +15,7 @@ use aws_lc_rs::{
     digest,
     hmac::{self, Key as HmacKey},
     rand::SystemRandom,
-    signature::{self, KeyPair, UnparsedPublicKey},
+    signature::{self, KeyPair},
 };
 use testutil::fx;
 #[cfg(feature = "native")]
@@ -360,9 +360,7 @@ mod ed25519_aws_lc_rs_tests {
 
         // Verify key pair is valid by attempting to sign
         let msg = b"test message";
-        let sig = aws_keypair
-            .sign(msg)
-            .expect("Failed to sign with AWS LC-RS Ed25519 key pair");
+        let sig = aws_keypair.sign(msg);
 
         // Verify signature
         let public_key_bytes = aws_keypair.public_key().as_ref();
@@ -393,8 +391,8 @@ mod ed25519_aws_lc_rs_tests {
 
         // Test signing with deterministic keys (Ed25519 signatures are deterministic)
         let msg = b"deterministic test message";
-        let sig1 = aws1.sign(msg).unwrap();
-        let sig2 = aws2.sign(msg).unwrap();
+        let sig1 = aws1.sign(msg);
+        let sig2 = aws2.sign(msg);
 
         // Ed25519 signatures should be identical for identical keys and messages
         assert_eq!(
@@ -424,7 +422,7 @@ mod ed25519_aws_lc_rs_tests {
         let aws_b = ed25519_b.ed25519_key_pair_aws_lc_rs();
 
         let msg = b"test message";
-        let sig = aws_a.sign(msg).unwrap();
+        let sig = aws_a.sign(msg);
 
         // Try to verify with key B's public key
         let public_key_bytes = aws_b.public_key().as_ref();
@@ -442,7 +440,7 @@ mod ed25519_aws_lc_rs_tests {
 
         let original_msg = b"original message";
         let tampered_msg = b"tampered message";
-        let sig = aws_keypair.sign(original_msg).unwrap();
+        let sig = aws_keypair.sign(original_msg);
 
         let public_key_bytes = aws_keypair.public_key().as_ref();
         let public_key = signature::UnparsedPublicKey::new(&signature::ED25519, public_key_bytes);

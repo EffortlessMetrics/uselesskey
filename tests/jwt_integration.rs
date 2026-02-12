@@ -9,15 +9,12 @@
 mod testutil;
 
 use jsonwebtoken::jwk::Jwk;
-use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
+use jsonwebtoken::{Algorithm, DecodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 use testutil::fx;
-use uselesskey_core::Factory;
-use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
-use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
-use uselesskey_hmac::{HmacFactoryExt, HmacSpec};
+use uselesskey_ed25519::Ed25519Spec;
 use uselesskey_jsonwebtoken::JwtKeyExt;
-use uselesskey_jwk::{AnyJwk, JwksBuilder};
+use uselesskey_jwk::JwksBuilder;
 use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -304,9 +301,9 @@ mod jwks_integration_tests {
 
         // Build JWKS with all keys
         let jwks = JwksBuilder::new()
-            .add_public(issuer1.public_jwk().into())
-            .add_public(issuer2.public_jwk().into())
-            .add_public(issuer3.public_jwk().into())
+            .add_public(issuer1.public_jwk())
+            .add_public(issuer2.public_jwk())
+            .add_public(issuer3.public_jwk())
             .build();
 
         // Verify all keys are in JWKS
@@ -354,8 +351,8 @@ mod jwks_integration_tests {
 
         // Build JWKS with both keys
         let jwks = JwksBuilder::new()
-            .add_public(old_key.public_jwk().into())
-            .add_public(new_key.public_jwk().into())
+            .add_public(old_key.public_jwk())
+            .add_public(new_key.public_jwk())
             .build();
 
         // Sign JWT with new key
@@ -441,7 +438,7 @@ mod cross_crate_compatibility_tests {
                 }
                 _ => panic!("Unknown key type: {}", key_type),
             }
-            .expect(&format!("Failed to encode JWT with {}", key_type));
+            .unwrap_or_else(|e| panic!("Failed to encode JWT with {}: {:?}", key_type, e));
 
             // Verify token can be decoded
             let validation = Validation::new(alg);
@@ -464,7 +461,7 @@ mod cross_crate_compatibility_tests {
                 }
                 _ => panic!("Unknown key type: {}", key_type),
             }
-            .expect(&format!("Failed to decode JWT with {}", key_type));
+            .unwrap_or_else(|e| panic!("Failed to decode JWT with {}: {:?}", key_type, e));
 
             assert_eq!(decoded.claims, claims);
         }
