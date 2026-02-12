@@ -8,11 +8,37 @@
   - sinks (tempfile outputs)
   - generic negative-fixture helpers (PEM/DER mangling)
 
+- `crates/uselesskey-jwk`
+  - typed JWK/JWKS helpers
+  - stable key ordering via `JwksBuilder`
+
 - `crates/uselesskey-rsa`
   - RSA keypair generator (RustCrypto `rsa`)
   - encodings: PKCS#8 private, SPKI public
   - mismatch fixtures (variant-derived keypairs)
   - optional `jwk` feature
+
+- `crates/uselesskey-ecdsa`
+  - ECDSA keypair generator (P-256/P-384)
+  - encodings: PKCS#8 private, SPKI public
+  - optional `jwk` feature
+
+- `crates/uselesskey-ed25519`
+  - Ed25519 keypair generator
+  - encodings: PKCS#8 private, SPKI public
+  - optional `jwk` feature
+
+- `crates/uselesskey-hmac`
+  - HMAC secret generator (HS256/384/512)
+  - raw bytes + optional `jwk` feature
+
+- `crates/uselesskey-x509`
+  - X.509 certificate fixtures (self-signed for now)
+  - deterministic validity/serial in deterministic mode
+
+- `crates/uselesskey-jsonwebtoken`
+  - adapter: returns `jsonwebtoken::EncodingKey` / `DecodingKey` directly
+  - optional features per key type (`rsa`, `ecdsa`, `ed25519`, `hmac`)
 
 - `crates/uselesskey`
   - facade re-exporting the stable public API
@@ -24,7 +50,7 @@
   - cargo-fuzz targets (negative fixture functions + parser stress)
 
 - `xtask/`
-  - fmt/clippy/test/bdd/mutants/fuzz runners
+  - build automation: fmt, clippy, test, nextest, deny, feature-matrix, no-blob, publish-check, pr, bdd, mutants, fuzz
 
 ## Deterministic derivation
 
@@ -54,7 +80,7 @@ A `Factory` caches artifacts per `ArtifactId`.
 
 Artifacts are stored as `Arc<dyn Any + Send + Sync>` and downcast on retrieval.
 
-## Why “variant”
+## Why "variant"
 
 Variant strings solve a bunch of test cases cleanly:
 
@@ -62,4 +88,45 @@ Variant strings solve a bunch of test cases cleanly:
 - `"mismatch"`: same label/spec, different keypair, used for mismatch negative tests
 - `"corrupt:*"`: future: derive deterministic corruption patterns without randomness
 
-The variant is part of the artifact id, so it does not collide with the “good” fixture.
+The variant is part of the artifact id, so it does not collide with the "good" fixture.
+
+## Extension pattern
+
+Key type support is added via extension traits rather than monolithic API growth:
+
+```
+Factory (core)
+  ├── RsaFactoryExt      (uselesskey-rsa)     → fx.rsa(label, spec)
+  ├── EcdsaFactoryExt    (uselesskey-ecdsa)   → fx.ecdsa(label, spec)
+  ├── Ed25519FactoryExt  (uselesskey-ed25519) → fx.ed25519(label)
+  ├── HmacFactoryExt     (uselesskey-hmac)    → fx.hmac(label, spec)
+  └── X509FactoryExt     (uselesskey-x509)    → fx.x509(label, spec)
+```
+
+This pattern:
+
+- Keeps compile times reasonable (opt-in via features)
+- Allows independent versioning of key type crates
+- Maintains a consistent API shape across key types
+- Avoids dependency bloat in the core crate
+
+Each extension crate depends on `uselesskey-core` and adds methods to `Factory` via its trait. The facade crate (`uselesskey`) re-exports enabled features.
+
+## Adapter crates
+
+Adapter crates provide native integration with downstream libraries. They are separate crates (not features) to avoid coupling uselesskey's versioning to downstream crate versions.
+
+- `uselesskey-jsonwebtoken` — returns `jsonwebtoken::EncodingKey` / `DecodingKey` directly
+
+### Planned adapters
+
+```
+uselesskey-rustls        → returns PrivateKeyDer/CertificateDer directly
+uselesskey-ring          → returns ring's native key types
+```
+
+## CI scoping
+
+Pull requests run `cargo xtask pr`, which scopes tests based on `git diff` and runs
+the full suites relevant to changed areas. Pushes to `main` run the full `cargo xtask ci`
+pipeline.

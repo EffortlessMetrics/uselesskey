@@ -10,9 +10,13 @@ proptest-regressions/
 fuzz/artifacts/
 fuzz/corpus/
 
+# cargo-mutants
+mutants.out*/
+
 # IDEs
 .idea/
 .vscode/
 
 # OS
 Thumbs.db
+nul

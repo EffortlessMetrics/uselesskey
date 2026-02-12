@@ -2,20 +2,72 @@ name: CI
 
 on:
   push:
+    branches:
+      - main
   pull_request:
 
 jobs:
-  test:
+  pr:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.92
         with:
           components: rustfmt, clippy
+
+      - uses: dtolnay/rust-toolchain@nightly
 
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
 
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz
+
+      - name: Install cargo-mutants
+        run: cargo install cargo-mutants
+
+      - name: Fetch base branch
+        if: github.base_ref != ''
+        run: git fetch origin ${{ github.base_ref }}
+
+      - name: xtask pr
+        run: cargo xtask pr
+      - name: Upload receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: receipt-pr
+          path: target/xtask/receipt.json
+
+  main:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@1.92
+        with:
+          components: rustfmt, clippy
+
+      - uses: dtolnay/rust-toolchain@nightly
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz
+
+      - name: Install cargo-mutants
+        run: cargo install cargo-mutants
+
       - name: xtask ci
         run: cargo xtask ci
+
+      - name: Upload receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: receipt-main
+          path: target/xtask/receipt.json

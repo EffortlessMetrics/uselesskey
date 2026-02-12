@@ -1,0 +1,16 @@
+[package]
+name = "uselesskey-jwk"
+version = "0.2.0"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "Typed JWK/JWKS helpers for uselesskey."
+categories = ["development-tools::testing"]
+keywords = ["jwk", "jwks", "fixtures", "testing"]
+readme = "README.md"
+authors.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true

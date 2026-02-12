@@ -1,9 +1,22 @@
-#[derive(Clone, Copy, Debug)]
-pub struct TruncateTo(pub usize);
-
 /// Truncate DER bytes to `len` bytes.
 ///
-/// If `len >= der.len()`, returns the original bytes.
+/// If `len >= der.len()`, returns the original bytes unchanged.
+///
+/// # Examples
+///
+/// ```
+/// use uselesskey_core::negative::truncate_der;
+///
+/// let der = vec![0x30, 0x82, 0x01, 0x22, 0x30, 0x0D, 0x06, 0x09];
+///
+/// // Truncate to 4 bytes
+/// let truncated = truncate_der(&der, 4);
+/// assert_eq!(truncated, vec![0x30, 0x82, 0x01, 0x22]);
+///
+/// // Truncate beyond length returns original
+/// let same = truncate_der(&der, 100);
+/// assert_eq!(same, der);
+/// ```
 pub fn truncate_der(der: &[u8], len: usize) -> Vec<u8> {
     if len >= der.len() {
         return der.to_vec();
@@ -11,9 +24,29 @@ pub fn truncate_der(der: &[u8], len: usize) -> Vec<u8> {
     der[..len].to_vec()
 }
 
-/// Flip one byte at `offset` (xor with `0x01`).
+/// Flip one byte at `offset` (XOR with `0x01`).
 ///
-/// If `offset` is out of range, returns the original bytes.
+/// If `offset` is out of range, returns the original bytes unchanged.
+///
+/// This is useful for creating DER that is structurally invalid,
+/// such as corrupting ASN.1 tags or length bytes.
+///
+/// # Examples
+///
+/// ```
+/// use uselesskey_core::negative::flip_byte;
+///
+/// let der = vec![0x30, 0x82, 0x01, 0x22]; // SEQUENCE tag at byte 0
+///
+/// // Flip the tag byte: 0x30 XOR 0x01 = 0x31
+/// let flipped = flip_byte(&der, 0);
+/// assert_eq!(flipped[0], 0x31);
+/// assert_eq!(flipped[1..], der[1..]); // Rest unchanged
+///
+/// // Flip at invalid offset returns original
+/// let same = flip_byte(&der, 100);
+/// assert_eq!(same, der);
+/// ```
 pub fn flip_byte(der: &[u8], offset: usize) -> Vec<u8> {
     if offset >= der.len() {
         return der.to_vec();
@@ -22,4 +55,39 @@ pub fn flip_byte(der: &[u8], offset: usize) -> Vec<u8> {
     let mut out = der.to_vec();
     out[offset] ^= 0x01;
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn flip_byte_changes_only_target_offset() {
+        let der = vec![0x30, 0x82, 0x01, 0x22];
+        let flipped = flip_byte(&der, 0);
+
+        assert_eq!(flipped[0], 0x31);
+        assert_eq!(&flipped[1..], &der[1..]);
+    }
+
+    #[test]
+    fn flip_byte_out_of_range_is_noop() {
+        let der = vec![0x30, 0x82, 0x01, 0x22];
+        let flipped = flip_byte(&der, 100);
+        assert_eq!(flipped, der);
+    }
+
+    #[test]
+    fn truncate_der_shortens_when_len_smaller() {
+        let der = vec![0x30, 0x82, 0x01, 0x22];
+        let truncated = truncate_der(&der, 2);
+        assert_eq!(truncated, vec![0x30, 0x82]);
+    }
+
+    #[test]
+    fn truncate_der_len_ge_returns_original() {
+        let der = vec![0x30, 0x82, 0x01, 0x22];
+        assert_eq!(truncate_der(&der, der.len()), der);
+        assert_eq!(truncate_der(&der, der.len() + 10), der);
+    }
 }

@@ -44,3 +44,48 @@ fn write_len_prefixed(hasher: &mut blake3::Hasher, bytes: &[u8]) {
     hasher.update(&len.to_be_bytes());
     hasher.update(bytes);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::id::{ArtifactId, DerivationVersion, Seed};
+
+    #[test]
+    fn derive_seed_unknown_version_is_deterministic() {
+        let master = Seed::new([9u8; 32]);
+        let id = ArtifactId::new(
+            "domain:test",
+            "label",
+            b"spec",
+            "variant",
+            DerivationVersion(999),
+        );
+
+        let first = derive_seed(&master, &id);
+        let second = derive_seed(&master, &id);
+        assert_eq!(first.bytes(), second.bytes());
+    }
+
+    #[test]
+    fn derive_seed_version_affects_output() {
+        let master = Seed::new([3u8; 32]);
+        let id_v1 = ArtifactId::new(
+            "domain:test",
+            "label",
+            b"spec",
+            "variant",
+            DerivationVersion::V1,
+        );
+        let id_v2 = ArtifactId::new(
+            "domain:test",
+            "label",
+            b"spec",
+            "variant",
+            DerivationVersion(2),
+        );
+
+        let v1 = derive_seed(&master, &id_v1);
+        let v2 = derive_seed(&master, &id_v2);
+        assert_ne!(v1.bytes(), v2.bytes());
+    }
+}
