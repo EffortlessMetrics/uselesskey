@@ -270,7 +270,6 @@ impl RustlsMtlsExt for uselesskey_x509::X509Chain {
 #[cfg(all(feature = "server-config", feature = "client-config"))]
 mod tests {
     use super::*;
-    use uselesskey_core::Factory;
     use uselesskey_x509::{ChainSpec, X509FactoryExt, X509Spec};
 
     use std::sync::Once;
@@ -288,10 +287,14 @@ mod tests {
         Arc::new(rustls::crypto::ring::default_provider())
     }
 
+    // Maximum iterations for TLS handshake loops to prevent infinite loops
+    // A normal TLS handshake completes in well under 10 iterations
+    const MAX_HANDSHAKE_ITERATIONS: usize = 10;
+
     #[test]
     fn server_config_from_chain() {
         install_provider();
-        let fx = Factory::random();
+        let fx = super::super::testutil::fx();
         let chain = fx.x509_chain("test", ChainSpec::new("test.example.com"));
         // Succeeds without panic = config was built with valid cert/key
         let _cfg = chain.server_config_rustls();
@@ -300,7 +303,7 @@ mod tests {
     #[test]
     fn server_config_from_chain_with_provider() {
         install_provider();
-        let fx = Factory::random();
+        let fx = super::super::testutil::fx();
         let chain = fx.x509_chain("test-provider", ChainSpec::new("test.example.com"));
         let _cfg = chain.server_config_rustls_with_provider(ring_provider());
     }
@@ -308,7 +311,7 @@ mod tests {
     #[test]
     fn client_config_from_chain() {
         install_provider();
-        let fx = Factory::random();
+        let fx = super::super::testutil::fx();
         let chain = fx.x509_chain("test", ChainSpec::new("test.example.com"));
         let _cfg = chain.client_config_rustls();
     }
@@ -316,7 +319,7 @@ mod tests {
     #[test]
     fn client_config_from_chain_with_provider() {
         install_provider();
-        let fx = Factory::random();
+        let fx = super::super::testutil::fx();
         let chain = fx.x509_chain("test-provider", ChainSpec::new("test.example.com"));
         let _cfg = chain.client_config_rustls_with_provider(ring_provider());
     }
@@ -324,7 +327,7 @@ mod tests {
     #[test]
     fn server_config_from_self_signed() {
         install_provider();
-        let fx = Factory::random();
+        let fx = super::super::testutil::fx();
         let cert = fx.x509_self_signed("test", X509Spec::self_signed("test.example.com"));
         let _cfg = cert.server_config_rustls();
     }
@@ -332,7 +335,7 @@ mod tests {
     #[test]
     fn server_config_from_self_signed_with_provider() {
         install_provider();
-        let fx = Factory::random();
+        let fx = super::super::testutil::fx();
         let cert = fx.x509_self_signed("test-provider", X509Spec::self_signed("test.example.com"));
         let _cfg = cert.server_config_rustls_with_provider(ring_provider());
     }
@@ -340,7 +343,7 @@ mod tests {
     #[test]
     fn client_config_from_self_signed() {
         install_provider();
-        let fx = Factory::random();
+        let fx = super::super::testutil::fx();
         let cert = fx.x509_self_signed("test", X509Spec::self_signed("test.example.com"));
         let _cfg = cert.client_config_rustls();
     }
@@ -348,7 +351,7 @@ mod tests {
     #[test]
     fn client_config_from_self_signed_with_provider() {
         install_provider();
-        let fx = Factory::random();
+        let fx = super::super::testutil::fx();
         let cert = fx.x509_self_signed("test-provider", X509Spec::self_signed("test.example.com"));
         let _cfg = cert.client_config_rustls_with_provider(ring_provider());
     }
@@ -356,7 +359,7 @@ mod tests {
     #[test]
     fn tls_handshake_roundtrip() {
         install_provider();
-        let fx = Factory::random();
+        let fx = super::super::testutil::fx();
         let chain = fx.x509_chain("tls-test", ChainSpec::new("test.example.com"));
 
         let server_config = Arc::new(chain.server_config_rustls());
@@ -370,7 +373,7 @@ mod tests {
         // Drive the handshake to completion by transferring bytes between
         // client and server until neither side needs to write.
         let mut buf = Vec::new();
-        loop {
+        for iteration in 0..MAX_HANDSHAKE_ITERATIONS {
             let mut progress = false;
 
             // client -> server
@@ -398,6 +401,14 @@ mod tests {
             if !progress {
                 break;
             }
+
+            // Safety check: if we've exhausted iterations without completing,
+            // something is wrong with the handshake state machine
+            assert!(
+                iteration < MAX_HANDSHAKE_ITERATIONS - 1,
+                "TLS handshake did not complete within {} iterations",
+                MAX_HANDSHAKE_ITERATIONS
+            );
         }
 
         assert!(!client.is_handshaking());
@@ -406,7 +417,7 @@ mod tests {
 
     #[test]
     fn mtls_with_provider_roundtrip() {
-        let fx = Factory::random();
+        let fx = super::super::testutil::fx();
         let chain = fx.x509_chain("mtls-provider-test", ChainSpec::new("test.example.com"));
 
         let provider = ring_provider();
@@ -420,7 +431,7 @@ mod tests {
             rustls::ClientConnection::new(client_config, server_name.to_owned()).unwrap();
 
         let mut buf = Vec::new();
-        loop {
+        for iteration in 0..MAX_HANDSHAKE_ITERATIONS {
             let mut progress = false;
 
             buf.clear();
@@ -446,6 +457,14 @@ mod tests {
             if !progress {
                 break;
             }
+
+            // Safety check: if we've exhausted iterations without completing,
+            // something is wrong with the handshake state machine
+            assert!(
+                iteration < MAX_HANDSHAKE_ITERATIONS - 1,
+                "mTLS handshake did not complete within {} iterations",
+                MAX_HANDSHAKE_ITERATIONS
+            );
         }
 
         assert!(!client.is_handshaking());
@@ -455,7 +474,7 @@ mod tests {
     #[test]
     fn mtls_roundtrip() {
         install_provider();
-        let fx = Factory::random();
+        let fx = super::super::testutil::fx();
         let chain = fx.x509_chain("mtls-test", ChainSpec::new("test.example.com"));
 
         let server_config = Arc::new(chain.server_config_mtls_rustls());
@@ -467,7 +486,7 @@ mod tests {
             rustls::ClientConnection::new(client_config, server_name.to_owned()).unwrap();
 
         let mut buf = Vec::new();
-        loop {
+        for iteration in 0..MAX_HANDSHAKE_ITERATIONS {
             let mut progress = false;
 
             buf.clear();
@@ -493,6 +512,14 @@ mod tests {
             if !progress {
                 break;
             }
+
+            // Safety check: if we've exhausted iterations without completing,
+            // something is wrong with the handshake state machine
+            assert!(
+                iteration < MAX_HANDSHAKE_ITERATIONS - 1,
+                "mTLS handshake did not complete within {} iterations",
+                MAX_HANDSHAKE_ITERATIONS
+            );
         }
 
         assert!(!client.is_handshaking());
