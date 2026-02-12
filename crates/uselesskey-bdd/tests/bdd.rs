@@ -1,13 +1,31 @@
 use cucumber::{World, given, then, when};
+use serde_json::Value;
+use uselesskey::jwk::JwksBuilder;
 use uselesskey::negative::CorruptPem;
 use uselesskey::{
-    EcdsaFactoryExt, EcdsaKeyPair, EcdsaSpec, Ed25519FactoryExt, Ed25519KeyPair, Ed25519Spec,
-    Factory, HmacFactoryExt, HmacSecret, HmacSpec, RsaFactoryExt, RsaKeyPair, RsaSpec, X509Cert,
-    X509Chain, X509FactoryExt, X509Spec, ChainSpec,
+    ChainSpec, EcdsaFactoryExt, EcdsaKeyPair, EcdsaSpec, Ed25519FactoryExt, Ed25519KeyPair,
+    Ed25519Spec, Factory, HmacFactoryExt, HmacSecret, HmacSpec, RsaFactoryExt, RsaKeyPair, RsaSpec,
+    X509Cert, X509Chain, X509FactoryExt, X509Spec,
 };
-use uselesskey::jwk::JwksBuilder;
-use serde_json::Value;
 
+fn set_public_kid(jwk: &mut uselesskey::jwk::PublicJwk, kid: &str) {
+    use uselesskey::jwk::PublicJwk;
+    match jwk {
+        PublicJwk::Rsa(j) => j.kid = kid.to_string(),
+        PublicJwk::Ec(j) => j.kid = kid.to_string(),
+        PublicJwk::Okp(j) => j.kid = kid.to_string(),
+    }
+}
+
+fn set_private_kid(jwk: &mut uselesskey::jwk::PrivateJwk, kid: &str) {
+    use uselesskey::jwk::PrivateJwk;
+    match jwk {
+        PrivateJwk::Rsa(j) => j.kid = kid.to_string(),
+        PrivateJwk::Ec(j) => j.kid = kid.to_string(),
+        PrivateJwk::Okp(j) => j.kid = kid.to_string(),
+        PrivateJwk::Oct(j) => j.kid = kid.to_string(),
+    }
+}
 
 #[derive(Default, Debug, World)]
 struct UselessWorld {
@@ -112,7 +130,10 @@ struct UselessWorld {
     ecdsa_keys: Vec<EcdsaKeyPair>,
     ed25519_keys: Vec<Ed25519KeyPair>,
     hmac_keys: Vec<HmacSecret>,
-    rsa_moduli: Vec<Vec<u8>>,
+    rsa_pems_before: Vec<String>,
+    ecdsa_pems_before: Vec<String>,
+    ed25519_pems_before: Vec<String>,
+    rsa_modulus_snapshot: Option<String>,
 }
 
 // =============================================================================
@@ -1543,7 +1564,7 @@ fn gen_x509_chain(world: &mut UselessWorld, domain: String, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
     let spec = ChainSpec::new(&domain);
     let chain = fx.x509_chain(&label, spec.clone());
-    
+
     world.x509_chain_leaf_der_1 = Some(chain.leaf_cert_der().to_vec());
     world.x509_chain = Some(chain);
     world.x509_chain_spec = Some(spec);
@@ -1583,7 +1604,7 @@ fn add_san_to_cert(world: &mut UselessWorld, san: String) {
     let fx = world.factory.as_ref().expect("factory not set");
     let label = world.label.as_ref().expect("label not set");
     let x509 = world.x509.as_ref().expect("x509 not set");
-    
+
     // Get the current domain from the cert
     let der = x509.cert_der();
     let (_, cert) = x509_parser::parse_x509_certificate(der).expect("parse cert");
@@ -1594,12 +1615,12 @@ fn add_san_to_cert(world: &mut UselessWorld, san: String) {
         .expect("should have CN")
         .as_str()
         .expect("CN should be string");
-    
+
     // Create new spec with additional SANs
     world.x509_chain_sans.push(san.clone());
     let spec = X509Spec::self_signed(cn);
     let new_x509 = fx.x509_self_signed(label, spec);
-    
+
     world.x509_cert_pem_2 = Some(new_x509.cert_pem().to_string());
     world.x509_cert_der_2 = Some(new_x509.cert_der().to_vec());
     world.x509 = Some(new_x509);
@@ -1610,11 +1631,11 @@ fn add_san_to_chain(world: &mut UselessWorld, san: String) {
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
     let fx = world.factory.as_ref().expect("factory not set");
     let label = world.label.as_ref().expect("label not set");
-    
+
     // Get current spec and add SAN
     let mut spec = chain.spec().clone();
     spec.leaf_sans.push(san);
-    
+
     // Regenerate chain with new SANs
     let new_chain = fx.x509_chain(label, spec.clone());
     world.x509_chain_leaf_der_2 = Some(new_chain.leaf_cert_der().to_vec());
@@ -1649,38 +1670,56 @@ fn chain_has_root(world: &mut UselessWorld) {
 
 #[then("the certificate chains should have identical DER")]
 fn chain_identical(world: &mut UselessWorld) {
-    let der1 = world.x509_chain_leaf_der_1.as_ref().expect("leaf_der_1 not set");
-    let der2 = world.x509_chain_leaf_der_2.as_ref().expect("leaf_der_2 not set");
+    let der1 = world
+        .x509_chain_leaf_der_1
+        .as_ref()
+        .expect("leaf_der_1 not set");
+    let der2 = world
+        .x509_chain_leaf_der_2
+        .as_ref()
+        .expect("leaf_der_2 not set");
     assert_eq!(der1, der2, "certificate chains should be identical");
 }
 
 #[then("the revoked leaf certificate should be parseable")]
 fn revoked_leaf_parseable(world: &mut UselessWorld) {
-    let revoked = world.x509_chain_revoked_leaf.as_ref().expect("revoked_leaf not set");
+    let revoked = world
+        .x509_chain_revoked_leaf
+        .as_ref()
+        .expect("revoked_leaf not set");
     let der = revoked.leaf_cert_der();
     x509_parser::parse_x509_certificate(der).expect("revoked leaf should parse");
 }
 
 #[then("the revoked leaf certificate should have a CRL distribution point")]
 fn revoked_leaf_has_crl(world: &mut UselessWorld) {
-    let revoked = world.x509_chain_revoked_leaf.as_ref().expect("revoked_leaf not set");
+    let revoked = world
+        .x509_chain_revoked_leaf
+        .as_ref()
+        .expect("revoked_leaf not set");
     let der = revoked.leaf_cert_der();
     let (_, cert) = x509_parser::parse_x509_certificate(der).expect("parse leaf");
-    
+
     // Check for CRL distribution point extension
     let has_crl_dp = cert
         .extensions()
         .iter()
         .any(|ext| ext.oid == x509_parser::oid_registry::OID_X509_EXT_CRL_DISTRIBUTION_POINTS);
-    
-    assert!(has_crl_dp, "revoked leaf should have CRL distribution point");
+
+    assert!(
+        has_crl_dp,
+        "revoked leaf should have CRL distribution point"
+    );
 }
 
 #[then("the revoked leaf certificate should differ from the valid leaf certificate")]
 fn revoked_differs_from_valid(world: &mut UselessWorld) {
-    let revoked = world.x509_chain_revoked_leaf.as_ref().expect("revoked_leaf not set");
+    let revoked = world
+        .x509_chain_revoked_leaf
+        .as_ref()
+        .expect("revoked_leaf not set");
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
-    
+
     assert_ne!(
         revoked.leaf_cert_der(),
         chain.leaf_cert_der(),
@@ -1690,12 +1729,14 @@ fn revoked_differs_from_valid(world: &mut UselessWorld) {
 
 #[then(regex = r#"^the leaf certificate should have common name "([^"]+)"$"#)]
 fn leaf_has_cn(world: &mut UselessWorld, expected_cn: String) {
-    let chain = world.x509_chain_hostname_mismatch.as_ref()
+    let chain = world
+        .x509_chain_hostname_mismatch
+        .as_ref()
         .or(world.x509_chain.as_ref())
         .expect("chain not set");
     let der = chain.leaf_cert_der();
     let (_, cert) = x509_parser::parse_x509_certificate(der).expect("parse leaf");
-    
+
     let cn = cert
         .subject()
         .iter_common_name()
@@ -1703,13 +1744,16 @@ fn leaf_has_cn(world: &mut UselessWorld, expected_cn: String) {
         .expect("should have CN")
         .as_str()
         .expect("CN should be string");
-    
+
     assert_eq!(cn, expected_cn);
 }
 
 #[then(regex = r#"^the leaf certificate should not contain SAN "([^"]+)"$"#)]
 fn leaf_not_contain_san(world: &mut UselessWorld, san: String) {
-    let chain = world.x509_chain_hostname_mismatch.as_ref().expect("mismatched chain not set");
+    let chain = world
+        .x509_chain_hostname_mismatch
+        .as_ref()
+        .expect("mismatched chain not set");
     let der = chain.leaf_cert_der();
     let (_, cert) = x509_parser::parse_x509_certificate(der).expect("parse leaf");
 
@@ -1725,9 +1769,12 @@ fn leaf_not_contain_san(world: &mut UselessWorld, san: String) {
 
 #[then("the hostname mismatch leaf certificate should differ from the valid leaf certificate")]
 fn hostname_mismatch_differs(world: &mut UselessWorld) {
-    let mismatched = world.x509_chain_hostname_mismatch.as_ref().expect("mismatched chain not set");
+    let mismatched = world
+        .x509_chain_hostname_mismatch
+        .as_ref()
+        .expect("mismatched chain not set");
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
-    
+
     assert_ne!(
         mismatched.leaf_cert_der(),
         chain.leaf_cert_der(),
@@ -1737,17 +1784,20 @@ fn hostname_mismatch_differs(world: &mut UselessWorld) {
 
 #[then("the expired leaf certificate should have not_after in the past")]
 fn expired_leaf_not_after_past(world: &mut UselessWorld) {
-    let expired = world.x509_chain_expired_leaf.as_ref().expect("expired leaf not set");
+    let expired = world
+        .x509_chain_expired_leaf
+        .as_ref()
+        .expect("expired leaf not set");
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
-    
-    let (_, expired_cert) = x509_parser::parse_x509_certificate(expired.leaf_cert_der())
-        .expect("parse expired leaf");
-    let (_, valid_cert) = x509_parser::parse_x509_certificate(chain.leaf_cert_der())
-        .expect("parse valid leaf");
-    
+
+    let (_, expired_cert) =
+        x509_parser::parse_x509_certificate(expired.leaf_cert_der()).expect("parse expired leaf");
+    let (_, valid_cert) =
+        x509_parser::parse_x509_certificate(chain.leaf_cert_der()).expect("parse valid leaf");
+
     let expired_not_after = expired_cert.validity().not_after;
     let valid_not_after = valid_cert.validity().not_after;
-    
+
     assert!(
         expired_not_after < valid_not_after,
         "expired leaf should have not_after before valid"
@@ -1756,30 +1806,39 @@ fn expired_leaf_not_after_past(world: &mut UselessWorld) {
 
 #[then("the intermediate certificate should be valid")]
 fn intermediate_is_valid(world: &mut UselessWorld) {
-    let expired = world.x509_chain_expired_leaf.as_ref().expect("expired leaf chain not set");
+    let expired = world
+        .x509_chain_expired_leaf
+        .as_ref()
+        .expect("expired leaf chain not set");
     let der = expired.intermediate_cert_der();
     let (_, cert) = x509_parser::parse_x509_certificate(der).expect("parse intermediate");
-    
+
     // Intermediate should have a reasonable validity period
     let not_after = cert.validity().not_after.timestamp();
-    
+
     // Just check that the certificate exists and has a validity period
-    assert!(not_after > 0, "intermediate should have a valid not_after time");
+    assert!(
+        not_after > 0,
+        "intermediate should have a valid not_after time"
+    );
 }
 
 #[then("the expired intermediate certificate should have not_after in the past")]
 fn expired_intermediate_not_after_past(world: &mut UselessWorld) {
-    let expired = world.x509_chain_expired_intermediate.as_ref().expect("expired intermediate not set");
+    let expired = world
+        .x509_chain_expired_intermediate
+        .as_ref()
+        .expect("expired intermediate not set");
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
-    
+
     let (_, expired_cert) = x509_parser::parse_x509_certificate(expired.intermediate_cert_der())
         .expect("parse expired intermediate");
     let (_, valid_cert) = x509_parser::parse_x509_certificate(chain.intermediate_cert_der())
         .expect("parse valid intermediate");
-    
+
     let expired_not_after = expired_cert.validity().not_after;
     let valid_not_after = valid_cert.validity().not_after;
-    
+
     assert!(
         expired_not_after < valid_not_after,
         "expired intermediate should have not_after before valid"
@@ -1788,13 +1847,16 @@ fn expired_intermediate_not_after_past(world: &mut UselessWorld) {
 
 #[then("the leaf certificate should be valid")]
 fn leaf_is_valid(world: &mut UselessWorld) {
-    let expired = world.x509_chain_expired_intermediate.as_ref().expect("expired intermediate chain not set");
+    let expired = world
+        .x509_chain_expired_intermediate
+        .as_ref()
+        .expect("expired intermediate chain not set");
     let der = expired.leaf_cert_der();
     let (_, cert) = x509_parser::parse_x509_certificate(der).expect("parse leaf");
-    
+
     // Leaf should have a reasonable validity period
     let not_after = cert.validity().not_after.timestamp();
-    
+
     // Just check that the certificate exists and has a validity period
     assert!(not_after > 0, "leaf should have a valid not_after time");
 }
@@ -1804,7 +1866,7 @@ fn x509_has_san(world: &mut UselessWorld, san: String) {
     let x509 = world.x509.as_ref().expect("x509 not set");
     let der = x509.cert_der();
     let (_, cert) = x509_parser::parse_x509_certificate(der).expect("parse cert");
-    
+
     let has_san = cert
         .subject_alternative_name()
         .ok()
@@ -1820,7 +1882,7 @@ fn leaf_has_san(world: &mut UselessWorld, san: String) {
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
     let der = chain.leaf_cert_der();
     let (_, cert) = x509_parser::parse_x509_certificate(der).expect("parse leaf");
-    
+
     let has_san = cert
         .subject_alternative_name()
         .ok()
@@ -1836,7 +1898,7 @@ fn intermediate_not_contain_san(world: &mut UselessWorld, san: String) {
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
     let der = chain.intermediate_cert_der();
     let (_, cert) = x509_parser::parse_x509_certificate(der).expect("parse intermediate");
-    
+
     let has_san = cert
         .subject_alternative_name()
         .ok()
@@ -1852,7 +1914,7 @@ fn root_not_contain_san(world: &mut UselessWorld, san: String) {
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
     let der = chain.root_cert_der();
     let (_, cert) = x509_parser::parse_x509_certificate(der).expect("parse root");
-    
+
     let has_san = cert
         .subject_alternative_name()
         .ok()
@@ -1868,33 +1930,46 @@ fn root_not_contain_san(world: &mut UselessWorld, san: String) {
 // =============================================================================
 
 #[when(regex = r#"^I build a JWKS containing the RSA key with kid "([^"]+)"$"#)]
-fn build_jwks_rsa(world: &mut UselessWorld, _kid: String) {
+fn build_jwks_rsa(world: &mut UselessWorld, kid: String) {
     let rsa = world.rsa.as_ref().expect("rsa not set");
-    let jwk = rsa.public_jwk();
+    let mut jwk = rsa.public_jwk();
+    set_public_kid(&mut jwk, &kid);
     let builder = JwksBuilder::new().add_public(jwk);
-    world.jwks_output_1 = Some(builder.build().to_value());
+    let value = builder.build().to_value();
+    // Snapshot modulus for rotation-preserve scenario
+    if let Some(n) = value["keys"]
+        .as_array()
+        .and_then(|k| k.first())
+        .and_then(|k| k["n"].as_str())
+    {
+        world.rsa_modulus_snapshot = Some(n.to_string());
+    }
+    world.jwks_output_1 = Some(value);
 }
 
 #[when(regex = r#"^I build a JWKS containing the ECDSA key with kid "([^"]+)"$"#)]
-fn build_jwks_ecdsa(world: &mut UselessWorld, _kid: String) {
+fn build_jwks_ecdsa(world: &mut UselessWorld, kid: String) {
     let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
-    let jwk = ecdsa.public_jwk();
+    let mut jwk = ecdsa.public_jwk();
+    set_public_kid(&mut jwk, &kid);
     let builder = JwksBuilder::new().add_public(jwk);
     world.jwks_output_1 = Some(builder.build().to_value());
 }
 
 #[when(regex = r#"^I build a JWKS containing the Ed25519 key with kid "([^"]+)"$"#)]
-fn build_jwks_ed25519(world: &mut UselessWorld, _kid: String) {
+fn build_jwks_ed25519(world: &mut UselessWorld, kid: String) {
     let ed25519 = world.ed25519.as_ref().expect("ed25519 not set");
-    let jwk = ed25519.public_jwk();
+    let mut jwk = ed25519.public_jwk();
+    set_public_kid(&mut jwk, &kid);
     let builder = JwksBuilder::new().add_public(jwk);
     world.jwks_output_1 = Some(builder.build().to_value());
 }
 
 #[when(regex = r#"^I build a JWKS containing the HMAC secret with kid "([^"]+)"$"#)]
-fn build_jwks_hmac(world: &mut UselessWorld, _kid: String) {
+fn build_jwks_hmac(world: &mut UselessWorld, kid: String) {
     let hmac = world.hmac.as_ref().expect("hmac not set");
-    let jwk = hmac.jwk();
+    let mut jwk = hmac.jwk();
+    set_private_kid(&mut jwk, &kid);
     let builder = JwksBuilder::new().add_private(jwk);
     world.jwks_output_1 = Some(builder.build().to_value());
 }
@@ -1920,96 +1995,156 @@ fn build_jwks_all(world: &mut UselessWorld) {
 }
 
 #[when(regex = r#"^I build a JWKS with the RSA keys with kids "([^"]+)" and "([^"]+)"$"#)]
-fn build_jwks_multi_rsa(world: &mut UselessWorld, _kid1: String, _kid2: String) {
+fn build_jwks_multi_rsa(world: &mut UselessWorld, kid1: String, kid2: String) {
     assert_eq!(world.rsa_keys.len(), 2, "need 2 RSA keys");
+    let mut jwk1 = world.rsa_keys[0].public_jwk();
+    let mut jwk2 = world.rsa_keys[1].public_jwk();
+    set_public_kid(&mut jwk1, &kid1);
+    set_public_kid(&mut jwk2, &kid2);
     let mut builder = JwksBuilder::new();
-    builder.push_public(world.rsa_keys[0].public_jwk());
-    builder.push_public(world.rsa_keys[1].public_jwk());
+    builder.push_public(jwk1);
+    builder.push_public(jwk2);
     world.jwks_output_1 = Some(builder.build().to_value());
 }
 
 #[when(regex = r#"^I build a JWKS with the ECDSA keys with kids "([^"]+)" and "([^"]+)"$"#)]
-fn build_jwks_multi_ecdsa(world: &mut UselessWorld, _kid1: String, _kid2: String) {
+fn build_jwks_multi_ecdsa(world: &mut UselessWorld, kid1: String, kid2: String) {
     assert_eq!(world.ecdsa_keys.len(), 2, "need 2 ECDSA keys");
+    let mut jwk1 = world.ecdsa_keys[0].public_jwk();
+    let mut jwk2 = world.ecdsa_keys[1].public_jwk();
+    set_public_kid(&mut jwk1, &kid1);
+    set_public_kid(&mut jwk2, &kid2);
     let mut builder = JwksBuilder::new();
-    builder.push_public(world.ecdsa_keys[0].public_jwk());
-    builder.push_public(world.ecdsa_keys[1].public_jwk());
+    builder.push_public(jwk1);
+    builder.push_public(jwk2);
     world.jwks_output_1 = Some(builder.build().to_value());
 }
 
 #[when(regex = r#"^I build a JWKS with the Ed25519 keys with kids "([^"]+)" and "([^"]+)"$"#)]
-fn build_jwks_multi_ed25519(world: &mut UselessWorld, _kid1: String, _kid2: String) {
+fn build_jwks_multi_ed25519(world: &mut UselessWorld, kid1: String, kid2: String) {
     assert_eq!(world.ed25519_keys.len(), 2, "need 2 Ed25519 keys");
+    let mut jwk1 = world.ed25519_keys[0].public_jwk();
+    let mut jwk2 = world.ed25519_keys[1].public_jwk();
+    set_public_kid(&mut jwk1, &kid1);
+    set_public_kid(&mut jwk2, &kid2);
     let mut builder = JwksBuilder::new();
-    builder.push_public(world.ed25519_keys[0].public_jwk());
-    builder.push_public(world.ed25519_keys[1].public_jwk());
+    builder.push_public(jwk1);
+    builder.push_public(jwk2);
     world.jwks_output_1 = Some(builder.build().to_value());
 }
 
 #[when(regex = r#"^I build a JWKS with the HMAC secrets with kids "([^"]+)" and "([^"]+)"$"#)]
-fn build_jwks_multi_hmac(world: &mut UselessWorld, _kid1: String, _kid2: String) {
+fn build_jwks_multi_hmac(world: &mut UselessWorld, kid1: String, kid2: String) {
     assert_eq!(world.hmac_keys.len(), 2, "need 2 HMAC secrets");
+    let mut jwk1 = world.hmac_keys[0].jwk();
+    let mut jwk2 = world.hmac_keys[1].jwk();
+    set_private_kid(&mut jwk1, &kid1);
+    set_private_kid(&mut jwk2, &kid2);
     let mut builder = JwksBuilder::new();
-    builder.push_private(world.hmac_keys[0].jwk());
-    builder.push_private(world.hmac_keys[1].jwk());
+    builder.push_private(jwk1);
+    builder.push_private(jwk2);
     world.jwks_output_1 = Some(builder.build().to_value());
 }
 
 #[when(regex = r#"^I build a JWKS with both keys with kids "([^"]+)" and "([^"]+)"$"#)]
-fn build_jwks_both(world: &mut UselessWorld, _kid1: String, _kid2: String) {
+fn build_jwks_both(world: &mut UselessWorld, kid1: String, kid2: String) {
     assert_eq!(world.rsa_keys.len(), 2, "need 2 RSA keys");
+    let mut jwk1 = world.rsa_keys[0].public_jwk();
+    let mut jwk2 = world.rsa_keys[1].public_jwk();
+    set_public_kid(&mut jwk1, &kid1);
+    set_public_kid(&mut jwk2, &kid2);
     let mut builder = JwksBuilder::new();
-    builder.push_public(world.rsa_keys[0].public_jwk());
-    builder.push_public(world.rsa_keys[1].public_jwk());
+    builder.push_public(jwk1);
+    builder.push_public(jwk2);
     world.jwks_output_1 = Some(builder.build().to_value());
 }
 
 #[when(regex = r#"^I build a JWKS containing both keys with kids "([^"]+)" and "([^"]+)"$"#)]
-fn build_jwks_containing_both(world: &mut UselessWorld, _kid1: String, _kid2: String) {
+fn build_jwks_containing_both(world: &mut UselessWorld, kid1: String, kid2: String) {
     assert_eq!(world.rsa_keys.len(), 2, "need 2 RSA keys");
+    let mut jwk1 = world.rsa_keys[0].public_jwk();
+    let mut jwk2 = world.rsa_keys[1].public_jwk();
+    set_public_kid(&mut jwk1, &kid1);
+    set_public_kid(&mut jwk2, &kid2);
     let mut builder = JwksBuilder::new();
-    builder.push_public(world.rsa_keys[0].public_jwk());
-    builder.push_public(world.rsa_keys[1].public_jwk());
+    builder.push_public(jwk1);
+    builder.push_public(jwk2);
     world.jwks_output_1 = Some(builder.build().to_value());
 }
 
-#[when(regex = r#"^I build a JWKS containing all keys with kids "([^"]+)", "([^"]+)", and "([^"]+)"$"#)]
-fn build_jwks_all_kids(world: &mut UselessWorld, _kid1: String, _kid2: String, _kid3: String) {
+#[when(
+    regex = r#"^I build a JWKS containing all keys with kids "([^"]+)",\s*"([^"]+)",\s*"([^"]+)"$"#
+)]
+fn build_jwks_all_kids(world: &mut UselessWorld, kid1: String, kid2: String, kid3: String) {
     let mut builder = JwksBuilder::new();
+    let kids = [&kid1, &kid2, &kid3];
 
-    if let Some(rsa) = &world.rsa {
-        builder.push_public(rsa.public_jwk());
-    }
-    if let Some(ecdsa) = &world.ecdsa {
-        builder.push_public(ecdsa.public_jwk());
-    }
-    if let Some(ed25519) = &world.ed25519 {
-        builder.push_public(ed25519.public_jwk());
+    // If we have 3+ RSA keys and no other key types, use rsa_keys vector.
+    if world.rsa_keys.len() >= 3 && world.ecdsa.is_none() && world.ed25519.is_none() {
+        for (i, kid) in kids.iter().enumerate() {
+            let mut jwk = world.rsa_keys[i].public_jwk();
+            set_public_kid(&mut jwk, kid);
+            builder.push_public(jwk);
+        }
+    } else {
+        let mut idx = 0;
+        if let Some(rsa) = &world.rsa {
+            let mut jwk = rsa.public_jwk();
+            set_public_kid(&mut jwk, kids[idx]);
+            builder.push_public(jwk);
+            idx += 1;
+        }
+        if let Some(ecdsa) = &world.ecdsa {
+            let mut jwk = ecdsa.public_jwk();
+            set_public_kid(&mut jwk, kids[idx]);
+            builder.push_public(jwk);
+            idx += 1;
+        }
+        if let Some(ed25519) = &world.ed25519 {
+            let mut jwk = ed25519.public_jwk();
+            set_public_kid(&mut jwk, kids[idx]);
+            builder.push_public(jwk);
+            let _ = idx;
+        }
     }
 
     world.jwks_output_1 = Some(builder.build().to_value());
 }
 
 #[when(regex = r#"^I build a JWKS with only the second key with kid "([^"]+)"$"#)]
-fn build_jwks_only_second(world: &mut UselessWorld, _kid: String) {
+fn build_jwks_only_second(world: &mut UselessWorld, kid: String) {
     assert_eq!(world.rsa_keys.len(), 2, "need 2 RSA keys");
-    let builder = JwksBuilder::new()
-        .add_public(world.rsa_keys[1].public_jwk());
+    let mut jwk = world.rsa_keys[1].public_jwk();
+    set_public_kid(&mut jwk, &kid);
+    let builder = JwksBuilder::new().add_public(jwk);
     world.jwks_output_1 = Some(builder.build().to_value());
 }
 
-#[when(regex = r#"^I build another JWKS containing all keys with kids "([^"]+)", "([^"]+)", and "([^"]+)"$"#)]
-fn build_another_jwks(world: &mut UselessWorld, _kid1: String, _kid2: String, _kid3: String) {
+#[when(
+    regex = r#"^I build another JWKS containing all keys with kids "([^"]+)",\s*"([^"]+)",\s*"([^"]+)"$"#
+)]
+fn build_another_jwks(world: &mut UselessWorld, kid1: String, kid2: String, kid3: String) {
     let mut builder = JwksBuilder::new();
+    let kids = [&kid1, &kid2, &kid3];
+    let mut idx = 0;
 
     if let Some(rsa) = &world.rsa {
-        builder.push_public(rsa.public_jwk());
+        let mut jwk = rsa.public_jwk();
+        set_public_kid(&mut jwk, kids[idx]);
+        builder.push_public(jwk);
+        idx += 1;
     }
     if let Some(ecdsa) = &world.ecdsa {
-        builder.push_public(ecdsa.public_jwk());
+        let mut jwk = ecdsa.public_jwk();
+        set_public_kid(&mut jwk, kids[idx]);
+        builder.push_public(jwk);
+        idx += 1;
     }
     if let Some(ed25519) = &world.ed25519 {
-        builder.push_public(ed25519.public_jwk());
+        let mut jwk = ed25519.public_jwk();
+        set_public_kid(&mut jwk, kids[idx]);
+        builder.push_public(jwk);
+        let _ = idx;
     }
 
     world.jwks_output_2 = Some(builder.build().to_value());
@@ -2021,21 +2156,43 @@ fn build_empty_jwks(world: &mut UselessWorld) {
     world.jwks_output_1 = Some(builder.build().to_value());
 }
 
-#[when(regex = r#"^I build a JWKS containing all keys with kids "([^"]+)", "([^"]+)", "([^"]+)", and "([^"]+)"$"#)]
-fn build_jwks_four_keys(world: &mut UselessWorld, _kid1: String, _kid2: String, _kid3: String, _kid4: String) {
+#[when(
+    regex = r#"^I build a JWKS containing all keys with kids "([^"]+)",\s*"([^"]+)",\s*"([^"]+)",\s*"([^"]+)"$"#
+)]
+fn build_jwks_four_keys(
+    world: &mut UselessWorld,
+    kid1: String,
+    kid2: String,
+    kid3: String,
+    kid4: String,
+) {
     let mut builder = JwksBuilder::new();
+    let kids = [&kid1, &kid2, &kid3, &kid4];
+    let mut idx = 0;
 
     if let Some(rsa) = &world.rsa {
-        builder.push_public(rsa.public_jwk());
+        let mut jwk = rsa.public_jwk();
+        set_public_kid(&mut jwk, kids[idx]);
+        builder.push_public(jwk);
+        idx += 1;
     }
     if let Some(ecdsa) = &world.ecdsa {
-        builder.push_public(ecdsa.public_jwk());
+        let mut jwk = ecdsa.public_jwk();
+        set_public_kid(&mut jwk, kids[idx]);
+        builder.push_public(jwk);
+        idx += 1;
     }
     if let Some(ed25519) = &world.ed25519 {
-        builder.push_public(ed25519.public_jwk());
+        let mut jwk = ed25519.public_jwk();
+        set_public_kid(&mut jwk, kids[idx]);
+        builder.push_public(jwk);
+        idx += 1;
     }
     if let Some(hmac) = &world.hmac {
-        builder.push_private(hmac.jwk());
+        let mut jwk = hmac.jwk();
+        set_private_kid(&mut jwk, kids[idx]);
+        builder.push_private(jwk);
+        let _ = idx;
     }
 
     world.jwks_output_1 = Some(builder.build().to_value());
@@ -2045,18 +2202,18 @@ fn build_jwks_four_keys(world: &mut UselessWorld, _kid1: String, _kid2: String, 
 fn filter_jwks_by_kid(world: &mut UselessWorld, kid: String) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
     let keys = jwks["keys"].as_array().expect("keys should be array");
-    
+
     // Filter keys by kid
     let filtered_keys: Vec<Value> = keys
         .iter()
         .filter(|key| key["kid"].as_str() == Some(kid.as_str()))
         .cloned()
         .collect();
-    
+
     world.jwks_filtered = Some(serde_json::json!({ "keys": filtered_keys }));
 }
 
-#[when(regex = r#"^I generate an RSA key for label "([^"]+)" with spec RS256$"#)]
+#[when(regex = r#"^I generate an RSA key for label "([^"]*)" with spec RS256$"#)]
 fn gen_rsa_rs256(world: &mut UselessWorld, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
     let rsa = fx.rsa(&label, RsaSpec::rs256());
@@ -2114,8 +2271,10 @@ fn jwks_has_zero_keys(world: &mut UselessWorld) {
 fn jwks_has_kid(world: &mut UselessWorld, kid: String) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
     let keys = jwks["keys"].as_array().expect("keys should be array");
-    
-    let found = keys.iter().any(|key| key["kid"].as_str() == Some(kid.as_str()));
+
+    let found = keys
+        .iter()
+        .any(|key| key["kid"].as_str() == Some(kid.as_str()));
     assert!(found, "JWKS should contain key with kid '{}'", kid);
 }
 
@@ -2123,8 +2282,10 @@ fn jwks_has_kid(world: &mut UselessWorld, kid: String) {
 fn jwks_not_has_kid(world: &mut UselessWorld, kid: String) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
     let keys = jwks["keys"].as_array().expect("keys should be array");
-    
-    let found = keys.iter().any(|key| key["kid"].as_str() == Some(kid.as_str()));
+
+    let found = keys
+        .iter()
+        .any(|key| key["kid"].as_str() == Some(kid.as_str()));
     assert!(!found, "JWKS should not contain key with kid '{}'", kid);
 }
 
@@ -2132,7 +2293,7 @@ fn jwks_not_has_kid(world: &mut UselessWorld, kid: String) {
 fn jwks_all_have_kty(world: &mut UselessWorld, kty: String) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
     let keys = jwks["keys"].as_array().expect("keys should be array");
-    
+
     for key in keys {
         assert_eq!(key["kty"].as_str(), Some(kty.as_str()));
     }
@@ -2142,15 +2303,11 @@ fn jwks_all_have_kty(world: &mut UselessWorld, kty: String) {
 fn jwks_unique_kids(world: &mut UselessWorld) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
     let keys = jwks["keys"].as_array().expect("keys should be array");
-    
+
     let mut kids = std::collections::HashSet::new();
     for key in keys {
         let kid = key["kid"].as_str().expect("kid should be string");
-        assert!(
-            kids.insert(kid),
-            "kid '{}' is not unique",
-            kid
-        );
+        assert!(kids.insert(kid), "kid '{}' is not unique", kid);
     }
 }
 
@@ -2178,8 +2335,10 @@ fn jwks_has_empty_keys_array(world: &mut UselessWorld) {
 fn jwks_has_alg(world: &mut UselessWorld, alg: String) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
     let keys = jwks["keys"].as_array().expect("keys should be array");
-    
-    let found = keys.iter().any(|key| key["alg"].as_str() == Some(alg.as_str()));
+
+    let found = keys
+        .iter()
+        .any(|key| key["alg"].as_str() == Some(alg.as_str()));
     assert!(found, "JWKS should contain key with alg '{}'", alg);
 }
 
@@ -2187,26 +2346,46 @@ fn jwks_has_alg(world: &mut UselessWorld, alg: String) {
 fn jwks_rsa_has_field(world: &mut UselessWorld, field: String) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
     let keys = jwks["keys"].as_array().expect("keys should be array");
-    let rsa_key = keys.iter().find(|k| k["kty"].as_str() == Some("RSA")).expect("should find RSA key");
-    assert!(rsa_key.get(&field).is_some(), "RSA key should have field '{}'", field);
+    let rsa_key = keys
+        .iter()
+        .find(|k| k["kty"].as_str() == Some("RSA"))
+        .expect("should find RSA key");
+    assert!(
+        rsa_key.get(&field).is_some(),
+        "RSA key should have field '{}'",
+        field
+    );
 }
 
 #[then(regex = r#"^the JWKS EC key should contain field "([^"]+)"$"#)]
 fn jwks_ec_has_field(world: &mut UselessWorld, field: String) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
     let keys = jwks["keys"].as_array().expect("keys should be array");
-    let ec_key = keys.iter().find(|k| k["kty"].as_str() == Some("EC")).expect("should find EC key");
-    assert!(ec_key.get(&field).is_some(), "EC key should have field '{}'", field);
+    let ec_key = keys
+        .iter()
+        .find(|k| k["kty"].as_str() == Some("EC"))
+        .expect("should find EC key");
+    assert!(
+        ec_key.get(&field).is_some(),
+        "EC key should have field '{}'",
+        field
+    );
 }
 
 #[then(regex = r#"^the JWKS RSA key should not contain field "([^"]+)"$"#)]
 fn jwks_rsa_not_has_field(world: &mut UselessWorld, field: String) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
     let keys = jwks["keys"].as_array().expect("keys should be array");
-    let rsa_key = keys.iter().find(|k| k["kty"].as_str() == Some("RSA")).expect("should find RSA key");
-    assert!(rsa_key.get(&field).is_none(), "RSA key should not have field '{}'", field);
+    let rsa_key = keys
+        .iter()
+        .find(|k| k["kty"].as_str() == Some("RSA"))
+        .expect("should find RSA key");
+    assert!(
+        rsa_key.get(&field).is_none(),
+        "RSA key should not have field '{}'",
+        field
+    );
 }
-
 
 #[then("the filtered JWKS should contain 1 key")]
 fn filtered_jwks_has_one_key(world: &mut UselessWorld) {
@@ -2219,8 +2398,10 @@ fn filtered_jwks_has_one_key(world: &mut UselessWorld) {
 fn filtered_jwks_has_kid(world: &mut UselessWorld, kid: String) {
     let jwks = world.jwks_filtered.as_ref().expect("filtered jwks not set");
     let keys = jwks["keys"].as_array().expect("keys should be array");
-    
-    let found = keys.iter().any(|key| key["kid"].as_str() == Some(kid.as_str()));
+
+    let found = keys
+        .iter()
+        .any(|key| key["kid"].as_str() == Some(kid.as_str()));
     assert!(found, "filtered JWKS should contain key with kid '{}'", kid);
 }
 
@@ -2253,8 +2434,10 @@ fn filtered_jwks_has_kid(world: &mut UselessWorld, kid: String) {
 fn jwks_has_kty(world: &mut UselessWorld, kty: String) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
     let keys = jwks["keys"].as_array().expect("keys should be array");
-    
-    let found = keys.iter().any(|key| key["kty"].as_str() == Some(kty.as_str()));
+
+    let found = keys
+        .iter()
+        .any(|key| key["kty"].as_str() == Some(kty.as_str()));
     assert!(found, "JWKS should contain key with kty '{}'", kty);
 }
 
@@ -2267,17 +2450,22 @@ fn jwks_parseable(world: &mut UselessWorld) {
 
 #[then(regex = r#"^the JWKS key with kid "([^"]+)" should have the same modulus as the original$"#)]
 fn jwks_key_same_modulus(world: &mut UselessWorld, kid: String) {
-    let jwks1 = world.jwks_output_1.as_ref().expect("jwks_output_1 not set");
-    let jwks2 = world.jwks_output_2.as_ref().expect("jwks_output_2 not set");
-    
-    let key1 = jwks1["keys"].as_array().expect("keys should be array")
-        .iter().find(|k| k["kid"].as_str() == Some(kid.as_str()))
-        .expect("should find key in first JWKS");
-    let key2 = jwks2["keys"].as_array().expect("keys should be array")
-        .iter().find(|k| k["kid"].as_str() == Some(kid.as_str()))
-        .expect("should find key in second JWKS");
-    
-    assert_eq!(key1["n"], key2["n"], "modulus should be same");
+    let jwks = world.jwks_output_1.as_ref().expect("jwks_output_1 not set");
+    let original_n = world
+        .rsa_modulus_snapshot
+        .as_ref()
+        .expect("no modulus snapshot");
+    let key = jwks["keys"]
+        .as_array()
+        .expect("keys should be array")
+        .iter()
+        .find(|k| k["kid"].as_str() == Some(kid.as_str()))
+        .expect("should find key with given kid");
+    assert_eq!(
+        key["n"].as_str().unwrap(),
+        original_n.as_str(),
+        "modulus should be same"
+    );
 }
 
 // =============================================================================
@@ -2364,7 +2552,11 @@ fn rsa_modulus_size(world: &mut UselessWorld, expected: usize) {
     let der = world.spki_der_1.as_ref().expect("spki_der_1 not set");
     let pub_key = rsa::RsaPublicKey::from_public_key_der(der).unwrap();
     let modulus_bytes = pub_key.n().to_bytes_be();
-    assert_eq!(modulus_bytes.len(), expected, "modulus should have {expected} bytes");
+    assert_eq!(
+        modulus_bytes.len(),
+        expected,
+        "modulus should have {expected} bytes"
+    );
 }
 
 #[then(regex = r#"^the RSA private JWK should have (\w+) parameter$"#)]
@@ -2458,9 +2650,12 @@ fn pkcs8_pem_parseable(world: &mut UselessWorld) {
 
 #[when("I generate the same keys again")]
 fn gen_same_keys_again(world: &mut UselessWorld) {
-    // The edge_cases.feature "cache isolates different labels" scenario:
-    // After clearing cache, regenerate the same RSA keys (label-a and label-b).
-    // Deterministic factory produces same output for same seed+label+spec.
+    // Snapshot PEMs before regenerating so we can compare after.
+    world.rsa_pems_before = world
+        .rsa_keys
+        .iter()
+        .map(|k| k.private_key_pkcs8_pem().to_string())
+        .collect();
     let fx = world.factory.as_ref().expect("factory not set");
     let rsa_a = fx.rsa("label-a", RsaSpec::rs256());
     let rsa_b = fx.rsa("label-b", RsaSpec::rs256());
@@ -2471,13 +2666,58 @@ fn gen_same_keys_again(world: &mut UselessWorld) {
 
 #[then("each regenerated key should be identical to the original")]
 fn regenerated_keys_identical(world: &mut UselessWorld) {
-    // Deterministic factory produces same keys for same seed+label+spec.
-    // The cache was cleared between generations, so this verifies derivation stability.
-    assert!(!world.rsa_keys.is_empty(), "should have regenerated keys");
+    // Real PEM equality: compare before-snapshots with current keys.
+    let rsa_after: Vec<String> = world
+        .rsa_keys
+        .iter()
+        .map(|k| k.private_key_pkcs8_pem().to_string())
+        .collect();
+    assert_eq!(
+        world.rsa_pems_before, rsa_after,
+        "RSA keys must survive cache clear"
+    );
+    if !world.ecdsa_pems_before.is_empty() {
+        let pem = world
+            .ecdsa
+            .as_ref()
+            .unwrap()
+            .private_key_pkcs8_pem()
+            .to_string();
+        assert_eq!(
+            world.ecdsa_pems_before,
+            vec![pem],
+            "ECDSA key must survive cache clear"
+        );
+    }
+    if !world.ed25519_pems_before.is_empty() {
+        let pem = world
+            .ed25519
+            .as_ref()
+            .unwrap()
+            .private_key_pkcs8_pem()
+            .to_string();
+        assert_eq!(
+            world.ed25519_pems_before,
+            vec![pem],
+            "Ed25519 key must survive cache clear"
+        );
+    }
 }
 
 #[when("I generate the same keys in reverse order")]
 fn gen_same_keys_reverse(world: &mut UselessWorld) {
+    // Snapshot PEMs before regenerating.
+    world.rsa_pems_before = world
+        .rsa_keys
+        .iter()
+        .map(|k| k.private_key_pkcs8_pem().to_string())
+        .collect();
+    if let Some(k) = &world.ecdsa {
+        world.ecdsa_pems_before = vec![k.private_key_pkcs8_pem().to_string()];
+    }
+    if let Some(k) = &world.ed25519 {
+        world.ed25519_pems_before = vec![k.private_key_pkcs8_pem().to_string()];
+    }
     let fx = world.factory.as_ref().expect("factory not set");
     // Generate Ed25519, ECDSA, RSA in reverse of original order (RSA, ECDSA, Ed25519)
     let ed25519 = fx.ed25519("ed25519", Ed25519Spec::new());
@@ -2517,42 +2757,23 @@ fn all_keys_unique_kid(world: &mut UselessWorld) {
 // =============================================================================
 
 #[when(regex = r#"^I build a JWKS containing the RSA public key with kid "([^"]+)"$"#)]
-fn build_jwks_rsa_public(world: &mut UselessWorld, _kid: String) {
+fn build_jwks_rsa_public(world: &mut UselessWorld, kid: String) {
     let rsa = world.rsa.as_ref().expect("rsa not set");
-    let builder = JwksBuilder::new().add_public(rsa.public_jwk());
+    let mut jwk = rsa.public_jwk();
+    set_public_kid(&mut jwk, &kid);
+    let builder = JwksBuilder::new().add_public(jwk);
     world.jwks_output_1 = Some(builder.build().to_value());
 }
 
-#[when(regex = r#"^I generate a certificate chain for domain "([^"]+)" with label "([^"]+)" again$"#)]
+#[when(
+    regex = r#"^I generate a certificate chain for domain "([^"]+)" with label "([^"]+)" again$"#
+)]
 fn gen_x509_chain_again(world: &mut UselessWorld, domain: String, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
     let spec = ChainSpec::new(&domain);
     let chain = fx.x509_chain(&label, spec);
     world.x509_chain_leaf_der_2 = Some(chain.leaf_cert_der().to_vec());
     world.x509_chain = Some(chain);
-}
-
-#[then("the X.509 certificate should have a JWK representation")]
-fn x509_has_jwk_representation(world: &mut UselessWorld) {
-    // Self-signed certs use RSA keys, so we can get the JWK via the RSA key
-    let x509 = world.x509.as_ref().expect("x509 not set");
-    // Just check that the cert has valid PEM (proxy for JWK representability)
-    assert!(!x509.cert_pem().is_empty(), "cert should have PEM representation");
-}
-
-#[then(regex = r#"^the X\.509 certificate JWK should have kty "([^"]+)"$"#)]
-fn x509_jwk_has_kty(world: &mut UselessWorld, _expected: String) {
-    // X509Cert doesn't expose private_key_jwk() directly, so we verify
-    // through the cert PEM structure (RSA self-signed certs always use RSA keys)
-    let x509 = world.x509.as_ref().expect("x509 not set");
-    assert!(!x509.cert_pem().is_empty());
-}
-
-#[then("the X.509 certificate JWK should have a kid")]
-fn x509_jwk_has_kid(world: &mut UselessWorld) {
-    // X509Cert doesn't expose private_key_jwk() directly
-    let x509 = world.x509.as_ref().expect("x509 not set");
-    assert!(!x509.cert_pem().is_empty());
 }
 
 /// Cucumber entry point.
