@@ -8,17 +8,17 @@
 
 mod testutil;
 
-use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 use testutil::fx;
 use uselesskey_core::Factory;
 use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
 use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
 use uselesskey_hmac::{HmacFactoryExt, HmacSpec};
-use uselesskey_jwk::{AnyJwk, JwksBuilder};
 use uselesskey_jsonwebtoken::JwtKeyExt;
-use uselesskey_rustls::{RustlsClientConfigExt, RustlsServerConfigExt};
+use uselesskey_jwk::{AnyJwk, JwksBuilder};
 use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+use uselesskey_rustls::{RustlsClientConfigExt, RustlsServerConfigExt};
 use uselesskey_x509::{ChainSpec, X509FactoryExt};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -61,17 +61,15 @@ mod jwt_workflow_tests {
         assert!(!public_jwk.kid().is_empty());
 
         // Step 3: Build JWKS
-        let jwks = JwksBuilder::new()
-            .add_public(public_jwk.into())
-            .build();
+        let jwks = JwksBuilder::new().add_public(public_jwk.into()).build();
 
         // Step 4: Sign JWT
         let claims = JwtClaims::new("user123", 9999999999, 1234567890, "jwt-workflow");
         let mut header = Header::new(Algorithm::RS256);
         header.kid = Some(keypair.kid().to_string());
 
-        let token = encode(&header, &claims, &keypair.encoding_key())
-            .expect("Failed to encode JWT");
+        let token =
+            encode(&header, &claims, &keypair.encoding_key()).expect("Failed to encode JWT");
 
         // Step 5: Verify JWT using JWKS
         let jwk = jwks
@@ -81,14 +79,14 @@ mod jwt_workflow_tests {
             .expect("Key not found in JWKS");
 
         let jwk_value = serde_json::to_value(jwk).expect("Failed to serialize JWK");
-        let jwk_json: jsonwebtoken::jwk::Jwk = serde_json::from_value(jwk_value)
-            .expect("Failed to deserialize JWK");
+        let jwk_json: jsonwebtoken::jwk::Jwk =
+            serde_json::from_value(jwk_value).expect("Failed to deserialize JWK");
         let decoding_key = jsonwebtoken::DecodingKey::from_jwk(&jwk_json)
             .expect("Failed to create DecodingKey from JWK");
 
         let validation = Validation::new(Algorithm::RS256);
-        let decoded = decode::<JwtClaims>(&token, &decoding_key, &validation)
-            .expect("Failed to decode JWT");
+        let decoded =
+            decode::<JwtClaims>(&token, &decoding_key, &validation).expect("Failed to decode JWT");
 
         assert_eq!(decoded.claims, claims);
     }
@@ -122,8 +120,8 @@ mod jwt_workflow_tests {
             let mut header = Header::new(Algorithm::RS256);
             header.kid = Some(issuer.kid().to_string());
 
-            let token = encode(&header, &claims, &issuer.encoding_key())
-                .expect("Failed to encode JWT");
+            let token =
+                encode(&header, &claims, &issuer.encoding_key()).expect("Failed to encode JWT");
 
             // Step 4: Verify each JWT with JWKS
             let jwk = jwks
@@ -162,8 +160,8 @@ mod jwt_workflow_tests {
         let mut header = Header::new(Algorithm::RS256);
         header.kid = Some(new_key.kid().to_string());
 
-        let token = encode(&header, &claims, &new_key.encoding_key())
-            .expect("Failed to encode JWT");
+        let token =
+            encode(&header, &claims, &new_key.encoding_key()).expect("Failed to encode JWT");
 
         // Step 4: Verify with JWKS (should find new key)
         let jwk = jwks
@@ -173,14 +171,14 @@ mod jwt_workflow_tests {
             .expect("New key not found in JWKS");
 
         let jwk_value = serde_json::to_value(jwk).expect("Failed to serialize JWK");
-        let jwk_json: jsonwebtoken::jwk::Jwk = serde_json::from_value(jwk_value)
-            .expect("Failed to deserialize JWK");
+        let jwk_json: jsonwebtoken::jwk::Jwk =
+            serde_json::from_value(jwk_value).expect("Failed to deserialize JWK");
         let decoding_key = jsonwebtoken::DecodingKey::from_jwk(&jwk_json)
             .expect("Failed to create DecodingKey from JWK");
 
         let validation = Validation::new(Algorithm::RS256);
-        let decoded = decode::<JwtClaims>(&token, &decoding_key, &validation)
-            .expect("Failed to decode JWT");
+        let decoded =
+            decode::<JwtClaims>(&token, &decoding_key, &validation).expect("Failed to decode JWT");
 
         assert_eq!(decoded.claims, claims);
 
@@ -399,12 +397,11 @@ mod chain_workflow_tests {
         let fx = fx();
 
         // Step 1: Generate certificate chain
-        let chain_spec = ChainSpec::new("chain.example.com")
-            .with_sans(vec![
-                "localhost".to_string(),
-                "127.0.0.1".to_string(),
-                "*.example.com".to_string(),
-            ]);
+        let chain_spec = ChainSpec::new("chain.example.com").with_sans(vec![
+            "localhost".to_string(),
+            "127.0.0.1".to_string(),
+            "*.example.com".to_string(),
+        ]);
         let chain = fx.x509_chain("chain-workflow", chain_spec);
 
         // Step 2: Verify chain structure
@@ -552,8 +549,7 @@ mod negative_fixture_workflow_tests {
         // Step 2: Sign JWT with key1
         let claims = JwtClaims::new("user123", 9999999999, 1234567890, "key1");
         let header = Header::new(Algorithm::RS256);
-        let token = encode(&header, &claims, &key1.encoding_key())
-            .expect("Failed to encode JWT");
+        let token = encode(&header, &claims, &key1.encoding_key()).expect("Failed to encode JWT");
 
         // Step 3: Try to verify with key2 (should fail)
         let validation = Validation::new(Algorithm::RS256);
@@ -590,10 +586,7 @@ mod deterministic_workflow_tests {
         let ed2 = fx2.ed25519("deterministic-ed25519", Ed25519Spec::new());
 
         // Step 2: Verify keys are identical
-        assert_eq!(
-            rsa1.private_key_pkcs8_der(),
-            rsa2.private_key_pkcs8_der()
-        );
+        assert_eq!(rsa1.private_key_pkcs8_der(), rsa2.private_key_pkcs8_der());
         assert_eq!(
             ecdsa1.private_key_pkcs8_der(),
             ecdsa2.private_key_pkcs8_der()

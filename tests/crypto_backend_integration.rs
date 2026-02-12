@@ -65,19 +65,15 @@ mod rsa_cross_backend_tests {
         let public_key_bytes = ring_keypair.public().as_ref();
 
         // Verify ring signature with ring
-        let ring_pubkey = RingUnparsedPublicKey::new(
-            &ring_sig::RSA_PKCS1_2048_8192_SHA256,
-            public_key_bytes,
-        );
+        let ring_pubkey =
+            RingUnparsedPublicKey::new(&ring_sig::RSA_PKCS1_2048_8192_SHA256, public_key_bytes);
         ring_pubkey
             .verify(msg, &ring_sig)
             .expect("Failed to verify ring signature with ring");
 
         // Verify aws-lc-rs signature with aws-lc-rs
-        let aws_pubkey = AwsUnparsedPublicKey::new(
-            &aws_sig::RSA_PKCS1_2048_8192_SHA256,
-            public_key_bytes,
-        );
+        let aws_pubkey =
+            AwsUnparsedPublicKey::new(&aws_sig::RSA_PKCS1_2048_8192_SHA256, public_key_bytes);
         aws_pubkey
             .verify(msg, &aws_sig)
             .expect("Failed to verify aws-lc-rs signature with aws-lc-rs");
@@ -145,29 +141,35 @@ mod rsa_cross_backend_tests {
             let ring_rng = RingRng::new();
             let mut ring_sig = vec![0u8; ring_keypair.public().modulus_len()];
             ring_keypair
-                .sign(&ring_sig::RSA_PKCS1_SHA256, &ring_rng, msg.as_bytes(), &mut ring_sig)
+                .sign(
+                    &ring_sig::RSA_PKCS1_SHA256,
+                    &ring_rng,
+                    msg.as_bytes(),
+                    &mut ring_sig,
+                )
                 .expect("Failed to sign with ring");
 
             let aws_rng = AwsRng::new();
             let mut aws_sig = vec![0u8; aws_keypair.public_modulus_len()];
             aws_keypair
-                .sign(&aws_sig::RSA_PKCS1_SHA256, &aws_rng, msg.as_bytes(), &mut aws_sig)
+                .sign(
+                    &aws_sig::RSA_PKCS1_SHA256,
+                    &aws_rng,
+                    msg.as_bytes(),
+                    &mut aws_sig,
+                )
                 .expect("Failed to sign with aws-lc-rs");
 
             // Verify signatures
             let public_key_bytes = ring_keypair.public().as_ref();
-            let ring_pubkey = RingUnparsedPublicKey::new(
-                &ring_sig::RSA_PKCS1_2048_8192_SHA256,
-                public_key_bytes,
-            );
+            let ring_pubkey =
+                RingUnparsedPublicKey::new(&ring_sig::RSA_PKCS1_2048_8192_SHA256, public_key_bytes);
             ring_pubkey
                 .verify(msg.as_bytes(), &ring_sig)
                 .expect("Failed to verify ring signature");
 
-            let aws_pubkey = AwsUnparsedPublicKey::new(
-                &aws_sig::RSA_PKCS1_2048_8192_SHA256,
-                public_key_bytes,
-            );
+            let aws_pubkey =
+                AwsUnparsedPublicKey::new(&aws_sig::RSA_PKCS1_2048_8192_SHA256, public_key_bytes);
             aws_pubkey
                 .verify(msg.as_bytes(), &aws_sig)
                 .expect("Failed to verify aws-lc-rs signature");
@@ -213,11 +215,15 @@ mod ecdsa_cross_backend_tests {
         // Sign with ring
         let msg = b"test message for ECDSA P-256 cross-backend compatibility";
         let ring_rng = RingRng::new();
-        let ring_sig = ring_keypair.sign(&ring_rng, msg).expect("Failed to sign with ring");
+        let ring_sig = ring_keypair
+            .sign(&ring_rng, msg)
+            .expect("Failed to sign with ring");
 
         // Sign with aws-lc-rs
         let aws_rng = AwsRng::new();
-        let aws_sig = aws_keypair.sign(&aws_rng, msg).expect("Failed to sign with aws-lc-rs");
+        let aws_sig = aws_keypair
+            .sign(&aws_rng, msg)
+            .expect("Failed to sign with aws-lc-rs");
 
         // Both signatures should verify with the same public key
         let public_key_bytes = ring_keypair.public_key().as_ref();
@@ -232,10 +238,8 @@ mod ecdsa_cross_backend_tests {
             .expect("Failed to verify ring signature with ring");
 
         // Verify aws-lc-rs signature with aws-lc-rs
-        let aws_pubkey = AwsUnparsedPublicKey::new(
-            &aws_sig::ECDSA_P256_SHA256_FIXED_SIGNING,
-            public_key_bytes,
-        );
+        let aws_pubkey =
+            AwsUnparsedPublicKey::new(&aws_sig::ECDSA_P256_SHA256_FIXED_SIGNING, public_key_bytes);
         aws_pubkey
             .verify(msg, aws_sig.as_ref())
             .expect("Failed to verify aws-lc-rs signature with aws-lc-rs");
@@ -264,11 +268,15 @@ mod ecdsa_cross_backend_tests {
         // Sign with ring
         let msg = b"test message for ECDSA P-384 cross-backend compatibility";
         let ring_rng = RingRng::new();
-        let ring_sig = ring_keypair.sign(&ring_rng, msg).expect("Failed to sign with ring");
+        let ring_sig = ring_keypair
+            .sign(&ring_rng, msg)
+            .expect("Failed to sign with ring");
 
         // Sign with aws-lc-rs
         let aws_rng = AwsRng::new();
-        let aws_sig = aws_keypair.sign(&aws_rng, msg).expect("Failed to sign with aws-lc-rs");
+        let aws_sig = aws_keypair
+            .sign(&aws_rng, msg)
+            .expect("Failed to sign with aws-lc-rs");
 
         // Both signatures should verify with the same public key
         let public_key_bytes = ring_keypair.public_key().as_ref();
@@ -283,10 +291,8 @@ mod ecdsa_cross_backend_tests {
             .expect("Failed to verify ring signature with ring");
 
         // Verify aws-lc-rs signature with aws-lc-rs
-        let aws_pubkey = AwsUnparsedPublicKey::new(
-            &aws_sig::ECDSA_P384_SHA384_FIXED_SIGNING,
-            public_key_bytes,
-        );
+        let aws_pubkey =
+            AwsUnparsedPublicKey::new(&aws_sig::ECDSA_P384_SHA384_FIXED_SIGNING, public_key_bytes);
         aws_pubkey
             .verify(msg, aws_sig.as_ref())
             .expect("Failed to verify aws-lc-rs signature with aws-lc-rs");
@@ -366,7 +372,10 @@ mod ed25519_cross_backend_tests {
     #[cfg(feature = "native")]
     fn test_ed25519_ring_and_aws_lc_rs_produce_same_signatures() {
         let fx = fx();
-        let ed25519_keypair = fx.ed25519("cross-backend-ed25519", uselesskey_ed25519::Ed25519Spec::new());
+        let ed25519_keypair = fx.ed25519(
+            "cross-backend-ed25519",
+            uselesskey_ed25519::Ed25519Spec::new(),
+        );
 
         // Convert to both backends
         let ring_keypair = ed25519_keypair.ed25519_key_pair_ring();
@@ -378,7 +387,9 @@ mod ed25519_cross_backend_tests {
 
         // Sign with aws-lc-rs
         let aws_rng = AwsRng::new();
-        let aws_sig = aws_keypair.sign(&aws_rng, msg).expect("Failed to sign with aws-lc-rs");
+        let aws_sig = aws_keypair
+            .sign(&aws_rng, msg)
+            .expect("Failed to sign with aws-lc-rs");
 
         // Both signatures should verify with the same public key
         let public_key_bytes = ring_keypair.public_key().as_ref();
@@ -413,8 +424,14 @@ mod ed25519_cross_backend_tests {
         let fx2 = fx();
 
         // Generate same key from same seed
-        let ed25519_1 = fx1.ed25519("deterministic-ed25519", uselesskey_ed25519::Ed25519Spec::new());
-        let ed25519_2 = fx2.ed25519("deterministic-ed25519", uselesskey_ed25519::Ed25519Spec::new());
+        let ed25519_1 = fx1.ed25519(
+            "deterministic-ed25519",
+            uselesskey_ed25519::Ed25519Spec::new(),
+        );
+        let ed25519_2 = fx2.ed25519(
+            "deterministic-ed25519",
+            uselesskey_ed25519::Ed25519Spec::new(),
+        );
 
         // Convert to both backends
         let ring1 = ed25519_1.ed25519_key_pair_ring();
@@ -740,8 +757,14 @@ mod deterministic_behavior_tests {
         );
 
         // Ed25519
-        let ed1 = fx1.ed25519("deterministic-ed25519", uselesskey_ed25519::Ed25519Spec::new());
-        let ed2 = fx2.ed25519("deterministic-ed25519", uselesskey_ed25519::Ed25519Spec::new());
+        let ed1 = fx1.ed25519(
+            "deterministic-ed25519",
+            uselesskey_ed25519::Ed25519Spec::new(),
+        );
+        let ed2 = fx2.ed25519(
+            "deterministic-ed25519",
+            uselesskey_ed25519::Ed25519Spec::new(),
+        );
         assert_eq!(
             ed1.private_key_pkcs8_der(),
             ed2.private_key_pkcs8_der(),
