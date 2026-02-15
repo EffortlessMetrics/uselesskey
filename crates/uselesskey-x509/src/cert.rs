@@ -296,6 +296,16 @@ fn load_inner_with_spec(
             ];
         }
 
+        // Add Subject Alternative Names
+        let mut sorted_sans = spec.sans.clone();
+        sorted_sans.sort();
+        sorted_sans.dedup();
+        for san in &sorted_sans {
+            params.subject_alt_names.push(rcgen::SanType::DnsName(
+                san.clone().try_into().expect("valid DNS name"),
+            ));
+        }
+
         // Generate the self-signed certificate
         let cert = params.self_signed(&key_pair).expect("cert generation");
 
