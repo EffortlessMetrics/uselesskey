@@ -23,6 +23,10 @@ base64 = { workspace = true, optional = true }
 [package.metadata.docs.rs]
 features = ["jwk"]
 
+[dev-dependencies]
+uselesskey-core = { path = "../uselesskey-core", version = "0.2.0" }
+base64 = { workspace = true }
+
 [features]
 default = []
 jwk = ["dep:uselesskey-jwk", "dep:base64"]

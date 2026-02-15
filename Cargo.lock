@@ -2373,11 +2373,15 @@ dependencies = [
 name = "uselesskey-integration-tests"
 version = "0.0.0"
 dependencies = [
+ "ed25519-dalek",
  "jsonwebtoken",
+ "p256",
  "ring",
+ "rsa",
  "rustls",
  "serde",
  "serde_json",
+ "sha2",
  "uselesskey-core",
  "uselesskey-ecdsa",
  "uselesskey-ed25519",
@@ -2386,6 +2390,7 @@ dependencies = [
  "uselesskey-jwk",
  "uselesskey-ring",
  "uselesskey-rsa",
+ "uselesskey-rustcrypto",
  "uselesskey-rustls",
  "uselesskey-x509",
 ]
