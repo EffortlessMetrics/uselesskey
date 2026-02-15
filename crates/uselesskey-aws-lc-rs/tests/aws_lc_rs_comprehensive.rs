@@ -625,7 +625,7 @@ mod hmac_tests {
     }
 }
 
-#[cfg(all(feature = "native", has_nasm, all(feature = "rsa", feature = "ecdsa")))]
+#[cfg(all(feature = "native", has_nasm, feature = "rsa", feature = "ecdsa"))]
 mod cross_algorithm_tests {
     use super::*;
     use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};

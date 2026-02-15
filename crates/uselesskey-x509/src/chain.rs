@@ -377,9 +377,10 @@ fn load_chain_inner(
             ExtendedKeyUsagePurpose::ClientAuth,
         ];
 
-        // Add SANs
+        // Add SANs (sorted and deduplicated to match stable_bytes)
         let mut sorted_sans = spec.leaf_sans.clone();
         sorted_sans.sort();
+        sorted_sans.dedup();
         for san in &sorted_sans {
             leaf_params.subject_alt_names.push(rcgen::SanType::DnsName(
                 san.clone().try_into().expect("valid DNS name"),

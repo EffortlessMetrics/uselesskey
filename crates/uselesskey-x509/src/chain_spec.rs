@@ -101,21 +101,22 @@ impl ChainSpec {
 
     /// Stable byte representation for deterministic derivation.
     ///
-    /// SANs are sorted before encoding for ordering stability.
+    /// SANs are sorted and deduplicated before encoding for stability.
     pub fn stable_bytes(&self) -> Vec<u8> {
         let mut out = Vec::new();
 
-        // Version prefix
-        out.push(1);
+        // Version prefix (v2: dedup SANs)
+        out.push(2);
 
         // leaf_cn
         let leaf_cn_bytes = self.leaf_cn.as_bytes();
         out.extend_from_slice(&(leaf_cn_bytes.len() as u32).to_be_bytes());
         out.extend_from_slice(leaf_cn_bytes);
 
-        // leaf_sans (sorted for stability)
+        // leaf_sans (sorted and deduplicated for stability)
         let mut sorted_sans = self.leaf_sans.clone();
         sorted_sans.sort();
+        sorted_sans.dedup();
         out.extend_from_slice(&(sorted_sans.len() as u32).to_be_bytes());
         for san in &sorted_sans {
             let san_bytes = san.as_bytes();

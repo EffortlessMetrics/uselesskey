@@ -23,7 +23,7 @@ impl Claims {
     fn test() -> Self {
         Self {
             sub: "user123".to_string(),
-            exp: 9999999999,
+            exp: 2_000_000_000,
             iat: 1234567890,
         }
     }

@@ -64,7 +64,7 @@ mod jwt_workflow_tests {
         let jwks = JwksBuilder::new().add_public(public_jwk).build();
 
         // Step 4: Sign JWT
-        let claims = JwtClaims::new("user123", 9999999999, 1234567890, "jwt-workflow");
+        let claims = JwtClaims::new("user123", 2_000_000_000, 1234567890, "jwt-workflow");
         let mut header = Header::new(Algorithm::RS256);
         header.kid = Some(keypair.kid().to_string());
 
@@ -113,7 +113,7 @@ mod jwt_workflow_tests {
         for (i, issuer) in [&issuer1, &issuer2, &issuer3].iter().enumerate() {
             let claims = JwtClaims::new(
                 "user123",
-                9999999999,
+                2_000_000_000,
                 1234567890,
                 &format!("issuer{}", i + 1),
             );
@@ -160,7 +160,7 @@ mod jwt_workflow_tests {
             .build();
 
         // Step 3: Sign JWT with new key
-        let claims = JwtClaims::new("user123", 9999999999, 1234567890, "new-key");
+        let claims = JwtClaims::new("user123", 2_000_000_000, 1234567890, "new-key");
         let mut header = Header::new(Algorithm::RS256);
         header.kid = Some(new_key.kid().to_string());
 
@@ -529,7 +529,7 @@ mod negative_fixture_workflow_tests {
         let key2 = fx.rsa("key2", RsaSpec::rs256());
 
         // Step 2: Sign JWT with key1
-        let claims = JwtClaims::new("user123", 9999999999, 1234567890, "key1");
+        let claims = JwtClaims::new("user123", 2_000_000_000, 1234567890, "key1");
         let header = Header::new(Algorithm::RS256);
         let token = encode(&header, &claims, &key1.encoding_key()).expect("Failed to encode JWT");
 

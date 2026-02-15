@@ -53,7 +53,7 @@ mod rsa_tests {
         let fx = fx();
         let keypair = fx.rsa("test-rs256", RsaSpec::rs256());
 
-        let claims = TestClaims::new("user123", 9999999999, 1234567890, "test-issuer");
+        let claims = TestClaims::new("user123", 2_000_000_000, 1234567890, "test-issuer");
         let header = Header::new(Algorithm::RS256);
 
         let token = encode(&header, &claims, &keypair.encoding_key())
@@ -74,7 +74,7 @@ mod rsa_tests {
             let fx = fx();
             let keypair = fx.rsa(label, RsaSpec::new(bits));
 
-            let claims = TestClaims::new("user123", 9999999999, 1234567890, label);
+            let claims = TestClaims::new("user123", 2_000_000_000, 1234567890, label);
             let header = Header::new(Algorithm::RS256);
 
             let token = encode(&header, &claims, &keypair.encoding_key())
@@ -97,7 +97,7 @@ mod rsa_tests {
         let fx = fx();
         let keypair = fx.rsa("test-mismatch", RsaSpec::rs256());
 
-        let claims = TestClaims::new("user123", 9999999999, 1234567890, "test-issuer");
+        let claims = TestClaims::new("user123", 2_000_000_000, 1234567890, "test-issuer");
 
         // Sign with RS256
         let header = Header::new(Algorithm::RS256);
@@ -120,7 +120,7 @@ mod rsa_tests {
         let key_a = fx.rsa("issuer-a", RsaSpec::rs256());
         let key_b = fx.rsa("issuer-b", RsaSpec::rs256());
 
-        let claims = TestClaims::new("user123", 9999999999, 1234567890, "issuer-a");
+        let claims = TestClaims::new("user123", 2_000_000_000, 1234567890, "issuer-a");
 
         // Sign with key_a
         let header = Header::new(Algorithm::RS256);
@@ -154,7 +154,7 @@ mod rsa_tests {
         );
 
         // Test JWT creation with deterministic keys
-        let claims = TestClaims::new("det-user", 9999999999, 1234567890, "det-issuer");
+        let claims = TestClaims::new("det-user", 2_000_000_000, 1234567890, "det-issuer");
         let header = Header::new(Algorithm::RS256);
 
         let token1 = encode(&header, &claims, &key1.encoding_key()).unwrap();
@@ -187,7 +187,7 @@ mod rsa_tests {
         let dec_key2 = keypair.decoding_key();
 
         // Keys should be functionally identical
-        let claims = TestClaims::new("user123", 9999999999, 1234567890, "test-issuer");
+        let claims = TestClaims::new("user123", 2_000_000_000, 1234567890, "test-issuer");
         let header = Header::new(Algorithm::RS256);
 
         let token1 = encode(&header, &claims, &enc_key1).unwrap();
@@ -216,7 +216,7 @@ mod ecdsa_tests {
         let fx = fx();
         let keypair = fx.ecdsa("test-es256", EcdsaSpec::es256());
 
-        let claims = TestClaims::new("user123", 9999999999, 1234567890, "test-issuer");
+        let claims = TestClaims::new("user123", 2_000_000_000, 1234567890, "test-issuer");
         let header = Header::new(Algorithm::ES256);
 
         let token = encode(&header, &claims, &keypair.encoding_key())
@@ -234,7 +234,7 @@ mod ecdsa_tests {
         let fx = fx();
         let keypair = fx.ecdsa("test-es384", EcdsaSpec::es384());
 
-        let claims = TestClaims::new("user123", 9999999999, 1234567890, "test-issuer");
+        let claims = TestClaims::new("user123", 2_000_000_000, 1234567890, "test-issuer");
         let header = Header::new(Algorithm::ES384);
 
         let token = encode(&header, &claims, &keypair.encoding_key())
@@ -252,7 +252,7 @@ mod ecdsa_tests {
         let fx = fx();
         let keypair = fx.ecdsa("test-mismatch", EcdsaSpec::es256());
 
-        let claims = TestClaims::new("user123", 9999999999, 1234567890, "test-issuer");
+        let claims = TestClaims::new("user123", 2_000_000_000, 1234567890, "test-issuer");
 
         // Sign with ES256
         let header = Header::new(Algorithm::ES256);
@@ -275,7 +275,7 @@ mod ecdsa_tests {
         let key_a = fx.ecdsa("issuer-a", EcdsaSpec::es256());
         let key_b = fx.ecdsa("issuer-b", EcdsaSpec::es256());
 
-        let claims = TestClaims::new("user123", 9999999999, 1234567890, "issuer-a");
+        let claims = TestClaims::new("user123", 2_000_000_000, 1234567890, "issuer-a");
 
         // Sign with key_a
         let header = Header::new(Algorithm::ES256);
@@ -303,7 +303,7 @@ mod ed25519_tests {
         let fx = fx();
         let keypair = fx.ed25519("test-ed25519", Ed25519Spec::new());
 
-        let claims = TestClaims::new("user123", 9999999999, 1234567890, "test-issuer")
+        let claims = TestClaims::new("user123", 2_000_000_000, 1234567890, "test-issuer")
             .with_custom("ed25519-test");
 
         let header = Header::new(Algorithm::EdDSA);
@@ -321,7 +321,7 @@ mod ed25519_tests {
         let key_a = fx.ed25519("issuer-a", Ed25519Spec::new());
         let key_b = fx.ed25519("issuer-b", Ed25519Spec::new());
 
-        let claims = TestClaims::new("user123", 9999999999, 1234567890, "issuer-a");
+        let claims = TestClaims::new("user123", 2_000_000_000, 1234567890, "issuer-a");
 
         // Sign with key_a
         let header = Header::new(Algorithm::EdDSA);
@@ -343,7 +343,7 @@ mod ed25519_tests {
         let fx = fx();
         let keypair = fx.ed25519("test-mismatch", Ed25519Spec::new());
 
-        let claims = TestClaims::new("user123", 9999999999, 1234567890, "test-issuer");
+        let claims = TestClaims::new("user123", 2_000_000_000, 1234567890, "test-issuer");
 
         // Sign with EdDSA
         let header = Header::new(Algorithm::EdDSA);
@@ -371,7 +371,7 @@ mod hmac_tests {
         let fx = fx();
         let secret = fx.hmac("test-hs256", HmacSpec::hs256());
 
-        let claims = TestClaims::new("user123", 9999999999, 1234567890, "test-issuer");
+        let claims = TestClaims::new("user123", 2_000_000_000, 1234567890, "test-issuer");
         let header = Header::new(Algorithm::HS256);
 
         let token = encode(&header, &claims, &secret.encoding_key())
@@ -389,7 +389,7 @@ mod hmac_tests {
         let fx = fx();
         let secret = fx.hmac("test-hs384", HmacSpec::hs384());
 
-        let claims = TestClaims::new("user123", 9999999999, 1234567890, "test-issuer");
+        let claims = TestClaims::new("user123", 2_000_000_000, 1234567890, "test-issuer");
         let header = Header::new(Algorithm::HS384);
 
         let token = encode(&header, &claims, &secret.encoding_key())
@@ -407,7 +407,7 @@ mod hmac_tests {
         let fx = fx();
         let secret = fx.hmac("test-hs512", HmacSpec::hs512());
 
-        let claims = TestClaims::new("user123", 9999999999, 1234567890, "test-issuer");
+        let claims = TestClaims::new("user123", 2_000_000_000, 1234567890, "test-issuer");
         let header = Header::new(Algorithm::HS512);
 
         let token = encode(&header, &claims, &secret.encoding_key())
@@ -425,7 +425,7 @@ mod hmac_tests {
         let fx = fx();
         let secret = fx.hmac("test-mismatch", HmacSpec::hs256());
 
-        let claims = TestClaims::new("user123", 9999999999, 1234567890, "test-issuer");
+        let claims = TestClaims::new("user123", 2_000_000_000, 1234567890, "test-issuer");
 
         // Sign with HS256
         let header = Header::new(Algorithm::HS256);
@@ -448,7 +448,7 @@ mod hmac_tests {
         let secret_a = fx.hmac("secret-a", HmacSpec::hs256());
         let secret_b = fx.hmac("secret-b", HmacSpec::hs256());
 
-        let claims = TestClaims::new("user123", 9999999999, 1234567890, "test-issuer");
+        let claims = TestClaims::new("user123", 2_000_000_000, 1234567890, "test-issuer");
 
         // Sign with secret_a
         let header = Header::new(Algorithm::HS256);
@@ -482,7 +482,7 @@ mod hmac_tests {
         );
 
         // Test JWT creation with deterministic secrets
-        let claims = TestClaims::new("det-user", 9999999999, 1234567890, "det-issuer");
+        let claims = TestClaims::new("det-user", 2_000_000_000, 1234567890, "det-issuer");
         let header = Header::new(Algorithm::HS256);
 
         let token1 = encode(&header, &claims, &secret1.encoding_key()).unwrap();
@@ -516,7 +516,7 @@ mod cross_algorithm_tests {
         let rsa_key = fx.rsa("rsa-test", RsaSpec::rs256());
         let ecdsa_key = fx.ecdsa("ecdsa-test", EcdsaSpec::es256());
 
-        let claims = TestClaims::new("user123", 9999999999, 1234567890, "test-issuer");
+        let claims = TestClaims::new("user123", 2_000_000_000, 1234567890, "test-issuer");
 
         // Sign with RSA
         let header = Header::new(Algorithm::RS256);
@@ -537,7 +537,7 @@ mod cross_algorithm_tests {
         let fx = fx();
         let rsa_key = fx.rsa("rsa-test", RsaSpec::rs256());
 
-        let claims = TestClaims::new("user123", 9999999999, 1234567890, "test-issuer");
+        let claims = TestClaims::new("user123", 2_000_000_000, 1234567890, "test-issuer");
 
         // Sign with RSA
         let header = Header::new(Algorithm::RS256);

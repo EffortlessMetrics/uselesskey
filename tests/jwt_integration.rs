@@ -49,7 +49,7 @@ mod rsa_jwt_tests {
         let fx = fx();
         let keypair = fx.rsa("test-rs256", RsaSpec::rs256());
 
-        let claims = JwtClaims::new("user123", 9999999999, 1234567890, "test-issuer");
+        let claims = JwtClaims::new("user123", 2_000_000_000, 1234567890, "test-issuer");
         let header = Header::new(Algorithm::RS256);
 
         let token = encode(&header, &claims, &keypair.encoding_key())
@@ -70,7 +70,7 @@ mod rsa_jwt_tests {
             let fx = fx();
             let keypair = fx.rsa(label, RsaSpec::new(bits));
 
-            let claims = JwtClaims::new("user123", 9999999999, 1234567890, label);
+            let claims = JwtClaims::new("user123", 2_000_000_000, 1234567890, label);
             let header = Header::new(Algorithm::RS256);
 
             let token = encode(&header, &claims, &keypair.encoding_key())
@@ -93,7 +93,7 @@ mod rsa_jwt_tests {
         let fx = fx();
         let keypair = fx.rsa("mismatch-test", RsaSpec::rs256());
 
-        let claims = JwtClaims::new("user000", 9999999999, 1234567890, "mismatch-test");
+        let claims = JwtClaims::new("user000", 2_000_000_000, 1234567890, "mismatch-test");
         let header = Header::new(Algorithm::RS256);
 
         let token =
@@ -121,7 +121,7 @@ mod ecdsa_jwt_tests {
         let fx = fx();
         let keypair = fx.ecdsa("es256-issuer", EcdsaSpec::Es256);
 
-        let claims = JwtClaims::new("user123", 9999999999, 1234567890, "es256-issuer");
+        let claims = JwtClaims::new("user123", 2_000_000_000, 1234567890, "es256-issuer");
         let header = Header::new(Algorithm::ES256);
 
         let token = encode(&header, &claims, &keypair.encoding_key())
@@ -139,7 +139,7 @@ mod ecdsa_jwt_tests {
         let fx = fx();
         let keypair = fx.ecdsa("es384-issuer", EcdsaSpec::Es384);
 
-        let claims = JwtClaims::new("user456", 9999999999, 1234567890, "es384-issuer");
+        let claims = JwtClaims::new("user456", 2_000_000_000, 1234567890, "es384-issuer");
         let header = Header::new(Algorithm::ES384);
 
         let token = encode(&header, &claims, &keypair.encoding_key())
@@ -157,7 +157,7 @@ mod ecdsa_jwt_tests {
         let fx = fx();
         let keypair = fx.ecdsa("es256-mismatch", EcdsaSpec::Es256);
 
-        let claims = JwtClaims::new("user000", 9999999999, 1234567890, "es256-mismatch");
+        let claims = JwtClaims::new("user000", 2_000_000_000, 1234567890, "es256-mismatch");
         let header = Header::new(Algorithm::ES256);
 
         let token =
@@ -185,7 +185,7 @@ mod ed25519_jwt_tests {
         let fx = fx();
         let keypair = fx.ed25519("ed25519-issuer", Ed25519Spec::new());
 
-        let claims = JwtClaims::new("user123", 9999999999, 1234567890, "ed25519-issuer");
+        let claims = JwtClaims::new("user123", 2_000_000_000, 1234567890, "ed25519-issuer");
         let header = Header::new(Algorithm::EdDSA);
 
         let token = encode(&header, &claims, &keypair.encoding_key())
@@ -213,7 +213,7 @@ mod hmac_jwt_tests {
         let fx = fx();
         let secret = fx.hmac("hs256-issuer", HmacSpec::Hs256);
 
-        let claims = JwtClaims::new("user123", 9999999999, 1234567890, "hs256-issuer");
+        let claims = JwtClaims::new("user123", 2_000_000_000, 1234567890, "hs256-issuer");
         let header = Header::new(Algorithm::HS256);
 
         let token = encode(&header, &claims, &secret.encoding_key())
@@ -231,7 +231,7 @@ mod hmac_jwt_tests {
         let fx = fx();
         let secret = fx.hmac("hs384-issuer", HmacSpec::Hs384);
 
-        let claims = JwtClaims::new("user456", 9999999999, 1234567890, "hs384-issuer");
+        let claims = JwtClaims::new("user456", 2_000_000_000, 1234567890, "hs384-issuer");
         let header = Header::new(Algorithm::HS384);
 
         let token = encode(&header, &claims, &secret.encoding_key())
@@ -249,7 +249,7 @@ mod hmac_jwt_tests {
         let fx = fx();
         let secret = fx.hmac("hs512-issuer", HmacSpec::Hs512);
 
-        let claims = JwtClaims::new("user789", 9999999999, 1234567890, "hs512-issuer");
+        let claims = JwtClaims::new("user789", 2_000_000_000, 1234567890, "hs512-issuer");
         let header = Header::new(Algorithm::HS512);
 
         let token = encode(&header, &claims, &secret.encoding_key())
@@ -268,7 +268,7 @@ mod hmac_jwt_tests {
         let secret1 = fx.hmac("secret1", HmacSpec::Hs256);
         let secret2 = fx.hmac("secret2", HmacSpec::Hs256);
 
-        let claims = JwtClaims::new("user000", 9999999999, 1234567890, "secret1");
+        let claims = JwtClaims::new("user000", 2_000_000_000, 1234567890, "secret1");
         let header = Header::new(Algorithm::HS256);
 
         let token =
@@ -310,7 +310,7 @@ mod jwks_integration_tests {
         assert_eq!(jwks.keys.len(), 3);
 
         // Sign JWT with issuer2
-        let claims = JwtClaims::new("user123", 9999999999, 1234567890, "issuer2");
+        let claims = JwtClaims::new("user123", 2_000_000_000, 1234567890, "issuer2");
         let mut header = Header::new(Algorithm::RS256);
         header.kid = Some(issuer2.kid().to_string());
 
@@ -356,7 +356,7 @@ mod jwks_integration_tests {
             .build();
 
         // Sign JWT with new key
-        let claims = JwtClaims::new("user123", 9999999999, 1234567890, "new-key");
+        let claims = JwtClaims::new("user123", 2_000_000_000, 1234567890, "new-key");
         let mut header = Header::new(Algorithm::RS256);
         header.kid = Some(new_key.kid().to_string());
 
@@ -413,7 +413,7 @@ mod cross_crate_compatibility_tests {
         for (key_type, alg) in test_cases {
             let claims = JwtClaims::new(
                 "user123",
-                9999999999,
+                2_000_000_000,
                 1234567890,
                 &format!("{}-issuer", key_type),
             );
@@ -502,7 +502,7 @@ mod determinism_tests {
         let keypair2 = fx2.rsa("deterministic-jwt", RsaSpec::rs256());
 
         // Sign same claims with both keys
-        let claims = JwtClaims::new("user123", 9999999999, 1234567890, "deterministic-jwt");
+        let claims = JwtClaims::new("user123", 2_000_000_000, 1234567890, "deterministic-jwt");
         let header = Header::new(Algorithm::RS256);
 
         let token1 =
@@ -536,7 +536,7 @@ mod determinism_tests {
         let keypair2 = fx.rsa("label-2", RsaSpec::rs256());
 
         // Sign same claims with both keys
-        let claims = JwtClaims::new("user123", 9999999999, 1234567890, "test");
+        let claims = JwtClaims::new("user123", 2_000_000_000, 1234567890, "test");
         let header = Header::new(Algorithm::RS256);
 
         let token1 =
