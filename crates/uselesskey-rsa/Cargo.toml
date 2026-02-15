@@ -8,7 +8,7 @@ repository.workspace = true
 description = "RSA key fixtures for uselesskey."
 categories = ["development-tools::testing"]
 keywords = ["rsa", "fixtures", "testing", "jwk"]
-readme = "../../README.md"
+readme = "README.md"
 authors.workspace = true
 
 [dependencies]
@@ -24,6 +24,9 @@ blake3.workspace = true
 [features]
 default = []
 jwk = ["dep:serde_json", "dep:base64", "dep:uselesskey-jwk"]
+
+[package.metadata.docs.rs]
+features = ["jwk"]
 
 [dev-dependencies]
 proptest.workspace = true

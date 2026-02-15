@@ -243,17 +243,17 @@ let rsa_pk = rsa.rsa_private_key_rustcrypto(); // rsa::RsaPrivateKey
 
 ```toml
 [dev-dependencies]
-uselesskey-aws-lc-rs = { version = "0.2" }
+uselesskey-aws-lc-rs = { version = "0.2", features = ["native", "all"] }
 ```
 
 ```rust
 use uselesskey_core::Factory;
-use uselesskey_ed25519::Ed25519FactoryExt;
-use uselesskey_aws_lc_rs::AwsLcEd25519Ext;
+use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+use uselesskey_aws_lc_rs::AwsLcRsRsaKeyPairExt;
 
 let fx = Factory::random();
-let ed = fx.ed25519("signer");
-let lc_key = ed.ed25519_key_pair_aws_lc(); // aws_lc_rs::signature::Ed25519KeyPair
+let rsa = fx.rsa("signer", RsaSpec::rs256());
+let lc_kp = rsa.rsa_key_pair_aws_lc_rs();  // aws_lc_rs::rsa::KeyPair
 ```
 
 ## Feature Flags

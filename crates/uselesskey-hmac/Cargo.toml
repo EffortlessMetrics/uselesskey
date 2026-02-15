@@ -20,6 +20,9 @@ rand_core.workspace = true
 uselesskey-jwk = { path = "../uselesskey-jwk", version = "0.2.0", optional = true }
 base64 = { workspace = true, optional = true }
 
+[package.metadata.docs.rs]
+features = ["jwk"]
+
 [features]
 default = []
 jwk = ["dep:uselesskey-jwk", "dep:base64"]
