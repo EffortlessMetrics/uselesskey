@@ -8,7 +8,7 @@ Converts uselesskey keypairs into aws-lc-rs native signing key types. Includes a
 
 | Feature | Description |
 |---------|-------------|
-| `native` (default) | Enable `aws-lc-rs` dependency |
+| `native` | Enable `aws-lc-rs` dependency (requires NASM on Windows) |
 | `rsa` | RSA keypairs -> `aws_lc_rs::rsa::KeyPair` |
 | `ecdsa` | ECDSA keypairs -> `aws_lc_rs::signature::EcdsaKeyPair` |
 | `ed25519` | Ed25519 keypairs -> `aws_lc_rs::signature::Ed25519KeyPair` |
@@ -20,7 +20,7 @@ When the `native` feature is disabled, this crate compiles as a no-op with no tr
 
 ```toml
 [dev-dependencies]
-uselesskey-aws-lc-rs = { version = "0.2", features = ["all"] }
+uselesskey-aws-lc-rs = { version = "0.2", features = ["native", "all"] }
 ```
 
 ```rust

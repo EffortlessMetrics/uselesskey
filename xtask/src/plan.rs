@@ -60,7 +60,7 @@ pub fn build_plan(paths: &[String]) -> Plan {
         || paths.iter().any(|p| {
             let p = normalize_path(p);
             p.starts_with("crates/uselesskey/")
-                && (p.ends_with(".feature") && p.contains("features/"))
+                || (p.starts_with("crates/uselesskey-bdd/") && p.ends_with(".feature"))
         });
     let run_dep_guard = cargo_changed;
     let run_bdd = rust_code_changed || bdd_feature_changed;
@@ -325,5 +325,26 @@ mod tests {
         assert!(plan.run_feature_matrix);
         assert!(plan.run_fmt);
         assert!(plan.run_clippy);
+    }
+
+    #[test]
+    fn facade_change_triggers_feature_matrix() {
+        let paths = vec!["crates/uselesskey/src/lib.rs".to_string()];
+        let plan = build_plan(&paths);
+        assert!(plan.run_feature_matrix);
+    }
+
+    #[test]
+    fn bdd_feature_file_triggers_feature_matrix() {
+        let paths = vec!["crates/uselesskey-bdd/features/rsa.feature".to_string()];
+        let plan = build_plan(&paths);
+        assert!(plan.run_feature_matrix);
+    }
+
+    #[test]
+    fn windows_paths_normalized_for_feature_matrix() {
+        let paths = vec!["crates\\uselesskey\\src\\lib.rs".to_string()];
+        let plan = build_plan(&paths);
+        assert!(plan.run_feature_matrix);
     }
 }

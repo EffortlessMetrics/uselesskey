@@ -24,11 +24,16 @@ uselesskey-jwk = { path = "../crates/uselesskey-jwk", version = "0.2.0", optiona
 uselesskey-jsonwebtoken = { path = "../crates/uselesskey-jsonwebtoken", version = "0.2.0", optional = true, features = ["all"] }
 uselesskey-rustls = { path = "../crates/uselesskey-rustls", version = "0.2.0", optional = true, features = ["server-config", "client-config"] }
 uselesskey-ring = { path = "../crates/uselesskey-ring", version = "0.2.0", optional = true, features = ["all"] }
+uselesskey-rustcrypto = { path = "../crates/uselesskey-rustcrypto", version = "0.2.0", optional = true, features = ["all"] }
 
 # External dependencies
 jsonwebtoken = { workspace = true, optional = true }
 ring = { workspace = true, optional = true }
 rustls = { workspace = true, optional = true }
+rsa = { workspace = true, optional = true }
+p256 = { version = "0.13", features = ["ecdsa", "pkcs8"], optional = true }
+ed25519-dalek = { workspace = true, optional = true }
+sha2 = { version = "0.10", features = ["oid"], optional = true }
 serde.workspace = true
 serde_json.workspace = true
 
@@ -76,8 +81,36 @@ e2e = [
     "dep:jsonwebtoken",
 ]
 
+# Key rotation workflow tests
+key-rotation = [
+    "dep:uselesskey-rsa",
+    "dep:uselesskey-ecdsa",
+    "dep:uselesskey-ed25519",
+    "dep:uselesskey-hmac",
+    "dep:uselesskey-x509",
+    "dep:uselesskey-jwk",
+    "dep:uselesskey-jsonwebtoken",
+    "dep:uselesskey-rustls",
+    "dep:jsonwebtoken",
+    "dep:rustls",
+]
+
+# Cross-adapter compatibility tests
+cross-adapter = [
+    "dep:uselesskey-rsa",
+    "dep:uselesskey-ecdsa",
+    "dep:uselesskey-ed25519",
+    "dep:uselesskey-ring",
+    "dep:uselesskey-rustcrypto",
+    "ring",
+    "dep:rsa",
+    "dep:p256",
+    "dep:ed25519-dalek",
+    "dep:sha2",
+]
+
 # All integration tests
-all = ["jwt", "tls", "crypto-backend", "e2e"]
+all = ["jwt", "tls", "crypto-backend", "e2e", "key-rotation", "cross-adapter"]
 
 [[test]]
 name = "jwt_integration"
@@ -98,3 +131,13 @@ required-features = ["crypto-backend"]
 name = "e2e_workflows"
 path = "e2e_workflows.rs"
 required-features = ["e2e"]
+
+[[test]]
+name = "key_rotation"
+path = "key_rotation.rs"
+required-features = ["key-rotation"]
+
+[[test]]
+name = "cross_adapter"
+path = "cross_adapter.rs"
+required-features = ["cross-adapter"]

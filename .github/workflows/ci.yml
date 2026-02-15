@@ -21,6 +21,9 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@nightly
 
+      - name: Install NASM (for aws-lc-rs)
+        run: sudo apt-get update && sudo apt-get install -y nasm
+
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
 
@@ -55,6 +58,9 @@ jobs:
           components: rustfmt, clippy
 
       - uses: dtolnay/rust-toolchain@nightly
+
+      - name: Install NASM (for aws-lc-rs)
+        run: sudo apt-get update && sudo apt-get install -y nasm
 
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2

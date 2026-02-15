@@ -21,6 +21,9 @@ uselesskey-rsa = { path = "../uselesskey-rsa", version = "0.2.0", optional = tru
 uselesskey-ecdsa = { path = "../uselesskey-ecdsa", version = "0.2.0", optional = true }
 uselesskey-ed25519 = { path = "../uselesskey-ed25519", version = "0.2.0", optional = true }
 
+[package.metadata.docs.rs]
+features = ["all", "tls-config", "rustls-ring"]
+
 [features]
 default = ["x509"]
 x509 = ["dep:uselesskey-x509"]

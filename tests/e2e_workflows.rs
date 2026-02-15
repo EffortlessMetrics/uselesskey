@@ -80,10 +80,9 @@ mod jwt_workflow_tests {
             .expect("Key not found in JWKS");
 
         let jwk_value = serde_json::to_value(jwk).expect("Failed to serialize JWK");
-        let jwk_json: Jwk =
-            serde_json::from_value(jwk_value).expect("Failed to deserialize JWK");
-        let decoding_key = DecodingKey::from_jwk(&jwk_json)
-            .expect("Failed to create DecodingKey from JWK");
+        let jwk_json: Jwk = serde_json::from_value(jwk_value).expect("Failed to deserialize JWK");
+        let decoding_key =
+            DecodingKey::from_jwk(&jwk_json).expect("Failed to create DecodingKey from JWK");
 
         let validation = Validation::new(Algorithm::RS256);
         let decoded =
@@ -135,8 +134,8 @@ mod jwt_workflow_tests {
             let jwk_value = serde_json::to_value(jwk).expect("Failed to serialize JWK");
             let jwk_json: Jwk =
                 serde_json::from_value(jwk_value).expect("Failed to deserialize JWK");
-            let decoding_key = DecodingKey::from_jwk(&jwk_json)
-                .expect("Failed to create DecodingKey from JWK");
+            let decoding_key =
+                DecodingKey::from_jwk(&jwk_json).expect("Failed to create DecodingKey from JWK");
 
             let validation = Validation::new(Algorithm::RS256);
             let decoded = decode::<JwtClaims>(&token, &decoding_key, &validation)
@@ -177,10 +176,9 @@ mod jwt_workflow_tests {
             .expect("New key not found in JWKS");
 
         let jwk_value = serde_json::to_value(jwk).expect("Failed to serialize JWK");
-        let jwk_json: Jwk =
-            serde_json::from_value(jwk_value).expect("Failed to deserialize JWK");
-        let decoding_key = DecodingKey::from_jwk(&jwk_json)
-            .expect("Failed to create DecodingKey from JWK");
+        let jwk_json: Jwk = serde_json::from_value(jwk_value).expect("Failed to deserialize JWK");
+        let decoding_key =
+            DecodingKey::from_jwk(&jwk_json).expect("Failed to create DecodingKey from JWK");
 
         let validation = Validation::new(Algorithm::RS256);
         let decoded =
@@ -593,13 +591,9 @@ mod deterministic_workflow_tests {
         let rsa2 = fx2.rsa("jwks-deterministic", RsaSpec::rs256());
 
         // Step 2: Build JWKS from both
-        let jwks1 = JwksBuilder::new()
-            .add_public(rsa1.public_jwk())
-            .build();
+        let jwks1 = JwksBuilder::new().add_public(rsa1.public_jwk()).build();
 
-        let jwks2 = JwksBuilder::new()
-            .add_public(rsa2.public_jwk())
-            .build();
+        let jwks2 = JwksBuilder::new().add_public(rsa2.public_jwk()).build();
 
         // Step 3: Verify JWKS are identical
         assert_eq!(jwks1.to_string(), jwks2.to_string());

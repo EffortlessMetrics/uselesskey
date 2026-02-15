@@ -72,6 +72,8 @@ pub struct X509Spec {
     pub is_ca: bool,
     /// RSA key size in bits.
     pub rsa_bits: usize,
+    /// DNS Subject Alternative Names.
+    pub sans: Vec<String>,
 }
 
 /// Offset for the not_before field.
@@ -99,6 +101,7 @@ impl Default for X509Spec {
             key_usage: KeyUsage::leaf(),
             is_ca: false,
             rsa_bits: 2048,
+            sans: Vec::new(),
         }
     }
 }
@@ -156,6 +159,12 @@ impl X509Spec {
         self
     }
 
+    /// Set DNS Subject Alternative Names.
+    pub fn with_sans(mut self, sans: Vec<String>) -> Self {
+        self.sans = sans;
+        self
+    }
+
     /// Stable encoding for cache keys / deterministic derivation.
     ///
     /// If you change this, bump the derivation version in `uselesskey-core`.
@@ -164,7 +173,8 @@ impl X509Spec {
 
         // Version prefix to allow deterministic derivation changes without affecting other crates.
         // Bump this if X.509 derivation inputs change.
-        out.push(2);
+        // v3: added SANs field
+        out.push(3);
 
         // Subject CN length + bytes
         let subject_bytes = self.subject_cn.as_bytes();
@@ -199,6 +209,16 @@ impl X509Spec {
 
         // rsa_bits
         out.extend_from_slice(&(self.rsa_bits as u32).to_be_bytes());
+
+        // SANs (sorted for stability)
+        let mut sorted_sans = self.sans.clone();
+        sorted_sans.sort();
+        out.extend_from_slice(&(sorted_sans.len() as u32).to_be_bytes());
+        for san in &sorted_sans {
+            let san_bytes = san.as_bytes();
+            out.extend_from_slice(&(san_bytes.len() as u32).to_be_bytes());
+            out.extend_from_slice(san_bytes);
+        }
 
         out
     }

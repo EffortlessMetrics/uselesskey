@@ -148,7 +148,15 @@ fn test() -> Result<()> {
 }
 
 fn bdd() -> Result<()> {
-    run(Command::new("cargo").args(["test", "-p", "uselesskey-bdd", "--test", "bdd"]))
+    run(Command::new("cargo").args([
+        "test",
+        "-p",
+        "uselesskey-bdd",
+        "--test",
+        "bdd",
+        "--features",
+        "uk-all",
+    ]))
 }
 
 fn bdd_matrix() -> Result<()> {

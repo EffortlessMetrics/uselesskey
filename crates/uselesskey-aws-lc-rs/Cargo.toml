@@ -19,8 +19,15 @@ uselesskey-rsa = { path = "../uselesskey-rsa", version = "0.2.0", optional = tru
 uselesskey-ecdsa = { path = "../uselesskey-ecdsa", version = "0.2.0", optional = true }
 uselesskey-ed25519 = { path = "../uselesskey-ed25519", version = "0.2.0", optional = true }
 
+[package.metadata.docs.rs]
+features = ["all"]
+rustdoc-args = ["--cfg", "docsrs"]
+
 [features]
-default = ["native"]
+# Note: The "native" feature is not enabled by default because aws-lc-rs requires NASM on Windows.
+# To use aws-lc-rs integration, enable the "native" feature explicitly.
+# CI environments should install NASM before running tests with this feature.
+default = []
 native = ["dep:aws-lc-rs"]
 rsa = ["dep:uselesskey-rsa"]
 ecdsa = ["dep:uselesskey-ecdsa"]

@@ -8,7 +8,7 @@ repository.workspace = true
 description = "Core factory, derivation, and caching for uselesskey test fixtures."
 categories = ["development-tools::testing"]
 keywords = ["test", "fixtures", "deterministic"]
-readme = "../../README.md"
+readme = "README.md"
 authors.workspace = true
 
 [dependencies]

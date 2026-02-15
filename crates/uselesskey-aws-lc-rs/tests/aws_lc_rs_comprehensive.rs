@@ -10,21 +10,23 @@
 
 mod testutil;
 
-#[cfg(feature = "native")]
+#[cfg(all(feature = "native", has_nasm))]
 use aws_lc_rs::{
     digest,
     hmac::{self, Key as HmacKey},
     rand::SystemRandom,
     signature::{self, KeyPair},
 };
+#[cfg(has_nasm)]
 use testutil::fx;
-#[cfg(feature = "native")]
+#[cfg(all(feature = "native", has_nasm))]
 use uselesskey_aws_lc_rs::{
     AwsLcRsEcdsaKeyPairExt, AwsLcRsEd25519KeyPairExt, AwsLcRsRsaKeyPairExt,
 };
+#[cfg(has_nasm)]
 use uselesskey_core::{Factory, Seed};
 
-#[cfg(all(feature = "native", feature = "rsa"))]
+#[cfg(all(feature = "native", has_nasm, feature = "rsa"))]
 mod rsa_aws_lc_rs_tests {
     use super::*;
     use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
@@ -192,7 +194,7 @@ mod rsa_aws_lc_rs_tests {
     }
 }
 
-#[cfg(all(feature = "native", feature = "ecdsa"))]
+#[cfg(all(feature = "native", has_nasm, feature = "ecdsa"))]
 mod ecdsa_aws_lc_rs_tests {
     use super::*;
     use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
@@ -345,7 +347,7 @@ mod ecdsa_aws_lc_rs_tests {
     }
 }
 
-#[cfg(all(feature = "native", feature = "ed25519"))]
+#[cfg(all(feature = "native", has_nasm, feature = "ed25519"))]
 mod ed25519_aws_lc_rs_tests {
     use super::*;
     use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
@@ -456,7 +458,7 @@ mod ed25519_aws_lc_rs_tests {
     }
 }
 
-#[cfg(feature = "native")]
+#[cfg(all(feature = "native", has_nasm))]
 mod digest_tests {
     use super::*;
 
@@ -528,7 +530,7 @@ mod digest_tests {
     }
 }
 
-#[cfg(feature = "native")]
+#[cfg(all(feature = "native", has_nasm))]
 mod hmac_tests {
     use super::*;
 
@@ -623,7 +625,7 @@ mod hmac_tests {
     }
 }
 
-#[cfg(all(feature = "native", all(feature = "rsa", feature = "ecdsa")))]
+#[cfg(all(feature = "native", has_nasm, all(feature = "rsa", feature = "ecdsa")))]
 mod cross_algorithm_tests {
     use super::*;
     use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};

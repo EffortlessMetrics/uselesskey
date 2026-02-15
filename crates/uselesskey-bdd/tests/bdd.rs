@@ -1616,9 +1616,13 @@ fn add_san_to_cert(world: &mut UselessWorld, san: String) {
         .as_str()
         .expect("CN should be string");
 
-    // Create new spec with additional SANs
-    world.x509_chain_sans.push(san.clone());
-    let spec = X509Spec::self_signed(cn);
+    // Accumulate SANs and regenerate with all of them applied
+    world.x509_chain_sans.push(san);
+    let mut all_sans = world.x509_chain_sans.clone();
+    all_sans.push(cn.to_string());
+    all_sans.sort();
+    all_sans.dedup();
+    let spec = X509Spec::self_signed(cn).with_sans(all_sans);
     let new_x509 = fx.x509_self_signed(label, spec);
 
     world.x509_cert_pem_2 = Some(new_x509.cert_pem().to_string());
