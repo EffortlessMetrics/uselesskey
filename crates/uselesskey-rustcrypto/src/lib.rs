@@ -193,6 +193,20 @@ impl RustCryptoHmacExt for uselesskey_hmac::HmacSecret {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::OnceLock;
+    use uselesskey_core::{Factory, Seed};
+
+    static FX: OnceLock<Factory> = OnceLock::new();
+
+    fn fx() -> Factory {
+        FX.get_or_init(|| {
+            let seed = Seed::from_env_value("uselesskey-rustcrypto-inline-test-seed-v1")
+                .expect("test seed should always parse");
+            Factory::deterministic(seed)
+        })
+        .clone()
+    }
+
     #[cfg(feature = "rsa")]
     mod rsa_tests {
         use crate::RustCryptoRsaExt;
@@ -204,7 +218,7 @@ mod tests {
 
         #[test]
         fn test_rsa_sign_verify() {
-            let fx = Factory::random();
+            let fx = super::fx();
             let keypair = fx.rsa("test", RsaSpec::rs256());
 
             let private_key = keypair.rsa_private_key();

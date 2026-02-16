@@ -9,12 +9,16 @@
 mod testutil;
 
 use rustls::crypto::CryptoProvider;
-use testutil::fx;
 use uselesskey_rustls::{
     RustlsChainExt, RustlsClientConfigExt, RustlsMtlsExt, RustlsPrivateKeyExt,
     RustlsServerConfigExt,
 };
 use uselesskey_x509::{ChainSpec, X509FactoryExt};
+
+fn fx() -> uselesskey_core::Factory {
+    testutil::install_rustls_ring_provider();
+    testutil::fx()
+}
 
 // =========================================================================
 // Basic TLS Configuration Tests

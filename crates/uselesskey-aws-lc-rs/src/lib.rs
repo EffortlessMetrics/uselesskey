@@ -110,16 +110,31 @@ impl AwsLcRsEd25519KeyPairExt for uselesskey_ed25519::Ed25519KeyPair {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::OnceLock;
+    use uselesskey_core::{Factory, Seed};
+
+    #[allow(dead_code)]
+    static FX: OnceLock<Factory> = OnceLock::new();
+
+    #[allow(dead_code)]
+    fn fx() -> Factory {
+        FX.get_or_init(|| {
+            let seed = Seed::from_env_value("uselesskey-aws-lc-rs-inline-test-seed-v1")
+                .expect("test seed should always parse");
+            Factory::deterministic(seed)
+        })
+        .clone()
+    }
+
     #[cfg(all(feature = "native", any(not(windows), has_nasm), feature = "rsa"))]
     mod rsa_tests {
         use crate::AwsLcRsRsaKeyPairExt;
         use aws_lc_rs::signature::{self, KeyPair};
-        use uselesskey_core::Factory;
         use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 
         #[test]
         fn test_rsa_sign_verify() {
-            let fx = Factory::random();
+            let fx = super::fx();
             let rsa = fx.rsa("test", RsaSpec::rs256());
             let kp = rsa.rsa_key_pair_aws_lc_rs();
 

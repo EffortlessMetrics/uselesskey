@@ -124,7 +124,9 @@ Adapter crates (e.g. `uselesskey-jsonwebtoken`) are separate crates, not feature
 ## Testing
 
 - Unit/integration tests use `#[test]`, `proptest` (property-based), and `rstest` (parameterized)
-- BDD tests in `crates/uselesskey-bdd/features/rsa.feature`
+- `cargo xtask test` runs `--workspace --all-features --exclude uselesskey-bdd`
+- `cargo xtask bdd` runs BDD tests separately with `--release` (RSA keygen is too slow in debug)
+- BDD feature files in `crates/uselesskey-bdd/features/` covering all key types, X.509, JWK, negative fixtures, and edge cases
 - Fuzz targets in `fuzz/fuzz_targets/`
 
 ## Configuration Files

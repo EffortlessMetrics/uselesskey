@@ -1,3 +1,5 @@
+mod testutil;
+
 use uselesskey::Factory;
 
 #[test]
@@ -22,7 +24,7 @@ fn rsa_reexport_works() {
     use uselesskey::RsaFactoryExt;
     use uselesskey::RsaSpec;
 
-    let fx = Factory::random();
+    let fx = testutil::fx();
     let key = fx.rsa("issuer", RsaSpec::rs256());
     assert!(key.private_key_pkcs8_pem().contains("BEGIN PRIVATE KEY"));
 }

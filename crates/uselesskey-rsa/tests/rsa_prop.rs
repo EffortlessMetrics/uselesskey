@@ -1,7 +1,10 @@
+mod testutil;
+
 use proptest::prelude::*;
 use rsa::traits::PublicKeyParts;
 use rsa::{pkcs8::DecodePrivateKey, pkcs8::DecodePublicKey};
 
+use testutil::fx;
 use uselesskey_core::negative::CorruptPem;
 use uselesskey_core::{Factory, Seed};
 use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
@@ -9,14 +12,14 @@ use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 #[test]
 #[should_panic(expected = "RSA bits too small")]
 fn rsa_bits_too_small_panics() {
-    let fx = Factory::random();
+    let fx = fx();
     let _ = fx.rsa("issuer", RsaSpec::new(512));
 }
 
 #[test]
 #[should_panic(expected = "custom RSA public exponent not supported")]
 fn rsa_custom_exponent_panics() {
-    let fx = Factory::random();
+    let fx = fx();
     let spec = RsaSpec {
         bits: 2048,
         exponent: 3,
@@ -26,7 +29,7 @@ fn rsa_custom_exponent_panics() {
 
 #[test]
 fn pkcs8_pem_is_parseable() {
-    let fx = Factory::random();
+    let fx = fx();
     let rsa = fx.rsa("issuer", RsaSpec::rs256());
 
     let parsed = rsa::RsaPrivateKey::from_pkcs8_pem(rsa.private_key_pkcs8_pem());
@@ -35,7 +38,7 @@ fn pkcs8_pem_is_parseable() {
 
 #[test]
 fn corrupt_pem_fails_to_parse() {
-    let fx = Factory::random();
+    let fx = fx();
     let rsa = fx.rsa("issuer", RsaSpec::rs256());
 
     let bad = rsa.private_key_pkcs8_pem_corrupt(CorruptPem::BadBase64);
@@ -45,7 +48,7 @@ fn corrupt_pem_fails_to_parse() {
 
 #[test]
 fn mismatched_public_key_is_parseable_and_different() {
-    let fx = Factory::random();
+    let fx = fx();
     let rsa = fx.rsa("issuer", RsaSpec::rs256());
 
     let good_pub = rsa::RsaPublicKey::from_public_key_der(rsa.public_key_spki_der()).unwrap();
@@ -58,7 +61,7 @@ fn mismatched_public_key_is_parseable_and_different() {
 
 #[test]
 fn pkcs8_der_truncated_shortens() {
-    let fx = Factory::random();
+    let fx = fx();
     let rsa = fx.rsa("issuer", RsaSpec::rs256());
 
     let truncated = rsa.private_key_pkcs8_der_truncated(12);
@@ -67,7 +70,7 @@ fn pkcs8_der_truncated_shortens() {
 
 #[test]
 fn debug_includes_label_and_type() {
-    let fx = Factory::random();
+    let fx = fx();
     let rsa = fx.rsa("debug-label", RsaSpec::rs256());
 
     let dbg = format!("{:?}", rsa);

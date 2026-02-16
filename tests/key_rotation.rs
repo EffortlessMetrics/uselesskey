@@ -10,7 +10,6 @@
 mod testutil;
 
 use serde::{Deserialize, Serialize};
-use testutil::fx;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 struct Claims {
@@ -27,6 +26,11 @@ impl Claims {
             iat: 1234567890,
         }
     }
+}
+
+fn fx() -> uselesskey_core::Factory {
+    testutil::install_rustls_ring_provider();
+    testutil::fx()
 }
 
 // =========================================================================

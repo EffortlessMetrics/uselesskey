@@ -11,7 +11,6 @@ mod testutil;
 use jsonwebtoken::jwk::Jwk;
 use jsonwebtoken::{Algorithm, DecodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
-use testutil::fx;
 use uselesskey_ed25519::Ed25519Spec;
 use uselesskey_jsonwebtoken::JwtKeyExt;
 use uselesskey_jwk::JwksBuilder;
@@ -20,6 +19,11 @@ use uselesskey_rustls::{
     RustlsServerConfigExt,
 };
 use uselesskey_x509::{ChainSpec, X509FactoryExt};
+
+fn fx() -> uselesskey_core::Factory {
+    testutil::install_rustls_ring_provider();
+    testutil::fx()
+}
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 struct JwtClaims {
