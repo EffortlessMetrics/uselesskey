@@ -463,7 +463,7 @@ mod tests {
 
     #[test]
     fn test_chain_generation() {
-        let factory = Factory::random();
+        let factory = fx();
         let spec = ChainSpec::new("test.example.com");
         let chain = X509Chain::new(factory, "test", spec);
 

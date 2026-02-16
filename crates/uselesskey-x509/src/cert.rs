@@ -332,7 +332,7 @@ mod tests {
 
     #[test]
     fn test_self_signed_cert_generation() {
-        let factory = Factory::random();
+        let factory = fx();
         let spec = X509Spec::self_signed("test.example.com");
         let cert = factory.x509_self_signed("test", spec);
 

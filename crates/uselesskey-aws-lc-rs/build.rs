@@ -13,15 +13,6 @@ fn main() {
     println!("cargo::rerun-if-changed=build.rs");
     println!("cargo::rerun-if-env-changed=PATH");
 
-    // NASM is only required on Windows for aws-lc-rs.
-    // On other platforms, always set has_nasm so the full API is available.
-    let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
-    if target_os != "windows" {
-        println!("cargo::rustc-cfg=has_nasm");
-        return;
-    }
-
-    // On Windows, probe for NASM
     let nasm_available = Command::new("nasm")
         .arg("-v")
         .output()
@@ -30,8 +21,10 @@ fn main() {
 
     if nasm_available {
         println!("cargo::rustc-cfg=has_nasm");
-        println!("cargo::warning=NASM found - aws-lc-rs will be compiled from source");
+        println!("cargo::warning=NASM found");
     } else {
-        println!("cargo::warning=NASM not found - aws-lc-rs tests will be skipped");
+        println!(
+            "cargo::warning=NASM not found - aws-lc-rs tests gated on has_nasm will be skipped"
+        );
     }
 }

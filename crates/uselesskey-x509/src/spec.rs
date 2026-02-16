@@ -333,10 +333,13 @@ mod tests {
 
     #[test]
     fn test_stable_bytes_deduplicates_sans() {
-        let with_dupes = X509Spec::self_signed("test")
-            .with_sans(vec!["a.com".into(), "a.com".into(), "b.com".into()]);
-        let without_dupes = X509Spec::self_signed("test")
-            .with_sans(vec!["a.com".into(), "b.com".into()]);
+        let with_dupes = X509Spec::self_signed("test").with_sans(vec![
+            "a.com".into(),
+            "a.com".into(),
+            "b.com".into(),
+        ]);
+        let without_dupes =
+            X509Spec::self_signed("test").with_sans(vec!["a.com".into(), "b.com".into()]);
         assert_eq!(with_dupes.stable_bytes(), without_dupes.stable_bytes());
     }
 }
