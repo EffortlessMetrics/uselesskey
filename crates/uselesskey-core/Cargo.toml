@@ -1,6 +1,6 @@
 [package]
 name = "uselesskey-core"
-version = "0.2.0"
+version = "0.2.1"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
@@ -23,3 +23,4 @@ tempfile.workspace = true
 [dev-dependencies]
 proptest.workspace = true
 rstest.workspace = true
+

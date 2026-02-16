@@ -1,6 +1,6 @@
 # uselesskey
 
-*Terraform for test credentials.*
+*Fixture generator for test credentials.*
 
 **Stop committing PEM/DER/JWK blobs into your repos.**
 

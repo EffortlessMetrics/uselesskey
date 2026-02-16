@@ -13,6 +13,10 @@ This is the publish order for the uselesskey workspace crates.
 7. `uselesskey-x509`
 8. `uselesskey`
 9. `uselesskey-jsonwebtoken` (adapter, depends on key type crates)
+10. `uselesskey-rustls`
+11. `uselesskey-ring`
+12. `uselesskey-rustcrypto`
+13. `uselesskey-aws-lc-rs`
 
 This list matches the `cargo xtask publish-check` order.
 
@@ -34,4 +38,8 @@ cargo publish -p uselesskey-hmac
 cargo publish -p uselesskey-x509
 cargo publish -p uselesskey
 cargo publish -p uselesskey-jsonwebtoken
+cargo publish -p uselesskey-rustls
+cargo publish -p uselesskey-ring
+cargo publish -p uselesskey-rustcrypto
+cargo publish -p uselesskey-aws-lc-rs
 ```
