@@ -79,6 +79,7 @@ e2e = [
     "dep:uselesskey-jsonwebtoken",
     "dep:uselesskey-rustls",
     "dep:jsonwebtoken",
+    "dep:rustls",
 ]
 
 # Key rotation workflow tests

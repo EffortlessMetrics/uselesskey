@@ -144,7 +144,13 @@ fn clippy() -> Result<()> {
 }
 
 fn test() -> Result<()> {
-    run(Command::new("cargo").args(["test", "--workspace", "--all-features"]))
+    run(Command::new("cargo").args([
+        "test",
+        "--workspace",
+        "--all-features",
+        "--exclude",
+        "uselesskey-bdd",
+    ]))
 }
 
 fn bdd() -> Result<()> {
@@ -156,6 +162,7 @@ fn bdd() -> Result<()> {
         "bdd",
         "--features",
         "uk-all",
+        "--release",
     ]))
 }
 
@@ -170,7 +177,7 @@ fn bdd_matrix() -> Result<()> {
         let step_name = format!("bdd-matrix:{name}");
         let result = runner.step(&step_name, None, || {
             let mut cmd = Command::new("cargo");
-            cmd.args(["test", "-p", "uselesskey-bdd", "--test", "bdd"]);
+            cmd.args(["test", "-p", "uselesskey-bdd", "--test", "bdd", "--release"]);
             for arg in args {
                 cmd.arg(arg);
             }
