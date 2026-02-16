@@ -5,9 +5,9 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "Ed25519 key fixtures for uselesskey."
+description = "Ed25519 key fixtures for deterministic and random cryptographic testing."
 categories = ["development-tools::testing"]
-keywords = ["ed25519", "fixtures", "testing", "jwk"]
+keywords = ["ed25519", "fixtures", "testing", "cryptography", "jwk"]
 readme = "README.md"
 authors.workspace = true
 

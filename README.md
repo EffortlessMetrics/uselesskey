@@ -1,6 +1,6 @@
 # uselesskey
 
-*Fixture generator for test credentials.*
+*Deterministic and random cryptographic fixtures for tests.*
 
 **Stop committing PEM/DER/JWK blobs into your repos.**
 

@@ -5,9 +5,9 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "X.509 certificate fixtures for testing"
+description = "X.509 certificate fixtures for deterministic and random cryptographic testing."
 categories = ["development-tools::testing"]
-keywords = ["x509", "fixtures", "testing"]
+keywords = ["x509", "fixtures", "testing", "cryptography", "certificate"]
 readme = "README.md"
 authors.workspace = true
 

@@ -5,12 +5,17 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "Runtime-generated key fixtures for tests (no committed PEM blobs)."
+description = "Deterministic and random cryptographic test fixtures for Rust integration and unit tests."
 categories = ["development-tools::testing"]
-keywords = ["test", "fixtures", "pem", "pkcs8", "jwks"]
+keywords = ["test", "fixtures", "cryptography", "deterministic", "x509"]
 readme = "../../README.md"
+homepage = "https://github.com/EffortlessMetrics/uselesskey"
 documentation = "https://docs.rs/uselesskey"
 authors.workspace = true
+
+[badges]
+github-actions = { repository = "EffortlessMetrics/uselesskey", workflow = "CI" }
+maintenance = { status = "actively-developed" }
 
 [package.metadata.docs.rs]
 features = ["full"]

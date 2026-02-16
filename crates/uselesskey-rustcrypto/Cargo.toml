@@ -5,9 +5,9 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "RustCrypto integration for uselesskey test fixtures."
+description = "RustCrypto integration for deterministic and random cryptographic test fixtures."
 categories = ["development-tools::testing"]
-keywords = ["rustcrypto", "fixtures", "testing", "crypto"]
+keywords = ["rustcrypto", "fixtures", "testing", "cryptography", "crypto"]
 readme = "README.md"
 authors.workspace = true
 

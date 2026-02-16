@@ -8,6 +8,8 @@
 
 mod testutil;
 
+use std::sync::OnceLock;
+
 use jsonwebtoken::jwk::Jwk;
 use jsonwebtoken::{Algorithm, DecodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
@@ -18,11 +20,36 @@ use uselesskey_rustls::{
     RustlsChainExt, RustlsClientConfigExt, RustlsMtlsExt, RustlsPrivateKeyExt,
     RustlsServerConfigExt,
 };
-use uselesskey_x509::{ChainSpec, X509FactoryExt};
+use uselesskey_x509::{ChainSpec, X509Cert, X509Chain, X509FactoryExt, X509Spec};
 
 fn fx() -> uselesskey_core::Factory {
     testutil::install_rustls_ring_provider();
     testutil::fx()
+}
+
+// ---------------------------------------------------------------------------
+// Shared fixtures — amortise RSA keygen to once per test binary
+// ---------------------------------------------------------------------------
+
+static SHARED_CHAIN: OnceLock<X509Chain> = OnceLock::new();
+static SHARED_SELF_SIGNED: OnceLock<X509Cert> = OnceLock::new();
+
+fn shared_chain() -> &'static X509Chain {
+    SHARED_CHAIN.get_or_init(|| {
+        let fx = fx();
+        fx.x509_chain(
+            "shared-e2e",
+            ChainSpec::new("test.example.com")
+                .with_sans(vec!["localhost".to_string(), "127.0.0.1".to_string()]),
+        )
+    })
+}
+
+fn shared_self_signed() -> &'static X509Cert {
+    SHARED_SELF_SIGNED.get_or_init(|| {
+        let fx = fx();
+        fx.x509_self_signed("shared-e2e-ss", X509Spec::self_signed("localhost"))
+    })
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -206,28 +233,23 @@ mod tls_workflow_tests {
 
     #[test]
     fn test_complete_tls_workflow() {
-        let fx = fx();
+        let chain = shared_chain();
 
-        // Step 1: Generate certificate chain
-        let chain_spec = ChainSpec::new("test.example.com")
-            .with_sans(vec!["localhost".to_string(), "127.0.0.1".to_string()]);
-        let chain = fx.x509_chain("tls-workflow", chain_spec);
-
-        // Step 2: Build server config
+        // Build server config
         let server_config = chain.server_config_rustls();
         assert_eq!(server_config.alpn_protocols.len(), 0);
 
-        // Step 3: Build client config
+        // Build client config
         let client_config = chain.client_config_rustls();
         assert_eq!(client_config.alpn_protocols.len(), 0);
 
-        // Step 4: Verify chain structure
+        // Verify chain structure
         assert!(!chain.leaf_cert_pem().is_empty());
         assert!(!chain.intermediate_cert_pem().is_empty());
         assert!(!chain.root_cert_pem().is_empty());
         assert!(!chain.chain_pem().is_empty());
 
-        // Step 5: Verify DER conversions
+        // Verify DER conversions
         let cert_chain = chain.chain_der_rustls();
         assert_eq!(cert_chain.len(), 2); // leaf + intermediate
 
@@ -240,48 +262,34 @@ mod tls_workflow_tests {
 
     #[test]
     fn test_mtls_workflow() {
-        let fx = fx();
+        let chain = shared_chain();
 
-        // Step 1: Generate server chain
-        let server_chain_spec = ChainSpec::new("server.example.com");
-        let server_chain = fx.x509_chain("mtls-server", server_chain_spec);
-
-        // Step 2: Generate client chain
-        let client_chain_spec = ChainSpec::new("client.example.com");
-        let client_chain = fx.x509_chain("mtls-client", client_chain_spec);
-
-        // Step 3: Build mTLS server config
-        let server_config = server_chain.server_config_mtls_rustls();
+        // Build mTLS server config
+        let server_config = chain.server_config_mtls_rustls();
         assert_eq!(server_config.alpn_protocols.len(), 0);
 
-        // Step 4: Build mTLS client config
-        let client_config = client_chain.client_config_mtls_rustls();
+        // Build mTLS client config
+        let client_config = chain.client_config_mtls_rustls();
         assert_eq!(client_config.alpn_protocols.len(), 0);
 
-        // Step 5: Verify both chains have valid structure
-        assert!(!server_chain.leaf_cert_pem().is_empty());
-        assert!(!server_chain.root_cert_pem().is_empty());
-        assert!(!client_chain.leaf_cert_pem().is_empty());
-        assert!(!client_chain.root_cert_pem().is_empty());
+        // Verify chain has valid structure
+        assert!(!chain.leaf_cert_pem().is_empty());
+        assert!(!chain.root_cert_pem().is_empty());
     }
 
     #[test]
     fn test_tls_self_signed_workflow() {
-        let fx = fx();
+        let cert = shared_self_signed();
 
-        // Step 1: Generate self-signed certificate
-        let spec = uselesskey_x509::X509Spec::self_signed("localhost");
-        let cert = fx.x509_self_signed("self-signed-workflow", spec);
-
-        // Step 2: Build server config
+        // Build server config
         let server_config = cert.server_config_rustls();
         assert_eq!(server_config.alpn_protocols.len(), 0);
 
-        // Step 3: Build client config
+        // Build client config
         let client_config = cert.client_config_rustls();
         assert_eq!(client_config.alpn_protocols.len(), 0);
 
-        // Step 4: Verify certificate structure
+        // Verify certificate structure
         assert!(!cert.cert_pem().is_empty());
         assert!(!cert.private_key_pkcs8_pem().is_empty());
         assert!(!cert.identity_pem().is_empty());
@@ -403,48 +411,36 @@ mod chain_workflow_tests {
 
     #[test]
     fn test_chain_creation_workflow() {
-        let fx = fx();
+        let chain = shared_chain();
 
-        // Step 1: Generate certificate chain
-        let chain_spec = ChainSpec::new("chain.example.com").with_sans(vec![
-            "localhost".to_string(),
-            "127.0.0.1".to_string(),
-            "*.example.com".to_string(),
-        ]);
-        let chain = fx.x509_chain("chain-workflow", chain_spec);
-
-        // Step 2: Verify chain structure
+        // Verify chain structure
         assert!(!chain.leaf_cert_pem().is_empty());
         assert!(!chain.intermediate_cert_pem().is_empty());
         assert!(!chain.root_cert_pem().is_empty());
         assert!(!chain.chain_pem().is_empty());
 
-        // Step 3: Verify DER formats
+        // Verify DER formats
         assert!(!chain.leaf_cert_der().is_empty());
         assert!(!chain.intermediate_cert_der().is_empty());
         assert!(!chain.root_cert_der().is_empty());
 
-        // Step 4: Verify private key
+        // Verify private key
         assert!(!chain.leaf_private_key_pkcs8_pem().is_empty());
         assert!(!chain.leaf_private_key_pkcs8_der().is_empty());
     }
 
     #[test]
     fn test_self_signed_cert_workflow() {
-        let fx = fx();
+        let cert = shared_self_signed();
 
-        // Step 1: Generate self-signed certificate
-        let spec = uselesskey_x509::X509Spec::self_signed("self-signed.example.com");
-        let cert = fx.x509_self_signed("self-signed-workflow", spec);
-
-        // Step 2: Verify certificate structure
+        // Verify certificate structure
         assert!(!cert.cert_pem().is_empty());
         assert!(!cert.cert_der().is_empty());
         assert!(!cert.private_key_pkcs8_pem().is_empty());
         assert!(!cert.private_key_pkcs8_der().is_empty());
         assert!(!cert.identity_pem().is_empty());
 
-        // Step 3: Verify identity PEM contains both cert and key
+        // Verify identity PEM contains both cert and key
         let identity = cert.identity_pem();
         assert!(identity.contains("BEGIN CERTIFICATE"));
         assert!(identity.contains("BEGIN PRIVATE KEY"));
@@ -484,42 +480,30 @@ mod negative_fixture_workflow_tests {
 
     #[test]
     fn test_expired_cert_workflow() {
-        let fx = fx();
-
-        // Step 1: Generate self-signed certificate
-        let spec = uselesskey_x509::X509Spec::self_signed("expired.example.com");
-        let cert = fx.x509_self_signed("expired-cert", spec);
-
-        // Step 2: Create expired variant
+        let cert = shared_self_signed();
         let expired_cert = cert.expired();
 
-        // Step 3: Verify expired cert can still be used to create config
+        // Verify expired cert can still be used to create config
         // (config creation succeeds, handshake would fail)
         let server_config = expired_cert.server_config_rustls();
         assert_eq!(server_config.alpn_protocols.len(), 0);
 
-        // Step 4: Verify certificate structure is preserved
+        // Verify certificate structure is preserved
         assert!(!expired_cert.cert_pem().is_empty());
         assert!(!expired_cert.cert_der().is_empty());
     }
 
     #[test]
     fn test_not_yet_valid_cert_workflow() {
-        let fx = fx();
-
-        // Step 1: Generate self-signed certificate
-        let spec = uselesskey_x509::X509Spec::self_signed("not-yet-valid.example.com");
-        let cert = fx.x509_self_signed("not-yet-valid-cert", spec);
-
-        // Step 2: Create not-yet-valid variant
+        let cert = shared_self_signed();
         let not_yet_valid_cert = cert.not_yet_valid();
 
-        // Step 3: Verify not-yet-valid cert can still be used to create config
+        // Verify not-yet-valid cert can still be used to create config
         // (config creation succeeds, handshake would fail)
         let server_config = not_yet_valid_cert.server_config_rustls();
         assert_eq!(server_config.alpn_protocols.len(), 0);
 
-        // Step 4: Verify certificate structure is preserved
+        // Verify certificate structure is preserved
         assert!(!not_yet_valid_cert.cert_pem().is_empty());
         assert!(!not_yet_valid_cert.cert_der().is_empty());
     }

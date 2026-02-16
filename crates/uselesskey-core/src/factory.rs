@@ -236,22 +236,24 @@ impl Factory {
             DerivationVersion::V1,
         );
 
-        use dashmap::mapref::entry::Entry;
+        // Fast path: already cached.
+        if let Some(entry) = self.inner.cache.get(&id) {
+            return downcast_or_panic::<T>(entry.value().clone(), &id);
+        }
 
-        let arc_any = match self.inner.cache.entry(id.clone()) {
-            Entry::Occupied(o) => o.get().clone(),
-            Entry::Vacant(v) => {
-                let seed = self.seed_for(&id);
-                let mut rng = ChaCha20Rng::from_seed(seed.0);
-                let value = init(&mut rng);
-                let arc: Arc<T> = Arc::new(value);
-                let arc_any: Arc<dyn Any + Send + Sync> = arc.clone();
-                v.insert(arc_any.clone());
-                arc_any
-            }
-        };
+        // Slow path: compute WITHOUT holding the DashMap shard lock.
+        // This avoids deadlocks when the init closure calls back into
+        // get_or_init (e.g. x509 cert generation calling factory.rsa()).
+        let seed = self.seed_for(&id);
+        let mut rng = ChaCha20Rng::from_seed(seed.0);
+        let value = init(&mut rng);
+        let arc: Arc<T> = Arc::new(value);
+        let arc_any: Arc<dyn Any + Send + Sync> = arc.clone();
 
-        downcast_or_panic::<T>(arc_any, &id)
+        // Insert if absent; if another thread raced us, use its value.
+        self.inner.cache.entry(id.clone()).or_insert(arc_any);
+
+        downcast_or_panic::<T>(self.inner.cache.get(&id).unwrap().value().clone(), &id)
     }
 
     fn seed_for(&self, id: &ArtifactId) -> Seed {

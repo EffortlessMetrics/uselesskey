@@ -5,9 +5,9 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "Core factory, derivation, and caching for uselesskey test fixtures."
+description = "Core factory for deterministic and random cryptographic test fixture generation."
 categories = ["development-tools::testing"]
-keywords = ["test", "fixtures", "deterministic"]
+keywords = ["test", "fixtures", "deterministic", "cryptography", "caching"]
 readme = "README.md"
 authors.workspace = true
 

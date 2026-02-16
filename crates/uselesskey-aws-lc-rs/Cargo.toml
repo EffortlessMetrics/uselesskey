@@ -5,9 +5,9 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "aws-lc-rs integration for uselesskey test fixtures."
+description = "aws-lc-rs integration for deterministic and random cryptographic test fixtures."
 categories = ["development-tools::testing"]
-keywords = ["aws-lc-rs", "fixtures", "testing", "crypto"]
+keywords = ["aws-lc-rs", "fixtures", "testing", "cryptography", "crypto"]
 readme = "README.md"
 authors.workspace = true
 

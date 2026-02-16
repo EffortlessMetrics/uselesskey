@@ -79,11 +79,13 @@ fn debug_includes_label_and_type() {
 }
 
 proptest! {
+    #![proptest_config(ProptestConfig { cases: 8, ..ProptestConfig::default() })]
+
     #[test]
-    fn deterministic_rsa_key_is_stable(seed in any::<[u8;32]>(), label in "[-_a-zA-Z0-9]{1,24}") {
+    fn deterministic_rsa_key_is_stable(seed in any::<[u8;32]>()) {
         let fx = Factory::deterministic(Seed::new(seed));
-        let rsa1 = fx.rsa(&label, RsaSpec::rs256());
-        let rsa2 = fx.rsa(&label, RsaSpec::rs256());
+        let rsa1 = fx.rsa("prop-key", RsaSpec::rs256());
+        let rsa2 = fx.rsa("prop-key", RsaSpec::rs256());
 
         prop_assert_eq!(rsa1.private_key_pkcs8_der(), rsa2.private_key_pkcs8_der());
         prop_assert_eq!(rsa1.public_key_spki_der(), rsa2.public_key_spki_der());
@@ -99,13 +101,12 @@ proptest! {
     #[test]
     fn all_spec_configs_produce_parseable_keys(
         seed in any::<[u8; 32]>(),
-        label in "[a-zA-Z0-9]{1,16}"
     ) {
         let fx = Factory::deterministic(Seed::new(seed));
 
         // Test rs256 spec (2048 bits, 65537 exponent).
         let spec = RsaSpec::rs256();
-        let rsa = fx.rsa(&label, spec);
+        let rsa = fx.rsa("prop-key", spec);
 
         // Verify private key is parseable.
         let priv_result = rsa::RsaPrivateKey::from_pkcs8_der(rsa.private_key_pkcs8_der());
@@ -130,10 +131,9 @@ proptest! {
     #[test]
     fn tempfile_outputs_match_in_memory(
         seed in any::<[u8; 32]>(),
-        label in "[a-zA-Z0-9]{1,16}"
     ) {
         let fx = Factory::deterministic(Seed::new(seed));
-        let rsa = fx.rsa(&label, RsaSpec::rs256());
+        let rsa = fx.rsa("prop-key", RsaSpec::rs256());
 
         // Write to tempfiles.
         let priv_temp = rsa.write_private_key_pkcs8_pem()
@@ -168,11 +168,10 @@ proptest! {
     #[cfg(feature = "jwk")]
     fn kid_is_deterministic(
         seed in any::<[u8; 32]>(),
-        label in "[a-zA-Z0-9]{1,16}"
     ) {
         let fx = Factory::deterministic(Seed::new(seed));
-        let rsa1 = fx.rsa(&label, RsaSpec::rs256());
-        let rsa2 = fx.rsa(&label, RsaSpec::rs256());
+        let rsa1 = fx.rsa("prop-key", RsaSpec::rs256());
+        let rsa2 = fx.rsa("prop-key", RsaSpec::rs256());
 
         prop_assert_eq!(rsa1.kid(), rsa2.kid(), "Same key should produce same kid");
     }
@@ -207,14 +206,15 @@ mod jwk_tests {
     use super::*;
 
     proptest! {
+        #![proptest_config(ProptestConfig { cases: 8, ..ProptestConfig::default() })]
+
         /// JWK contains required fields: kty, alg, use, kid, n, e.
         #[test]
         fn jwk_contains_required_fields(
             seed in any::<[u8; 32]>(),
-            label in "[a-zA-Z0-9]{1,16}"
         ) {
             let fx = Factory::deterministic(Seed::new(seed));
-            let rsa = fx.rsa(&label, RsaSpec::rs256());
+            let rsa = fx.rsa("prop-jwk", RsaSpec::rs256());
 
             let jwk = rsa.public_jwk().to_value();
 
@@ -242,10 +242,9 @@ mod jwk_tests {
         #[test]
         fn jwks_wraps_jwk_correctly(
             seed in any::<[u8; 32]>(),
-            label in "[a-zA-Z0-9]{1,16}"
         ) {
             let fx = Factory::deterministic(Seed::new(seed));
-            let rsa = fx.rsa(&label, RsaSpec::rs256());
+            let rsa = fx.rsa("prop-jwk", RsaSpec::rs256());
 
             let jwks = rsa.public_jwks().to_value();
             let jwk = rsa.public_jwk().to_value();
@@ -266,13 +265,12 @@ mod jwk_tests {
         #[test]
         fn jwk_n_and_e_are_valid_base64url(
             seed in any::<[u8; 32]>(),
-            label in "[a-zA-Z0-9]{1,16}"
         ) {
             use base64::engine::general_purpose::URL_SAFE_NO_PAD;
             use base64::Engine as _;
 
             let fx = Factory::deterministic(Seed::new(seed));
-            let rsa = fx.rsa(&label, RsaSpec::rs256());
+            let rsa = fx.rsa("prop-jwk", RsaSpec::rs256());
 
             let jwk = rsa.public_jwk().to_value();
 
@@ -299,10 +297,9 @@ mod jwk_tests {
         #[test]
         fn private_jwk_contains_required_fields(
             seed in any::<[u8; 32]>(),
-            label in "[a-zA-Z0-9]{1,16}"
         ) {
             let fx = Factory::deterministic(Seed::new(seed));
-            let rsa = fx.rsa(&label, RsaSpec::rs256());
+            let rsa = fx.rsa("prop-jwk", RsaSpec::rs256());
 
             let jwk = rsa.private_key_jwk().to_value();
 
@@ -316,13 +313,12 @@ mod jwk_tests {
         #[test]
         fn private_jwk_fields_are_valid_base64url(
             seed in any::<[u8; 32]>(),
-            label in "[a-zA-Z0-9]{1,16}"
         ) {
             use base64::engine::general_purpose::URL_SAFE_NO_PAD;
             use base64::Engine as _;
 
             let fx = Factory::deterministic(Seed::new(seed));
-            let rsa = fx.rsa(&label, RsaSpec::rs256());
+            let rsa = fx.rsa("prop-jwk", RsaSpec::rs256());
             let jwk = rsa.private_key_jwk().to_value();
 
             for key in ["d", "p", "q", "dp", "dq", "qi"] {

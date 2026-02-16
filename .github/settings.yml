@@ -1,5 +1,5 @@
 # .github/settings.yml
 repository:
-  description: "Terraform for test credentials. Runtime-generated key fixtures for tests to avoid committed PEM blobs."
+  description: "Deterministic and random cryptographic test fixtures for Rust tests."
   homepage: "https://github.com/EffortlessMetrics/uselesskey"
-  topics: rust, testing, security, cryptography, fixtures, pki, devex, x509, jwt
+  topics: rust, testing, test-fixtures, cryptography, security, pki, x509, jwt, tls, keys

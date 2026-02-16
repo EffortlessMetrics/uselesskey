@@ -5,9 +5,9 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "HMAC secret fixtures for testing"
+description = "HMAC secret fixtures for deterministic and random cryptographic testing."
 categories = ["development-tools::testing"]
-keywords = ["hmac", "fixtures", "testing", "jwk"]
+keywords = ["hmac", "fixtures", "testing", "cryptography", "crypto"]
 readme = "README.md"
 authors.workspace = true
 

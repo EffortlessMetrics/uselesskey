@@ -5,9 +5,9 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "RSA key fixtures for uselesskey."
+description = "RSA key fixtures for deterministic and random cryptographic testing."
 categories = ["development-tools::testing"]
-keywords = ["rsa", "fixtures", "testing", "jwk"]
+keywords = ["rsa", "fixtures", "testing", "jwk", "cryptography"]
 readme = "README.md"
 authors.workspace = true
 

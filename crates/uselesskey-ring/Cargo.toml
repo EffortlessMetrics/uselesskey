@@ -5,9 +5,9 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "ring 0.17 integration for uselesskey test fixtures."
+description = "ring 0.17 integration for deterministic and random cryptographic test fixtures."
 categories = ["development-tools::testing"]
-keywords = ["ring", "fixtures", "testing", "crypto"]
+keywords = ["ring", "tls", "fixtures", "testing", "cryptography"]
 readme = "README.md"
 authors.workspace = true
 

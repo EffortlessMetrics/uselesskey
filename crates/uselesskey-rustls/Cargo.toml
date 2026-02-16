@@ -5,9 +5,9 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "rustls-pki-types integration for uselesskey test fixtures."
+description = "rustls-pki-types integration for deterministic and random cryptographic test fixtures."
 categories = ["development-tools::testing"]
-keywords = ["rustls", "tls", "fixtures", "testing"]
+keywords = ["rustls", "tls", "fixtures", "testing", "cryptography"]
 readme = "README.md"
 authors.workspace = true
 

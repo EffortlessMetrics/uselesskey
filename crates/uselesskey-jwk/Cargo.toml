@@ -5,9 +5,9 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "Typed JWK/JWKS helpers for uselesskey."
+description = "Typed JWK/JWKS helpers for deterministic and random cryptographic key fixtures."
 categories = ["development-tools::testing"]
-keywords = ["jwk", "jwks", "fixtures", "testing"]
+keywords = ["jwk", "jwks", "fixtures", "testing", "cryptography"]
 readme = "README.md"
 authors.workspace = true
 
