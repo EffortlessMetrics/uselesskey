@@ -1,5 +1,5 @@
 use crate::factory::{Factory, downcast_or_panic, random_seed};
-use crate::id::{ArtifactId, DerivationVersion};
+use crate::id::{ArtifactId, DerivationVersion, Seed};
 use std::any::Any;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::Arc;
@@ -80,6 +80,22 @@ fn downcast_or_panic_ok_returns_value() {
 fn random_seed_has_expected_length() {
     let seed = random_seed();
     assert_eq!(seed.bytes().len(), 32);
+}
+
+#[test]
+fn get_or_init_reentrant_does_not_deadlock() {
+    let fx = Factory::deterministic(Seed::new([42u8; 32]));
+
+    // Outer init closure calls get_or_init again (re-entrant).
+    // This mirrors X.509 cert generation calling factory.rsa().
+    // Would deadlock if the init closure ran while holding the shard lock.
+    let outer: Arc<String> = fx.get_or_init("test:outer", "label", b"spec", "good", |_rng| {
+        let inner: Arc<u64> =
+            fx.get_or_init("test:inner", "label", b"spec", "good", |_rng| 42u64);
+        format!("outer-{}", *inner)
+    });
+
+    assert_eq!(*outer, "outer-42");
 }
 
 #[test]

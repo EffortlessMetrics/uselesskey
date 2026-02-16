@@ -216,6 +216,14 @@ impl Factory {
     /// `spec_bytes` must be stable across versions for deterministic behavior.
     ///
     /// The closure receives a `ChaCha20Rng` seeded appropriately for the current mode.
+    ///
+    /// # Re-entrancy
+    ///
+    /// The `init` closure runs **outside** the `DashMap` shard lock, so it is safe
+    /// for `init` to call back into `get_or_init` (e.g. X.509 cert generation
+    /// calling `factory.rsa()`). Under contention, `init` may execute more than
+    /// once for the same key; only one result is kept in the cache. The returned
+    /// `Arc<T>` always points to the cached winner.
     pub fn get_or_init<T, F>(
         &self,
         domain: ArtifactDomain,
