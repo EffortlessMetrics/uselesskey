@@ -1,6 +1,6 @@
 [package]
 name = "uselesskey-jwk"
-version = "0.2.1"
+version = "0.3.0"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
@@ -16,5 +16,3 @@ authors.workspace = true
 [dependencies]
 serde.workspace = true
 serde_json.workspace = true
-
-

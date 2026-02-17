@@ -3276,7 +3276,7 @@ checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
 
 [[package]]
 name = "uselesskey"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "tempfile",
  "uselesskey-core",
@@ -3292,7 +3292,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-aws-lc-rs"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "aws-lc-rs",
  "uselesskey-core",
@@ -3319,7 +3319,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "blake3",
  "dashmap",
@@ -3335,7 +3335,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-ecdsa"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "base64",
  "blake3",
@@ -3352,7 +3352,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-ed25519"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "base64",
  "blake3",
@@ -3368,7 +3368,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-hmac"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "base64",
  "blake3",
@@ -3405,7 +3405,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-jsonwebtoken"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "jsonwebtoken",
  "serde",
@@ -3418,7 +3418,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-jwk"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -3426,7 +3426,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-pgp"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "pgp",
  "uselesskey-core",
@@ -3434,7 +3434,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-ring"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "hex",
  "ring",
@@ -3446,7 +3446,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-rsa"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "base64",
  "blake3",
@@ -3460,7 +3460,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-rustcrypto"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "ed25519-dalek",
  "hmac",
@@ -3477,7 +3477,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-rustls"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "rustls",
  "rustls-pki-types",
@@ -3490,7 +3490,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-token"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "base64",
  "rand_core 0.6.4",
@@ -3500,7 +3500,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-tonic"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "tonic",
  "uselesskey-core",
@@ -3509,7 +3509,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-x509"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "base64",
  "blake3",

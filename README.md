@@ -57,7 +57,7 @@ Add to `Cargo.toml`:
 
 ```toml
 [dev-dependencies]
-uselesskey = "0.2"
+uselesskey = "0.3"
 ```
 
 Generate keys:
@@ -211,7 +211,7 @@ With the `tls-config` feature, build rustls configs in one line:
 
 ```toml
 [dev-dependencies]
-uselesskey-rustls = { version = "0.2", features = ["tls-config", "rustls-ring"] }
+uselesskey-rustls = { version = "0.3", features = ["tls-config", "rustls-ring"] }
 ```
 
 ```rust
@@ -230,7 +230,7 @@ let client_config = chain.client_config_rustls();    // ClientConfig (trusts roo
 
 ```toml
 [dev-dependencies]
-uselesskey-ring = { version = "0.2", features = ["all"] }
+uselesskey-ring = { version = "0.3", features = ["all"] }
 ```
 
 ```rust
@@ -247,7 +247,7 @@ let ring_kp = rsa.rsa_key_pair_ring();  // ring::rsa::KeyPair
 
 ```toml
 [dev-dependencies]
-uselesskey-rustcrypto = { version = "0.2", features = ["all"] }
+uselesskey-rustcrypto = { version = "0.3", features = ["all"] }
 ```
 
 ```rust
@@ -264,7 +264,7 @@ let rsa_pk = rsa.rsa_private_key(); // rsa::RsaPrivateKey
 
 ```toml
 [dev-dependencies]
-uselesskey-aws-lc-rs = { version = "0.2", features = ["native", "all"] }
+uselesskey-aws-lc-rs = { version = "0.3", features = ["native", "all"] }
 ```
 
 ```rust
@@ -281,7 +281,7 @@ let lc_kp = rsa.rsa_key_pair_aws_lc_rs();  // aws_lc_rs::rsa::KeyPair
 
 ```toml
 [dev-dependencies]
-uselesskey-tonic = "0.2"
+uselesskey-tonic = "0.3"
 ```
 
 ```rust
