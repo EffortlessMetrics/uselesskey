@@ -29,6 +29,7 @@ uselesskey-rsa = { path = "../uselesskey-rsa", version = "0.2.1", optional = tru
 uselesskey-ecdsa = { path = "../uselesskey-ecdsa", version = "0.2.1", optional = true }
 uselesskey-ed25519 = { path = "../uselesskey-ed25519", version = "0.2.1", optional = true }
 uselesskey-hmac = { path = "../uselesskey-hmac", version = "0.2.1", optional = true }
+uselesskey-token = { path = "../uselesskey-token", version = "0.2.1", optional = true }
 uselesskey-x509 = { path = "../uselesskey-x509", version = "0.2.1", optional = true }
 
 [features]
@@ -39,6 +40,7 @@ rsa = ["dep:uselesskey-rsa"]
 ecdsa = ["dep:uselesskey-ecdsa"]
 ed25519 = ["dep:uselesskey-ed25519"]
 hmac = ["dep:uselesskey-hmac"]
+token = ["dep:uselesskey-token"]
 
 # X.509 certificates (implies rsa for now)
 x509 = ["dep:uselesskey-x509", "rsa", "uselesskey-x509/jwk"]
@@ -54,7 +56,7 @@ jwk = [
 
 # Convenience bundles
 all-keys = ["rsa", "ecdsa", "ed25519", "hmac"]
-full = ["all-keys", "x509", "jwk"]
+full = ["all-keys", "token", "x509", "jwk"]
 
 [dev-dependencies]
 tempfile.workspace = true

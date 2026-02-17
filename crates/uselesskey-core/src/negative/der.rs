@@ -1,3 +1,5 @@
+use crate::derive::hash32;
+
 /// Truncate DER bytes to `len` bytes.
 ///
 /// If `len >= der.len()`, returns the original bytes unchanged.
@@ -57,8 +59,55 @@ pub fn flip_byte(der: &[u8], offset: usize) -> Vec<u8> {
     out
 }
 
+/// Apply a deterministic DER corruption derived from a variant string.
+///
+/// This is useful for stable "corrupt:*" fixtures where the corruption pattern
+/// should be tied to identity rather than test execution order.
+///
+/// The mapping is deterministic:
+/// same `der` + same `variant` => same corrupted output.
+pub fn corrupt_der_deterministic(der: &[u8], variant: &str) -> Vec<u8> {
+    let digest = hash32(variant.as_bytes());
+    let bytes = digest.as_bytes();
+
+    match bytes[0] % 3 {
+        0 => {
+            let len = derived_truncate_len(der.len(), bytes);
+            truncate_der(der, len)
+        }
+        1 => {
+            let offset = derived_offset(der.len(), bytes[1]);
+            flip_byte(der, offset)
+        }
+        _ => {
+            let offset = derived_offset(der.len(), bytes[1]);
+            let flipped = flip_byte(der, offset);
+            let len = derived_truncate_len(flipped.len(), bytes);
+            truncate_der(&flipped, len)
+        }
+    }
+}
+
+fn derived_offset(len: usize, selector: u8) -> usize {
+    if len == 0 {
+        return 0;
+    }
+    selector as usize % len
+}
+
+fn derived_truncate_len(len: usize, digest: &[u8; 32]) -> usize {
+    if len <= 1 {
+        return 0;
+    }
+    // Always truncate by at least one byte.
+    let span = len - 1;
+    digest[2] as usize % span
+}
+
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
     use super::*;
 
     #[test]
@@ -89,5 +138,30 @@ mod tests {
         let der = vec![0x30, 0x82, 0x01, 0x22];
         assert_eq!(truncate_der(&der, der.len()), der);
         assert_eq!(truncate_der(&der, der.len() + 10), der);
+    }
+
+    #[test]
+    fn deterministic_der_corruption_is_stable() {
+        let der = vec![0x30, 0x82, 0x01, 0x22, 0x30, 0x0D];
+        let first = corrupt_der_deterministic(&der, "corrupt:der:v1");
+        let second = corrupt_der_deterministic(&der, "corrupt:der:v1");
+        assert_eq!(first, second);
+    }
+
+    #[test]
+    fn deterministic_der_corruption_varies_across_variants() {
+        let der = vec![0x30, 0x82, 0x01, 0x22, 0x30, 0x0D];
+        let variants = ["a", "b", "c", "d", "e", "f", "g"];
+        let mut outputs = HashSet::new();
+        for v in variants {
+            outputs.insert(corrupt_der_deterministic(&der, v));
+        }
+        assert!(outputs.len() >= 2);
+    }
+
+    #[test]
+    fn deterministic_der_corruption_handles_empty_input() {
+        let out = corrupt_der_deterministic(&[], "empty");
+        assert!(out.is_empty());
     }
 }

@@ -8,6 +8,7 @@ members = [
   "crates/uselesskey-ecdsa",
   "crates/uselesskey-ed25519",
   "crates/uselesskey-hmac",
+  "crates/uselesskey-token",
   "crates/uselesskey-x509",
   "crates/uselesskey-jsonwebtoken",
   "crates/uselesskey-rustls",

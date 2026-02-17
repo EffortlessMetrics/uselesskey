@@ -1,0 +1,18 @@
+[package]
+name = "uselesskey-token"
+version = "0.2.1"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "API key, bearer token, and OAuth token fixtures for deterministic and random testing."
+categories = ["development-tools::testing"]
+keywords = ["token", "fixtures", "testing", "oauth", "deterministic"]
+readme = "README.md"
+authors.workspace = true
+
+[dependencies]
+uselesskey-core = { path = "../uselesskey-core", version = "0.2.1" }
+base64.workspace = true
+rand_core.workspace = true
+serde_json.workspace = true

@@ -63,6 +63,17 @@ fn hmac_reexport_works() {
 }
 
 #[test]
+#[cfg(feature = "token")]
+fn token_reexport_works() {
+    use uselesskey::TokenFactoryExt;
+    use uselesskey::TokenSpec;
+
+    let fx = Factory::random();
+    let token = fx.token("issuer", TokenSpec::api_key());
+    assert!(token.value().starts_with("uk_test_"));
+}
+
+#[test]
 #[cfg(feature = "jwk")]
 fn jwk_module_reexports_work() {
     use uselesskey::jwk::{JwksBuilder, PublicJwk, RsaPublicJwk};

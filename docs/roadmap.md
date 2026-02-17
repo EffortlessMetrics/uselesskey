@@ -36,6 +36,12 @@ This roadmap reflects the strategic direction for uselesskey as a **test-fixture
 - [x] **`uselesskey-jsonwebtoken`**
   - Returns `jsonwebtoken::EncodingKey` / `DecodingKey` directly
   - Reduces boilerplate in JWT tests
+- [x] **Deterministic corruption variants** (`uselesskey-core`)
+  - `corrupt_pem_deterministic(pem, variant)` and `corrupt_der_deterministic(der, variant)`
+  - Enables stable `corrupt:*` fixture patterns tied to artifact identity
+- [x] **Token fixtures** (`uselesskey-token`)
+  - API key, bearer token, and OAuth access token (JWT-shape) fixtures
+  - `TokenFactoryExt` trait on `Factory`: `fx.token("issuer", TokenSpec::api_key())`
 
 - [x] **X.509 cert chain fixtures** (`uselesskey-x509`)
   - Root CA → Intermediate → Leaf
@@ -68,8 +74,6 @@ This roadmap reflects the strategic direction for uselesskey as a **test-fixture
 Items under evaluation, not yet committed:
 
 - **`no_std` core** — If demand exists for embedded/WASM test fixtures
-- **Deterministic corruptions** — Variant-derived corruption patterns via RNG instead of hard-coded transforms
-- **Token fixtures** — API keys, bearer tokens, OAuth tokens with realistic shapes
 - **PGP key fixtures** — For projects testing PGP/GPG workflows
 
 ## Non-goals

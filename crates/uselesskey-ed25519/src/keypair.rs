@@ -4,7 +4,9 @@ use std::sync::Arc;
 use ed25519_dalek::{SigningKey, VerifyingKey, pkcs8::EncodePrivateKey, pkcs8::EncodePublicKey};
 use pkcs8::LineEnding;
 use rand_core::RngCore;
-use uselesskey_core::negative::{CorruptPem, corrupt_pem, truncate_der};
+use uselesskey_core::negative::{
+    CorruptPem, corrupt_der_deterministic, corrupt_pem, corrupt_pem_deterministic, truncate_der,
+};
 use uselesskey_core::sink::TempArtifact;
 use uselesskey_core::{Error, Factory};
 
@@ -107,9 +109,19 @@ impl Ed25519KeyPair {
         corrupt_pem(self.private_key_pkcs8_pem(), how)
     }
 
+    /// Produce a deterministic corrupted PKCS#8 PEM using a variant string.
+    pub fn private_key_pkcs8_pem_corrupt_deterministic(&self, variant: &str) -> String {
+        corrupt_pem_deterministic(self.private_key_pkcs8_pem(), variant)
+    }
+
     /// Produce a truncated variant of the PKCS#8 DER.
     pub fn private_key_pkcs8_der_truncated(&self, len: usize) -> Vec<u8> {
         truncate_der(self.private_key_pkcs8_der(), len)
+    }
+
+    /// Produce a deterministic corrupted PKCS#8 DER using a variant string.
+    pub fn private_key_pkcs8_der_corrupt_deterministic(&self, variant: &str) -> Vec<u8> {
+        corrupt_der_deterministic(self.private_key_pkcs8_der(), variant)
     }
 
     /// Return a valid (parseable) public key that does *not* match this private key.

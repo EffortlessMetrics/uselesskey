@@ -1,3 +1,5 @@
+use crate::derive::hash32;
+
 /// Strategies for corrupting PEM-encoded data.
 ///
 /// Each variant produces a different kind of malformed PEM that can be used
@@ -78,6 +80,40 @@ pub fn corrupt_pem(pem: &str, how: CorruptPem) -> String {
     }
 }
 
+/// Apply a deterministic PEM corruption derived from a variant string.
+///
+/// This is useful when you want stable negative fixtures keyed by
+/// an artifact variant such as `"corrupt:header"` or `"corrupt:v2"`.
+///
+/// The mapping is deterministic:
+/// same `pem` + same `variant` => same corrupted output.
+pub fn corrupt_pem_deterministic(pem: &str, variant: &str) -> String {
+    let digest = hash32(variant.as_bytes());
+    let bytes = digest.as_bytes();
+
+    match bytes[0] % 5 {
+        0 => corrupt_pem(pem, CorruptPem::BadHeader),
+        1 => corrupt_pem(pem, CorruptPem::BadFooter),
+        2 => corrupt_pem(pem, CorruptPem::BadBase64),
+        3 => corrupt_pem(pem, CorruptPem::ExtraBlankLine),
+        _ => {
+            let bytes = derived_truncate_len(pem, bytes);
+            corrupt_pem(pem, CorruptPem::Truncate { bytes })
+        }
+    }
+}
+
+fn derived_truncate_len(pem: &str, digest: &[u8; 32]) -> usize {
+    let chars = pem.chars().count();
+    if chars <= 1 {
+        return 0;
+    }
+
+    // Keep at least one char and always truncate by at least one char.
+    let span = chars - 1;
+    1 + (u16::from_be_bytes([digest[1], digest[2]]) as usize % span)
+}
+
 fn replace_first_line(pem: &str, replacement: &str) -> String {
     let mut lines = pem.lines();
     let _first = lines.next();
@@ -144,6 +180,8 @@ fn inject_blank_line(pem: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
     use super::*;
 
     #[test]
@@ -199,5 +237,31 @@ mod tests {
         let out = corrupt_pem(pem, CorruptPem::ExtraBlankLine);
         let lines: Vec<_> = out.lines().collect();
         assert_eq!(lines[1], "");
+    }
+
+    #[test]
+    fn deterministic_corruption_is_stable_for_same_variant() {
+        let pem = "-----BEGIN TEST-----\nAAA=\n-----END TEST-----\n";
+        let first = corrupt_pem_deterministic(pem, "corrupt:variant-a");
+        let second = corrupt_pem_deterministic(pem, "corrupt:variant-a");
+        assert_eq!(first, second);
+    }
+
+    #[test]
+    fn deterministic_corruption_produces_multiple_shapes_across_variants() {
+        let pem = "-----BEGIN TEST-----\nAAA=\n-----END TEST-----\n";
+        let variants = ["a", "b", "c", "d", "e", "f", "g", "h"];
+        let mut outputs = HashSet::new();
+        for v in variants {
+            outputs.insert(corrupt_pem_deterministic(pem, v));
+        }
+        assert!(outputs.len() >= 2);
+    }
+
+    #[test]
+    fn deterministic_corruption_handles_short_inputs() {
+        let out = corrupt_pem_deterministic("x", "short");
+        let out2 = corrupt_pem_deterministic("x", "short");
+        assert_eq!(out, out2);
     }
 }

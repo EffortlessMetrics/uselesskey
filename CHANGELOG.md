@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Deterministic negative-fixture helpers in `uselesskey-core`:
+  - `negative::corrupt_pem_deterministic(pem, variant)`
+  - `negative::corrupt_der_deterministic(der, variant)`
+- Deterministic corruption convenience methods on key/cert fixtures:
+  - RSA/ECDSA/Ed25519: `*_corrupt_deterministic(variant)`
+  - X.509: `corrupt_cert_pem_deterministic(variant)` and `corrupt_cert_der_deterministic(variant)`
+- New `uselesskey-token` microcrate:
+  - `TokenFactoryExt` (`fx.token(label, spec)`)
+  - `TokenSpec::{api_key,bearer,oauth_access_token}`
+  - Authorization header helpers and deterministic token generation
+- New facade `token` feature in `uselesskey`, included in `full`
+
 ## [0.2.1] - 2026-02-16
 
 ### Changed

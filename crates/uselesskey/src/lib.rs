@@ -181,6 +181,9 @@ pub use uselesskey_ed25519::{
 #[cfg(feature = "hmac")]
 pub use uselesskey_hmac::{DOMAIN_HMAC_SECRET, HmacFactoryExt, HmacSecret, HmacSpec};
 
+#[cfg(feature = "token")]
+pub use uselesskey_token::{DOMAIN_TOKEN_FIXTURE, TokenFactoryExt, TokenFixture, TokenSpec};
+
 #[cfg(feature = "x509")]
 pub use uselesskey_x509::{
     ChainNegative, ChainSpec, DOMAIN_X509_CERT, DOMAIN_X509_CHAIN, X509Cert, X509Chain,
@@ -209,6 +212,9 @@ pub mod prelude {
 
     #[cfg(feature = "hmac")]
     pub use crate::{HmacFactoryExt, HmacSecret, HmacSpec};
+
+    #[cfg(feature = "token")]
+    pub use crate::{TokenFactoryExt, TokenFixture, TokenSpec};
 
     #[cfg(feature = "x509")]
     pub use crate::{ChainSpec, X509Cert, X509Chain, X509FactoryExt, X509Spec};

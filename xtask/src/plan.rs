@@ -153,6 +153,7 @@ fn dependents(crate_name: &str) -> &'static [&'static str] {
             "uselesskey-ecdsa",
             "uselesskey-ed25519",
             "uselesskey-hmac",
+            "uselesskey-token",
             "uselesskey-x509",
             "uselesskey",
             "uselesskey-bdd",
@@ -195,6 +196,7 @@ fn dependents(crate_name: &str) -> &'static [&'static str] {
             "uselesskey-jsonwebtoken",
             "uselesskey-rustcrypto",
         ],
+        "uselesskey-token" => &["uselesskey"],
         "uselesskey" => &[],
         "uselesskey-jsonwebtoken" => &[],
         "uselesskey-rustls" => &[],
@@ -238,6 +240,7 @@ mod tests {
         assert!(impacted.contains("uselesskey-ecdsa"));
         assert!(impacted.contains("uselesskey-ed25519"));
         assert!(impacted.contains("uselesskey-hmac"));
+        assert!(impacted.contains("uselesskey-token"));
         assert!(impacted.contains("uselesskey-x509"));
         assert!(impacted.contains("uselesskey"));
         assert!(impacted.contains("uselesskey-bdd"));
@@ -302,6 +305,15 @@ mod tests {
         assert!(impacted.contains("uselesskey-hmac"));
         assert!(impacted.contains("uselesskey"));
         assert!(impacted.contains("uselesskey-jsonwebtoken"));
+    }
+
+    #[test]
+    fn token_change_expands_to_facade() {
+        let paths = vec!["crates/uselesskey-token/src/lib.rs".to_string()];
+        let plan = build_plan(&paths);
+        let impacted = &plan.impacted_crates;
+        assert!(impacted.contains("uselesskey-token"));
+        assert!(impacted.contains("uselesskey"));
     }
 
     #[test]

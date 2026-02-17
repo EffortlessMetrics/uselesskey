@@ -32,6 +32,10 @@
   - HMAC secret generator (HS256/384/512)
   - raw bytes + optional `jwk` feature
 
+- `crates/uselesskey-token`
+  - token fixture generator (API key, bearer, OAuth access token)
+  - deterministic JWT-shape OAuth access token outputs
+
 - `crates/uselesskey-x509`
   - X.509 certificate fixtures (self-signed + cert chains)
   - Root CA → Intermediate → Leaf chain generation
@@ -105,7 +109,7 @@ Variant strings solve a bunch of test cases cleanly:
 
 - `"good"`: normal fixture
 - `"mismatch"`: same label/spec, different keypair, used for mismatch negative tests
-- `"corrupt:*"`: future: derive deterministic corruption patterns without randomness
+- `"corrupt:*"`: deterministic corruption patterns derived from variant identity
 
 The variant is part of the artifact id, so it does not collide with the "good" fixture.
 
@@ -119,6 +123,7 @@ Factory (core)
   ├── EcdsaFactoryExt    (uselesskey-ecdsa)   → fx.ecdsa(label, spec)
   ├── Ed25519FactoryExt  (uselesskey-ed25519) → fx.ed25519(label)
   ├── HmacFactoryExt     (uselesskey-hmac)    → fx.hmac(label, spec)
+  ├── TokenFactoryExt    (uselesskey-token)   → fx.token(label, spec)
   └── X509FactoryExt     (uselesskey-x509)    → fx.x509(label, spec)
 ```
 

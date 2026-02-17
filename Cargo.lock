@@ -2280,6 +2280,7 @@ dependencies = [
  "uselesskey-hmac",
  "uselesskey-jwk",
  "uselesskey-rsa",
+ "uselesskey-token",
  "uselesskey-x509",
 ]
 
@@ -2470,6 +2471,16 @@ dependencies = [
  "uselesskey-ed25519",
  "uselesskey-rsa",
  "uselesskey-x509",
+]
+
+[[package]]
+name = "uselesskey-token"
+version = "0.2.1"
+dependencies = [
+ "base64",
+ "rand_core 0.6.4",
+ "serde_json",
+ "uselesskey-core",
 ]
 
 [[package]]

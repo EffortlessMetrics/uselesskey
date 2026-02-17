@@ -114,6 +114,22 @@ fn corrupt_pem_and_truncate_der_fail_to_parse() {
 }
 
 #[test]
+fn deterministic_corruption_helpers_are_stable() {
+    let fx = Factory::deterministic(Seed::from_env_value("ecdsa-corrupt-det").unwrap());
+    let key = fx.ecdsa("issuer", EcdsaSpec::es256());
+
+    let pem_a = key.private_key_pkcs8_pem_corrupt_deterministic("corrupt:v1");
+    let pem_b = key.private_key_pkcs8_pem_corrupt_deterministic("corrupt:v1");
+    assert_eq!(pem_a, pem_b);
+    assert_ne!(pem_a, key.private_key_pkcs8_pem());
+
+    let der_a = key.private_key_pkcs8_der_corrupt_deterministic("corrupt:v1");
+    let der_b = key.private_key_pkcs8_der_corrupt_deterministic("corrupt:v1");
+    assert_eq!(der_a, der_b);
+    assert_ne!(der_a, key.private_key_pkcs8_der());
+}
+
+#[test]
 fn tempfiles_match_in_memory() {
     let fx = Factory::random();
     let key = fx.ecdsa("issuer", EcdsaSpec::es256());

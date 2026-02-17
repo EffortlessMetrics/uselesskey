@@ -47,6 +47,22 @@ fn corrupt_pem_fails_to_parse() {
 }
 
 #[test]
+fn deterministic_corruption_helpers_are_stable() {
+    let fx = Factory::deterministic(Seed::from_env_value("rsa-corrupt-det").unwrap());
+    let rsa = fx.rsa("issuer", RsaSpec::rs256());
+
+    let pem_a = rsa.private_key_pkcs8_pem_corrupt_deterministic("corrupt:v1");
+    let pem_b = rsa.private_key_pkcs8_pem_corrupt_deterministic("corrupt:v1");
+    assert_eq!(pem_a, pem_b);
+    assert_ne!(pem_a, rsa.private_key_pkcs8_pem());
+
+    let der_a = rsa.private_key_pkcs8_der_corrupt_deterministic("corrupt:v1");
+    let der_b = rsa.private_key_pkcs8_der_corrupt_deterministic("corrupt:v1");
+    assert_eq!(der_a, der_b);
+    assert_ne!(der_a, rsa.private_key_pkcs8_der());
+}
+
+#[test]
 fn mismatched_public_key_is_parseable_and_different() {
     let fx = fx();
     let rsa = fx.rsa("issuer", RsaSpec::rs256());
