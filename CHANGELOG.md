@@ -20,6 +20,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `TokenSpec::{api_key,bearer,oauth_access_token}`
   - Authorization header helpers and deterministic token generation
 - New facade `token` feature in `uselesskey`, included in `full`
+- New `uselesskey-pgp` microcrate:
+  - `PgpFactoryExt` (`fx.pgp(label, spec)`)
+  - `PgpSpec::{rsa_2048,rsa_3072,ed25519}`
+  - Armored and binary OpenPGP keyblock outputs with mismatch/corruption helpers
+- New facade `pgp` feature in `uselesskey`, included in `all-keys` and `full`
+- New `uselesskey-tonic` adapter microcrate:
+  - `TonicIdentityExt`, `TonicServerTlsExt`, `TonicClientTlsExt`, `TonicMtlsExt`
+  - Converts `uselesskey-x509` fixtures into `tonic::transport` TLS types
+  - One-liner server/client/mTLS config builders for gRPC tests
+- `uselesskey-core` now supports `no_std` builds:
+  - New `std` default feature gate in `uselesskey-core`
+  - Deterministic derivation/caching and negative helpers compile with `--no-default-features`
 
 ## [0.2.1] - 2026-02-16
 

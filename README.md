@@ -34,11 +34,13 @@ Even fake keys that look real cause friction. This crate replaces "security poli
 - ECDSA (P-256, P-384)
 - Ed25519
 - HMAC (HS256, HS384, HS512)
+- OpenPGP (RSA 2048/3072, Ed25519)
 - Token fixtures (API key, bearer, OAuth access token/JWT shape)
 
 **Output formats:**
 - PKCS#8 PEM/DER (private keys)
 - SPKI PEM/DER (public keys)
+- OpenPGP armored and binary keyblocks (with `pgp` feature)
 - JWK/JWKS (with `jwk` feature)
 - Tempfiles (for libraries that need paths)
 - X.509 self-signed certificates and certificate chains (with `x509` feature)
@@ -198,6 +200,7 @@ Adapter crates bridge uselesskey fixtures to third-party library types. They are
 |-------|---------|
 | `uselesskey-jsonwebtoken` | Returns `jsonwebtoken::EncodingKey` / `DecodingKey` directly |
 | `uselesskey-rustls` | `rustls-pki-types` conversions + `ServerConfig` / `ClientConfig` builders |
+| `uselesskey-tonic` | `tonic::transport` TLS identity/certificate/config builders for gRPC tests |
 | `uselesskey-ring` | `ring` 0.17 native signing key types |
 | `uselesskey-rustcrypto` | RustCrypto native types (`rsa::RsaPrivateKey`, `p256::ecdsa::SigningKey`, etc.) |
 | `uselesskey-aws-lc-rs` | `aws-lc-rs` native types with `native` feature for wasm-safe builds |
@@ -254,7 +257,7 @@ use uselesskey_rustcrypto::RustCryptoRsaExt;
 
 let fx = Factory::random();
 let rsa = fx.rsa("signer", RsaSpec::rs256());
-let rsa_pk = rsa.rsa_private_key_rustcrypto(); // rsa::RsaPrivateKey
+let rsa_pk = rsa.rsa_private_key(); // rsa::RsaPrivateKey
 ```
 
 ### aws-lc-rs Types (uselesskey-aws-lc-rs)
@@ -274,6 +277,25 @@ let rsa = fx.rsa("signer", RsaSpec::rs256());
 let lc_kp = rsa.rsa_key_pair_aws_lc_rs();  // aws_lc_rs::rsa::KeyPair
 ```
 
+### gRPC TLS (uselesskey-tonic)
+
+```toml
+[dev-dependencies]
+uselesskey-tonic = "0.2"
+```
+
+```rust
+use uselesskey_core::Factory;
+use uselesskey_x509::{X509FactoryExt, ChainSpec};
+use uselesskey_tonic::{TonicClientTlsExt, TonicServerTlsExt};
+
+let fx = Factory::random();
+let chain = fx.x509_chain("grpc", ChainSpec::new("test.example.com"));
+
+let server_tls = chain.server_tls_config_tonic();
+let client_tls = chain.client_tls_config_tonic("test.example.com");
+```
+
 ## Feature Flags
 
 | Feature | Description |
@@ -282,10 +304,11 @@ let lc_kp = rsa.rsa_key_pair_aws_lc_rs();  // aws_lc_rs::rsa::KeyPair
 | `ecdsa` | ECDSA P-256/P-384 keypairs |
 | `ed25519` | Ed25519 keypairs |
 | `hmac` | HMAC secrets |
+| `pgp` | OpenPGP keypairs (armored + binary keyblocks) |
 | `token` | API key, bearer token, and OAuth access token fixtures |
 | `x509` | X.509 certificate generation (implies `rsa`) |
 | `jwk` | JWK/JWKS output for enabled key types |
-| `all-keys` | All key algorithms (`rsa` + `ecdsa` + `ed25519` + `hmac`) |
+| `all-keys` | All key algorithms (`rsa` + `ecdsa` + `ed25519` + `hmac` + `pgp`) |
 | `full` | Everything (`all-keys` + `token` + `x509` + `jwk`) |
 
 Extension traits by feature:
@@ -293,6 +316,7 @@ Extension traits by feature:
 - `ecdsa`: `EcdsaFactoryExt`
 - `ed25519`: `Ed25519FactoryExt`
 - `hmac`: `HmacFactoryExt`
+- `pgp`: `PgpFactoryExt`
 - `token`: `TokenFactoryExt`
 - `x509`: `X509FactoryExt`
 

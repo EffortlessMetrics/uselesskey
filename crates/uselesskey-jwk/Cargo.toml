@@ -5,13 +5,16 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "Typed JWK/JWKS helpers for deterministic and random cryptographic key fixtures."
+description = "Typed JWK/JWKS models and builders for uselesskey fixture crates."
 categories = ["development-tools::testing"]
-keywords = ["jwk", "jwks", "fixtures", "testing", "cryptography"]
+keywords = ["jwk", "jwks", "jwt", "fixtures", "testing"]
 readme = "README.md"
+homepage = "https://github.com/EffortlessMetrics/uselesskey"
+documentation = "https://docs.rs/uselesskey-jwk"
 authors.workspace = true
 
 [dependencies]
 serde.workspace = true
 serde_json.workspace = true
+
 

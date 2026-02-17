@@ -1,33 +1,35 @@
 # uselesskey-ring
 
-[`ring`](https://docs.rs/ring) 0.17 integration for [uselesskey](https://docs.rs/uselesskey) test fixtures.
+`ring` 0.17 adapter traits for `uselesskey` fixtures.
 
-Converts uselesskey keypairs into ring native signing key types for direct use in code that depends on ring.
+Converts fixture keypairs into native ring signing key types for tests that call ring APIs directly.
 
 ## Features
 
 | Feature | Description |
 |---------|-------------|
-| `rsa` | RSA keypairs -> `ring::rsa::KeyPair` |
-| `ecdsa` | ECDSA keypairs -> `ring::signature::EcdsaKeyPair` |
-| `ed25519` | Ed25519 keypairs -> `ring::signature::Ed25519KeyPair` |
-| `all` | All of the above |
+| `rsa` | RSA -> `ring::rsa::KeyPair` |
+| `ecdsa` | ECDSA -> `ring::signature::EcdsaKeyPair` |
+| `ed25519` | Ed25519 -> `ring::signature::Ed25519KeyPair` |
+| `all` | All key adapters |
 
 ## Example
 
 ```toml
 [dev-dependencies]
-uselesskey-ring = { version = "0.2", features = ["all"] }
+uselesskey-ring = { version = "0.2", features = ["rsa"] }
 ```
 
 ```rust
 use uselesskey_core::Factory;
-use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 use uselesskey_ring::RingRsaKeyPairExt;
+use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 
 let fx = Factory::random();
 let rsa = fx.rsa("signer", RsaSpec::rs256());
-let ring_kp = rsa.rsa_key_pair_ring();  // ring::rsa::KeyPair
+let keypair = rsa.rsa_key_pair_ring();
+
+assert!(keypair.public().modulus_len() > 0);
 ```
 
 ## License

@@ -1,21 +1,19 @@
 [package]
-name = "uselesskey-token"
+name = "uselesskey-pgp"
 version = "0.2.1"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "API key, bearer, and OAuth access-token fixture generator for tests."
+description = "OpenPGP key fixtures (armored and binary) for deterministic and random tests."
 categories = ["development-tools::testing"]
-keywords = ["token", "api-key", "oauth", "fixtures", "testing"]
+keywords = ["openpgp", "pgp", "fixtures", "testing", "deterministic"]
 readme = "README.md"
 homepage = "https://github.com/EffortlessMetrics/uselesskey"
-documentation = "https://docs.rs/uselesskey-token"
+documentation = "https://docs.rs/uselesskey-pgp"
 authors.workspace = true
 
 [dependencies]
 uselesskey-core = { path = "../uselesskey-core", version = "0.2.1" }
-base64.workspace = true
-rand_core.workspace = true
-serde_json.workspace = true
+pgp = { version = "0.19.0", default-features = false }
 

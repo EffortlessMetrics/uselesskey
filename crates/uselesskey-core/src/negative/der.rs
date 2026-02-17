@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use crate::derive::hash32;
 
 /// Truncate DER bytes to `len` bytes.
@@ -104,7 +106,7 @@ fn derived_truncate_len(len: usize, digest: &[u8; 32]) -> usize {
     digest[2] as usize % span
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "std"))]
 mod tests {
     use std::collections::HashSet;
 

@@ -5,10 +5,12 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "HMAC secret fixtures for deterministic and random cryptographic testing."
+description = "HMAC HS256/HS384/HS512 secret fixtures for deterministic and random tests."
 categories = ["development-tools::testing"]
-keywords = ["hmac", "fixtures", "testing", "cryptography", "crypto"]
+keywords = ["hmac", "jwt", "fixtures", "testing", "deterministic"]
 readme = "README.md"
+homepage = "https://github.com/EffortlessMetrics/uselesskey"
+documentation = "https://docs.rs/uselesskey-hmac"
 authors.workspace = true
 
 [dependencies]
@@ -29,4 +31,5 @@ base64 = { workspace = true }
 [features]
 default = []
 jwk = ["dep:uselesskey-jwk", "dep:base64"]
+
 

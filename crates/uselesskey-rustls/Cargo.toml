@@ -5,10 +5,12 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "rustls-pki-types integration for deterministic and random cryptographic test fixtures."
+description = "rustls-pki-types and rustls config adapters for uselesskey X.509/key fixtures."
 categories = ["development-tools::testing"]
-keywords = ["rustls", "tls", "fixtures", "testing", "cryptography"]
+keywords = ["rustls", "tls", "fixtures", "testing", "adapter"]
 readme = "README.md"
+homepage = "https://github.com/EffortlessMetrics/uselesskey"
+documentation = "https://docs.rs/uselesskey-rustls"
 authors.workspace = true
 
 [dependencies]
@@ -41,4 +43,5 @@ rustls-aws-lc-rs = ["rustls?/aws_lc_rs"]
 uselesskey-core = { path = "../uselesskey-core", version = "0.2.1" }
 uselesskey-x509 = { path = "../uselesskey-x509", version = "0.2.1" }
 rustls = { version = "0.23", features = ["ring"] }
+
 

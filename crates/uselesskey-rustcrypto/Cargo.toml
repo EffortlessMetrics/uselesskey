@@ -5,10 +5,12 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "RustCrypto integration for deterministic and random cryptographic test fixtures."
+description = "RustCrypto adapter traits for uselesskey RSA/ECDSA/Ed25519/HMAC fixtures."
 categories = ["development-tools::testing"]
-keywords = ["rustcrypto", "fixtures", "testing", "cryptography", "crypto"]
+keywords = ["rustcrypto", "crypto", "fixtures", "testing", "adapter"]
 readme = "README.md"
+homepage = "https://github.com/EffortlessMetrics/uselesskey"
+documentation = "https://docs.rs/uselesskey-rustcrypto"
 authors.workspace = true
 
 [dependencies]
@@ -40,4 +42,5 @@ all = ["rsa", "ecdsa", "ed25519", "hmac"]
 uselesskey-core = { path = "../uselesskey-core", version = "0.2.1" }
 sha2 = "0.10"
 rsa = { workspace = true }
+
 

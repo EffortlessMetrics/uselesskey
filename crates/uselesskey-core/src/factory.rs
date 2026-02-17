@@ -1,14 +1,31 @@
-use std::any::Any;
-use std::fmt;
-use std::sync::Arc;
+use alloc::string::ToString;
+use alloc::sync::Arc;
+use core::any::Any;
+use core::fmt;
 
+#[cfg(not(feature = "std"))]
+use alloc::collections::BTreeMap;
+#[cfg(feature = "std")]
 use dashmap::DashMap;
+#[cfg(feature = "std")]
 use rand::rngs::OsRng;
 use rand_chacha::ChaCha20Rng;
-use rand_core::{RngCore, SeedableRng};
+#[cfg(feature = "std")]
+use rand_core::RngCore;
+use rand_core::SeedableRng;
+#[cfg(not(feature = "std"))]
+use spin::Mutex;
 
 use crate::derive;
 use crate::id::{ArtifactDomain, ArtifactId, DerivationVersion, Seed};
+
+type CacheValue = Arc<dyn Any + Send + Sync>;
+
+#[cfg(feature = "std")]
+type Cache = DashMap<ArtifactId, CacheValue>;
+
+#[cfg(not(feature = "std"))]
+type Cache = Mutex<BTreeMap<ArtifactId, CacheValue>>;
 
 /// How a [`Factory`] generates artifacts.
 ///
@@ -42,7 +59,7 @@ pub enum Mode {
 
 struct Inner {
     mode: Mode,
-    cache: DashMap<ArtifactId, Arc<dyn Any + Send + Sync>>,
+    cache: Cache,
 }
 
 /// A factory for generating and caching test fixtures.
@@ -72,7 +89,7 @@ impl fmt::Debug for Factory {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Factory")
             .field("mode", &self.inner.mode)
-            .field("cache_size", &self.inner.cache.len())
+            .field("cache_size", &cache_len(&self.inner.cache))
             .finish()
     }
 }
@@ -96,7 +113,7 @@ impl Factory {
         Self {
             inner: Arc::new(Inner {
                 mode,
-                cache: DashMap::new(),
+                cache: new_cache(),
             }),
         }
     }
@@ -105,6 +122,10 @@ impl Factory {
     ///
     /// Each process run produces different artifacts, but within a process,
     /// artifacts are cached by `(domain, label, spec, variant)`.
+    ///
+    /// In `no_std` builds (`default-features = false`), this is available for
+    /// API compatibility but panics when used because OS randomness is not
+    /// available.
     ///
     /// # Examples
     ///
@@ -166,6 +187,7 @@ impl Factory {
     /// let result = Factory::deterministic_from_env("NONEXISTENT_VAR");
     /// assert!(result.is_err());
     /// ```
+    #[cfg(feature = "std")]
     pub fn deterministic_from_env(var: &str) -> Result<Self, crate::Error> {
         let raw = std::env::var(var).map_err(|_| crate::Error::MissingEnvVar {
             var: var.to_string(),
@@ -208,7 +230,7 @@ impl Factory {
     /// fx.clear_cache(); // Clear all cached artifacts
     /// ```
     pub fn clear_cache(&self) {
-        self.inner.cache.clear();
+        cache_clear(&self.inner.cache);
     }
 
     /// Get a cached artifact or initialize it using the provided closure.
@@ -219,7 +241,7 @@ impl Factory {
     ///
     /// # Re-entrancy
     ///
-    /// The `init` closure runs **outside** the `DashMap` shard lock, so it is safe
+    /// The `init` closure runs outside the cache lock, so it is safe
     /// for `init` to call back into `get_or_init` (e.g. X.509 cert generation
     /// calling `factory.rsa()`). Under contention, `init` may execute more than
     /// once for the same key; only one result is kept in the cache. The returned
@@ -245,23 +267,25 @@ impl Factory {
         );
 
         // Fast path: already cached.
-        if let Some(entry) = self.inner.cache.get(&id) {
-            return downcast_or_panic::<T>(entry.value().clone(), &id);
+        if let Some(entry) = cache_get(&self.inner.cache, &id) {
+            return downcast_or_panic::<T>(entry, &id);
         }
 
-        // Slow path: compute WITHOUT holding the DashMap shard lock.
+        // Slow path: compute WITHOUT holding the cache lock.
         // This avoids deadlocks when the init closure calls back into
         // get_or_init (e.g. x509 cert generation calling factory.rsa()).
         let seed = self.seed_for(&id);
         let mut rng = ChaCha20Rng::from_seed(seed.0);
         let value = init(&mut rng);
         let arc: Arc<T> = Arc::new(value);
-        let arc_any: Arc<dyn Any + Send + Sync> = arc.clone();
+        let arc_any: CacheValue = arc.clone();
 
         // Insert if absent; if another thread raced us, use its value.
-        self.inner.cache.entry(id.clone()).or_insert(arc_any);
+        cache_insert_if_absent(&self.inner.cache, id.clone(), arc_any);
 
-        downcast_or_panic::<T>(self.inner.cache.get(&id).unwrap().value().clone(), &id)
+        let cached = cache_get(&self.inner.cache, &id)
+            .expect("uselesskey-core: cached artifact missing after insert");
+        downcast_or_panic::<T>(cached, &id)
     }
 
     fn seed_for(&self, id: &ArtifactId) -> Seed {
@@ -271,12 +295,75 @@ impl Factory {
         }
     }
 }
+
+#[cfg(feature = "std")]
+fn new_cache() -> Cache {
+    DashMap::new()
+}
+
+#[cfg(not(feature = "std"))]
+fn new_cache() -> Cache {
+    Mutex::new(BTreeMap::new())
+}
+
+#[cfg(feature = "std")]
+fn cache_len(cache: &Cache) -> usize {
+    cache.len()
+}
+
+#[cfg(not(feature = "std"))]
+fn cache_len(cache: &Cache) -> usize {
+    cache.lock().len()
+}
+
+#[cfg(feature = "std")]
+fn cache_clear(cache: &Cache) {
+    cache.clear();
+}
+
+#[cfg(not(feature = "std"))]
+fn cache_clear(cache: &Cache) {
+    cache.lock().clear();
+}
+
+#[cfg(feature = "std")]
+fn cache_get(cache: &Cache, id: &ArtifactId) -> Option<CacheValue> {
+    cache.get(id).map(|entry| entry.value().clone())
+}
+
+#[cfg(not(feature = "std"))]
+fn cache_get(cache: &Cache, id: &ArtifactId) -> Option<CacheValue> {
+    cache.lock().get(id).cloned()
+}
+
+#[cfg(feature = "std")]
+fn cache_insert_if_absent(cache: &Cache, id: ArtifactId, value: CacheValue) {
+    cache.entry(id).or_insert(value);
+}
+
+#[cfg(not(feature = "std"))]
+fn cache_insert_if_absent(cache: &Cache, id: ArtifactId, value: CacheValue) {
+    use alloc::collections::btree_map::Entry;
+
+    let mut guard = cache.lock();
+    if let Entry::Vacant(slot) = guard.entry(id) {
+        slot.insert(value);
+    }
+}
+
+#[cfg(feature = "std")]
 pub(crate) fn random_seed() -> Seed {
     let mut bytes = [0u8; 32];
     OsRng.fill_bytes(&mut bytes);
     Seed(bytes)
 }
-pub(crate) fn downcast_or_panic<T>(arc_any: Arc<dyn Any + Send + Sync>, id: &ArtifactId) -> Arc<T>
+
+#[cfg(not(feature = "std"))]
+pub(crate) fn random_seed() -> Seed {
+    panic!("uselesskey-core: Mode::Random requires the `std` feature")
+}
+
+pub(crate) fn downcast_or_panic<T>(arc_any: CacheValue, id: &ArtifactId) -> Arc<T>
 where
     T: Any + Send + Sync + 'static,
 {

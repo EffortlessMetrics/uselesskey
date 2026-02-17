@@ -5,10 +5,12 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "X.509 certificate fixtures for deterministic and random cryptographic testing."
+description = "X.509 self-signed and chain certificate fixtures with negative variants for tests."
 categories = ["development-tools::testing"]
-keywords = ["x509", "fixtures", "testing", "cryptography", "certificate"]
+keywords = ["x509", "certificate", "tls", "fixtures", "testing"]
 readme = "README.md"
+homepage = "https://github.com/EffortlessMetrics/uselesskey"
+documentation = "https://docs.rs/uselesskey-x509"
 authors.workspace = true
 
 [dependencies]
@@ -34,4 +36,5 @@ jwk = ["dep:uselesskey-jwk", "uselesskey-rsa/jwk"]
 proptest.workspace = true
 rstest.workspace = true
 rand_chacha.workspace = true
+
 

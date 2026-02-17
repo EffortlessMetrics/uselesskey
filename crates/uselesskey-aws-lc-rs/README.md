@@ -1,36 +1,38 @@
 # uselesskey-aws-lc-rs
 
-[`aws-lc-rs`](https://docs.rs/aws-lc-rs) integration for [uselesskey](https://docs.rs/uselesskey) test fixtures.
+`aws-lc-rs` adapter traits for `uselesskey` fixtures.
 
-Converts uselesskey keypairs into aws-lc-rs native signing key types. Includes a `native` feature flag for wasm-safe builds.
+Converts fixture keypairs into `aws-lc-rs` signing key types for tests that integrate directly with aws-lc-rs APIs.
 
 ## Features
 
 | Feature | Description |
 |---------|-------------|
-| `native` | Enable `aws-lc-rs` dependency (requires NASM on Windows) |
-| `rsa` | RSA keypairs -> `aws_lc_rs::rsa::KeyPair` |
-| `ecdsa` | ECDSA keypairs -> `aws_lc_rs::signature::EcdsaKeyPair` |
-| `ed25519` | Ed25519 keypairs -> `aws_lc_rs::signature::Ed25519KeyPair` |
-| `all` | All key types |
+| `native` | Enable the `aws-lc-rs` dependency (requires NASM on Windows) |
+| `rsa` | RSA -> `aws_lc_rs::rsa::KeyPair` |
+| `ecdsa` | ECDSA -> `aws_lc_rs::signature::EcdsaKeyPair` |
+| `ed25519` | Ed25519 -> `aws_lc_rs::signature::Ed25519KeyPair` |
+| `all` | `native` plus all key adapters |
 
-When the `native` feature is disabled, this crate compiles as a no-op with no traits or implementations available. This is useful for wasm targets where `aws-lc-rs` cannot build.
+When `native` is disabled, this crate builds as a no-op and exports no adapter traits.
 
 ## Example
 
 ```toml
 [dev-dependencies]
-uselesskey-aws-lc-rs = { version = "0.2", features = ["native", "all"] }
+uselesskey-aws-lc-rs = { version = "0.2", features = ["native", "rsa"] }
 ```
 
 ```rust
+use uselesskey_aws_lc_rs::AwsLcRsRsaKeyPairExt;
 use uselesskey_core::Factory;
 use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
-use uselesskey_aws_lc_rs::AwsLcRsRsaKeyPairExt;
 
 let fx = Factory::random();
 let rsa = fx.rsa("signer", RsaSpec::rs256());
-let kp = rsa.rsa_key_pair_aws_lc_rs();  // aws_lc_rs::rsa::KeyPair
+let keypair = rsa.rsa_key_pair_aws_lc_rs();
+
+assert!(keypair.public_modulus_len() > 0);
 ```
 
 ## License

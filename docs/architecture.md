@@ -63,6 +63,10 @@
   - adapter: returns `aws-lc-rs` native key types
   - `native` feature for wasm-safe builds
 
+- `crates/uselesskey-tonic`
+  - adapter: returns `tonic::transport` TLS types (`Identity`, `Certificate`)
+  - one-liner `ServerTlsConfig` / `ClientTlsConfig` / mTLS builders from X.509 fixtures
+
 - `crates/uselesskey`
   - facade re-exporting the stable public API
 
@@ -121,10 +125,10 @@ Key type support is added via extension traits rather than monolithic API growth
 Factory (core)
   ├── RsaFactoryExt      (uselesskey-rsa)     → fx.rsa(label, spec)
   ├── EcdsaFactoryExt    (uselesskey-ecdsa)   → fx.ecdsa(label, spec)
-  ├── Ed25519FactoryExt  (uselesskey-ed25519) → fx.ed25519(label)
+  ├── Ed25519FactoryExt  (uselesskey-ed25519) → fx.ed25519(label, spec)
   ├── HmacFactoryExt     (uselesskey-hmac)    → fx.hmac(label, spec)
   ├── TokenFactoryExt    (uselesskey-token)   → fx.token(label, spec)
-  └── X509FactoryExt     (uselesskey-x509)    → fx.x509(label, spec)
+  └── X509FactoryExt     (uselesskey-x509)    → fx.x509_self_signed(label, spec)
 ```
 
 This pattern:
@@ -143,6 +147,7 @@ Adapter crates provide native integration with downstream libraries. They are se
 ```
 uselesskey-jsonwebtoken  → jsonwebtoken::EncodingKey / DecodingKey
 uselesskey-rustls        → rustls-pki-types + ServerConfig/ClientConfig builders
+uselesskey-tonic         → tonic::transport TLS identity/certificate/config builders
 uselesskey-ring          → ring 0.17 native signing key types
 uselesskey-rustcrypto    → RustCrypto native types (rsa, p256, p384, ed25519-dalek, hmac)
 uselesskey-aws-lc-rs     → aws-lc-rs native key types

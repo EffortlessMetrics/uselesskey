@@ -1,23 +1,35 @@
 # uselesskey-core
 
-Core factory, derivation, and caching engine for [uselesskey](https://docs.rs/uselesskey) test fixtures.
+Core factory, deterministic derivation, and cache primitives for `uselesskey` test fixtures.
 
-This crate provides the `Factory` struct (random and deterministic modes), BLAKE3-based seed derivation, and a concurrent `DashMap` cache. Most users should depend on the [`uselesskey`](https://docs.rs/uselesskey) facade crate instead of using this directly.
+Most test suites should depend on the facade crate (`uselesskey`). Use `uselesskey-core` directly when building extension crates.
+
+## What It Provides
+
+- `Factory` in random and deterministic modes
+- Order-independent derivation from `(domain, label, spec, variant)`
+- Per-process cache for generated artifacts
+- Generic negative helpers for corrupted PEM / truncated DER
+- Tempfile sinks when `std` is enabled
+
+## Features
+
+| Feature | Description |
+|---------|-------------|
+| `std` (default) | Random mode, env seed helpers, tempfile sink, concurrent cache |
+| `default-features = false` | `no_std` deterministic derivation and negative helpers |
 
 ## Example
 
 ```rust
-use uselesskey_core::Factory;
+use uselesskey_core::{Factory, Mode, Seed};
 
-// Random mode -- fresh key material every run
-let fx = Factory::random();
+let seed = Seed::from_env_value("ci-seed").unwrap();
+let fx = Factory::deterministic(seed);
 
-// Deterministic mode -- reproducible from seed
-let fx = Factory::deterministic(b"my-test-seed");
+assert!(matches!(fx.mode(), Mode::Deterministic { .. }));
 ```
 
 ## License
 
 Licensed under either of [Apache License, Version 2.0](../../LICENSE-APACHE) or [MIT license](../../LICENSE-MIT) at your option.
-
-See the [main uselesskey README](../../README.md) for full documentation.

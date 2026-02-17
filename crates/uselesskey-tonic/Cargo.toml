@@ -1,0 +1,30 @@
+[package]
+name = "uselesskey-tonic"
+version = "0.2.1"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "tonic transport TLS adapters for uselesskey X.509 certificate fixtures."
+categories = ["development-tools::testing"]
+keywords = ["tonic", "grpc", "tls", "fixtures", "testing"]
+readme = "README.md"
+homepage = "https://github.com/EffortlessMetrics/uselesskey"
+documentation = "https://docs.rs/uselesskey-tonic"
+authors.workspace = true
+
+[dependencies]
+tonic = { version = "0.14.4", default-features = false, features = ["transport", "tls-ring"] }
+uselesskey-x509 = { path = "../uselesskey-x509", version = "0.2.1", optional = true }
+
+[package.metadata.docs.rs]
+features = ["x509"]
+
+[features]
+default = ["x509"]
+x509 = ["dep:uselesskey-x509"]
+
+[dev-dependencies]
+uselesskey-core = { path = "../uselesskey-core", version = "0.2.1" }
+uselesskey-x509 = { path = "../uselesskey-x509", version = "0.2.1" }
+

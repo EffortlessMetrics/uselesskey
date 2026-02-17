@@ -5,10 +5,12 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "jsonwebtoken adapter for deterministic and random cryptographic test fixtures."
+description = "jsonwebtoken adapter traits for uselesskey fixtures (EncodingKey/DecodingKey)."
 categories = ["development-tools::testing"]
-keywords = ["jwt", "jsonwebtoken", "fixtures", "testing", "cryptography"]
+keywords = ["jwt", "jsonwebtoken", "fixtures", "testing", "adapter"]
 readme = "README.md"
+homepage = "https://github.com/EffortlessMetrics/uselesskey"
+documentation = "https://docs.rs/uselesskey-jsonwebtoken"
 authors.workspace = true
 
 [dependencies]
@@ -41,4 +43,5 @@ serde.workspace = true
 [dev-dependencies.jsonwebtoken]
 version = "10"
 features = ["use_pem", "rust_crypto"]
+
 

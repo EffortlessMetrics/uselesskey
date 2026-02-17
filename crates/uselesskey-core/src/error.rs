@@ -1,3 +1,5 @@
+use alloc::string::String;
+
 use thiserror::Error;
 
 /// Errors for `uselesskey-core`.
@@ -12,11 +14,12 @@ pub enum Error {
     #[error("failed to parse seed from environment variable `{var}`: {message}")]
     InvalidSeed { var: String, message: String },
 
+    #[cfg(feature = "std")]
     #[error(transparent)]
     Io(#[from] std::io::Error),
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "std"))]
 mod tests {
     use super::Error;
 
@@ -39,7 +42,10 @@ mod tests {
             "failed to parse seed from environment variable `MY_VAR`: bad seed"
         );
 
-        let io_err: Error = std::io::Error::other("io-fail").into();
-        assert_eq!(io_err.to_string(), "io-fail");
+        #[cfg(feature = "std")]
+        {
+            let io_err: Error = std::io::Error::other("io-fail").into();
+            assert_eq!(io_err.to_string(), "io-fail");
+        }
     }
 }

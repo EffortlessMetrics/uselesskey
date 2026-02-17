@@ -154,6 +154,7 @@ fn dependents(crate_name: &str) -> &'static [&'static str] {
             "uselesskey-ed25519",
             "uselesskey-hmac",
             "uselesskey-token",
+            "uselesskey-pgp",
             "uselesskey-x509",
             "uselesskey",
             "uselesskey-bdd",
@@ -183,7 +184,7 @@ fn dependents(crate_name: &str) -> &'static [&'static str] {
             "uselesskey-rustcrypto",
             "uselesskey-aws-lc-rs",
         ],
-        "uselesskey-x509" => &["uselesskey", "uselesskey-rustls"],
+        "uselesskey-x509" => &["uselesskey", "uselesskey-rustls", "uselesskey-tonic"],
         "uselesskey-jwk" => &[
             "uselesskey-rsa",
             "uselesskey-ecdsa",
@@ -197,9 +198,11 @@ fn dependents(crate_name: &str) -> &'static [&'static str] {
             "uselesskey-rustcrypto",
         ],
         "uselesskey-token" => &["uselesskey"],
+        "uselesskey-pgp" => &["uselesskey"],
         "uselesskey" => &[],
         "uselesskey-jsonwebtoken" => &[],
         "uselesskey-rustls" => &[],
+        "uselesskey-tonic" => &[],
         "uselesskey-ring" => &[],
         "uselesskey-rustcrypto" => &[],
         "uselesskey-aws-lc-rs" => &[],
@@ -241,6 +244,7 @@ mod tests {
         assert!(impacted.contains("uselesskey-ed25519"));
         assert!(impacted.contains("uselesskey-hmac"));
         assert!(impacted.contains("uselesskey-token"));
+        assert!(impacted.contains("uselesskey-pgp"));
         assert!(impacted.contains("uselesskey-x509"));
         assert!(impacted.contains("uselesskey"));
         assert!(impacted.contains("uselesskey-bdd"));
@@ -313,6 +317,25 @@ mod tests {
         let plan = build_plan(&paths);
         let impacted = &plan.impacted_crates;
         assert!(impacted.contains("uselesskey-token"));
+        assert!(impacted.contains("uselesskey"));
+    }
+
+    #[test]
+    fn x509_change_expands_to_tonic_adapter() {
+        let paths = vec!["crates/uselesskey-x509/src/lib.rs".to_string()];
+        let plan = build_plan(&paths);
+        let impacted = &plan.impacted_crates;
+        assert!(impacted.contains("uselesskey-x509"));
+        assert!(impacted.contains("uselesskey-rustls"));
+        assert!(impacted.contains("uselesskey-tonic"));
+    }
+
+    #[test]
+    fn pgp_change_expands_to_facade() {
+        let paths = vec!["crates/uselesskey-pgp/src/lib.rs".to_string()];
+        let plan = build_plan(&paths);
+        let impacted = &plan.impacted_crates;
+        assert!(impacted.contains("uselesskey-pgp"));
         assert!(impacted.contains("uselesskey"));
     }
 

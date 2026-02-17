@@ -8,10 +8,14 @@
 //!
 //! Run with: cargo run --example negative_fixtures --features "rsa,x509"
 
+#[cfg(feature = "x509")]
 use std::io::Read;
+#[cfg(feature = "x509")]
 use uselesskey::prelude::*;
+#[cfg(feature = "x509")]
 use uselesskey_core::negative::CorruptPem;
 
+#[cfg(feature = "x509")]
 fn main() {
     let fx = Factory::random();
 
@@ -98,4 +102,10 @@ fn main() {
 
     println!("\n=== All negative fixtures generated successfully ===");
     println!("Use these in your tests to verify error handling paths!");
+}
+
+#[cfg(not(feature = "x509"))]
+fn main() {
+    eprintln!("Enable required feature to run this example:");
+    eprintln!("  cargo run --example negative_fixtures --features \"x509\"");
 }

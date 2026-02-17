@@ -5,9 +5,9 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "Deterministic and random cryptographic test fixtures for Rust integration and unit tests."
+description = "Runtime cryptographic test fixtures for Rust with deterministic derivation, caching, and negative variants."
 categories = ["development-tools::testing"]
-keywords = ["test", "fixtures", "cryptography", "deterministic", "x509"]
+keywords = ["test", "fixtures", "crypto", "deterministic", "x509"]
 readme = "../../README.md"
 homepage = "https://github.com/EffortlessMetrics/uselesskey"
 documentation = "https://docs.rs/uselesskey"
@@ -30,6 +30,7 @@ uselesskey-ecdsa = { path = "../uselesskey-ecdsa", version = "0.2.1", optional =
 uselesskey-ed25519 = { path = "../uselesskey-ed25519", version = "0.2.1", optional = true }
 uselesskey-hmac = { path = "../uselesskey-hmac", version = "0.2.1", optional = true }
 uselesskey-token = { path = "../uselesskey-token", version = "0.2.1", optional = true }
+uselesskey-pgp = { path = "../uselesskey-pgp", version = "0.2.1", optional = true }
 uselesskey-x509 = { path = "../uselesskey-x509", version = "0.2.1", optional = true }
 
 [features]
@@ -41,6 +42,7 @@ ecdsa = ["dep:uselesskey-ecdsa"]
 ed25519 = ["dep:uselesskey-ed25519"]
 hmac = ["dep:uselesskey-hmac"]
 token = ["dep:uselesskey-token"]
+pgp = ["dep:uselesskey-pgp"]
 
 # X.509 certificates (implies rsa for now)
 x509 = ["dep:uselesskey-x509", "rsa", "uselesskey-x509/jwk"]
@@ -55,9 +57,10 @@ jwk = [
 ]
 
 # Convenience bundles
-all-keys = ["rsa", "ecdsa", "ed25519", "hmac"]
+all-keys = ["rsa", "ecdsa", "ed25519", "hmac", "pgp"]
 full = ["all-keys", "token", "x509", "jwk"]
 
 [dev-dependencies]
 tempfile.workspace = true
+
 

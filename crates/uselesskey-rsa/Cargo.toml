@@ -5,10 +5,12 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "RSA key fixtures for deterministic and random cryptographic testing."
+description = "RSA key fixtures (PKCS#8/SPKI, PEM/DER) with negative variants for tests."
 categories = ["development-tools::testing"]
-keywords = ["rsa", "fixtures", "testing", "jwk", "cryptography"]
+keywords = ["rsa", "pkcs8", "spki", "fixtures", "testing"]
 readme = "README.md"
+homepage = "https://github.com/EffortlessMetrics/uselesskey"
+documentation = "https://docs.rs/uselesskey-rsa"
 authors.workspace = true
 
 [dependencies]
@@ -31,4 +33,5 @@ features = ["jwk"]
 [dev-dependencies]
 proptest.workspace = true
 rstest.workspace = true
+
 

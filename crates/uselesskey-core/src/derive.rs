@@ -15,7 +15,10 @@ pub fn derive_seed(master: &Seed, id: &ArtifactId) -> Seed {
         other => {
             // For now: treat unknown versions as v1, but keep this explicit.
             // If you ever ship v2, add a proper match branch.
+            #[cfg(feature = "std")]
             eprintln!("uselesskey-core: unknown derivation version {other}, using v1");
+            #[cfg(not(feature = "std"))]
+            let _ = other;
             derive_seed_v1(master, id)
         }
     }

@@ -5,10 +5,12 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "Ed25519 key fixtures for deterministic and random cryptographic testing."
+description = "Ed25519 key fixtures (PKCS#8/SPKI, PEM/DER) with deterministic generation."
 categories = ["development-tools::testing"]
-keywords = ["ed25519", "fixtures", "testing", "cryptography", "jwk"]
+keywords = ["ed25519", "pkcs8", "spki", "fixtures", "testing"]
 readme = "README.md"
+homepage = "https://github.com/EffortlessMetrics/uselesskey"
+documentation = "https://docs.rs/uselesskey-ed25519"
 authors.workspace = true
 
 [dependencies]
@@ -33,4 +35,5 @@ features = ["jwk"]
 [dev-dependencies]
 proptest.workspace = true
 rstest.workspace = true
+
 

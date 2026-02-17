@@ -5,22 +5,37 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "Core factory for deterministic and random cryptographic test fixture generation."
+description = "Core factory, deterministic derivation, and cache engine for uselesskey test fixtures."
 categories = ["development-tools::testing"]
-keywords = ["test", "fixtures", "deterministic", "cryptography", "caching"]
+keywords = ["test", "fixtures", "deterministic", "cache", "seeded"]
 readme = "README.md"
+homepage = "https://github.com/EffortlessMetrics/uselesskey"
+documentation = "https://docs.rs/uselesskey-core"
 authors.workspace = true
 
+[features]
+default = ["std"]
+std = [
+    "dep:dashmap",
+    "dep:rand",
+    "dep:tempfile",
+    "thiserror/std",
+    "blake3/std",
+    "rand_chacha/std",
+]
+
 [dependencies]
-thiserror.workspace = true
-blake3.workspace = true
-dashmap.workspace = true
-rand.workspace = true
+thiserror = { version = "2.0.18", default-features = false }
+blake3 = { version = "1.8.3", default-features = false }
+dashmap = { workspace = true, optional = true }
+rand = { workspace = true, optional = true }
 rand_core.workspace = true
-rand_chacha.workspace = true
-tempfile.workspace = true
+rand_chacha = { version = "0.3.1", default-features = false }
+tempfile = { workspace = true, optional = true }
+spin = { version = "0.9.8", default-features = false, features = ["mutex", "spin_mutex"] }
 
 [dev-dependencies]
 proptest.workspace = true
 rstest.workspace = true
+
 

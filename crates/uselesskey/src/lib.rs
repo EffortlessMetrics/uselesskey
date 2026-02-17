@@ -9,8 +9,8 @@
 //! > Not for production. Deterministic keys are predictable by design.
 //!
 //! For integration with third-party crypto crates, see the adapter crates:
-//! `uselesskey-jsonwebtoken`, `uselesskey-rustls`, `uselesskey-ring`,
-//! `uselesskey-rustcrypto`, and `uselesskey-aws-lc-rs`.
+//! `uselesskey-jsonwebtoken`, `uselesskey-rustls`, `uselesskey-tonic`,
+//! `uselesskey-ring`, `uselesskey-rustcrypto`, and `uselesskey-aws-lc-rs`.
 //!
 //! # Quick Start
 //!
@@ -184,6 +184,9 @@ pub use uselesskey_hmac::{DOMAIN_HMAC_SECRET, HmacFactoryExt, HmacSecret, HmacSp
 #[cfg(feature = "token")]
 pub use uselesskey_token::{DOMAIN_TOKEN_FIXTURE, TokenFactoryExt, TokenFixture, TokenSpec};
 
+#[cfg(feature = "pgp")]
+pub use uselesskey_pgp::{DOMAIN_PGP_KEYPAIR, PgpFactoryExt, PgpKeyPair, PgpSpec};
+
 #[cfg(feature = "x509")]
 pub use uselesskey_x509::{
     ChainNegative, ChainSpec, DOMAIN_X509_CERT, DOMAIN_X509_CHAIN, X509Cert, X509Chain,
@@ -215,6 +218,9 @@ pub mod prelude {
 
     #[cfg(feature = "token")]
     pub use crate::{TokenFactoryExt, TokenFixture, TokenSpec};
+
+    #[cfg(feature = "pgp")]
+    pub use crate::{PgpFactoryExt, PgpKeyPair, PgpSpec};
 
     #[cfg(feature = "x509")]
     pub use crate::{ChainSpec, X509Cert, X509Chain, X509FactoryExt, X509Spec};

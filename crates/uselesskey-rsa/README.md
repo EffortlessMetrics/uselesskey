@@ -1,14 +1,14 @@
 # uselesskey-rsa
 
-RSA key fixtures (PKCS#8/SPKI in PEM/DER) for [uselesskey](https://docs.rs/uselesskey) test fixtures.
+RSA key fixtures for `uselesskey` test suites.
 
-Provides `RsaFactoryExt` to generate deterministic or random RSA keypairs with cached generation.
+Generates PKCS#8 private keys and SPKI public keys (PEM/DER), plus negative variants for parser and validator tests.
 
 ## Features
 
 | Feature | Description |
 |---------|-------------|
-| `jwk` | JWK/JWKS output via `uselesskey-jwk` |
+| `jwk` | JWK/JWKS helpers via `uselesskey-jwk` |
 
 ## Example
 
@@ -19,8 +19,11 @@ use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 let fx = Factory::random();
 let rsa = fx.rsa("signer", RsaSpec::rs256());
 
-let pem = rsa.private_key_pem();   // PKCS#8 PEM
-let der = rsa.public_key_spki_der(); // SPKI DER
+let private_pem = rsa.private_key_pkcs8_pem();
+let public_der = rsa.public_key_spki_der();
+
+assert!(private_pem.contains("BEGIN PRIVATE KEY"));
+assert!(!public_der.is_empty());
 ```
 
 ## License

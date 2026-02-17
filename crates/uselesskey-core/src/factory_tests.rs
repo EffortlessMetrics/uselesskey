@@ -90,8 +90,7 @@ fn get_or_init_reentrant_does_not_deadlock() {
     // This mirrors X.509 cert generation calling factory.rsa().
     // Would deadlock if the init closure ran while holding the shard lock.
     let outer: Arc<String> = fx.get_or_init("test:outer", "label", b"spec", "good", |_rng| {
-        let inner: Arc<u64> =
-            fx.get_or_init("test:inner", "label", b"spec", "good", |_rng| 42u64);
+        let inner: Arc<u64> = fx.get_or_init("test:inner", "label", b"spec", "good", |_rng| 42u64);
         format!("outer-{}", *inner)
     });
 

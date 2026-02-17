@@ -1,3 +1,6 @@
+use alloc::string::{String, ToString};
+use alloc::vec::Vec;
+
 use crate::derive::hash32;
 
 /// Strategies for corrupting PEM-encoded data.
@@ -150,7 +153,7 @@ fn inject_bad_base64_line(pem: &str) -> String {
     // Put garbage after the header, before any base64.
     let mut lines: Vec<&str> = pem.lines().collect();
     if lines.len() < 3 {
-        return format!("{pem}\nTHIS_IS_NOT_BASE64!!!\n");
+        return alloc::format!("{pem}\nTHIS_IS_NOT_BASE64!!!\n");
     }
 
     // Insert after header.
@@ -167,7 +170,7 @@ fn inject_bad_base64_line(pem: &str) -> String {
 fn inject_blank_line(pem: &str) -> String {
     let mut lines: Vec<&str> = pem.lines().collect();
     if lines.len() < 3 {
-        return format!("{pem}\n\n");
+        return alloc::format!("{pem}\n\n");
     }
     lines.insert(1, "");
     let mut out = String::new();
@@ -178,7 +181,7 @@ fn inject_blank_line(pem: &str) -> String {
     out
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "std"))]
 mod tests {
     use std::collections::HashSet;
 

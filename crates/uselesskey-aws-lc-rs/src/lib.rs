@@ -18,8 +18,14 @@
 //!
 //! # Example: RSA sign and verify
 //!
-#![cfg_attr(all(feature = "native", feature = "rsa"), doc = "```")]
-#![cfg_attr(not(all(feature = "native", feature = "rsa")), doc = "```ignore")]
+#![cfg_attr(
+    all(feature = "native", any(not(windows), has_nasm), feature = "rsa"),
+    doc = "```"
+)]
+#![cfg_attr(
+    not(all(feature = "native", any(not(windows), has_nasm), feature = "rsa")),
+    doc = "```ignore"
+)]
 //! use uselesskey_core::Factory;
 //! use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 //! use uselesskey_aws_lc_rs::AwsLcRsRsaKeyPairExt;

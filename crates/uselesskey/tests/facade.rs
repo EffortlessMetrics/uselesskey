@@ -74,6 +74,20 @@ fn token_reexport_works() {
 }
 
 #[test]
+#[cfg(feature = "pgp")]
+fn pgp_reexport_works() {
+    use uselesskey::PgpFactoryExt;
+    use uselesskey::PgpSpec;
+
+    let fx = Factory::random();
+    let key = fx.pgp("issuer", PgpSpec::ed25519());
+    assert!(
+        key.private_key_armored()
+            .contains("BEGIN PGP PRIVATE KEY BLOCK")
+    );
+}
+
+#[test]
 #[cfg(feature = "jwk")]
 fn jwk_module_reexports_work() {
     use uselesskey::jwk::{JwksBuilder, PublicJwk, RsaPublicJwk};
