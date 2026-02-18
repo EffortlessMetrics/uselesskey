@@ -198,7 +198,7 @@ mod tests {
             .map(|i| format!("bucket-0-special-{i}"))
             .find(|v| {
                 let d = hash32(v.as_bytes());
-                d.as_bytes()[0] % 3 == 0
+                d.as_bytes()[0].is_multiple_of(3)
                     && reference_truncate_len(der.len(), d.as_bytes())
                         > reference_offset(der.len(), d.as_bytes()[1])
             })
