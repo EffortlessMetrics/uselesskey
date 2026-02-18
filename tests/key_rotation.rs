@@ -29,6 +29,7 @@ impl Claims {
 }
 
 fn fx() -> uselesskey_core::Factory {
+    #[cfg(any(feature = "tls", feature = "e2e", feature = "key-rotation"))]
     testutil::install_rustls_ring_provider();
     testutil::fx()
 }

@@ -1948,7 +1948,7 @@ fn revoked_leaf_parseable(world: &mut UselessWorld) {
     x509_parser::parse_x509_certificate(der).expect("revoked leaf should parse");
 }
 
-#[then("the revoked leaf certificate should have a CRL distribution point")]
+#[then("the revoked leaf certificate should include a CRL with revoked entries")]
 fn revoked_leaf_has_crl(world: &mut UselessWorld) {
     use x509_parser::prelude::FromDer;
 

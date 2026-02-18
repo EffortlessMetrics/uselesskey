@@ -6,7 +6,7 @@
 //! - Using corrupt PEM variants and truncated DER
 //! - Tempfile outputs for testing external tools
 //!
-//! Run with: cargo run --example negative_fixtures --features "rsa,x509"
+//! Run with: cargo run --example negative_fixtures --features x509
 
 #[cfg(feature = "x509")]
 use std::io::Read;

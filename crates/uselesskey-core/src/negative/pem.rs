@@ -90,6 +90,10 @@ pub fn corrupt_pem(pem: &str, how: CorruptPem) -> String {
 ///
 /// The mapping is deterministic:
 /// same `pem` + same `variant` => same corrupted output.
+///
+/// Note: the corruption pattern depends only on the variant string,
+/// not on the factory seed. This is by design — corruption strategies
+/// are stable across all seeds for a given variant.
 pub fn corrupt_pem_deterministic(pem: &str, variant: &str) -> String {
     let digest = hash32(variant.as_bytes());
     let bytes = digest.as_bytes();

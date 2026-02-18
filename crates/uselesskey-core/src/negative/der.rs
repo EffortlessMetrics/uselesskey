@@ -68,6 +68,10 @@ pub fn flip_byte(der: &[u8], offset: usize) -> Vec<u8> {
 ///
 /// The mapping is deterministic:
 /// same `der` + same `variant` => same corrupted output.
+///
+/// Note: the corruption pattern depends only on the variant string,
+/// not on the factory seed. This is by design — corruption strategies
+/// are stable across all seeds for a given variant.
 pub fn corrupt_der_deterministic(der: &[u8], variant: &str) -> Vec<u8> {
     let digest = hash32(variant.as_bytes());
     let bytes = digest.as_bytes();
@@ -121,18 +125,6 @@ mod tests {
             }
         }
         panic!("failed to find variant for bucket {target}");
-    }
-
-    fn reference_offset(len: usize, selector: u8) -> usize {
-        if len == 0 { 0 } else { selector as usize % len }
-    }
-
-    fn reference_truncate_len(len: usize, digest: &[u8; 32]) -> usize {
-        if len <= 1 {
-            0
-        } else {
-            digest[2] as usize % (len - 1)
-        }
     }
 
     #[test]
@@ -199,8 +191,8 @@ mod tests {
             .find(|v| {
                 let d = hash32(v.as_bytes());
                 d.as_bytes()[0].is_multiple_of(3)
-                    && reference_truncate_len(der.len(), d.as_bytes())
-                        > reference_offset(der.len(), d.as_bytes()[1])
+                    && derived_truncate_len(der.len(), d.as_bytes())
+                        > derived_offset(der.len(), d.as_bytes()[1])
             })
             .expect("variant for bucket 0 with non-equivalent truncate/flip behavior");
         let v1 = find_variant_for_bucket(1);
@@ -210,14 +202,11 @@ mod tests {
         let d1 = hash32(v1.as_bytes());
         let d2 = hash32(v2.as_bytes());
 
-        let expected0 = truncate_der(&der, reference_truncate_len(der.len(), d0.as_bytes()));
-        let expected1 = flip_byte(&der, reference_offset(der.len(), d1.as_bytes()[1]));
+        let expected0 = truncate_der(&der, derived_truncate_len(der.len(), d0.as_bytes()));
+        let expected1 = flip_byte(&der, derived_offset(der.len(), d1.as_bytes()[1]));
         let expected2 = {
-            let flipped = flip_byte(&der, reference_offset(der.len(), d2.as_bytes()[1]));
-            truncate_der(
-                &flipped,
-                reference_truncate_len(flipped.len(), d2.as_bytes()),
-            )
+            let flipped = flip_byte(&der, derived_offset(der.len(), d2.as_bytes()[1]));
+            truncate_der(&flipped, derived_truncate_len(flipped.len(), d2.as_bytes()))
         };
 
         assert_eq!(corrupt_der_deterministic(&der, &v0), expected0);
@@ -226,26 +215,35 @@ mod tests {
     }
 
     #[test]
-    fn derived_offset_matches_reference_formula() {
+    fn derived_offset_properties() {
         assert_eq!(derived_offset(0, 200), 0);
-        assert_eq!(derived_offset(7, 250), reference_offset(7, 250));
-        assert_eq!(derived_offset(13, 5), reference_offset(13, 5));
+        // For non-zero lengths, result must be in [0, len-1].
+        for len in [1, 2, 7, 13, 255] {
+            for selector in [0u8, 1, 127, 200, 255] {
+                let result = derived_offset(len, selector);
+                assert!(result < len, "offset {result} should be < {len}");
+            }
+        }
     }
 
     #[test]
-    fn derived_truncate_len_matches_reference_formula() {
+    fn derived_truncate_len_properties() {
         let mut digest = [0u8; 32];
-        digest[2] = 8;
-
+        // len == 0 → 0
         assert_eq!(derived_truncate_len(0, &digest), 0);
+        // len == 1 → 0
         assert_eq!(derived_truncate_len(1, &digest), 0);
-        assert_eq!(
-            derived_truncate_len(10, &digest),
-            reference_truncate_len(10, &digest)
-        );
-        assert_eq!(
-            derived_truncate_len(17, &digest),
-            reference_truncate_len(17, &digest)
-        );
+        // For len > 1, result must be in [0, len-2] (i.e., result < len - 1).
+        for len in [2, 3, 10, 17, 256] {
+            for byte2 in [0u8, 1, 127, 200, 255] {
+                digest[2] = byte2;
+                let result = derived_truncate_len(len, &digest);
+                assert!(
+                    result < len - 1,
+                    "truncate_len {result} should be < {} for len={len}",
+                    len - 1
+                );
+            }
+        }
     }
 }

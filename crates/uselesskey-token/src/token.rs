@@ -17,6 +17,7 @@ const BASE62: &[u8; 62] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
 
 #[derive(Clone)]
 pub struct TokenFixture {
+    factory: Factory,
     label: String,
     spec: TokenSpec,
     inner: Arc<Inner>,
@@ -38,22 +39,52 @@ impl fmt::Debug for TokenFixture {
 /// Extension trait to hang token helpers off the core [`Factory`].
 pub trait TokenFactoryExt {
     fn token(&self, label: impl AsRef<str>, spec: TokenSpec) -> TokenFixture;
+    fn token_with_variant(
+        &self,
+        label: impl AsRef<str>,
+        spec: TokenSpec,
+        variant: impl AsRef<str>,
+    ) -> TokenFixture;
 }
 
 impl TokenFactoryExt for Factory {
     fn token(&self, label: impl AsRef<str>, spec: TokenSpec) -> TokenFixture {
-        TokenFixture::new(self, label.as_ref(), spec)
+        TokenFixture::new(self.clone(), label.as_ref(), spec)
     }
-}
 
-impl TokenFixture {
-    fn new(factory: &Factory, label: &str, spec: TokenSpec) -> Self {
-        let inner = load_inner(factory, label, spec, "good");
-        Self {
+    fn token_with_variant(
+        &self,
+        label: impl AsRef<str>,
+        spec: TokenSpec,
+        variant: impl AsRef<str>,
+    ) -> TokenFixture {
+        let label = label.as_ref();
+        let variant = variant.as_ref();
+        let factory = self.clone();
+        let inner = load_inner(&factory, label, spec, variant);
+        TokenFixture {
+            factory,
             label: label.to_string(),
             spec,
             inner,
         }
+    }
+}
+
+impl TokenFixture {
+    fn new(factory: Factory, label: &str, spec: TokenSpec) -> Self {
+        let inner = load_inner(&factory, label, spec, "good");
+        Self {
+            factory,
+            label: label.to_string(),
+            spec,
+            inner,
+        }
+    }
+
+    #[allow(dead_code)]
+    fn load_variant(&self, variant: &str) -> Arc<Inner> {
+        load_inner(&self.factory, &self.label, self.spec, variant)
     }
 
     /// Access the token value.
@@ -212,6 +243,24 @@ mod tests {
         assert_eq!(header["typ"], "JWT");
         assert_eq!(payload["sub"], "issuer");
         assert_eq!(payload["iss"], "uselesskey");
+    }
+
+    #[test]
+    fn different_variants_produce_different_tokens() {
+        let fx = Factory::deterministic(Seed::from_env_value("token-variant").unwrap());
+        let token = fx.token("svc", TokenSpec::bearer());
+        let other = token.load_variant("other");
+
+        assert_ne!(token.value(), other.value.as_str());
+    }
+
+    #[test]
+    fn token_with_variant_uses_custom_variant() {
+        let fx = Factory::deterministic(Seed::from_env_value("token-variant2").unwrap());
+        let good = fx.token("svc", TokenSpec::api_key());
+        let custom = fx.token_with_variant("svc", TokenSpec::api_key(), "custom");
+
+        assert_ne!(good.value(), custom.value());
     }
 
     #[test]
