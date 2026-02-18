@@ -8,7 +8,11 @@ use std::process::Command;
 fn main() {
     // Tell cargo about our custom cfg to avoid warnings
     println!("cargo::rustc-check-cfg=cfg(has_nasm)");
-    // Check if NASM is available
+
+    // Rerun only when this build script or PATH changes
+    println!("cargo::rerun-if-changed=build.rs");
+    println!("cargo::rerun-if-env-changed=PATH");
+
     let nasm_available = Command::new("nasm")
         .arg("-v")
         .output()
@@ -16,9 +20,11 @@ fn main() {
         .unwrap_or(false);
 
     if nasm_available {
-        println!("cargo:rustc-cfg=has_nasm");
-        println!("cargo:warning=NASM found - aws-lc-rs will be compiled from source");
+        println!("cargo::rustc-cfg=has_nasm");
+        println!("cargo::warning=NASM found");
     } else {
-        println!("cargo:warning=NASM not found - aws-lc-rs tests will be skipped");
+        println!(
+            "cargo::warning=NASM not found - aws-lc-rs tests gated on has_nasm will be skipped"
+        );
     }
 }

@@ -1,14 +1,21 @@
 # uselesskey-x509
 
-X.509 certificate fixtures for [uselesskey](https://docs.rs/uselesskey) test fixtures.
+X.509 certificate fixtures for `uselesskey` test suites.
 
-Generate self-signed certificates and 3-level certificate chains (Root CA, Intermediate CA, Leaf) with deterministic or random key material. Includes negative fixture variants for testing error handling (expired CA, wrong issuer, self-signed leaf, reversed chain, revoked leaf, and more).
+Generates self-signed certificates and 3-level chains (root CA -> intermediate CA -> leaf), with deterministic derivation and negative fixture variants.
+
+## What It Provides
+
+- `x509_self_signed(label, X509Spec)` for single certificates
+- `x509_chain(label, ChainSpec)` for root/intermediate/leaf chains
+- PEM and DER outputs for certs and private keys
+- Negative fixtures: expired, hostname mismatch, unknown CA, revoked leaf (CRL)
 
 ## Features
 
 | Feature | Description |
 |---------|-------------|
-| `jwk` | JWK output for underlying RSA keys |
+| `jwk` | Pass-through for `uselesskey-rsa/jwk` compatibility (no direct X.509 JWK API) |
 
 ## Example
 
@@ -16,11 +23,14 @@ Generate self-signed certificates and 3-level certificate chains (Root CA, Inter
 use uselesskey_core::Factory;
 use uselesskey_x509::{X509FactoryExt, X509Spec};
 
-let fx = Factory::deterministic(b"test-seed");
-let cert = fx.x509("server", X509Spec::self_signed());
+let fx = Factory::deterministic_from_env("USELESSKEY_SEED").unwrap_or_else(|_| Factory::random());
+let cert = fx.x509_self_signed("server", X509Spec::self_signed("test.example.com"));
 
 let cert_pem = cert.cert_pem();
-let key_pem = cert.key_pem();
+let key_pem = cert.private_key_pkcs8_pem();
+
+assert!(cert_pem.contains("BEGIN CERTIFICATE"));
+assert!(key_pem.contains("BEGIN PRIVATE KEY"));
 ```
 
 ## License

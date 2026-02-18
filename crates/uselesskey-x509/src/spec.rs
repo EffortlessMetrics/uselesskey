@@ -173,8 +173,8 @@ impl X509Spec {
 
         // Version prefix to allow deterministic derivation changes without affecting other crates.
         // Bump this if X.509 derivation inputs change.
-        // v3: added SANs field
-        out.push(3);
+        // v4: dedup SANs
+        out.push(4);
 
         // Subject CN length + bytes
         let subject_bytes = self.subject_cn.as_bytes();
@@ -210,9 +210,10 @@ impl X509Spec {
         // rsa_bits
         out.extend_from_slice(&(self.rsa_bits as u32).to_be_bytes());
 
-        // SANs (sorted for stability)
+        // SANs (sorted and deduplicated for stability)
         let mut sorted_sans = self.sans.clone();
         sorted_sans.sort();
+        sorted_sans.dedup();
         out.extend_from_slice(&(sorted_sans.len() as u32).to_be_bytes());
         for san in &sorted_sans {
             let san_bytes = san.as_bytes();
@@ -328,5 +329,17 @@ mod tests {
 
         let spec3 = X509Spec::self_signed("different");
         assert_ne!(spec1.stable_bytes(), spec3.stable_bytes());
+    }
+
+    #[test]
+    fn test_stable_bytes_deduplicates_sans() {
+        let with_dupes = X509Spec::self_signed("test").with_sans(vec![
+            "a.com".into(),
+            "a.com".into(),
+            "b.com".into(),
+        ]);
+        let without_dupes =
+            X509Spec::self_signed("test").with_sans(vec!["a.com".into(), "b.com".into()]);
+        assert_eq!(with_dupes.stable_bytes(), without_dupes.stable_bytes());
     }
 }

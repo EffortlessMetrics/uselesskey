@@ -1,4 +1,4 @@
-use uselesskey::Factory;
+mod testutil;
 
 #[test]
 fn prelude_exposes_core_items() {
@@ -22,7 +22,7 @@ fn rsa_reexport_works() {
     use uselesskey::RsaFactoryExt;
     use uselesskey::RsaSpec;
 
-    let fx = Factory::random();
+    let fx = testutil::fx();
     let key = fx.rsa("issuer", RsaSpec::rs256());
     assert!(key.private_key_pkcs8_pem().contains("BEGIN PRIVATE KEY"));
 }
@@ -33,7 +33,7 @@ fn ecdsa_reexport_works() {
     use uselesskey::EcdsaFactoryExt;
     use uselesskey::EcdsaSpec;
 
-    let fx = Factory::random();
+    let fx = testutil::fx();
     let key = fx.ecdsa("issuer", EcdsaSpec::es256());
     assert!(key.private_key_pkcs8_pem().contains("BEGIN PRIVATE KEY"));
 }
@@ -44,7 +44,7 @@ fn ed25519_reexport_works() {
     use uselesskey::Ed25519FactoryExt;
     use uselesskey::Ed25519Spec;
 
-    let fx = Factory::random();
+    let fx = testutil::fx();
     let key = fx.ed25519("issuer", Ed25519Spec::new());
     assert!(key.private_key_pkcs8_pem().contains("BEGIN PRIVATE KEY"));
 }
@@ -55,9 +55,34 @@ fn hmac_reexport_works() {
     use uselesskey::HmacFactoryExt;
     use uselesskey::HmacSpec;
 
-    let fx = Factory::random();
+    let fx = testutil::fx();
     let secret = fx.hmac("issuer", HmacSpec::hs256());
     assert_eq!(secret.secret_bytes().len(), HmacSpec::hs256().byte_len());
+}
+
+#[test]
+#[cfg(feature = "token")]
+fn token_reexport_works() {
+    use uselesskey::TokenFactoryExt;
+    use uselesskey::TokenSpec;
+
+    let fx = testutil::fx();
+    let token = fx.token("issuer", TokenSpec::api_key());
+    assert!(token.value().starts_with("uk_test_"));
+}
+
+#[test]
+#[cfg(feature = "pgp")]
+fn pgp_reexport_works() {
+    use uselesskey::PgpFactoryExt;
+    use uselesskey::PgpSpec;
+
+    let fx = testutil::fx();
+    let key = fx.pgp("issuer", PgpSpec::ed25519());
+    assert!(
+        key.private_key_armored()
+            .contains("BEGIN PGP PRIVATE KEY BLOCK")
+    );
 }
 
 #[test]

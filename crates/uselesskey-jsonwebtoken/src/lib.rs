@@ -35,7 +35,7 @@
 //! let keypair = fx.rsa("my-issuer", RsaSpec::rs256());
 //!
 //! // Sign a JWT
-//! let claims = Claims { sub: "user123".to_string(), exp: 9999999999 };
+//! let claims = Claims { sub: "user123".to_string(), exp: 2_000_000_000 };
 //! let header = Header::new(Algorithm::RS256);
 //! let token = encode(&header, &claims, &keypair.encoding_key()).unwrap();
 //!
@@ -64,7 +64,7 @@
 //! let fx = Factory::random();
 //! let keypair = fx.ecdsa("my-issuer", EcdsaSpec::es256());
 //!
-//! let claims = Claims { sub: "user123".to_string(), exp: 9999999999 };
+//! let claims = Claims { sub: "user123".to_string(), exp: 2_000_000_000 };
 //! let header = Header::new(Algorithm::ES256);
 //! let token = encode(&header, &claims, &keypair.encoding_key()).unwrap();
 //!
@@ -92,7 +92,7 @@
 //! let fx = Factory::random();
 //! let keypair = fx.ed25519("my-issuer", Ed25519Spec::new());
 //!
-//! let claims = Claims { sub: "user123".to_string(), exp: 9999999999 };
+//! let claims = Claims { sub: "user123".to_string(), exp: 2_000_000_000 };
 //! let header = Header::new(Algorithm::EdDSA);
 //! let token = encode(&header, &claims, &keypair.encoding_key()).unwrap();
 //!
@@ -120,7 +120,7 @@
 //! let fx = Factory::random();
 //! let secret = fx.hmac("my-secret", HmacSpec::hs256());
 //!
-//! let claims = Claims { sub: "user123".to_string(), exp: 9999999999 };
+//! let claims = Claims { sub: "user123".to_string(), exp: 2_000_000_000 };
 //! let header = Header::new(Algorithm::HS256);
 //! let token = encode(&header, &claims, &secret.encoding_key()).unwrap();
 //!
@@ -203,6 +203,20 @@ impl JwtKeyExt for uselesskey_hmac::HmacSecret {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::OnceLock;
+    use uselesskey_core::{Factory, Seed};
+
+    static FX: OnceLock<Factory> = OnceLock::new();
+
+    fn fx() -> Factory {
+        FX.get_or_init(|| {
+            let seed = Seed::from_env_value("uselesskey-jsonwebtoken-inline-test-seed-v1")
+                .expect("test seed should always parse");
+            Factory::deterministic(seed)
+        })
+        .clone()
+    }
+
     #[cfg(feature = "rsa")]
     mod rsa_tests {
         use crate::JwtKeyExt;
@@ -219,12 +233,12 @@ mod tests {
 
         #[test]
         fn test_rsa_sign_and_verify() {
-            let fx = Factory::random();
+            let fx = super::fx();
             let keypair = fx.rsa("test-issuer", RsaSpec::rs256());
 
             let claims = TestClaims {
                 sub: "user123".to_string(),
-                exp: 9999999999,
+                exp: 2_000_000_000,
             };
 
             let header = Header::new(Algorithm::RS256);
@@ -247,7 +261,7 @@ mod tests {
 
             let claims = TestClaims {
                 sub: "det-user".to_string(),
-                exp: 9999999999,
+                exp: 2_000_000_000,
             };
 
             let header = Header::new(Algorithm::RS256);
@@ -282,7 +296,7 @@ mod tests {
 
             let claims = TestClaims {
                 sub: "user123".to_string(),
-                exp: 9999999999,
+                exp: 2_000_000_000,
             };
 
             let header = Header::new(Algorithm::ES256);
@@ -302,7 +316,7 @@ mod tests {
 
             let claims = TestClaims {
                 sub: "user123".to_string(),
-                exp: 9999999999,
+                exp: 2_000_000_000,
             };
 
             let header = Header::new(Algorithm::ES384);
@@ -337,7 +351,7 @@ mod tests {
 
             let claims = TestClaims {
                 sub: "user123".to_string(),
-                exp: 9999999999,
+                exp: 2_000_000_000,
             };
 
             let header = Header::new(Algorithm::EdDSA);
@@ -373,7 +387,7 @@ mod tests {
 
             let claims = TestClaims {
                 sub: "user".to_string(),
-                exp: 9999999999,
+                exp: 2_000_000_000,
             };
 
             let token = encode(
@@ -413,7 +427,7 @@ mod tests {
 
             let claims = TestClaims {
                 sub: "user123".to_string(),
-                exp: 9999999999,
+                exp: 2_000_000_000,
             };
 
             let header = Header::new(Algorithm::HS256);
@@ -433,7 +447,7 @@ mod tests {
 
             let claims = TestClaims {
                 sub: "user123".to_string(),
-                exp: 9999999999,
+                exp: 2_000_000_000,
             };
 
             let header = Header::new(Algorithm::HS384);
@@ -453,7 +467,7 @@ mod tests {
 
             let claims = TestClaims {
                 sub: "user123".to_string(),
-                exp: 9999999999,
+                exp: 2_000_000_000,
             };
 
             let header = Header::new(Algorithm::HS512);

@@ -1,4 +1,5 @@
-use std::fmt;
+use alloc::string::String;
+use core::fmt;
 
 use crate::derive;
 
@@ -126,15 +127,17 @@ fn parse_hex_32(hex: &str) -> Result<[u8; 32], String> {
     }
 
     if hex.len() != 64 {
-        return Err(format!("expected 64 hex chars, got {}", hex.len()));
+        return Err(alloc::format!("expected 64 hex chars, got {}", hex.len()));
     }
 
     let bytes = hex.as_bytes();
     let mut out = [0u8; 32];
 
     for (i, chunk) in bytes.chunks_exact(2).enumerate() {
-        let hi = val(chunk[0]).ok_or_else(|| format!("invalid hex char: {}", chunk[0] as char))?;
-        let lo = val(chunk[1]).ok_or_else(|| format!("invalid hex char: {}", chunk[1] as char))?;
+        let hi = val(chunk[0])
+            .ok_or_else(|| alloc::format!("invalid hex char: {}", chunk[0] as char))?;
+        let lo = val(chunk[1])
+            .ok_or_else(|| alloc::format!("invalid hex char: {}", chunk[1] as char))?;
         out[i] = (hi << 4) | lo;
     }
 
@@ -153,7 +156,7 @@ pub type ArtifactDomain = &'static str;
 /// Version tag for the derivation scheme.
 ///
 /// Bump this if you *intentionally* change how fixture derivation works.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, PartialOrd, Ord)]
 pub struct DerivationVersion(pub u16);
 
 impl DerivationVersion {
@@ -165,7 +168,7 @@ impl DerivationVersion {
 /// The goal is stability:
 /// the same `(domain, label, spec, variant)` produces the same artifact in deterministic mode,
 /// regardless of call order.
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, PartialOrd, Ord)]
 pub struct ArtifactId {
     pub domain: ArtifactDomain,
     pub label: String,
@@ -192,7 +195,7 @@ impl ArtifactId {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "std"))]
 mod tests {
     use super::*;
 

@@ -277,9 +277,11 @@ mod tests {
 
     fn install_provider() {
         INIT.call_once(|| {
-            rustls::crypto::ring::default_provider()
-                .install_default()
-                .expect("install ring provider");
+            // When both `rustls-ring` and `rustls-aws-lc-rs` features are
+            // enabled (e.g. via `--all-features`), another provider may
+            // already be set as process-default. Ignore the error — the
+            // explicit-provider tests cover the critical paths.
+            let _ = rustls::crypto::ring::default_provider().install_default();
         });
     }
 
@@ -358,12 +360,12 @@ mod tests {
 
     #[test]
     fn tls_handshake_roundtrip() {
-        install_provider();
         let fx = super::super::testutil::fx();
         let chain = fx.x509_chain("tls-test", ChainSpec::new("test.example.com"));
 
-        let server_config = Arc::new(chain.server_config_rustls());
-        let client_config = Arc::new(chain.client_config_rustls());
+        let provider = ring_provider();
+        let server_config = Arc::new(chain.server_config_rustls_with_provider(provider.clone()));
+        let client_config = Arc::new(chain.client_config_rustls_with_provider(provider));
 
         let server_name: rustls::pki_types::ServerName<'_> = "test.example.com".try_into().unwrap();
         let mut server = rustls::ServerConnection::new(server_config).unwrap();
@@ -473,12 +475,13 @@ mod tests {
 
     #[test]
     fn mtls_roundtrip() {
-        install_provider();
         let fx = super::super::testutil::fx();
         let chain = fx.x509_chain("mtls-test", ChainSpec::new("test.example.com"));
 
-        let server_config = Arc::new(chain.server_config_mtls_rustls());
-        let client_config = Arc::new(chain.client_config_mtls_rustls());
+        let provider = ring_provider();
+        let server_config =
+            Arc::new(chain.server_config_mtls_rustls_with_provider(provider.clone()));
+        let client_config = Arc::new(chain.client_config_mtls_rustls_with_provider(provider));
 
         let server_name: rustls::pki_types::ServerName<'_> = "test.example.com".try_into().unwrap();
         let mut server = rustls::ServerConnection::new(server_config).unwrap();

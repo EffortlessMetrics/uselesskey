@@ -89,11 +89,21 @@ pub fn corrupt_cert_pem(pem: &str, how: uselesskey_core::negative::CorruptPem) -
     uselesskey_core::negative::corrupt_pem(pem, how)
 }
 
+/// Corrupt a PEM-encoded certificate using a deterministic variant string.
+pub fn corrupt_cert_pem_deterministic(pem: &str, variant: &str) -> String {
+    uselesskey_core::negative::corrupt_pem_deterministic(pem, variant)
+}
+
 /// Truncate a DER-encoded certificate.
 ///
 /// Delegates to the core negative fixture helpers.
 pub fn truncate_cert_der(der: &[u8], len: usize) -> Vec<u8> {
     uselesskey_core::negative::truncate_der(der, len)
+}
+
+/// Corrupt a DER-encoded certificate using a deterministic variant string.
+pub fn corrupt_cert_der_deterministic(der: &[u8], variant: &str) -> Vec<u8> {
+    uselesskey_core::negative::corrupt_der_deterministic(der, variant)
 }
 
 #[cfg(test)]
@@ -160,5 +170,19 @@ mod tests {
             X509Negative::SelfSignedButClaimsCA.variant_name(),
             "self_signed_ca"
         );
+    }
+
+    #[test]
+    fn deterministic_corruption_helpers_are_stable() {
+        let pem = "-----BEGIN CERTIFICATE-----\nAAA=\n-----END CERTIFICATE-----\n";
+        let der = vec![0x30, 0x03, 0x02, 0x01, 0x01];
+
+        let pem_a = corrupt_cert_pem_deterministic(pem, "corrupt:v1");
+        let pem_b = corrupt_cert_pem_deterministic(pem, "corrupt:v1");
+        assert_eq!(pem_a, pem_b);
+
+        let der_a = corrupt_cert_der_deterministic(&der, "corrupt:v1");
+        let der_b = corrupt_cert_der_deterministic(&der, "corrupt:v1");
+        assert_eq!(der_a, der_b);
     }
 }

@@ -26,6 +26,7 @@ uk-rsa = ["uselesskey/rsa"]
 uk-ecdsa = ["uselesskey/ecdsa"]
 uk-ed25519 = ["uselesskey/ed25519"]
 uk-hmac = ["uselesskey/hmac"]
+uk-pgp = ["uselesskey/pgp"]
 uk-x509 = ["uselesskey/x509"]
 uk-jwk = ["uselesskey/jwk"]
 

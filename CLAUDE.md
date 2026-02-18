@@ -37,7 +37,7 @@ Path ignores exist but require ongoing maintenance. This crate replaces "securit
 
 3. **Shape-first outputs** — Users ask for PKCS#8/SPKI/JWK/tempfiles, not crypto primitives.
 
-4. **Negative fixtures first-class** — Corrupt PEM, truncated DER, mismatched keys. This is the sticky feature. (X.509 negative fixtures like expired certs are on the roadmap.)
+4. **Negative fixtures first-class** — Corrupt PEM, truncated DER, mismatched keys, and deterministic corruption variants (`corrupt:*`).
 
 ### Design principles
 
@@ -84,6 +84,7 @@ cargo test -p uselesskey-rsa test_name
 - **`crates/uselesskey-ecdsa`** - ECDSA (P-256/P-384) fixtures via `EcdsaFactoryExt` trait
 - **`crates/uselesskey-ed25519`** - Ed25519 fixtures via `Ed25519FactoryExt` trait
 - **`crates/uselesskey-hmac`** - HMAC (HS256/HS384/HS512) fixtures via `HmacFactoryExt` trait
+- **`crates/uselesskey-token`** - Token fixtures (API key, bearer, OAuth/JWT-shape) via `TokenFactoryExt` trait
 - **`crates/uselesskey-x509`** - X.509 certificate fixtures via `X509FactoryExt` trait
 - **`crates/uselesskey-jsonwebtoken`** - Adapter: `jsonwebtoken` integration
 - **`crates/uselesskey-rustls`** - Adapter: `rustls` / `rustls-pki-types` integration
@@ -110,6 +111,7 @@ Key type support is added via extension traits on `Factory`:
 - `EcdsaFactoryExt` → `fx.ecdsa(label, spec)`
 - `Ed25519FactoryExt` → `fx.ed25519(label)`
 - `HmacFactoryExt` → `fx.hmac(label, spec)`
+- `TokenFactoryExt` → `fx.token(label, spec)`
 - `X509FactoryExt` → `fx.x509(label, spec)`
 
 Adapter crates (e.g. `uselesskey-jsonwebtoken`) are separate crates, not features, to avoid coupling versioning.
@@ -124,7 +126,9 @@ Adapter crates (e.g. `uselesskey-jsonwebtoken`) are separate crates, not feature
 ## Testing
 
 - Unit/integration tests use `#[test]`, `proptest` (property-based), and `rstest` (parameterized)
-- BDD tests in `crates/uselesskey-bdd/features/rsa.feature`
+- `cargo xtask test` runs `--workspace --all-features --exclude uselesskey-bdd`
+- `cargo xtask bdd` runs BDD tests separately with `--release` (RSA keygen is too slow in debug)
+- BDD feature files in `crates/uselesskey-bdd/features/` covering all key types, X.509, JWK, negative fixtures, and edge cases
 - Fuzz targets in `fuzz/fuzz_targets/`
 
 ## Configuration Files

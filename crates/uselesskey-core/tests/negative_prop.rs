@@ -1,3 +1,5 @@
+#![cfg(feature = "std")]
+
 use proptest::prelude::*;
 
 use uselesskey_core::negative::{CorruptPem, corrupt_pem, flip_byte, truncate_der};

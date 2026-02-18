@@ -51,12 +51,10 @@ fn test_different_specs_different_secrets() {
     let fx = fx();
     let s256 = fx.hmac("same-label", HmacSpec::hs256());
     let s512 = fx.hmac("same-label", HmacSpec::hs512());
-    // Different lengths alone guarantee inequality, but also check content
-    assert_ne!(s256.secret_bytes().len(), s512.secret_bytes().len());
     assert_ne!(
-        &s256.secret_bytes()[..32],
-        &s512.secret_bytes()[..32],
-        "first 32 bytes should also differ (different derivation)"
+        s256.secret_bytes(),
+        s512.secret_bytes(),
+        "same label + different spec must not produce same secret bytes"
     );
 }
 
@@ -69,8 +67,8 @@ fn test_debug_does_not_leak_secret_material() {
     let fx = fx();
     let secret = fx.hmac("debug-test", HmacSpec::hs256());
 
-    let dbg = format!("{:?}", secret);
-    assert!(dbg.contains("HmacSecret"));
+    let debug_output = format!("{:?}", secret);
+    assert!(debug_output.contains("HmacSecret"));
 
     // Convert secret bytes to hex and verify it does NOT appear in debug
     let hex_secret: String = secret
@@ -79,14 +77,14 @@ fn test_debug_does_not_leak_secret_material() {
         .map(|b| format!("{:02x}", b))
         .collect();
     assert!(
-        !dbg.contains(&hex_secret),
+        !debug_output.contains(&hex_secret),
         "Debug output must NOT contain hex-encoded secret bytes"
     );
 
     // Also check that raw byte values don't appear
     // (finish_non_exhaustive should prevent this)
     assert!(
-        dbg.contains(".."),
+        debug_output.contains(".."),
         "Debug should use finish_non_exhaustive()"
     );
 }

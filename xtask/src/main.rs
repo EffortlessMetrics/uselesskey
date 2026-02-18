@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::env;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use anyhow::{Context, Result, bail};
@@ -118,6 +118,8 @@ const FEATURE_MATRIX: &[(&str, &[&str])] = &[
         &["--no-default-features", "--features", "ed25519"],
     ),
     ("hmac", &["--no-default-features", "--features", "hmac"]),
+    ("token", &["--no-default-features", "--features", "token"]),
+    ("pgp", &["--no-default-features", "--features", "pgp"]),
     ("x509", &["--no-default-features", "--features", "x509"]),
     ("jwk", &["--no-default-features", "--features", "jwk"]),
     ("all-features", &["--all-features"]),
@@ -144,7 +146,13 @@ fn clippy() -> Result<()> {
 }
 
 fn test() -> Result<()> {
-    run(Command::new("cargo").args(["test", "--workspace", "--all-features"]))
+    run(Command::new("cargo").args([
+        "test",
+        "--workspace",
+        "--all-features",
+        "--exclude",
+        "uselesskey-bdd",
+    ]))
 }
 
 fn bdd() -> Result<()> {
@@ -156,6 +164,7 @@ fn bdd() -> Result<()> {
         "bdd",
         "--features",
         "uk-all",
+        "--release",
     ]))
 }
 
@@ -170,7 +179,7 @@ fn bdd_matrix() -> Result<()> {
         let step_name = format!("bdd-matrix:{name}");
         let result = runner.step(&step_name, None, || {
             let mut cmd = Command::new("cargo");
-            cmd.args(["test", "-p", "uselesskey-bdd", "--test", "bdd"]);
+            cmd.args(["test", "-p", "uselesskey-bdd", "--test", "bdd", "--release"]);
             for arg in args {
                 cmd.arg(arg);
             }
@@ -254,10 +263,13 @@ const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-ecdsa",
     "uselesskey-ed25519",
     "uselesskey-hmac",
+    "uselesskey-token",
+    "uselesskey-pgp",
     "uselesskey-x509",
     "uselesskey",
     "uselesskey-jsonwebtoken",
     "uselesskey-rustls",
+    "uselesskey-tonic",
     "uselesskey-ring",
     "uselesskey-rustcrypto",
     "uselesskey-aws-lc-rs",
@@ -730,11 +742,11 @@ fn fuzz_pr() -> Result<()> {
 
 fn list_fuzz_targets() -> Result<Vec<String>> {
     let mut targets = Vec::new();
-    let dir = Path::new("fuzz/fuzz_targets");
+    let dir = workspace_path("fuzz/fuzz_targets");
     if !dir.exists() {
         return Ok(targets);
     }
-    for entry in fs::read_dir(dir).context("failed to read fuzz_targets")? {
+    for entry in fs::read_dir(&dir).context("failed to read fuzz_targets")? {
         let entry = entry.context("failed to read fuzz_targets entry")?;
         let path = entry.path();
         if path.extension().and_then(|s| s.to_str()) != Some("rs") {
@@ -828,11 +840,11 @@ fn contains_pem_markers(path: &Path) -> Result<bool> {
 
 fn count_bdd_scenarios() -> Result<BTreeMap<String, usize>> {
     let mut counts = BTreeMap::new();
-    let dir = Path::new("crates/uselesskey-bdd/features");
+    let dir = workspace_path("crates/uselesskey-bdd/features");
     if !dir.exists() {
         return Ok(counts);
     }
-    for entry in fs::read_dir(dir).context("failed to read bdd features dir")? {
+    for entry in fs::read_dir(&dir).context("failed to read bdd features dir")? {
         let entry = entry.context("failed to read bdd feature entry")?;
         let path = entry.path();
         if path.extension().and_then(|s| s.to_str()) != Some("feature") {
@@ -855,6 +867,30 @@ fn count_bdd_scenarios() -> Result<BTreeMap<String, usize>> {
         counts.insert(name, count);
     }
     Ok(counts)
+}
+
+fn workspace_path(rel: &str) -> PathBuf {
+    let cwd_rel = PathBuf::from(rel);
+    if cwd_rel.exists() {
+        return cwd_rel;
+    }
+
+    // Also resolve from the workspace root when running from within this repo
+    // (for example from `xtask/`), but do not leak into unrelated temp dirs.
+    let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap_or(Path::new(env!("CARGO_MANIFEST_DIR")));
+    if env::current_dir()
+        .ok()
+        .is_some_and(|cwd| cwd.starts_with(workspace_root))
+    {
+        let workspace_rel = workspace_root.join(rel);
+        if workspace_rel.exists() {
+            return workspace_rel;
+        }
+    }
+
+    cwd_rel
 }
 
 fn nextest() -> Result<()> {
@@ -942,6 +978,7 @@ mod tests {
     use std::sync::Mutex;
 
     static ENV_LOCK: Mutex<()> = Mutex::new(());
+    static CWD_LOCK: Mutex<()> = Mutex::new(());
 
     struct CwdGuard {
         prev: PathBuf,
@@ -1059,6 +1096,7 @@ mod tests {
 
     #[test]
     fn list_fuzz_targets_returns_sorted_rs_stems() {
+        let _cwd_lock = CWD_LOCK.lock().unwrap();
         let dir = tempfile::tempdir().expect("tempdir");
         let root = dir.path();
         let fuzz_dir = root.join("fuzz").join("fuzz_targets");
@@ -1074,6 +1112,7 @@ mod tests {
 
     #[test]
     fn list_fuzz_targets_missing_dir_is_empty() {
+        let _cwd_lock = CWD_LOCK.lock().unwrap();
         let dir = tempfile::tempdir().expect("tempdir");
         let _cwd = CwdGuard::new(dir.path());
         let targets = list_fuzz_targets().expect("list targets");
@@ -1082,6 +1121,7 @@ mod tests {
 
     #[test]
     fn count_bdd_scenarios_counts_scenarios_and_outlines() {
+        let _cwd_lock = CWD_LOCK.lock().unwrap();
         let dir = tempfile::tempdir().expect("tempdir");
         let root = dir.path();
         let features_dir = root.join("crates").join("uselesskey-bdd").join("features");

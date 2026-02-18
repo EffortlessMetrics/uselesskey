@@ -18,8 +18,14 @@
 //!
 //! # Example: RSA sign and verify
 //!
-#![cfg_attr(all(feature = "native", feature = "rsa"), doc = "```")]
-#![cfg_attr(not(all(feature = "native", feature = "rsa")), doc = "```ignore")]
+#![cfg_attr(
+    all(feature = "native", any(not(windows), has_nasm), feature = "rsa"),
+    doc = "```"
+)]
+#![cfg_attr(
+    not(all(feature = "native", any(not(windows), has_nasm), feature = "rsa")),
+    doc = "```ignore"
+)]
 //! use uselesskey_core::Factory;
 //! use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 //! use uselesskey_aws_lc_rs::AwsLcRsRsaKeyPairExt;
@@ -40,13 +46,13 @@
 // =========================================================================
 
 /// Extension trait to convert uselesskey RSA fixtures into `aws_lc_rs::rsa::KeyPair`.
-#[cfg(all(feature = "native", has_nasm, feature = "rsa"))]
+#[cfg(all(feature = "native", any(not(windows), has_nasm), feature = "rsa"))]
 pub trait AwsLcRsRsaKeyPairExt {
     /// Convert the RSA private key to an `aws_lc_rs::rsa::KeyPair`.
     fn rsa_key_pair_aws_lc_rs(&self) -> aws_lc_rs::rsa::KeyPair;
 }
 
-#[cfg(all(feature = "native", has_nasm, feature = "rsa"))]
+#[cfg(all(feature = "native", any(not(windows), has_nasm), feature = "rsa"))]
 impl AwsLcRsRsaKeyPairExt for uselesskey_rsa::RsaKeyPair {
     fn rsa_key_pair_aws_lc_rs(&self) -> aws_lc_rs::rsa::KeyPair {
         aws_lc_rs::rsa::KeyPair::from_pkcs8(self.private_key_pkcs8_der())
@@ -58,14 +64,14 @@ impl AwsLcRsRsaKeyPairExt for uselesskey_rsa::RsaKeyPair {
 // ECDSA
 // =========================================================================
 
-#[cfg(all(feature = "native", has_nasm, feature = "ecdsa"))]
+#[cfg(all(feature = "native", any(not(windows), has_nasm), feature = "ecdsa"))]
 use aws_lc_rs::signature::{
     ECDSA_P256_SHA256_ASN1_SIGNING, ECDSA_P384_SHA384_ASN1_SIGNING,
     EcdsaKeyPair as AwsLcRsEcdsaKeyPair, EcdsaSigningAlgorithm,
 };
 
 /// Extension trait to convert uselesskey ECDSA fixtures into `aws_lc_rs::signature::EcdsaKeyPair`.
-#[cfg(all(feature = "native", has_nasm, feature = "ecdsa"))]
+#[cfg(all(feature = "native", any(not(windows), has_nasm), feature = "ecdsa"))]
 pub trait AwsLcRsEcdsaKeyPairExt {
     /// Convert the ECDSA private key to an `aws_lc_rs::signature::EcdsaKeyPair`.
     ///
@@ -73,7 +79,7 @@ pub trait AwsLcRsEcdsaKeyPairExt {
     fn ecdsa_key_pair_aws_lc_rs(&self) -> AwsLcRsEcdsaKeyPair;
 }
 
-#[cfg(all(feature = "native", has_nasm, feature = "ecdsa"))]
+#[cfg(all(feature = "native", any(not(windows), has_nasm), feature = "ecdsa"))]
 impl AwsLcRsEcdsaKeyPairExt for uselesskey_ecdsa::EcdsaKeyPair {
     fn ecdsa_key_pair_aws_lc_rs(&self) -> AwsLcRsEcdsaKeyPair {
         let alg: &'static EcdsaSigningAlgorithm = match self.spec() {
@@ -90,13 +96,13 @@ impl AwsLcRsEcdsaKeyPairExt for uselesskey_ecdsa::EcdsaKeyPair {
 // =========================================================================
 
 /// Extension trait to convert uselesskey Ed25519 fixtures into `aws_lc_rs::signature::Ed25519KeyPair`.
-#[cfg(all(feature = "native", has_nasm, feature = "ed25519"))]
+#[cfg(all(feature = "native", any(not(windows), has_nasm), feature = "ed25519"))]
 pub trait AwsLcRsEd25519KeyPairExt {
     /// Convert the Ed25519 private key to an `aws_lc_rs::signature::Ed25519KeyPair`.
     fn ed25519_key_pair_aws_lc_rs(&self) -> aws_lc_rs::signature::Ed25519KeyPair;
 }
 
-#[cfg(all(feature = "native", has_nasm, feature = "ed25519"))]
+#[cfg(all(feature = "native", any(not(windows), has_nasm), feature = "ed25519"))]
 impl AwsLcRsEd25519KeyPairExt for uselesskey_ed25519::Ed25519KeyPair {
     fn ed25519_key_pair_aws_lc_rs(&self) -> aws_lc_rs::signature::Ed25519KeyPair {
         aws_lc_rs::signature::Ed25519KeyPair::from_pkcs8(self.private_key_pkcs8_der())
@@ -110,16 +116,31 @@ impl AwsLcRsEd25519KeyPairExt for uselesskey_ed25519::Ed25519KeyPair {
 
 #[cfg(test)]
 mod tests {
-    #[cfg(all(feature = "native", has_nasm, feature = "rsa"))]
+    use std::sync::OnceLock;
+    use uselesskey_core::{Factory, Seed};
+
+    #[allow(dead_code)]
+    static FX: OnceLock<Factory> = OnceLock::new();
+
+    #[allow(dead_code)]
+    fn fx() -> Factory {
+        FX.get_or_init(|| {
+            let seed = Seed::from_env_value("uselesskey-aws-lc-rs-inline-test-seed-v1")
+                .expect("test seed should always parse");
+            Factory::deterministic(seed)
+        })
+        .clone()
+    }
+
+    #[cfg(all(feature = "native", any(not(windows), has_nasm), feature = "rsa"))]
     mod rsa_tests {
         use crate::AwsLcRsRsaKeyPairExt;
         use aws_lc_rs::signature::{self, KeyPair};
-        use uselesskey_core::Factory;
         use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 
         #[test]
         fn test_rsa_sign_verify() {
-            let fx = Factory::random();
+            let fx = super::fx();
             let rsa = fx.rsa("test", RsaSpec::rs256());
             let kp = rsa.rsa_key_pair_aws_lc_rs();
 
@@ -138,7 +159,7 @@ mod tests {
         }
     }
 
-    #[cfg(all(feature = "native", has_nasm, feature = "ecdsa"))]
+    #[cfg(all(feature = "native", any(not(windows), has_nasm), feature = "ecdsa"))]
     mod ecdsa_tests {
         use crate::AwsLcRsEcdsaKeyPairExt;
         use aws_lc_rs::signature::{self, KeyPair};
@@ -182,7 +203,7 @@ mod tests {
         }
     }
 
-    #[cfg(all(feature = "native", has_nasm, feature = "ed25519"))]
+    #[cfg(all(feature = "native", any(not(windows), has_nasm), feature = "ed25519"))]
     mod ed25519_tests {
         use crate::AwsLcRsEd25519KeyPairExt;
         use aws_lc_rs::signature::{self, KeyPair};

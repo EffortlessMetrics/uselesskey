@@ -94,16 +94,29 @@ impl RingEd25519KeyPairExt for uselesskey_ed25519::Ed25519KeyPair {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::OnceLock;
+    use uselesskey_core::{Factory, Seed};
+
+    static FX: OnceLock<Factory> = OnceLock::new();
+
+    fn fx() -> Factory {
+        FX.get_or_init(|| {
+            let seed = Seed::from_env_value("uselesskey-ring-inline-test-seed-v1")
+                .expect("test seed should always parse");
+            Factory::deterministic(seed)
+        })
+        .clone()
+    }
+
     #[cfg(feature = "rsa")]
     mod rsa_tests {
         use crate::RingRsaKeyPairExt;
         use ring::signature;
-        use uselesskey_core::Factory;
         use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 
         #[test]
         fn test_rsa_sign_verify() {
-            let fx = Factory::random();
+            let fx = super::fx();
             let rsa = fx.rsa("test", RsaSpec::rs256());
             let ring_kp = rsa.rsa_key_pair_ring();
 

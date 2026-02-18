@@ -1,24 +1,26 @@
 [package]
 name = "uselesskey-rsa"
-version = "0.2.0"
+version = "0.3.0"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "RSA key fixtures for uselesskey."
+description = "RSA key fixtures (PKCS#8/SPKI, PEM/DER) with negative variants for tests."
 categories = ["development-tools::testing"]
-keywords = ["rsa", "fixtures", "testing", "jwk"]
+keywords = ["rsa", "pkcs8", "spki", "fixtures", "testing"]
 readme = "README.md"
+homepage = "https://github.com/EffortlessMetrics/uselesskey"
+documentation = "https://docs.rs/uselesskey-rsa"
 authors.workspace = true
 
 [dependencies]
-uselesskey-core = { path = "../uselesskey-core", version = "0.2.0" }
+uselesskey-core = { path = "../uselesskey-core", version = "0.3.0" }
 rsa.workspace = true
 
 # Optional JWK/JWKS support
 serde_json = { workspace = true, optional = true }
 base64 = { workspace = true, optional = true }
-uselesskey-jwk = { path = "../uselesskey-jwk", version = "0.2.0", optional = true }
+uselesskey-jwk = { path = "../uselesskey-jwk", version = "0.3.0", optional = true }
 blake3.workspace = true
 
 [features]

@@ -1,14 +1,16 @@
 [package]
 name = "uselesskey-jwk"
-version = "0.2.0"
+version = "0.3.0"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "Typed JWK/JWKS helpers for uselesskey."
+description = "Typed JWK/JWKS models and builders for uselesskey fixture crates."
 categories = ["development-tools::testing"]
-keywords = ["jwk", "jwks", "fixtures", "testing"]
+keywords = ["jwk", "jwks", "jwt", "fixtures", "testing"]
 readme = "README.md"
+homepage = "https://github.com/EffortlessMetrics/uselesskey"
+documentation = "https://docs.rs/uselesskey-jwk"
 authors.workspace = true
 
 [dependencies]

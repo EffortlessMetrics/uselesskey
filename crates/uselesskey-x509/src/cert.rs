@@ -16,7 +16,10 @@ use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 
 use crate::chain::X509Chain;
 use crate::chain_spec::ChainSpec;
-use crate::negative::{X509Negative, corrupt_cert_pem, truncate_cert_der};
+use crate::negative::{
+    X509Negative, corrupt_cert_der_deterministic, corrupt_cert_pem, corrupt_cert_pem_deterministic,
+    truncate_cert_der,
+};
 use crate::spec::{NotBeforeOffset, X509Spec};
 use crate::util::{deterministic_base_time, deterministic_serial_number};
 
@@ -156,9 +159,19 @@ impl X509Cert {
         corrupt_cert_pem(self.cert_pem(), how)
     }
 
+    /// Produce a deterministic corrupted certificate PEM using a variant string.
+    pub fn corrupt_cert_pem_deterministic(&self, variant: &str) -> String {
+        corrupt_cert_pem_deterministic(self.cert_pem(), variant)
+    }
+
     /// Produce a truncated variant of the certificate DER.
     pub fn truncate_cert_der(&self, len: usize) -> Vec<u8> {
         truncate_cert_der(self.cert_der(), len)
+    }
+
+    /// Produce a deterministic corrupted certificate DER using a variant string.
+    pub fn corrupt_cert_der_deterministic(&self, variant: &str) -> Vec<u8> {
+        corrupt_cert_der_deterministic(self.cert_der(), variant)
     }
 
     /// Generate a negative fixture variant of this certificate.
@@ -332,7 +345,7 @@ mod tests {
 
     #[test]
     fn test_self_signed_cert_generation() {
-        let factory = Factory::random();
+        let factory = fx();
         let spec = X509Spec::self_signed("test.example.com");
         let cert = factory.x509_self_signed("test", spec);
 
@@ -424,6 +437,21 @@ mod tests {
 
         let truncated = cert.truncate_cert_der(10);
         assert_eq!(truncated.len(), 10);
+    }
+
+    #[test]
+    fn test_deterministic_corrupt_helpers() {
+        let factory = fx();
+        let spec = X509Spec::self_signed("test.example.com");
+        let cert = factory.x509_self_signed("test", spec);
+
+        let pem_a = cert.corrupt_cert_pem_deterministic("corrupt:v1");
+        let pem_b = cert.corrupt_cert_pem_deterministic("corrupt:v1");
+        assert_eq!(pem_a, pem_b);
+
+        let der_a = cert.corrupt_cert_der_deterministic("corrupt:v1");
+        let der_b = cert.corrupt_cert_der_deterministic("corrupt:v1");
+        assert_eq!(der_a, der_b);
     }
 
     #[test]

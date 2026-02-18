@@ -2,7 +2,9 @@ use std::fmt;
 use std::sync::Arc;
 
 use elliptic_curve::pkcs8::{EncodePrivateKey, EncodePublicKey, LineEnding};
-use uselesskey_core::negative::{CorruptPem, corrupt_pem, truncate_der};
+use uselesskey_core::negative::{
+    CorruptPem, corrupt_der_deterministic, corrupt_pem, corrupt_pem_deterministic, truncate_der,
+};
 use uselesskey_core::sink::TempArtifact;
 use uselesskey_core::{Error, Factory};
 
@@ -114,9 +116,19 @@ impl EcdsaKeyPair {
         corrupt_pem(self.private_key_pkcs8_pem(), how)
     }
 
+    /// Produce a deterministic corrupted PKCS#8 PEM using a variant string.
+    pub fn private_key_pkcs8_pem_corrupt_deterministic(&self, variant: &str) -> String {
+        corrupt_pem_deterministic(self.private_key_pkcs8_pem(), variant)
+    }
+
     /// Produce a truncated variant of the PKCS#8 DER.
     pub fn private_key_pkcs8_der_truncated(&self, len: usize) -> Vec<u8> {
         truncate_der(self.private_key_pkcs8_der(), len)
+    }
+
+    /// Produce a deterministic corrupted PKCS#8 DER using a variant string.
+    pub fn private_key_pkcs8_der_corrupt_deterministic(&self, variant: &str) -> Vec<u8> {
+        corrupt_der_deterministic(self.private_key_pkcs8_der(), variant)
     }
 
     /// Return a valid (parseable) public key that does *not* match this private key.
@@ -156,8 +168,13 @@ impl EcdsaKeyPair {
         // Public key bytes are in uncompressed form: 0x04 || x || y
         let bytes = &self.inner.public_key_bytes;
         assert_eq!(bytes[0], 0x04, "expected uncompressed point");
-
-        let coord_len = (bytes.len() - 1) / 2;
+        let coord_len = self.spec.coordinate_len_bytes();
+        assert_eq!(
+            bytes.len(),
+            1 + (coord_len * 2),
+            "unexpected EC point length for {:?}",
+            self.spec
+        );
         let x = &bytes[1..1 + coord_len];
         let y = &bytes[1 + coord_len..];
 
@@ -184,8 +201,13 @@ impl EcdsaKeyPair {
         // Public key bytes are in uncompressed form: 0x04 || x || y
         let bytes = &self.inner.public_key_bytes;
         assert_eq!(bytes[0], 0x04, "expected uncompressed point");
-
-        let coord_len = (bytes.len() - 1) / 2;
+        let coord_len = self.spec.coordinate_len_bytes();
+        assert_eq!(
+            bytes.len(),
+            1 + (coord_len * 2),
+            "unexpected EC point length for {:?}",
+            self.spec
+        );
         let x = &bytes[1..1 + coord_len];
         let y = &bytes[1 + coord_len..];
 

@@ -1,6 +1,6 @@
 # uselesskey
 
-*Terraform for test credentials.*
+*Deterministic cryptographic test fixtures for Rust.*
 
 **Stop committing PEM/DER/JWK blobs into your repos.**
 
@@ -34,10 +34,13 @@ Even fake keys that look real cause friction. This crate replaces "security poli
 - ECDSA (P-256, P-384)
 - Ed25519
 - HMAC (HS256, HS384, HS512)
+- OpenPGP (RSA 2048/3072, Ed25519)
+- Token fixtures (API key, bearer, OAuth access token/JWT shape)
 
 **Output formats:**
 - PKCS#8 PEM/DER (private keys)
 - SPKI PEM/DER (public keys)
+- OpenPGP armored and binary keyblocks (with `pgp` feature)
 - JWK/JWKS (with `jwk` feature)
 - Tempfiles (for libraries that need paths)
 - X.509 self-signed certificates and certificate chains (with `x509` feature)
@@ -54,7 +57,7 @@ Add to `Cargo.toml`:
 
 ```toml
 [dev-dependencies]
-uselesskey = "0.2"
+uselesskey = "0.3"
 ```
 
 Generate keys:
@@ -172,6 +175,23 @@ let truncated = rsa.private_key_pkcs8_der_truncated(32);
 let mismatched_pub = rsa.mismatched_public_key_spki_der();
 ```
 
+### Token Fixtures
+
+Generate realistic token-shaped fixtures without committing token blobs:
+
+```rust
+use uselesskey::{Factory, TokenFactoryExt, TokenSpec};
+
+let fx = Factory::random();
+let api_key = fx.token("billing", TokenSpec::api_key());
+let bearer = fx.token("gateway", TokenSpec::bearer());
+let oauth = fx.token("issuer", TokenSpec::oauth_access_token());
+
+assert!(api_key.value().starts_with("uk_test_"));
+assert!(bearer.authorization_header().starts_with("Bearer "));
+assert_eq!(oauth.value().split('.').count(), 3);
+```
+
 ## Adapter Crates
 
 Adapter crates bridge uselesskey fixtures to third-party library types. They are separate crates (not features) to avoid coupling versioning.
@@ -180,6 +200,7 @@ Adapter crates bridge uselesskey fixtures to third-party library types. They are
 |-------|---------|
 | `uselesskey-jsonwebtoken` | Returns `jsonwebtoken::EncodingKey` / `DecodingKey` directly |
 | `uselesskey-rustls` | `rustls-pki-types` conversions + `ServerConfig` / `ClientConfig` builders |
+| `uselesskey-tonic` | `tonic::transport` TLS identity/certificate/config builders for gRPC tests |
 | `uselesskey-ring` | `ring` 0.17 native signing key types |
 | `uselesskey-rustcrypto` | RustCrypto native types (`rsa::RsaPrivateKey`, `p256::ecdsa::SigningKey`, etc.) |
 | `uselesskey-aws-lc-rs` | `aws-lc-rs` native types with `native` feature for wasm-safe builds |
@@ -190,7 +211,7 @@ With the `tls-config` feature, build rustls configs in one line:
 
 ```toml
 [dev-dependencies]
-uselesskey-rustls = { version = "0.2", features = ["tls-config", "rustls-ring"] }
+uselesskey-rustls = { version = "0.3", features = ["tls-config", "rustls-ring"] }
 ```
 
 ```rust
@@ -209,7 +230,7 @@ let client_config = chain.client_config_rustls();    // ClientConfig (trusts roo
 
 ```toml
 [dev-dependencies]
-uselesskey-ring = { version = "0.2", features = ["all"] }
+uselesskey-ring = { version = "0.3", features = ["all"] }
 ```
 
 ```rust
@@ -226,7 +247,7 @@ let ring_kp = rsa.rsa_key_pair_ring();  // ring::rsa::KeyPair
 
 ```toml
 [dev-dependencies]
-uselesskey-rustcrypto = { version = "0.2", features = ["all"] }
+uselesskey-rustcrypto = { version = "0.3", features = ["all"] }
 ```
 
 ```rust
@@ -236,14 +257,14 @@ use uselesskey_rustcrypto::RustCryptoRsaExt;
 
 let fx = Factory::random();
 let rsa = fx.rsa("signer", RsaSpec::rs256());
-let rsa_pk = rsa.rsa_private_key_rustcrypto(); // rsa::RsaPrivateKey
+let rsa_pk = rsa.rsa_private_key(); // rsa::RsaPrivateKey
 ```
 
 ### aws-lc-rs Types (uselesskey-aws-lc-rs)
 
 ```toml
 [dev-dependencies]
-uselesskey-aws-lc-rs = { version = "0.2", features = ["native", "all"] }
+uselesskey-aws-lc-rs = { version = "0.3", features = ["native", "all"] }
 ```
 
 ```rust
@@ -256,6 +277,25 @@ let rsa = fx.rsa("signer", RsaSpec::rs256());
 let lc_kp = rsa.rsa_key_pair_aws_lc_rs();  // aws_lc_rs::rsa::KeyPair
 ```
 
+### gRPC TLS (uselesskey-tonic)
+
+```toml
+[dev-dependencies]
+uselesskey-tonic = "0.3"
+```
+
+```rust
+use uselesskey_core::Factory;
+use uselesskey_x509::{X509FactoryExt, ChainSpec};
+use uselesskey_tonic::{TonicClientTlsExt, TonicServerTlsExt};
+
+let fx = Factory::random();
+let chain = fx.x509_chain("grpc", ChainSpec::new("test.example.com"));
+
+let server_tls = chain.server_tls_config_tonic();
+let client_tls = chain.client_tls_config_tonic("test.example.com");
+```
+
 ## Feature Flags
 
 | Feature | Description |
@@ -264,16 +304,20 @@ let lc_kp = rsa.rsa_key_pair_aws_lc_rs();  // aws_lc_rs::rsa::KeyPair
 | `ecdsa` | ECDSA P-256/P-384 keypairs |
 | `ed25519` | Ed25519 keypairs |
 | `hmac` | HMAC secrets |
+| `pgp` | OpenPGP keypairs (armored + binary keyblocks) |
+| `token` | API key, bearer token, and OAuth access token fixtures |
 | `x509` | X.509 certificate generation (implies `rsa`) |
 | `jwk` | JWK/JWKS output for enabled key types |
-| `all-keys` | All key algorithms (`rsa` + `ecdsa` + `ed25519` + `hmac`) |
-| `full` | Everything (`all-keys` + `x509` + `jwk`) |
+| `all-keys` | All key algorithms (`rsa` + `ecdsa` + `ed25519` + `hmac` + `pgp`) |
+| `full` | Everything (`all-keys` + `token` + `x509` + `jwk`) |
 
 Extension traits by feature:
 - `rsa`: `RsaFactoryExt`
 - `ecdsa`: `EcdsaFactoryExt`
 - `ed25519`: `Ed25519FactoryExt`
 - `hmac`: `HmacFactoryExt`
+- `pgp`: `PgpFactoryExt`
+- `token`: `TokenFactoryExt`
 - `x509`: `X509FactoryExt`
 
 ## Why This Crate?

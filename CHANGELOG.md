@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-02-17
+
+### Added
+
+- Deterministic negative-fixture helpers in `uselesskey-core`:
+  - `negative::corrupt_pem_deterministic(pem, variant)`
+  - `negative::corrupt_der_deterministic(der, variant)`
+- Deterministic corruption convenience methods on key/cert fixtures:
+  - RSA/ECDSA/Ed25519: `*_corrupt_deterministic(variant)`
+  - X.509: `corrupt_cert_pem_deterministic(variant)` and `corrupt_cert_der_deterministic(variant)`
+- New `uselesskey-token` microcrate:
+  - `TokenFactoryExt` (`fx.token(label, spec)`)
+  - `TokenSpec::{api_key,bearer,oauth_access_token}`
+  - Authorization header helpers and deterministic token generation
+- New facade `token` feature in `uselesskey`, included in `full`
+- New `uselesskey-pgp` microcrate:
+  - `PgpFactoryExt` (`fx.pgp(label, spec)`)
+  - `PgpSpec::{rsa_2048,rsa_3072,ed25519}`
+  - Armored and binary OpenPGP keyblock outputs with mismatch/corruption helpers
+- New facade `pgp` feature in `uselesskey`, included in `all-keys` and `full`
+- New `uselesskey-tonic` adapter microcrate:
+  - `TonicIdentityExt`, `TonicServerTlsExt`, `TonicClientTlsExt`, `TonicMtlsExt`
+  - Converts `uselesskey-x509` fixtures into `tonic::transport` TLS types
+  - One-liner server/client/mTLS config builders for gRPC tests
+- `uselesskey-core` now supports `no_std` builds:
+  - New `std` default feature gate in `uselesskey-core`
+  - Deterministic derivation/caching and negative helpers compile with `--no-default-features`
+
+## [0.2.1] - 2026-02-16
+
+### Changed
+
+- Release prep updates for release metadata and manifest version alignment.
+
 ## [0.2.0] - 2026-02-14
 
 ### Added

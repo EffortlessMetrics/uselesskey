@@ -44,8 +44,8 @@ fn test_stable_bytes_version_prefix() {
     let spec = X509Spec::self_signed("test");
     let bytes = spec.stable_bytes();
     assert_eq!(
-        bytes[0], 3,
-        "X509Spec stable_bytes version prefix should be 3"
+        bytes[0], 4,
+        "X509Spec stable_bytes version prefix should be 4"
     );
 }
 
@@ -151,8 +151,8 @@ fn test_chain_spec_stable_bytes_version_prefix() {
     let spec = ChainSpec::new("test.example.com");
     let bytes = spec.stable_bytes();
     assert_eq!(
-        bytes[0], 1,
-        "ChainSpec stable_bytes version prefix should be 1"
+        bytes[0], 2,
+        "ChainSpec stable_bytes version prefix should be 2"
     );
 }
 

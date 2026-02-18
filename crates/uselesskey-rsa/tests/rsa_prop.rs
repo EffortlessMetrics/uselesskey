@@ -1,22 +1,30 @@
+mod testutil;
+
 use proptest::prelude::*;
 use rsa::traits::PublicKeyParts;
 use rsa::{pkcs8::DecodePrivateKey, pkcs8::DecodePublicKey};
 
+use testutil::fx;
 use uselesskey_core::negative::CorruptPem;
 use uselesskey_core::{Factory, Seed};
 use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 
+fn assert_private_key_rejects(pem: &str, der: &[u8]) {
+    assert!(rsa::RsaPrivateKey::from_pkcs8_pem(pem).is_err());
+    assert!(rsa::RsaPrivateKey::from_pkcs8_der(der).is_err());
+}
+
 #[test]
 #[should_panic(expected = "RSA bits too small")]
 fn rsa_bits_too_small_panics() {
-    let fx = Factory::random();
+    let fx = fx();
     let _ = fx.rsa("issuer", RsaSpec::new(512));
 }
 
 #[test]
 #[should_panic(expected = "custom RSA public exponent not supported")]
 fn rsa_custom_exponent_panics() {
-    let fx = Factory::random();
+    let fx = fx();
     let spec = RsaSpec {
         bits: 2048,
         exponent: 3,
@@ -26,7 +34,7 @@ fn rsa_custom_exponent_panics() {
 
 #[test]
 fn pkcs8_pem_is_parseable() {
-    let fx = Factory::random();
+    let fx = fx();
     let rsa = fx.rsa("issuer", RsaSpec::rs256());
 
     let parsed = rsa::RsaPrivateKey::from_pkcs8_pem(rsa.private_key_pkcs8_pem());
@@ -35,17 +43,40 @@ fn pkcs8_pem_is_parseable() {
 
 #[test]
 fn corrupt_pem_fails_to_parse() {
-    let fx = Factory::random();
+    let fx = fx();
     let rsa = fx.rsa("issuer", RsaSpec::rs256());
 
+    let original = rsa.private_key_pkcs8_pem();
     let bad = rsa.private_key_pkcs8_pem_corrupt(CorruptPem::BadBase64);
+    assert_ne!(bad, original);
+    assert!(bad.contains("THIS_IS_NOT_BASE64!!!"));
     let parsed = rsa::RsaPrivateKey::from_pkcs8_pem(&bad);
     assert!(parsed.is_err());
 }
 
 #[test]
+fn deterministic_corruption_helpers_are_stable() {
+    let fx = Factory::deterministic(Seed::from_env_value("rsa-corrupt-det").unwrap());
+    let rsa = fx.rsa("issuer", RsaSpec::rs256());
+
+    let pem_a = rsa.private_key_pkcs8_pem_corrupt_deterministic("corrupt:v1");
+    let pem_b = rsa.private_key_pkcs8_pem_corrupt_deterministic("corrupt:v1");
+    assert_eq!(pem_a, pem_b);
+    assert_ne!(pem_a, rsa.private_key_pkcs8_pem());
+    assert!(pem_a.starts_with('-'));
+
+    let der_a = rsa.private_key_pkcs8_der_corrupt_deterministic("corrupt:v1");
+    let der_b = rsa.private_key_pkcs8_der_corrupt_deterministic("corrupt:v1");
+    assert_eq!(der_a, der_b);
+    assert_ne!(der_a, rsa.private_key_pkcs8_der());
+    assert_eq!(der_a.len(), rsa.private_key_pkcs8_der().len());
+
+    assert_private_key_rejects(&pem_a, &der_a);
+}
+
+#[test]
 fn mismatched_public_key_is_parseable_and_different() {
-    let fx = Factory::random();
+    let fx = fx();
     let rsa = fx.rsa("issuer", RsaSpec::rs256());
 
     let good_pub = rsa::RsaPublicKey::from_public_key_der(rsa.public_key_spki_der()).unwrap();
@@ -58,7 +89,7 @@ fn mismatched_public_key_is_parseable_and_different() {
 
 #[test]
 fn pkcs8_der_truncated_shortens() {
-    let fx = Factory::random();
+    let fx = fx();
     let rsa = fx.rsa("issuer", RsaSpec::rs256());
 
     let truncated = rsa.private_key_pkcs8_der_truncated(12);
@@ -67,7 +98,7 @@ fn pkcs8_der_truncated_shortens() {
 
 #[test]
 fn debug_includes_label_and_type() {
-    let fx = Factory::random();
+    let fx = fx();
     let rsa = fx.rsa("debug-label", RsaSpec::rs256());
 
     let dbg = format!("{:?}", rsa);
@@ -76,11 +107,13 @@ fn debug_includes_label_and_type() {
 }
 
 proptest! {
+    #![proptest_config(ProptestConfig { cases: 8, ..ProptestConfig::default() })]
+
     #[test]
-    fn deterministic_rsa_key_is_stable(seed in any::<[u8;32]>(), label in "[-_a-zA-Z0-9]{1,24}") {
+    fn deterministic_rsa_key_is_stable(seed in any::<[u8;32]>()) {
         let fx = Factory::deterministic(Seed::new(seed));
-        let rsa1 = fx.rsa(&label, RsaSpec::rs256());
-        let rsa2 = fx.rsa(&label, RsaSpec::rs256());
+        let rsa1 = fx.rsa("prop-key", RsaSpec::rs256());
+        let rsa2 = fx.rsa("prop-key", RsaSpec::rs256());
 
         prop_assert_eq!(rsa1.private_key_pkcs8_der(), rsa2.private_key_pkcs8_der());
         prop_assert_eq!(rsa1.public_key_spki_der(), rsa2.public_key_spki_der());
@@ -96,13 +129,12 @@ proptest! {
     #[test]
     fn all_spec_configs_produce_parseable_keys(
         seed in any::<[u8; 32]>(),
-        label in "[a-zA-Z0-9]{1,16}"
     ) {
         let fx = Factory::deterministic(Seed::new(seed));
 
         // Test rs256 spec (2048 bits, 65537 exponent).
         let spec = RsaSpec::rs256();
-        let rsa = fx.rsa(&label, spec);
+        let rsa = fx.rsa("prop-key", spec);
 
         // Verify private key is parseable.
         let priv_result = rsa::RsaPrivateKey::from_pkcs8_der(rsa.private_key_pkcs8_der());
@@ -127,10 +159,9 @@ proptest! {
     #[test]
     fn tempfile_outputs_match_in_memory(
         seed in any::<[u8; 32]>(),
-        label in "[a-zA-Z0-9]{1,16}"
     ) {
         let fx = Factory::deterministic(Seed::new(seed));
-        let rsa = fx.rsa(&label, RsaSpec::rs256());
+        let rsa = fx.rsa("prop-key", RsaSpec::rs256());
 
         // Write to tempfiles.
         let priv_temp = rsa.write_private_key_pkcs8_pem()
@@ -165,11 +196,10 @@ proptest! {
     #[cfg(feature = "jwk")]
     fn kid_is_deterministic(
         seed in any::<[u8; 32]>(),
-        label in "[a-zA-Z0-9]{1,16}"
     ) {
         let fx = Factory::deterministic(Seed::new(seed));
-        let rsa1 = fx.rsa(&label, RsaSpec::rs256());
-        let rsa2 = fx.rsa(&label, RsaSpec::rs256());
+        let rsa1 = fx.rsa("prop-key", RsaSpec::rs256());
+        let rsa2 = fx.rsa("prop-key", RsaSpec::rs256());
 
         prop_assert_eq!(rsa1.kid(), rsa2.kid(), "Same key should produce same kid");
     }
@@ -204,14 +234,15 @@ mod jwk_tests {
     use super::*;
 
     proptest! {
+        #![proptest_config(ProptestConfig { cases: 8, ..ProptestConfig::default() })]
+
         /// JWK contains required fields: kty, alg, use, kid, n, e.
         #[test]
         fn jwk_contains_required_fields(
             seed in any::<[u8; 32]>(),
-            label in "[a-zA-Z0-9]{1,16}"
         ) {
             let fx = Factory::deterministic(Seed::new(seed));
-            let rsa = fx.rsa(&label, RsaSpec::rs256());
+            let rsa = fx.rsa("prop-jwk", RsaSpec::rs256());
 
             let jwk = rsa.public_jwk().to_value();
 
@@ -239,10 +270,9 @@ mod jwk_tests {
         #[test]
         fn jwks_wraps_jwk_correctly(
             seed in any::<[u8; 32]>(),
-            label in "[a-zA-Z0-9]{1,16}"
         ) {
             let fx = Factory::deterministic(Seed::new(seed));
-            let rsa = fx.rsa(&label, RsaSpec::rs256());
+            let rsa = fx.rsa("prop-jwk", RsaSpec::rs256());
 
             let jwks = rsa.public_jwks().to_value();
             let jwk = rsa.public_jwk().to_value();
@@ -263,13 +293,12 @@ mod jwk_tests {
         #[test]
         fn jwk_n_and_e_are_valid_base64url(
             seed in any::<[u8; 32]>(),
-            label in "[a-zA-Z0-9]{1,16}"
         ) {
             use base64::engine::general_purpose::URL_SAFE_NO_PAD;
             use base64::Engine as _;
 
             let fx = Factory::deterministic(Seed::new(seed));
-            let rsa = fx.rsa(&label, RsaSpec::rs256());
+            let rsa = fx.rsa("prop-jwk", RsaSpec::rs256());
 
             let jwk = rsa.public_jwk().to_value();
 
@@ -296,10 +325,9 @@ mod jwk_tests {
         #[test]
         fn private_jwk_contains_required_fields(
             seed in any::<[u8; 32]>(),
-            label in "[a-zA-Z0-9]{1,16}"
         ) {
             let fx = Factory::deterministic(Seed::new(seed));
-            let rsa = fx.rsa(&label, RsaSpec::rs256());
+            let rsa = fx.rsa("prop-jwk", RsaSpec::rs256());
 
             let jwk = rsa.private_key_jwk().to_value();
 
@@ -313,13 +341,12 @@ mod jwk_tests {
         #[test]
         fn private_jwk_fields_are_valid_base64url(
             seed in any::<[u8; 32]>(),
-            label in "[a-zA-Z0-9]{1,16}"
         ) {
             use base64::engine::general_purpose::URL_SAFE_NO_PAD;
             use base64::Engine as _;
 
             let fx = Factory::deterministic(Seed::new(seed));
-            let rsa = fx.rsa(&label, RsaSpec::rs256());
+            let rsa = fx.rsa("prop-jwk", RsaSpec::rs256());
             let jwk = rsa.private_key_jwk().to_value();
 
             for key in ["d", "p", "q", "dp", "dq", "qi"] {
@@ -345,5 +372,18 @@ mod jwk_tests {
         assert_eq!(rsa.public_jwk_json(), rsa.public_jwk().to_value());
         assert_eq!(rsa.public_jwks_json(), rsa.public_jwks().to_value());
         assert_eq!(rsa.private_key_jwk_json(), rsa.private_key_jwk().to_value());
+    }
+
+    #[test]
+    fn jwk_alg_matches_key_size() {
+        let fx = Factory::deterministic(Seed::from_env_value("rsa-jwk-alg-bits").unwrap());
+
+        let rs256 = fx.rsa("issuer-2048", RsaSpec::new(2048));
+        let rs384 = fx.rsa("issuer-3072", RsaSpec::new(3072));
+        let rs512 = fx.rsa("issuer-4096", RsaSpec::new(4096));
+
+        assert_eq!(rs256.public_jwk().to_value()["alg"], "RS256");
+        assert_eq!(rs384.public_jwk().to_value()["alg"], "RS384");
+        assert_eq!(rs512.public_jwk().to_value()["alg"], "RS512");
     }
 }

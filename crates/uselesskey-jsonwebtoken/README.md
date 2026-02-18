@@ -1,38 +1,48 @@
 # uselesskey-jsonwebtoken
 
-[`jsonwebtoken`](https://docs.rs/jsonwebtoken) integration for [uselesskey](https://docs.rs/uselesskey) test fixtures.
+`jsonwebtoken` adapter traits for `uselesskey` fixtures.
 
-Returns `jsonwebtoken::EncodingKey` and `DecodingKey` directly from uselesskey keypairs.
+Implements `JwtKeyExt` so fixture types return `jsonwebtoken::EncodingKey` and `jsonwebtoken::DecodingKey` directly.
 
 ## Features
 
 | Feature | Description |
 |---------|-------------|
-| `rsa` | RSA keypairs (RS256, RS384, RS512) |
-| `ecdsa` | ECDSA keypairs (ES256, ES384) |
+| `rsa` | RSA keypairs (RS256/RS384/RS512) |
+| `ecdsa` | ECDSA keypairs (ES256/ES384) |
 | `ed25519` | Ed25519 keypairs (EdDSA) |
-| `hmac` | HMAC secrets (HS256, HS384, HS512) |
-| `all` | All of the above |
+| `hmac` | HMAC secrets (HS256/HS384/HS512) |
+| `all` | All key types |
 
 ## Example
 
 ```toml
 [dev-dependencies]
-uselesskey-jsonwebtoken = { version = "0.2", features = ["all"] }
+uselesskey-jsonwebtoken = { version = "0.3", features = ["rsa"] }
 jsonwebtoken = { version = "10", features = ["use_pem", "rust_crypto"] }
 ```
 
 ```rust
+use jsonwebtoken::{Algorithm, Header, Validation, decode, encode};
+use serde::{Deserialize, Serialize};
 use uselesskey_core::Factory;
-use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 use uselesskey_jsonwebtoken::JwtKeyExt;
-use jsonwebtoken::{encode, decode, Header, Algorithm, Validation};
+use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+struct Claims {
+    sub: String,
+    exp: usize,
+}
 
 let fx = Factory::random();
-let keypair = fx.rsa("my-issuer", RsaSpec::rs256());
+let keypair = fx.rsa("issuer", RsaSpec::rs256());
 
+let claims = Claims { sub: "user-1".into(), exp: 2_000_000_000 };
 let token = encode(&Header::new(Algorithm::RS256), &claims, &keypair.encoding_key()).unwrap();
 let decoded = decode::<Claims>(&token, &keypair.decoding_key(), &Validation::new(Algorithm::RS256)).unwrap();
+
+assert_eq!(decoded.claims, claims);
 ```
 
 ## License

@@ -1,40 +1,42 @@
 # uselesskey-rustcrypto
 
-[RustCrypto](https://github.com/RustCrypto) integration for [uselesskey](https://docs.rs/uselesskey) test fixtures.
+RustCrypto adapter traits for `uselesskey` fixtures.
 
-Converts uselesskey keypairs into native RustCrypto types (`rsa::RsaPrivateKey`, `p256::ecdsa::SigningKey`, `ed25519_dalek::SigningKey`, `hmac::Hmac`).
+Converts fixture key material into native RustCrypto types (`rsa`, `p256`/`p384`, `ed25519-dalek`, `hmac`).
 
 ## Features
 
 | Feature | Description |
 |---------|-------------|
-| `rsa` | RSA -> `rsa::RsaPrivateKey` / `RsaPublicKey` |
-| `ecdsa` | ECDSA -> `p256::ecdsa::SigningKey` / `p384::ecdsa::SigningKey` |
-| `ed25519` | Ed25519 -> `ed25519_dalek::SigningKey` / `VerifyingKey` |
-| `hmac` | HMAC -> `hmac::Hmac<Sha256>` / `Sha384` / `Sha512` |
-| `all` | All of the above |
+| `rsa` | `rsa::RsaPrivateKey` / `rsa::RsaPublicKey` adapters |
+| `ecdsa` | P-256 and P-384 signing/verifying key adapters |
+| `ed25519` | `ed25519_dalek::SigningKey` / `VerifyingKey` adapters |
+| `hmac` | `hmac::Hmac<Sha256/Sha384/Sha512>` adapters |
+| `all` | All adapters |
 
 ## Example
 
 ```toml
 [dev-dependencies]
-uselesskey-rustcrypto = { version = "0.2", features = ["all"] }
+uselesskey-rustcrypto = { version = "0.3", features = ["rsa"] }
 ```
 
 ```rust
+use rsa::pkcs1v15::{SigningKey, VerifyingKey};
+use rsa::signature::{Signer, Verifier};
+use sha2::Sha256;
 use uselesskey_core::Factory;
 use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 use uselesskey_rustcrypto::RustCryptoRsaExt;
-use rsa::pkcs1v15::SigningKey;
-use rsa::signature::{Signer, Verifier};
-use sha2::Sha256;
 
 let fx = Factory::random();
-let keypair = fx.rsa("test", RsaSpec::rs256());
+let keypair = fx.rsa("signer", RsaSpec::rs256());
 
-let private_key = keypair.rsa_private_key();
-let signing_key = SigningKey::<Sha256>::new(private_key);
-let signature = signing_key.sign(b"hello world");
+let signing_key = SigningKey::<Sha256>::new_unprefixed(keypair.rsa_private_key());
+let verifying_key = VerifyingKey::<Sha256>::new_unprefixed(keypair.rsa_public_key());
+
+let signature = signing_key.sign(b"hello");
+verifying_key.verify(b"hello", &signature).unwrap();
 ```
 
 ## License

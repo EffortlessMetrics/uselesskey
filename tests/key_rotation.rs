@@ -10,7 +10,6 @@
 mod testutil;
 
 use serde::{Deserialize, Serialize};
-use testutil::fx;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 struct Claims {
@@ -23,10 +22,16 @@ impl Claims {
     fn test() -> Self {
         Self {
             sub: "user123".to_string(),
-            exp: 9999999999,
+            exp: 2_000_000_000,
             iat: 1234567890,
         }
     }
+}
+
+fn fx() -> uselesskey_core::Factory {
+    #[cfg(any(feature = "tls", feature = "e2e", feature = "key-rotation"))]
+    testutil::install_rustls_ring_provider();
+    testutil::fx()
 }
 
 // =========================================================================

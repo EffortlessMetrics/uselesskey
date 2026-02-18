@@ -13,16 +13,17 @@ mod testutil;
 use ring::{
     digest,
     hmac::{self, Key as HmacKey},
-    rand::SystemRandom,
-    signature::{self, KeyPair, UnparsedPublicKey},
 };
-use testutil::fx;
-use uselesskey_core::{Factory, Seed};
-use uselesskey_ring::{RingEcdsaKeyPairExt, RingEd25519KeyPairExt, RingRsaKeyPairExt};
 
 #[cfg(feature = "rsa")]
 mod rsa_ring_tests {
-    use super::*;
+    use crate::testutil::fx;
+    use ring::{
+        rand::SystemRandom,
+        signature::{self, UnparsedPublicKey},
+    };
+    use uselesskey_core::{Factory, Seed};
+    use uselesskey_ring::RingRsaKeyPairExt;
     use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 
     #[test]
@@ -184,8 +185,14 @@ mod rsa_ring_tests {
 
 #[cfg(feature = "ecdsa")]
 mod ecdsa_ring_tests {
-    use super::*;
+    use crate::testutil::fx;
+    use ring::{
+        rand::SystemRandom,
+        signature::{self, KeyPair, UnparsedPublicKey},
+    };
+    use uselesskey_core::{Factory, Seed};
     use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
+    use uselesskey_ring::RingEcdsaKeyPairExt;
 
     #[test]
     fn test_ecdsa_p256_key_pair_conversion() {
@@ -333,8 +340,11 @@ mod ecdsa_ring_tests {
 
 #[cfg(feature = "ed25519")]
 mod ed25519_ring_tests {
-    use super::*;
+    use crate::testutil::fx;
+    use ring::signature::{self, KeyPair, UnparsedPublicKey};
+    use uselesskey_core::{Factory, Seed};
     use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
+    use uselesskey_ring::RingEd25519KeyPairExt;
 
     #[test]
     fn test_ed25519_key_pair_conversion() {
@@ -609,8 +619,13 @@ mod hmac_tests {
 
 #[cfg(all(feature = "rsa", feature = "ecdsa"))]
 mod cross_algorithm_tests {
-    use super::*;
+    use crate::testutil::fx;
+    use ring::{
+        rand::SystemRandom,
+        signature::{self, KeyPair, UnparsedPublicKey},
+    };
     use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
+    use uselesskey_ring::{RingEcdsaKeyPairExt, RingRsaKeyPairExt};
     use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 
     #[test]

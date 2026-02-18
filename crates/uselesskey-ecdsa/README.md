@@ -1,14 +1,14 @@
 # uselesskey-ecdsa
 
-ECDSA P-256/P-384 key fixtures for [uselesskey](https://docs.rs/uselesskey) test fixtures.
+ECDSA P-256/P-384 key fixtures for `uselesskey` test suites.
 
-Provides `EcdsaFactoryExt` to generate deterministic or random ECDSA keypairs (ES256/ES384) with cached generation.
+Generates PKCS#8 private keys and SPKI public keys (PEM/DER) for ES256 and ES384 workflows, with deterministic derivation and cache-by-identity.
 
 ## Features
 
 | Feature | Description |
 |---------|-------------|
-| `jwk` | JWK/JWKS output via `uselesskey-jwk` |
+| `jwk` | JWK/JWKS helpers via `uselesskey-jwk` |
 
 ## Example
 
@@ -17,10 +17,13 @@ use uselesskey_core::Factory;
 use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
 
 let fx = Factory::random();
-let ecdsa = fx.ecdsa("signer", EcdsaSpec::es256());
+let keypair = fx.ecdsa("signer", EcdsaSpec::es256());
 
-let pem = ecdsa.private_key_pem();   // PKCS#8 PEM
-let der = ecdsa.public_key_spki_der(); // SPKI DER
+let private_pem = keypair.private_key_pkcs8_pem();
+let public_der = keypair.public_key_spki_der();
+
+assert!(private_pem.contains("BEGIN PRIVATE KEY"));
+assert!(!public_der.is_empty());
 ```
 
 ## License

@@ -8,13 +8,47 @@
 
 mod testutil;
 
+use std::sync::OnceLock;
+
 use rustls::crypto::CryptoProvider;
-use testutil::fx;
 use uselesskey_rustls::{
     RustlsChainExt, RustlsClientConfigExt, RustlsMtlsExt, RustlsPrivateKeyExt,
     RustlsServerConfigExt,
 };
-use uselesskey_x509::{ChainSpec, X509FactoryExt};
+use uselesskey_x509::{ChainSpec, X509Cert, X509Chain, X509FactoryExt, X509Spec};
+
+fn fx() -> uselesskey_core::Factory {
+    testutil::install_rustls_ring_provider();
+    testutil::fx()
+}
+
+// ---------------------------------------------------------------------------
+// Shared fixtures — amortise RSA keygen to once per test binary
+// ---------------------------------------------------------------------------
+
+static SHARED_CHAIN: OnceLock<X509Chain> = OnceLock::new();
+static SHARED_SELF_SIGNED: OnceLock<X509Cert> = OnceLock::new();
+
+fn shared_chain() -> &'static X509Chain {
+    SHARED_CHAIN.get_or_init(|| {
+        let fx = fx();
+        fx.x509_chain(
+            "shared-tls",
+            ChainSpec::new("test.example.com").with_sans(vec![
+                "localhost".to_string(),
+                "127.0.0.1".to_string(),
+                "*.example.com".to_string(),
+            ]),
+        )
+    })
+}
+
+fn shared_self_signed() -> &'static X509Cert {
+    SHARED_SELF_SIGNED.get_or_init(|| {
+        let fx = fx();
+        fx.x509_self_signed("shared-ss", X509Spec::self_signed("localhost"))
+    })
+}
 
 // =========================================================================
 // Basic TLS Configuration Tests
@@ -26,75 +60,39 @@ mod basic_tls_config_tests {
 
     #[test]
     fn test_tls_server_config_from_chain() {
-        let fx = fx();
-
-        let chain_spec = ChainSpec::new("test.example.com")
-            .with_sans(vec!["localhost".to_string(), "127.0.0.1".to_string()]);
-        let chain = fx.x509_chain("server1", chain_spec);
-
-        // Build server config
+        let chain = shared_chain();
         let server_config = chain.server_config_rustls();
-
-        // Verify config was created successfully
         assert_eq!(server_config.alpn_protocols.len(), 0);
     }
 
     #[test]
     fn test_tls_server_config_from_self_signed() {
-        let fx = fx();
-
-        let spec = uselesskey_x509::X509Spec::self_signed("localhost");
-        let cert = fx.x509_self_signed("self-signed", spec);
-
-        // Build server config
+        let cert = shared_self_signed();
         let server_config = cert.server_config_rustls();
-
-        // Verify config was created successfully
         assert_eq!(server_config.alpn_protocols.len(), 0);
     }
 
     #[test]
     fn test_tls_client_config_from_chain() {
-        let fx = fx();
-
-        let chain_spec = ChainSpec::new("test.example.com");
-        let chain = fx.x509_chain("client1", chain_spec);
-
-        // Build client config
+        let chain = shared_chain();
         let client_config = chain.client_config_rustls();
-
-        // Verify config was created successfully
         assert_eq!(client_config.alpn_protocols.len(), 0);
     }
 
     #[test]
     fn test_tls_client_config_from_self_signed() {
-        let fx = fx();
-
-        let spec = uselesskey_x509::X509Spec::self_signed("localhost");
-        let cert = fx.x509_self_signed("self-signed", spec);
-
-        // Build client config
+        let cert = shared_self_signed();
         let client_config = cert.client_config_rustls();
-
-        // Verify config was created successfully
         assert_eq!(client_config.alpn_protocols.len(), 0);
     }
 
     #[test]
     fn test_tls_config_with_provider() {
-        let fx = fx();
-
-        let chain_spec = ChainSpec::new("test.example.com");
-        let chain = fx.x509_chain("provider-test", chain_spec);
-
-        // Build server config with explicit provider
+        let chain = shared_chain();
         let provider = CryptoProvider::get_default()
             .expect("default crypto provider available")
             .clone();
         let server_config = chain.server_config_rustls_with_provider(provider);
-
-        // Verify config was created successfully
         assert_eq!(server_config.alpn_protocols.len(), 0);
     }
 }
@@ -109,75 +107,42 @@ mod mtls_config_tests {
 
     #[test]
     fn test_mtls_server_config() {
-        let fx = fx();
-
-        let chain_spec = ChainSpec::new("mtls-server.example.com");
-        let chain = fx.x509_chain("mtls-server", chain_spec);
-
-        // Build mTLS server config
+        let chain = shared_chain();
         let server_config = chain.server_config_mtls_rustls();
-
-        // Verify config was created successfully
         assert_eq!(server_config.alpn_protocols.len(), 0);
     }
 
     #[test]
     fn test_mtls_client_config() {
-        let fx = fx();
-
-        let chain_spec = ChainSpec::new("mtls-client.example.com");
-        let chain = fx.x509_chain("mtls-client", chain_spec);
-
-        // Build mTLS client config
+        let chain = shared_chain();
         let client_config = chain.client_config_mtls_rustls();
-
-        // Verify config was created successfully
         assert_eq!(client_config.alpn_protocols.len(), 0);
     }
 
     #[test]
     fn test_mtls_config_with_provider() {
-        let fx = fx();
+        let chain = shared_chain();
 
-        let chain_spec = ChainSpec::new("mtls-provider.example.com");
-        let chain = fx.x509_chain("mtls-provider", chain_spec);
-
-        // Build mTLS server config with explicit provider
         let provider = CryptoProvider::get_default()
             .expect("default crypto provider available")
             .clone();
         let server_config = chain.server_config_mtls_rustls_with_provider(provider);
-
-        // Verify config was created successfully
         assert_eq!(server_config.alpn_protocols.len(), 0);
 
-        // Build mTLS client config with explicit provider
         let provider = CryptoProvider::get_default()
             .expect("default crypto provider available")
             .clone();
         let client_config = chain.client_config_mtls_rustls_with_provider(provider);
-
-        // Verify config was created successfully
         assert_eq!(client_config.alpn_protocols.len(), 0);
     }
 
     #[test]
     fn test_mtls_pair_config() {
-        let fx = fx();
+        let chain = shared_chain();
 
-        // Server chain
-        let server_chain_spec = ChainSpec::new("server.example.com");
-        let server_chain = fx.x509_chain("mtls-server-pair", server_chain_spec);
+        let server_config = chain.server_config_mtls_rustls();
+        let client_config = chain.client_config_mtls_rustls();
 
-        // Client chain
-        let client_chain_spec = ChainSpec::new("client.example.com");
-        let client_chain = fx.x509_chain("mtls-client-pair", client_chain_spec);
-
-        // Build both configs
-        let server_config = server_chain.server_config_mtls_rustls();
-        let client_config = client_chain.client_config_mtls_rustls();
-
-        // Verify both configs were created successfully
         assert_eq!(server_config.alpn_protocols.len(), 0);
         assert_eq!(client_config.alpn_protocols.len(), 0);
     }
@@ -193,12 +158,8 @@ mod chain_tests {
 
     #[test]
     fn test_chain_structure() {
-        let fx = fx();
+        let chain = shared_chain();
 
-        let chain_spec = ChainSpec::new("chain.example.com");
-        let chain = fx.x509_chain("chain-test", chain_spec);
-
-        // Verify chain structure
         assert!(!chain.leaf_cert_pem().is_empty());
         assert!(!chain.intermediate_cert_pem().is_empty());
         assert!(!chain.root_cert_pem().is_empty());
@@ -207,18 +168,13 @@ mod chain_tests {
 
     #[test]
     fn test_chain_der_conversions() {
-        let fx = fx();
+        let chain = shared_chain();
 
-        let chain_spec = ChainSpec::new("der.example.com");
-        let chain = fx.x509_chain("der-test", chain_spec);
-
-        // Get DER formats
         let leaf_der = chain.leaf_cert_der();
         let intermediate_der = chain.intermediate_cert_der();
         let root_der = chain.root_cert_der();
         let private_key_der = chain.leaf_private_key_pkcs8_der();
 
-        // Verify DER conversions
         assert!(!leaf_der.is_empty());
         assert!(!intermediate_der.is_empty());
         assert!(!root_der.is_empty());
@@ -227,17 +183,12 @@ mod chain_tests {
 
     #[test]
     fn test_chain_rustls_conversions() {
-        let fx = fx();
+        let chain = shared_chain();
 
-        let chain_spec = ChainSpec::new("rustls.example.com");
-        let chain = fx.x509_chain("rustls-test", chain_spec);
-
-        // Get rustls formats
         let cert_chain = chain.chain_der_rustls();
         let root_cert = chain.root_certificate_der_rustls();
         let private_key = chain.private_key_der_rustls();
 
-        // Verify rustls conversions
         assert_eq!(cert_chain.len(), 2); // leaf + intermediate
         assert!(!root_cert.as_ref().is_empty());
         assert!(!private_key.secret_der().is_empty());
@@ -245,19 +196,9 @@ mod chain_tests {
 
     #[test]
     fn test_chain_with_sans() {
-        let fx = fx();
-
-        let chain_spec = ChainSpec::new("sans.example.com").with_sans(vec![
-            "localhost".to_string(),
-            "127.0.0.1".to_string(),
-            "*.example.com".to_string(),
-        ]);
-        let chain = fx.x509_chain("sans-test", chain_spec);
-
-        // Build server config
+        // shared_chain() already includes SANs
+        let chain = shared_chain();
         let server_config = chain.server_config_rustls();
-
-        // Verify config was created successfully
         assert_eq!(server_config.alpn_protocols.len(), 0);
     }
 }
@@ -275,15 +216,13 @@ mod tls_determinism_tests {
         let fx1 = fx();
         let fx2 = fx();
 
-        // Generate same chain from same seed
+        // Same seed + same label → identical chain (cache hit on cloned Factory)
         let chain1 = fx1.x509_chain("deterministic", ChainSpec::new("test.example.com"));
         let chain2 = fx2.x509_chain("deterministic", ChainSpec::new("test.example.com"));
 
-        // Build configs from both chains
         let server_config1 = chain1.server_config_rustls();
         let server_config2 = chain2.server_config_rustls();
 
-        // Both configs should be created successfully
         assert_eq!(server_config1.alpn_protocols.len(), 0);
         assert_eq!(server_config2.alpn_protocols.len(), 0);
     }
@@ -292,11 +231,9 @@ mod tls_determinism_tests {
     fn test_different_labels_produce_different_chains() {
         let fx = fx();
 
-        // Generate chains with different labels
         let chain1 = fx.x509_chain("label-1", ChainSpec::new("test.example.com"));
         let chain2 = fx.x509_chain("label-2", ChainSpec::new("test.example.com"));
 
-        // Chains should have different certificates
         assert_ne!(chain1.leaf_cert_pem(), chain2.leaf_cert_pem());
         assert_ne!(chain1.root_cert_pem(), chain2.root_cert_pem());
     }
@@ -312,35 +249,19 @@ mod negative_fixture_tests {
 
     #[test]
     fn test_expired_cert_config() {
-        let fx = fx();
-
-        let spec = uselesskey_x509::X509Spec::self_signed("expired.example.com");
-        let cert = fx.x509_self_signed("expired", spec);
-
-        // Create expired variant
+        let cert = shared_self_signed();
         let expired_cert = cert.expired();
 
-        // Build server config (config creation succeeds, handshake would fail)
         let server_config = expired_cert.server_config_rustls();
-
-        // Verify config was created successfully
         assert_eq!(server_config.alpn_protocols.len(), 0);
     }
 
     #[test]
     fn test_not_yet_valid_cert_config() {
-        let fx = fx();
-
-        let spec = uselesskey_x509::X509Spec::self_signed("not-yet-valid.example.com");
-        let cert = fx.x509_self_signed("not-yet-valid", spec);
-
-        // Create not-yet-valid variant
+        let cert = shared_self_signed();
         let not_yet_valid_cert = cert.not_yet_valid();
 
-        // Build server config (config creation succeeds, handshake would fail)
         let server_config = not_yet_valid_cert.server_config_rustls();
-
-        // Verify config was created successfully
         assert_eq!(server_config.alpn_protocols.len(), 0);
     }
 }

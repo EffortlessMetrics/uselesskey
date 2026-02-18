@@ -10,6 +10,8 @@
 //!
 //! - **PEM corruption**: [`corrupt_pem`] with various [`CorruptPem`] strategies
 //! - **DER manipulation**: [`truncate_der`] and [`flip_byte`]
+//! - **Deterministic variant corruption**: [`corrupt_pem_deterministic`]
+//!   and [`corrupt_der_deterministic`]
 //!
 //! # Examples
 //!
@@ -48,5 +50,5 @@
 mod der;
 mod pem;
 
-pub use der::{flip_byte, truncate_der};
-pub use pem::{CorruptPem, corrupt_pem};
+pub use der::{corrupt_der_deterministic, flip_byte, truncate_der};
+pub use pem::{CorruptPem, corrupt_pem, corrupt_pem_deterministic};

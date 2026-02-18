@@ -166,7 +166,7 @@ Feature: X.509 certificate fixtures
     When I generate a certificate chain for domain "test.example.com" with label "revoked-chain"
     And I get the revoked leaf variant of the certificate chain
     Then the revoked leaf certificate should be parseable
-    And the revoked leaf certificate should have a CRL distribution point
+    And the revoked leaf certificate should include a CRL with revoked entries
 
   Scenario: revoked leaf certificate is different from valid
     Given a deterministic factory seeded with "revoked-diff-test"

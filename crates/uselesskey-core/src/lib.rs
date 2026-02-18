@@ -1,4 +1,5 @@
 #![forbid(unsafe_code)]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 //! Core building blocks for `uselesskey`.
 //!
@@ -36,11 +37,14 @@ mod error;
 mod factory;
 mod id;
 pub mod negative;
+#[cfg(feature = "std")]
 pub mod sink;
 
 pub use crate::error::Error;
 pub use crate::factory::{Factory, Mode};
 pub use crate::id::{ArtifactDomain, ArtifactId, DerivationVersion, Seed};
 
-#[cfg(test)]
+extern crate alloc;
+
+#[cfg(all(test, feature = "std"))]
 mod factory_tests;

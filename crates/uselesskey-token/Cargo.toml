@@ -1,0 +1,20 @@
+[package]
+name = "uselesskey-token"
+version = "0.3.0"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "API key, bearer, and OAuth access-token fixture generator for tests."
+categories = ["development-tools::testing"]
+keywords = ["token", "api-key", "oauth", "fixtures", "testing"]
+readme = "README.md"
+homepage = "https://github.com/EffortlessMetrics/uselesskey"
+documentation = "https://docs.rs/uselesskey-token"
+authors.workspace = true
+
+[dependencies]
+uselesskey-core = { path = "../uselesskey-core", version = "0.3.0" }
+base64.workspace = true
+rand_core.workspace = true
+serde_json.workspace = true

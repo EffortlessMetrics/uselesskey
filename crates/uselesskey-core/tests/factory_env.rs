@@ -1,3 +1,5 @@
+#![cfg(feature = "std")]
+
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use uselesskey_core::{Error, Factory, Mode, Seed};

@@ -113,8 +113,17 @@ struct UselessWorld {
     x509_chain: Option<X509Chain>,
     x509_chain_leaf_der_1: Option<Vec<u8>>,
     x509_chain_leaf_der_2: Option<Vec<u8>>,
+    x509_chain_root_der_1: Option<Vec<u8>>,
+    x509_chain_root_der_2: Option<Vec<u8>>,
+    x509_chain_leaf_pem_1: Option<String>,
+    x509_chain_leaf_pem_2: Option<String>,
+    x509_chain_intermediate_pem_1: Option<String>,
+    x509_chain_intermediate_pem_2: Option<String>,
+    x509_chain_root_pem_1: Option<String>,
+    x509_chain_root_pem_2: Option<String>,
     x509_chain_revoked_leaf: Option<X509Chain>,
     x509_chain_hostname_mismatch: Option<X509Chain>,
+    x509_chain_unknown_ca: Option<X509Chain>,
     x509_chain_expired_leaf: Option<X509Chain>,
     x509_chain_expired_intermediate: Option<X509Chain>,
     x509_chain_sans: Vec<String>,
@@ -928,6 +937,7 @@ fn gen_ecdsa_es384(world: &mut UselessWorld, label: String) {
     world.ecdsa_pkcs8_pem_1 = Some(ecdsa.private_key_pkcs8_pem().to_string());
     world.ecdsa_pkcs8_der_original = Some(ecdsa.private_key_pkcs8_der().to_vec());
     world.ecdsa_spki_der_1 = Some(ecdsa.public_key_spki_der().to_vec());
+    world.ecdsa_keys.push(ecdsa.clone());
     world.ecdsa = Some(ecdsa);
 }
 
@@ -1565,7 +1575,30 @@ fn gen_x509_chain(world: &mut UselessWorld, domain: String, label: String) {
     let spec = ChainSpec::new(&domain);
     let chain = fx.x509_chain(&label, spec.clone());
 
+    world.label = Some(label);
     world.x509_chain_leaf_der_1 = Some(chain.leaf_cert_der().to_vec());
+    world.x509_chain_root_der_1 = Some(chain.root_cert_der().to_vec());
+    world.x509_chain_leaf_pem_1 = Some(chain.leaf_cert_pem().to_string());
+    world.x509_chain_intermediate_pem_1 = Some(chain.intermediate_cert_pem().to_string());
+    world.x509_chain_root_pem_1 = Some(chain.root_cert_pem().to_string());
+    world.x509_chain = Some(chain);
+    world.x509_chain_spec = Some(spec);
+}
+
+#[when(
+    regex = r#"^I generate another certificate chain for domain "([^"]+)" with label "([^"]+)"$"#
+)]
+fn gen_x509_chain_second(world: &mut UselessWorld, domain: String, label: String) {
+    let fx = world.factory.as_ref().expect("factory not set");
+    let spec = ChainSpec::new(&domain);
+    let chain = fx.x509_chain(&label, spec.clone());
+
+    world.label = Some(label);
+    world.x509_chain_leaf_der_2 = Some(chain.leaf_cert_der().to_vec());
+    world.x509_chain_root_der_2 = Some(chain.root_cert_der().to_vec());
+    world.x509_chain_leaf_pem_2 = Some(chain.leaf_cert_pem().to_string());
+    world.x509_chain_intermediate_pem_2 = Some(chain.intermediate_cert_pem().to_string());
+    world.x509_chain_root_pem_2 = Some(chain.root_cert_pem().to_string());
     world.x509_chain = Some(chain);
     world.x509_chain_spec = Some(spec);
 }
@@ -1596,6 +1629,13 @@ fn get_expired_intermediate_chain(world: &mut UselessWorld) {
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
     let expired = chain.expired_intermediate();
     world.x509_chain_expired_intermediate = Some(expired);
+}
+
+#[when("I get the unknown CA variant of the certificate chain")]
+fn get_unknown_ca_chain(world: &mut UselessWorld) {
+    let chain = world.x509_chain.as_ref().expect("x509_chain not set");
+    let unknown = chain.unknown_ca();
+    world.x509_chain_unknown_ca = Some(unknown);
 }
 
 #[when(regex = r#"^I add SAN "([^"]+)" to the X\.509 certificate$"#)]
@@ -1634,7 +1674,7 @@ fn add_san_to_cert(world: &mut UselessWorld, san: String) {
 fn add_san_to_chain(world: &mut UselessWorld, san: String) {
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
     let fx = world.factory.as_ref().expect("factory not set");
-    let label = world.label.as_ref().expect("label not set");
+    let label = world.label.as_deref().unwrap_or_else(|| chain.label());
 
     // Get current spec and add SAN
     let mut spec = chain.spec().clone();
@@ -1645,6 +1685,18 @@ fn add_san_to_chain(world: &mut UselessWorld, san: String) {
     world.x509_chain_leaf_der_2 = Some(new_chain.leaf_cert_der().to_vec());
     world.x509_chain = Some(new_chain);
     world.x509_chain_spec = Some(spec);
+}
+
+#[when("I write the leaf certificate PEM to a tempfile")]
+fn write_leaf_cert_tempfile(world: &mut UselessWorld) {
+    let chain = world.x509_chain.as_ref().expect("x509_chain not set");
+    world.x509_cert_tempfile = Some(chain.write_leaf_cert_pem().expect("write failed"));
+}
+
+#[when("I write the leaf private key PEM to a tempfile")]
+fn write_leaf_key_tempfile(world: &mut UselessWorld) {
+    let chain = world.x509_chain.as_ref().expect("x509_chain not set");
+    world.x509_key_tempfile = Some(chain.write_leaf_private_key_pem().expect("write failed"));
 }
 
 // =============================================================================
@@ -1685,6 +1737,207 @@ fn chain_identical(world: &mut UselessWorld) {
     assert_eq!(der1, der2, "certificate chains should be identical");
 }
 
+#[then("the leaf certificate PEM should be identical")]
+fn chain_leaf_pem_identical(world: &mut UselessWorld) {
+    let first = world
+        .x509_chain_leaf_pem_1
+        .as_ref()
+        .expect("leaf PEM #1 not set");
+    let second = world
+        .x509_chain_leaf_pem_2
+        .as_ref()
+        .expect("leaf PEM #2 not set");
+    assert_eq!(first, second, "leaf certificate PEM should be identical");
+}
+
+#[then("the intermediate certificate PEM should be identical")]
+fn chain_intermediate_pem_identical(world: &mut UselessWorld) {
+    let first = world
+        .x509_chain_intermediate_pem_1
+        .as_ref()
+        .expect("intermediate PEM #1 not set");
+    let second = world
+        .x509_chain_intermediate_pem_2
+        .as_ref()
+        .expect("intermediate PEM #2 not set");
+    assert_eq!(
+        first, second,
+        "intermediate certificate PEM should be identical"
+    );
+}
+
+#[then("the root certificate PEM should be identical")]
+fn chain_root_pem_identical(world: &mut UselessWorld) {
+    let first = world
+        .x509_chain_root_pem_1
+        .as_ref()
+        .expect("root PEM #1 not set");
+    let second = world
+        .x509_chain_root_pem_2
+        .as_ref()
+        .expect("root PEM #2 not set");
+    assert_eq!(first, second, "root certificate PEM should be identical");
+}
+
+#[then("the certificate chain should have a leaf certificate")]
+fn chain_has_leaf_alias(world: &mut UselessWorld) {
+    chain_has_leaf(world);
+}
+
+#[then("the certificate chain should have an intermediate certificate")]
+fn chain_has_intermediate_alias(world: &mut UselessWorld) {
+    chain_has_intermediate(world);
+}
+
+#[then("the certificate chain should have a root certificate")]
+fn chain_has_root_alias(world: &mut UselessWorld) {
+    chain_has_root(world);
+}
+
+#[then(regex = r#"^the chain PEM should contain (\d+) "([^"]+)" markers$"#)]
+fn chain_pem_contains_markers(world: &mut UselessWorld, expected: usize, marker: String) {
+    let chain = world.x509_chain.as_ref().expect("x509_chain not set");
+    let count = chain.chain_pem().matches(&marker).count();
+    assert_eq!(
+        count, expected,
+        "expected chain PEM to contain {expected} '{marker}' markers, got {count}"
+    );
+}
+
+#[then("the leaf certificate DER should differ from the intermediate certificate DER")]
+fn leaf_der_differs_from_intermediate(world: &mut UselessWorld) {
+    let chain = world.x509_chain.as_ref().expect("x509_chain not set");
+    assert_ne!(
+        chain.leaf_cert_der(),
+        chain.intermediate_cert_der(),
+        "leaf DER should differ from intermediate DER"
+    );
+}
+
+#[then("the intermediate certificate DER should differ from the root certificate DER")]
+fn intermediate_der_differs_from_root(world: &mut UselessWorld) {
+    let chain = world.x509_chain.as_ref().expect("x509_chain not set");
+    assert_ne!(
+        chain.intermediate_cert_der(),
+        chain.root_cert_der(),
+        "intermediate DER should differ from root DER"
+    );
+}
+
+#[then("the intermediate certificate should have a common name")]
+fn intermediate_has_common_name(world: &mut UselessWorld) {
+    let chain = world.x509_chain.as_ref().expect("x509_chain not set");
+    let (_, cert) =
+        x509_parser::parse_x509_certificate(chain.intermediate_cert_der()).expect("parse cert");
+    let cn = cert
+        .subject()
+        .iter_common_name()
+        .next()
+        .expect("intermediate should have CN")
+        .as_str()
+        .expect("CN should be string");
+    assert!(!cn.is_empty(), "intermediate CN should not be empty");
+}
+
+#[then("the root certificate should have a common name")]
+fn root_has_common_name(world: &mut UselessWorld) {
+    let chain = world.x509_chain.as_ref().expect("x509_chain not set");
+    let (_, cert) = x509_parser::parse_x509_certificate(chain.root_cert_der()).expect("parse cert");
+    let cn = cert
+        .subject()
+        .iter_common_name()
+        .next()
+        .expect("root should have CN")
+        .as_str()
+        .expect("CN should be string");
+    assert!(!cn.is_empty(), "root CN should not be empty");
+}
+
+#[then("the leaf certificates should have different DER")]
+fn leaf_certs_different_der(world: &mut UselessWorld) {
+    let first = world
+        .x509_chain_leaf_der_1
+        .as_ref()
+        .expect("leaf DER #1 not set");
+    let second = world
+        .x509_chain_leaf_der_2
+        .as_ref()
+        .expect("leaf DER #2 not set");
+    assert_ne!(first, second, "leaf certificates should differ");
+}
+
+#[then("the root certificates should have different DER")]
+fn root_certs_different_der(world: &mut UselessWorld) {
+    let first = world
+        .x509_chain_root_der_1
+        .as_ref()
+        .expect("root DER #1 not set");
+    let second = world
+        .x509_chain_root_der_2
+        .as_ref()
+        .expect("root DER #2 not set");
+    assert_ne!(first, second, "root certificates should differ");
+}
+
+#[then("the leaf private key should be a valid PKCS#8 key")]
+fn leaf_private_key_is_valid_pkcs8(world: &mut UselessWorld) {
+    use rsa::pkcs8::DecodePrivateKey;
+
+    let chain = world.x509_chain.as_ref().expect("x509_chain not set");
+    rsa::RsaPrivateKey::from_pkcs8_der(chain.leaf_private_key_pkcs8_der())
+        .expect("leaf private key should parse as PKCS#8");
+}
+
+#[then("the leaf private key should match the leaf certificate")]
+fn leaf_private_key_matches_leaf_cert(world: &mut UselessWorld) {
+    use rsa::pkcs8::DecodePrivateKey;
+    use rsa::pkcs8::DecodePublicKey;
+    use rsa::traits::PublicKeyParts;
+
+    let chain = world.x509_chain.as_ref().expect("x509_chain not set");
+    let private_key =
+        rsa::RsaPrivateKey::from_pkcs8_der(chain.leaf_private_key_pkcs8_der()).expect("parse key");
+    let (_, cert) = x509_parser::parse_x509_certificate(chain.leaf_cert_der()).expect("parse cert");
+    let cert_public =
+        rsa::RsaPublicKey::from_public_key_der(cert.public_key().raw).expect("parse cert SPKI");
+    let private_public = private_key.to_public_key();
+
+    assert_eq!(private_public.n(), cert_public.n(), "modulus should match");
+    assert_eq!(private_public.e(), cert_public.e(), "exponent should match");
+}
+
+#[then("the leaf certificate tempfile should exist")]
+fn leaf_cert_tempfile_exists(world: &mut UselessWorld) {
+    let tf = world
+        .x509_cert_tempfile
+        .as_ref()
+        .expect("leaf certificate tempfile not set");
+    assert!(tf.path().exists(), "leaf certificate tempfile should exist");
+}
+
+#[then("the leaf private key tempfile should exist")]
+fn leaf_key_tempfile_exists(world: &mut UselessWorld) {
+    let tf = world
+        .x509_key_tempfile
+        .as_ref()
+        .expect("leaf key tempfile not set");
+    assert!(tf.path().exists(), "leaf key tempfile should exist");
+}
+
+#[then("the chain root should differ from the original root")]
+fn chain_root_differs_from_original(world: &mut UselessWorld) {
+    let original = world.x509_chain.as_ref().expect("x509_chain not set");
+    let unknown = world
+        .x509_chain_unknown_ca
+        .as_ref()
+        .expect("unknown-ca chain not set");
+    assert_ne!(
+        original.root_cert_der(),
+        unknown.root_cert_der(),
+        "unknown-ca chain root should differ"
+    );
+}
+
 #[then("the revoked leaf certificate should be parseable")]
 fn revoked_leaf_parseable(world: &mut UselessWorld) {
     let revoked = world
@@ -1695,24 +1948,24 @@ fn revoked_leaf_parseable(world: &mut UselessWorld) {
     x509_parser::parse_x509_certificate(der).expect("revoked leaf should parse");
 }
 
-#[then("the revoked leaf certificate should have a CRL distribution point")]
+#[then("the revoked leaf certificate should include a CRL with revoked entries")]
 fn revoked_leaf_has_crl(world: &mut UselessWorld) {
+    use x509_parser::prelude::FromDer;
+
     let revoked = world
         .x509_chain_revoked_leaf
         .as_ref()
         .expect("revoked_leaf not set");
-    let der = revoked.leaf_cert_der();
-    let (_, cert) = x509_parser::parse_x509_certificate(der).expect("parse leaf");
+    let crl_der = revoked
+        .crl_der()
+        .expect("revoked_leaf should include a CRL artifact");
+    let (_, crl) = x509_parser::revocation_list::CertificateRevocationList::from_der(crl_der)
+        .expect("CRL should parse");
 
-    // Check for CRL distribution point extension
-    let has_crl_dp = cert
-        .extensions()
-        .iter()
-        .any(|ext| ext.oid == x509_parser::oid_registry::OID_X509_EXT_CRL_DISTRIBUTION_POINTS);
-
+    let revoked_count = crl.iter_revoked_certificates().count();
     assert!(
-        has_crl_dp,
-        "revoked leaf should have CRL distribution point"
+        revoked_count > 0,
+        "CRL should contain revoked certificate entries"
     );
 }
 
@@ -1996,6 +2249,11 @@ fn build_jwks_all(world: &mut UselessWorld) {
     }
 
     world.jwks_output_1 = Some(builder.build().to_value());
+}
+
+#[when("I build a JWKS containing all three keys")]
+fn build_jwks_all_three(world: &mut UselessWorld) {
+    build_jwks_all(world);
 }
 
 #[when(regex = r#"^I build a JWKS with the RSA keys with kids "([^"]+)" and "([^"]+)"$"#)]
@@ -2472,6 +2730,117 @@ fn jwks_key_same_modulus(world: &mut UselessWorld, kid: String) {
     );
 }
 
+#[then(regex = r#"^the RSA JWK should have kty "([^"]+)"$"#)]
+fn cross_rsa_jwk_has_kty(world: &mut UselessWorld, expected: String) {
+    let rsa = world.rsa.as_ref().expect("rsa not set");
+    let jwk = rsa.public_jwk().to_value();
+    assert_eq!(jwk["kty"].as_str(), Some(expected.as_str()));
+}
+
+#[then(regex = r#"^the ECDSA JWK should have kty "([^"]+)"$"#)]
+fn cross_ecdsa_jwk_has_kty(world: &mut UselessWorld, expected: String) {
+    let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
+    let jwk = ecdsa.public_jwk().to_value();
+    assert_eq!(jwk["kty"].as_str(), Some(expected.as_str()));
+}
+
+#[then("the RSA JWK kty should differ from the ECDSA JWK kty")]
+fn cross_rsa_and_ecdsa_kty_differ(world: &mut UselessWorld) {
+    let rsa = world.rsa.as_ref().expect("rsa not set");
+    let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
+    let rsa_jwk = rsa.public_jwk().to_value();
+    let ecdsa_jwk = ecdsa.public_jwk().to_value();
+    let rsa_kty = rsa_jwk["kty"].as_str().unwrap();
+    let ecdsa_kty = ecdsa_jwk["kty"].as_str().unwrap();
+    assert_ne!(rsa_kty, ecdsa_kty, "RSA and ECDSA kty should differ");
+}
+
+#[then(regex = r#"^the ES256 JWK should have crv "([^"]+)"$"#)]
+fn cross_es256_jwk_has_crv(world: &mut UselessWorld, expected: String) {
+    let ecdsa = world.ecdsa_keys.first().expect("ES256 key not set");
+    let jwk = ecdsa.public_jwk().to_value();
+    assert_eq!(jwk["crv"].as_str(), Some(expected.as_str()));
+}
+
+#[then(regex = r#"^the ES384 JWK should have crv "([^"]+)"$"#)]
+fn cross_es384_jwk_has_crv(world: &mut UselessWorld, expected: String) {
+    let ecdsa = world.ecdsa_keys.get(1).expect("ES384 key not set");
+    let jwk = ecdsa.public_jwk().to_value();
+    assert_eq!(jwk["crv"].as_str(), Some(expected.as_str()));
+}
+
+#[then("the ES256 crv should differ from the ES384 crv")]
+fn cross_es256_es384_crv_differ(world: &mut UselessWorld) {
+    let es256 = world.ecdsa_keys.first().expect("ES256 key not set");
+    let es384 = world.ecdsa_keys.get(1).expect("ES384 key not set");
+    let es256_jwk = es256.public_jwk().to_value();
+    let es384_jwk = es384.public_jwk().to_value();
+    let es256_crv = es256_jwk["crv"].as_str().unwrap();
+    let es384_crv = es384_jwk["crv"].as_str().unwrap();
+    assert_ne!(es256_crv, es384_crv, "ES256 and ES384 curves should differ");
+}
+
+#[then(regex = r#"^the RS256 JWK should have alg "([^"]+)"$"#)]
+fn cross_rs256_jwk_has_alg(world: &mut UselessWorld, expected: String) {
+    let rsa = world.rsa_keys.first().expect("RS256 key not set");
+    let jwk = rsa.public_jwk().to_value();
+    assert_eq!(jwk["alg"].as_str(), Some(expected.as_str()));
+}
+
+#[then(regex = r#"^the RS384 JWK should have alg "([^"]+)"$"#)]
+fn cross_rs384_jwk_has_alg(world: &mut UselessWorld, expected: String) {
+    let rsa = world.rsa_keys.get(1).expect("RS384 key not set");
+    let jwk = rsa.public_jwk().to_value();
+    assert_eq!(jwk["alg"].as_str(), Some(expected.as_str()));
+}
+
+#[then("the RS256 alg should differ from the RS384 alg")]
+fn cross_rs256_rs384_alg_differ(world: &mut UselessWorld) {
+    let rs256 = world.rsa_keys.first().expect("RS256 key not set");
+    let rs384 = world.rsa_keys.get(1).expect("RS384 key not set");
+    let rs256_jwk = rs256.public_jwk().to_value();
+    let rs384_jwk = rs384.public_jwk().to_value();
+    let rs256_alg = rs256_jwk["alg"].as_str().unwrap();
+    let rs384_alg = rs384_jwk["alg"].as_str().unwrap();
+    assert_ne!(rs256_alg, rs384_alg, "RS256 and RS384 alg should differ");
+}
+
+#[then(regex = r#"^the HS256 JWK should have alg "([^"]+)"$"#)]
+fn cross_hs256_jwk_has_alg(world: &mut UselessWorld, expected: String) {
+    let hs256 = world.hmac_keys.first().expect("HS256 key not set");
+    let jwk = hs256.jwk().to_value();
+    assert_eq!(jwk["alg"].as_str(), Some(expected.as_str()));
+}
+
+#[then(regex = r#"^the HS384 JWK should have alg "([^"]+)"$"#)]
+fn cross_hs384_jwk_has_alg(world: &mut UselessWorld, expected: String) {
+    let hs384 = world.hmac_keys.get(1).expect("HS384 key not set");
+    let jwk = hs384.jwk().to_value();
+    assert_eq!(jwk["alg"].as_str(), Some(expected.as_str()));
+}
+
+#[then(regex = r#"^the HS512 JWK should have alg "([^"]+)"$"#)]
+fn cross_hs512_jwk_has_alg(world: &mut UselessWorld, expected: String) {
+    let hs512 = world.hmac_keys.get(2).expect("HS512 key not set");
+    let jwk = hs512.jwk().to_value();
+    assert_eq!(jwk["alg"].as_str(), Some(expected.as_str()));
+}
+
+#[then("the RSA 2048 n value should have different length than RSA 4096 n value")]
+fn cross_rsa_modulus_length_diff(world: &mut UselessWorld) {
+    let rsa_2048 = world.rsa_keys.first().expect("RSA 2048 key not set");
+    let rsa_4096 = world.rsa_keys.get(2).expect("RSA 4096 key not set");
+    let jwk_2048 = rsa_2048.public_jwk().to_value();
+    let jwk_4096 = rsa_4096.public_jwk().to_value();
+    let n_2048 = jwk_2048["n"].as_str().expect("RSA 2048 n missing");
+    let n_4096 = jwk_4096["n"].as_str().expect("RSA 4096 n missing");
+    assert_ne!(
+        n_2048.len(),
+        n_4096.len(),
+        "RSA 2048 and RSA 4096 n lengths should differ"
+    );
+}
+
 // =============================================================================
 // RSA variant When steps (RS384, RS512, key sizes)
 // =============================================================================
@@ -2734,6 +3103,34 @@ fn gen_same_keys_reverse(world: &mut UselessWorld) {
     world.ed25519 = Some(ed25519);
 }
 
+#[when("I generate the same keys again in reverse order")]
+fn gen_same_keys_reverse_again(world: &mut UselessWorld) {
+    // Snapshot PEMs before regenerating.
+    world.rsa_pems_before = world
+        .rsa_keys
+        .iter()
+        .map(|k| k.private_key_pkcs8_pem().to_string())
+        .collect();
+    if let Some(k) = &world.ecdsa {
+        world.ecdsa_pems_before = vec![k.private_key_pkcs8_pem().to_string()];
+    }
+    if let Some(k) = &world.ed25519 {
+        world.ed25519_pems_before = vec![k.private_key_pkcs8_pem().to_string()];
+    }
+
+    let fx = world.factory.as_ref().expect("factory not set");
+    // Regenerate in reverse order, preserving the labels used by cross_key.feature.
+    let ed25519 = fx.ed25519("isolation-ed25519", Ed25519Spec::new());
+    let ecdsa = fx.ecdsa("isolation-ecdsa", EcdsaSpec::es256());
+    let rsa = fx.rsa("isolation-rsa", RsaSpec::rs256());
+
+    world.rsa_keys.clear();
+    world.rsa_keys.push(rsa.clone());
+    world.rsa = Some(rsa);
+    world.ecdsa = Some(ecdsa);
+    world.ed25519 = Some(ed25519);
+}
+
 #[then("each key should have a unique kid")]
 fn all_keys_unique_kid(world: &mut UselessWorld) {
     let mut kids = std::collections::HashSet::new();
@@ -2777,6 +3174,10 @@ fn gen_x509_chain_again(world: &mut UselessWorld, domain: String, label: String)
     let spec = ChainSpec::new(&domain);
     let chain = fx.x509_chain(&label, spec);
     world.x509_chain_leaf_der_2 = Some(chain.leaf_cert_der().to_vec());
+    world.x509_chain_root_der_2 = Some(chain.root_cert_der().to_vec());
+    world.x509_chain_leaf_pem_2 = Some(chain.leaf_cert_pem().to_string());
+    world.x509_chain_intermediate_pem_2 = Some(chain.intermediate_cert_pem().to_string());
+    world.x509_chain_root_pem_2 = Some(chain.root_cert_pem().to_string());
     world.x509_chain = Some(chain);
 }
 
