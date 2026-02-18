@@ -281,11 +281,8 @@ impl Factory {
         let arc_any: CacheValue = arc.clone();
 
         // Insert if absent; if another thread raced us, use its value.
-        cache_insert_if_absent(&self.inner.cache, id.clone(), arc_any);
-
-        let cached = cache_get(&self.inner.cache, &id)
-            .expect("uselesskey-core: cached artifact missing after insert");
-        downcast_or_panic::<T>(cached, &id)
+        let winner = cache_insert_if_absent(&self.inner.cache, id.clone(), arc_any);
+        downcast_or_panic::<T>(winner, &id)
     }
 
     fn seed_for(&self, id: &ArtifactId) -> Seed {
@@ -337,17 +334,18 @@ fn cache_get(cache: &Cache, id: &ArtifactId) -> Option<CacheValue> {
 }
 
 #[cfg(feature = "std")]
-fn cache_insert_if_absent(cache: &Cache, id: ArtifactId, value: CacheValue) {
-    cache.entry(id).or_insert(value);
+fn cache_insert_if_absent(cache: &Cache, id: ArtifactId, value: CacheValue) -> CacheValue {
+    cache.entry(id).or_insert(value).value().clone()
 }
 
 #[cfg(not(feature = "std"))]
-fn cache_insert_if_absent(cache: &Cache, id: ArtifactId, value: CacheValue) {
+fn cache_insert_if_absent(cache: &Cache, id: ArtifactId, value: CacheValue) -> CacheValue {
     use alloc::collections::btree_map::Entry;
 
     let mut guard = cache.lock();
-    if let Entry::Vacant(slot) = guard.entry(id) {
-        slot.insert(value);
+    match guard.entry(id) {
+        Entry::Vacant(slot) => slot.insert(value).clone(),
+        Entry::Occupied(slot) => slot.get().clone(),
     }
 }
 

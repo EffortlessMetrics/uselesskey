@@ -214,7 +214,10 @@ mod tests {
         let expected1 = flip_byte(&der, reference_offset(der.len(), d1.as_bytes()[1]));
         let expected2 = {
             let flipped = flip_byte(&der, reference_offset(der.len(), d2.as_bytes()[1]));
-            truncate_der(&flipped, reference_truncate_len(flipped.len(), d2.as_bytes()))
+            truncate_der(
+                &flipped,
+                reference_truncate_len(flipped.len(), d2.as_bytes()),
+            )
         };
 
         assert_eq!(corrupt_der_deterministic(&der, &v0), expected0);
@@ -236,7 +239,13 @@ mod tests {
 
         assert_eq!(derived_truncate_len(0, &digest), 0);
         assert_eq!(derived_truncate_len(1, &digest), 0);
-        assert_eq!(derived_truncate_len(10, &digest), reference_truncate_len(10, &digest));
-        assert_eq!(derived_truncate_len(17, &digest), reference_truncate_len(17, &digest));
+        assert_eq!(
+            derived_truncate_len(10, &digest),
+            reference_truncate_len(10, &digest)
+        );
+        assert_eq!(
+            derived_truncate_len(17, &digest),
+            reference_truncate_len(17, &digest)
+        );
     }
 }

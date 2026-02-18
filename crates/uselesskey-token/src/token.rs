@@ -115,7 +115,7 @@ fn generate_oauth_access_token(label: &str, rng: &mut impl RngCore) -> String {
         "aud": "tests",
         "scope": "fixture.read",
         "jti": URL_SAFE_NO_PAD.encode(jti),
-        "exp": 4_102_444_800u64,
+        "exp": 2_000_000_000u64,
     });
     let payload_json = serde_json::to_vec(&payload).expect("payload JSON");
     let payload_segment = URL_SAFE_NO_PAD.encode(payload_json);
