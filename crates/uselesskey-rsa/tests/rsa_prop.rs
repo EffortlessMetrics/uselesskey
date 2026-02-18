@@ -9,6 +9,11 @@ use uselesskey_core::negative::CorruptPem;
 use uselesskey_core::{Factory, Seed};
 use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 
+fn assert_private_key_rejects(pem: &str, der: &[u8]) {
+    assert!(rsa::RsaPrivateKey::from_pkcs8_pem(pem).is_err());
+    assert!(rsa::RsaPrivateKey::from_pkcs8_der(der).is_err());
+}
+
 #[test]
 #[should_panic(expected = "RSA bits too small")]
 fn rsa_bits_too_small_panics() {
@@ -41,7 +46,10 @@ fn corrupt_pem_fails_to_parse() {
     let fx = fx();
     let rsa = fx.rsa("issuer", RsaSpec::rs256());
 
+    let original = rsa.private_key_pkcs8_pem();
     let bad = rsa.private_key_pkcs8_pem_corrupt(CorruptPem::BadBase64);
+    assert_ne!(bad, original);
+    assert!(bad.contains("THIS_IS_NOT_BASE64!!!"));
     let parsed = rsa::RsaPrivateKey::from_pkcs8_pem(&bad);
     assert!(parsed.is_err());
 }
@@ -55,11 +63,15 @@ fn deterministic_corruption_helpers_are_stable() {
     let pem_b = rsa.private_key_pkcs8_pem_corrupt_deterministic("corrupt:v1");
     assert_eq!(pem_a, pem_b);
     assert_ne!(pem_a, rsa.private_key_pkcs8_pem());
+    assert!(pem_a.starts_with('-'));
 
     let der_a = rsa.private_key_pkcs8_der_corrupt_deterministic("corrupt:v1");
     let der_b = rsa.private_key_pkcs8_der_corrupt_deterministic("corrupt:v1");
     assert_eq!(der_a, der_b);
     assert_ne!(der_a, rsa.private_key_pkcs8_der());
+    assert_eq!(der_a.len(), rsa.private_key_pkcs8_der().len());
+
+    assert_private_key_rejects(&pem_a, &der_a);
 }
 
 #[test]
@@ -360,5 +372,18 @@ mod jwk_tests {
         assert_eq!(rsa.public_jwk_json(), rsa.public_jwk().to_value());
         assert_eq!(rsa.public_jwks_json(), rsa.public_jwks().to_value());
         assert_eq!(rsa.private_key_jwk_json(), rsa.private_key_jwk().to_value());
+    }
+
+    #[test]
+    fn jwk_alg_matches_key_size() {
+        let fx = Factory::deterministic(Seed::from_env_value("rsa-jwk-alg-bits").unwrap());
+
+        let rs256 = fx.rsa("issuer-2048", RsaSpec::new(2048));
+        let rs384 = fx.rsa("issuer-3072", RsaSpec::new(3072));
+        let rs512 = fx.rsa("issuer-4096", RsaSpec::new(4096));
+
+        assert_eq!(rs256.public_jwk().to_value()["alg"], "RS256");
+        assert_eq!(rs384.public_jwk().to_value()["alg"], "RS384");
+        assert_eq!(rs512.public_jwk().to_value()["alg"], "RS512");
     }
 }

@@ -106,7 +106,10 @@ fn corrupt_pem_and_truncate_der_fail_to_parse() {
 
     for spec in [EcdsaSpec::es256(), EcdsaSpec::es384()] {
         let key = fx.ecdsa("issuer", spec);
+        let original_pem = key.private_key_pkcs8_pem();
         let bad_pem = key.private_key_pkcs8_pem_corrupt(CorruptPem::BadBase64);
+        assert_ne!(bad_pem, original_pem);
+        assert!(bad_pem.contains("THIS_IS_NOT_BASE64!!!"));
         let truncated = key.private_key_pkcs8_der_truncated(10);
         assert_eq!(truncated.len(), 10);
         assert_private_key_rejects(spec, &bad_pem, &truncated);
@@ -116,17 +119,24 @@ fn corrupt_pem_and_truncate_der_fail_to_parse() {
 #[test]
 fn deterministic_corruption_helpers_are_stable() {
     let fx = Factory::deterministic(Seed::from_env_value("ecdsa-corrupt-det").unwrap());
-    let key = fx.ecdsa("issuer", EcdsaSpec::es256());
 
-    let pem_a = key.private_key_pkcs8_pem_corrupt_deterministic("corrupt:v1");
-    let pem_b = key.private_key_pkcs8_pem_corrupt_deterministic("corrupt:v1");
-    assert_eq!(pem_a, pem_b);
-    assert_ne!(pem_a, key.private_key_pkcs8_pem());
+    for spec in [EcdsaSpec::es256(), EcdsaSpec::es384()] {
+        let key = fx.ecdsa("issuer", spec);
 
-    let der_a = key.private_key_pkcs8_der_corrupt_deterministic("corrupt:v1");
-    let der_b = key.private_key_pkcs8_der_corrupt_deterministic("corrupt:v1");
-    assert_eq!(der_a, der_b);
-    assert_ne!(der_a, key.private_key_pkcs8_der());
+        let pem_a = key.private_key_pkcs8_pem_corrupt_deterministic("corrupt:v1");
+        let pem_b = key.private_key_pkcs8_pem_corrupt_deterministic("corrupt:v1");
+        assert_eq!(pem_a, pem_b);
+        assert_ne!(pem_a, key.private_key_pkcs8_pem());
+        assert!(pem_a.starts_with('-'));
+
+        let der_a = key.private_key_pkcs8_der_corrupt_deterministic("corrupt:v1");
+        let der_b = key.private_key_pkcs8_der_corrupt_deterministic("corrupt:v1");
+        assert_eq!(der_a, der_b);
+        assert_ne!(der_a, key.private_key_pkcs8_der());
+        assert_eq!(der_a.len(), key.private_key_pkcs8_der().len());
+
+        assert_private_key_rejects(spec, &pem_a, &der_a);
+    }
 }
 
 #[test]

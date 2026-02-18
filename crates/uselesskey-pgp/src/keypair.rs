@@ -326,6 +326,70 @@ mod tests {
     }
 
     #[test]
+    fn user_id_is_exposed_and_sanitized() {
+        let fx = Factory::deterministic(Seed::from_env_value("pgp-user-id").unwrap());
+        let key = fx.pgp("Test User!@#", PgpSpec::ed25519());
+        let blank = fx.pgp("   ", PgpSpec::ed25519());
+
+        assert_eq!(key.user_id(), "Test User!@# <test-user@uselesskey.test>");
+        assert_eq!(blank.user_id(), "fixture <fixture@uselesskey.test>");
+    }
+
+    #[test]
+    fn armored_corruption_helpers_are_invalid_and_stable() {
+        let fx = Factory::deterministic(Seed::from_env_value("pgp-corrupt-armor").unwrap());
+        let key = fx.pgp("issuer", PgpSpec::ed25519());
+
+        let bad = key.private_key_armored_corrupt(CorruptPem::BadBase64);
+        assert_ne!(bad, key.private_key_armored());
+        assert!(bad.contains("THIS_IS_NOT_BASE64!!!"));
+        assert!(SignedSecretKey::from_armor_single(Cursor::new(&bad)).is_err());
+
+        let det_a = key.private_key_armored_corrupt_deterministic("corrupt:v1");
+        let det_b = key.private_key_armored_corrupt_deterministic("corrupt:v1");
+        assert_eq!(det_a, det_b);
+        assert_ne!(det_a, key.private_key_armored());
+        assert!(det_a.starts_with('-'));
+        assert!(SignedSecretKey::from_armor_single(Cursor::new(&det_a)).is_err());
+    }
+
+    #[test]
+    fn binary_corruption_helpers_are_invalid_and_stable() {
+        let fx = Factory::deterministic(Seed::from_env_value("pgp-corrupt-bin").unwrap());
+        let key = fx.pgp("issuer", PgpSpec::ed25519());
+
+        let truncated = key.private_key_binary_truncated(32);
+        assert_eq!(truncated.len(), 32);
+        assert!(SignedSecretKey::from_bytes(Cursor::new(&truncated)).is_err());
+
+        let det_a = key.private_key_binary_corrupt_deterministic("corrupt:v1");
+        let det_b = key.private_key_binary_corrupt_deterministic("corrupt:v1");
+        assert_eq!(det_a, det_b);
+        assert_ne!(det_a, key.private_key_binary());
+        assert_eq!(det_a.len(), key.private_key_binary().len());
+    }
+
+    #[test]
+    fn mismatched_public_key_variants_parse_and_fingerprint_differs() {
+        let fx = Factory::deterministic(Seed::from_env_value("pgp-mismatch-parse").unwrap());
+        let key = fx.pgp("issuer", PgpSpec::ed25519());
+
+        let mismatch_bin = key.mismatched_public_key_binary();
+        let mismatch_pub = SignedPublicKey::from_bytes(Cursor::new(&mismatch_bin))
+            .expect("parse mismatched public binary");
+        assert_ne!(mismatch_pub.fingerprint().to_string(), key.fingerprint());
+
+        let mismatch_arm = key.mismatched_public_key_armored();
+        assert_ne!(mismatch_arm, key.public_key_armored());
+        let (mismatch_pub_arm, _) = SignedPublicKey::from_armor_single(Cursor::new(&mismatch_arm))
+            .expect("parse mismatched public armor");
+        assert_ne!(
+            mismatch_pub_arm.fingerprint().to_string(),
+            key.fingerprint()
+        );
+    }
+
+    #[test]
     fn debug_does_not_leak_key_material() {
         let fx = Factory::random();
         let key = fx.pgp("debug", PgpSpec::ed25519());

@@ -112,6 +112,29 @@ mod tests {
 
     use super::*;
 
+    fn find_variant_for_bucket(target: u8) -> String {
+        for i in 0..10_000 {
+            let v = format!("bucket-{target}-{i}");
+            let digest = hash32(v.as_bytes());
+            if digest.as_bytes()[0] % 3 == target {
+                return v;
+            }
+        }
+        panic!("failed to find variant for bucket {target}");
+    }
+
+    fn reference_offset(len: usize, selector: u8) -> usize {
+        if len == 0 { 0 } else { selector as usize % len }
+    }
+
+    fn reference_truncate_len(len: usize, digest: &[u8; 32]) -> usize {
+        if len <= 1 {
+            0
+        } else {
+            digest[2] as usize % (len - 1)
+        }
+    }
+
     #[test]
     fn flip_byte_changes_only_target_offset() {
         let der = vec![0x30, 0x82, 0x01, 0x22];
@@ -165,5 +188,55 @@ mod tests {
     fn deterministic_der_corruption_handles_empty_input() {
         let out = corrupt_der_deterministic(&[], "empty");
         assert!(out.is_empty());
+    }
+
+    #[test]
+    fn deterministic_der_corruption_bucket_mapping_matches_strategy() {
+        let der = vec![0x30, 0x82, 0x01, 0x22, 0x30, 0x0D];
+
+        let v0 = (0..10_000)
+            .map(|i| format!("bucket-0-special-{i}"))
+            .find(|v| {
+                let d = hash32(v.as_bytes());
+                d.as_bytes()[0] % 3 == 0
+                    && reference_truncate_len(der.len(), d.as_bytes())
+                        > reference_offset(der.len(), d.as_bytes()[1])
+            })
+            .expect("variant for bucket 0 with non-equivalent truncate/flip behavior");
+        let v1 = find_variant_for_bucket(1);
+        let v2 = find_variant_for_bucket(2);
+
+        let d0 = hash32(v0.as_bytes());
+        let d1 = hash32(v1.as_bytes());
+        let d2 = hash32(v2.as_bytes());
+
+        let expected0 = truncate_der(&der, reference_truncate_len(der.len(), d0.as_bytes()));
+        let expected1 = flip_byte(&der, reference_offset(der.len(), d1.as_bytes()[1]));
+        let expected2 = {
+            let flipped = flip_byte(&der, reference_offset(der.len(), d2.as_bytes()[1]));
+            truncate_der(&flipped, reference_truncate_len(flipped.len(), d2.as_bytes()))
+        };
+
+        assert_eq!(corrupt_der_deterministic(&der, &v0), expected0);
+        assert_eq!(corrupt_der_deterministic(&der, &v1), expected1);
+        assert_eq!(corrupt_der_deterministic(&der, &v2), expected2);
+    }
+
+    #[test]
+    fn derived_offset_matches_reference_formula() {
+        assert_eq!(derived_offset(0, 200), 0);
+        assert_eq!(derived_offset(7, 250), reference_offset(7, 250));
+        assert_eq!(derived_offset(13, 5), reference_offset(13, 5));
+    }
+
+    #[test]
+    fn derived_truncate_len_matches_reference_formula() {
+        let mut digest = [0u8; 32];
+        digest[2] = 8;
+
+        assert_eq!(derived_truncate_len(0, &digest), 0);
+        assert_eq!(derived_truncate_len(1, &digest), 0);
+        assert_eq!(derived_truncate_len(10, &digest), reference_truncate_len(10, &digest));
+        assert_eq!(derived_truncate_len(17, &digest), reference_truncate_len(17, &digest));
     }
 }

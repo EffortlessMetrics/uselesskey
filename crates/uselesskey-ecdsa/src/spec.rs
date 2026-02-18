@@ -34,6 +34,14 @@ impl EcdsaSpec {
         }
     }
 
+    /// Returns the expected coordinate length in bytes for uncompressed points.
+    pub fn coordinate_len_bytes(&self) -> usize {
+        match self {
+            Self::Es256 => 32,
+            Self::Es384 => 48,
+        }
+    }
+
     /// Stable encoding for cache keys / deterministic derivation.
     ///
     /// If you change this, bump the derivation version in `uselesskey-core`.
@@ -54,10 +62,12 @@ mod tests {
         let es256 = EcdsaSpec::es256();
         assert_eq!(es256.alg_name(), "ES256");
         assert_eq!(es256.curve_name(), "P-256");
+        assert_eq!(es256.coordinate_len_bytes(), 32);
 
         let es384 = EcdsaSpec::es384();
         assert_eq!(es384.alg_name(), "ES384");
         assert_eq!(es384.curve_name(), "P-384");
+        assert_eq!(es384.coordinate_len_bytes(), 48);
     }
 
     #[test]

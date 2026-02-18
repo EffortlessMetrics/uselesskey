@@ -187,6 +187,17 @@ mod tests {
 
     use super::*;
 
+    fn find_variant_for_bucket(target: u8) -> String {
+        for i in 0..10_000 {
+            let v = format!("bucket-{target}-{i}");
+            let digest = hash32(v.as_bytes());
+            if digest.as_bytes()[0] % 5 == target {
+                return v;
+            }
+        }
+        panic!("failed to find variant for bucket {target}");
+    }
+
     #[test]
     fn bad_header_replaces_first_line() {
         let pem = "-----BEGIN TEST-----\nAAA=\n-----END TEST-----\n";
@@ -266,5 +277,98 @@ mod tests {
         let out = corrupt_pem_deterministic("x", "short");
         let out2 = corrupt_pem_deterministic("x", "short");
         assert_eq!(out, out2);
+    }
+
+    #[test]
+    fn deterministic_corruption_bucket_mapping_matches_strategy() {
+        let pem = "-----BEGIN TEST-----\nAAA=\n-----END TEST-----\n";
+
+        let v0 = find_variant_for_bucket(0);
+        let v1 = find_variant_for_bucket(1);
+        let v2 = find_variant_for_bucket(2);
+        let v3 = find_variant_for_bucket(3);
+        let v4 = find_variant_for_bucket(4);
+
+        assert_eq!(
+            corrupt_pem_deterministic(pem, &v0),
+            corrupt_pem(pem, CorruptPem::BadHeader)
+        );
+        assert_eq!(
+            corrupt_pem_deterministic(pem, &v1),
+            corrupt_pem(pem, CorruptPem::BadFooter)
+        );
+        assert_eq!(
+            corrupt_pem_deterministic(pem, &v2),
+            corrupt_pem(pem, CorruptPem::BadBase64)
+        );
+        assert_eq!(
+            corrupt_pem_deterministic(pem, &v3),
+            corrupt_pem(pem, CorruptPem::ExtraBlankLine)
+        );
+
+        let digest = hash32(v4.as_bytes());
+        let expected_len = derived_truncate_len(pem, digest.as_bytes());
+        assert_eq!(
+            corrupt_pem_deterministic(pem, &v4),
+            corrupt_pem(
+                pem,
+                CorruptPem::Truncate {
+                    bytes: expected_len
+                }
+            )
+        );
+    }
+
+    #[test]
+    fn derived_truncate_len_is_within_expected_bounds() {
+        let pem = "-----BEGIN TEST-----\nAAA=\nBBB=\n-----END TEST-----\n";
+        let chars = pem.chars().count();
+
+        let digest_a = [0u8; 32];
+        let mut digest_b = [0u8; 32];
+        digest_b[1] = 0xFE;
+        digest_b[2] = 0xDC;
+
+        let a = derived_truncate_len(pem, &digest_a);
+        let b = derived_truncate_len(pem, &digest_b);
+
+        assert!(a >= 1 && a < chars);
+        assert!(b >= 1 && b < chars);
+        assert_ne!(a, b);
+    }
+
+    #[test]
+    fn derived_truncate_len_matches_reference_formula() {
+        let pem = "-----BEGIN TEST-----\nAAA=\nBBB=\n-----END TEST-----\n";
+        let chars = pem.chars().count();
+        let span = chars - 1;
+
+        // Choose digest bytes so modulus against (chars - 1) is exactly zero.
+        let v = u16::try_from(span).expect("span should fit in u16 for this test");
+        let mut digest = [0u8; 32];
+        digest[1] = (v >> 8) as u8;
+        digest[2] = (v & 0xFF) as u8;
+
+        let expected = 1 + (u16::from_be_bytes([digest[1], digest[2]]) as usize % (chars - 1));
+        assert_eq!(expected, 1);
+        assert_eq!(derived_truncate_len(pem, &digest), expected);
+    }
+
+    #[test]
+    fn bad_base64_multi_line_input_inserts_after_header() {
+        let pem = "-----BEGIN TEST-----\nAAA=\nBBB=\n-----END TEST-----\n";
+        let out = inject_bad_base64_line(pem);
+        let lines: Vec<_> = out.lines().collect();
+        assert_eq!(lines[0], "-----BEGIN TEST-----");
+        assert_eq!(lines[1], "THIS_IS_NOT_BASE64!!!");
+    }
+
+    #[test]
+    fn extra_blank_line_multi_line_input_inserts_after_header() {
+        let pem = "-----BEGIN TEST-----\nAAA=\nBBB=\n-----END TEST-----\n";
+        let out = inject_blank_line(pem);
+        let lines: Vec<_> = out.lines().collect();
+        assert_eq!(lines[0], "-----BEGIN TEST-----");
+        assert_eq!(lines[1], "");
     }
 }

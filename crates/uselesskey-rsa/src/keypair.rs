@@ -97,7 +97,6 @@ impl RsaKeyPair {
     #[cfg(feature = "jwk")]
     fn jwk_alg(&self) -> &'static str {
         match self.spec.bits {
-            2048 => "RS256",
             3072 => "RS384",
             4096 => "RS512",
             _ => "RS256",

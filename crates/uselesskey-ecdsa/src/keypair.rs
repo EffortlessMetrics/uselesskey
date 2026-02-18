@@ -168,8 +168,13 @@ impl EcdsaKeyPair {
         // Public key bytes are in uncompressed form: 0x04 || x || y
         let bytes = &self.inner.public_key_bytes;
         assert_eq!(bytes[0], 0x04, "expected uncompressed point");
-
-        let coord_len = (bytes.len() - 1) / 2;
+        let coord_len = self.spec.coordinate_len_bytes();
+        assert_eq!(
+            bytes.len(),
+            1 + (coord_len * 2),
+            "unexpected EC point length for {:?}",
+            self.spec
+        );
         let x = &bytes[1..1 + coord_len];
         let y = &bytes[1 + coord_len..];
 
@@ -196,8 +201,13 @@ impl EcdsaKeyPair {
         // Public key bytes are in uncompressed form: 0x04 || x || y
         let bytes = &self.inner.public_key_bytes;
         assert_eq!(bytes[0], 0x04, "expected uncompressed point");
-
-        let coord_len = (bytes.len() - 1) / 2;
+        let coord_len = self.spec.coordinate_len_bytes();
+        assert_eq!(
+            bytes.len(),
+            1 + (coord_len * 2),
+            "unexpected EC point length for {:?}",
+            self.spec
+        );
         let x = &bytes[1..1 + coord_len];
         let y = &bytes[1 + coord_len..];
 

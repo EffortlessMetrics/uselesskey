@@ -5,6 +5,15 @@ mod jwk_private_tests {
     use uselesskey_core::{Factory, Seed};
     use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
 
+    fn decode_b64url(v: &str) -> Vec<u8> {
+        URL_SAFE_NO_PAD.decode(v).expect("valid base64url")
+    }
+
+    fn expected_kid(spki_der: &[u8]) -> String {
+        let hash = blake3::hash(spki_der);
+        URL_SAFE_NO_PAD.encode(&hash.as_bytes()[..12])
+    }
+
     #[test]
     fn private_jwk_has_d() {
         let fx = Factory::deterministic(Seed::from_env_value("ecdsa-jwk").unwrap());
@@ -77,6 +86,113 @@ mod jwk_private_tests {
         let k1 = fx.ecdsa("issuer", EcdsaSpec::es256());
         let k2 = fx.ecdsa("issuer", EcdsaSpec::es256());
         assert_eq!(k1.kid(), k2.kid());
+    }
+
+    #[test]
+    fn kid_matches_public_key_hash_prefix() {
+        let fx = Factory::deterministic(Seed::from_env_value("ecdsa-kid-shape").unwrap());
+
+        for spec in [EcdsaSpec::es256(), EcdsaSpec::es384()] {
+            let key = fx.ecdsa("issuer", spec);
+            let kid = key.kid();
+
+            assert_eq!(kid, expected_kid(key.public_key_spki_der()));
+
+            let decoded = decode_b64url(&kid);
+            assert_eq!(decoded.len(), 12);
+        }
+    }
+
+    #[test]
+    fn public_jwk_coordinates_match_public_key_material() {
+        let fx = Factory::deterministic(Seed::from_env_value("ecdsa-public-jwk-bytes").unwrap());
+
+        for (spec, coord_len) in [(EcdsaSpec::es256(), 32usize), (EcdsaSpec::es384(), 48usize)] {
+            let key = fx.ecdsa("issuer", spec);
+            let jwk = key.public_jwk().to_value();
+            let x = decode_b64url(jwk["x"].as_str().expect("x"));
+            let y = decode_b64url(jwk["y"].as_str().expect("y"));
+
+            assert_eq!(x.len(), coord_len);
+            assert_eq!(y.len(), coord_len);
+
+            match spec {
+                EcdsaSpec::Es256 => {
+                    use p256::elliptic_curve::sec1::ToEncodedPoint as _;
+                    use p256::pkcs8::DecodePublicKey as _;
+
+                    let public = p256::PublicKey::from_public_key_der(key.public_key_spki_der())
+                        .expect("P-256 SPKI should parse");
+                    let encoded = public.to_encoded_point(false);
+                    let bytes = encoded.as_bytes();
+
+                    assert_eq!(x.as_slice(), &bytes[1..1 + coord_len]);
+                    assert_eq!(y.as_slice(), &bytes[1 + coord_len..]);
+                }
+                EcdsaSpec::Es384 => {
+                    use p384::elliptic_curve::sec1::ToEncodedPoint as _;
+                    use p384::pkcs8::DecodePublicKey as _;
+
+                    let public = p384::PublicKey::from_public_key_der(key.public_key_spki_der())
+                        .expect("P-384 SPKI should parse");
+                    let encoded = public.to_encoded_point(false);
+                    let bytes = encoded.as_bytes();
+
+                    assert_eq!(x.as_slice(), &bytes[1..1 + coord_len]);
+                    assert_eq!(y.as_slice(), &bytes[1 + coord_len..]);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn private_jwk_matches_private_scalar_and_public_coordinates() {
+        let fx = Factory::deterministic(Seed::from_env_value("ecdsa-private-jwk-bytes").unwrap());
+
+        for (spec, coord_len) in [(EcdsaSpec::es256(), 32usize), (EcdsaSpec::es384(), 48usize)] {
+            let key = fx.ecdsa("issuer", spec);
+            let jwk = key.private_key_jwk().to_value();
+            let x = decode_b64url(jwk["x"].as_str().expect("x"));
+            let y = decode_b64url(jwk["y"].as_str().expect("y"));
+            let d = decode_b64url(jwk["d"].as_str().expect("d"));
+
+            assert_eq!(x.len(), coord_len);
+            assert_eq!(y.len(), coord_len);
+            assert_eq!(d.len(), coord_len);
+
+            match spec {
+                EcdsaSpec::Es256 => {
+                    use p256::elliptic_curve::sec1::ToEncodedPoint as _;
+                    use p256::pkcs8::DecodePrivateKey as _;
+
+                    let secret = p256::SecretKey::from_pkcs8_der(key.private_key_pkcs8_der())
+                        .expect("P-256 PKCS#8 should parse");
+                    let public = secret.public_key();
+                    let encoded = public.to_encoded_point(false);
+                    let bytes = encoded.as_bytes();
+                    let scalar = secret.to_bytes();
+
+                    assert_eq!(x.as_slice(), &bytes[1..1 + coord_len]);
+                    assert_eq!(y.as_slice(), &bytes[1 + coord_len..]);
+                    assert_eq!(d.as_slice(), &scalar[..]);
+                }
+                EcdsaSpec::Es384 => {
+                    use p384::elliptic_curve::sec1::ToEncodedPoint as _;
+                    use p384::pkcs8::DecodePrivateKey as _;
+
+                    let secret = p384::SecretKey::from_pkcs8_der(key.private_key_pkcs8_der())
+                        .expect("P-384 PKCS#8 should parse");
+                    let public = secret.public_key();
+                    let encoded = public.to_encoded_point(false);
+                    let bytes = encoded.as_bytes();
+                    let scalar = secret.to_bytes();
+
+                    assert_eq!(x.as_slice(), &bytes[1..1 + coord_len]);
+                    assert_eq!(y.as_slice(), &bytes[1 + coord_len..]);
+                    assert_eq!(d.as_slice(), &scalar[..]);
+                }
+            }
+        }
     }
 
     #[test]
