@@ -11,5 +11,14 @@ exclude_globs = [
   "**/*.md",
 ]
 
+exclude_re = [
+    # DashMap::new() == Default::default(); semantic no-op that cannot be killed
+    "replace new_cache",
+    # cfg(not(feature = "std")) variants are dead code under default (and all) features.
+    # std variants are trivial single-line delegations (DashMap::len / DashMap::clear).
+    "replace cache_len",
+    "replace cache_clear",
+]
+
 # Mutation testing is CPU-heavy; keep output readable.
 print_times = true

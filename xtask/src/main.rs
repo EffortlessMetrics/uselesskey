@@ -432,7 +432,7 @@ fn mutants() -> Result<()> {
         .status();
 
     match status {
-        Ok(s) if s.success() => run(Command::new("cargo").args(["mutants"])),
+        Ok(s) if s.success() => run(Command::new("cargo").args(["mutants", "--all-features"])),
         _ => bail!("cargo-mutants is not installed. Install with: cargo install cargo-mutants"),
     }
 }
