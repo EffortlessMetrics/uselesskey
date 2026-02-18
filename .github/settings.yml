@@ -1,5 +1,5 @@
 # .github/settings.yml
 repository:
-  description: "Deterministic and random cryptographic test fixtures for Rust tests."
+  description: "Deterministic cryptographic key and certificate fixtures for Rust tests. Never commit secrets again."
   homepage: "https://github.com/EffortlessMetrics/uselesskey"
-  topics: rust, testing, test-fixtures, cryptography, security, pki, x509, jwt, tls, keys
+  topics: rust, testing, test-fixtures, fixtures, cryptography, deterministic, rsa, ecdsa, ed25519, x509, jwk, pem, certificate, secret-scanning, dev-tools

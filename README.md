@@ -1,6 +1,6 @@
 # uselesskey
 
-*Deterministic and random cryptographic fixtures for tests.*
+*Deterministic cryptographic test fixtures for Rust.*
 
 **Stop committing PEM/DER/JWK blobs into your repos.**
 
