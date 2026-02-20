@@ -32,7 +32,7 @@ rand = { workspace = true, optional = true }
 rand_core.workspace = true
 rand_chacha = { version = "0.3.1", default-features = false }
 tempfile = { workspace = true, optional = true }
-spin = { version = "0.9.8", default-features = false, features = ["mutex", "spin_mutex"] }
+spin = { version = "0.10.0", default-features = false, features = ["mutex", "spin_mutex"] }
 
 [dev-dependencies]
 proptest.workspace = true
