@@ -40,7 +40,7 @@ jobs:
       - name: xtask pr
         run: cargo xtask pr
       - name: Upload receipt
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: receipt-pr
           path: target/xtask/receipt.json
@@ -75,7 +75,7 @@ jobs:
         run: cargo xtask ci
 
       - name: Upload receipt
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: receipt-main
           path: target/xtask/receipt.json
