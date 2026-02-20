@@ -54,7 +54,7 @@ proptest = "1.10.0"
 rstest = "0.26.1"
 
 # CLI helpers (xtask)
-anyhow = "1.0.101"
+anyhow = "1.0.102"
 clap = { version = "4.5.57", features = ["derive"] }
 
 # BDD
