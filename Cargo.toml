@@ -55,7 +55,7 @@ rstest = "0.26.1"
 
 # CLI helpers (xtask)
 anyhow = "1.0.101"
-clap = { version = "4.5.57", features = ["derive"] }
+clap = { version = "4.5.60", features = ["derive"] }
 
 # BDD
 cucumber = { version = "0.22.1", features = ["macros"] }
