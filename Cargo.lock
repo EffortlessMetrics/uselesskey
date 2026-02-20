@@ -3374,6 +3374,7 @@ version = "0.3.0"
 dependencies = [
  "base64",
  "blake3",
+ "proptest",
  "rand_core 0.6.4",
  "uselesskey-core",
  "uselesskey-jwk",
@@ -3406,6 +3407,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "uselesskey-interop-tests"
+version = "0.0.0"
+dependencies = [
+ "ed25519-dalek",
+ "p256",
+ "ring",
+ "rsa",
+ "sha2",
+ "signature",
+ "uselesskey-core",
+ "uselesskey-ecdsa",
+ "uselesskey-ed25519",
+ "uselesskey-rsa",
+]
+
+[[package]]
 name = "uselesskey-jsonwebtoken"
 version = "0.3.0"
 dependencies = [
@@ -3431,6 +3448,7 @@ name = "uselesskey-pgp"
 version = "0.3.0"
 dependencies = [
  "pgp",
+ "proptest",
  "uselesskey-core",
 ]
 
@@ -3495,6 +3513,7 @@ name = "uselesskey-token"
 version = "0.3.0"
 dependencies = [
  "base64",
+ "proptest",
  "rand_core 0.6.4",
  "serde_json",
  "uselesskey-core",

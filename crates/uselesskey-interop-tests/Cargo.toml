@@ -1,0 +1,21 @@
+[package]
+name = "uselesskey-interop-tests"
+version = "0.0.0"
+publish = false
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dev-dependencies]
+uselesskey-core = { path = "../uselesskey-core" }
+uselesskey-rsa = { path = "../uselesskey-rsa" }
+uselesskey-ecdsa = { path = "../uselesskey-ecdsa" }
+uselesskey-ed25519 = { path = "../uselesskey-ed25519" }
+
+# Crypto backends for verification
+ring = { workspace = true }
+p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "pem"] }
+ed25519-dalek = { workspace = true }
+rsa = { workspace = true }
+sha2 = { version = "0.10", features = ["oid"] }
+signature = "2"

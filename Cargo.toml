@@ -17,6 +17,7 @@ members = [
   "crates/uselesskey-ring",
   "crates/uselesskey-rustcrypto",
   "crates/uselesskey-aws-lc-rs",
+  "crates/uselesskey-interop-tests",
   "crates/uselesskey-bdd",
   "tests",
   "xtask",
