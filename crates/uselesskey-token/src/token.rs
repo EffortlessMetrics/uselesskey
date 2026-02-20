@@ -272,4 +272,23 @@ mod tests {
         assert!(dbg.contains("debug-label"));
         assert!(!dbg.contains(token.value()));
     }
+
+    #[test]
+    fn random_base62_uses_full_alphabet() {
+        let fx = Factory::deterministic(Seed::from_env_value("base62-test").unwrap());
+        let t = fx.token("alphabet-test", TokenSpec::api_key());
+        let value = t.value();
+        // API key format: "uk_test_{32 random base62 chars}".
+        // Strip the prefix to inspect only the random suffix.
+        let suffix = value.strip_prefix("uk_test_").expect("API key prefix");
+        // With / instead of %, only A-E would appear (byte[0] / 62 yields 0..=4).
+        // With %, the full base62 alphabet is used. A 32-char random suffix must
+        // contain characters beyond the first five uppercase letters.
+        assert!(
+            suffix
+                .chars()
+                .any(|c| c.is_ascii_lowercase() || c.is_ascii_digit()),
+            "random suffix should use full base62 alphabet, got: {suffix}"
+        );
+    }
 }

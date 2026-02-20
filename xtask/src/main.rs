@@ -122,6 +122,35 @@ const FEATURE_MATRIX: &[(&str, &[&str])] = &[
     ("pgp", &["--no-default-features", "--features", "pgp"]),
     ("x509", &["--no-default-features", "--features", "x509"]),
     ("jwk", &["--no-default-features", "--features", "jwk"]),
+    // Feature combinations: key types with output formats
+    (
+        "rsa+jwk",
+        &["--no-default-features", "--features", "rsa,jwk"],
+    ),
+    (
+        "ecdsa+jwk",
+        &["--no-default-features", "--features", "ecdsa,jwk"],
+    ),
+    (
+        "ed25519+jwk",
+        &["--no-default-features", "--features", "ed25519,jwk"],
+    ),
+    (
+        "rsa+x509",
+        &["--no-default-features", "--features", "rsa,x509"],
+    ),
+    (
+        "ecdsa+x509",
+        &["--no-default-features", "--features", "ecdsa,x509"],
+    ),
+    (
+        "ed25519+pgp",
+        &["--no-default-features", "--features", "ed25519,pgp"],
+    ),
+    (
+        "rsa+pgp",
+        &["--no-default-features", "--features", "rsa,pgp"],
+    ),
     ("all-features", &["--all-features"]),
 ];
 

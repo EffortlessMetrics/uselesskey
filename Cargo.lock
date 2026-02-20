@@ -3305,10 +3305,12 @@ dependencies = [
 name = "uselesskey-bdd"
 version = "0.0.0"
 dependencies = [
+ "base64",
  "cucumber",
  "ed25519-dalek",
  "p256",
  "p384",
+ "pgp",
  "rsa",
  "serde_json",
  "tokio",

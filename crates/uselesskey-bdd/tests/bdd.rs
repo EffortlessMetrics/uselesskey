@@ -8,6 +8,12 @@ use uselesskey::{
     X509Cert, X509Chain, X509FactoryExt, X509Spec,
 };
 
+#[cfg(feature = "uk-token")]
+use uselesskey::{TokenFactoryExt, TokenFixture, TokenSpec};
+
+#[cfg(feature = "uk-pgp")]
+use uselesskey::{PgpFactoryExt, PgpKeyPair, PgpSpec};
+
 fn set_public_kid(jwk: &mut uselesskey::jwk::PublicJwk, kid: &str) {
     use uselesskey::jwk::PublicJwk;
     match jwk {
@@ -143,6 +149,48 @@ struct UselessWorld {
     ecdsa_pems_before: Vec<String>,
     ed25519_pems_before: Vec<String>,
     rsa_modulus_snapshot: Option<String>,
+
+    // Token-specific storage
+    #[cfg(feature = "uk-token")]
+    token: Option<TokenFixture>,
+    #[cfg(feature = "uk-token")]
+    token_value_1: Option<String>,
+    #[cfg(feature = "uk-token")]
+    token_value_2: Option<String>,
+    #[cfg(feature = "uk-token")]
+    token_auth_header: Option<String>,
+
+    // PGP-specific storage
+    #[cfg(feature = "uk-pgp")]
+    pgp: Option<PgpKeyPair>,
+    #[cfg(feature = "uk-pgp")]
+    pgp_private_armor_1: Option<String>,
+    #[cfg(feature = "uk-pgp")]
+    pgp_private_armor_2: Option<String>,
+    #[cfg(feature = "uk-pgp")]
+    pgp_public_armor_1: Option<String>,
+    #[cfg(feature = "uk-pgp")]
+    pgp_public_armor_2: Option<String>,
+    #[cfg(feature = "uk-pgp")]
+    pgp_private_binary_1: Option<Vec<u8>>,
+    #[cfg(feature = "uk-pgp")]
+    pgp_public_binary_1: Option<Vec<u8>>,
+    #[cfg(feature = "uk-pgp")]
+    pgp_fingerprint_1: Option<String>,
+    #[cfg(feature = "uk-pgp")]
+    pgp_fingerprint_2: Option<String>,
+    #[cfg(feature = "uk-pgp")]
+    pgp_mismatch_1: Option<Vec<u8>>,
+    #[cfg(feature = "uk-pgp")]
+    pgp_mismatch_2: Option<Vec<u8>>,
+    #[cfg(feature = "uk-pgp")]
+    pgp_corrupted_armor: Option<String>,
+    #[cfg(feature = "uk-pgp")]
+    pgp_truncated_binary: Option<Vec<u8>>,
+    #[cfg(feature = "uk-pgp")]
+    pgp_tempfile: Option<uselesskey_core::sink::TempArtifact>,
+    #[cfg(feature = "uk-pgp")]
+    pgp_public_tempfile: Option<uselesskey_core::sink::TempArtifact>,
 }
 
 // =============================================================================
@@ -3179,6 +3227,769 @@ fn gen_x509_chain_again(world: &mut UselessWorld, domain: String, label: String)
     world.x509_chain_intermediate_pem_2 = Some(chain.intermediate_cert_pem().to_string());
     world.x509_chain_root_pem_2 = Some(chain.root_cert_pem().to_string());
     world.x509_chain = Some(chain);
+}
+
+// =============================================================================
+// Token steps
+// =============================================================================
+
+#[cfg(feature = "uk-token")]
+use base64::Engine as _;
+#[cfg(feature = "uk-token")]
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+
+// --- API key steps ---
+
+#[cfg(feature = "uk-token")]
+#[when(regex = r#"^I generate an API key token for label "([^"]+)"$"#)]
+fn gen_token_apikey(world: &mut UselessWorld, label: String) {
+    let fx = world.factory.as_ref().expect("factory not set");
+    let token = fx.token(&label, TokenSpec::api_key());
+    world.token_value_1 = Some(token.value().to_string());
+    world.token_auth_header = Some(token.authorization_header());
+    world.token = Some(token);
+}
+
+#[cfg(feature = "uk-token")]
+#[when(regex = r#"^I generate an API key token for label "([^"]+)" again$"#)]
+fn gen_token_apikey_again(world: &mut UselessWorld, label: String) {
+    let fx = world.factory.as_ref().expect("factory not set");
+    let token = fx.token(&label, TokenSpec::api_key());
+    world.token_value_2 = Some(token.value().to_string());
+    world.token = Some(token);
+}
+
+#[cfg(feature = "uk-token")]
+#[when(regex = r#"^I generate another API key token for label "([^"]+)"$"#)]
+fn gen_token_apikey_second(world: &mut UselessWorld, label: String) {
+    let fx = world.factory.as_ref().expect("factory not set");
+    let token = fx.token(&label, TokenSpec::api_key());
+    world.token_value_2 = Some(token.value().to_string());
+    world.token = Some(token);
+}
+
+#[cfg(feature = "uk-token")]
+#[when(regex = r#"^I generate an API key token for label "([^"]+)" with variant "([^"]+)"$"#)]
+fn gen_token_apikey_variant(world: &mut UselessWorld, label: String, variant: String) {
+    let fx = world.factory.as_ref().expect("factory not set");
+    let token = fx.token_with_variant(&label, TokenSpec::api_key(), &variant);
+    if world.token_value_1.is_none() {
+        world.token_value_1 = Some(token.value().to_string());
+    } else {
+        world.token_value_2 = Some(token.value().to_string());
+    }
+    world.token = Some(token);
+}
+
+#[cfg(feature = "uk-token")]
+#[when(regex = r#"^I generate an API key token for label "([^"]+)" with variant "([^"]+)" again$"#)]
+fn gen_token_apikey_variant_again(world: &mut UselessWorld, label: String, variant: String) {
+    let fx = world.factory.as_ref().expect("factory not set");
+    let token = fx.token_with_variant(&label, TokenSpec::api_key(), &variant);
+    world.token_value_2 = Some(token.value().to_string());
+    world.token = Some(token);
+}
+
+// --- Bearer token steps ---
+
+#[cfg(feature = "uk-token")]
+#[when(regex = r#"^I generate a bearer token for label "([^"]+)"$"#)]
+fn gen_token_bearer(world: &mut UselessWorld, label: String) {
+    let fx = world.factory.as_ref().expect("factory not set");
+    let token = fx.token(&label, TokenSpec::bearer());
+    world.token_value_1 = Some(token.value().to_string());
+    world.token_auth_header = Some(token.authorization_header());
+    world.token = Some(token);
+}
+
+#[cfg(feature = "uk-token")]
+#[when(regex = r#"^I generate a bearer token for label "([^"]+)" again$"#)]
+fn gen_token_bearer_again(world: &mut UselessWorld, label: String) {
+    let fx = world.factory.as_ref().expect("factory not set");
+    let token = fx.token(&label, TokenSpec::bearer());
+    world.token_value_2 = Some(token.value().to_string());
+    world.token = Some(token);
+}
+
+#[cfg(feature = "uk-token")]
+#[when(regex = r#"^I generate another bearer token for label "([^"]+)"$"#)]
+fn gen_token_bearer_second(world: &mut UselessWorld, label: String) {
+    let fx = world.factory.as_ref().expect("factory not set");
+    let token = fx.token(&label, TokenSpec::bearer());
+    world.token_value_2 = Some(token.value().to_string());
+    world.token = Some(token);
+}
+
+// --- OAuth access token steps ---
+
+#[cfg(feature = "uk-token")]
+#[when(regex = r#"^I generate an OAuth access token for label "([^"]+)"$"#)]
+fn gen_token_oauth(world: &mut UselessWorld, label: String) {
+    let fx = world.factory.as_ref().expect("factory not set");
+    let token = fx.token(&label, TokenSpec::oauth_access_token());
+    world.token_value_1 = Some(token.value().to_string());
+    world.token_auth_header = Some(token.authorization_header());
+    world.token = Some(token);
+}
+
+#[cfg(feature = "uk-token")]
+#[when(regex = r#"^I generate an OAuth access token for label "([^"]+)" again$"#)]
+fn gen_token_oauth_again(world: &mut UselessWorld, label: String) {
+    let fx = world.factory.as_ref().expect("factory not set");
+    let token = fx.token(&label, TokenSpec::oauth_access_token());
+    world.token_value_2 = Some(token.value().to_string());
+    world.token = Some(token);
+}
+
+#[cfg(feature = "uk-token")]
+#[when(regex = r#"^I generate another OAuth access token for label "([^"]+)"$"#)]
+fn gen_token_oauth_second(world: &mut UselessWorld, label: String) {
+    let fx = world.factory.as_ref().expect("factory not set");
+    let token = fx.token(&label, TokenSpec::oauth_access_token());
+    world.token_value_2 = Some(token.value().to_string());
+    world.token = Some(token);
+}
+
+// --- Token assertions ---
+
+#[cfg(feature = "uk-token")]
+#[then("the token values should be identical")]
+fn token_values_identical(world: &mut UselessWorld) {
+    assert_eq!(world.token_value_1, world.token_value_2);
+}
+
+#[cfg(feature = "uk-token")]
+#[then("the token values should be different")]
+fn token_values_different(world: &mut UselessWorld) {
+    assert_ne!(world.token_value_1, world.token_value_2);
+}
+
+#[cfg(feature = "uk-token")]
+#[then(regex = r#"^the token value should start with "([^"]+)"$"#)]
+fn token_value_starts_with(world: &mut UselessWorld, prefix: String) {
+    let value = world.token_value_1.as_ref().expect("token_value_1 not set");
+    assert!(
+        value.starts_with(&prefix),
+        "token value should start with '{prefix}', got '{value}'"
+    );
+}
+
+#[cfg(feature = "uk-token")]
+#[then(regex = r"^the token value should have length (\d+)$")]
+fn token_value_length(world: &mut UselessWorld, expected: usize) {
+    let value = world.token_value_1.as_ref().expect("token_value_1 not set");
+    assert_eq!(
+        value.len(),
+        expected,
+        "token value length should be {expected}"
+    );
+}
+
+#[cfg(feature = "uk-token")]
+#[then("the token value should be valid base64url")]
+fn token_value_base64url(world: &mut UselessWorld) {
+    let value = world.token_value_1.as_ref().expect("token_value_1 not set");
+    assert!(
+        URL_SAFE_NO_PAD.decode(value).is_ok(),
+        "token value should be valid base64url"
+    );
+}
+
+#[cfg(feature = "uk-token")]
+#[then("the token value should have three dot-separated segments")]
+fn token_value_jwt_format(world: &mut UselessWorld) {
+    let value = world.token_value_1.as_ref().expect("token_value_1 not set");
+    let parts: Vec<&str> = value.split('.').collect();
+    assert_eq!(parts.len(), 3, "token should have 3 dot-separated segments");
+}
+
+#[cfg(feature = "uk-token")]
+#[then("the token value header should decode to valid JSON")]
+fn token_header_valid_json(world: &mut UselessWorld) {
+    let value = world.token_value_1.as_ref().expect("token_value_1 not set");
+    let header = value.split('.').next().expect("header segment");
+    let decoded = URL_SAFE_NO_PAD
+        .decode(header)
+        .expect("header base64url decode");
+    let json: Value = serde_json::from_slice(&decoded).expect("header JSON parse");
+    assert!(json.is_object(), "header should be a JSON object");
+}
+
+#[cfg(feature = "uk-token")]
+#[then(regex = r#"^the authorization header should start with "([^"]+)"$"#)]
+fn auth_header_starts_with(world: &mut UselessWorld, prefix: String) {
+    let header = world
+        .token_auth_header
+        .as_ref()
+        .expect("token_auth_header not set");
+    assert!(
+        header.starts_with(&prefix),
+        "authorization header should start with '{prefix}', got '{header}'"
+    );
+}
+
+#[cfg(feature = "uk-token")]
+#[then(regex = r#"^the OAuth payload should contain issuer "([^"]+)"$"#)]
+fn oauth_payload_issuer(world: &mut UselessWorld, expected: String) {
+    let value = world.token_value_1.as_ref().expect("token_value_1 not set");
+    let payload = value.split('.').nth(1).expect("payload segment");
+    let decoded = URL_SAFE_NO_PAD
+        .decode(payload)
+        .expect("payload base64url decode");
+    let json: Value = serde_json::from_slice(&decoded).expect("payload JSON parse");
+    assert_eq!(json["iss"].as_str(), Some(expected.as_str()));
+}
+
+#[cfg(feature = "uk-token")]
+#[then(regex = r#"^the OAuth payload should contain subject "([^"]+)"$"#)]
+fn oauth_payload_subject(world: &mut UselessWorld, expected: String) {
+    let value = world.token_value_1.as_ref().expect("token_value_1 not set");
+    let payload = value.split('.').nth(1).expect("payload segment");
+    let decoded = URL_SAFE_NO_PAD
+        .decode(payload)
+        .expect("payload base64url decode");
+    let json: Value = serde_json::from_slice(&decoded).expect("payload JSON parse");
+    assert_eq!(json["sub"].as_str(), Some(expected.as_str()));
+}
+
+#[cfg(feature = "uk-token")]
+#[then(regex = r#"^the OAuth payload should contain audience "([^"]+)"$"#)]
+fn oauth_payload_audience(world: &mut UselessWorld, expected: String) {
+    let value = world.token_value_1.as_ref().expect("token_value_1 not set");
+    let payload = value.split('.').nth(1).expect("payload segment");
+    let decoded = URL_SAFE_NO_PAD
+        .decode(payload)
+        .expect("payload base64url decode");
+    let json: Value = serde_json::from_slice(&decoded).expect("payload JSON parse");
+    assert_eq!(json["aud"].as_str(), Some(expected.as_str()));
+}
+
+#[cfg(feature = "uk-token")]
+#[then(regex = r#"^the OAuth payload should contain scope "([^"]+)"$"#)]
+fn oauth_payload_scope(world: &mut UselessWorld, expected: String) {
+    let value = world.token_value_1.as_ref().expect("token_value_1 not set");
+    let payload = value.split('.').nth(1).expect("payload segment");
+    let decoded = URL_SAFE_NO_PAD
+        .decode(payload)
+        .expect("payload base64url decode");
+    let json: Value = serde_json::from_slice(&decoded).expect("payload JSON parse");
+    assert_eq!(json["scope"].as_str(), Some(expected.as_str()));
+}
+
+// =============================================================================
+// PGP steps
+// =============================================================================
+
+#[cfg(feature = "uk-pgp")]
+use std::io::Cursor;
+
+// --- Ed25519 PGP steps ---
+
+#[cfg(feature = "uk-pgp")]
+#[when(regex = r#"^I generate an Ed25519 PGP key for label "([^"]+)"$"#)]
+fn gen_pgp_ed25519(world: &mut UselessWorld, label: String) {
+    let fx = world.factory.as_ref().expect("factory not set");
+    let pgp = fx.pgp(&label, PgpSpec::ed25519());
+    world.pgp_private_armor_1 = Some(pgp.private_key_armored().to_string());
+    world.pgp_public_armor_1 = Some(pgp.public_key_armored().to_string());
+    world.pgp_private_binary_1 = Some(pgp.private_key_binary().to_vec());
+    world.pgp_public_binary_1 = Some(pgp.public_key_binary().to_vec());
+    world.pgp_fingerprint_1 = Some(pgp.fingerprint().to_string());
+    world.pgp = Some(pgp);
+}
+
+#[cfg(feature = "uk-pgp")]
+#[when(regex = r#"^I generate an Ed25519 PGP key for label "([^"]+)" again$"#)]
+fn gen_pgp_ed25519_again(world: &mut UselessWorld, label: String) {
+    let fx = world.factory.as_ref().expect("factory not set");
+    let pgp = fx.pgp(&label, PgpSpec::ed25519());
+    world.pgp_private_armor_2 = Some(pgp.private_key_armored().to_string());
+    world.pgp_public_armor_2 = Some(pgp.public_key_armored().to_string());
+    world.pgp_fingerprint_2 = Some(pgp.fingerprint().to_string());
+    world.pgp = Some(pgp);
+}
+
+#[cfg(feature = "uk-pgp")]
+#[when(regex = r#"^I generate another Ed25519 PGP key for label "([^"]+)"$"#)]
+fn gen_pgp_ed25519_second(world: &mut UselessWorld, label: String) {
+    let fx = world.factory.as_ref().expect("factory not set");
+    let pgp = fx.pgp(&label, PgpSpec::ed25519());
+    world.pgp_private_armor_2 = Some(pgp.private_key_armored().to_string());
+    world.pgp_public_armor_2 = Some(pgp.public_key_armored().to_string());
+    world.pgp_fingerprint_2 = Some(pgp.fingerprint().to_string());
+    world.pgp = Some(pgp);
+}
+
+// --- RSA 2048 PGP steps ---
+
+#[cfg(feature = "uk-pgp")]
+#[when(regex = r#"^I generate an RSA 2048 PGP key for label "([^"]+)"$"#)]
+fn gen_pgp_rsa2048(world: &mut UselessWorld, label: String) {
+    let fx = world.factory.as_ref().expect("factory not set");
+    let pgp = fx.pgp(&label, PgpSpec::rsa_2048());
+    world.pgp_private_armor_1 = Some(pgp.private_key_armored().to_string());
+    world.pgp_public_armor_1 = Some(pgp.public_key_armored().to_string());
+    world.pgp_private_binary_1 = Some(pgp.private_key_binary().to_vec());
+    world.pgp_public_binary_1 = Some(pgp.public_key_binary().to_vec());
+    world.pgp_fingerprint_1 = Some(pgp.fingerprint().to_string());
+    world.pgp = Some(pgp);
+}
+
+#[cfg(feature = "uk-pgp")]
+#[when(regex = r#"^I generate an RSA 2048 PGP key for label "([^"]+)" again$"#)]
+fn gen_pgp_rsa2048_again(world: &mut UselessWorld, label: String) {
+    let fx = world.factory.as_ref().expect("factory not set");
+    let pgp = fx.pgp(&label, PgpSpec::rsa_2048());
+    world.pgp_private_armor_2 = Some(pgp.private_key_armored().to_string());
+    world.pgp_fingerprint_2 = Some(pgp.fingerprint().to_string());
+    world.pgp = Some(pgp);
+}
+
+#[cfg(feature = "uk-pgp")]
+#[when(regex = r#"^I generate another RSA 2048 PGP key for label "([^"]+)"$"#)]
+fn gen_pgp_rsa2048_second(world: &mut UselessWorld, label: String) {
+    let fx = world.factory.as_ref().expect("factory not set");
+    let pgp = fx.pgp(&label, PgpSpec::rsa_2048());
+    world.pgp_private_armor_2 = Some(pgp.private_key_armored().to_string());
+    world.pgp_fingerprint_2 = Some(pgp.fingerprint().to_string());
+    world.pgp = Some(pgp);
+}
+
+// --- RSA 3072 PGP steps ---
+
+#[cfg(feature = "uk-pgp")]
+#[when(regex = r#"^I generate an RSA 3072 PGP key for label "([^"]+)"$"#)]
+fn gen_pgp_rsa3072(world: &mut UselessWorld, label: String) {
+    let fx = world.factory.as_ref().expect("factory not set");
+    let pgp = fx.pgp(&label, PgpSpec::rsa_3072());
+    world.pgp_private_armor_1 = Some(pgp.private_key_armored().to_string());
+    world.pgp_public_armor_1 = Some(pgp.public_key_armored().to_string());
+    world.pgp_fingerprint_1 = Some(pgp.fingerprint().to_string());
+    world.pgp = Some(pgp);
+}
+
+#[cfg(feature = "uk-pgp")]
+#[when(regex = r#"^I generate an RSA 3072 PGP key for label "([^"]+)" again$"#)]
+fn gen_pgp_rsa3072_again(world: &mut UselessWorld, label: String) {
+    let fx = world.factory.as_ref().expect("factory not set");
+    let pgp = fx.pgp(&label, PgpSpec::rsa_3072());
+    world.pgp_private_armor_2 = Some(pgp.private_key_armored().to_string());
+    world.pgp_fingerprint_2 = Some(pgp.fingerprint().to_string());
+    world.pgp = Some(pgp);
+}
+
+#[cfg(feature = "uk-pgp")]
+#[when(regex = r#"^I generate another RSA 3072 PGP key for label "([^"]+)"$"#)]
+fn gen_pgp_rsa3072_second(world: &mut UselessWorld, label: String) {
+    let fx = world.factory.as_ref().expect("factory not set");
+    let pgp = fx.pgp(&label, PgpSpec::rsa_3072());
+    world.pgp_private_armor_2 = Some(pgp.private_key_armored().to_string());
+    world.pgp_fingerprint_2 = Some(pgp.fingerprint().to_string());
+    world.pgp = Some(pgp);
+}
+
+// --- PGP assertions ---
+
+#[cfg(feature = "uk-pgp")]
+#[then("the PGP private key armor should be identical")]
+fn pgp_private_armor_identical(world: &mut UselessWorld) {
+    assert_eq!(world.pgp_private_armor_1, world.pgp_private_armor_2);
+}
+
+#[cfg(feature = "uk-pgp")]
+#[then("the PGP fingerprints should be different")]
+fn pgp_fingerprints_different(world: &mut UselessWorld) {
+    assert_ne!(world.pgp_fingerprint_1, world.pgp_fingerprint_2);
+}
+
+#[cfg(feature = "uk-pgp")]
+#[then(regex = r#"^the PGP private key armor should contain "([^"]+)"$"#)]
+fn pgp_private_armor_contains(world: &mut UselessWorld, needle: String) {
+    let armor = world
+        .pgp_private_armor_1
+        .as_ref()
+        .expect("pgp_private_armor_1 not set");
+    assert!(
+        armor.contains(&needle),
+        "PGP private armor should contain '{needle}'"
+    );
+}
+
+#[cfg(feature = "uk-pgp")]
+#[then(regex = r#"^the PGP public key armor should contain "([^"]+)"$"#)]
+fn pgp_public_armor_contains(world: &mut UselessWorld, needle: String) {
+    let armor = world
+        .pgp_public_armor_1
+        .as_ref()
+        .expect("pgp_public_armor_1 not set");
+    assert!(
+        armor.contains(&needle),
+        "PGP public armor should contain '{needle}'"
+    );
+}
+
+#[cfg(feature = "uk-pgp")]
+#[then("the PGP private key binary should be parseable")]
+fn pgp_private_binary_parseable(world: &mut UselessWorld) {
+    let binary = world
+        .pgp_private_binary_1
+        .as_ref()
+        .expect("pgp_private_binary_1 not set");
+    use pgp::composed::{Deserializable, SignedSecretKey};
+    assert!(
+        SignedSecretKey::from_bytes(Cursor::new(binary)).is_ok(),
+        "PGP private key binary should be parseable"
+    );
+}
+
+#[cfg(feature = "uk-pgp")]
+#[then("the PGP public key binary should be parseable")]
+fn pgp_public_binary_parseable(world: &mut UselessWorld) {
+    let binary = world
+        .pgp_public_binary_1
+        .as_ref()
+        .expect("pgp_public_binary_1 not set");
+    use pgp::composed::{Deserializable, SignedPublicKey};
+    assert!(
+        SignedPublicKey::from_bytes(Cursor::new(binary)).is_ok(),
+        "PGP public key binary should be parseable"
+    );
+}
+
+#[cfg(feature = "uk-pgp")]
+#[then("the PGP private key armor should be parseable")]
+fn pgp_private_armor_parseable(world: &mut UselessWorld) {
+    let armor = world
+        .pgp_private_armor_1
+        .as_ref()
+        .expect("pgp_private_armor_1 not set");
+    use pgp::composed::{Deserializable, SignedSecretKey};
+    assert!(
+        SignedSecretKey::from_armor_single(Cursor::new(armor)).is_ok(),
+        "PGP private key armor should be parseable"
+    );
+}
+
+#[cfg(feature = "uk-pgp")]
+#[then("the PGP public key armor should be parseable")]
+fn pgp_public_armor_parseable(world: &mut UselessWorld) {
+    let armor = world
+        .pgp_public_armor_1
+        .as_ref()
+        .expect("pgp_public_armor_1 not set");
+    use pgp::composed::{Deserializable, SignedPublicKey};
+    assert!(
+        SignedPublicKey::from_armor_single(Cursor::new(armor)).is_ok(),
+        "PGP public key armor should be parseable"
+    );
+}
+
+#[cfg(feature = "uk-pgp")]
+#[then("the parsed PGP key fingerprint should match")]
+fn pgp_parsed_fingerprint_matches(world: &mut UselessWorld) {
+    let armor = world
+        .pgp_private_armor_1
+        .as_ref()
+        .expect("pgp_private_armor_1 not set");
+    let expected_fp = world
+        .pgp_fingerprint_1
+        .as_ref()
+        .expect("pgp_fingerprint_1 not set");
+    use pgp::composed::{Deserializable, SignedSecretKey};
+    use pgp::types::KeyDetails;
+    let (secret, _) =
+        SignedSecretKey::from_armor_single(Cursor::new(armor)).expect("parse armored private key");
+    assert_eq!(secret.fingerprint().to_string(), *expected_fp);
+}
+
+#[cfg(feature = "uk-pgp")]
+#[then("the parsed PGP public key fingerprint should match")]
+fn pgp_parsed_public_fingerprint_matches(world: &mut UselessWorld) {
+    let armor = world
+        .pgp_public_armor_1
+        .as_ref()
+        .expect("pgp_public_armor_1 not set");
+    let expected_fp = world
+        .pgp_fingerprint_1
+        .as_ref()
+        .expect("pgp_fingerprint_1 not set");
+    use pgp::composed::{Deserializable, SignedPublicKey};
+    use pgp::types::KeyDetails;
+    let (public, _) =
+        SignedPublicKey::from_armor_single(Cursor::new(armor)).expect("parse armored public key");
+    assert_eq!(public.fingerprint().to_string(), *expected_fp);
+}
+
+#[cfg(feature = "uk-pgp")]
+#[then(regex = r#"^the PGP user ID should contain "([^"]+)"$"#)]
+fn pgp_user_id_contains(world: &mut UselessWorld, needle: String) {
+    let pgp = world.pgp.as_ref().expect("pgp not set");
+    let user_id = pgp.user_id();
+    assert!(
+        user_id.contains(&needle),
+        "PGP user ID should contain '{needle}', got '{user_id}'"
+    );
+}
+
+#[cfg(feature = "uk-pgp")]
+#[then("the PGP fingerprint should be non-empty")]
+fn pgp_fingerprint_nonempty(world: &mut UselessWorld) {
+    let pgp = world.pgp.as_ref().expect("pgp not set");
+    assert!(
+        !pgp.fingerprint().is_empty(),
+        "PGP fingerprint should not be empty"
+    );
+}
+
+// --- Mismatched key steps ---
+
+#[cfg(feature = "uk-pgp")]
+#[then("a PGP mismatched public key binary should parse and differ")]
+fn pgp_mismatched_binary_differs(world: &mut UselessWorld) {
+    let pgp = world.pgp.as_ref().expect("pgp not set");
+    let mismatch = pgp.mismatched_public_key_binary();
+    let original = world
+        .pgp_public_binary_1
+        .as_ref()
+        .expect("pgp_public_binary_1 not set");
+    assert_ne!(
+        mismatch, *original,
+        "mismatched key should differ from original"
+    );
+    use pgp::composed::{Deserializable, SignedPublicKey};
+    assert!(
+        SignedPublicKey::from_bytes(Cursor::new(&mismatch)).is_ok(),
+        "mismatched public key should be parseable"
+    );
+}
+
+#[cfg(feature = "uk-pgp")]
+#[when("I get the mismatched PGP public key binary")]
+fn get_pgp_mismatch_binary(world: &mut UselessWorld) {
+    let pgp = world.pgp.as_ref().expect("pgp not set");
+    world.pgp_mismatch_1 = Some(pgp.mismatched_public_key_binary());
+}
+
+#[cfg(feature = "uk-pgp")]
+#[when("I get the mismatched PGP public key binary again")]
+fn get_pgp_mismatch_binary_again(world: &mut UselessWorld) {
+    let pgp = world.pgp.as_ref().expect("pgp not set");
+    world.pgp_mismatch_2 = Some(pgp.mismatched_public_key_binary());
+}
+
+#[cfg(feature = "uk-pgp")]
+#[then("the mismatched PGP keys should be identical")]
+fn pgp_mismatched_identical(world: &mut UselessWorld) {
+    assert_eq!(world.pgp_mismatch_1, world.pgp_mismatch_2);
+}
+
+#[cfg(feature = "uk-pgp")]
+#[then("a PGP mismatched public key armor should differ from original")]
+fn pgp_mismatched_armor_differs(world: &mut UselessWorld) {
+    let pgp = world.pgp.as_ref().expect("pgp not set");
+    let mismatch = pgp.mismatched_public_key_armored();
+    let original = world
+        .pgp_public_armor_1
+        .as_ref()
+        .expect("pgp_public_armor_1 not set");
+    assert_ne!(
+        mismatch, *original,
+        "mismatched armor should differ from original"
+    );
+}
+
+// --- Corruption steps ---
+
+#[cfg(feature = "uk-pgp")]
+#[when("I corrupt the PGP private key armor with BadBase64")]
+fn corrupt_pgp_armor_badbase64(world: &mut UselessWorld) {
+    let pgp = world.pgp.as_ref().expect("pgp not set");
+    world.pgp_corrupted_armor = Some(pgp.private_key_armored_corrupt(CorruptPem::BadBase64));
+}
+
+#[cfg(feature = "uk-pgp")]
+#[then(regex = r#"^the corrupted PGP armor should contain "([^"]+)"$"#)]
+fn corrupted_pgp_armor_contains(world: &mut UselessWorld, needle: String) {
+    let armor = world
+        .pgp_corrupted_armor
+        .as_ref()
+        .expect("pgp_corrupted_armor not set");
+    assert!(
+        armor.contains(&needle),
+        "corrupted armor should contain '{needle}'"
+    );
+}
+
+#[cfg(feature = "uk-pgp")]
+#[when(regex = r"^I truncate the PGP private key binary to (\d+) bytes$")]
+fn truncate_pgp_binary(world: &mut UselessWorld, len: usize) {
+    let pgp = world.pgp.as_ref().expect("pgp not set");
+    world.pgp_truncated_binary = Some(pgp.private_key_binary_truncated(len));
+}
+
+#[cfg(feature = "uk-pgp")]
+#[then(regex = r"^the truncated PGP binary should have length (\d+)$")]
+fn truncated_pgp_binary_length(world: &mut UselessWorld, expected: usize) {
+    let binary = world
+        .pgp_truncated_binary
+        .as_ref()
+        .expect("pgp_truncated_binary not set");
+    assert_eq!(binary.len(), expected);
+}
+
+#[cfg(feature = "uk-pgp")]
+#[then("the truncated PGP binary should fail to parse")]
+fn truncated_pgp_binary_fails(world: &mut UselessWorld) {
+    let binary = world
+        .pgp_truncated_binary
+        .as_ref()
+        .expect("pgp_truncated_binary not set");
+    use pgp::composed::{Deserializable, SignedSecretKey};
+    assert!(
+        SignedSecretKey::from_bytes(Cursor::new(binary)).is_err(),
+        "truncated binary should fail to parse"
+    );
+}
+
+#[cfg(feature = "uk-pgp")]
+#[when(regex = r#"^I deterministically corrupt the PGP private key armor with variant "([^"]+)"$"#)]
+fn det_corrupt_pgp_armor(world: &mut UselessWorld, variant: String) {
+    let pgp = world.pgp.as_ref().expect("pgp not set");
+    let corrupted = pgp.private_key_armored_corrupt_deterministic(&variant);
+    world.pgp_corrupted_armor = Some(corrupted);
+}
+
+#[cfg(feature = "uk-pgp")]
+#[when(
+    regex = r#"^I deterministically corrupt the PGP private key armor with variant "([^"]+)" again$"#
+)]
+fn det_corrupt_pgp_armor_again(world: &mut UselessWorld, _variant: String) {
+    let _pgp = world.pgp.as_ref().expect("pgp not set");
+    // Comparison handled in the then step
+}
+
+#[cfg(feature = "uk-pgp")]
+#[then("the corrupted PGP armors should be identical")]
+fn corrupted_pgp_armors_identical(world: &mut UselessWorld) {
+    let pgp = world.pgp.as_ref().expect("pgp not set");
+    let c1 = pgp.private_key_armored_corrupt_deterministic("v1");
+    let c2 = pgp.private_key_armored_corrupt_deterministic("v1");
+    assert_eq!(c1, c2, "deterministic corruption should be identical");
+}
+
+#[cfg(feature = "uk-pgp")]
+#[when(
+    regex = r#"^I deterministically corrupt the PGP private key binary with variant "([^"]+)"$"#
+)]
+fn det_corrupt_pgp_binary(world: &mut UselessWorld, variant: String) {
+    let pgp = world.pgp.as_ref().expect("pgp not set");
+    let corrupted = pgp.private_key_binary_corrupt_deterministic(&variant);
+    world.pgp_truncated_binary = Some(corrupted);
+}
+
+#[cfg(feature = "uk-pgp")]
+#[when(
+    regex = r#"^I deterministically corrupt the PGP private key binary with variant "([^"]+)" again$"#
+)]
+fn det_corrupt_pgp_binary_again(world: &mut UselessWorld, _variant: String) {
+    let _pgp = world.pgp.as_ref().expect("pgp not set");
+    // Comparison handled in the then step
+}
+
+#[cfg(feature = "uk-pgp")]
+#[then("the corrupted PGP binaries should be identical")]
+fn corrupted_pgp_binaries_identical(world: &mut UselessWorld) {
+    let pgp = world.pgp.as_ref().expect("pgp not set");
+    let c1 = pgp.private_key_binary_corrupt_deterministic("v1");
+    let c2 = pgp.private_key_binary_corrupt_deterministic("v1");
+    assert_eq!(
+        c1, c2,
+        "deterministic binary corruption should be identical"
+    );
+}
+
+// --- Tempfile steps ---
+
+#[cfg(feature = "uk-pgp")]
+#[when("I write the PGP private key armor to a tempfile")]
+fn write_pgp_private_tempfile(world: &mut UselessWorld) {
+    let pgp = world.pgp.as_ref().expect("pgp not set");
+    world.pgp_tempfile = Some(pgp.write_private_key_armored().expect("write failed"));
+}
+
+#[cfg(feature = "uk-pgp")]
+#[when("I write the PGP public key armor to a tempfile")]
+fn write_pgp_public_tempfile(world: &mut UselessWorld) {
+    let pgp = world.pgp.as_ref().expect("pgp not set");
+    world.pgp_public_tempfile = Some(pgp.write_public_key_armored().expect("write failed"));
+}
+
+#[cfg(feature = "uk-pgp")]
+#[then("the PGP tempfile should exist")]
+fn pgp_tempfile_exists(world: &mut UselessWorld) {
+    let tf = world.pgp_tempfile.as_ref().expect("pgp_tempfile not set");
+    assert!(tf.path().exists(), "PGP tempfile should exist");
+}
+
+#[cfg(feature = "uk-pgp")]
+#[then("the PGP public tempfile should exist")]
+fn pgp_public_tempfile_exists(world: &mut UselessWorld) {
+    let tf = world
+        .pgp_public_tempfile
+        .as_ref()
+        .expect("pgp_public_tempfile not set");
+    assert!(tf.path().exists(), "PGP public tempfile should exist");
+}
+
+#[cfg(feature = "uk-pgp")]
+#[then(regex = r#"^the PGP tempfile should contain "([^"]+)"$"#)]
+fn pgp_tempfile_contains(world: &mut UselessWorld, needle: String) {
+    let tf = world.pgp_tempfile.as_ref().expect("pgp_tempfile not set");
+    let contents = tf.read_to_string().expect("read failed");
+    assert!(
+        contents.contains(&needle),
+        "PGP tempfile should contain '{needle}'"
+    );
+}
+
+#[cfg(feature = "uk-pgp")]
+#[then(regex = r#"^the PGP public tempfile should contain "([^"]+)"$"#)]
+fn pgp_public_tempfile_contains(world: &mut UselessWorld, needle: String) {
+    let tf = world
+        .pgp_public_tempfile
+        .as_ref()
+        .expect("pgp_public_tempfile not set");
+    let contents = tf.read_to_string().expect("read failed");
+    assert!(
+        contents.contains(&needle),
+        "PGP public tempfile should contain '{needle}'"
+    );
+}
+
+// --- Debug safety ---
+
+#[cfg(feature = "uk-pgp")]
+#[then("the PGP debug output should not contain the private key armor")]
+fn pgp_debug_no_leak(world: &mut UselessWorld) {
+    let pgp = world.pgp.as_ref().expect("pgp not set");
+    let debug_output = format!("{pgp:?}");
+    let private_armor = pgp.private_key_armored();
+    assert!(
+        !debug_output.contains(private_armor),
+        "debug output should not contain private key armor"
+    );
+}
+
+#[cfg(feature = "uk-pgp")]
+#[then("the PGP debug output should contain the fingerprint")]
+fn pgp_debug_has_fingerprint(world: &mut UselessWorld) {
+    let pgp = world.pgp.as_ref().expect("pgp not set");
+    let debug_output = format!("{pgp:?}");
+    let fingerprint = pgp.fingerprint();
+    assert!(
+        debug_output.contains(fingerprint),
+        "debug output should contain fingerprint"
+    );
 }
 
 /// Cucumber entry point.
