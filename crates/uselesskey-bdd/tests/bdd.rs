@@ -1847,6 +1847,27 @@ fn x509_truncated_der_fails(world: &mut UselessWorld) {
     assert!(result.is_err(), "truncated X.509 DER should fail to parse");
 }
 
+#[then("the deterministic X.509 PEM artifact should fail to parse")]
+fn deterministic_x509_pem_fails(world: &mut UselessWorld) {
+    let pem = world
+        .deterministic_text_1
+        .as_ref()
+        .expect("deterministic_text_1 not set");
+
+    match x509_parser::pem::parse_x509_pem(pem.as_bytes()) {
+        Ok((_, p)) => {
+            let result = x509_parser::parse_x509_certificate(&p.contents);
+            assert!(
+                result.is_err(),
+                "deterministic X.509 PEM should fail to parse"
+            );
+        }
+        Err(_) => {
+            // PEM framing itself is broken — acceptable for corruption
+        }
+    }
+}
+
 #[then("the deterministic X.509 DER artifact should fail to parse")]
 fn deterministic_x509_der_fails(world: &mut UselessWorld) {
     let der = world

@@ -138,6 +138,7 @@ Feature: X.509 certificate fixtures
     And I deterministically corrupt the X.509 certificate PEM with variant "v1"
     And I deterministically corrupt the X.509 certificate PEM with variant "v1" again
     Then the deterministic text artifacts should be identical
+    And the deterministic X.509 PEM artifact should fail to parse
 
   Scenario: deterministic X.509 DER corruption with variant is stable
     Given a deterministic factory seeded with "x509-det-corrupt-der"

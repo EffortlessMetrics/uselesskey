@@ -7,9 +7,9 @@ use core::fmt;
 use alloc::collections::BTreeMap;
 #[cfg(feature = "std")]
 use dashmap::DashMap;
+use rand_chacha::ChaCha20Rng;
 #[cfg(feature = "std")]
 use rand_core::OsRng;
-use rand_chacha::ChaCha20Rng;
 #[cfg(feature = "std")]
 use rand_core::RngCore;
 use rand_core::SeedableRng;
