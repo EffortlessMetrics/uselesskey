@@ -11,8 +11,9 @@ cargo-fuzz = true
 libfuzzer-sys = "0.4"
 
 # fuzz targets
-uselesskey = { path = "../crates/uselesskey" }
+uselesskey = { path = "../crates/uselesskey", features = ["ecdsa", "token"] }
 rsa = { version = "0.9", features = ["pem", "pkcs8"] }
+p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "pem"] }
 
 [[bin]]
 name = "pem_corrupt"
@@ -29,5 +30,17 @@ doc = false
 [[bin]]
 name = "rsa_pkcs8_pem_parse"
 path = "fuzz_targets/rsa_pkcs8_pem_parse.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "ecdsa_pkcs8_pem_parse"
+path = "fuzz_targets/ecdsa_pkcs8_pem_parse.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "token_format"
+path = "fuzz_targets/token_format.rs"
 test = false
 doc = false
