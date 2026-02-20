@@ -89,7 +89,7 @@ fn main() -> Result<()> {
         Cmd::BddMatrix => bdd_matrix(),
         Cmd::Coverage => coverage(),
         Cmd::PublishPreflight => publish_preflight(),
-        Cmd::Mutants => mutants(),
+        Cmd::Mutants => run_mutants(PUBLISH_CRATES),
         Cmd::Fuzz { target, args } => fuzz(target.as_deref(), &args),
     }
 }
@@ -254,7 +254,7 @@ fn run_ci_plan(runner: &mut receipt::Runner) -> Result<()> {
     runner.set_bdd_counts(counts);
 
     runner.step("no-blob", None, no_blob_gate)?;
-    runner.step("mutants", None, mutants)?;
+    runner.step("mutants", None, || run_mutants(PUBLISH_CRATES))?;
     runner.step("fuzz", None, fuzz_pr)?;
 
     if is_llvm_cov_installed() {
@@ -485,18 +485,35 @@ fn check_crate_metadata() -> Result<()> {
     Ok(())
 }
 
-fn mutants() -> Result<()> {
-    // Keep this "soft" so contributors without cargo-mutants can still use xtask.
-    let status = Command::new("cargo")
+fn run_mutants(crates: &[&str]) -> Result<()> {
+    let have = Command::new("cargo")
         .args(["mutants", "--version"])
         .stdout(Stdio::null())
         .stderr(Stdio::null())
-        .status();
+        .status()
+        .is_ok_and(|s| s.success());
 
-    match status {
-        Ok(s) if s.success() => run(Command::new("cargo").args(["mutants", "--all-features"])),
-        _ => bail!("cargo-mutants is not installed. Install with: cargo install cargo-mutants"),
+    if !have {
+        bail!("cargo-mutants is not installed. Install with: cargo install cargo-mutants");
     }
+
+    eprintln!("mutants targets: {crates:?}");
+
+    for name in crates {
+        let mut cmd = Command::new("cargo");
+        cmd.arg("mutants");
+
+        // Only pass --all-features in CI or when explicitly requested,
+        // to avoid requiring NASM on local Windows dev machines.
+        if env::var("CI").is_ok() || env::var("XTASK_MUTANTS_ALL_FEATURES").is_ok() {
+            cmd.arg("--all-features");
+        }
+
+        cmd.args(["--manifest-path", &format!("crates/{name}/Cargo.toml")]);
+        run(&mut cmd)?;
+    }
+
+    Ok(())
 }
 
 fn fuzz(target: Option<&str>, extra: &[String]) -> Result<()> {
@@ -625,7 +642,17 @@ fn run_pr_plan(
     }
 
     if plan.run_mutants {
-        runner.step("mutants", None, mutants)?;
+        let pr_crates: Vec<&str> = plan
+            .impacted_crates
+            .iter()
+            .filter(|name| PUBLISH_CRATES.contains(&name.as_str()))
+            .map(|s| s.as_str())
+            .collect();
+        if pr_crates.is_empty() {
+            runner.skip("mutants", Some("no publishable crates impacted".into()));
+        } else {
+            runner.step("mutants", None, || run_mutants(&pr_crates))?;
+        }
     } else {
         runner.skip("mutants", Some("no rust changes".to_string()));
     }
