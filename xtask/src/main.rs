@@ -89,7 +89,7 @@ fn main() -> Result<()> {
         Cmd::BddMatrix => bdd_matrix(),
         Cmd::Coverage => coverage(),
         Cmd::PublishPreflight => publish_preflight(),
-        Cmd::Mutants => mutants(),
+        Cmd::Mutants => run_mutants(PUBLISH_CRATES),
         Cmd::Fuzz { target, args } => fuzz(target.as_deref(), &args),
     }
 }
@@ -122,6 +122,35 @@ const FEATURE_MATRIX: &[(&str, &[&str])] = &[
     ("pgp", &["--no-default-features", "--features", "pgp"]),
     ("x509", &["--no-default-features", "--features", "x509"]),
     ("jwk", &["--no-default-features", "--features", "jwk"]),
+    // Feature combinations: key types with output formats
+    (
+        "rsa+jwk",
+        &["--no-default-features", "--features", "rsa,jwk"],
+    ),
+    (
+        "ecdsa+jwk",
+        &["--no-default-features", "--features", "ecdsa,jwk"],
+    ),
+    (
+        "ed25519+jwk",
+        &["--no-default-features", "--features", "ed25519,jwk"],
+    ),
+    (
+        "rsa+x509",
+        &["--no-default-features", "--features", "rsa,x509"],
+    ),
+    (
+        "ecdsa+x509",
+        &["--no-default-features", "--features", "ecdsa,x509"],
+    ),
+    (
+        "ed25519+pgp",
+        &["--no-default-features", "--features", "ed25519,pgp"],
+    ),
+    (
+        "rsa+pgp",
+        &["--no-default-features", "--features", "rsa,pgp"],
+    ),
     ("all-features", &["--all-features"]),
 ];
 
@@ -225,7 +254,7 @@ fn run_ci_plan(runner: &mut receipt::Runner) -> Result<()> {
     runner.set_bdd_counts(counts);
 
     runner.step("no-blob", None, no_blob_gate)?;
-    runner.step("mutants", None, mutants)?;
+    runner.step("mutants", None, || run_mutants(PUBLISH_CRATES))?;
     runner.step("fuzz", None, fuzz_pr)?;
 
     if is_llvm_cov_installed() {
@@ -326,8 +355,41 @@ fn run_coverage(runner: &mut receipt::Runner) -> Result<()> {
             .args(["llvm-cov", "report", "--workspace", "--all-features"])
             .env("PROPTEST_CASES", "16"))
     })?;
-    runner.set_coverage_lcov_path("target/coverage/lcov.info".to_string());
+
+    let lcov_path = "target/coverage/lcov.info";
+    runner.set_coverage_lcov_path(lcov_path.to_string());
+
+    if let Some(pct) = parse_lcov_coverage(lcov_path) {
+        eprintln!("==> coverage: {pct:.1}%");
+        runner.set_coverage_percent(pct);
+    } else {
+        eprintln!("==> coverage: unable to parse lcov.info");
+    }
+
     Ok(())
+}
+
+/// Parse an LCOV info file and compute line coverage percentage.
+///
+/// The LCOV format includes `LF:<count>` (lines found) and `LH:<count>`
+/// (lines hit) entries per source file. This sums all entries and returns
+/// `(total_hit / total_found) * 100.0`, or `None` if no line data is present.
+fn parse_lcov_coverage(lcov_path: &str) -> Option<f64> {
+    let content = fs::read_to_string(lcov_path).ok()?;
+    let mut lines_found: u64 = 0;
+    let mut lines_hit: u64 = 0;
+    for line in content.lines() {
+        if let Some(n) = line.strip_prefix("LF:") {
+            lines_found += n.parse::<u64>().unwrap_or(0);
+        } else if let Some(n) = line.strip_prefix("LH:") {
+            lines_hit += n.parse::<u64>().unwrap_or(0);
+        }
+    }
+    if lines_found > 0 {
+        Some((lines_hit as f64 / lines_found as f64) * 100.0)
+    } else {
+        None
+    }
 }
 
 fn publish_preflight() -> Result<()> {
@@ -423,18 +485,35 @@ fn check_crate_metadata() -> Result<()> {
     Ok(())
 }
 
-fn mutants() -> Result<()> {
-    // Keep this "soft" so contributors without cargo-mutants can still use xtask.
-    let status = Command::new("cargo")
+fn run_mutants(crates: &[&str]) -> Result<()> {
+    let have = Command::new("cargo")
         .args(["mutants", "--version"])
         .stdout(Stdio::null())
         .stderr(Stdio::null())
-        .status();
+        .status()
+        .is_ok_and(|s| s.success());
 
-    match status {
-        Ok(s) if s.success() => run(Command::new("cargo").args(["mutants"])),
-        _ => bail!("cargo-mutants is not installed. Install with: cargo install cargo-mutants"),
+    if !have {
+        bail!("cargo-mutants is not installed. Install with: cargo install cargo-mutants");
     }
+
+    eprintln!("mutants targets: {crates:?}");
+
+    for name in crates {
+        let mut cmd = Command::new("cargo");
+        cmd.arg("mutants");
+
+        // Only pass --all-features in CI or when explicitly requested,
+        // to avoid requiring NASM on local Windows dev machines.
+        if env::var("CI").is_ok() || env::var("XTASK_MUTANTS_ALL_FEATURES").is_ok() {
+            cmd.arg("--all-features");
+        }
+
+        cmd.args(["--manifest-path", &format!("crates/{name}/Cargo.toml")]);
+        run(&mut cmd)?;
+    }
+
+    Ok(())
 }
 
 fn fuzz(target: Option<&str>, extra: &[String]) -> Result<()> {
@@ -563,7 +642,17 @@ fn run_pr_plan(
     }
 
     if plan.run_mutants {
-        runner.step("mutants", None, mutants)?;
+        let pr_crates: Vec<&str> = plan
+            .impacted_crates
+            .iter()
+            .filter(|name| PUBLISH_CRATES.contains(&name.as_str()))
+            .map(|s| s.as_str())
+            .collect();
+        if pr_crates.is_empty() {
+            runner.skip("mutants", Some("no publishable crates impacted".into()));
+        } else {
+            runner.step("mutants", None, || run_mutants(&pr_crates))?;
+        }
     } else {
         runner.skip("mutants", Some("no rust changes".to_string()));
     }
@@ -1117,6 +1206,54 @@ mod tests {
         let _cwd = CwdGuard::new(dir.path());
         let targets = list_fuzz_targets().expect("list targets");
         assert!(targets.is_empty());
+    }
+
+    #[test]
+    fn parse_lcov_coverage_computes_percentage() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let lcov = dir.path().join("lcov.info");
+        fs::write(
+            &lcov,
+            "\
+SF:src/lib.rs
+DA:1,1
+DA:2,0
+LF:10
+LH:8
+end_of_record
+SF:src/other.rs
+DA:1,1
+LF:20
+LH:15
+end_of_record
+",
+        )
+        .unwrap();
+
+        let pct = parse_lcov_coverage(lcov.to_str().unwrap()).expect("should parse");
+        // (8 + 15) / (10 + 20) * 100 = 76.666...
+        assert!((pct - 76.666).abs() < 0.1, "expected ~76.7%, got {pct}");
+    }
+
+    #[test]
+    fn parse_lcov_coverage_returns_none_for_empty_file() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let lcov = dir.path().join("lcov.info");
+        fs::write(&lcov, "").unwrap();
+        assert!(parse_lcov_coverage(lcov.to_str().unwrap()).is_none());
+    }
+
+    #[test]
+    fn parse_lcov_coverage_returns_none_for_missing_file() {
+        assert!(parse_lcov_coverage("/nonexistent/lcov.info").is_none());
+    }
+
+    #[test]
+    fn parse_lcov_coverage_handles_zero_lines_found() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let lcov = dir.path().join("lcov.info");
+        fs::write(&lcov, "SF:src/lib.rs\nLF:0\nLH:0\nend_of_record\n").unwrap();
+        assert!(parse_lcov_coverage(lcov.to_str().unwrap()).is_none());
     }
 
     #[test]

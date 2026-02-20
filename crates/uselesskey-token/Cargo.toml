@@ -18,3 +18,6 @@ uselesskey-core = { path = "../uselesskey-core", version = "0.3.0" }
 base64.workspace = true
 rand_core.workspace = true
 serde_json.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true

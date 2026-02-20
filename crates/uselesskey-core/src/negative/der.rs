@@ -227,6 +227,16 @@ mod tests {
     }
 
     #[test]
+    fn derived_offset_returns_nonzero_for_nonzero_remainder() {
+        // selector % len != 0 must produce a non-zero offset.
+        assert_eq!(derived_offset(10, 7), 7);
+        assert_eq!(derived_offset(3, 5), 2);
+        assert_eq!(derived_offset(4, 255), 3); // 255 % 4 == 3
+        assert_ne!(derived_offset(10, 7), 0);
+        assert_ne!(derived_offset(3, 5), 0);
+    }
+
+    #[test]
     fn derived_truncate_len_properties() {
         let mut digest = [0u8; 32];
         // len == 0 → 0

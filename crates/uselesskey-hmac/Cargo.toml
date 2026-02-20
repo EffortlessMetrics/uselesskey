@@ -27,6 +27,7 @@ features = ["jwk"]
 
 [dev-dependencies]
 base64 = { workspace = true }
+proptest.workspace = true
 
 [features]
 default = []

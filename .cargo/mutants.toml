@@ -1,0 +1,44 @@
+# cargo-mutants configuration
+# https://mutants.rs/config-file.html
+
+# Keep mutation testing focused on library code.
+exclude_globs = [
+  "xtask/**",
+  "crates/**/tests/**",
+  "crates/uselesskey-bdd/**",
+  "fuzz/**",
+  "**/*.md",
+]
+
+exclude_re = [
+    # ── no_std factory cache helpers ──────────────────────────────────────
+    # Each cache/seed function has two #[cfg]-gated variants:
+    #   - #[cfg(feature = "std")]       delegates to DashMap / OsRng
+    #   - #[cfg(not(feature = "std"))]  delegates to Mutex<BTreeMap> / panics
+    #
+    # Mutation testing runs with --all-features, so the not(std) variants
+    # are dead code that can never be exercised.  The std variants are
+    # trivial one-line delegations whose mutations are either semantic
+    # no-ops (e.g. DashMap::new() == Default::default()) or impossible to
+    # observe (OsRng.fill_bytes is opaque).
+    "replace new_cache",
+    "replace cache_len",
+    "replace cache_clear",
+    "replace cache_get",
+    "replace cache_insert_if_absent",
+    "replace random_seed",
+
+    # ── semantically equivalent bit manipulation ──────────────────────────
+    # In parse_hex_32: `(hi << 4) | lo` where hi occupies bits 4..7 and lo
+    # occupies bits 0..3 (both are 4-bit nibbles).  Because the bit ranges
+    # are disjoint, OR and XOR produce identical results, so the mutation
+    # "replace | with ^" is semantically equivalent and unkillable.
+    "replace \\| with \\^ in parse_hex_32",
+
+    # ── opaque third-party return types ───────────────────────────────────
+    # tonic::transport::{ServerTlsConfig, ClientTlsConfig, Identity} have
+    # no PartialEq, no public field accessors, and opaque Debug impls.
+    # Replacing bodies with Default::default() cannot be distinguished
+    # from the real value without a live TLS handshake.
+    "replace <impl Tonic",
+]

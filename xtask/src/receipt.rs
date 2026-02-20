@@ -15,6 +15,8 @@ pub struct Receipt {
     pub bdd_counts: BTreeMap<String, usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub coverage_lcov_path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub coverage_percent: Option<f64>,
 }
 
 #[derive(Debug, Serialize)]
@@ -58,6 +60,7 @@ impl Runner {
                 bdd_matrix: Vec::new(),
                 bdd_counts: BTreeMap::new(),
                 coverage_lcov_path: None,
+                coverage_percent: None,
             },
             path: path.as_ref().to_path_buf(),
             start: Instant::now(),
@@ -133,6 +136,10 @@ impl Runner {
 
     pub fn set_coverage_lcov_path(&mut self, path: String) {
         self.receipt.coverage_lcov_path = Some(path);
+    }
+
+    pub fn set_coverage_percent(&mut self, percent: f64) {
+        self.receipt.coverage_percent = Some(percent);
     }
 
     pub fn summary(&self) {
@@ -211,5 +218,38 @@ mod tests {
         runner.write().expect("write receipt");
         let json = fs::read_to_string(&path).expect("read receipt");
         assert!(json.contains("\"steps\""));
+    }
+
+    #[test]
+    fn runner_records_coverage_percent() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let path = dir.path().join("receipt.json");
+
+        let mut runner = Runner::new(&path);
+        runner.set_coverage_percent(82.5);
+        assert_eq!(runner.receipt.coverage_percent, Some(82.5));
+
+        runner.write().expect("write receipt");
+        let json = fs::read_to_string(&path).expect("read receipt");
+        assert!(
+            json.contains("\"coverage_percent\": 82.5"),
+            "receipt JSON should contain coverage_percent"
+        );
+    }
+
+    #[test]
+    fn runner_omits_coverage_percent_when_not_set() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let path = dir.path().join("receipt.json");
+
+        let runner = Runner::new(&path);
+        assert!(runner.receipt.coverage_percent.is_none());
+
+        runner.write().expect("write receipt");
+        let json = fs::read_to_string(&path).expect("read receipt");
+        assert!(
+            !json.contains("coverage_percent"),
+            "receipt JSON should omit coverage_percent when None"
+        );
     }
 }

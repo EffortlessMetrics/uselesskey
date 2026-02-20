@@ -100,8 +100,10 @@ fn get_or_init_reentrant_does_not_deadlock() {
 #[test]
 fn debug_includes_cache_size() {
     let fx = Factory::random();
-    let _ = fx.get_or_init("domain:test", "label", b"spec", "good", |_rng| 7u8);
-
     let dbg = format!("{:?}", fx);
-    assert!(dbg.contains("cache_size"), "debug output was: {dbg}");
+    assert!(dbg.contains("cache_size: 0"), "empty factory: {dbg}");
+
+    let _ = fx.get_or_init("domain:test", "label", b"spec", "good", |_rng| 7u8);
+    let dbg = format!("{:?}", fx);
+    assert!(dbg.contains("cache_size: 1"), "after insert: {dbg}");
 }
