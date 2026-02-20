@@ -10,7 +10,7 @@
 
 mod testutil;
 
-use jsonwebtoken::{Algorithm, Header, Validation, decode, encode, errors::ErrorKind};
+use jsonwebtoken::{Algorithm, DecodingKey, Header, Validation, decode, encode, errors::ErrorKind};
 use serde::{Deserialize, Serialize};
 use testutil::fx;
 use uselesskey_core::{Factory, Seed};
@@ -131,6 +131,35 @@ mod rsa_tests {
         let result = decode::<TestClaims>(&token, &key_b.decoding_key(), &validation);
 
         assert!(result.is_err(), "Decoding with wrong key should fail");
+        match result.unwrap_err().kind() {
+            ErrorKind::InvalidSignature => {} // Expected
+            other => panic!("Expected InvalidSignature error, got: {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_rsa_mismatched_key_rejects_signature() {
+        let fx = fx();
+        let rsa = fx.rsa("mismatch-test", RsaSpec::rs256());
+
+        let claims = TestClaims::new("user123", 2_000_000_000, 1234567890, "test-issuer");
+        let header = Header::new(Algorithm::RS256);
+
+        // Sign a token with the real private key
+        let token = encode(&header, &claims, &rsa.encoding_key()).unwrap();
+
+        // Build a DecodingKey from the mismatched public key DER
+        let mismatched_der = rsa.mismatched_public_key_spki_der();
+        let mismatched_decoding_key = DecodingKey::from_rsa_der(&mismatched_der);
+
+        // Attempting to verify with the mismatched key should fail
+        let validation = Validation::new(Algorithm::RS256);
+        let result = decode::<TestClaims>(&token, &mismatched_decoding_key, &validation);
+
+        assert!(
+            result.is_err(),
+            "Decoding with mismatched public key should fail"
+        );
         match result.unwrap_err().kind() {
             ErrorKind::InvalidSignature => {} // Expected
             other => panic!("Expected InvalidSignature error, got: {:?}", other),
