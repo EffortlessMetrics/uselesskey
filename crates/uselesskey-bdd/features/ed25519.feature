@@ -92,6 +92,22 @@ Feature: Ed25519 fixtures
     Then the truncated Ed25519 DER should have length 10
     And the truncated Ed25519 DER should fail to parse
 
+  Scenario: deterministic Ed25519 PEM corruption with variant is stable
+    Given a deterministic factory seeded with "ed25519-det-corrupt-pem"
+    When I generate an Ed25519 key for label "ed25519-det-pem"
+    And I deterministically corrupt the Ed25519 PKCS8 PEM with variant "v1"
+    And I deterministically corrupt the Ed25519 PKCS8 PEM with variant "v1" again
+    Then the deterministic text artifacts should be identical
+    And the deterministic Ed25519 PEM artifact should fail to parse
+
+  Scenario: deterministic Ed25519 DER corruption with variant is stable
+    Given a deterministic factory seeded with "ed25519-det-corrupt-der"
+    When I generate an Ed25519 key for label "ed25519-det-der"
+    And I deterministically corrupt the Ed25519 PKCS8 DER with variant "v1"
+    And I deterministically corrupt the Ed25519 PKCS8 DER with variant "v1" again
+    Then the deterministic binary artifacts should be identical
+    And the deterministic Ed25519 DER artifact should fail to parse
+
   # --- JWK support ---
 
   Scenario: Ed25519 public JWK has correct format
