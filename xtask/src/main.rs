@@ -355,8 +355,41 @@ fn run_coverage(runner: &mut receipt::Runner) -> Result<()> {
             .args(["llvm-cov", "report", "--workspace", "--all-features"])
             .env("PROPTEST_CASES", "16"))
     })?;
-    runner.set_coverage_lcov_path("target/coverage/lcov.info".to_string());
+
+    let lcov_path = "target/coverage/lcov.info";
+    runner.set_coverage_lcov_path(lcov_path.to_string());
+
+    if let Some(pct) = parse_lcov_coverage(lcov_path) {
+        eprintln!("==> coverage: {pct:.1}%");
+        runner.set_coverage_percent(pct);
+    } else {
+        eprintln!("==> coverage: unable to parse lcov.info");
+    }
+
     Ok(())
+}
+
+/// Parse an LCOV info file and compute line coverage percentage.
+///
+/// The LCOV format includes `LF:<count>` (lines found) and `LH:<count>`
+/// (lines hit) entries per source file. This sums all entries and returns
+/// `(total_hit / total_found) * 100.0`, or `None` if no line data is present.
+fn parse_lcov_coverage(lcov_path: &str) -> Option<f64> {
+    let content = fs::read_to_string(lcov_path).ok()?;
+    let mut lines_found: u64 = 0;
+    let mut lines_hit: u64 = 0;
+    for line in content.lines() {
+        if let Some(n) = line.strip_prefix("LF:") {
+            lines_found += n.parse::<u64>().unwrap_or(0);
+        } else if let Some(n) = line.strip_prefix("LH:") {
+            lines_hit += n.parse::<u64>().unwrap_or(0);
+        }
+    }
+    if lines_found > 0 {
+        Some((lines_hit as f64 / lines_found as f64) * 100.0)
+    } else {
+        None
+    }
 }
 
 fn publish_preflight() -> Result<()> {
@@ -1146,6 +1179,54 @@ mod tests {
         let _cwd = CwdGuard::new(dir.path());
         let targets = list_fuzz_targets().expect("list targets");
         assert!(targets.is_empty());
+    }
+
+    #[test]
+    fn parse_lcov_coverage_computes_percentage() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let lcov = dir.path().join("lcov.info");
+        fs::write(
+            &lcov,
+            "\
+SF:src/lib.rs
+DA:1,1
+DA:2,0
+LF:10
+LH:8
+end_of_record
+SF:src/other.rs
+DA:1,1
+LF:20
+LH:15
+end_of_record
+",
+        )
+        .unwrap();
+
+        let pct = parse_lcov_coverage(lcov.to_str().unwrap()).expect("should parse");
+        // (8 + 15) / (10 + 20) * 100 = 76.666...
+        assert!((pct - 76.666).abs() < 0.1, "expected ~76.7%, got {pct}");
+    }
+
+    #[test]
+    fn parse_lcov_coverage_returns_none_for_empty_file() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let lcov = dir.path().join("lcov.info");
+        fs::write(&lcov, "").unwrap();
+        assert!(parse_lcov_coverage(lcov.to_str().unwrap()).is_none());
+    }
+
+    #[test]
+    fn parse_lcov_coverage_returns_none_for_missing_file() {
+        assert!(parse_lcov_coverage("/nonexistent/lcov.info").is_none());
+    }
+
+    #[test]
+    fn parse_lcov_coverage_handles_zero_lines_found() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let lcov = dir.path().join("lcov.info");
+        fs::write(&lcov, "SF:src/lib.rs\nLF:0\nLH:0\nend_of_record\n").unwrap();
+        assert!(parse_lcov_coverage(lcov.to_str().unwrap()).is_none());
     }
 
     #[test]
