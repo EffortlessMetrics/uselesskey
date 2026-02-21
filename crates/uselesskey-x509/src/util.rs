@@ -59,5 +59,16 @@ mod tests {
 
         assert_eq!(bytes.len(), 16);
         assert_eq!(bytes[0] & 0x80, 0, "high bit should be cleared");
+
+        // Second seed that likely produces a high-bit-set first byte
+        let mut rng2 = ChaCha20Rng::from_seed([0xFF; 32]);
+        let serial2 = deterministic_serial_number(&mut rng2);
+        let bytes2 = serial2.to_bytes();
+        assert_eq!(bytes2.len(), 16);
+        assert_eq!(
+            bytes2[0] & 0x80,
+            0,
+            "high bit should be cleared for any seed"
+        );
     }
 }

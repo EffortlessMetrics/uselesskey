@@ -349,13 +349,20 @@ mod tests {
         let spec = X509Spec::self_signed("test.example.com");
         let cert = factory.x509_self_signed("test", spec);
 
-        assert!(!cert.cert_der().is_empty());
+        assert!(cert.cert_der().len() > 1);
         assert!(cert.cert_pem().contains("-----BEGIN CERTIFICATE-----"));
-        assert!(!cert.private_key_pkcs8_der().is_empty());
+        assert!(cert.private_key_pkcs8_der().len() > 1);
         assert!(
             cert.private_key_pkcs8_pem()
                 .contains("-----BEGIN PRIVATE KEY-----")
         );
+
+        // Verify CN and leaf-not-CA
+        use x509_parser::prelude::*;
+        let (_, parsed) = X509Certificate::from_der(cert.cert_der()).expect("parse cert");
+        let cn = parsed.subject().iter_common_name().next().expect("CN");
+        assert_eq!(cn.as_str().unwrap(), "test.example.com");
+        assert!(!parsed.is_ca(), "leaf cert must not be CA");
     }
 
     #[test]
@@ -452,6 +459,10 @@ mod tests {
         let der_a = cert.corrupt_cert_der_deterministic("corrupt:v1");
         let der_b = cert.corrupt_cert_der_deterministic("corrupt:v1");
         assert_eq!(der_a, der_b);
+
+        assert!(!pem_a.is_empty());
+        assert_ne!(pem_a, "xyzzy");
+        assert!(der_a.len() > 1);
     }
 
     #[test]
@@ -514,6 +525,50 @@ mod tests {
     }
 
     #[test]
+    fn test_not_before_offset_affects_cert_time() {
+        use x509_parser::prelude::*;
+
+        let factory = fx();
+
+        let spec_ago = X509Spec::self_signed("offset.example.com")
+            .with_not_before(NotBeforeOffset::DaysAgo(30));
+        let cert_ago = factory.x509_self_signed("offset", spec_ago);
+
+        let spec_future = X509Spec::self_signed("offset.example.com")
+            .with_not_before(NotBeforeOffset::DaysFromNow(30));
+        let cert_future = factory.x509_self_signed("offset", spec_future);
+
+        let (_, parsed_ago) =
+            X509Certificate::from_der(cert_ago.cert_der()).expect("parse ago cert");
+        let (_, parsed_future) =
+            X509Certificate::from_der(cert_future.cert_der()).expect("parse future cert");
+
+        // DaysFromNow cert must have a later not_before than DaysAgo cert
+        assert!(
+            parsed_future.validity().not_before.timestamp()
+                > parsed_ago.validity().not_before.timestamp()
+        );
+    }
+
+    #[test]
+    fn test_leaf_cert_has_eku() {
+        use x509_parser::prelude::*;
+
+        let factory = fx();
+        let spec = X509Spec::self_signed("eku.example.com");
+        let cert = factory.x509_self_signed("eku", spec);
+
+        let (_, parsed) = X509Certificate::from_der(cert.cert_der()).expect("parse cert");
+
+        // Leaf cert (is_ca=false) should have Extended Key Usage
+        let eku_ext = parsed
+            .extensions()
+            .iter()
+            .find(|ext| ext.oid == x509_parser::oid_registry::OID_X509_EXT_EXTENDED_KEY_USAGE);
+        assert!(eku_ext.is_some(), "leaf cert should have EKU extension");
+    }
+
+    #[test]
     fn test_self_signed_ca_executes_ca_branches() {
         use x509_parser::prelude::*;
 
@@ -523,5 +578,12 @@ mod tests {
 
         let (_, parsed) = X509Certificate::from_der(cert.cert_der()).expect("parse cert");
         assert!(parsed.is_ca());
+
+        // CA cert must NOT have EKU extension
+        let eku = parsed
+            .extensions()
+            .iter()
+            .find(|e| e.oid == x509_parser::oid_registry::OID_X509_EXT_EXTENDED_KEY_USAGE);
+        assert!(eku.is_none(), "CA cert should not have EKU");
     }
 }

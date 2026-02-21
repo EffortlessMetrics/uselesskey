@@ -272,6 +272,8 @@ mod tests {
         let spec = X509Spec::self_signed_ca("My CA");
         assert!(spec.is_ca);
         assert!(spec.key_usage.key_cert_sign);
+        assert_eq!(spec.subject_cn, "My CA");
+        assert_eq!(spec.issuer_cn, "My CA");
     }
 
     #[test]

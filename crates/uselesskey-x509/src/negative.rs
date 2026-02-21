@@ -170,6 +170,23 @@ mod tests {
             X509Negative::SelfSignedButClaimsCA.variant_name(),
             "self_signed_ca"
         );
+
+        assert!(X509Negative::Expired.description().contains("expired"));
+        assert!(
+            X509Negative::NotYetValid
+                .description()
+                .contains("not yet valid")
+        );
+        assert!(
+            X509Negative::WrongKeyUsage
+                .description()
+                .contains("keyCertSign")
+        );
+        assert!(
+            X509Negative::SelfSignedButClaimsCA
+                .description()
+                .contains("CA")
+        );
     }
 
     #[test]
@@ -184,5 +201,9 @@ mod tests {
         let der_a = corrupt_cert_der_deterministic(&der, "corrupt:v1");
         let der_b = corrupt_cert_der_deterministic(&der, "corrupt:v1");
         assert_eq!(der_a, der_b);
+
+        assert!(!pem_a.is_empty());
+        assert_ne!(pem_a, "xyzzy");
+        assert!(der_a.len() > 1);
     }
 }
