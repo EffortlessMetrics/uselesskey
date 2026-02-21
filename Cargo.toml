@@ -46,7 +46,7 @@ rand_core = "0.6.4"
 rand_chacha = "0.3.1"
 
 # sinks
-tempfile = "3.24.0"
+tempfile = "3.25.0"
 
 # testing
 proptest = "1.10.0"
