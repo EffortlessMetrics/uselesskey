@@ -17,21 +17,22 @@ authors.workspace = true
 default = ["std"]
 std = [
     "dep:dashmap",
-    "dep:tempfile",
+    "dep:uselesskey-core-sink",
     "thiserror/std",
-    "blake3/std",
     "rand_core/std",
     "rand_chacha/std",
 ]
 
 [dependencies]
 thiserror = { version = "2.0.18", default-features = false }
-blake3 = { version = "1.8.3", default-features = false }
 dashmap = { workspace = true, optional = true }
 rand_core.workspace = true
 rand_chacha = { version = "0.3.1", default-features = false }
-tempfile = { workspace = true, optional = true }
 spin = { version = "0.9.8", default-features = false, features = ["mutex", "spin_mutex"] }
+uselesskey-core-sink = { workspace = true, optional = true }
+
+uselesskey-core-id = { workspace = true }
+uselesskey-core-negative = { workspace = true }
 
 [dev-dependencies]
 proptest.workspace = true

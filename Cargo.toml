@@ -1,8 +1,15 @@
 [workspace]
 resolver = "2"
 members = [
+  "crates/uselesskey-test-grid",
+  "crates/uselesskey-feature-grid",
   "crates/uselesskey",
   "crates/uselesskey-core",
+  "crates/uselesskey-core-id",
+  "crates/uselesskey-core-kid",
+  "crates/uselesskey-core-keypair",
+  "crates/uselesskey-core-negative",
+  "crates/uselesskey-core-sink",
   "crates/uselesskey-jwk",
   "crates/uselesskey-rsa",
   "crates/uselesskey-ecdsa",
@@ -19,6 +26,7 @@ members = [
   "crates/uselesskey-aws-lc-rs",
   "crates/uselesskey-interop-tests",
   "crates/uselesskey-bdd",
+  "crates/uselesskey-bdd-steps",
   "tests",
   "xtask",
 ]
@@ -35,6 +43,13 @@ authors = ["Effortless Metrics <opensource@effortlessmetrics.com>"]
 # error handling
 thiserror = "2.0.18"
 
+uselesskey-test-grid = { path = "crates/uselesskey-test-grid", version = "0.3.0" }
+uselesskey-feature-grid = { path = "crates/uselesskey-feature-grid", version = "0.3.0" }
+uselesskey-core-id = { path = "crates/uselesskey-core-id", version = "0.3.0" }
+uselesskey-core-kid = { path = "crates/uselesskey-core-kid", version = "0.3.0" }
+uselesskey-core-keypair = { path = "crates/uselesskey-core-keypair", version = "0.3.0" }
+uselesskey-core-negative = { path = "crates/uselesskey-core-negative", version = "0.3.0" }
+
 # determinism / hashing
 blake3 = "1.8.3"
 
@@ -47,6 +62,7 @@ rand_chacha = "0.3.1"
 
 # sinks
 tempfile = "3.24.0"
+uselesskey-core-sink = { path = "crates/uselesskey-core-sink", version = "0.3.0" }
 
 # testing
 proptest = "1.10.0"
