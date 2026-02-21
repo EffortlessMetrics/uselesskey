@@ -180,17 +180,6 @@ mod tests {
         truncate_der,
     };
 
-    fn find_variant_for_bucket(target: u8) -> String {
-        for i in 0..10_000 {
-            let v = format!("bucket-{target}-{i}");
-            let digest = hash32(v.as_bytes());
-            if digest.as_bytes()[0] % 5 == target {
-                return v;
-            }
-        }
-        panic!("failed to find variant for bucket {target}");
-    }
-
     #[test]
     fn bad_header_replaces_first_line() {
         let pem = "-----BEGIN TEST-----\nAAA=\n-----END TEST-----\n";
@@ -263,5 +252,14 @@ mod tests {
         let der = vec![0x30, 0x82, 0x01, 0x22];
         let truncated = truncate_der(&der, 2);
         assert_eq!(truncated, vec![0x30, 0x82]);
+    }
+
+    #[test]
+    fn deterministic_der_corruption_is_stable_for_same_variant() {
+        let der = vec![0x30, 0x82, 0x01, 0x22, 0x10, 0x20];
+        let first = corrupt_der_deterministic(&der, "corrupt:variant-a");
+        let second = corrupt_der_deterministic(&der, "corrupt:variant-a");
+        assert_eq!(first, second);
+        assert_ne!(first, der);
     }
 }
