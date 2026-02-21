@@ -272,6 +272,8 @@ mod tests {
         let spec = X509Spec::self_signed_ca("My CA");
         assert!(spec.is_ca);
         assert!(spec.key_usage.key_cert_sign);
+        assert_eq!(spec.subject_cn, "My CA");
+        assert_eq!(spec.issuer_cn, "My CA");
     }
 
     #[test]
@@ -341,5 +343,75 @@ mod tests {
         let without_dupes =
             X509Spec::self_signed("test").with_sans(vec!["a.com".into(), "b.com".into()]);
         assert_eq!(with_dupes.stable_bytes(), without_dupes.stable_bytes());
+    }
+
+    #[test]
+    fn test_stable_bytes_field_sensitivity() {
+        let base = X509Spec::self_signed("test");
+        let base_bytes = base.stable_bytes();
+
+        // Changing validity_days changes output
+        let changed = base.clone().with_validity_days(999);
+        assert_ne!(
+            changed.stable_bytes(),
+            base_bytes,
+            "validity_days must affect stable_bytes"
+        );
+
+        // Changing is_ca changes output
+        let changed = base.clone().with_is_ca(true);
+        assert_ne!(
+            changed.stable_bytes(),
+            base_bytes,
+            "is_ca must affect stable_bytes"
+        );
+
+        // Changing rsa_bits changes output
+        let changed = base.clone().with_rsa_bits(4096);
+        assert_ne!(
+            changed.stable_bytes(),
+            base_bytes,
+            "rsa_bits must affect stable_bytes"
+        );
+
+        // Changing not_before_offset changes output
+        let changed = base
+            .clone()
+            .with_not_before(NotBeforeOffset::DaysFromNow(7));
+        assert_ne!(
+            changed.stable_bytes(),
+            base_bytes,
+            "not_before_offset must affect stable_bytes"
+        );
+
+        // Changing key_usage changes output
+        let changed = base.clone().with_key_usage(KeyUsage::ca());
+        assert_ne!(
+            changed.stable_bytes(),
+            base_bytes,
+            "key_usage must affect stable_bytes"
+        );
+
+        // Changing issuer_cn changes output
+        let mut changed = base.clone();
+        changed.issuer_cn = "Other Issuer".to_string();
+        assert_ne!(
+            changed.stable_bytes(),
+            base_bytes,
+            "issuer_cn must affect stable_bytes"
+        );
+    }
+
+    #[test]
+    fn test_stable_bytes_not_before_offset_variants_differ() {
+        let days_ago = X509Spec::self_signed("test").with_not_before(NotBeforeOffset::DaysAgo(1));
+        let days_from_now =
+            X509Spec::self_signed("test").with_not_before(NotBeforeOffset::DaysFromNow(1));
+
+        assert_ne!(
+            days_ago.stable_bytes(),
+            days_from_now.stable_bytes(),
+            "DaysAgo(1) and DaysFromNow(1) must produce different stable_bytes (tag byte 0 vs 1)"
+        );
     }
 }

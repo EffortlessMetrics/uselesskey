@@ -467,25 +467,27 @@ mod tests {
         let spec = ChainSpec::new("test.example.com");
         let chain = X509Chain::new(factory, "test", spec);
 
-        assert!(!chain.root_cert_der().is_empty());
+        assert_eq!(chain.label(), "test");
+
+        assert!(chain.root_cert_der().len() > 1);
         assert!(
             chain
                 .root_cert_pem()
                 .contains("-----BEGIN CERTIFICATE-----")
         );
-        assert!(!chain.intermediate_cert_der().is_empty());
+        assert!(chain.intermediate_cert_der().len() > 1);
         assert!(
             chain
                 .intermediate_cert_pem()
                 .contains("-----BEGIN CERTIFICATE-----")
         );
-        assert!(!chain.leaf_cert_der().is_empty());
+        assert!(chain.leaf_cert_der().len() > 1);
         assert!(
             chain
                 .leaf_cert_pem()
                 .contains("-----BEGIN CERTIFICATE-----")
         );
-        assert!(!chain.leaf_private_key_pkcs8_der().is_empty());
+        assert!(chain.leaf_private_key_pkcs8_der().len() > 1);
         assert!(
             chain
                 .leaf_private_key_pkcs8_pem()
@@ -643,6 +645,45 @@ mod tests {
     }
 
     #[test]
+    fn test_chain_cert_validity_periods() {
+        use x509_parser::prelude::*;
+
+        let factory = fx();
+        let spec = ChainSpec::new("validity.example.com");
+        let chain = X509Chain::new(factory, "validity", spec);
+
+        let (_, root) = X509Certificate::from_der(chain.root_cert_der()).expect("parse root");
+        let (_, int) = X509Certificate::from_der(chain.intermediate_cert_der()).expect("parse int");
+
+        let root_nb = root.validity().not_before.timestamp();
+        let root_na = root.validity().not_after.timestamp();
+        let int_nb = int.validity().not_before.timestamp();
+        let int_na = int.validity().not_after.timestamp();
+
+        // not_after must be after not_before for both certs
+        assert!(root_na > root_nb, "root not_after must be after not_before");
+        assert!(int_na > int_nb, "int not_after must be after not_before");
+
+        // root not_before should be <= intermediate not_before
+        assert!(
+            root_nb <= int_nb,
+            "root not_before should be <= intermediate not_before"
+        );
+
+        // Parse leaf and check all not_before values are within a tight window
+        let (_, leaf) = X509Certificate::from_der(chain.leaf_cert_der()).expect("parse leaf");
+        let leaf_nb = leaf.validity().not_before.timestamp();
+
+        // All not_before values should be within 2 days (offsets default to 1 day)
+        let max_nb = root_nb.max(int_nb).max(leaf_nb);
+        let min_nb = root_nb.min(int_nb).min(leaf_nb);
+        assert!(
+            max_nb - min_nb < 86400 * 2,
+            "all not_before values should be within 2 days of each other"
+        );
+    }
+
+    #[test]
     fn test_debug_includes_label_and_spec() {
         let factory = fx();
         let spec = ChainSpec::new("debug.example.com");
@@ -659,13 +700,13 @@ mod tests {
         let spec = ChainSpec::new("keys.example.com");
         let chain = X509Chain::new(factory, "keys", spec);
 
-        assert!(!chain.root_private_key_pkcs8_der().is_empty());
+        assert!(chain.root_private_key_pkcs8_der().len() > 1);
         assert!(
             chain
                 .root_private_key_pkcs8_pem()
                 .contains("BEGIN PRIVATE KEY")
         );
-        assert!(!chain.intermediate_private_key_pkcs8_der().is_empty());
+        assert!(chain.intermediate_private_key_pkcs8_der().len() > 1);
         assert!(
             chain
                 .intermediate_private_key_pkcs8_pem()

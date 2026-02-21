@@ -59,5 +59,62 @@ mod tests {
 
         assert_eq!(bytes.len(), 16);
         assert_eq!(bytes[0] & 0x80, 0, "high bit should be cleared");
+
+        // Second seed that likely produces a high-bit-set first byte
+        let mut rng2 = ChaCha20Rng::from_seed([0xFF; 32]);
+        let serial2 = deterministic_serial_number(&mut rng2);
+        let bytes2 = serial2.to_bytes();
+        assert_eq!(bytes2.len(), 16);
+        assert_eq!(
+            bytes2[0] & 0x80,
+            0,
+            "high bit should be cleared for any seed"
+        );
+    }
+
+    #[test]
+    fn deterministic_base_time_is_deterministic() {
+        let h1 = blake3::Hasher::new();
+        let h2 = blake3::Hasher::new();
+        assert_eq!(
+            deterministic_base_time(h1),
+            deterministic_base_time(h2),
+            "same hasher state must produce same time"
+        );
+    }
+
+    #[test]
+    fn deterministic_base_time_varies_with_input() {
+        let mut h1 = blake3::Hasher::new();
+        h1.update(b"input-a");
+        let mut h2 = blake3::Hasher::new();
+        h2.update(b"input-b");
+        assert_ne!(
+            deterministic_base_time(h1),
+            deterministic_base_time(h2),
+            "different hasher inputs must produce different times"
+        );
+    }
+
+    #[test]
+    fn deterministic_serial_number_is_deterministic() {
+        let mut rng1 = ChaCha20Rng::from_seed([42u8; 32]);
+        let mut rng2 = ChaCha20Rng::from_seed([42u8; 32]);
+        assert_eq!(
+            deterministic_serial_number(&mut rng1).to_bytes(),
+            deterministic_serial_number(&mut rng2).to_bytes(),
+            "same seed must produce same serial"
+        );
+    }
+
+    #[test]
+    fn deterministic_serial_number_varies_with_seed() {
+        let mut rng1 = ChaCha20Rng::from_seed([1u8; 32]);
+        let mut rng2 = ChaCha20Rng::from_seed([2u8; 32]);
+        assert_ne!(
+            deterministic_serial_number(&mut rng1).to_bytes(),
+            deterministic_serial_number(&mut rng2).to_bytes(),
+            "different seeds must produce different serials"
+        );
     }
 }

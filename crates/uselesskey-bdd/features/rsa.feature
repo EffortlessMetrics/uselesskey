@@ -153,3 +153,19 @@ Feature: RSA fixtures
     When I generate an RSA key for label "rsa-blankline"
     And I corrupt the PKCS8 PEM with ExtraBlankLine
     Then the corrupted PEM should fail to parse
+
+  Scenario: deterministic RSA PEM corruption with variant is stable
+    Given a deterministic factory seeded with "rsa-det-corrupt-pem"
+    When I generate an RSA key for label "rsa-det-pem"
+    And I deterministically corrupt the RSA PKCS8 PEM with variant "v1"
+    And I deterministically corrupt the RSA PKCS8 PEM with variant "v1" again
+    Then the deterministic text artifacts should be identical
+    And the deterministic RSA PEM artifact should fail to parse
+
+  Scenario: deterministic RSA DER corruption with variant is stable
+    Given a deterministic factory seeded with "rsa-det-corrupt-der"
+    When I generate an RSA key for label "rsa-det-der"
+    And I deterministically corrupt the RSA PKCS8 DER with variant "v1"
+    And I deterministically corrupt the RSA PKCS8 DER with variant "v1" again
+    Then the deterministic binary artifacts should be identical
+    And the deterministic RSA DER artifact should fail to parse

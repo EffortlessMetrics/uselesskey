@@ -85,6 +85,19 @@ Feature: X.509 certificate chain fixtures
     Then the leaf certificate tempfile should exist
     And the leaf private key tempfile should exist
 
+  Scenario: certificate chain writes chain, full chain, and root tempfiles
+    Given a deterministic factory seeded with "tempfile-chain-extra-test"
+    When I generate a certificate chain for domain "test.example.com" with label "temp-chain-extra"
+    And I write the chain PEM to a tempfile
+    And I write the full chain PEM to a tempfile
+    And I write the root certificate PEM to a tempfile
+    Then the chain tempfile path should end with ".chain.pem"
+    And the full chain tempfile path should end with ".fullchain.pem"
+    And the root certificate tempfile path should end with ".root.crt.pem"
+    And reading the chain tempfile should match the chain PEM
+    And reading the full chain tempfile should match the full chain PEM
+    And reading the root certificate tempfile should match the root certificate PEM
+
   # --- Negative fixtures: expired intermediate ---
 
   Scenario: expired intermediate CA chain variant
@@ -100,3 +113,14 @@ Feature: X.509 certificate chain fixtures
     When I generate a certificate chain for domain "test.example.com" with label "unknown-check"
     And I get the unknown CA variant of the certificate chain
     Then the chain root should differ from the original root
+
+  Scenario: revoked chain writes CRL tempfiles
+    Given a deterministic factory seeded with "crl-tempfile-test"
+    When I generate a certificate chain for domain "test.example.com" with label "revoked-crl-files"
+    And I get the revoked leaf variant of the certificate chain
+    And I write the revoked chain CRL PEM to a tempfile
+    And I write the revoked chain CRL DER to a tempfile
+    Then the CRL PEM tempfile path should end with ".crl.pem"
+    And the CRL DER tempfile path should end with ".crl.der"
+    And the CRL PEM tempfile should contain "BEGIN X509 CRL"
+    And the CRL DER tempfile should be parseable as a CRL

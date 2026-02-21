@@ -106,6 +106,22 @@ Feature: ECDSA fixtures
     Then the truncated ECDSA DER should have length 10
     And the truncated ECDSA DER should fail to parse
 
+  Scenario: deterministic ECDSA PEM corruption with variant is stable
+    Given a deterministic factory seeded with "ecdsa-det-corrupt-pem"
+    When I generate an ECDSA ES256 key for label "ecdsa-det-pem"
+    And I deterministically corrupt the ECDSA PKCS8 PEM with variant "v1"
+    And I deterministically corrupt the ECDSA PKCS8 PEM with variant "v1" again
+    Then the deterministic text artifacts should be identical
+    And the deterministic ECDSA PEM artifact should fail to parse
+
+  Scenario: deterministic ECDSA DER corruption with variant is stable
+    Given a deterministic factory seeded with "ecdsa-det-corrupt-der"
+    When I generate an ECDSA ES256 key for label "ecdsa-det-der"
+    And I deterministically corrupt the ECDSA PKCS8 DER with variant "v1"
+    And I deterministically corrupt the ECDSA PKCS8 DER with variant "v1" again
+    Then the deterministic binary artifacts should be identical
+    And the deterministic ECDSA DER artifact should fail to parse
+
   # --- JWK support (ES256) ---
 
   Scenario: ES256 public JWK has correct format

@@ -224,4 +224,100 @@ mod tests {
         ]);
         assert_eq!(spec1.stable_bytes(), spec2.stable_bytes());
     }
+
+    #[test]
+    fn test_stable_bytes_field_sensitivity() {
+        let base = ChainSpec::new("test.example.com");
+        let base_bytes = base.stable_bytes();
+
+        // Changing rsa_bits
+        let changed = base.clone().with_rsa_bits(4096);
+        assert_ne!(
+            changed.stable_bytes(),
+            base_bytes,
+            "rsa_bits must affect stable_bytes"
+        );
+
+        // Changing root_validity_days
+        let changed = base.clone().with_root_validity_days(999);
+        assert_ne!(
+            changed.stable_bytes(),
+            base_bytes,
+            "root_validity_days must affect stable_bytes"
+        );
+
+        // Changing intermediate_validity_days
+        let changed = base.clone().with_intermediate_validity_days(999);
+        assert_ne!(
+            changed.stable_bytes(),
+            base_bytes,
+            "intermediate_validity_days must affect stable_bytes"
+        );
+
+        // Changing leaf_validity_days
+        let changed = base.clone().with_leaf_validity_days(999);
+        assert_ne!(
+            changed.stable_bytes(),
+            base_bytes,
+            "leaf_validity_days must affect stable_bytes"
+        );
+
+        // Changing root_cn
+        let changed = base.clone().with_root_cn("Other Root CA");
+        assert_ne!(
+            changed.stable_bytes(),
+            base_bytes,
+            "root_cn must affect stable_bytes"
+        );
+
+        // Changing intermediate_cn
+        let changed = base.clone().with_intermediate_cn("Other Int CA");
+        assert_ne!(
+            changed.stable_bytes(),
+            base_bytes,
+            "intermediate_cn must affect stable_bytes"
+        );
+    }
+
+    #[test]
+    fn test_stable_bytes_optional_offset_sensitivity() {
+        let base = ChainSpec::new("test.example.com");
+        let base_bytes = base.stable_bytes();
+
+        // leaf_not_before_offset_days: None vs Some(100)
+        let mut with_leaf_offset = base.clone();
+        with_leaf_offset.leaf_not_before_offset_days = Some(100);
+        assert_ne!(
+            with_leaf_offset.stable_bytes(),
+            base_bytes,
+            "leaf_not_before_offset_days None vs Some must differ"
+        );
+
+        // leaf_not_before_offset_days: Some(100) vs Some(200)
+        let mut with_leaf_offset2 = base.clone();
+        with_leaf_offset2.leaf_not_before_offset_days = Some(200);
+        assert_ne!(
+            with_leaf_offset.stable_bytes(),
+            with_leaf_offset2.stable_bytes(),
+            "leaf_not_before_offset_days Some(100) vs Some(200) must differ"
+        );
+
+        // intermediate_not_before_offset_days: None vs Some(100)
+        let mut with_int_offset = base.clone();
+        with_int_offset.intermediate_not_before_offset_days = Some(100);
+        assert_ne!(
+            with_int_offset.stable_bytes(),
+            base_bytes,
+            "intermediate_not_before_offset_days None vs Some must differ"
+        );
+
+        // intermediate_not_before_offset_days: Some(100) vs Some(200)
+        let mut with_int_offset2 = base.clone();
+        with_int_offset2.intermediate_not_before_offset_days = Some(200);
+        assert_ne!(
+            with_int_offset.stable_bytes(),
+            with_int_offset2.stable_bytes(),
+            "intermediate_not_before_offset_days Some(100) vs Some(200) must differ"
+        );
+    }
 }

@@ -303,6 +303,14 @@ mod tests {
         let revoked_certs: Vec<_> = crl.iter_revoked_certificates().collect();
         assert_eq!(revoked_certs.len(), 1);
         assert_eq!(revoked_certs[0].raw_serial(), leaf_serial.to_bytes_be());
+
+        // CRL next_update must be after this_update
+        let this_update = crl.last_update().timestamp();
+        let next_update = crl.next_update().expect("next_update").timestamp();
+        assert!(
+            next_update > this_update,
+            "CRL next_update must be after this_update"
+        );
     }
 
     #[test]

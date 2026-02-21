@@ -58,6 +58,10 @@ struct UselessWorld {
     // Corrupted artifacts.
     corrupted_pem: Option<String>,
     truncated_der: Option<Vec<u8>>,
+    deterministic_text_1: Option<String>,
+    deterministic_text_2: Option<String>,
+    deterministic_bytes_1: Option<Vec<u8>>,
+    deterministic_bytes_2: Option<Vec<u8>>,
 
     // Tempfile handles.
     private_tempfile: Option<uselesskey_core::sink::TempArtifact>,
@@ -109,11 +113,18 @@ struct UselessWorld {
     x509_private_key_pem_2: Option<String>,
     x509_expired: Option<X509Cert>,
     x509_not_yet_valid: Option<X509Cert>,
+    x509_wrong_key_usage: Option<X509Cert>,
     x509_corrupted_pem: Option<String>,
     x509_truncated_der: Option<Vec<u8>>,
     x509_cert_tempfile: Option<uselesskey_core::sink::TempArtifact>,
+    x509_cert_der_tempfile: Option<uselesskey_core::sink::TempArtifact>,
     x509_key_tempfile: Option<uselesskey_core::sink::TempArtifact>,
     x509_chain_tempfile: Option<uselesskey_core::sink::TempArtifact>,
+    x509_chain_pem_tempfile: Option<uselesskey_core::sink::TempArtifact>,
+    x509_full_chain_tempfile: Option<uselesskey_core::sink::TempArtifact>,
+    x509_root_cert_tempfile: Option<uselesskey_core::sink::TempArtifact>,
+    x509_crl_pem_tempfile: Option<uselesskey_core::sink::TempArtifact>,
+    x509_crl_der_tempfile: Option<uselesskey_core::sink::TempArtifact>,
 
     // X.509 chain storage
     x509_chain: Option<X509Chain>,
@@ -329,6 +340,30 @@ fn truncate_der(world: &mut UselessWorld, len: usize) {
     world.truncated_der = Some(rsa.private_key_pkcs8_der_truncated(len));
 }
 
+#[when(regex = r#"^I deterministically corrupt the RSA PKCS8 PEM with variant "([^"]+)"$"#)]
+fn det_corrupt_rsa_pem(world: &mut UselessWorld, variant: String) {
+    let rsa = world.rsa.as_ref().expect("rsa not set");
+    world.deterministic_text_1 = Some(rsa.private_key_pkcs8_pem_corrupt_deterministic(&variant));
+}
+
+#[when(regex = r#"^I deterministically corrupt the RSA PKCS8 PEM with variant "([^"]+)" again$"#)]
+fn det_corrupt_rsa_pem_again(world: &mut UselessWorld, variant: String) {
+    let rsa = world.rsa.as_ref().expect("rsa not set");
+    world.deterministic_text_2 = Some(rsa.private_key_pkcs8_pem_corrupt_deterministic(&variant));
+}
+
+#[when(regex = r#"^I deterministically corrupt the RSA PKCS8 DER with variant "([^"]+)"$"#)]
+fn det_corrupt_rsa_der(world: &mut UselessWorld, variant: String) {
+    let rsa = world.rsa.as_ref().expect("rsa not set");
+    world.deterministic_bytes_1 = Some(rsa.private_key_pkcs8_der_corrupt_deterministic(&variant));
+}
+
+#[when(regex = r#"^I deterministically corrupt the RSA PKCS8 DER with variant "([^"]+)" again$"#)]
+fn det_corrupt_rsa_der_again(world: &mut UselessWorld, variant: String) {
+    let rsa = world.rsa.as_ref().expect("rsa not set");
+    world.deterministic_bytes_2 = Some(rsa.private_key_pkcs8_der_corrupt_deterministic(&variant));
+}
+
 // --- Tempfile steps ---
 
 #[when("I write the private key to a tempfile")]
@@ -474,6 +509,58 @@ fn truncated_der_equals_original(world: &mut UselessWorld) {
         .as_ref()
         .expect("pkcs8_der not set");
     assert_eq!(truncated, original);
+}
+
+#[then("the deterministic text artifacts should be identical")]
+fn deterministic_text_artifacts_identical(world: &mut UselessWorld) {
+    assert_eq!(world.deterministic_text_1, world.deterministic_text_2);
+}
+
+#[then("the deterministic binary artifacts should be identical")]
+fn deterministic_binary_artifacts_identical(world: &mut UselessWorld) {
+    assert_eq!(world.deterministic_bytes_1, world.deterministic_bytes_2);
+}
+
+#[then(regex = r#"^the deterministic text artifact should contain "([^"]+)"$"#)]
+fn deterministic_text_artifact_contains(world: &mut UselessWorld, needle: String) {
+    let text = world
+        .deterministic_text_1
+        .as_ref()
+        .expect("deterministic_text_1 not set");
+    assert!(
+        text.contains(&needle),
+        "expected deterministic text artifact to contain '{needle}'"
+    );
+}
+
+#[then("the deterministic RSA PEM artifact should fail to parse")]
+fn deterministic_rsa_pem_fails(world: &mut UselessWorld) {
+    use rsa::pkcs8::DecodePrivateKey;
+
+    let pem = world
+        .deterministic_text_1
+        .as_ref()
+        .expect("deterministic_text_1 not set");
+    let result = rsa::RsaPrivateKey::from_pkcs8_pem(pem);
+    assert!(
+        result.is_err(),
+        "deterministic RSA PEM should fail to parse"
+    );
+}
+
+#[then("the deterministic RSA DER artifact should fail to parse")]
+fn deterministic_rsa_der_fails(world: &mut UselessWorld) {
+    use rsa::pkcs8::DecodePrivateKey;
+
+    let der = world
+        .deterministic_bytes_1
+        .as_ref()
+        .expect("deterministic_bytes_1 not set");
+    let result = rsa::RsaPrivateKey::from_pkcs8_der(der);
+    assert!(
+        result.is_err(),
+        "deterministic RSA DER should fail to parse"
+    );
 }
 
 // --- Tempfile assertions ---
@@ -727,6 +814,38 @@ fn truncate_ed25519_der(world: &mut UselessWorld, len: usize) {
     world.ed25519_truncated_der = Some(ed25519.private_key_pkcs8_der_truncated(len));
 }
 
+#[when(regex = r#"^I deterministically corrupt the Ed25519 PKCS8 PEM with variant "([^"]+)"$"#)]
+fn det_corrupt_ed25519_pem(world: &mut UselessWorld, variant: String) {
+    let ed25519 = world.ed25519.as_ref().expect("ed25519 not set");
+    world.deterministic_text_1 =
+        Some(ed25519.private_key_pkcs8_pem_corrupt_deterministic(&variant));
+}
+
+#[when(
+    regex = r#"^I deterministically corrupt the Ed25519 PKCS8 PEM with variant "([^"]+)" again$"#
+)]
+fn det_corrupt_ed25519_pem_again(world: &mut UselessWorld, variant: String) {
+    let ed25519 = world.ed25519.as_ref().expect("ed25519 not set");
+    world.deterministic_text_2 =
+        Some(ed25519.private_key_pkcs8_pem_corrupt_deterministic(&variant));
+}
+
+#[when(regex = r#"^I deterministically corrupt the Ed25519 PKCS8 DER with variant "([^"]+)"$"#)]
+fn det_corrupt_ed25519_der(world: &mut UselessWorld, variant: String) {
+    let ed25519 = world.ed25519.as_ref().expect("ed25519 not set");
+    world.deterministic_bytes_1 =
+        Some(ed25519.private_key_pkcs8_der_corrupt_deterministic(&variant));
+}
+
+#[when(
+    regex = r#"^I deterministically corrupt the Ed25519 PKCS8 DER with variant "([^"]+)" again$"#
+)]
+fn det_corrupt_ed25519_der_again(world: &mut UselessWorld, variant: String) {
+    let ed25519 = world.ed25519.as_ref().expect("ed25519 not set");
+    world.deterministic_bytes_2 =
+        Some(ed25519.private_key_pkcs8_der_corrupt_deterministic(&variant));
+}
+
 #[when("I capture the Ed25519 kid")]
 fn capture_ed25519_kid(world: &mut UselessWorld) {
     let ed25519 = world.ed25519.as_ref().expect("ed25519 not set");
@@ -855,6 +974,38 @@ fn ed25519_truncated_der_fails(world: &mut UselessWorld) {
     assert!(
         result.is_err(),
         "truncated Ed25519 DER should fail to parse"
+    );
+}
+
+#[then("the deterministic Ed25519 PEM artifact should fail to parse")]
+fn deterministic_ed25519_pem_fails(world: &mut UselessWorld) {
+    use ed25519_dalek::SigningKey;
+    use ed25519_dalek::pkcs8::DecodePrivateKey;
+
+    let pem = world
+        .deterministic_text_1
+        .as_ref()
+        .expect("deterministic_text_1 not set");
+    let result = SigningKey::from_pkcs8_pem(pem);
+    assert!(
+        result.is_err(),
+        "deterministic Ed25519 PEM should fail to parse"
+    );
+}
+
+#[then("the deterministic Ed25519 DER artifact should fail to parse")]
+fn deterministic_ed25519_der_fails(world: &mut UselessWorld) {
+    use ed25519_dalek::SigningKey;
+    use ed25519_dalek::pkcs8::DecodePrivateKey;
+
+    let der = world
+        .deterministic_bytes_1
+        .as_ref()
+        .expect("deterministic_bytes_1 not set");
+    let result = SigningKey::from_pkcs8_der(der);
+    assert!(
+        result.is_err(),
+        "deterministic Ed25519 DER should fail to parse"
     );
 }
 
@@ -1031,6 +1182,30 @@ fn truncate_ecdsa_der(world: &mut UselessWorld, len: usize) {
     world.ecdsa_truncated_der = Some(ecdsa.private_key_pkcs8_der_truncated(len));
 }
 
+#[when(regex = r#"^I deterministically corrupt the ECDSA PKCS8 PEM with variant "([^"]+)"$"#)]
+fn det_corrupt_ecdsa_pem(world: &mut UselessWorld, variant: String) {
+    let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
+    world.deterministic_text_1 = Some(ecdsa.private_key_pkcs8_pem_corrupt_deterministic(&variant));
+}
+
+#[when(regex = r#"^I deterministically corrupt the ECDSA PKCS8 PEM with variant "([^"]+)" again$"#)]
+fn det_corrupt_ecdsa_pem_again(world: &mut UselessWorld, variant: String) {
+    let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
+    world.deterministic_text_2 = Some(ecdsa.private_key_pkcs8_pem_corrupt_deterministic(&variant));
+}
+
+#[when(regex = r#"^I deterministically corrupt the ECDSA PKCS8 DER with variant "([^"]+)"$"#)]
+fn det_corrupt_ecdsa_der(world: &mut UselessWorld, variant: String) {
+    let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
+    world.deterministic_bytes_1 = Some(ecdsa.private_key_pkcs8_der_corrupt_deterministic(&variant));
+}
+
+#[when(regex = r#"^I deterministically corrupt the ECDSA PKCS8 DER with variant "([^"]+)" again$"#)]
+fn det_corrupt_ecdsa_der_again(world: &mut UselessWorld, variant: String) {
+    let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
+    world.deterministic_bytes_2 = Some(ecdsa.private_key_pkcs8_der_corrupt_deterministic(&variant));
+}
+
 #[when("I capture the ECDSA kid")]
 fn capture_ecdsa_kid(world: &mut UselessWorld) {
     let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
@@ -1195,6 +1370,38 @@ fn ecdsa_truncated_der_fails(world: &mut UselessWorld) {
     );
 }
 
+#[then("the deterministic ECDSA PEM artifact should fail to parse")]
+fn deterministic_ecdsa_pem_fails(world: &mut UselessWorld) {
+    use p256::pkcs8::DecodePrivateKey as _;
+
+    let pem = world
+        .deterministic_text_1
+        .as_ref()
+        .expect("deterministic_text_1 not set");
+    let p256_result = p256::SecretKey::from_pkcs8_pem(pem);
+    let p384_result = p384::SecretKey::from_pkcs8_pem(pem);
+    assert!(
+        p256_result.is_err() && p384_result.is_err(),
+        "deterministic ECDSA PEM should fail to parse"
+    );
+}
+
+#[then("the deterministic ECDSA DER artifact should fail to parse")]
+fn deterministic_ecdsa_der_fails(world: &mut UselessWorld) {
+    use p256::pkcs8::DecodePrivateKey as _;
+
+    let der = world
+        .deterministic_bytes_1
+        .as_ref()
+        .expect("deterministic_bytes_1 not set");
+    let p256_result = p256::SecretKey::from_pkcs8_der(der);
+    let p384_result = p384::SecretKey::from_pkcs8_der(der);
+    assert!(
+        p256_result.is_err() && p384_result.is_err(),
+        "deterministic ECDSA DER should fail to parse"
+    );
+}
+
 #[then(regex = r#"^the ECDSA public JWK should have kty "([^"]+)"$"#)]
 fn ecdsa_jwk_has_kty(world: &mut UselessWorld, expected: String) {
     let ecdsa_key = world.ecdsa.as_ref().expect("ecdsa not set");
@@ -1341,6 +1548,14 @@ fn get_x509_not_yet_valid(world: &mut UselessWorld) {
     world.x509_not_yet_valid = Some(not_yet_valid);
 }
 
+#[when("I get the wrong-key-usage variant of the X.509 certificate")]
+fn get_x509_wrong_key_usage(world: &mut UselessWorld) {
+    let x509 = world.x509.as_ref().expect("x509 not set");
+    let wrong_key_usage = x509.wrong_key_usage();
+    world.x509_cert_der_2 = Some(wrong_key_usage.cert_der().to_vec());
+    world.x509_wrong_key_usage = Some(wrong_key_usage);
+}
+
 #[when("I corrupt the X.509 certificate PEM with BadHeader")]
 fn corrupt_x509_bad_header(world: &mut UselessWorld) {
     let x509 = world.x509.as_ref().expect("x509 not set");
@@ -1353,10 +1568,48 @@ fn truncate_x509_der(world: &mut UselessWorld, len: usize) {
     world.x509_truncated_der = Some(x509.truncate_cert_der(len));
 }
 
+#[when(
+    regex = r#"^I deterministically corrupt the X\.509 certificate PEM with variant "([^"]+)"$"#
+)]
+fn det_corrupt_x509_pem(world: &mut UselessWorld, variant: String) {
+    let x509 = world.x509.as_ref().expect("x509 not set");
+    world.deterministic_text_1 = Some(x509.corrupt_cert_pem_deterministic(&variant));
+}
+
+#[when(
+    regex = r#"^I deterministically corrupt the X\.509 certificate PEM with variant "([^"]+)" again$"#
+)]
+fn det_corrupt_x509_pem_again(world: &mut UselessWorld, variant: String) {
+    let x509 = world.x509.as_ref().expect("x509 not set");
+    world.deterministic_text_2 = Some(x509.corrupt_cert_pem_deterministic(&variant));
+}
+
+#[when(
+    regex = r#"^I deterministically corrupt the X\.509 certificate DER with variant "([^"]+)"$"#
+)]
+fn det_corrupt_x509_der(world: &mut UselessWorld, variant: String) {
+    let x509 = world.x509.as_ref().expect("x509 not set");
+    world.deterministic_bytes_1 = Some(x509.corrupt_cert_der_deterministic(&variant));
+}
+
+#[when(
+    regex = r#"^I deterministically corrupt the X\.509 certificate DER with variant "([^"]+)" again$"#
+)]
+fn det_corrupt_x509_der_again(world: &mut UselessWorld, variant: String) {
+    let x509 = world.x509.as_ref().expect("x509 not set");
+    world.deterministic_bytes_2 = Some(x509.corrupt_cert_der_deterministic(&variant));
+}
+
 #[when("I write the X.509 certificate PEM to a tempfile")]
 fn write_x509_cert_tempfile(world: &mut UselessWorld) {
     let x509 = world.x509.as_ref().expect("x509 not set");
     world.x509_cert_tempfile = Some(x509.write_cert_pem().expect("write failed"));
+}
+
+#[when("I write the X.509 certificate DER to a tempfile")]
+fn write_x509_cert_der_tempfile(world: &mut UselessWorld) {
+    let x509 = world.x509.as_ref().expect("x509 not set");
+    world.x509_cert_der_tempfile = Some(x509.write_cert_der().expect("write failed"));
 }
 
 #[when("I write the X.509 private key PEM to a tempfile")]
@@ -1521,6 +1774,48 @@ fn x509_not_yet_valid_not_before_future(world: &mut UselessWorld) {
     );
 }
 
+#[then("the wrong-key-usage X.509 certificate should be parseable")]
+fn x509_wrong_key_usage_parseable(world: &mut UselessWorld) {
+    let wrong = world
+        .x509_wrong_key_usage
+        .as_ref()
+        .expect("wrong_key_usage cert not set");
+    x509_parser::parse_x509_certificate(wrong.cert_der())
+        .expect("wrong-key-usage cert should parse");
+}
+
+#[then("the wrong-key-usage X.509 certificate should be marked as CA")]
+fn x509_wrong_key_usage_is_ca(world: &mut UselessWorld) {
+    let wrong = world
+        .x509_wrong_key_usage
+        .as_ref()
+        .expect("wrong_key_usage cert not set");
+    let (_, cert) =
+        x509_parser::parse_x509_certificate(wrong.cert_der()).expect("parse wrong-key-usage cert");
+    assert!(cert.is_ca(), "wrong-key-usage cert should be CA");
+}
+
+#[then("the wrong-key-usage X.509 certificate spec should disable keyCertSign")]
+fn x509_wrong_key_usage_spec(world: &mut UselessWorld) {
+    let wrong = world
+        .x509_wrong_key_usage
+        .as_ref()
+        .expect("wrong_key_usage cert not set");
+    assert!(
+        !wrong.spec().key_usage.key_cert_sign,
+        "wrong-key-usage spec should disable keyCertSign"
+    );
+}
+
+#[then(regex = r#"^the wrong-key-usage X\.509 certificate label should remain "([^"]+)"$"#)]
+fn x509_wrong_key_usage_label(world: &mut UselessWorld, expected: String) {
+    let wrong = world
+        .x509_wrong_key_usage
+        .as_ref()
+        .expect("wrong_key_usage cert not set");
+    assert_eq!(wrong.label(), expected);
+}
+
 #[then(regex = r#"^the corrupted X\.509 PEM should contain "([^"]+)"$"#)]
 fn x509_corrupted_pem_contains(world: &mut UselessWorld, needle: String) {
     let pem = world
@@ -1552,12 +1847,59 @@ fn x509_truncated_der_fails(world: &mut UselessWorld) {
     assert!(result.is_err(), "truncated X.509 DER should fail to parse");
 }
 
+#[then("the deterministic X.509 PEM artifact should fail to parse")]
+fn deterministic_x509_pem_fails(world: &mut UselessWorld) {
+    let pem = world
+        .deterministic_text_1
+        .as_ref()
+        .expect("deterministic_text_1 not set");
+
+    match x509_parser::pem::parse_x509_pem(pem.as_bytes()) {
+        Ok((_, p)) => {
+            let result = x509_parser::parse_x509_certificate(&p.contents);
+            assert!(
+                result.is_err(),
+                "deterministic X.509 PEM should fail to parse"
+            );
+        }
+        Err(_) => {
+            // PEM framing itself is broken — acceptable for corruption
+        }
+    }
+}
+
+#[then("the deterministic X.509 DER artifact should fail to parse")]
+fn deterministic_x509_der_fails(world: &mut UselessWorld) {
+    let der = world
+        .deterministic_bytes_1
+        .as_ref()
+        .expect("deterministic_bytes_1 not set");
+    let result = x509_parser::parse_x509_certificate(der);
+    assert!(
+        result.is_err(),
+        "deterministic X.509 DER should fail to parse"
+    );
+}
+
 #[then(regex = r#"^the X\.509 tempfile path should end with "([^"]+)"$"#)]
 fn x509_cert_tempfile_path_ends_with(world: &mut UselessWorld, suffix: String) {
     let tf = world
         .x509_cert_tempfile
         .as_ref()
         .expect("x509_cert_tempfile not set");
+    let path = tf.path().to_string_lossy().to_string();
+    assert!(
+        path.ends_with(&suffix),
+        "expected path to end with '{suffix}', got '{path}'"
+    );
+}
+
+#[then(regex = r#"^the X\.509 DER tempfile path should end with "([^"]+)"$"#)]
+fn x509_cert_der_tempfile_path_ends_with(world: &mut UselessWorld, suffix: String) {
+    let tf = world
+        .x509_cert_der_tempfile
+        .as_ref()
+        .expect("x509_cert_der_tempfile not set");
     let path = tf.path().to_string_lossy().to_string();
     assert!(
         path.ends_with(&suffix),
@@ -1600,6 +1942,17 @@ fn x509_tempfile_matches_cert(world: &mut UselessWorld) {
     let contents = tf.read_to_string().expect("read failed");
     let x509 = world.x509.as_ref().expect("x509 not set");
     assert_eq!(contents, x509.cert_pem());
+}
+
+#[then("reading the X.509 DER tempfile should match the certificate DER")]
+fn x509_tempfile_matches_cert_der(world: &mut UselessWorld) {
+    let tf = world
+        .x509_cert_der_tempfile
+        .as_ref()
+        .expect("x509_cert_der_tempfile not set");
+    let contents = tf.read_to_bytes().expect("read failed");
+    let x509 = world.x509.as_ref().expect("x509 not set");
+    assert_eq!(contents, x509.cert_der());
 }
 
 #[then("reading the X.509 key tempfile should match the private key PEM")]
@@ -1745,6 +2098,50 @@ fn write_leaf_cert_tempfile(world: &mut UselessWorld) {
 fn write_leaf_key_tempfile(world: &mut UselessWorld) {
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
     world.x509_key_tempfile = Some(chain.write_leaf_private_key_pem().expect("write failed"));
+}
+
+#[when("I write the chain PEM to a tempfile")]
+fn write_chain_pem_tempfile(world: &mut UselessWorld) {
+    let chain = world.x509_chain.as_ref().expect("x509_chain not set");
+    world.x509_chain_pem_tempfile = Some(chain.write_chain_pem().expect("write failed"));
+}
+
+#[when("I write the full chain PEM to a tempfile")]
+fn write_full_chain_pem_tempfile(world: &mut UselessWorld) {
+    let chain = world.x509_chain.as_ref().expect("x509_chain not set");
+    world.x509_full_chain_tempfile = Some(chain.write_full_chain_pem().expect("write failed"));
+}
+
+#[when("I write the root certificate PEM to a tempfile")]
+fn write_root_cert_tempfile(world: &mut UselessWorld) {
+    let chain = world.x509_chain.as_ref().expect("x509_chain not set");
+    world.x509_root_cert_tempfile = Some(chain.write_root_cert_pem().expect("write failed"));
+}
+
+#[when("I write the revoked chain CRL PEM to a tempfile")]
+fn write_revoked_chain_crl_pem(world: &mut UselessWorld) {
+    let revoked = world
+        .x509_chain_revoked_leaf
+        .as_ref()
+        .expect("revoked_leaf not set");
+    let tf = revoked
+        .write_crl_pem()
+        .expect("revoked chain should include a CRL PEM")
+        .expect("write failed");
+    world.x509_crl_pem_tempfile = Some(tf);
+}
+
+#[when("I write the revoked chain CRL DER to a tempfile")]
+fn write_revoked_chain_crl_der(world: &mut UselessWorld) {
+    let revoked = world
+        .x509_chain_revoked_leaf
+        .as_ref()
+        .expect("revoked_leaf not set");
+    let tf = revoked
+        .write_crl_der()
+        .expect("revoked chain should include a CRL DER")
+        .expect("write failed");
+    world.x509_crl_der_tempfile = Some(tf);
 }
 
 // =============================================================================
@@ -1970,6 +2367,130 @@ fn leaf_key_tempfile_exists(world: &mut UselessWorld) {
         .as_ref()
         .expect("leaf key tempfile not set");
     assert!(tf.path().exists(), "leaf key tempfile should exist");
+}
+
+#[then(regex = r#"^the chain tempfile path should end with "([^"]+)"$"#)]
+fn chain_tempfile_path_ends_with(world: &mut UselessWorld, suffix: String) {
+    let tf = world
+        .x509_chain_pem_tempfile
+        .as_ref()
+        .expect("x509_chain_pem_tempfile not set");
+    let path = tf.path().to_string_lossy().to_string();
+    assert!(
+        path.ends_with(&suffix),
+        "expected path to end with '{suffix}', got '{path}'"
+    );
+}
+
+#[then(regex = r#"^the full chain tempfile path should end with "([^"]+)"$"#)]
+fn full_chain_tempfile_path_ends_with(world: &mut UselessWorld, suffix: String) {
+    let tf = world
+        .x509_full_chain_tempfile
+        .as_ref()
+        .expect("x509_full_chain_tempfile not set");
+    let path = tf.path().to_string_lossy().to_string();
+    assert!(
+        path.ends_with(&suffix),
+        "expected path to end with '{suffix}', got '{path}'"
+    );
+}
+
+#[then(regex = r#"^the root certificate tempfile path should end with "([^"]+)"$"#)]
+fn root_cert_tempfile_path_ends_with(world: &mut UselessWorld, suffix: String) {
+    let tf = world
+        .x509_root_cert_tempfile
+        .as_ref()
+        .expect("x509_root_cert_tempfile not set");
+    let path = tf.path().to_string_lossy().to_string();
+    assert!(
+        path.ends_with(&suffix),
+        "expected path to end with '{suffix}', got '{path}'"
+    );
+}
+
+#[then("reading the chain tempfile should match the chain PEM")]
+fn chain_tempfile_matches_chain_pem(world: &mut UselessWorld) {
+    let tf = world
+        .x509_chain_pem_tempfile
+        .as_ref()
+        .expect("x509_chain_pem_tempfile not set");
+    let contents = tf.read_to_string().expect("read failed");
+    let chain = world.x509_chain.as_ref().expect("x509_chain not set");
+    assert_eq!(contents, chain.chain_pem());
+}
+
+#[then("reading the full chain tempfile should match the full chain PEM")]
+fn full_chain_tempfile_matches_full_chain_pem(world: &mut UselessWorld) {
+    let tf = world
+        .x509_full_chain_tempfile
+        .as_ref()
+        .expect("x509_full_chain_tempfile not set");
+    let contents = tf.read_to_string().expect("read failed");
+    let chain = world.x509_chain.as_ref().expect("x509_chain not set");
+    assert_eq!(contents, chain.full_chain_pem());
+}
+
+#[then("reading the root certificate tempfile should match the root certificate PEM")]
+fn root_cert_tempfile_matches_root_pem(world: &mut UselessWorld) {
+    let tf = world
+        .x509_root_cert_tempfile
+        .as_ref()
+        .expect("x509_root_cert_tempfile not set");
+    let contents = tf.read_to_string().expect("read failed");
+    let chain = world.x509_chain.as_ref().expect("x509_chain not set");
+    assert_eq!(contents, chain.root_cert_pem());
+}
+
+#[then(regex = r#"^the CRL PEM tempfile path should end with "([^"]+)"$"#)]
+fn crl_pem_tempfile_path_ends_with(world: &mut UselessWorld, suffix: String) {
+    let tf = world
+        .x509_crl_pem_tempfile
+        .as_ref()
+        .expect("x509_crl_pem_tempfile not set");
+    let path = tf.path().to_string_lossy().to_string();
+    assert!(
+        path.ends_with(&suffix),
+        "expected path to end with '{suffix}', got '{path}'"
+    );
+}
+
+#[then(regex = r#"^the CRL DER tempfile path should end with "([^"]+)"$"#)]
+fn crl_der_tempfile_path_ends_with(world: &mut UselessWorld, suffix: String) {
+    let tf = world
+        .x509_crl_der_tempfile
+        .as_ref()
+        .expect("x509_crl_der_tempfile not set");
+    let path = tf.path().to_string_lossy().to_string();
+    assert!(
+        path.ends_with(&suffix),
+        "expected path to end with '{suffix}', got '{path}'"
+    );
+}
+
+#[then(regex = r#"^the CRL PEM tempfile should contain "([^"]+)"$"#)]
+fn crl_pem_tempfile_contains(world: &mut UselessWorld, needle: String) {
+    let tf = world
+        .x509_crl_pem_tempfile
+        .as_ref()
+        .expect("x509_crl_pem_tempfile not set");
+    let contents = tf.read_to_string().expect("read failed");
+    assert!(
+        contents.contains(&needle),
+        "CRL PEM tempfile should contain '{needle}'"
+    );
+}
+
+#[then("the CRL DER tempfile should be parseable as a CRL")]
+fn crl_der_tempfile_parseable(world: &mut UselessWorld) {
+    use x509_parser::prelude::FromDer;
+
+    let tf = world
+        .x509_crl_der_tempfile
+        .as_ref()
+        .expect("x509_crl_der_tempfile not set");
+    let der = tf.read_to_bytes().expect("read failed");
+    let parse_result = x509_parser::revocation_list::CertificateRevocationList::from_der(&der);
+    assert!(parse_result.is_ok(), "CRL DER tempfile should parse");
 }
 
 #[then("the chain root should differ from the original root")]

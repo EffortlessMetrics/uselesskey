@@ -41,4 +41,9 @@ exclude_re = [
     # Replacing bodies with Default::default() cannot be distinguished
     # from the real value without a live TLS handshake.
     "replace <impl Tonic",
+
+    # ── infinite recursion: Default calls leaf() ──────────────────────────
+    # KeyUsage::default() calls Self::leaf(), so replacing leaf() with
+    # Default::default() causes infinite recursion → unkillable timeout.
+    "replace KeyUsage::leaf.* with Default::default",
 ]

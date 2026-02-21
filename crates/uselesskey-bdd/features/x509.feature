@@ -107,6 +107,16 @@ Feature: X.509 certificate fixtures
     Then the not-yet-valid X.509 certificate should be parseable
     And the not-yet-valid X.509 certificate should have not_before in the future
 
+  Scenario: wrong-key-usage X.509 certificate is parseable and marked as CA
+    Given a deterministic factory seeded with "wrong-key-usage-test"
+    When I generate an X.509 certificate for domain "test.example.com" with label "bad-ku"
+    And I get the wrong-key-usage variant of the X.509 certificate
+    Then the X.509 certificates should have different DER
+    And the wrong-key-usage X.509 certificate should be parseable
+    And the wrong-key-usage X.509 certificate should be marked as CA
+    And the wrong-key-usage X.509 certificate spec should disable keyCertSign
+    And the wrong-key-usage X.509 certificate label should remain "bad-ku"
+
   # --- Negative fixtures: corruption ---
 
   Scenario: X.509 corrupted PEM with BadHeader
@@ -121,6 +131,22 @@ Feature: X.509 certificate fixtures
     And I truncate the X.509 certificate DER to 10 bytes
     Then the truncated X.509 DER should have length 10
     And the truncated X.509 DER should fail to parse
+
+  Scenario: deterministic X.509 PEM corruption with variant is stable
+    Given a deterministic factory seeded with "x509-det-corrupt-pem"
+    When I generate an X.509 certificate for domain "test.example.com" with label "x509-det-pem"
+    And I deterministically corrupt the X.509 certificate PEM with variant "v1"
+    And I deterministically corrupt the X.509 certificate PEM with variant "v1" again
+    Then the deterministic text artifacts should be identical
+    And the deterministic X.509 PEM artifact should fail to parse
+
+  Scenario: deterministic X.509 DER corruption with variant is stable
+    Given a deterministic factory seeded with "x509-det-corrupt-der"
+    When I generate an X.509 certificate for domain "test.example.com" with label "x509-det-der"
+    And I deterministically corrupt the X.509 certificate DER with variant "v1"
+    And I deterministically corrupt the X.509 certificate DER with variant "v1" again
+    Then the deterministic binary artifacts should be identical
+    And the deterministic X.509 DER artifact should fail to parse
 
   # --- Tempfile outputs ---
 
@@ -137,6 +163,13 @@ Feature: X.509 certificate fixtures
     And I write the X.509 private key PEM to a tempfile
     Then the X.509 key tempfile path should end with ".key.pem"
     And reading the X.509 key tempfile should match the private key PEM
+
+  Scenario: X.509 certificate DER writes to tempfile
+    Given a deterministic factory seeded with "tempfile-test"
+    When I generate an X.509 certificate for domain "test.example.com" with label "temp-der"
+    And I write the X.509 certificate DER to a tempfile
+    Then the X.509 DER tempfile path should end with ".crt.der"
+    And reading the X.509 DER tempfile should match the certificate DER
 
   Scenario: X.509 identity PEM writes to tempfile
     Given a deterministic factory seeded with "tempfile-test"
