@@ -111,49 +111,67 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_expired_modifies_spec() {
+    fn test_expired_exact_values() {
         let base = X509Spec::self_signed("test");
         let modified = X509Negative::Expired.apply_to_spec(&base);
 
-        // Should have not_before far in the past
-        assert!(matches!(
-            modified.not_before_offset,
-            NotBeforeOffset::DaysAgo(d) if d > 365
-        ));
+        assert_eq!(modified.not_before_offset, NotBeforeOffset::DaysAgo(395));
+        assert_eq!(modified.validity_days, 365);
+        assert!(!modified.is_ca);
+        assert_eq!(modified.key_usage, KeyUsage::leaf());
     }
 
     #[test]
-    fn test_not_yet_valid_modifies_spec() {
+    fn test_not_yet_valid_exact_values() {
         let base = X509Spec::self_signed("test");
         let modified = X509Negative::NotYetValid.apply_to_spec(&base);
 
-        assert!(matches!(
-            modified.not_before_offset,
-            NotBeforeOffset::DaysFromNow(d) if d > 0
-        ));
+        assert_eq!(modified.not_before_offset, NotBeforeOffset::DaysFromNow(30));
+        assert_eq!(modified.validity_days, 365);
     }
 
     #[test]
-    fn test_wrong_key_usage_modifies_spec() {
+    fn test_wrong_key_usage_exact_values() {
         let base = X509Spec::self_signed("test");
         let modified = X509Negative::WrongKeyUsage.apply_to_spec(&base);
 
         assert!(modified.is_ca);
-        assert!(!modified.key_usage.key_cert_sign);
+        assert_eq!(
+            modified.key_usage,
+            KeyUsage {
+                key_cert_sign: false,
+                crl_sign: false,
+                digital_signature: true,
+                key_encipherment: true,
+            }
+        );
     }
 
     #[test]
-    fn test_self_signed_ca_variant_modifies_spec() {
+    fn test_self_signed_ca_exact_values() {
         let base = X509Spec::self_signed("test");
         let modified = X509Negative::SelfSignedButClaimsCA.apply_to_spec(&base);
 
         assert!(modified.is_ca);
-        assert!(modified.key_usage.key_cert_sign);
-        assert!(modified.key_usage.crl_sign);
+        assert_eq!(modified.key_usage, KeyUsage::ca());
     }
 
     #[test]
-    fn test_description_and_variant_name_cover_all() {
+    fn test_variant_name_exact_values() {
+        assert_eq!(X509Negative::Expired.variant_name(), "expired");
+        assert_eq!(X509Negative::NotYetValid.variant_name(), "not_yet_valid");
+        assert_eq!(
+            X509Negative::WrongKeyUsage.variant_name(),
+            "wrong_key_usage"
+        );
+        assert_eq!(
+            X509Negative::SelfSignedButClaimsCA.variant_name(),
+            "self_signed_ca"
+        );
+    }
+
+    #[test]
+    fn test_description_covers_all() {
         let variants = [
             X509Negative::Expired,
             X509Negative::NotYetValid,
@@ -163,13 +181,7 @@ mod tests {
 
         for variant in &variants {
             assert!(!variant.description().is_empty());
-            assert!(!variant.variant_name().is_empty());
         }
-
-        assert_eq!(
-            X509Negative::SelfSignedButClaimsCA.variant_name(),
-            "self_signed_ca"
-        );
 
         assert!(X509Negative::Expired.description().contains("expired"));
         assert!(
@@ -190,20 +202,54 @@ mod tests {
     }
 
     #[test]
-    fn deterministic_corruption_helpers_are_stable() {
+    fn test_corrupt_cert_pem_bad_header_changes_pem() {
         let pem = "-----BEGIN CERTIFICATE-----\nAAA=\n-----END CERTIFICATE-----\n";
+        let corrupted = corrupt_cert_pem(pem, uselesskey_core::negative::CorruptPem::BadHeader);
+        assert_ne!(corrupted, pem, "BadHeader must alter the PEM");
+    }
+
+    #[test]
+    fn test_corrupt_cert_pem_deterministic_changes_pem() {
+        let pem = "-----BEGIN CERTIFICATE-----\nAAA=\n-----END CERTIFICATE-----\n";
+        let corrupted = corrupt_cert_pem_deterministic(pem, "corrupt:v1");
+        assert_ne!(
+            corrupted, pem,
+            "deterministic corruption must alter the PEM"
+        );
+
+        // Stability
+        let corrupted2 = corrupt_cert_pem_deterministic(pem, "corrupt:v1");
+        assert_eq!(
+            corrupted, corrupted2,
+            "same variant must produce same result"
+        );
+    }
+
+    #[test]
+    fn test_truncate_cert_der_returns_exact_prefix() {
         let der = vec![0x30, 0x03, 0x02, 0x01, 0x01];
+        let truncated = truncate_cert_der(&der, 2);
+        assert_eq!(
+            truncated,
+            &der[..2],
+            "truncate_cert_der must return exact prefix"
+        );
+    }
 
-        let pem_a = corrupt_cert_pem_deterministic(pem, "corrupt:v1");
-        let pem_b = corrupt_cert_pem_deterministic(pem, "corrupt:v1");
-        assert_eq!(pem_a, pem_b);
+    #[test]
+    fn test_corrupt_cert_der_deterministic_changes_der() {
+        let der = vec![0x30, 0x03, 0x02, 0x01, 0x01];
+        let corrupted = corrupt_cert_der_deterministic(&der, "corrupt:v1");
+        assert_ne!(
+            corrupted, der,
+            "deterministic corruption must alter the DER"
+        );
 
-        let der_a = corrupt_cert_der_deterministic(&der, "corrupt:v1");
-        let der_b = corrupt_cert_der_deterministic(&der, "corrupt:v1");
-        assert_eq!(der_a, der_b);
-
-        assert!(!pem_a.is_empty());
-        assert_ne!(pem_a, "xyzzy");
-        assert!(der_a.len() > 1);
+        // Stability
+        let corrupted2 = corrupt_cert_der_deterministic(&der, "corrupt:v1");
+        assert_eq!(
+            corrupted, corrupted2,
+            "same variant must produce same result"
+        );
     }
 }
