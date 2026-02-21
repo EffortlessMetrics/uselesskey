@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use rand_core::RngCore;
 use uselesskey_core::Factory;
+#[cfg(feature = "jwk")]
 use uselesskey_core_kid::kid_from_bytes;
 
 use crate::HmacSpec;

@@ -149,9 +149,7 @@ fn write_len_prefixed(hasher: &mut blake3::Hasher, bytes: &[u8]) {
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        ArtifactDomain, ArtifactId, DerivationVersion, Seed, derive_seed, hash32, parse_hex_32,
-    };
+    use super::{ArtifactId, DerivationVersion, Seed, derive_seed, hash32, parse_hex_32};
 
     #[test]
     fn seed_debug_is_redacted() {
