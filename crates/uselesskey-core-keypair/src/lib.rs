@@ -105,6 +105,7 @@ impl Pkcs8SpkiKeyMaterial {
 #[cfg(test)]
 mod tests {
     use super::Pkcs8SpkiKeyMaterial;
+    use uselesskey_core::negative::CorruptPem;
 
     fn sample_material() -> Pkcs8SpkiKeyMaterial {
         Pkcs8SpkiKeyMaterial::new(
@@ -138,11 +139,22 @@ mod tests {
     }
 
     #[test]
+    fn private_key_pkcs8_pem_corrupt() {
+        let material = sample_material();
+        let corrupted = material.private_key_pkcs8_pem_corrupt(CorruptPem::BadHeader);
+        assert_ne!(corrupted, material.private_key_pkcs8_pem());
+        assert!(corrupted.contains("CORRUPTED KEY"));
+    }
+
+    #[test]
     fn deterministic_corruption_is_stable() {
         let material = sample_material();
         let a = material.private_key_pkcs8_pem_corrupt_deterministic("core-keypair:v1");
         let b = material.private_key_pkcs8_pem_corrupt_deterministic("core-keypair:v1");
         assert_eq!(a, b);
+        assert_ne!(a, material.private_key_pkcs8_pem());
+        // Must still look like (corrupted) PEM, not a constant like "" or "xyzzy"
+        assert!(a.contains("-----"));
     }
 
     #[test]
@@ -153,12 +165,36 @@ mod tests {
     }
 
     #[test]
+    fn private_key_pkcs8_der_corrupt_deterministic() {
+        let material = sample_material();
+        let a = material.private_key_pkcs8_der_corrupt_deterministic("variant-a");
+        let b = material.private_key_pkcs8_der_corrupt_deterministic("variant-a");
+        assert_eq!(a, b);
+        assert_ne!(a, material.private_key_pkcs8_der());
+        // Different variants must produce different corruption — a constant return can't satisfy this
+        let c = material.private_key_pkcs8_der_corrupt_deterministic("variant-b");
+        assert_ne!(a, c);
+    }
+
+    #[test]
     fn kid_is_deterministic() {
         let material = sample_material();
         let a = material.kid();
         let b = material.kid();
         assert_eq!(a, b);
         assert!(!a.is_empty());
+    }
+
+    #[test]
+    fn kid_depends_on_spki_bytes() {
+        let m1 = sample_material();
+        let m2 = Pkcs8SpkiKeyMaterial::new(
+            vec![0x30, 0x82, 0x01, 0x22],
+            "-----BEGIN PRIVATE KEY-----\nAAAA\n-----END PRIVATE KEY-----\n",
+            vec![0xFF, 0xFE, 0xFD, 0xFC],
+            "-----BEGIN PUBLIC KEY-----\nCCCC\n-----END PUBLIC KEY-----\n",
+        );
+        assert_ne!(m1.kid(), m2.kid());
     }
 
     #[test]
