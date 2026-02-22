@@ -162,6 +162,7 @@ mod tests {
         let material = sample_material();
         let truncated = material.private_key_pkcs8_der_truncated(2);
         assert_eq!(truncated.len(), 2);
+        assert_eq!(truncated, &material.private_key_pkcs8_der()[..2]);
     }
 
     #[test]
