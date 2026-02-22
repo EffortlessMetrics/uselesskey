@@ -256,4 +256,23 @@ mod tests {
         let seed = Seed::from_env_value(&hex).unwrap();
         assert!(seed.bytes().iter().all(|b| *b == 0xFF));
     }
+
+    #[test]
+    fn parse_hex_32_lowercase_values() {
+        // "0a" repeated 32 times → each byte should be 0x0a = 10
+        let hex = "0a".repeat(32);
+        let parsed = parse_hex_32(&hex).unwrap();
+        assert!(parsed.iter().all(|b| *b == 0x0a));
+    }
+
+    #[test]
+    fn derive_seed_label_affects_output() {
+        let master = Seed::new([5u8; 32]);
+        let id_a = ArtifactId::new("d", "label-a", b"spec", "v", DerivationVersion::V1);
+        let id_b = ArtifactId::new("d", "label-b", b"spec", "v", DerivationVersion::V1);
+        assert_ne!(
+            derive_seed(&master, &id_a).bytes(),
+            derive_seed(&master, &id_b).bytes()
+        );
+    }
 }
