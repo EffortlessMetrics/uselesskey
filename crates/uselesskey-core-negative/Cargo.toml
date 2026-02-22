@@ -15,7 +15,7 @@ authors.workspace = true
 documentation = "https://docs.rs/uselesskey-core-negative"
 
 [dependencies]
-uselesskey-core-id = { path = "../uselesskey-core-id", version = "0.3.0" }
+uselesskey-core-id = { path = "../uselesskey-core-id", version = "0.3.0", default-features = false }
 
 [dev-dependencies]
 proptest.workspace = true
@@ -23,4 +23,4 @@ rstest.workspace = true
 
 [features]
 default = ["std"]
-std = []
+std = ["uselesskey-core-id/std"]
