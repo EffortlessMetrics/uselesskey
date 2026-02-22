@@ -1,0 +1,13 @@
+# Enforce LF line endings across all platforms.
+# Matches .editorconfig (end_of_line = lf) and rustfmt.toml (newline_style = "Unix").
+* text=auto eol=lf
+
+*.rs      text eol=lf
+*.toml    text eol=lf
+*.md      text eol=lf
+*.yml     text eol=lf
+*.yaml    text eol=lf
+*.json    text eol=lf
+*.txt     text eol=lf
+*.feature text eol=lf
+*.lock    text eol=lf

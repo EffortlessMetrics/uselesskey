@@ -6,6 +6,7 @@ use std::process::{Command, Stdio};
 
 use anyhow::{Context, Result, bail};
 use clap::{Parser, Subcommand};
+use uselesskey_feature_grid::{BDD_FEATURE_MATRIX, CORE_FEATURE_MATRIX};
 
 mod plan;
 mod receipt;
@@ -108,52 +109,6 @@ fn run(cmd: &mut Command) -> Result<()> {
     Ok(())
 }
 
-const FEATURE_MATRIX: &[(&str, &[&str])] = &[
-    ("default", &[]),
-    ("no-default", &["--no-default-features"]),
-    ("rsa", &["--no-default-features", "--features", "rsa"]),
-    ("ecdsa", &["--no-default-features", "--features", "ecdsa"]),
-    (
-        "ed25519",
-        &["--no-default-features", "--features", "ed25519"],
-    ),
-    ("hmac", &["--no-default-features", "--features", "hmac"]),
-    ("token", &["--no-default-features", "--features", "token"]),
-    ("pgp", &["--no-default-features", "--features", "pgp"]),
-    ("x509", &["--no-default-features", "--features", "x509"]),
-    ("jwk", &["--no-default-features", "--features", "jwk"]),
-    // Feature combinations: key types with output formats
-    (
-        "rsa+jwk",
-        &["--no-default-features", "--features", "rsa,jwk"],
-    ),
-    (
-        "ecdsa+jwk",
-        &["--no-default-features", "--features", "ecdsa,jwk"],
-    ),
-    (
-        "ed25519+jwk",
-        &["--no-default-features", "--features", "ed25519,jwk"],
-    ),
-    (
-        "rsa+x509",
-        &["--no-default-features", "--features", "rsa,x509"],
-    ),
-    (
-        "ecdsa+x509",
-        &["--no-default-features", "--features", "ecdsa,x509"],
-    ),
-    (
-        "ed25519+pgp",
-        &["--no-default-features", "--features", "ed25519,pgp"],
-    ),
-    (
-        "rsa+pgp",
-        &["--no-default-features", "--features", "rsa,pgp"],
-    ),
-    ("all-features", &["--all-features"]),
-];
-
 fn fmt(fix: bool) -> Result<()> {
     if fix {
         run(Command::new("cargo").args(["fmt", "--all"]))
@@ -201,10 +156,9 @@ fn bdd_matrix() -> Result<()> {
     let mut runner = receipt::Runner::new("target/xtask/receipt.json");
 
     // Define the feature sets to run
-    // Note: BDD tests require all features to be enabled
-    let feature_sets = vec![("all-features", vec!["--features", "uk-all"])];
-
-    for (name, args) in feature_sets {
+    for feature_set in BDD_FEATURE_MATRIX {
+        let name = feature_set.name;
+        let args = feature_set.cargo_args;
         let step_name = format!("bdd-matrix:{name}");
         let result = runner.step(&step_name, None, || {
             let mut cmd = Command::new("cargo");
@@ -286,7 +240,12 @@ fn feature_matrix_cmd() -> Result<()> {
 }
 
 const PUBLISH_CRATES: &[&str] = &[
+    "uselesskey-core-id",
+    "uselesskey-core-kid",
+    "uselesskey-core-negative",
+    "uselesskey-core-sink",
     "uselesskey-core",
+    "uselesskey-core-keypair",
     "uselesskey-jwk",
     "uselesskey-rsa",
     "uselesskey-ecdsa",
@@ -769,12 +728,13 @@ fn run_impacted_tests(
 }
 
 fn run_feature_matrix(runner: &mut receipt::Runner) -> Result<()> {
-    for (label, args) in FEATURE_MATRIX {
-        let step_name = format!("feature-matrix:{label}");
+    for feature_set in CORE_FEATURE_MATRIX {
+        let label = feature_set.name;
+        let step_name = format!("feature-matrix:{}", label);
         let result = runner.step(&step_name, None, || {
             let mut cmd = Command::new("cargo");
             cmd.args(["check", "-p", "uselesskey"]);
-            for arg in *args {
+            for arg in feature_set.cargo_args {
                 cmd.arg(arg);
             }
             run(&mut cmd)
@@ -792,7 +752,8 @@ fn run_feature_matrix(runner: &mut receipt::Runner) -> Result<()> {
 }
 
 fn record_feature_matrix_skipped(runner: &mut receipt::Runner) {
-    for (label, _) in FEATURE_MATRIX {
+    for feature_set in CORE_FEATURE_MATRIX {
+        let label = feature_set.name;
         runner.add_feature_matrix(label, "skipped");
     }
 }

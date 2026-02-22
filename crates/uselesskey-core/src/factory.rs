@@ -275,7 +275,7 @@ impl Factory {
         // This avoids deadlocks when the init closure calls back into
         // get_or_init (e.g. x509 cert generation calling factory.rsa()).
         let seed = self.seed_for(&id);
-        let mut rng = ChaCha20Rng::from_seed(seed.0);
+        let mut rng = ChaCha20Rng::from_seed(*seed.bytes());
         let value = init(&mut rng);
         let arc: Arc<T> = Arc::new(value);
         let arc_any: CacheValue = arc.clone();
@@ -353,7 +353,7 @@ fn cache_insert_if_absent(cache: &Cache, id: ArtifactId, value: CacheValue) -> C
 pub(crate) fn random_seed() -> Seed {
     let mut bytes = [0u8; 32];
     OsRng.fill_bytes(&mut bytes);
-    Seed(bytes)
+    Seed::new(bytes)
 }
 
 #[cfg(not(feature = "std"))]

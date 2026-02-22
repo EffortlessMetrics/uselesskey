@@ -10,8 +10,7 @@ mod jwk_private_tests {
     }
 
     fn expected_kid(spki_der: &[u8]) -> String {
-        let hash = blake3::hash(spki_der);
-        URL_SAFE_NO_PAD.encode(&hash.as_bytes()[..12])
+        uselesskey_core_kid::kid_from_bytes(spki_der)
     }
 
     #[test]

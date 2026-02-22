@@ -277,6 +277,16 @@ mod tests {
             base_bytes,
             "intermediate_cn must affect stable_bytes"
         );
+
+        // Changing leaf_sans
+        let changed = base
+            .clone()
+            .with_sans(vec!["extra.example.com".to_string()]);
+        assert_ne!(
+            changed.stable_bytes(),
+            base_bytes,
+            "leaf_sans must affect stable_bytes"
+        );
     }
 
     #[test]

@@ -15,7 +15,7 @@ authors.workspace = true
 
 [dependencies]
 uselesskey-core = { path = "../uselesskey-core", version = "0.3.0" }
-blake3.workspace = true
+uselesskey-core-kid.workspace = true
 rand_core.workspace = true
 
 # Optional JWK/JWKS support

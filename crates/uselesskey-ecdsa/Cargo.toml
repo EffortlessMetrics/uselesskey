@@ -15,6 +15,7 @@ authors.workspace = true
 
 [dependencies]
 uselesskey-core = { path = "../uselesskey-core", version = "0.3.0" }
+uselesskey-core-keypair.workspace = true
 
 # Elliptic curve support from RustCrypto
 p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "pem"] }
@@ -26,7 +27,6 @@ rand_core.workspace = true
 serde_json = { workspace = true, optional = true }
 base64 = { workspace = true, optional = true }
 uselesskey-jwk = { path = "../uselesskey-jwk", version = "0.3.0", optional = true }
-blake3.workspace = true
 
 [features]
 default = []
@@ -36,5 +36,6 @@ jwk = ["dep:serde_json", "dep:base64", "dep:uselesskey-jwk"]
 features = ["jwk"]
 
 [dev-dependencies]
+uselesskey-core-kid.workspace = true
 proptest.workspace = true
 rstest.workspace = true
