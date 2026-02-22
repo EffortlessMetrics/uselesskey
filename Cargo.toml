@@ -45,10 +45,10 @@ thiserror = "2.0.18"
 
 uselesskey-test-grid = { path = "crates/uselesskey-test-grid", version = "0.3.0" }
 uselesskey-feature-grid = { path = "crates/uselesskey-feature-grid", version = "0.3.0" }
-uselesskey-core-id = { path = "crates/uselesskey-core-id", version = "0.3.0" }
+uselesskey-core-id = { path = "crates/uselesskey-core-id", version = "0.3.0", default-features = false }
 uselesskey-core-kid = { path = "crates/uselesskey-core-kid", version = "0.3.0" }
 uselesskey-core-keypair = { path = "crates/uselesskey-core-keypair", version = "0.3.0" }
-uselesskey-core-negative = { path = "crates/uselesskey-core-negative", version = "0.3.0" }
+uselesskey-core-negative = { path = "crates/uselesskey-core-negative", version = "0.3.0", default-features = false }
 
 # determinism / hashing
 blake3 = "1.8.3"

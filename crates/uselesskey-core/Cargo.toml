@@ -21,6 +21,8 @@ std = [
     "thiserror/std",
     "rand_core/std",
     "rand_chacha/std",
+    "uselesskey-core-id/std",
+    "uselesskey-core-negative/std",
 ]
 
 [dependencies]
@@ -31,8 +33,8 @@ rand_chacha = { version = "0.3.1", default-features = false }
 spin = { version = "0.9.8", default-features = false, features = ["mutex", "spin_mutex"] }
 uselesskey-core-sink = { workspace = true, optional = true }
 
-uselesskey-core-id = { workspace = true }
-uselesskey-core-negative = { workspace = true }
+uselesskey-core-id = { workspace = true, default-features = false }
+uselesskey-core-negative = { workspace = true, default-features = false }
 
 [dev-dependencies]
 proptest.workspace = true
