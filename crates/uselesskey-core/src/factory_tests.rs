@@ -1,6 +1,5 @@
-use crate::factory::{Factory, downcast_or_panic, random_seed};
-use crate::id::{ArtifactId, DerivationVersion, Seed};
-use std::any::Any;
+use crate::factory::{Factory, random_seed};
+use crate::id::Seed;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -43,37 +42,6 @@ fn get_or_init_type_mismatch_panics() {
     }));
 
     assert!(result.is_err(), "expected panic on type mismatch");
-}
-
-#[test]
-fn downcast_or_panic_type_mismatch_panics() {
-    let id = ArtifactId::new(
-        "domain:test",
-        "label".to_string(),
-        b"spec",
-        "good".to_string(),
-        DerivationVersion::V1,
-    );
-    let arc_any: Arc<dyn Any + Send + Sync> = Arc::new(123u32);
-    let result = catch_unwind(AssertUnwindSafe(|| {
-        let _ = downcast_or_panic::<String>(arc_any.clone(), &id);
-    }));
-
-    assert!(result.is_err(), "expected panic on type mismatch");
-}
-
-#[test]
-fn downcast_or_panic_ok_returns_value() {
-    let id = ArtifactId::new(
-        "domain:test",
-        "label".to_string(),
-        b"spec",
-        "good".to_string(),
-        DerivationVersion::V1,
-    );
-    let arc_any: Arc<dyn Any + Send + Sync> = Arc::new(123u32);
-    let arc = downcast_or_panic::<u32>(arc_any, &id);
-    assert_eq!(*arc, 123u32);
 }
 
 #[test]

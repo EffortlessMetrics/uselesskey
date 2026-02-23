@@ -241,6 +241,7 @@ fn feature_matrix_cmd() -> Result<()> {
 
 const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-core-id",
+    "uselesskey-core-cache",
     "uselesskey-core-kid",
     "uselesskey-core-negative",
     "uselesskey-core-sink",

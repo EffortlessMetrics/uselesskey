@@ -3343,16 +3343,26 @@ dependencies = [
 name = "uselesskey-core"
 version = "0.3.0"
 dependencies = [
- "dashmap",
  "proptest",
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
  "rstest",
- "spin",
  "thiserror 2.0.18",
+ "uselesskey-core-cache",
  "uselesskey-core-id",
  "uselesskey-core-negative",
  "uselesskey-core-sink",
+]
+
+[[package]]
+name = "uselesskey-core-cache"
+version = "0.3.0"
+dependencies = [
+ "dashmap",
+ "proptest",
+ "rstest",
+ "spin",
+ "uselesskey-core-id",
 ]
 
 [[package]]

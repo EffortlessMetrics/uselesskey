@@ -148,9 +148,10 @@ fn expand_impacted_crates(changed: &HashSet<String>) -> BTreeSet<String> {
 
 fn dependents(crate_name: &str) -> &'static [&'static str] {
     match crate_name {
-        "uselesskey-core-id" => &["uselesskey-core"],
+        "uselesskey-core-id" => &["uselesskey-core-cache", "uselesskey-core"],
         "uselesskey-core-kid" => &["uselesskey-core-keypair", "uselesskey-hmac"],
         "uselesskey-core-keypair" => &["uselesskey-rsa", "uselesskey-ecdsa", "uselesskey-ed25519"],
+        "uselesskey-core-cache" => &["uselesskey-core"],
         "uselesskey-core-negative" => &["uselesskey-core"],
         "uselesskey-core-sink" => &["uselesskey-core"],
         "uselesskey-core-token" => &["uselesskey-token"],
@@ -267,6 +268,19 @@ mod tests {
         let plan = build_plan(&paths);
         let impacted = plan.impacted_crates;
         assert!(impacted.contains("uselesskey-core-id"));
+        assert!(impacted.contains("uselesskey-core-cache"));
+        assert!(impacted.contains("uselesskey-core"));
+        assert!(impacted.contains("uselesskey-rsa"));
+        assert!(impacted.contains("uselesskey"));
+        assert!(impacted.contains("uselesskey-bdd"));
+    }
+
+    #[test]
+    fn core_cache_change_expands_to_core_and_facade() {
+        let paths = vec!["crates/uselesskey-core-cache/src/lib.rs".to_string()];
+        let plan = build_plan(&paths);
+        let impacted = plan.impacted_crates;
+        assert!(impacted.contains("uselesskey-core-cache"));
         assert!(impacted.contains("uselesskey-core"));
         assert!(impacted.contains("uselesskey-rsa"));
         assert!(impacted.contains("uselesskey"));

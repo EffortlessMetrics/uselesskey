@@ -3,29 +3,16 @@ use alloc::sync::Arc;
 use core::any::Any;
 use core::fmt;
 
-#[cfg(not(feature = "std"))]
-use alloc::collections::BTreeMap;
-#[cfg(feature = "std")]
-use dashmap::DashMap;
 use rand_chacha::ChaCha20Rng;
 #[cfg(feature = "std")]
 use rand_core::OsRng;
 #[cfg(feature = "std")]
 use rand_core::RngCore;
 use rand_core::SeedableRng;
-#[cfg(not(feature = "std"))]
-use spin::Mutex;
+use uselesskey_core_cache::ArtifactCache;
 
 use crate::derive;
 use crate::id::{ArtifactDomain, ArtifactId, DerivationVersion, Seed};
-
-type CacheValue = Arc<dyn Any + Send + Sync>;
-
-#[cfg(feature = "std")]
-type Cache = DashMap<ArtifactId, CacheValue>;
-
-#[cfg(not(feature = "std"))]
-type Cache = Mutex<BTreeMap<ArtifactId, CacheValue>>;
 
 /// How a [`Factory`] generates artifacts.
 ///
@@ -59,7 +46,7 @@ pub enum Mode {
 
 struct Inner {
     mode: Mode,
-    cache: Cache,
+    cache: ArtifactCache,
 }
 
 /// A factory for generating and caching test fixtures.
@@ -89,7 +76,7 @@ impl fmt::Debug for Factory {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Factory")
             .field("mode", &self.inner.mode)
-            .field("cache_size", &cache_len(&self.inner.cache))
+            .field("cache_size", &self.inner.cache.len())
             .finish()
     }
 }
@@ -113,7 +100,7 @@ impl Factory {
         Self {
             inner: Arc::new(Inner {
                 mode,
-                cache: new_cache(),
+                cache: ArtifactCache::new(),
             }),
         }
     }
@@ -230,7 +217,7 @@ impl Factory {
     /// fx.clear_cache(); // Clear all cached artifacts
     /// ```
     pub fn clear_cache(&self) {
-        cache_clear(&self.inner.cache);
+        self.inner.cache.clear();
     }
 
     /// Get a cached artifact or initialize it using the provided closure.
@@ -267,8 +254,8 @@ impl Factory {
         );
 
         // Fast path: already cached.
-        if let Some(entry) = cache_get(&self.inner.cache, &id) {
-            return downcast_or_panic::<T>(entry, &id);
+        if let Some(entry) = self.inner.cache.get_typed::<T>(&id) {
+            return entry;
         }
 
         // Slow path: compute WITHOUT holding the cache lock.
@@ -278,11 +265,9 @@ impl Factory {
         let mut rng = ChaCha20Rng::from_seed(*seed.bytes());
         let value = init(&mut rng);
         let arc: Arc<T> = Arc::new(value);
-        let arc_any: CacheValue = arc.clone();
 
         // Insert if absent; if another thread raced us, use its value.
-        let winner = cache_insert_if_absent(&self.inner.cache, id.clone(), arc_any);
-        downcast_or_panic::<T>(winner, &id)
+        self.inner.cache.insert_if_absent_typed(id, arc)
     }
 
     fn seed_for(&self, id: &ArtifactId) -> Seed {
@@ -290,62 +275,6 @@ impl Factory {
             Mode::Random => random_seed(),
             Mode::Deterministic { master } => derive::derive_seed(master, id),
         }
-    }
-}
-
-#[cfg(feature = "std")]
-fn new_cache() -> Cache {
-    DashMap::new()
-}
-
-#[cfg(not(feature = "std"))]
-fn new_cache() -> Cache {
-    Mutex::new(BTreeMap::new())
-}
-
-#[cfg(feature = "std")]
-fn cache_len(cache: &Cache) -> usize {
-    cache.len()
-}
-
-#[cfg(not(feature = "std"))]
-fn cache_len(cache: &Cache) -> usize {
-    cache.lock().len()
-}
-
-#[cfg(feature = "std")]
-fn cache_clear(cache: &Cache) {
-    cache.clear();
-}
-
-#[cfg(not(feature = "std"))]
-fn cache_clear(cache: &Cache) {
-    cache.lock().clear();
-}
-
-#[cfg(feature = "std")]
-fn cache_get(cache: &Cache, id: &ArtifactId) -> Option<CacheValue> {
-    cache.get(id).map(|entry| entry.value().clone())
-}
-
-#[cfg(not(feature = "std"))]
-fn cache_get(cache: &Cache, id: &ArtifactId) -> Option<CacheValue> {
-    cache.lock().get(id).cloned()
-}
-
-#[cfg(feature = "std")]
-fn cache_insert_if_absent(cache: &Cache, id: ArtifactId, value: CacheValue) -> CacheValue {
-    cache.entry(id).or_insert(value).value().clone()
-}
-
-#[cfg(not(feature = "std"))]
-fn cache_insert_if_absent(cache: &Cache, id: ArtifactId, value: CacheValue) -> CacheValue {
-    use alloc::collections::btree_map::Entry;
-
-    let mut guard = cache.lock();
-    match guard.entry(id) {
-        Entry::Vacant(slot) => slot.insert(value).clone(),
-        Entry::Occupied(slot) => slot.get().clone(),
     }
 }
 
@@ -359,20 +288,4 @@ pub(crate) fn random_seed() -> Seed {
 #[cfg(not(feature = "std"))]
 pub(crate) fn random_seed() -> Seed {
     panic!("uselesskey-core: Mode::Random requires the `std` feature")
-}
-
-pub(crate) fn downcast_or_panic<T>(arc_any: CacheValue, id: &ArtifactId) -> Arc<T>
-where
-    T: Any + Send + Sync + 'static,
-{
-    match arc_any.downcast::<T>() {
-        Ok(v) => v,
-        Err(_) => {
-            // This is a bug: it means two different types used the same artifact id.
-            panic!(
-                "uselesskey-core: artifact type mismatch for domain={} label={} variant={}",
-                id.domain, id.label, id.variant
-            );
-        }
-    }
 }

@@ -1,0 +1,27 @@
+[package]
+name = "uselesskey-core-cache"
+version = "0.3.0"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "Identity-keyed typed cache primitives for uselesskey fixture factories."
+readme = "README.md"
+categories = ["development-tools::testing"]
+keywords = ["fixtures", "cache", "deterministic", "testing", "core"]
+homepage = "https://github.com/EffortlessMetrics/uselesskey"
+documentation = "https://docs.rs/uselesskey-core-cache"
+authors.workspace = true
+
+[dependencies]
+dashmap = { workspace = true, optional = true }
+spin = { version = "0.9.8", default-features = false, features = ["mutex", "spin_mutex"] }
+uselesskey-core-id = { workspace = true, default-features = false }
+
+[dev-dependencies]
+proptest.workspace = true
+rstest.workspace = true
+
+[features]
+default = ["std"]
+std = ["dep:dashmap", "uselesskey-core-id/std"]

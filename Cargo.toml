@@ -5,6 +5,7 @@ members = [
   "crates/uselesskey-feature-grid",
   "crates/uselesskey",
   "crates/uselesskey-core",
+  "crates/uselesskey-core-cache",
   "crates/uselesskey-core-id",
   "crates/uselesskey-core-kid",
   "crates/uselesskey-core-keypair",
@@ -49,6 +50,7 @@ thiserror = "2.0.18"
 
 uselesskey-test-grid = { path = "crates/uselesskey-test-grid", version = "0.3.0" }
 uselesskey-feature-grid = { path = "crates/uselesskey-feature-grid", version = "0.3.0" }
+uselesskey-core-cache = { path = "crates/uselesskey-core-cache", version = "0.3.0", default-features = false }
 uselesskey-core-id = { path = "crates/uselesskey-core-id", version = "0.3.0", default-features = false }
 uselesskey-core-kid = { path = "crates/uselesskey-core-kid", version = "0.3.0" }
 uselesskey-core-keypair = { path = "crates/uselesskey-core-keypair", version = "0.3.0" }
