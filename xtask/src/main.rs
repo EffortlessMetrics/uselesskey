@@ -247,6 +247,7 @@ const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-core-negative",
     "uselesskey-core-sink",
     "uselesskey-core-token",
+    "uselesskey-core-jwk",
     "uselesskey-core-x509-derive",
     "uselesskey-core-x509",
     "uselesskey-core",
@@ -490,7 +491,7 @@ fn fuzz(target: Option<&str>, extra: &[String]) -> Result<()> {
     match status {
         Ok(s) if s.success() => {
             let mut cmd = Command::new("cargo");
-            cmd.args(["fuzz", "run"]);
+            cmd.args(["+nightly", "fuzz", "run"]);
 
             if let Some(t) = target {
                 cmd.arg(t);

@@ -12,8 +12,10 @@ libfuzzer-sys = "0.4"
 
 # fuzz targets
 uselesskey = { path = "../crates/uselesskey", features = ["ecdsa", "token"] }
+uselesskey-jwk = { path = "../crates/uselesskey-jwk" }
 rsa = { version = "0.9", features = ["pem"] }
 p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "pem"] }
+serde_json = "1"
 
 [[bin]]
 name = "pem_corrupt"
@@ -48,5 +50,11 @@ doc = false
 [[bin]]
 name = "seed_parse"
 path = "fuzz_targets/seed_parse.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "jwk_builder"
+path = "fuzz_targets/jwk_builder.rs"
 test = false
 doc = false

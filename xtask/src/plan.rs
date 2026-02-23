@@ -156,6 +156,7 @@ fn dependents(crate_name: &str) -> &'static [&'static str] {
         "uselesskey-core-negative" => &["uselesskey-core"],
         "uselesskey-core-sink" => &["uselesskey-core"],
         "uselesskey-core-token" => &["uselesskey-token"],
+        "uselesskey-core-jwk" => &["uselesskey-jwk"],
         "uselesskey-core-x509-derive" => &["uselesskey-core-x509"],
         "uselesskey-core-x509" => &["uselesskey-x509"],
         "uselesskey-core" => &[
@@ -360,6 +361,20 @@ mod tests {
         let impacted = plan.impacted_crates;
         assert!(impacted.contains("uselesskey-core-token"));
         assert!(impacted.contains("uselesskey-token"));
+        assert!(impacted.contains("uselesskey"));
+    }
+
+    #[test]
+    fn core_jwk_change_expands_to_jwk_and_key_crates() {
+        let paths = vec!["crates/uselesskey-core-jwk/src/lib.rs".to_string()];
+        let plan = build_plan(&paths);
+        let impacted = plan.impacted_crates;
+        assert!(impacted.contains("uselesskey-core-jwk"));
+        assert!(impacted.contains("uselesskey-jwk"));
+        assert!(impacted.contains("uselesskey-rsa"));
+        assert!(impacted.contains("uselesskey-ecdsa"));
+        assert!(impacted.contains("uselesskey-ed25519"));
+        assert!(impacted.contains("uselesskey-hmac"));
         assert!(impacted.contains("uselesskey"));
     }
 

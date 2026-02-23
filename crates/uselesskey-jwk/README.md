@@ -1,8 +1,9 @@
 # uselesskey-jwk
 
-Typed JWK/JWKS models for `uselesskey` fixture crates.
+Compatibility facade for typed JWK/JWKS models used by `uselesskey` fixture crates.
 
-This crate provides lightweight serializable structs (`PublicJwk`, `PrivateJwk`, `AnyJwk`) plus `JwksBuilder` with stable `kid` ordering.
+The canonical implementation lives in `uselesskey-core-jwk`; this crate re-exports
+that API to preserve the stable `uselesskey-jwk` crate name.
 
 ## Example
 

@@ -76,9 +76,10 @@ cargo test -p uselesskey-rsa test_name
 
 - **`crates/uselesskey`** - Public facade crate, re-exports stable API
 - **`crates/uselesskey-core`** - Core factory, derivation, caching, negative fixtures
+- **`crates/uselesskey-core-jwk`** - Core typed JWK/JWKS models plus stable `JwksBuilder` ordering semantics
 - **`crates/uselesskey-core-x509-spec`** - X.509 spec models and stable encoding helpers
 - **`crates/uselesskey-core-x509`** - X.509 negative-policy types plus X.509 spec/derive re-exports
-- **`crates/uselesskey-jwk`** - Typed JWK/JWKS helpers and `JwksBuilder`
+- **`crates/uselesskey-jwk`** - Compatibility facade re-exporting `uselesskey-core-jwk`
 - **`crates/uselesskey-rsa`** - RSA fixtures via `RsaFactoryExt` trait
 - **`crates/uselesskey-ecdsa`** - ECDSA (P-256/P-384) fixtures via `EcdsaFactoryExt` trait
 - **`crates/uselesskey-ed25519`** - Ed25519 fixtures via `Ed25519FactoryExt` trait
