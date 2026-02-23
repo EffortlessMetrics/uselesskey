@@ -3416,6 +3416,7 @@ dependencies = [
  "proptest",
  "rstest",
  "uselesskey-core-x509-derive",
+ "uselesskey-core-x509-spec",
 ]
 
 [[package]]
@@ -3427,6 +3428,14 @@ dependencies = [
  "rand_core 0.6.4",
  "rcgen",
  "time",
+]
+
+[[package]]
+name = "uselesskey-core-x509-spec"
+version = "0.3.0"
+dependencies = [
+ "proptest",
+ "rstest",
 ]
 
 [[package]]
