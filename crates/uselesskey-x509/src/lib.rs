@@ -76,7 +76,6 @@ pub mod negative;
 mod spec;
 #[cfg(test)]
 mod testutil;
-mod util;
 
 pub use cert::{DOMAIN_X509_CERT, X509Cert, X509FactoryExt};
 pub use chain::{DOMAIN_X509_CHAIN, X509Chain};

@@ -12,6 +12,7 @@ use time::Duration as TimeDuration;
 use uselesskey_core::negative::CorruptPem;
 use uselesskey_core::sink::TempArtifact;
 use uselesskey_core::{Error, Factory};
+use uselesskey_core_x509::{deterministic_base_time_from_parts, deterministic_serial_number};
 use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 
 use crate::chain::X509Chain;
@@ -21,7 +22,6 @@ use crate::negative::{
     truncate_cert_der,
 };
 use crate::spec::{NotBeforeOffset, X509Spec};
-use crate::util::{deterministic_base_time, deterministic_serial_number};
 
 /// Cache domain for X.509 certificate fixtures.
 ///
@@ -252,20 +252,13 @@ fn load_inner_with_spec(
             .push(DnType::CommonName, spec.subject_cn.clone());
 
         // Set validity period based on spec
-        let base_time = {
-            let mut hasher = blake3::Hasher::new();
-            let label_bytes = label.as_bytes();
-            hasher.update(&(label_bytes.len() as u32).to_be_bytes());
-            hasher.update(label_bytes);
-            let subject_bytes = spec.subject_cn.as_bytes();
-            hasher.update(&(subject_bytes.len() as u32).to_be_bytes());
-            hasher.update(subject_bytes);
-            let issuer_bytes = spec.issuer_cn.as_bytes();
-            hasher.update(&(issuer_bytes.len() as u32).to_be_bytes());
-            hasher.update(issuer_bytes);
-            hasher.update(&(spec.rsa_bits as u32).to_be_bytes());
-            deterministic_base_time(hasher)
-        };
+        let rsa_bits = (spec.rsa_bits as u32).to_be_bytes();
+        let base_time = deterministic_base_time_from_parts(&[
+            label.as_bytes(),
+            spec.subject_cn.as_bytes(),
+            spec.issuer_cn.as_bytes(),
+            &rsa_bits,
+        ]);
 
         let not_before = match spec.not_before_offset {
             NotBeforeOffset::DaysAgo(days) => base_time - TimeDuration::days(days as i64),

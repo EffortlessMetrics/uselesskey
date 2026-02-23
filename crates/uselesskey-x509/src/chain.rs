@@ -12,10 +12,10 @@ use rustls_pki_types::PrivatePkcs8KeyDer;
 use time::Duration as TimeDuration;
 use uselesskey_core::sink::TempArtifact;
 use uselesskey_core::{Error, Factory};
+use uselesskey_core_x509::{deterministic_base_time_from_parts, deterministic_serial_number};
 use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 
 use crate::chain_spec::ChainSpec;
-use crate::util::{deterministic_base_time, deterministic_serial_number};
 
 /// Cache domain for X.509 certificate chain fixtures.
 ///
@@ -308,20 +308,13 @@ fn load_chain_inner(
         .expect("leaf key parse");
 
         // Deterministic base time for the chain
-        let base_time = {
-            let mut hasher = blake3::Hasher::new();
-            let label_bytes = label.as_bytes();
-            hasher.update(&(label_bytes.len() as u32).to_be_bytes());
-            hasher.update(label_bytes);
-            let leaf_cn_bytes = spec.leaf_cn.as_bytes();
-            hasher.update(&(leaf_cn_bytes.len() as u32).to_be_bytes());
-            hasher.update(leaf_cn_bytes);
-            let root_cn_bytes = spec.root_cn.as_bytes();
-            hasher.update(&(root_cn_bytes.len() as u32).to_be_bytes());
-            hasher.update(root_cn_bytes);
-            hasher.update(&(spec.rsa_bits as u32).to_be_bytes());
-            deterministic_base_time(hasher)
-        };
+        let rsa_bits = (spec.rsa_bits as u32).to_be_bytes();
+        let base_time = deterministic_base_time_from_parts(&[
+            label.as_bytes(),
+            spec.leaf_cn.as_bytes(),
+            spec.root_cn.as_bytes(),
+            &rsa_bits,
+        ]);
 
         // --- Root CA ---
         let mut root_params = CertificateParams::default();

@@ -3399,6 +3399,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "uselesskey-core-x509"
+version = "0.3.0"
+dependencies = [
+ "blake3",
+ "proptest",
+ "rand_chacha 0.3.1",
+ "rand_core 0.6.4",
+ "rcgen",
+ "rstest",
+ "time",
+]
+
+[[package]]
 name = "uselesskey-ecdsa"
 version = "0.3.0"
 dependencies = [
@@ -3609,16 +3622,15 @@ name = "uselesskey-x509"
 version = "0.3.0"
 dependencies = [
  "base64",
- "blake3",
  "proptest",
  "rand_chacha 0.3.1",
- "rand_core 0.6.4",
  "rcgen",
  "rsa",
  "rstest",
  "rustls-pki-types",
  "time",
  "uselesskey-core",
+ "uselesskey-core-x509",
  "uselesskey-jwk",
  "uselesskey-rsa",
  "x509-parser 0.16.0",
