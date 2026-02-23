@@ -153,6 +153,7 @@ fn dependents(crate_name: &str) -> &'static [&'static str] {
         "uselesskey-core-keypair" => &["uselesskey-rsa", "uselesskey-ecdsa", "uselesskey-ed25519"],
         "uselesskey-core-negative" => &["uselesskey-core"],
         "uselesskey-core-sink" => &["uselesskey-core"],
+        "uselesskey-core-token" => &["uselesskey-token"],
         "uselesskey-core" => &[
             "uselesskey-rsa",
             "uselesskey-ecdsa",
@@ -319,6 +320,16 @@ mod tests {
         assert!(impacted.contains("uselesskey"));
         assert!(impacted.contains("uselesskey-rsa"));
         assert!(impacted.contains("uselesskey-bdd"));
+    }
+
+    #[test]
+    fn core_token_change_expands_to_token_and_facade() {
+        let paths = vec!["crates/uselesskey-core-token/src/lib.rs".to_string()];
+        let plan = build_plan(&paths);
+        let impacted = plan.impacted_crates;
+        assert!(impacted.contains("uselesskey-core-token"));
+        assert!(impacted.contains("uselesskey-token"));
+        assert!(impacted.contains("uselesskey"));
     }
 
     #[test]

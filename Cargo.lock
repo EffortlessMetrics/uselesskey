@@ -3399,6 +3399,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "uselesskey-core-token"
+version = "0.3.0"
+dependencies = [
+ "base64",
+ "proptest",
+ "rand_chacha 0.3.1",
+ "rand_core 0.6.4",
+ "serde_json",
+]
+
+[[package]]
 name = "uselesskey-core-x509"
 version = "0.3.0"
 dependencies = [
@@ -3603,9 +3614,9 @@ version = "0.3.0"
 dependencies = [
  "base64",
  "proptest",
- "rand_core 0.6.4",
  "serde_json",
  "uselesskey-core",
+ "uselesskey-core-token",
 ]
 
 [[package]]

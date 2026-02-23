@@ -244,6 +244,7 @@ const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-core-kid",
     "uselesskey-core-negative",
     "uselesskey-core-sink",
+    "uselesskey-core-token",
     "uselesskey-core",
     "uselesskey-core-keypair",
     "uselesskey-jwk",

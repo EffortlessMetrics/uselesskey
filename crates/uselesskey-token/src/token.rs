@@ -1,10 +1,8 @@
 use std::fmt;
 use std::sync::Arc;
 
-use base64::Engine as _;
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-use rand_core::RngCore;
 use uselesskey_core::Factory;
+use uselesskey_core_token::{TokenKind, authorization_scheme, generate_token};
 
 use crate::TokenSpec;
 
@@ -12,8 +10,6 @@ use crate::TokenSpec;
 ///
 /// Keep this stable: changing it changes deterministic outputs.
 pub const DOMAIN_TOKEN_FIXTURE: &str = "uselesskey:token:fixture";
-
-const BASE62: &[u8; 62] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
 #[derive(Clone)]
 pub struct TokenFixture {
@@ -97,10 +93,7 @@ impl TokenFixture {
     /// - API keys use `ApiKey <token>`
     /// - Bearer and OAuth access tokens use `Bearer <token>`
     pub fn authorization_header(&self) -> String {
-        let scheme = match self.spec {
-            TokenSpec::ApiKey => "ApiKey",
-            TokenSpec::Bearer | TokenSpec::OAuthAccessToken => "Bearer",
-        };
+        let scheme = authorization_scheme(token_kind(self.spec));
         format!("{scheme} {}", self.value())
     }
 }
@@ -109,70 +102,24 @@ fn load_inner(factory: &Factory, label: &str, spec: TokenSpec, variant: &str) ->
     let spec_bytes = spec.stable_bytes();
 
     factory.get_or_init(DOMAIN_TOKEN_FIXTURE, label, &spec_bytes, variant, |rng| {
-        let value = generate_token(label, spec, rng);
+        let value = generate_token(label, token_kind(spec), rng);
         Inner { value }
     })
 }
 
-fn generate_token(label: &str, spec: TokenSpec, rng: &mut impl RngCore) -> String {
+fn token_kind(spec: TokenSpec) -> TokenKind {
     match spec {
-        TokenSpec::ApiKey => generate_api_key(rng),
-        TokenSpec::Bearer => generate_bearer_token(rng),
-        TokenSpec::OAuthAccessToken => generate_oauth_access_token(label, rng),
+        TokenSpec::ApiKey => TokenKind::ApiKey,
+        TokenSpec::Bearer => TokenKind::Bearer,
+        TokenSpec::OAuthAccessToken => TokenKind::OAuthAccessToken,
     }
-}
-
-fn generate_api_key(rng: &mut impl RngCore) -> String {
-    let mut out = String::from("uk_test_");
-    out.push_str(&random_base62(rng, 32));
-    out
-}
-
-fn generate_bearer_token(rng: &mut impl RngCore) -> String {
-    let mut bytes = [0u8; 32];
-    rng.fill_bytes(&mut bytes);
-    URL_SAFE_NO_PAD.encode(bytes)
-}
-
-fn generate_oauth_access_token(label: &str, rng: &mut impl RngCore) -> String {
-    let header = URL_SAFE_NO_PAD.encode(r#"{"alg":"RS256","typ":"JWT"}"#);
-
-    let mut jti = [0u8; 16];
-    rng.fill_bytes(&mut jti);
-
-    let payload = serde_json::json!({
-        "iss": "uselesskey",
-        "sub": label,
-        "aud": "tests",
-        "scope": "fixture.read",
-        "jti": URL_SAFE_NO_PAD.encode(jti),
-        "exp": 2_000_000_000u64,
-    });
-    let payload_json = serde_json::to_vec(&payload).expect("payload JSON");
-    let payload_segment = URL_SAFE_NO_PAD.encode(payload_json);
-
-    let mut signature = [0u8; 32];
-    rng.fill_bytes(&mut signature);
-    let signature_segment = URL_SAFE_NO_PAD.encode(signature);
-
-    format!("{header}.{payload_segment}.{signature_segment}")
-}
-
-fn random_base62(rng: &mut impl RngCore, len: usize) -> String {
-    let mut out = String::with_capacity(len);
-    let mut byte = [0u8; 1];
-
-    while out.len() < len {
-        rng.fill_bytes(&mut byte);
-        let idx = byte[0] as usize % BASE62.len();
-        out.push(BASE62[idx] as char);
-    }
-
-    out
 }
 
 #[cfg(test)]
 mod tests {
+    use base64::Engine as _;
+    use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+
     use super::*;
     use uselesskey_core::Seed;
 
