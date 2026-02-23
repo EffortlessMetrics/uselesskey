@@ -154,6 +154,8 @@ fn dependents(crate_name: &str) -> &'static [&'static str] {
         "uselesskey-core-negative" => &["uselesskey-core"],
         "uselesskey-core-sink" => &["uselesskey-core"],
         "uselesskey-core-token" => &["uselesskey-token"],
+        "uselesskey-core-x509-derive" => &["uselesskey-core-x509"],
+        "uselesskey-core-x509" => &["uselesskey-x509"],
         "uselesskey-core" => &[
             "uselesskey-rsa",
             "uselesskey-ecdsa",
@@ -330,6 +332,31 @@ mod tests {
         assert!(impacted.contains("uselesskey-core-token"));
         assert!(impacted.contains("uselesskey-token"));
         assert!(impacted.contains("uselesskey"));
+    }
+
+    #[test]
+    fn core_x509_derive_change_expands_to_x509_stack() {
+        let paths = vec!["crates/uselesskey-core-x509-derive/src/lib.rs".to_string()];
+        let plan = build_plan(&paths);
+        let impacted = plan.impacted_crates;
+        assert!(impacted.contains("uselesskey-core-x509-derive"));
+        assert!(impacted.contains("uselesskey-core-x509"));
+        assert!(impacted.contains("uselesskey-x509"));
+        assert!(impacted.contains("uselesskey"));
+        assert!(impacted.contains("uselesskey-rustls"));
+        assert!(impacted.contains("uselesskey-tonic"));
+    }
+
+    #[test]
+    fn core_x509_change_expands_to_x509_stack() {
+        let paths = vec!["crates/uselesskey-core-x509/src/lib.rs".to_string()];
+        let plan = build_plan(&paths);
+        let impacted = plan.impacted_crates;
+        assert!(impacted.contains("uselesskey-core-x509"));
+        assert!(impacted.contains("uselesskey-x509"));
+        assert!(impacted.contains("uselesskey"));
+        assert!(impacted.contains("uselesskey-rustls"));
+        assert!(impacted.contains("uselesskey-tonic"));
     }
 
     #[test]

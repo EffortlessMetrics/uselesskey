@@ -3413,12 +3413,19 @@ dependencies = [
 name = "uselesskey-core-x509"
 version = "0.3.0"
 dependencies = [
- "blake3",
  "proptest",
+ "rstest",
+ "uselesskey-core-x509-derive",
+]
+
+[[package]]
+name = "uselesskey-core-x509-derive"
+version = "0.3.0"
+dependencies = [
+ "blake3",
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
  "rcgen",
- "rstest",
  "time",
 ]
 

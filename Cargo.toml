@@ -11,6 +11,7 @@ members = [
   "crates/uselesskey-core-negative",
   "crates/uselesskey-core-sink",
   "crates/uselesskey-core-token",
+  "crates/uselesskey-core-x509-derive",
   "crates/uselesskey-core-x509",
   "crates/uselesskey-jwk",
   "crates/uselesskey-rsa",
@@ -52,6 +53,7 @@ uselesskey-core-kid = { path = "crates/uselesskey-core-kid", version = "0.3.0" }
 uselesskey-core-keypair = { path = "crates/uselesskey-core-keypair", version = "0.3.0" }
 uselesskey-core-negative = { path = "crates/uselesskey-core-negative", version = "0.3.0", default-features = false }
 uselesskey-core-token = { path = "crates/uselesskey-core-token", version = "0.3.0" }
+uselesskey-core-x509-derive = { path = "crates/uselesskey-core-x509-derive", version = "0.3.0" }
 uselesskey-core-x509 = { path = "crates/uselesskey-core-x509", version = "0.3.0" }
 
 # determinism / hashing
