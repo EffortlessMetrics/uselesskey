@@ -60,6 +60,22 @@ mod rsa_aws_lc_rs_tests {
     }
 
     #[test]
+    fn test_rsa_conversion_matches_fixture_material() {
+        let fx = fx();
+        let rsa_keypair = fx.rsa("fixture-rsa", RsaSpec::rs256());
+
+        let converted = rsa_keypair.rsa_key_pair_aws_lc_rs();
+        let expected = aws_lc_rs::rsa::KeyPair::from_pkcs8(rsa_keypair.private_key_pkcs8_der())
+            .expect("fixture PKCS#8 DER should parse");
+
+        assert_eq!(
+            converted.public_key().as_ref(),
+            expected.public_key().as_ref(),
+            "converted RSA key should match fixture key material"
+        );
+    }
+
+    #[test]
     fn test_rsa_different_key_sizes() {
         let test_cases = [(2048, "rsa-2048"), (3072, "rsa-3072"), (4096, "rsa-4096")];
 
@@ -248,6 +264,25 @@ mod ecdsa_aws_lc_rs_tests {
     }
 
     #[test]
+    fn test_ecdsa_conversion_matches_fixture_material() {
+        let fx = fx();
+        let ecdsa_keypair = fx.ecdsa("fixture-ecdsa", EcdsaSpec::es256());
+
+        let converted = ecdsa_keypair.ecdsa_key_pair_aws_lc_rs();
+        let expected = signature::EcdsaKeyPair::from_pkcs8(
+            &signature::ECDSA_P256_SHA256_ASN1_SIGNING,
+            ecdsa_keypair.private_key_pkcs8_der(),
+        )
+        .expect("fixture PKCS#8 DER should parse");
+
+        assert_eq!(
+            converted.public_key().as_ref(),
+            expected.public_key().as_ref(),
+            "converted ECDSA key should match fixture key material"
+        );
+    }
+
+    #[test]
     fn test_ecdsa_deterministic_keys() {
         let seed = Seed::from_env_value("ecdsa-aws-lc-rs-deterministic-test-seed").unwrap();
         let fx1 = Factory::deterministic(seed);
@@ -370,6 +405,23 @@ mod ed25519_aws_lc_rs_tests {
         public_key
             .verify(msg, sig.as_ref())
             .expect("Failed to verify signature");
+    }
+
+    #[test]
+    fn test_ed25519_conversion_matches_fixture_material() {
+        let fx = fx();
+        let ed25519_keypair = fx.ed25519("fixture-ed25519", Ed25519Spec::new());
+
+        let converted = ed25519_keypair.ed25519_key_pair_aws_lc_rs();
+        let expected =
+            signature::Ed25519KeyPair::from_pkcs8(ed25519_keypair.private_key_pkcs8_der())
+                .expect("fixture PKCS#8 DER should parse");
+
+        assert_eq!(
+            converted.public_key().as_ref(),
+            expected.public_key().as_ref(),
+            "converted Ed25519 key should match fixture key material"
+        );
     }
 
     #[test]

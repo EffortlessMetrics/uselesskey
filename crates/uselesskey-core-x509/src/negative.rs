@@ -211,6 +211,26 @@ mod tests {
     }
 
     #[test]
+    fn x509_negative_descriptions_are_stable() {
+        assert_eq!(
+            X509Negative::Expired.description(),
+            "Certificate with not_after in the past (expired)"
+        );
+        assert_eq!(
+            X509Negative::NotYetValid.description(),
+            "Certificate with not_before in the future (not yet valid)"
+        );
+        assert_eq!(
+            X509Negative::WrongKeyUsage.description(),
+            "Certificate marked as CA but without keyCertSign key usage"
+        );
+        assert_eq!(
+            X509Negative::SelfSignedButClaimsCA.description(),
+            "Self-signed certificate that claims to be a CA"
+        );
+    }
+
+    #[test]
     fn chain_negative_variant_names_are_stable() {
         let neg = ChainNegative::HostnameMismatch {
             wrong_hostname: "wrong.example.com".to_string(),

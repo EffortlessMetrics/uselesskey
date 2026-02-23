@@ -180,4 +180,63 @@ mod tests {
         assert_eq!(value.len(), 64);
         assert!(value.chars().all(|c| c.is_ascii_alphanumeric()));
     }
+
+    #[test]
+    fn random_base62_uses_modulo_indexing() {
+        struct ByteSeqRng {
+            bytes: [u8; 5],
+            pos: usize,
+        }
+
+        impl ByteSeqRng {
+            fn next_byte(&mut self) -> u8 {
+                let b = self.bytes[self.pos % self.bytes.len()];
+                self.pos += 1;
+                b
+            }
+        }
+
+        impl RngCore for ByteSeqRng {
+            fn next_u32(&mut self) -> u32 {
+                u32::from_le_bytes([
+                    self.next_byte(),
+                    self.next_byte(),
+                    self.next_byte(),
+                    self.next_byte(),
+                ])
+            }
+
+            fn next_u64(&mut self) -> u64 {
+                u64::from_le_bytes([
+                    self.next_byte(),
+                    self.next_byte(),
+                    self.next_byte(),
+                    self.next_byte(),
+                    self.next_byte(),
+                    self.next_byte(),
+                    self.next_byte(),
+                    self.next_byte(),
+                ])
+            }
+
+            fn fill_bytes(&mut self, dst: &mut [u8]) {
+                for b in dst {
+                    *b = self.next_byte();
+                }
+            }
+
+            fn try_fill_bytes(&mut self, dst: &mut [u8]) -> Result<(), rand_core::Error> {
+                self.fill_bytes(dst);
+                Ok(())
+            }
+        }
+
+        let mut rng = ByteSeqRng {
+            bytes: [0, 61, 62, 123, 255],
+            pos: 0,
+        };
+        let value = random_base62(&mut rng, 5);
+
+        assert_eq!(value, "A9A9H");
+    }
 }

@@ -220,6 +220,19 @@ mod tests {
     }
 
     #[test]
+    fn debug_includes_type_name_and_len() {
+        let cache = ArtifactCache::new();
+        cache.insert_if_absent_typed(sample_id(), Arc::new(1u8));
+
+        let dbg = format!("{cache:?}");
+        assert!(
+            dbg.contains("ArtifactCache"),
+            "debug output should include struct name"
+        );
+        assert!(dbg.contains("len: 1"), "debug output should include len");
+    }
+
+    #[test]
     fn get_typed_type_mismatch_panics() {
         let cache = ArtifactCache::new();
         let id = sample_id();
