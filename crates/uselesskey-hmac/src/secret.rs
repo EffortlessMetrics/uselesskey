@@ -3,6 +3,8 @@ use std::sync::Arc;
 
 use rand_core::RngCore;
 use uselesskey_core::Factory;
+#[cfg(feature = "jwk")]
+use uselesskey_core_kid::kid_from_bytes;
 
 use crate::HmacSpec;
 
@@ -67,12 +69,7 @@ impl HmacSecret {
     /// A stable key identifier derived from the secret bytes (base64url blake3 hash prefix).
     #[cfg(feature = "jwk")]
     pub fn kid(&self) -> String {
-        use base64::Engine as _;
-        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-
-        let h = blake3::hash(self.secret_bytes());
-        let short = &h.as_bytes()[..12]; // 96 bits is plenty for tests.
-        URL_SAFE_NO_PAD.encode(short)
+        kid_from_bytes(self.secret_bytes())
     }
 
     /// HMAC secret as an octet JWK (kty=oct).

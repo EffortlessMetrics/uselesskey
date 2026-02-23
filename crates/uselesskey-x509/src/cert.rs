@@ -564,8 +564,16 @@ mod tests {
         let eku_ext = parsed
             .extensions()
             .iter()
-            .find(|ext| ext.oid == x509_parser::oid_registry::OID_X509_EXT_EXTENDED_KEY_USAGE);
-        assert!(eku_ext.is_some(), "leaf cert should have EKU extension");
+            .find(|ext| ext.oid == x509_parser::oid_registry::OID_X509_EXT_EXTENDED_KEY_USAGE)
+            .expect("leaf cert should have EKU extension");
+
+        let eku = match eku_ext.parsed_extension() {
+            x509_parser::extensions::ParsedExtension::ExtendedKeyUsage(eku) => eku,
+            other => panic!("expected ExtendedKeyUsage, got {:?}", other),
+        };
+
+        assert!(eku.server_auth, "leaf EKU must include ServerAuth");
+        assert!(eku.client_auth, "leaf EKU must include ClientAuth");
     }
 
     #[test]
@@ -585,5 +593,63 @@ mod tests {
             .iter()
             .find(|e| e.oid == x509_parser::oid_registry::OID_X509_EXT_EXTENDED_KEY_USAGE);
         assert!(eku.is_none(), "CA cert should not have EKU");
+    }
+
+    #[test]
+    fn test_leaf_key_usage_bits() {
+        use x509_parser::prelude::*;
+
+        let factory = fx();
+        let spec = X509Spec::self_signed("ku-leaf.example.com");
+        let cert = factory.x509_self_signed("ku-leaf", spec);
+
+        let (_, parsed) = X509Certificate::from_der(cert.cert_der()).expect("parse cert");
+
+        let ku_ext = parsed
+            .extensions()
+            .iter()
+            .find(|ext| ext.oid == x509_parser::oid_registry::OID_X509_EXT_KEY_USAGE)
+            .expect("leaf cert should have KeyUsage extension");
+
+        let ku = match ku_ext.parsed_extension() {
+            x509_parser::extensions::ParsedExtension::KeyUsage(ku) => ku,
+            other => panic!("expected KeyUsage, got {:?}", other),
+        };
+
+        // Leaf defaults: digital_signature=true, key_encipherment=true,
+        //                key_cert_sign=false, crl_sign=false
+        assert!(ku.digital_signature(), "leaf must have DigitalSignature");
+        assert!(ku.key_encipherment(), "leaf must have KeyEncipherment");
+        assert!(!ku.key_cert_sign(), "leaf must NOT have KeyCertSign");
+        assert!(!ku.crl_sign(), "leaf must NOT have CrlSign");
+    }
+
+    #[test]
+    fn test_ca_key_usage_bits() {
+        use x509_parser::prelude::*;
+
+        let factory = fx();
+        let spec = X509Spec::self_signed_ca("ku-ca.example.com");
+        let cert = factory.x509_self_signed("ku-ca", spec);
+
+        let (_, parsed) = X509Certificate::from_der(cert.cert_der()).expect("parse cert");
+
+        let ku_ext = parsed
+            .extensions()
+            .iter()
+            .find(|ext| ext.oid == x509_parser::oid_registry::OID_X509_EXT_KEY_USAGE)
+            .expect("CA cert should have KeyUsage extension");
+
+        let ku = match ku_ext.parsed_extension() {
+            x509_parser::extensions::ParsedExtension::KeyUsage(ku) => ku,
+            other => panic!("expected KeyUsage, got {:?}", other),
+        };
+
+        // CA defaults: digital_signature=true, key_encipherment=false,
+        //              key_cert_sign=true, crl_sign=true
+        assert!(ku.digital_signature(), "CA must have DigitalSignature");
+        assert!(!ku.key_encipherment(), "CA must NOT have KeyEncipherment");
+        assert!(ku.key_cert_sign(), "CA must have KeyCertSign");
+        assert!(ku.crl_sign(), "CA must have CrlSign");
     }
 }

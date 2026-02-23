@@ -1,0 +1,20 @@
+[package]
+name = "uselesskey-feature-grid"
+version = "0.3.0"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+homepage = "https://github.com/EffortlessMetrics/uselesskey"
+description = "Canonical feature and matrix definitions for uselesskey automation."
+categories = ["development-tools::testing"]
+keywords = ["testing", "feature-flags", "feature-matrix", "bdd", "fixtures"]
+authors.workspace = true
+publish = true
+readme = "README.md"
+documentation = "https://docs.rs/uselesskey-feature-grid"
+
+[dependencies]
+
+[dev-dependencies]
+

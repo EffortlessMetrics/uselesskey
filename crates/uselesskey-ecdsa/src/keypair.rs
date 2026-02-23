@@ -2,11 +2,10 @@ use std::fmt;
 use std::sync::Arc;
 
 use elliptic_curve::pkcs8::{EncodePrivateKey, EncodePublicKey, LineEnding};
-use uselesskey_core::negative::{
-    CorruptPem, corrupt_der_deterministic, corrupt_pem, corrupt_pem_deterministic, truncate_der,
-};
+use uselesskey_core::negative::CorruptPem;
 use uselesskey_core::sink::TempArtifact;
 use uselesskey_core::{Error, Factory};
+use uselesskey_core_keypair::Pkcs8SpkiKeyMaterial;
 
 use crate::EcdsaSpec;
 
@@ -29,10 +28,7 @@ struct Inner {
     /// Kept for potential use; not currently read outside JWK feature.
     #[allow(dead_code)]
     spec: EcdsaSpec,
-    pkcs8_der: Arc<[u8]>,
-    pkcs8_pem: String,
-    spki_der: Arc<[u8]>,
-    spki_pem: String,
+    material: Pkcs8SpkiKeyMaterial,
     /// Raw public key bytes (uncompressed point, for JWK).
     #[cfg_attr(not(feature = "jwk"), allow(dead_code))]
     public_key_bytes: Vec<u8>,
@@ -83,69 +79,68 @@ impl EcdsaKeyPair {
 
     /// PKCS#8 DER-encoded private key bytes.
     pub fn private_key_pkcs8_der(&self) -> &[u8] {
-        &self.inner.pkcs8_der
+        self.inner.material.private_key_pkcs8_der()
     }
 
     /// PKCS#8 PEM-encoded private key.
     pub fn private_key_pkcs8_pem(&self) -> &str {
-        &self.inner.pkcs8_pem
+        self.inner.material.private_key_pkcs8_pem()
     }
 
     /// SPKI DER-encoded public key bytes.
     pub fn public_key_spki_der(&self) -> &[u8] {
-        &self.inner.spki_der
+        self.inner.material.public_key_spki_der()
     }
 
     /// SPKI PEM-encoded public key.
     pub fn public_key_spki_pem(&self) -> &str {
-        &self.inner.spki_pem
+        self.inner.material.public_key_spki_pem()
     }
 
     /// Write the PKCS#8 PEM private key to a tempfile and return the handle.
     pub fn write_private_key_pkcs8_pem(&self) -> Result<TempArtifact, Error> {
-        TempArtifact::new_string("uselesskey-", ".pkcs8.pem", self.private_key_pkcs8_pem())
+        self.inner.material.write_private_key_pkcs8_pem()
     }
 
     /// Write the SPKI PEM public key to a tempfile and return the handle.
     pub fn write_public_key_spki_pem(&self) -> Result<TempArtifact, Error> {
-        TempArtifact::new_string("uselesskey-", ".spki.pem", self.public_key_spki_pem())
+        self.inner.material.write_public_key_spki_pem()
     }
 
     /// Produce a corrupted variant of the PKCS#8 PEM.
     pub fn private_key_pkcs8_pem_corrupt(&self, how: CorruptPem) -> String {
-        corrupt_pem(self.private_key_pkcs8_pem(), how)
+        self.inner.material.private_key_pkcs8_pem_corrupt(how)
     }
 
     /// Produce a deterministic corrupted PKCS#8 PEM using a variant string.
     pub fn private_key_pkcs8_pem_corrupt_deterministic(&self, variant: &str) -> String {
-        corrupt_pem_deterministic(self.private_key_pkcs8_pem(), variant)
+        self.inner
+            .material
+            .private_key_pkcs8_pem_corrupt_deterministic(variant)
     }
 
     /// Produce a truncated variant of the PKCS#8 DER.
     pub fn private_key_pkcs8_der_truncated(&self, len: usize) -> Vec<u8> {
-        truncate_der(self.private_key_pkcs8_der(), len)
+        self.inner.material.private_key_pkcs8_der_truncated(len)
     }
 
     /// Produce a deterministic corrupted PKCS#8 DER using a variant string.
     pub fn private_key_pkcs8_der_corrupt_deterministic(&self, variant: &str) -> Vec<u8> {
-        corrupt_der_deterministic(self.private_key_pkcs8_der(), variant)
+        self.inner
+            .material
+            .private_key_pkcs8_der_corrupt_deterministic(variant)
     }
 
     /// Return a valid (parseable) public key that does *not* match this private key.
     pub fn mismatched_public_key_spki_der(&self) -> Vec<u8> {
         let other = self.load_variant("mismatch");
-        other.spki_der.as_ref().to_vec()
+        other.material.public_key_spki_der().to_vec()
     }
 
     /// A stable key identifier derived from the public key (base64url blake3 hash prefix).
     #[cfg(feature = "jwk")]
     pub fn kid(&self) -> String {
-        use base64::Engine as _;
-        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-
-        let h = blake3::hash(self.public_key_spki_der());
-        let short = &h.as_bytes()[..12]; // 96 bits is plenty for tests.
-        URL_SAFE_NO_PAD.encode(short)
+        self.inner.material.kid()
     }
 
     /// Alias for [`public_jwk`].
@@ -303,12 +298,11 @@ fn generate_p256(spec: EcdsaSpec, rng: &mut impl rand_core::CryptoRngCore) -> In
     let public_key_bytes = point.as_bytes().to_vec();
     let private_key_bytes = signing_key.to_bytes().to_vec();
 
+    let material = Pkcs8SpkiKeyMaterial::new(pkcs8_der, pkcs8_pem, spki_der, spki_pem);
+
     Inner {
         spec,
-        pkcs8_der,
-        pkcs8_pem,
-        spki_der,
-        spki_pem,
+        material,
         public_key_bytes,
         private_key_bytes,
     }
@@ -344,12 +338,11 @@ fn generate_p384(spec: EcdsaSpec, rng: &mut impl rand_core::CryptoRngCore) -> In
     let public_key_bytes = point.as_bytes().to_vec();
     let private_key_bytes = signing_key.to_bytes().to_vec();
 
+    let material = Pkcs8SpkiKeyMaterial::new(pkcs8_der, pkcs8_pem, spki_der, spki_pem);
+
     Inner {
         spec,
-        pkcs8_der,
-        pkcs8_pem,
-        spki_der,
-        spki_pem,
+        material,
         public_key_bytes,
         private_key_bytes,
     }

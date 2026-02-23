@@ -250,8 +250,13 @@ mod tests {
     fn test_default_spec() {
         let spec = X509Spec::default();
         assert_eq!(spec.subject_cn, "Test Certificate");
+        assert_eq!(spec.issuer_cn, "Test Certificate");
+        assert_eq!(spec.not_before_offset, NotBeforeOffset::DaysAgo(1));
         assert_eq!(spec.validity_days, 3650);
+        assert_eq!(spec.key_usage, KeyUsage::leaf());
         assert!(!spec.is_ca);
+        assert_eq!(spec.rsa_bits, 2048);
+        assert!(spec.sans.is_empty());
     }
 
     #[test]
@@ -399,6 +404,14 @@ mod tests {
             changed.stable_bytes(),
             base_bytes,
             "issuer_cn must affect stable_bytes"
+        );
+
+        // Changing sans changes output
+        let changed = base.clone().with_sans(vec!["san.example.com".into()]);
+        assert_ne!(
+            changed.stable_bytes(),
+            base_bytes,
+            "sans must affect stable_bytes"
         );
     }
 

@@ -1,11 +1,11 @@
+#![forbid(unsafe_code)]
+
 use std::fmt;
 use std::fs;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
 use tempfile::NamedTempFile;
-
-use crate::Error;
 
 /// A tempfile-backed artifact that cleans up on drop.
 ///
@@ -15,7 +15,7 @@ use crate::Error;
 /// # Examples
 ///
 /// ```
-/// use uselesskey_core::sink::TempArtifact;
+/// use uselesskey_core_sink::TempArtifact;
 ///
 /// // Create a temp file with string content
 /// let temp = TempArtifact::new_string("prefix-", ".pem", "-----BEGIN KEY-----\n").unwrap();
@@ -53,7 +53,7 @@ impl TempArtifact {
     /// # Examples
     ///
     /// ```
-    /// use uselesskey_core::sink::TempArtifact;
+    /// use uselesskey_core_sink::TempArtifact;
     ///
     /// let der_bytes = vec![0x30, 0x82, 0x01, 0x22];
     /// let temp = TempArtifact::new_bytes("key-", ".der", &der_bytes).unwrap();
@@ -61,7 +61,7 @@ impl TempArtifact {
     /// let read_back = temp.read_to_bytes().unwrap();
     /// assert_eq!(read_back, der_bytes);
     /// ```
-    pub fn new_bytes(prefix: &str, suffix: &str, bytes: &[u8]) -> Result<Self, Error> {
+    pub fn new_bytes(prefix: &str, suffix: &str, bytes: &[u8]) -> std::io::Result<Self> {
         let mut builder = tempfile::Builder::new();
         builder.prefix(prefix).suffix(suffix);
 
@@ -88,14 +88,14 @@ impl TempArtifact {
     /// # Examples
     ///
     /// ```
-    /// use uselesskey_core::sink::TempArtifact;
+    /// use uselesskey_core_sink::TempArtifact;
     ///
     /// let pem = "-----BEGIN PRIVATE KEY-----\nMIIBVQ==\n-----END PRIVATE KEY-----\n";
     /// let temp = TempArtifact::new_string("key-", ".pem", pem).unwrap();
     ///
     /// assert!(temp.path().extension().unwrap() == "pem");
     /// ```
-    pub fn new_string(prefix: &str, suffix: &str, s: &str) -> Result<Self, Error> {
+    pub fn new_string(prefix: &str, suffix: &str, s: &str) -> std::io::Result<Self> {
         Self::new_bytes(prefix, suffix, s.as_bytes())
     }
 
@@ -107,7 +107,7 @@ impl TempArtifact {
     /// # Examples
     ///
     /// ```
-    /// use uselesskey_core::sink::TempArtifact;
+    /// use uselesskey_core_sink::TempArtifact;
     ///
     /// let temp = TempArtifact::new_string("test-", ".txt", "hello").unwrap();
     /// let path = temp.path();
@@ -124,7 +124,7 @@ impl TempArtifact {
     /// # Examples
     ///
     /// ```
-    /// use uselesskey_core::sink::TempArtifact;
+    /// use uselesskey_core_sink::TempArtifact;
     ///
     /// let data = vec![1, 2, 3, 4, 5];
     /// let temp = TempArtifact::new_bytes("test-", ".bin", &data).unwrap();
@@ -132,7 +132,7 @@ impl TempArtifact {
     /// let read_back = temp.read_to_bytes().unwrap();
     /// assert_eq!(read_back, data);
     /// ```
-    pub fn read_to_bytes(&self) -> Result<Vec<u8>, Error> {
+    pub fn read_to_bytes(&self) -> std::io::Result<Vec<u8>> {
         let mut f = fs::File::open(&self.path)?;
         let mut buf = Vec::new();
         f.read_to_end(&mut buf)?;
@@ -146,14 +146,14 @@ impl TempArtifact {
     /// # Examples
     ///
     /// ```
-    /// use uselesskey_core::sink::TempArtifact;
+    /// use uselesskey_core_sink::TempArtifact;
     ///
     /// let temp = TempArtifact::new_string("test-", ".txt", "Hello, World!").unwrap();
     ///
     /// let content = temp.read_to_string().unwrap();
     /// assert_eq!(content, "Hello, World!");
     /// ```
-    pub fn read_to_string(&self) -> Result<String, Error> {
+    pub fn read_to_string(&self) -> std::io::Result<String> {
         let bytes = self.read_to_bytes()?;
         Ok(String::from_utf8_lossy(&bytes).to_string())
     }

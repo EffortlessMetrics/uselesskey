@@ -3305,17 +3305,37 @@ dependencies = [
 name = "uselesskey-bdd"
 version = "0.0.0"
 dependencies = [
+ "tokio",
+ "uselesskey-bdd-steps",
+ "uselesskey-test-grid",
+]
+
+[[package]]
+name = "uselesskey-bdd-steps"
+version = "0.3.0"
+dependencies = [
  "base64",
  "cucumber",
  "ed25519-dalek",
+ "jsonwebtoken",
  "p256",
  "p384",
  "pgp",
  "rsa",
  "serde_json",
- "tokio",
  "uselesskey",
+ "uselesskey-aws-lc-rs",
  "uselesskey-core",
+ "uselesskey-core-id",
+ "uselesskey-core-keypair",
+ "uselesskey-core-kid",
+ "uselesskey-core-negative",
+ "uselesskey-core-sink",
+ "uselesskey-jsonwebtoken",
+ "uselesskey-ring",
+ "uselesskey-rustcrypto",
+ "uselesskey-rustls",
+ "uselesskey-tonic",
  "x509-parser 0.18.1",
 ]
 
@@ -3323,15 +3343,59 @@ dependencies = [
 name = "uselesskey-core"
 version = "0.3.0"
 dependencies = [
- "blake3",
  "dashmap",
  "proptest",
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
  "rstest",
  "spin",
- "tempfile",
  "thiserror 2.0.18",
+ "uselesskey-core-id",
+ "uselesskey-core-negative",
+ "uselesskey-core-sink",
+]
+
+[[package]]
+name = "uselesskey-core-id"
+version = "0.3.0"
+dependencies = [
+ "blake3",
+ "proptest",
+ "rstest",
+]
+
+[[package]]
+name = "uselesskey-core-keypair"
+version = "0.3.0"
+dependencies = [
+ "uselesskey-core",
+ "uselesskey-core-kid",
+]
+
+[[package]]
+name = "uselesskey-core-kid"
+version = "0.3.0"
+dependencies = [
+ "base64",
+ "blake3",
+]
+
+[[package]]
+name = "uselesskey-core-negative"
+version = "0.3.0"
+dependencies = [
+ "proptest",
+ "rstest",
+ "uselesskey-core-id",
+]
+
+[[package]]
+name = "uselesskey-core-sink"
+version = "0.3.0"
+dependencies = [
+ "proptest",
+ "rstest",
+ "tempfile",
 ]
 
 [[package]]
@@ -3339,7 +3403,6 @@ name = "uselesskey-ecdsa"
 version = "0.3.0"
 dependencies = [
  "base64",
- "blake3",
  "elliptic-curve",
  "p256",
  "p384",
@@ -3348,6 +3411,8 @@ dependencies = [
  "rstest",
  "serde_json",
  "uselesskey-core",
+ "uselesskey-core-keypair",
+ "uselesskey-core-kid",
  "uselesskey-jwk",
 ]
 
@@ -3356,7 +3421,6 @@ name = "uselesskey-ed25519"
 version = "0.3.0"
 dependencies = [
  "base64",
- "blake3",
  "ed25519-dalek",
  "pkcs8",
  "proptest",
@@ -3364,18 +3428,24 @@ dependencies = [
  "rstest",
  "serde_json",
  "uselesskey-core",
+ "uselesskey-core-keypair",
+ "uselesskey-core-kid",
  "uselesskey-jwk",
 ]
+
+[[package]]
+name = "uselesskey-feature-grid"
+version = "0.3.0"
 
 [[package]]
 name = "uselesskey-hmac"
 version = "0.3.0"
 dependencies = [
  "base64",
- "blake3",
  "proptest",
  "rand_core 0.6.4",
  "uselesskey-core",
+ "uselesskey-core-kid",
  "uselesskey-jwk",
 ]
 
@@ -3468,12 +3538,12 @@ name = "uselesskey-rsa"
 version = "0.3.0"
 dependencies = [
  "base64",
- "blake3",
  "proptest",
  "rsa",
  "rstest",
  "serde_json",
  "uselesskey-core",
+ "uselesskey-core-keypair",
  "uselesskey-jwk",
 ]
 
@@ -3505,6 +3575,13 @@ dependencies = [
  "uselesskey-ed25519",
  "uselesskey-rsa",
  "uselesskey-x509",
+]
+
+[[package]]
+name = "uselesskey-test-grid"
+version = "0.3.0"
+dependencies = [
+ "uselesskey-feature-grid",
 ]
 
 [[package]]
@@ -3897,6 +3974,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
+ "uselesskey-feature-grid",
 ]
 
 [[package]]
