@@ -3330,6 +3330,7 @@ dependencies = [
  "uselesskey-core-keypair",
  "uselesskey-core-kid",
  "uselesskey-core-negative",
+ "uselesskey-core-seed",
  "uselesskey-core-sink",
  "uselesskey-jsonwebtoken",
  "uselesskey-ring",
@@ -3372,6 +3373,7 @@ dependencies = [
  "blake3",
  "proptest",
  "rstest",
+ "uselesskey-core-seed",
 ]
 
 [[package]]
@@ -3397,6 +3399,15 @@ dependencies = [
  "proptest",
  "rstest",
  "uselesskey-core-id",
+]
+
+[[package]]
+name = "uselesskey-core-seed"
+version = "0.3.0"
+dependencies = [
+ "blake3",
+ "proptest",
+ "rstest",
 ]
 
 [[package]]

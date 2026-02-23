@@ -12,7 +12,7 @@ libfuzzer-sys = "0.4"
 
 # fuzz targets
 uselesskey = { path = "../crates/uselesskey", features = ["ecdsa", "token"] }
-rsa = { version = "0.9", features = ["pem", "pkcs8"] }
+rsa = { version = "0.9", features = ["pem"] }
 p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "pem"] }
 
 [[bin]]
@@ -42,5 +42,11 @@ doc = false
 [[bin]]
 name = "token_format"
 path = "fuzz_targets/token_format.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "seed_parse"
+path = "fuzz_targets/seed_parse.rs"
 test = false
 doc = false

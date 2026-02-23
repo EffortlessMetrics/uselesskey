@@ -6,68 +6,7 @@ extern crate alloc;
 use alloc::string::String;
 
 use blake3::Hash;
-
-/// Seed bytes derived from a fixture master seed.
-#[derive(Clone, Copy, Eq, PartialEq, Hash)]
-pub struct Seed(pub(crate) [u8; 32]);
-
-impl Seed {
-    /// Create a seed from raw bytes.
-    pub fn new(bytes: [u8; 32]) -> Self {
-        Self(bytes)
-    }
-
-    /// Access raw seed bytes.
-    pub fn bytes(&self) -> &[u8; 32] {
-        &self.0
-    }
-
-    /// Derive a seed from a user-provided string.
-    pub fn from_env_value(value: &str) -> Result<Self, String> {
-        let v = value.trim();
-        let hex = v.strip_prefix("0x").unwrap_or(v);
-
-        if hex.len() == 64 {
-            return parse_hex_32(hex).map(Self);
-        }
-
-        Ok(Self(*hash32(v.as_bytes()).as_bytes()))
-    }
-}
-
-impl core::fmt::Debug for Seed {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.write_str("Seed(**redacted**)")
-    }
-}
-
-fn parse_hex_32(hex: &str) -> Result<[u8; 32], String> {
-    fn val(c: u8) -> Option<u8> {
-        match c {
-            b'0'..=b'9' => Some(c - b'0'),
-            b'a'..=b'f' => Some(c - b'a' + 10),
-            b'A'..=b'F' => Some(c - b'A' + 10),
-            _ => None,
-        }
-    }
-
-    if hex.len() != 64 {
-        return Err(alloc::format!("expected 64 hex chars, got {}", hex.len()));
-    }
-
-    let bytes = hex.as_bytes();
-    let mut out = [0u8; 32];
-
-    for (i, chunk) in bytes.chunks_exact(2).enumerate() {
-        let hi = val(chunk[0])
-            .ok_or_else(|| alloc::format!("invalid hex char: {}", chunk[0] as char))?;
-        let lo = val(chunk[1])
-            .ok_or_else(|| alloc::format!("invalid hex char: {}", chunk[1] as char))?;
-        out[i] = (hi << 4) | lo;
-    }
-
-    Ok(out)
-}
+pub use uselesskey_core_seed::Seed;
 
 /// Domain strings are used to separate unrelated fixture types.
 pub type ArtifactDomain = &'static str;
@@ -138,7 +77,7 @@ fn derive_seed_v1(master: &Seed, id: &ArtifactId) -> Seed {
     hasher.update(&id.spec_fingerprint);
 
     let out = hasher.finalize();
-    Seed(*out.as_bytes())
+    Seed::new(*out.as_bytes())
 }
 
 fn write_len_prefixed(hasher: &mut blake3::Hasher, bytes: &[u8]) {
@@ -149,28 +88,7 @@ fn write_len_prefixed(hasher: &mut blake3::Hasher, bytes: &[u8]) {
 
 #[cfg(test)]
 mod tests {
-    use super::{ArtifactId, DerivationVersion, Seed, derive_seed, hash32, parse_hex_32};
-
-    #[test]
-    fn seed_debug_is_redacted() {
-        let seed = Seed::new([7u8; 32]);
-        assert_eq!(format!("{:?}", seed), "Seed(**redacted**)");
-    }
-
-    #[test]
-    fn parse_hex_32_rejects_wrong_length() {
-        let err = parse_hex_32("abcd").unwrap_err();
-        assert!(err.contains("expected 64 hex chars"));
-    }
-
-    #[test]
-    fn parse_hex_32_rejects_invalid_char() {
-        let mut s = "0".repeat(64);
-        s.replace_range(10..11, "g");
-
-        let err = parse_hex_32(&s).unwrap_err();
-        assert!(err.contains("invalid hex char"));
-    }
+    use super::{ArtifactId, DerivationVersion, Seed, derive_seed, hash32};
 
     #[test]
     fn artifact_id_fingerprints_spec_bytes() {
@@ -243,26 +161,10 @@ mod tests {
     }
 
     #[test]
-    fn seed_from_env_value_parses_hex_with_prefix_and_whitespace() {
-        let hex = "0x0000000000000000000000000000000000000000000000000000000000000001";
-        let seed = Seed::from_env_value(&format!("  {hex}  ")).unwrap();
-        assert_eq!(seed.bytes()[31], 1);
-        assert!(seed.bytes()[..31].iter().all(|b| *b == 0));
-    }
-
-    #[test]
-    fn seed_from_env_value_parses_uppercase_hex() {
-        let hex = "F".repeat(64);
-        let seed = Seed::from_env_value(&hex).unwrap();
-        assert!(seed.bytes().iter().all(|b| *b == 0xFF));
-    }
-
-    #[test]
-    fn parse_hex_32_lowercase_values() {
-        // "0a" repeated 32 times → each byte should be 0x0a = 10
-        let hex = "0a".repeat(32);
-        let parsed = parse_hex_32(&hex).unwrap();
-        assert!(parsed.iter().all(|b| *b == 0x0a));
+    fn seed_reexport_matches_core_seed() {
+        let seed = Seed::from_env_value("core-id-seed").unwrap();
+        let expected = uselesskey_core_seed::Seed::from_env_value("core-id-seed").unwrap();
+        assert_eq!(seed.bytes(), expected.bytes());
     }
 
     #[test]
