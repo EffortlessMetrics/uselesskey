@@ -12,10 +12,10 @@ use rustls_pki_types::PrivatePkcs8KeyDer;
 use time::Duration as TimeDuration;
 use uselesskey_core::sink::TempArtifact;
 use uselesskey_core::{Error, Factory};
-use uselesskey_core_x509::{deterministic_base_time_from_parts, deterministic_serial_number};
+use uselesskey_core_x509::{
+    ChainSpec, deterministic_base_time_from_parts, deterministic_serial_number,
+};
 use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
-
-use crate::chain_spec::ChainSpec;
 
 /// Cache domain for X.509 certificate chain fixtures.
 ///
@@ -551,7 +551,7 @@ mod tests {
         let factory = Factory::deterministic(seed);
 
         // Generate a self-signed cert first
-        let self_signed_spec = crate::spec::X509Spec::self_signed("test.example.com");
+        let self_signed_spec = uselesskey_core_x509::X509Spec::self_signed("test.example.com");
         let self_signed = factory.x509_self_signed("test", self_signed_spec.clone());
         let self_signed_pem = self_signed.cert_pem().to_string();
 

@@ -1,7 +1,7 @@
 //! X.509 certificate chain specification.
 
 /// Specification for generating a three-level X.509 certificate chain
-/// (root CA → intermediate CA → leaf).
+/// (root CA -> intermediate CA -> leaf).
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct ChainSpec {
     /// Common Name (CN) for the leaf certificate.
@@ -142,7 +142,7 @@ impl ChainSpec {
         out.extend_from_slice(&self.intermediate_validity_days.to_be_bytes());
         out.extend_from_slice(&self.leaf_validity_days.to_be_bytes());
 
-        // not_before offsets (version 1 extension — optional fields encoded as 0/1 tag + value)
+        // not_before offsets (optional fields encoded as 0/1 tag + value)
         match self.leaf_not_before_offset_days {
             None => out.push(0),
             Some(v) => {

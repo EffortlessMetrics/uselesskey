@@ -6,6 +6,15 @@
 //! - deterministic base-time derivation from stable identity inputs
 //! - deterministic positive serial number generation
 //! - length-prefixed hashing to avoid input-boundary collisions
+//! - X.509 spec/negative policy types used by fixture generators
+
+mod chain_spec;
+mod negative;
+mod spec;
+
+pub use chain_spec::ChainSpec;
+pub use negative::{ChainNegative, X509Negative};
+pub use spec::{KeyUsage, NotBeforeOffset, X509Spec};
 
 use rand_core::RngCore;
 use rcgen::SerialNumber;

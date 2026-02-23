@@ -12,16 +12,17 @@ use time::Duration as TimeDuration;
 use uselesskey_core::negative::CorruptPem;
 use uselesskey_core::sink::TempArtifact;
 use uselesskey_core::{Error, Factory};
-use uselesskey_core_x509::{deterministic_base_time_from_parts, deterministic_serial_number};
+use uselesskey_core_x509::{
+    ChainSpec, NotBeforeOffset, X509Negative, X509Spec, deterministic_base_time_from_parts,
+    deterministic_serial_number,
+};
 use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 
 use crate::chain::X509Chain;
-use crate::chain_spec::ChainSpec;
 use crate::negative::{
-    X509Negative, corrupt_cert_der_deterministic, corrupt_cert_pem, corrupt_cert_pem_deterministic,
+    corrupt_cert_der_deterministic, corrupt_cert_pem, corrupt_cert_pem_deterministic,
     truncate_cert_der,
 };
-use crate::spec::{NotBeforeOffset, X509Spec};
 
 /// Cache domain for X.509 certificate fixtures.
 ///

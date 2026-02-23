@@ -1,77 +1,8 @@
 //! Negative fixtures for X.509 certificate chains.
 
+use uselesskey_core_x509::ChainNegative;
+
 use crate::chain::X509Chain;
-use crate::chain_spec::ChainSpec;
-
-/// Types of invalid certificate chains for negative testing.
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
-pub enum ChainNegative {
-    /// Leaf cert has a SAN that doesn't match the expected hostname.
-    HostnameMismatch {
-        /// The wrong hostname to put in the leaf SAN.
-        wrong_hostname: String,
-    },
-    /// Chain is anchored to a different (unknown) root certificate identity.
-    ///
-    /// This variant intentionally reuses the same underlying RSA key material
-    /// and changes certificate-level identity fields for the root certificate.
-    UnknownCa,
-    /// Leaf certificate is expired.
-    ExpiredLeaf,
-    /// Intermediate certificate is expired.
-    ExpiredIntermediate,
-    /// Leaf certificate is listed as revoked in a CRL signed by the intermediate CA.
-    RevokedLeaf,
-}
-
-impl ChainNegative {
-    /// Variant name for cache keys.
-    pub fn variant_name(&self) -> String {
-        match self {
-            ChainNegative::HostnameMismatch { wrong_hostname } => {
-                format!("hostname_mismatch:{}", wrong_hostname)
-            }
-            ChainNegative::UnknownCa => "unknown_ca".to_string(),
-            ChainNegative::ExpiredLeaf => "expired_leaf".to_string(),
-            ChainNegative::ExpiredIntermediate => "expired_intermediate".to_string(),
-            ChainNegative::RevokedLeaf => "revoked_leaf".to_string(),
-        }
-    }
-
-    /// Apply this negative variant to a chain spec.
-    pub fn apply_to_spec(&self, base_spec: &ChainSpec) -> ChainSpec {
-        let mut spec = base_spec.clone();
-        match self {
-            ChainNegative::HostnameMismatch { wrong_hostname } => {
-                spec.leaf_cn = wrong_hostname.clone();
-                spec.leaf_sans = vec![wrong_hostname.clone()];
-            }
-            ChainNegative::UnknownCa => {
-                // Use a different root CA CN so the chain anchors to a different root
-                // certificate identity (a different trust anchor). Keys are reused
-                // across variants; only cert-level identity/validity/SANs change.
-                spec.root_cn = format!("{} Unknown Root CA", spec.leaf_cn);
-            }
-            ChainNegative::ExpiredLeaf => {
-                // Push not_before 730 days into the past with 1-day validity,
-                // so not_after = base_time - 729 days — unambiguously expired
-                // regardless of where base_time lands (2025–2026).
-                spec.leaf_validity_days = 1;
-                spec.leaf_not_before_offset_days = Some(730);
-            }
-            ChainNegative::ExpiredIntermediate => {
-                spec.intermediate_validity_days = 1;
-                spec.intermediate_not_before_offset_days = Some(730);
-            }
-            ChainNegative::RevokedLeaf => {
-                // No spec changes needed. The chain is structurally valid;
-                // the CRL listing the leaf as revoked is generated as a side-effect
-                // in load_chain_inner when variant == "revoked_leaf".
-            }
-        }
-        spec
-    }
-}
 
 impl X509Chain {
     /// Generate a negative fixture variant of this chain.
@@ -127,6 +58,7 @@ mod tests {
     use super::*;
     use crate::testutil::fx;
     use uselesskey_core::Factory;
+    use uselesskey_core_x509::ChainSpec;
 
     #[test]
     fn test_hostname_mismatch() {
@@ -138,7 +70,7 @@ mod tests {
         assert_ne!(chain.leaf_cert_der(), mismatched.leaf_cert_der());
 
         // Root and intermediate should use the same spec (different variant though)
-        // but the leaf CN should differ
+        // but the leaf CN should differ.
         use x509_parser::prelude::*;
         let (_, leaf) = X509Certificate::from_der(mismatched.leaf_cert_der()).expect("parse leaf");
         let cn = leaf
@@ -159,7 +91,7 @@ mod tests {
         let chain = X509Chain::new(factory, "test", spec);
 
         let unknown = chain.unknown_ca();
-        // Root cert should be different (different CA)
+        // Root cert should be different (different CA).
         assert_ne!(chain.root_cert_der(), unknown.root_cert_der());
 
         let (_, good_root) = X509Certificate::from_der(chain.root_cert_der()).expect("parse root");
@@ -187,7 +119,7 @@ mod tests {
         let expired = chain.expired_leaf();
         assert_ne!(chain.leaf_cert_der(), expired.leaf_cert_der());
 
-        // Verify the leaf is unambiguously expired: not_after should be in the past
+        // Verify the leaf is unambiguously expired: not_after should be in the past.
         use x509_parser::prelude::*;
         let (_, leaf) = X509Certificate::from_der(expired.leaf_cert_der()).expect("parse leaf");
         let validity = leaf.validity();
@@ -196,7 +128,7 @@ mod tests {
         let diff_days = (not_after - not_before) / 86400;
         assert!(diff_days <= 1, "validity period should be 1 day");
 
-        // not_after should be well in the past (at least 365 days ago)
+        // not_after should be well in the past (at least 365 days ago).
         let now = ::time::OffsetDateTime::now_utc().unix_timestamp();
         assert!(not_after < now - 86400 * 365);
     }
@@ -213,7 +145,7 @@ mod tests {
             expired.intermediate_cert_der()
         );
 
-        // Verify the intermediate is unambiguously expired
+        // Verify the intermediate is unambiguously expired.
         use x509_parser::prelude::*;
         let (_, int) =
             X509Certificate::from_der(expired.intermediate_cert_der()).expect("parse intermediate");
@@ -237,12 +169,12 @@ mod tests {
         ];
 
         for variant in &variants {
-            // Keys should match the good chain (same underlying RSA keys)
+            // Keys should match the good chain (same underlying RSA keys).
             assert_eq!(
                 good.leaf_private_key_pkcs8_der(),
                 variant.leaf_private_key_pkcs8_der()
             );
-            // But certs should differ (different cert-level parameters)
+            // But certs should differ (different cert-level parameters).
             assert_ne!(good.leaf_cert_der(), variant.leaf_cert_der());
         }
     }
@@ -269,11 +201,11 @@ mod tests {
         let spec = ChainSpec::new("test.example.com");
         let good = X509Chain::new(factory, "test", spec);
 
-        // Good chain should have no CRL
+        // Good chain should have no CRL.
         assert!(good.crl_der().is_none());
         assert!(good.crl_pem().is_none());
 
-        // Revoked leaf chain should have a CRL
+        // Revoked leaf chain should have a CRL.
         let revoked = good.revoked_leaf();
         assert!(revoked.crl_der().is_some());
         assert!(revoked.crl_pem().is_some());
@@ -290,12 +222,12 @@ mod tests {
         let good = X509Chain::new(factory, "test", spec);
         let revoked = good.revoked_leaf();
 
-        // Parse the leaf cert to get its serial number
+        // Parse the leaf cert to get its serial number.
         let (_, leaf) =
             X509Certificate::from_der(revoked.leaf_cert_der()).expect("parse leaf cert");
         let leaf_serial = &leaf.serial;
 
-        // Parse the CRL and verify it lists the leaf serial
+        // Parse the CRL and verify it lists the leaf serial.
         let crl_der = revoked.crl_der().expect("CRL should be present");
         let (_, crl) = x509_parser::revocation_list::CertificateRevocationList::from_der(crl_der)
             .expect("parse CRL");
@@ -304,7 +236,7 @@ mod tests {
         assert_eq!(revoked_certs.len(), 1);
         assert_eq!(revoked_certs[0].raw_serial(), leaf_serial.to_bytes_be());
 
-        // CRL next_update must be after this_update
+        // CRL next_update must be after this_update.
         let this_update = crl.last_update().timestamp();
         let next_update = crl.next_update().expect("next_update").timestamp();
         assert!(
@@ -337,11 +269,11 @@ mod tests {
         let spec = ChainSpec::new("test.example.com");
         let good = X509Chain::new(factory, "test", spec);
 
-        // Good chain should return None for CRL tempfiles
+        // Good chain should return None for CRL tempfiles.
         assert!(good.write_crl_pem().is_none());
         assert!(good.write_crl_der().is_none());
 
-        // Revoked leaf chain should write CRL tempfiles
+        // Revoked leaf chain should write CRL tempfiles.
         let revoked = good.revoked_leaf();
         let crl_pem_file = revoked.write_crl_pem().unwrap().unwrap();
         assert!(crl_pem_file.path().exists());
