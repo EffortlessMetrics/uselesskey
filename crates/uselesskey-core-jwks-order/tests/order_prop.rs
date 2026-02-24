@@ -1,5 +1,5 @@
-use uselesskey_core_jwks_order::{HasKid, KidSorted};
 use proptest::prelude::*;
+use uselesskey_core_jwks_order::{HasKid, KidSorted};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 struct GeneratedItem {
@@ -17,7 +17,7 @@ proptest! {
     #[test]
     fn build_is_stable_for_arbitrary_kids(
         raw in prop::collection::vec(
-            prop::collection::vec(prop::char::range('a'..='z'), 0..8),
+            prop::collection::vec(prop::char::range('a', 'z'), 0..8),
             0..64,
         ),
     ) {
@@ -34,7 +34,6 @@ proptest! {
             expected.push(item);
         }
 
-        let mut expected = expected;
         expected.sort_by(|a, b| a.kid.cmp(&b.kid).then(a.index.cmp(&b.index)));
         let actual = sorter.build();
 

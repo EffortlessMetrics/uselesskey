@@ -4,8 +4,8 @@
 extern crate alloc;
 
 use alloc::string::String;
-pub use uselesskey_core_hash::{hash32, write_len_prefixed};
 use uselesskey_core_hash::Hasher;
+pub use uselesskey_core_hash::{hash32, write_len_prefixed};
 
 pub use uselesskey_core_seed::Seed;
 
@@ -46,7 +46,6 @@ impl ArtifactId {
             derivation_version,
         }
     }
-
 }
 
 /// Derive a per-artifact seed from the master seed and the artifact identifier.

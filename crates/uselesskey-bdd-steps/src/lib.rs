@@ -5,6 +5,9 @@ use cucumber::{World, given, then, when};
 use jsonwebtoken::{Algorithm, Header, Validation, decode, decode_header, encode};
 use serde_json::Value;
 
+#[cfg(feature = "uk-core-factory")]
+#[path = "steps/core_factory_steps.rs"]
+mod core_factory_steps;
 #[cfg(feature = "uk-core-id")]
 #[path = "steps/core_id_steps.rs"]
 mod core_id_steps;
@@ -14,18 +17,15 @@ mod core_keypair_steps;
 #[cfg(feature = "uk-core-kid")]
 #[path = "steps/core_kid_steps.rs"]
 mod core_kid_steps;
-#[cfg(feature = "uk-core-token-shape")]
-#[path = "steps/core_token_shape_steps.rs"]
-mod core_token_shape_steps;
 #[cfg(feature = "uk-core-negative")]
 #[path = "steps/core_negative_steps.rs"]
 mod core_negative_steps;
 #[cfg(feature = "uk-core-seed")]
 #[path = "steps/core_seed_steps.rs"]
 mod core_seed_steps;
-#[cfg(feature = "uk-core-factory")]
-#[path = "steps/core_factory_steps.rs"]
-mod core_factory_steps;
+#[cfg(feature = "uk-core-token-shape")]
+#[path = "steps/core_token_shape_steps.rs"]
+mod core_token_shape_steps;
 
 use uselesskey::jwk::JwksBuilder;
 use uselesskey::negative::CorruptPem;
@@ -3354,9 +3354,7 @@ fn jwks_outputs_identical(world: &mut UselessWorld) {
 #[then(regex = r#"^the JWKS key at index (\d+) should have kid "([^"]+)"$"#)]
 fn jwks_key_at_index_has_kid(world: &mut UselessWorld, index: usize, kid: String) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
-    let keys = jwks["keys"]
-        .as_array()
-        .expect("keys should be an array");
+    let keys = jwks["keys"].as_array().expect("keys should be an array");
 
     let key = keys
         .get(index)

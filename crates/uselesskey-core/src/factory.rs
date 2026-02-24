@@ -100,6 +100,7 @@ impl Factory {
         T: Any + Send + Sync + 'static,
         F: FnOnce(&mut rand_chacha::ChaCha20Rng) -> T,
     {
-        self.inner.get_or_init(domain, label, spec_bytes, variant, init)
+        self.inner
+            .get_or_init(domain, label, spec_bytes, variant, init)
     }
 }

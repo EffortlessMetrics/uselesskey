@@ -53,7 +53,8 @@ impl<T: HasKid> KidSorted<T> {
 
     /// Build the final vector, sorted by `kid`, stable on insertion order.
     pub fn build(mut self) -> Vec<T> {
-        self.entries.sort_by(|a, b| a.kid.cmp(&b.kid).then(a.index.cmp(&b.index)));
+        self.entries
+            .sort_by(|a, b| a.kid.cmp(&b.kid).then(a.index.cmp(&b.index)));
         self.entries.into_iter().map(|e| e.value).collect()
     }
 }

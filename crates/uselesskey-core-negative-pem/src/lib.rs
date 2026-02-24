@@ -14,9 +14,7 @@ pub enum CorruptPem {
     BadHeader,
     BadFooter,
     BadBase64,
-    Truncate {
-        bytes: usize,
-    },
+    Truncate { bytes: usize },
     ExtraBlankLine,
 }
 

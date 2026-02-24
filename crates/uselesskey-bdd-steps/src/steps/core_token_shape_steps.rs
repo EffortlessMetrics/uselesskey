@@ -7,7 +7,10 @@ use rand_chacha::ChaCha20Rng;
 #[cfg(feature = "uk-core-token-shape")]
 use rand_core::SeedableRng;
 #[cfg(feature = "uk-core-token-shape")]
-use uselesskey_core_token_shape::{authorization_scheme, generate_api_key, generate_bearer_token, generate_oauth_access_token, generate_token, TokenKind};
+use uselesskey_core_token_shape::{
+    TokenKind, authorization_scheme, generate_api_key, generate_bearer_token,
+    generate_oauth_access_token, generate_token,
+};
 
 #[cfg(feature = "uk-core-token-shape")]
 fn seed_from_text(raw: &str) -> [u8; 32] {
@@ -36,9 +39,7 @@ fn core_token_shape_api_key(world: &mut crate::UselessWorld, seed: String) {
 }
 
 #[cfg(feature = "uk-core-token-shape")]
-#[when(
-    regex = r#"^I generate a core token-shape bearer token with seed "([^"]+)"$"#
-)]
+#[when(regex = r#"^I generate a core token-shape bearer token with seed "([^"]+)"$"#)]
 fn core_token_shape_bearer(world: &mut crate::UselessWorld, seed: String) {
     let mut rng = ChaCha20Rng::from_seed(seed_from_text(&seed));
     let value = generate_bearer_token(&mut rng);
@@ -49,20 +50,14 @@ fn core_token_shape_bearer(world: &mut crate::UselessWorld, seed: String) {
 #[when(
     regex = r#"^I generate a core token-shape OAuth access token with seed "([^"]+)" and subject "([^"]+)"$"#
 )]
-fn core_token_shape_oauth(
-    world: &mut crate::UselessWorld,
-    seed: String,
-    subject: String,
-) {
+fn core_token_shape_oauth(world: &mut crate::UselessWorld, seed: String, subject: String) {
     let mut rng = ChaCha20Rng::from_seed(seed_from_text(&seed));
     let value = generate_oauth_access_token(&subject, &mut rng);
     set_next_core_token_shape_value(world, value);
 }
 
 #[cfg(feature = "uk-core-token-shape")]
-#[when(
-    regex = r#"^I generate a core token-shape token with seed "([^"]+)" and kind "([^"]+)"$"#
-)]
+#[when(regex = r#"^I generate a core token-shape token with seed "([^"]+)" and kind "([^"]+)"$"#)]
 fn core_token_shape_kind(world: &mut crate::UselessWorld, seed: String, kind: String) {
     let mut rng = ChaCha20Rng::from_seed(seed_from_text(&seed));
     let kind = match kind.as_str() {
@@ -79,8 +74,7 @@ fn core_token_shape_kind(world: &mut crate::UselessWorld, seed: String, kind: St
 #[then("the first and second core token-shape values should be identical")]
 fn core_token_shape_values_identical(world: &mut crate::UselessWorld) {
     assert_eq!(
-        world.core_token_shape_value_1,
-        world.core_token_shape_value_2,
+        world.core_token_shape_value_1, world.core_token_shape_value_2,
         "expected shape values to match",
     );
 }
@@ -89,8 +83,7 @@ fn core_token_shape_values_identical(world: &mut crate::UselessWorld) {
 #[then("the first and second core token-shape values should be different")]
 fn core_token_shape_values_different(world: &mut crate::UselessWorld) {
     assert_ne!(
-        world.core_token_shape_value_1,
-        world.core_token_shape_value_2,
+        world.core_token_shape_value_1, world.core_token_shape_value_2,
         "expected shape values to differ",
     );
 }
@@ -125,7 +118,11 @@ fn core_token_shape_value_base64(world: &mut crate::UselessWorld) {
         .core_token_shape_value_1
         .as_ref()
         .expect("core-token-shape value not set");
-    assert!(base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(value).is_ok());
+    assert!(
+        base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .decode(value)
+            .is_ok()
+    );
 }
 
 #[cfg(feature = "uk-core-token-shape")]
@@ -145,7 +142,9 @@ fn core_token_shape_auth_scheme_api_key(_world: &mut crate::UselessWorld, expect
 }
 
 #[cfg(feature = "uk-core-token-shape")]
-#[then(regex = r#"^the core-token-shape authorization scheme for bearer token should be "([^"]+)"$"#)]
+#[then(
+    regex = r#"^the core-token-shape authorization scheme for bearer token should be "([^"]+)"$"#
+)]
 fn core_token_shape_auth_scheme_bearer(_world: &mut crate::UselessWorld, expected: String) {
     assert_eq!(expected, authorization_scheme(TokenKind::Bearer));
 }

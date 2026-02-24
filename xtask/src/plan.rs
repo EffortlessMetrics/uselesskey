@@ -146,8 +146,8 @@ fn expand_impacted_crates(changed: &HashSet<String>) -> BTreeSet<String> {
     impacted
 }
 
-    fn dependents(crate_name: &str) -> &'static [&'static str] {
-        match crate_name {
+fn dependents(crate_name: &str) -> &'static [&'static str] {
+    match crate_name {
         "uselesskey-core-seed" => &["uselesskey-core-id"],
         "uselesskey-core-id" => &["uselesskey-core-cache", "uselesskey-core"],
         "uselesskey-core-kid" => &["uselesskey-core-keypair-material", "uselesskey-hmac"],

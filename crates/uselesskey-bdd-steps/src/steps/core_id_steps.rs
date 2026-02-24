@@ -1,9 +1,9 @@
 #[cfg(feature = "uk-core-id")]
 use cucumber::{given, then, when};
 #[cfg(feature = "uk-core-id")]
-use uselesskey_core_id::{ArtifactId, DerivationVersion, Seed, derive_seed};
+use uselesskey_core_hash::{Hasher, hash32};
 #[cfg(feature = "uk-core-id")]
-use uselesskey_core_hash::{hash32, Hasher};
+use uselesskey_core_id::{ArtifactId, DerivationVersion, Seed, derive_seed};
 
 #[cfg(feature = "uk-core-id")]
 #[given(regex = r#"^a core-id master seed "([^"]+)"$"#)]

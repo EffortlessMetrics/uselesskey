@@ -4,7 +4,9 @@ use cucumber::{then, when};
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
 #[cfg(feature = "uk-core-factory")]
-#[when(regex = r#"^I request a core-factory u64 value for domain \"([^\"]+)\", label \"([^\"]+)\", spec \"([^\"]+)\", variant \"([^\"]+)\"$"#)]
+#[when(
+    regex = r#"^I request a core-factory u64 value for domain \"([^\"]+)\", label \"([^\"]+)\", spec \"([^\"]+)\", variant \"([^\"]+)\"$"#
+)]
 fn core_factory_request_u64(
     world: &mut crate::UselessWorld,
     domain: String,
@@ -13,10 +15,7 @@ fn core_factory_request_u64(
     variant: String,
 ) {
     let domain = Box::leak(domain.into_boxed_str()) as &'static str;
-    let fx = world
-        .factory
-        .as_ref()
-        .expect("factory not set");
+    let fx = world.factory.as_ref().expect("factory not set");
 
     let value: u64 = *fx.get_or_init(domain, &label, spec.as_bytes(), &variant, |_rng| 0xDEADBEEF);
 
@@ -28,7 +27,9 @@ fn core_factory_request_u64(
 }
 
 #[cfg(feature = "uk-core-factory")]
-#[when(regex = r#"^I request a core-factory u32 value for domain \"([^\"]+)\", label \"([^\"]+)\", spec \"([^\"]+)\", variant \"([^\"]+)\"$"#)]
+#[when(
+    regex = r#"^I request a core-factory u32 value for domain \"([^\"]+)\", label \"([^\"]+)\", spec \"([^\"]+)\", variant \"([^\"]+)\"$"#
+)]
 fn core_factory_request_u32(
     world: &mut crate::UselessWorld,
     domain: String,
@@ -37,17 +38,16 @@ fn core_factory_request_u32(
     variant: String,
 ) {
     let domain = Box::leak(domain.into_boxed_str()) as &'static str;
-    let fx = world
-        .factory
-        .as_ref()
-        .expect("factory not set");
+    let fx = world.factory.as_ref().expect("factory not set");
 
     let _ = fx.get_or_init(domain, &label, spec.as_bytes(), &variant, |_rng| 1234u32);
     world.core_factory_type_mismatch_panic = Some(false);
 }
 
 #[cfg(feature = "uk-core-factory")]
-#[when(regex = r#"^I request a mismatched core-factory value for domain \"([^\"]+)\", label \"([^\"]+)\", spec \"([^\"]+)\", variant \"([^\"]+)\"$"#)]
+#[when(
+    regex = r#"^I request a mismatched core-factory value for domain \"([^\"]+)\", label \"([^\"]+)\", spec \"([^\"]+)\", variant \"([^\"]+)\"$"#
+)]
 fn core_factory_request_mismatched_type(
     world: &mut crate::UselessWorld,
     domain: String,
@@ -56,13 +56,12 @@ fn core_factory_request_mismatched_type(
     variant: String,
 ) {
     let domain = Box::leak(domain.into_boxed_str()) as &'static str;
-    let fx = world
-        .factory
-        .as_ref()
-        .expect("factory not set");
+    let fx = world.factory.as_ref().expect("factory not set");
 
     let result = catch_unwind(AssertUnwindSafe(|| {
-        let _ = fx.get_or_init(domain, &label, spec.as_bytes(), &variant, |_rng| "mismatch".to_string());
+        let _ = fx.get_or_init(domain, &label, spec.as_bytes(), &variant, |_rng| {
+            "mismatch".to_string()
+        });
     }));
 
     world.core_factory_type_mismatch_panic = Some(result.is_err());

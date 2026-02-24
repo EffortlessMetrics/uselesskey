@@ -35,10 +35,11 @@ fn random_seed_factory_reuses_cached_value() {
 fn deterministic_reentrant_get_or_init_is_supported() {
     let fx = Factory::deterministic(Seed::new([7u8; 32]));
 
-    let value: Arc<String> = fx.get_or_init("domain:integration", "outer", b"spec", "good", |_rng| {
-        let inner = fx.get_or_init("domain:integration", "inner", b"spec", "good", |_rng| 12u8);
-        format!("outer-{}", *inner)
-    });
+    let value: Arc<String> =
+        fx.get_or_init("domain:integration", "outer", b"spec", "good", |_rng| {
+            let inner = fx.get_or_init("domain:integration", "inner", b"spec", "good", |_rng| 12u8);
+            format!("outer-{}", *inner)
+        });
 
     assert_eq!(value.as_str(), "outer-12");
 }
@@ -67,7 +68,13 @@ fn get_or_init_type_switch_panics_when_type_differs() {
     let _ = fx.get_or_init("domain:integration", "type", b"spec", "v", |_rng| 1u32);
 
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        let _ = fx.get_or_init("domain:integration", "type", b"spec", "v", |_rng| "not-a-u32");
+        let _ = fx.get_or_init(
+            "domain:integration",
+            "type",
+            b"spec",
+            "v",
+            |_rng| "not-a-u32",
+        );
     }));
 
     assert!(result.is_err());

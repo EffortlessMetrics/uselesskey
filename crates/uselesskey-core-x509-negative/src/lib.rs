@@ -282,4 +282,3 @@ mod tests {
         assert_eq!(modified.leaf_validity_days, base.leaf_validity_days);
     }
 }
-

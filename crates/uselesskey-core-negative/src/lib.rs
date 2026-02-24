@@ -5,8 +5,8 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 
-pub use uselesskey_core_negative_pem::{CorruptPem, corrupt_pem, corrupt_pem_deterministic};
 use uselesskey_core_hash::hash32;
+pub use uselesskey_core_negative_pem::{CorruptPem, corrupt_pem, corrupt_pem_deterministic};
 
 pub fn truncate_der(der: &[u8], len: usize) -> Vec<u8> {
     if len >= der.len() {

@@ -21,4 +21,3 @@ fn external_users_can_apply_chain_negative_variant() {
     assert_eq!(mutated.leaf_cn, "wrong.integration.example");
     assert_eq!(mutated.leaf_sans, vec!["wrong.integration.example"]);
 }
-

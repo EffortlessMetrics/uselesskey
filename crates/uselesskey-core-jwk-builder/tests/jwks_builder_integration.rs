@@ -1,5 +1,5 @@
-use uselesskey_core_jwk_shape::{AnyJwk, PublicJwk, RsaPublicJwk};
 use uselesskey_core_jwk_builder::JwksBuilder;
+use uselesskey_core_jwk_shape::{AnyJwk, PublicJwk, RsaPublicJwk};
 
 fn rsa(kid: &str, n: &str) -> PublicJwk {
     PublicJwk::Rsa(RsaPublicJwk {
@@ -34,12 +34,13 @@ fn integration_preserves_duplicate_kids_in_insertion_order() {
     let n_values: Vec<_> = jwks
         .keys
         .into_iter()
-        .filter_map(|jwk| match jwk.to_value().get("n").and_then(|value| value.as_str()) {
-            Some(n) => Some(n.to_string()),
-            None => None,
+        .filter_map(|jwk| {
+            jwk.to_value()
+                .get("n")
+                .and_then(|value| value.as_str())
+                .map(|n| n.to_string())
         })
         .collect();
 
     assert_eq!(n_values, vec!["n3", "n1", "n2"]);
 }
-

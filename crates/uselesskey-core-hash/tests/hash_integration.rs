@@ -14,7 +14,11 @@ fn integration_matches_length_prefixed_spec_behavior() {
     let mut right = Hasher::new();
     right.update(&u32::try_from(first.len()).unwrap_or(u32::MAX).to_be_bytes());
     right.update(first);
-    right.update(&u32::try_from(second.len()).unwrap_or(u32::MAX).to_be_bytes());
+    right.update(
+        &u32::try_from(second.len())
+            .unwrap_or(u32::MAX)
+            .to_be_bytes(),
+    );
     right.update(second);
     let right = right.finalize();
 

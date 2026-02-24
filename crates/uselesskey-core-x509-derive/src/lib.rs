@@ -8,10 +8,10 @@
 //! - length-prefixed hashing to avoid input-boundary collisions
 
 use rand_core::RngCore;
-use uselesskey_core_hash::Hasher;
-pub use uselesskey_core_hash::write_len_prefixed;
 use rcgen::SerialNumber;
 use time::OffsetDateTime;
+use uselesskey_core_hash::Hasher;
+pub use uselesskey_core_hash::write_len_prefixed;
 
 /// 2025-01-01T00:00:00Z used as the deterministic X.509 epoch.
 pub const BASE_TIME_EPOCH_UNIX: i64 = 1_735_689_600;

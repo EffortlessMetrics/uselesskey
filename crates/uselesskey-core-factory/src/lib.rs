@@ -3,8 +3,8 @@
 
 extern crate alloc;
 
-use alloc::sync::Arc;
 use alloc::string::ToString;
+use alloc::sync::Arc;
 use core::fmt;
 
 use rand_chacha::ChaCha20Rng;
@@ -134,11 +134,11 @@ pub(crate) fn random_seed() -> Seed {
 
 #[cfg(all(test, feature = "std"))]
 mod tests {
-    use super::{random_seed, Factory, Mode};
-    use uselesskey_core_id::Seed;
+    use super::{Factory, Mode, random_seed};
     use std::panic::{AssertUnwindSafe, catch_unwind};
     use std::sync::Arc;
     use std::sync::atomic::{AtomicUsize, Ordering};
+    use uselesskey_core_id::Seed;
 
     #[test]
     fn clear_cache_forces_reinit() {

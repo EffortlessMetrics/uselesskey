@@ -1,7 +1,7 @@
 use proptest::prelude::*;
 
 use uselesskey_core_hash::hash32;
-use uselesskey_core_negative_pem::{corrupt_pem, corrupt_pem_deterministic, CorruptPem};
+use uselesskey_core_negative_pem::{CorruptPem, corrupt_pem, corrupt_pem_deterministic};
 
 #[test]
 fn deterministic_output_is_stable_for_same_variant() {
@@ -28,7 +28,8 @@ fn bad_base64_inserts_marker() {
 fn find_variant_for_arm(target: u8) -> String {
     for i in 0u64.. {
         let candidate = format!("integration-{i}");
-        let bytes = hash32(candidate.as_bytes()).as_bytes();
+        let hash = hash32(candidate.as_bytes());
+        let bytes = hash.as_bytes();
         if bytes[0] % 5 == target {
             return candidate;
         }

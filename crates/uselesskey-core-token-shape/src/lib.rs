@@ -110,9 +110,9 @@ mod tests {
     use rand_core::SeedableRng;
 
     use super::{
-        API_KEY_PREFIX, API_KEY_RANDOM_LEN, BEARER_RANDOM_BYTES,
-        TokenKind, authorization_scheme, generate_api_key, generate_bearer_token,
-        generate_oauth_access_token, generate_token, random_base62,
+        API_KEY_PREFIX, API_KEY_RANDOM_LEN, BEARER_RANDOM_BYTES, TokenKind, authorization_scheme,
+        generate_api_key, generate_bearer_token, generate_oauth_access_token, generate_token,
+        random_base62,
     };
 
     #[test]
