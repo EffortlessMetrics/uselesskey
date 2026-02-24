@@ -3350,6 +3350,7 @@ dependencies = [
  "rstest",
  "thiserror 2.0.18",
  "uselesskey-core-cache",
+ "uselesskey-core-factory",
  "uselesskey-core-id",
  "uselesskey-core-negative",
  "uselesskey-core-sink",
@@ -3363,6 +3364,17 @@ dependencies = [
  "proptest",
  "rstest",
  "spin",
+ "uselesskey-core-id",
+]
+
+[[package]]
+name = "uselesskey-core-factory"
+version = "0.3.0"
+dependencies = [
+ "proptest",
+ "rand_chacha 0.3.1",
+ "rand_core 0.6.4",
+ "uselesskey-core-cache",
  "uselesskey-core-id",
 ]
 
@@ -3383,6 +3395,15 @@ dependencies = [
  "proptest",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "uselesskey-core-jwk-builder"
+version = "0.3.0"
+dependencies = [
+ "proptest",
+ "serde_json",
+ "uselesskey-core-jwk",
 ]
 
 [[package]]
@@ -3588,6 +3609,7 @@ version = "0.3.0"
 dependencies = [
  "serde_json",
  "uselesskey-core-jwk",
+ "uselesskey-core-jwk-builder",
 ]
 
 [[package]]

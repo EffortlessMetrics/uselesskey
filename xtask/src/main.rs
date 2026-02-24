@@ -243,6 +243,7 @@ const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-core-seed",
     "uselesskey-core-id",
     "uselesskey-core-cache",
+    "uselesskey-core-factory",
     "uselesskey-core-kid",
     "uselesskey-core-negative",
     "uselesskey-core-sink",

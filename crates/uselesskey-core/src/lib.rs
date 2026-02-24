@@ -32,7 +32,6 @@
 //! // Extension crates add methods like: fx.rsa("label", spec)
 //! ```
 
-mod derive;
 mod error;
 mod factory;
 mod id;
@@ -45,6 +44,3 @@ pub use crate::factory::{Factory, Mode};
 pub use crate::id::{ArtifactDomain, ArtifactId, DerivationVersion, Seed};
 
 extern crate alloc;
-
-#[cfg(all(test, feature = "std"))]
-mod factory_tests;

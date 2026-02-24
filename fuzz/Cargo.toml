@@ -9,11 +9,13 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
+rand_core = "0.6.4"
 
 # fuzz targets
 uselesskey = { path = "../crates/uselesskey", features = ["ecdsa", "token"] }
 uselesskey-jwk = { path = "../crates/uselesskey-jwk" }
 uselesskey-core-keypair-material = { path = "../crates/uselesskey-core-keypair-material" }
+uselesskey-core-factory = { path = "../crates/uselesskey-core-factory" }
 rsa = { version = "0.9", features = ["pem"] }
 p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "pem"] }
 serde_json = "1"
@@ -57,6 +59,12 @@ doc = false
 [[bin]]
 name = "core_keypair_material"
 path = "fuzz_targets/core_keypair_material.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "core_factory_cache"
+path = "fuzz_targets/core_factory_cache.rs"
 test = false
 doc = false
 

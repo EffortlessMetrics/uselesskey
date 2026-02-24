@@ -916,9 +916,9 @@ name = "uselesskey-core"
 version = "0.3.0"
 dependencies = [
  "rand_chacha",
- "rand_core",
  "thiserror",
  "uselesskey-core-cache",
+ "uselesskey-core-factory",
  "uselesskey-core-id",
  "uselesskey-core-negative",
  "uselesskey-core-sink",
@@ -930,6 +930,16 @@ version = "0.3.0"
 dependencies = [
  "dashmap",
  "spin",
+ "uselesskey-core-id",
+]
+
+[[package]]
+name = "uselesskey-core-factory"
+version = "0.3.0"
+dependencies = [
+ "rand_chacha",
+ "rand_core",
+ "uselesskey-core-cache",
  "uselesskey-core-id",
 ]
 
@@ -947,6 +957,14 @@ version = "0.3.0"
 dependencies = [
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "uselesskey-core-jwk-builder"
+version = "0.3.0"
+dependencies = [
+ "serde_json",
+ "uselesskey-core-jwk",
 ]
 
 [[package]]
@@ -1013,9 +1031,11 @@ version = "0.0.0"
 dependencies = [
  "libfuzzer-sys",
  "p256",
+ "rand_core",
  "rsa",
  "serde_json",
  "uselesskey",
+ "uselesskey-core-factory",
  "uselesskey-core-keypair-material",
  "uselesskey-jwk",
 ]
@@ -1025,6 +1045,7 @@ name = "uselesskey-jwk"
 version = "0.3.0"
 dependencies = [
  "uselesskey-core-jwk",
+ "uselesskey-core-jwk-builder",
 ]
 
 [[package]]

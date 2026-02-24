@@ -20,6 +20,9 @@ mod core_negative_steps;
 #[cfg(feature = "uk-core-seed")]
 #[path = "steps/core_seed_steps.rs"]
 mod core_seed_steps;
+#[cfg(feature = "uk-core-factory")]
+#[path = "steps/core_factory_steps.rs"]
+mod core_factory_steps;
 
 use uselesskey::jwk::JwksBuilder;
 use uselesskey::negative::CorruptPem;
@@ -154,6 +157,12 @@ struct UselessWorld {
     core_seed_seed: Option<uselesskey_core_seed::Seed>,
     #[cfg(feature = "uk-core-seed")]
     core_seed_error: Option<String>,
+    #[cfg(feature = "uk-core-factory")]
+    core_factory_value_1: Option<u64>,
+    #[cfg(feature = "uk-core-factory")]
+    core_factory_value_2: Option<u64>,
+    #[cfg(feature = "uk-core-factory")]
+    core_factory_type_mismatch_panic: Option<bool>,
     #[cfg(any(feature = "uk-core-kid", feature = "uk-core-keypair"))]
     core_kid_first: Option<String>,
     #[cfg(any(feature = "uk-core-kid", feature = "uk-core-keypair"))]

@@ -29,6 +29,7 @@ pub const UK_FEATURE_TOKEN: &str = "uk-token";
 pub const UK_FEATURE_JWT: &str = "uk-jwt";
 pub const UK_FEATURE_CORE_ID: &str = "uk-core-id";
 pub const UK_FEATURE_CORE_SEED: &str = "uk-core-seed";
+pub const UK_FEATURE_CORE_FACTORY: &str = "uk-core-factory";
 pub const UK_FEATURE_CORE_KID: &str = "uk-core-kid";
 pub const UK_FEATURE_CORE_KEYPAIR: &str = "uk-core-keypair";
 pub const UK_FEATURE_CORE_NEGATIVE: &str = "uk-core-negative";
@@ -53,6 +54,7 @@ pub const UK_FEATURE_SETS: &[&str] = &[
     UK_FEATURE_JWT,
     UK_FEATURE_CORE_ID,
     UK_FEATURE_CORE_SEED,
+    UK_FEATURE_CORE_FACTORY,
     UK_FEATURE_CORE_KID,
     UK_FEATURE_CORE_KEYPAIR,
     UK_FEATURE_CORE_NEGATIVE,

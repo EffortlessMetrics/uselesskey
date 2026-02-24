@@ -4,8 +4,9 @@ members = [
   "crates/uselesskey-test-grid",
   "crates/uselesskey-feature-grid",
   "crates/uselesskey",
-  "crates/uselesskey-core",
-  "crates/uselesskey-core-cache",
+"crates/uselesskey-core",
+    "crates/uselesskey-core-factory",
+"crates/uselesskey-core-cache",
   "crates/uselesskey-core-id",
   "crates/uselesskey-core-seed",
   "crates/uselesskey-core-kid",
@@ -14,6 +15,7 @@ members = [
   "crates/uselesskey-core-negative",
   "crates/uselesskey-core-sink",
   "crates/uselesskey-core-token",
+  "crates/uselesskey-core-jwk-builder",
   "crates/uselesskey-core-jwk",
   "crates/uselesskey-core-x509-derive",
   "crates/uselesskey-core-x509-spec",
@@ -54,6 +56,7 @@ thiserror = "2.0.18"
 uselesskey-test-grid = { path = "crates/uselesskey-test-grid", version = "0.3.0" }
 uselesskey-feature-grid = { path = "crates/uselesskey-feature-grid", version = "0.3.0" }
 uselesskey-core-cache = { path = "crates/uselesskey-core-cache", version = "0.3.0", default-features = false }
+uselesskey-core-factory = { path = "crates/uselesskey-core-factory", version = "0.3.0" }
 uselesskey-core-id = { path = "crates/uselesskey-core-id", version = "0.3.0", default-features = false }
 uselesskey-core-seed = { path = "crates/uselesskey-core-seed", version = "0.3.0", default-features = false }
 uselesskey-core-kid = { path = "crates/uselesskey-core-kid", version = "0.3.0" }
@@ -61,6 +64,7 @@ uselesskey-core-keypair = { path = "crates/uselesskey-core-keypair", version = "
 uselesskey-core-keypair-material = { path = "crates/uselesskey-core-keypair-material", version = "0.3.0" }
 uselesskey-core-negative = { path = "crates/uselesskey-core-negative", version = "0.3.0", default-features = false }
 uselesskey-core-token = { path = "crates/uselesskey-core-token", version = "0.3.0" }
+uselesskey-core-jwk-builder = { path = "crates/uselesskey-core-jwk-builder", version = "0.3.0" }
 uselesskey-core-jwk = { path = "crates/uselesskey-core-jwk", version = "0.3.0" }
 uselesskey-core-x509-derive = { path = "crates/uselesskey-core-x509-derive", version = "0.3.0" }
 uselesskey-core-x509-spec = { path = "crates/uselesskey-core-x509-spec", version = "0.3.0" }

@@ -7,3 +7,4 @@
 //! and external consumers.
 
 pub use uselesskey_core_jwk::*;
+pub use uselesskey_core_jwk_builder::JwksBuilder;
