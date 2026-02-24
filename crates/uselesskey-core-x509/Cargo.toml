@@ -14,8 +14,8 @@ documentation = "https://docs.rs/uselesskey-core-x509"
 authors.workspace = true
 
 [dependencies]
-uselesskey-core-x509-derive.workspace = true
-uselesskey-core-x509-spec.workspace = true
+uselesskey-core-x509-derive = { path = "../uselesskey-core-x509-derive", version = "0.3.0" }
+uselesskey-core-x509-spec = { path = "../uselesskey-core-x509-spec", version = "0.3.0" }
 
 [dev-dependencies]
 proptest.workspace = true
