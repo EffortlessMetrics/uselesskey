@@ -1,12 +1,9 @@
 # uselesskey-core-keypair
 
-Reusable PKCS#8/SPKI key-material helpers for `uselesskey` fixture crates.
+Compatibility facade for PKCS#8/SPKI key-material helpers used by `uselesskey`
+fixture crates.
 
-This crate centralizes common behavior used by multiple key fixture crates:
-
-- PKCS#8 and SPKI material accessors
-- tempfile sinks for PEM output
-- deterministic negative fixture helpers
-- stable `kid` derivation from SPKI bytes
-
-It is a test-fixture utility crate, not a production crypto abstraction.
+The concrete implementation moved to
+[`uselesskey-core-keypair-material`](../uselesskey-core-keypair-material). This crate now
+re-exports the public API to keep the historical crate path stable while isolating
+responsibility into a focused microcrate.

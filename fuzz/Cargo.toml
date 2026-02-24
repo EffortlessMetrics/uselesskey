@@ -13,6 +13,7 @@ libfuzzer-sys = "0.4"
 # fuzz targets
 uselesskey = { path = "../crates/uselesskey", features = ["ecdsa", "token"] }
 uselesskey-jwk = { path = "../crates/uselesskey-jwk" }
+uselesskey-core-keypair-material = { path = "../crates/uselesskey-core-keypair-material" }
 rsa = { version = "0.9", features = ["pem"] }
 p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "pem"] }
 serde_json = "1"
@@ -50,6 +51,12 @@ doc = false
 [[bin]]
 name = "seed_parse"
 path = "fuzz_targets/seed_parse.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "core_keypair_material"
+path = "fuzz_targets/core_keypair_material.rs"
 test = false
 doc = false
 

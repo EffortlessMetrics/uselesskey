@@ -14,7 +14,7 @@ uselesskey = { path = "../uselesskey", default-features = false, features = [] }
 uselesskey-core-id = { workspace = true, optional = true }
 uselesskey-core-seed = { workspace = true, optional = true }
 uselesskey-core-kid = { workspace = true, optional = true }
-uselesskey-core-keypair = { workspace = true, optional = true }
+uselesskey-core-keypair-material = { workspace = true, optional = true }
 uselesskey-core-negative = { workspace = true, optional = true }
 uselesskey-core-sink = { workspace = true, optional = true }
 uselesskey-core = { path = "../uselesskey-core" }
@@ -42,7 +42,7 @@ uk-all = ["uselesskey/full", "uk-rsa", "uk-ecdsa", "uk-ed25519", "uk-hmac", "uk-
 uk-core-id = ["dep:uselesskey-core-id"]
 uk-core-seed = ["dep:uselesskey-core-seed"]
 uk-core-kid = ["dep:uselesskey-core-kid"]
-uk-core-keypair = ["dep:uselesskey-core-keypair"]
+uk-core-keypair = ["dep:uselesskey-core-keypair-material"]
 uk-core-negative = ["dep:uselesskey-core-negative"]
 uk-core-sink = ["dep:uselesskey-core-sink"]
 uk-jwt = []

@@ -159,7 +159,7 @@ struct UselessWorld {
     #[cfg(any(feature = "uk-core-kid", feature = "uk-core-keypair"))]
     core_kid_second: Option<String>,
     #[cfg(feature = "uk-core-keypair")]
-    core_keypair_material: Option<uselesskey_core_keypair::Pkcs8SpkiKeyMaterial>,
+    core_keypair_material: Option<uselesskey_core_keypair_material::Pkcs8SpkiKeyMaterial>,
 
     // Tempfile handles.
     private_tempfile: Option<uselesskey_core::sink::TempArtifact>,

@@ -252,6 +252,7 @@ const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-core-x509-derive",
     "uselesskey-core-x509",
     "uselesskey-core",
+    "uselesskey-core-keypair-material",
     "uselesskey-core-keypair",
     "uselesskey-jwk",
     "uselesskey-rsa",

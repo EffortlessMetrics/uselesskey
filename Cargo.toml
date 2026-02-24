@@ -10,6 +10,7 @@ members = [
   "crates/uselesskey-core-seed",
   "crates/uselesskey-core-kid",
   "crates/uselesskey-core-keypair",
+  "crates/uselesskey-core-keypair-material",
   "crates/uselesskey-core-negative",
   "crates/uselesskey-core-sink",
   "crates/uselesskey-core-token",
@@ -57,6 +58,7 @@ uselesskey-core-id = { path = "crates/uselesskey-core-id", version = "0.3.0", de
 uselesskey-core-seed = { path = "crates/uselesskey-core-seed", version = "0.3.0", default-features = false }
 uselesskey-core-kid = { path = "crates/uselesskey-core-kid", version = "0.3.0" }
 uselesskey-core-keypair = { path = "crates/uselesskey-core-keypair", version = "0.3.0" }
+uselesskey-core-keypair-material = { path = "crates/uselesskey-core-keypair-material", version = "0.3.0" }
 uselesskey-core-negative = { path = "crates/uselesskey-core-negative", version = "0.3.0", default-features = false }
 uselesskey-core-token = { path = "crates/uselesskey-core-token", version = "0.3.0" }
 uselesskey-core-jwk = { path = "crates/uselesskey-core-jwk", version = "0.3.0" }

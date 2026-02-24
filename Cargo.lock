@@ -3327,7 +3327,7 @@ dependencies = [
  "uselesskey-aws-lc-rs",
  "uselesskey-core",
  "uselesskey-core-id",
- "uselesskey-core-keypair",
+ "uselesskey-core-keypair-material",
  "uselesskey-core-kid",
  "uselesskey-core-negative",
  "uselesskey-core-seed",
@@ -3389,6 +3389,14 @@ dependencies = [
 name = "uselesskey-core-keypair"
 version = "0.3.0"
 dependencies = [
+ "uselesskey-core-keypair-material",
+]
+
+[[package]]
+name = "uselesskey-core-keypair-material"
+version = "0.3.0"
+dependencies = [
+ "proptest",
  "uselesskey-core",
  "uselesskey-core-kid",
 ]
@@ -3481,7 +3489,7 @@ dependencies = [
  "rstest",
  "serde_json",
  "uselesskey-core",
- "uselesskey-core-keypair",
+ "uselesskey-core-keypair-material",
  "uselesskey-core-kid",
  "uselesskey-jwk",
 ]
@@ -3498,7 +3506,7 @@ dependencies = [
  "rstest",
  "serde_json",
  "uselesskey-core",
- "uselesskey-core-keypair",
+ "uselesskey-core-keypair-material",
  "uselesskey-core-kid",
  "uselesskey-jwk",
 ]
@@ -3613,7 +3621,7 @@ dependencies = [
  "rstest",
  "serde_json",
  "uselesskey-core",
- "uselesskey-core-keypair",
+ "uselesskey-core-keypair-material",
  "uselesskey-jwk",
 ]
 

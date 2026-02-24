@@ -150,8 +150,14 @@ fn dependents(crate_name: &str) -> &'static [&'static str] {
     match crate_name {
         "uselesskey-core-seed" => &["uselesskey-core-id"],
         "uselesskey-core-id" => &["uselesskey-core-cache", "uselesskey-core"],
-        "uselesskey-core-kid" => &["uselesskey-core-keypair", "uselesskey-hmac"],
-        "uselesskey-core-keypair" => &["uselesskey-rsa", "uselesskey-ecdsa", "uselesskey-ed25519"],
+        "uselesskey-core-kid" => &["uselesskey-core-keypair-material", "uselesskey-hmac"],
+        "uselesskey-core-keypair-material" => &[
+            "uselesskey-core-keypair",
+            "uselesskey-rsa",
+            "uselesskey-ecdsa",
+            "uselesskey-ed25519",
+        ],
+        "uselesskey-core-keypair" => &[],
         "uselesskey-core-cache" => &["uselesskey-core"],
         "uselesskey-core-negative" => &["uselesskey-core"],
         "uselesskey-core-sink" => &["uselesskey-core"],
@@ -310,6 +316,7 @@ mod tests {
         let plan = build_plan(&paths);
         let impacted = plan.impacted_crates;
         assert!(impacted.contains("uselesskey-core-kid"));
+        assert!(impacted.contains("uselesskey-core-keypair-material"));
         assert!(impacted.contains("uselesskey-core-keypair"));
         assert!(impacted.contains("uselesskey-hmac"));
         assert!(impacted.contains("uselesskey-rsa"));
@@ -319,16 +326,24 @@ mod tests {
     }
 
     #[test]
-    fn core_keypair_change_expands_to_key_fixture_crates() {
-        let paths = vec!["crates/uselesskey-core-keypair/src/lib.rs".to_string()];
+    fn core_keypair_material_change_expands_to_key_fixture_crates() {
+        let paths = vec!["crates/uselesskey-core-keypair-material/src/lib.rs".to_string()];
         let plan = build_plan(&paths);
         let impacted = plan.impacted_crates;
+        assert!(impacted.contains("uselesskey-core-keypair-material"));
         assert!(impacted.contains("uselesskey-core-keypair"));
         assert!(impacted.contains("uselesskey-rsa"));
         assert!(impacted.contains("uselesskey-ecdsa"));
         assert!(impacted.contains("uselesskey-ed25519"));
-        assert!(impacted.contains("uselesskey-rustls"));
-        assert!(impacted.contains("uselesskey-aws-lc-rs"));
+    }
+
+    #[test]
+    fn core_keypair_change_is_self_only() {
+        let paths = vec!["crates/uselesskey-core-keypair/src/lib.rs".to_string()];
+        let plan = build_plan(&paths);
+        let impacted = plan.impacted_crates;
+        assert!(impacted.contains("uselesskey-core-keypair"));
+        assert_eq!(impacted.len(), 1);
     }
 
     #[test]
