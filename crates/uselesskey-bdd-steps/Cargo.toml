@@ -43,7 +43,7 @@ uselesskey-tonic = { path = "../uselesskey-tonic", version = "0.3.0", optional =
 [features]
 default = ["uk-default"]
 uk-default = ["uselesskey/default"]
-uk-all = ["uselesskey/full", "uk-rsa", "uk-ecdsa", "uk-ed25519", "uk-hmac", "uk-pgp", "uk-x509", "uk-jwk", "uk-token", "uk-jwt", "uk-core-id", "uk-core-seed", "uk-core-factory", "uk-core-kid", "uk-core-keypair", "uk-core-negative", "uk-core-sink", "uk-aws-lc-rs", "uk-rustls", "uk-tonic", "uk-ring", "uk-rustcrypto"]
+uk-all = ["uselesskey/full", "uk-rsa", "uk-ecdsa", "uk-ed25519", "uk-hmac", "uk-pgp", "uk-x509", "uk-jwk", "uk-token", "uk-jwt", "uk-core-id", "uk-core-seed", "uk-core-factory", "uk-core-kid", "uk-core-keypair", "uk-core-negative", "uk-core-sink", "uk-core-token-shape", "uk-aws-lc-rs", "uk-rustls", "uk-tonic", "uk-ring", "uk-rustcrypto"]
 uk-core-id = ["dep:uselesskey-core-id", "dep:uselesskey-core-hash"]
 uk-core-token-shape = ["dep:uselesskey-core-token-shape"]
 uk-core-seed = ["dep:uselesskey-core-seed"]

@@ -5,4 +5,5 @@
 //! This crate is a thin compatibility façade over
 //! `uselesskey-core-jwk-shape` for API stability.
 
+pub use uselesskey_core_jwk_builder::JwksBuilder;
 pub use uselesskey_core_jwk_shape::*;
