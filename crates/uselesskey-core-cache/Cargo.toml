@@ -15,7 +15,7 @@ authors.workspace = true
 
 [dependencies]
 dashmap = { workspace = true, optional = true }
-spin = { version = "0.9.8", default-features = false, features = ["mutex", "spin_mutex"] }
+spin = { version = "0.10.0", default-features = false, features = ["mutex", "spin_mutex"] }
 uselesskey-core-id = { path = "../uselesskey-core-id", version = "0.3.0", default-features = false }
 
 [dev-dependencies]
