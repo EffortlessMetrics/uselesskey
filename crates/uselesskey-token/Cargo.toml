@@ -15,9 +15,9 @@ authors.workspace = true
 
 [dependencies]
 uselesskey-core = { path = "../uselesskey-core", version = "0.3.0" }
-base64.workspace = true
-rand_core.workspace = true
-serde_json.workspace = true
+uselesskey-core-token.workspace = true
 
 [dev-dependencies]
+base64.workspace = true
+serde_json.workspace = true
 proptest.workspace = true

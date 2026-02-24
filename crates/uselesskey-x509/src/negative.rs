@@ -1,86 +1,9 @@
-//! X.509 negative fixture types.
+//! X.509 negative-fixture helpers.
 //!
-//! These types represent intentionally invalid certificates for testing error handling.
+//! Policy enums and spec mutations are defined in `uselesskey-core-x509`
+//! and re-exported by this crate.
 
-use crate::spec::{KeyUsage, NotBeforeOffset, X509Spec};
-
-/// Types of invalid X.509 certificates for negative testing.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
-pub enum X509Negative {
-    /// Certificate with not_after in the past (expired).
-    Expired,
-    /// Certificate with not_before in the future (not yet valid).
-    NotYetValid,
-    /// Certificate marked as CA but without proper key usage flags.
-    WrongKeyUsage,
-    /// Self-signed certificate that claims to be a CA but has conflicting extensions.
-    SelfSignedButClaimsCA,
-}
-
-impl X509Negative {
-    /// Modify a spec to produce the negative fixture variant.
-    pub fn apply_to_spec(&self, base_spec: &X509Spec) -> X509Spec {
-        let mut spec = base_spec.clone();
-
-        match self {
-            X509Negative::Expired => {
-                // Certificate expired 30 days ago
-                // not_before was 395 days ago, valid for 365 days = expired 30 days ago
-                spec.not_before_offset = NotBeforeOffset::DaysAgo(395);
-                spec.validity_days = 365;
-            }
-            X509Negative::NotYetValid => {
-                // Certificate valid starting 30 days from now
-                spec.not_before_offset = NotBeforeOffset::DaysFromNow(30);
-                spec.validity_days = 365;
-            }
-            X509Negative::WrongKeyUsage => {
-                // Marked as CA but without key_cert_sign
-                spec.is_ca = true;
-                spec.key_usage = KeyUsage {
-                    key_cert_sign: false, // Wrong! CA should have this
-                    crl_sign: false,
-                    digital_signature: true,
-                    key_encipherment: true,
-                };
-            }
-            X509Negative::SelfSignedButClaimsCA => {
-                // Self-signed but claims to be CA with path length constraint
-                // This creates a "CA" that can't actually sign anything valid
-                spec.is_ca = true;
-                spec.key_usage = KeyUsage::ca();
-                // The certificate will be self-signed but marked as CA
-                // with no actual chain - this is suspicious in production
-            }
-        }
-
-        spec
-    }
-
-    /// Human-readable description of this negative fixture.
-    pub fn description(&self) -> &'static str {
-        match self {
-            X509Negative::Expired => "Certificate with not_after in the past (expired)",
-            X509Negative::NotYetValid => {
-                "Certificate with not_before in the future (not yet valid)"
-            }
-            X509Negative::WrongKeyUsage => {
-                "Certificate marked as CA but without keyCertSign key usage"
-            }
-            X509Negative::SelfSignedButClaimsCA => "Self-signed certificate that claims to be a CA",
-        }
-    }
-
-    /// Variant name for cache keys.
-    pub fn variant_name(&self) -> &'static str {
-        match self {
-            X509Negative::Expired => "expired",
-            X509Negative::NotYetValid => "not_yet_valid",
-            X509Negative::WrongKeyUsage => "wrong_key_usage",
-            X509Negative::SelfSignedButClaimsCA => "self_signed_ca",
-        }
-    }
-}
+pub use uselesskey_core_x509::X509Negative;
 
 /// Corrupt a PEM-encoded certificate.
 ///
@@ -109,6 +32,7 @@ pub fn corrupt_cert_der_deterministic(der: &[u8], variant: &str) -> Vec<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use uselesskey_core_x509::{KeyUsage, NotBeforeOffset, X509Spec};
 
     #[test]
     fn test_expired_exact_values() {
@@ -217,7 +141,7 @@ mod tests {
             "deterministic corruption must alter the PEM"
         );
 
-        // Stability
+        // Stability.
         let corrupted2 = corrupt_cert_pem_deterministic(pem, "corrupt:v1");
         assert_eq!(
             corrupted, corrupted2,
@@ -245,7 +169,7 @@ mod tests {
             "deterministic corruption must alter the DER"
         );
 
-        // Stability
+        // Stability.
         let corrupted2 = corrupt_cert_der_deterministic(&der, "corrupt:v1");
         assert_eq!(
             corrupted, corrupted2,

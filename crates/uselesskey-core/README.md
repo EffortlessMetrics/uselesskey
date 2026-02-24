@@ -8,7 +8,7 @@ Most test suites should depend on the facade crate (`uselesskey`). Use `uselessk
 
 - `Factory` in random and deterministic modes
 - Order-independent derivation from `(domain, label, spec, variant)`
-- Per-process cache for generated artifacts
+- Per-process cache for generated artifacts (powered by `uselesskey-core-cache`)
 - Generic negative helpers for corrupted PEM / truncated DER
 - Tempfile sinks when `std` is enabled (implemented in `uselesskey-core-sink`)
 

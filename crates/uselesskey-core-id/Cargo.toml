@@ -15,6 +15,7 @@ authors.workspace = true
 
 [dependencies]
 blake3 = { version = "1.8.3", default-features = false }
+uselesskey-core-seed = { path = "../uselesskey-core-seed", version = "0.3.0", default-features = false }
 
 [dev-dependencies]
 proptest.workspace = true
@@ -22,4 +23,4 @@ rstest.workspace = true
 
 [features]
 default = ["std"]
-std = ["blake3/std"]
+std = ["blake3/std", "uselesskey-core-seed/std"]

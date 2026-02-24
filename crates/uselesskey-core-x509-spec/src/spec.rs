@@ -284,18 +284,21 @@ mod tests {
     #[test]
     fn test_builder_methods_apply() {
         let key_usage = KeyUsage::ca();
+        let sans: Vec<String> = vec!["a.example.com".into(), "b.example.com".into()];
         let spec = X509Spec::self_signed("builder.example.com")
             .with_validity_days(90)
             .with_not_before(NotBeforeOffset::DaysFromNow(7))
             .with_rsa_bits(4096)
             .with_key_usage(key_usage)
-            .with_is_ca(true);
+            .with_is_ca(true)
+            .with_sans(sans.clone());
 
         assert_eq!(spec.validity_days, 90);
         assert_eq!(spec.not_before_offset, NotBeforeOffset::DaysFromNow(7));
         assert_eq!(spec.rsa_bits, 4096);
         assert!(spec.is_ca);
         assert_eq!(spec.key_usage, key_usage);
+        assert_eq!(spec.sans, sans);
     }
 
     #[test]

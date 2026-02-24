@@ -176,9 +176,11 @@ mod tests {
     use std::collections::HashSet;
 
     use super::{
-        CorruptPem, corrupt_der_deterministic, corrupt_pem, corrupt_pem_deterministic, flip_byte,
-        truncate_der,
+        CorruptPem, corrupt_der_deterministic, corrupt_pem, corrupt_pem_deterministic,
+        derived_offset, derived_truncate_len, derived_truncate_len_bytes, flip_byte,
+        inject_bad_base64_line, inject_blank_line, truncate_der,
     };
+    use uselesskey_core_id::hash32;
 
     #[test]
     fn bad_header_replaces_first_line() {
@@ -261,5 +263,202 @@ mod tests {
         let second = corrupt_der_deterministic(&der, "corrupt:variant-a");
         assert_eq!(first, second);
         assert_ne!(first, der);
+    }
+
+    // ---- variant discovery helpers ----
+
+    /// Find a variant string whose `hash32` first byte % 5 == target.
+    fn find_pem_variant(target: u8) -> String {
+        for i in 0u64.. {
+            let v = format!("v{i}");
+            let digest = hash32(v.as_bytes());
+            if digest.as_bytes()[0] % 5 == target {
+                return v;
+            }
+        }
+        unreachable!()
+    }
+
+    /// Find a variant string whose `hash32` first byte % 3 == target.
+    fn find_der_variant(target: u8) -> String {
+        for i in 0u64.. {
+            let v = format!("v{i}");
+            let digest = hash32(v.as_bytes());
+            if digest.as_bytes()[0] % 3 == target {
+                return v;
+            }
+        }
+        unreachable!()
+    }
+
+    // ---- derived_truncate_len ----
+
+    #[test]
+    fn derived_truncate_len_exact_arithmetic() {
+        let pem = "abcde"; // 5 chars
+        let mut digest = [0u8; 32];
+        digest[1] = 0x00;
+        digest[2] = 0x0B; // u16::from_be_bytes([0x00, 0x0B]) = 11, 11 % 4 = 3, 1 + 3 = 4
+        assert_eq!(derived_truncate_len(pem, &digest), 4);
+    }
+
+    #[test]
+    fn derived_truncate_len_single_char_returns_zero() {
+        let pem = "x"; // 1 char
+        let digest = [0u8; 32];
+        assert_eq!(derived_truncate_len(pem, &digest), 0);
+    }
+
+    // ---- derived_truncate_len_bytes ----
+
+    #[test]
+    fn derived_truncate_len_bytes_exact_arithmetic() {
+        let mut digest = [0u8; 32];
+        digest[2] = 0x0B; // 11 % 4 = 3
+        assert_eq!(derived_truncate_len_bytes(5, &digest), 3);
+    }
+
+    #[test]
+    fn derived_truncate_len_bytes_single_returns_zero() {
+        let digest = [0u8; 32];
+        assert_eq!(derived_truncate_len_bytes(1, &digest), 0);
+    }
+
+    // ---- derived_offset ----
+
+    #[test]
+    fn derived_offset_exact_arithmetic() {
+        assert_eq!(derived_offset(5, 7), 2); // 7 % 5 = 2
+    }
+
+    #[test]
+    fn derived_offset_zero_len_returns_zero() {
+        assert_eq!(derived_offset(0, 7), 0);
+    }
+
+    // ---- flip_byte ----
+
+    #[test]
+    fn flip_byte_xor_vs_or_on_set_bit() {
+        // XOR: 0x01 ^ 0x01 = 0x00; OR mutation would give 0x01 | 0x01 = 0x01
+        let data = vec![0x01];
+        let result = flip_byte(&data, 0);
+        assert_eq!(result[0], 0x00);
+    }
+
+    // ---- inject_bad_base64_line ----
+
+    #[test]
+    fn inject_bad_base64_two_lines_early_return() {
+        let pem = "HEADER\nBODY";
+        let out = inject_bad_base64_line(pem);
+        assert_eq!(out, "HEADER\nBODY\nTHIS_IS_NOT_BASE64!!!\n");
+    }
+
+    #[test]
+    fn inject_bad_base64_three_lines_inserts() {
+        let pem = "HEADER\nBODY\nFOOTER";
+        let out = inject_bad_base64_line(pem);
+        let lines: Vec<&str> = out.lines().collect();
+        assert_eq!(lines[0], "HEADER");
+        assert_eq!(lines[1], "THIS_IS_NOT_BASE64!!!");
+        assert_eq!(lines[2], "BODY");
+        assert_eq!(lines[3], "FOOTER");
+    }
+
+    // ---- inject_blank_line ----
+
+    #[test]
+    fn inject_blank_line_two_lines_early_return() {
+        let pem = "HEADER\nBODY";
+        let out = inject_blank_line(pem);
+        assert_eq!(out, "HEADER\nBODY\n\n");
+    }
+
+    #[test]
+    fn inject_blank_line_three_lines_inserts() {
+        let pem = "HEADER\nBODY\nFOOTER";
+        let out = inject_blank_line(pem);
+        assert!(out.contains("HEADER\n\n"));
+    }
+
+    // ---- corrupt_pem_deterministic arm-specific ----
+
+    #[test]
+    fn deterministic_pem_arm0_bad_header() {
+        let pem = "-----BEGIN TEST-----\nAAA=\n-----END TEST-----\n";
+        let variant = find_pem_variant(0);
+        let out = corrupt_pem_deterministic(pem, &variant);
+        assert!(out.contains("BEGIN CORRUPTED KEY"));
+    }
+
+    #[test]
+    fn deterministic_pem_arm1_bad_footer() {
+        let pem = "-----BEGIN TEST-----\nAAA=\n-----END TEST-----\n";
+        let variant = find_pem_variant(1);
+        let out = corrupt_pem_deterministic(pem, &variant);
+        assert!(out.contains("END CORRUPTED KEY"));
+    }
+
+    #[test]
+    fn deterministic_pem_arm2_bad_base64() {
+        let pem = "-----BEGIN TEST-----\nAAA=\n-----END TEST-----\n";
+        let variant = find_pem_variant(2);
+        let out = corrupt_pem_deterministic(pem, &variant);
+        assert!(out.contains("THIS_IS_NOT_BASE64!!!"));
+    }
+
+    #[test]
+    fn deterministic_pem_arm3_blank_line() {
+        let pem = "-----BEGIN TEST-----\nAAA=\n-----END TEST-----\n";
+        let variant = find_pem_variant(3);
+        let out = corrupt_pem_deterministic(pem, &variant);
+        assert!(out.contains("BEGIN TEST-----\n\n"));
+    }
+
+    #[test]
+    fn deterministic_pem_arm4_truncate() {
+        let pem = "-----BEGIN TEST-----\nAAA=\n-----END TEST-----\n";
+        let variant = find_pem_variant(4);
+        let out = corrupt_pem_deterministic(pem, &variant);
+        assert!(out.len() < pem.len());
+    }
+
+    // ---- corrupt_der_deterministic arm-specific ----
+
+    #[test]
+    fn deterministic_der_arm0_truncation() {
+        let der = vec![0x30, 0x82, 0x01, 0x22, 0x10, 0x20];
+        let variant = find_der_variant(0);
+        let out = corrupt_der_deterministic(&der, &variant);
+        assert!(out.len() < der.len());
+        assert_eq!(&out[..], &der[..out.len()]);
+    }
+
+    #[test]
+    fn deterministic_der_arm1_flip() {
+        let der = vec![0x30, 0x82, 0x01, 0x22, 0x10, 0x20];
+        let variant = find_der_variant(1);
+        let out = corrupt_der_deterministic(&der, &variant);
+        assert_eq!(out.len(), der.len());
+        let diffs = out.iter().zip(der.iter()).filter(|(a, b)| a != b).count();
+        assert_eq!(diffs, 1);
+    }
+
+    #[test]
+    fn deterministic_der_arm2_flip_truncate() {
+        let der = vec![0x30, 0x82, 0x01, 0x22, 0x10, 0x20];
+        let variant = find_der_variant(2);
+        let out = corrupt_der_deterministic(&der, &variant);
+        assert!(out.len() < der.len());
+    }
+
+    #[test]
+    fn deterministic_der_not_constant() {
+        let der1 = vec![0x30, 0x82, 0x01, 0x22, 0x10, 0x20];
+        let der2 = vec![0xFF, 0xFE, 0xFD, 0xFC, 0xFB, 0xFA];
+        let out1 = corrupt_der_deterministic(&der1, "same-variant");
+        let out2 = corrupt_der_deterministic(&der2, "same-variant");
+        assert_ne!(out1, out2);
     }
 }

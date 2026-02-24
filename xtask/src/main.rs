@@ -240,10 +240,17 @@ fn feature_matrix_cmd() -> Result<()> {
 }
 
 const PUBLISH_CRATES: &[&str] = &[
+    "uselesskey-core-seed",
     "uselesskey-core-id",
+    "uselesskey-core-cache",
     "uselesskey-core-kid",
     "uselesskey-core-negative",
     "uselesskey-core-sink",
+    "uselesskey-core-token",
+    "uselesskey-core-jwk",
+    "uselesskey-core-x509-spec",
+    "uselesskey-core-x509-derive",
+    "uselesskey-core-x509",
     "uselesskey-core",
     "uselesskey-core-keypair",
     "uselesskey-jwk",
@@ -458,13 +465,38 @@ fn run_mutants(crates: &[&str]) -> Result<()> {
 
     eprintln!("mutants targets: {crates:?}");
 
+    let all_features_requested =
+        env::var("CI").is_ok() || env::var("XTASK_MUTANTS_ALL_FEATURES").is_ok();
+    let nasm_available = !cfg!(windows)
+        || Command::new("nasm")
+            .arg("-v")
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status()
+            .is_ok_and(|s| s.success());
+
     for name in crates {
         let mut cmd = Command::new("cargo");
         cmd.arg("mutants");
 
-        // Only pass --all-features in CI or when explicitly requested,
-        // to avoid requiring NASM on local Windows dev machines.
-        if env::var("CI").is_ok() || env::var("XTASK_MUTANTS_ALL_FEATURES").is_ok() {
+        let needs_aws_lc_features = *name == "uselesskey-aws-lc-rs";
+        let use_all_features = if needs_aws_lc_features {
+            all_features_requested || nasm_available
+        } else {
+            true
+        };
+
+        // For aws-lc-rs specifically, all-features on Windows requires NASM.
+        // For all other crates, run with all features to avoid false misses
+        // from feature-gated APIs (e.g. JWK helpers).
+        if needs_aws_lc_features && !use_all_features {
+            eprintln!(
+                "skipping mutants for {name}: set XTASK_MUTANTS_ALL_FEATURES=1 or install NASM"
+            );
+            continue;
+        }
+
+        if use_all_features {
             cmd.arg("--all-features");
         }
 
@@ -485,7 +517,7 @@ fn fuzz(target: Option<&str>, extra: &[String]) -> Result<()> {
     match status {
         Ok(s) if s.success() => {
             let mut cmd = Command::new("cargo");
-            cmd.args(["fuzz", "run"]);
+            cmd.args(["+nightly", "fuzz", "run"]);
 
             if let Some(t) = target {
                 cmd.arg(t);
