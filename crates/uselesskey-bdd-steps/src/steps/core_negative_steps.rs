@@ -1,7 +1,9 @@
 #[cfg(feature = "uk-core-negative")]
 use cucumber::{given, when};
 #[cfg(feature = "uk-core-negative")]
-use uselesskey_core_negative::{corrupt_pem_deterministic, truncate_der};
+use uselesskey_core_negative::truncate_der;
+#[cfg(feature = "uk-core-negative")]
+use uselesskey_core_negative_pem::corrupt_pem_deterministic;
 
 const CORE_NEGATIVE_PEM_FIXTURE: &str =
     "-----BEGIN PRIVATE KEY-----\nMHg=\n-----END PRIVATE KEY-----\n";

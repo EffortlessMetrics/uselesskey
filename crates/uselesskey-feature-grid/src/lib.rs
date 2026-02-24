@@ -33,6 +33,7 @@ pub const UK_FEATURE_CORE_FACTORY: &str = "uk-core-factory";
 pub const UK_FEATURE_CORE_KID: &str = "uk-core-kid";
 pub const UK_FEATURE_CORE_KEYPAIR: &str = "uk-core-keypair";
 pub const UK_FEATURE_CORE_NEGATIVE: &str = "uk-core-negative";
+pub const UK_FEATURE_CORE_TOKEN_SHAPE: &str = "uk-core-token-shape";
 pub const UK_FEATURE_CORE_SINK: &str = "uk-core-sink";
 pub const UK_FEATURE_AWS_LC_RS: &str = "uk-aws-lc-rs";
 pub const UK_FEATURE_RING: &str = "uk-ring";
@@ -57,6 +58,7 @@ pub const UK_FEATURE_SETS: &[&str] = &[
     UK_FEATURE_CORE_FACTORY,
     UK_FEATURE_CORE_KID,
     UK_FEATURE_CORE_KEYPAIR,
+    UK_FEATURE_CORE_TOKEN_SHAPE,
     UK_FEATURE_CORE_NEGATIVE,
     UK_FEATURE_CORE_SINK,
     UK_FEATURE_AWS_LC_RS,

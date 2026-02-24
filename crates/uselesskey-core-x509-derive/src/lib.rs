@@ -8,6 +8,8 @@
 //! - length-prefixed hashing to avoid input-boundary collisions
 
 use rand_core::RngCore;
+use uselesskey_core_hash::Hasher;
+pub use uselesskey_core_hash::write_len_prefixed;
 use rcgen::SerialNumber;
 use time::OffsetDateTime;
 
@@ -24,7 +26,7 @@ pub const SERIAL_NUMBER_BYTES: usize = 16;
 ///
 /// Every part is hashed with a 32-bit length prefix to avoid boundary ambiguity.
 pub fn deterministic_base_time_from_parts(parts: &[&[u8]]) -> OffsetDateTime {
-    let mut hasher = blake3::Hasher::new();
+    let mut hasher = Hasher::new();
     for part in parts {
         write_len_prefixed(&mut hasher, part);
     }
@@ -34,7 +36,7 @@ pub fn deterministic_base_time_from_parts(parts: &[&[u8]]) -> OffsetDateTime {
 /// Deterministic base time from a pre-configured BLAKE3 hasher.
 ///
 /// Returns a time spread across one year from 2025-01-01 to 2026-01-01.
-pub fn deterministic_base_time(hasher: blake3::Hasher) -> OffsetDateTime {
+pub fn deterministic_base_time(hasher: Hasher) -> OffsetDateTime {
     let epoch = OffsetDateTime::from_unix_timestamp(BASE_TIME_EPOCH_UNIX)
         .expect("failed to construct deterministic X.509 epoch");
 
@@ -43,13 +45,6 @@ pub fn deterministic_base_time(hasher: blake3::Hasher) -> OffsetDateTime {
     let day_offset =
         u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]) % BASE_TIME_WINDOW_DAYS;
     epoch + time::Duration::days(i64::from(day_offset))
-}
-
-/// Write bytes into a BLAKE3 hasher with a big-endian `u32` length prefix.
-pub fn write_len_prefixed(hasher: &mut blake3::Hasher, bytes: &[u8]) {
-    let len = u32::try_from(bytes.len()).unwrap_or(u32::MAX);
-    hasher.update(&len.to_be_bytes());
-    hasher.update(bytes);
 }
 
 /// Deterministic serial number drawn from an RNG.
@@ -73,7 +68,7 @@ mod tests {
         let epoch = OffsetDateTime::from_unix_timestamp(BASE_TIME_EPOCH_UNIX).unwrap();
         let max = epoch + time::Duration::days(i64::from(BASE_TIME_WINDOW_DAYS - 1));
 
-        let base = deterministic_base_time(blake3::Hasher::new());
+        let base = deterministic_base_time(Hasher::new());
         assert!(base >= epoch, "base time should be after epoch");
         assert!(base <= max, "base time should be within one year");
     }

@@ -6,18 +6,21 @@
 //! key fixtures. Entries are sorted by `kid` and preserve insertion order for duplicate
 //! `kid` values.
 
-use uselesskey_core_jwk::{AnyJwk, Jwks, PrivateJwk, PublicJwk};
+use uselesskey_core_jwk_shape::{AnyJwk, Jwks, PrivateJwk, PublicJwk};
+use uselesskey_core_jwks_order::{HasKid, KidSorted};
 
 #[derive(Clone, Default)]
 pub struct JwksBuilder {
-    entries: Vec<Entry>,
+    entries: KidSorted<OrderedJwk>,
 }
 
 #[derive(Clone)]
-struct Entry {
-    kid: String,
-    index: usize,
-    jwk: AnyJwk,
+struct OrderedJwk(AnyJwk);
+
+impl HasKid for OrderedJwk {
+    fn kid(&self) -> &str {
+        self.0.kid()
+    }
 }
 
 impl JwksBuilder {
@@ -49,17 +52,13 @@ impl JwksBuilder {
     }
 
     pub fn push_any(&mut self, jwk: AnyJwk) -> &mut Self {
-        let index = self.entries.len();
-        let kid = jwk.kid().to_string();
-        self.entries.push(Entry { kid, index, jwk });
+        self.entries.push(OrderedJwk(jwk));
         self
     }
 
-    pub fn build(mut self) -> Jwks {
-        self.entries
-            .sort_by(|a, b| a.kid.cmp(&b.kid).then(a.index.cmp(&b.index)));
+    pub fn build(self) -> Jwks {
         Jwks {
-            keys: self.entries.into_iter().map(|e| e.jwk).collect(),
+            keys: self.entries.build().into_iter().map(|jwk| jwk.0).collect(),
         }
     }
 }
@@ -69,7 +68,7 @@ mod tests {
     use super::*;
 
     fn sample_rsa_public(kid: &str, n: &str) -> PublicJwk {
-        PublicJwk::Rsa(uselesskey_core_jwk::RsaPublicJwk {
+        PublicJwk::Rsa(uselesskey_core_jwk_shape::RsaPublicJwk {
             kty: "RSA",
             use_: "sig",
             alg: "RS256",
@@ -80,7 +79,7 @@ mod tests {
     }
 
     fn sample_oct_private(kid: &str, k: &str) -> PrivateJwk {
-        PrivateJwk::Oct(uselesskey_core_jwk::OctJwk {
+        PrivateJwk::Oct(uselesskey_core_jwk_shape::OctJwk {
             kty: "oct",
             use_: "sig",
             alg: "HS256",
@@ -91,7 +90,7 @@ mod tests {
 
     #[test]
     fn jwks_builder_orders_by_kid() {
-        let jwk1 = PublicJwk::Rsa(uselesskey_core_jwk::RsaPublicJwk {
+        let jwk1 = PublicJwk::Rsa(uselesskey_core_jwk_shape::RsaPublicJwk {
             kty: "RSA",
             use_: "sig",
             alg: "RS256",
@@ -99,7 +98,7 @@ mod tests {
             n: "n".to_string(),
             e: "e".to_string(),
         });
-        let jwk2 = PublicJwk::Ec(uselesskey_core_jwk::EcPublicJwk {
+        let jwk2 = PublicJwk::Ec(uselesskey_core_jwk_shape::EcPublicJwk {
             kty: "EC",
             use_: "sig",
             alg: "ES256",
@@ -118,7 +117,7 @@ mod tests {
 
     #[test]
     fn jwks_builder_stable_for_same_kid() {
-        let jwk1 = PublicJwk::Rsa(uselesskey_core_jwk::RsaPublicJwk {
+        let jwk1 = PublicJwk::Rsa(uselesskey_core_jwk_shape::RsaPublicJwk {
             kty: "RSA",
             use_: "sig",
             alg: "RS256",
@@ -126,7 +125,7 @@ mod tests {
             n: "n1".to_string(),
             e: "e1".to_string(),
         });
-        let jwk2 = PublicJwk::Rsa(uselesskey_core_jwk::RsaPublicJwk {
+        let jwk2 = PublicJwk::Rsa(uselesskey_core_jwk_shape::RsaPublicJwk {
             kty: "RSA",
             use_: "sig",
             alg: "RS256",
@@ -177,3 +176,4 @@ mod tests {
         assert_eq!(jwks.keys.len(), 2);
     }
 }
+

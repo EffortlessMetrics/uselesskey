@@ -13,6 +13,9 @@ cucumber.workspace = true
 uselesskey = { path = "../uselesskey", default-features = false, features = [] }
 uselesskey-core-id = { workspace = true, optional = true }
 uselesskey-core-seed = { workspace = true, optional = true }
+uselesskey-core-hash = { workspace = true, optional = true }
+uselesskey-core-negative-pem = { workspace = true, optional = true }
+uselesskey-core-token-shape = { workspace = true, optional = true }
 uselesskey-core-kid = { workspace = true, optional = true }
 uselesskey-core-keypair-material = { workspace = true, optional = true }
 uselesskey-core-negative = { workspace = true, optional = true }
@@ -29,6 +32,8 @@ x509-parser = "0.18.1"
 serde_json.workspace = true
 base64.workspace = true
 pgp = { version = "0.19.0", default-features = false }
+rand_chacha.workspace = true
+rand_core.workspace = true
 uselesskey-aws-lc-rs = { path = "../uselesskey-aws-lc-rs", version = "0.3.0", optional = true, default-features = false, features = ["rsa", "ecdsa", "ed25519"] }
 uselesskey-ring = { path = "../uselesskey-ring", version = "0.3.0", optional = true, default-features = false, features = ["all"] }
 uselesskey-rustcrypto = { path = "../uselesskey-rustcrypto", version = "0.3.0", optional = true, default-features = false, features = ["all"] }
@@ -39,12 +44,13 @@ uselesskey-tonic = { path = "../uselesskey-tonic", version = "0.3.0", optional =
 default = ["uk-default"]
 uk-default = ["uselesskey/default"]
 uk-all = ["uselesskey/full", "uk-rsa", "uk-ecdsa", "uk-ed25519", "uk-hmac", "uk-pgp", "uk-x509", "uk-jwk", "uk-token", "uk-jwt", "uk-core-id", "uk-core-seed", "uk-core-factory", "uk-core-kid", "uk-core-keypair", "uk-core-negative", "uk-core-sink", "uk-aws-lc-rs", "uk-rustls", "uk-tonic", "uk-ring", "uk-rustcrypto"]
-uk-core-id = ["dep:uselesskey-core-id"]
+uk-core-id = ["dep:uselesskey-core-id", "dep:uselesskey-core-hash"]
+uk-core-token-shape = ["dep:uselesskey-core-token-shape"]
 uk-core-seed = ["dep:uselesskey-core-seed"]
 uk-core-factory = []
 uk-core-kid = ["dep:uselesskey-core-kid"]
 uk-core-keypair = ["dep:uselesskey-core-keypair-material"]
-uk-core-negative = ["dep:uselesskey-core-negative"]
+uk-core-negative = ["dep:uselesskey-core-negative", "dep:uselesskey-core-negative-pem"]
 uk-core-sink = ["dep:uselesskey-core-sink"]
 uk-jwt = []
 uk-rsa = ["uselesskey/rsa"]

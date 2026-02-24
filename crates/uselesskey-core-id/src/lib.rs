@@ -4,8 +4,9 @@
 extern crate alloc;
 
 use alloc::string::String;
+pub use uselesskey_core_hash::{hash32, write_len_prefixed};
+use uselesskey_core_hash::Hasher;
 
-use blake3::Hash;
 pub use uselesskey_core_seed::Seed;
 
 /// Domain strings are used to separate unrelated fixture types.
@@ -45,10 +46,7 @@ impl ArtifactId {
             derivation_version,
         }
     }
-}
 
-pub fn hash32(bytes: &[u8]) -> Hash {
-    blake3::hash(bytes)
 }
 
 /// Derive a per-artifact seed from the master seed and the artifact identifier.
@@ -66,8 +64,6 @@ pub fn derive_seed(master: &Seed, id: &ArtifactId) -> Seed {
 }
 
 fn derive_seed_v1(master: &Seed, id: &ArtifactId) -> Seed {
-    use blake3::Hasher;
-
     let mut hasher = Hasher::new_keyed(master.bytes());
 
     hasher.update(&id.derivation_version.0.to_be_bytes());
@@ -78,12 +74,6 @@ fn derive_seed_v1(master: &Seed, id: &ArtifactId) -> Seed {
 
     let out = hasher.finalize();
     Seed::new(*out.as_bytes())
-}
-
-fn write_len_prefixed(hasher: &mut blake3::Hasher, bytes: &[u8]) {
-    let len = u32::try_from(bytes.len()).unwrap_or(u32::MAX);
-    hasher.update(&len.to_be_bytes());
-    hasher.update(bytes);
 }
 
 #[cfg(test)]

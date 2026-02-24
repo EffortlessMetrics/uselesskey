@@ -10,12 +10,21 @@ cargo-fuzz = true
 [dependencies]
 libfuzzer-sys = "0.4"
 rand_core = "0.6.4"
+rand_chacha = "0.3.1"
+blake3 = "1.8.3"
 
 # fuzz targets
 uselesskey = { path = "../crates/uselesskey", features = ["ecdsa", "token"] }
 uselesskey-jwk = { path = "../crates/uselesskey-jwk" }
+uselesskey-core-jwks-order = { path = "../crates/uselesskey-core-jwks-order" }
 uselesskey-core-keypair-material = { path = "../crates/uselesskey-core-keypair-material" }
 uselesskey-core-factory = { path = "../crates/uselesskey-core-factory" }
+uselesskey-core-hash = { path = "../crates/uselesskey-core-hash" }
+uselesskey-core-negative-pem = { path = "../crates/uselesskey-core-negative-pem" }
+uselesskey-core-x509-negative = { path = "../crates/uselesskey-core-x509-negative" }
+uselesskey-core-x509-spec = { path = "../crates/uselesskey-core-x509-spec" }
+uselesskey-core-token-shape = { path = "../crates/uselesskey-core-token-shape" }
+uselesskey-core-jwk-shape = { path = "../crates/uselesskey-core-jwk-shape" }
 rsa = { version = "0.9", features = ["pem"] }
 p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "pem"] }
 serde_json = "1"
@@ -23,6 +32,12 @@ serde_json = "1"
 [[bin]]
 name = "pem_corrupt"
 path = "fuzz_targets/pem_corrupt.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "core_negative_pem"
+path = "fuzz_targets/core_negative_pem.rs"
 test = false
 doc = false
 
@@ -69,7 +84,37 @@ test = false
 doc = false
 
 [[bin]]
+name = "core_hash"
+path = "fuzz_targets/core_hash.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "core_x509_negative"
+path = "fuzz_targets/core_x509_negative.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "core_token_shape"
+path = "fuzz_targets/core_token_shape.rs"
+test = false
+doc = false
+
+[[bin]]
 name = "jwk_builder"
 path = "fuzz_targets/jwk_builder.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "jwk_order"
+path = "fuzz_targets/jwk_order.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "jwk_shape"
+path = "fuzz_targets/jwk_shape.rs"
 test = false
 doc = false

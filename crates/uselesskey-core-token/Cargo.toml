@@ -14,9 +14,7 @@ documentation = "https://docs.rs/uselesskey-core-token"
 authors.workspace = true
 
 [dependencies]
-base64.workspace = true
-rand_core.workspace = true
-serde_json.workspace = true
+uselesskey-core-token-shape.workspace = true
 
 [dev-dependencies]
 rand_chacha.workspace = true

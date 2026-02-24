@@ -3321,17 +3321,22 @@ dependencies = [
  "p256",
  "p384",
  "pgp",
+ "rand_chacha 0.3.1",
+ "rand_core 0.6.4",
  "rsa",
  "serde_json",
  "uselesskey",
  "uselesskey-aws-lc-rs",
  "uselesskey-core",
+ "uselesskey-core-hash",
  "uselesskey-core-id",
  "uselesskey-core-keypair-material",
  "uselesskey-core-kid",
  "uselesskey-core-negative",
+ "uselesskey-core-negative-pem",
  "uselesskey-core-seed",
  "uselesskey-core-sink",
+ "uselesskey-core-token-shape",
  "uselesskey-jsonwebtoken",
  "uselesskey-ring",
  "uselesskey-rustcrypto",
@@ -3379,12 +3384,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "uselesskey-core-id"
+name = "uselesskey-core-hash"
 version = "0.3.0"
 dependencies = [
  "blake3",
  "proptest",
+]
+
+[[package]]
+name = "uselesskey-core-id"
+version = "0.3.0"
+dependencies = [
+ "proptest",
  "rstest",
+ "uselesskey-core-hash",
  "uselesskey-core-seed",
 ]
 
@@ -3392,9 +3405,7 @@ dependencies = [
 name = "uselesskey-core-jwk"
 version = "0.3.0"
 dependencies = [
- "proptest",
- "serde",
- "serde_json",
+ "uselesskey-core-jwk-shape",
 ]
 
 [[package]]
@@ -3403,7 +3414,24 @@ version = "0.3.0"
 dependencies = [
  "proptest",
  "serde_json",
- "uselesskey-core-jwk",
+ "uselesskey-core-jwk-shape",
+ "uselesskey-core-jwks-order",
+]
+
+[[package]]
+name = "uselesskey-core-jwk-shape"
+version = "0.3.0"
+dependencies = [
+ "proptest",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "uselesskey-core-jwks-order"
+version = "0.3.0"
+dependencies = [
+ "proptest",
 ]
 
 [[package]]
@@ -3436,7 +3464,16 @@ version = "0.3.0"
 dependencies = [
  "proptest",
  "rstest",
- "uselesskey-core-id",
+ "uselesskey-core-hash",
+ "uselesskey-core-negative-pem",
+]
+
+[[package]]
+name = "uselesskey-core-negative-pem"
+version = "0.3.0"
+dependencies = [
+ "proptest",
+ "uselesskey-core-hash",
 ]
 
 [[package]]
@@ -3461,6 +3498,15 @@ dependencies = [
 name = "uselesskey-core-token"
 version = "0.3.0"
 dependencies = [
+ "proptest",
+ "rand_chacha 0.3.1",
+ "uselesskey-core-token-shape",
+]
+
+[[package]]
+name = "uselesskey-core-token-shape"
+version = "0.3.0"
+dependencies = [
  "base64",
  "proptest",
  "rand_chacha 0.3.1",
@@ -3475,6 +3521,7 @@ dependencies = [
  "proptest",
  "rstest",
  "uselesskey-core-x509-derive",
+ "uselesskey-core-x509-negative",
  "uselesskey-core-x509-spec",
 ]
 
@@ -3482,11 +3529,20 @@ dependencies = [
 name = "uselesskey-core-x509-derive"
 version = "0.3.0"
 dependencies = [
- "blake3",
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
  "rcgen",
  "time",
+ "uselesskey-core-hash",
+]
+
+[[package]]
+name = "uselesskey-core-x509-negative"
+version = "0.3.0"
+dependencies = [
+ "proptest",
+ "rstest",
+ "uselesskey-core-x509-spec",
 ]
 
 [[package]]

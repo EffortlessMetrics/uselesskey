@@ -1,0 +1,26 @@
+[package]
+name = "uselesskey-core-x509-negative"
+version = "0.3.0"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "X.509 negative-fixture policy helpers for uselesskey."
+readme = "README.md"
+categories = ["development-tools::testing"]
+keywords = ["x509", "fixtures", "negative", "testing", "ca"]
+homepage = "https://github.com/EffortlessMetrics/uselesskey"
+documentation = "https://docs.rs/uselesskey-core-x509-negative"
+authors.workspace = true
+
+[dependencies]
+uselesskey-core-x509-spec = { path = "../uselesskey-core-x509-spec", version = "0.3.0" }
+
+[dev-dependencies]
+proptest.workspace = true
+rstest.workspace = true
+
+[features]
+default = ["std"]
+std = []
+

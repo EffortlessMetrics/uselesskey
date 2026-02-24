@@ -944,10 +944,17 @@ dependencies = [
 ]
 
 [[package]]
-name = "uselesskey-core-id"
+name = "uselesskey-core-hash"
 version = "0.3.0"
 dependencies = [
  "blake3",
+]
+
+[[package]]
+name = "uselesskey-core-id"
+version = "0.3.0"
+dependencies = [
+ "uselesskey-core-hash",
  "uselesskey-core-seed",
 ]
 
@@ -955,8 +962,7 @@ dependencies = [
 name = "uselesskey-core-jwk"
 version = "0.3.0"
 dependencies = [
- "serde",
- "serde_json",
+ "uselesskey-core-jwk-shape",
 ]
 
 [[package]]
@@ -964,8 +970,21 @@ name = "uselesskey-core-jwk-builder"
 version = "0.3.0"
 dependencies = [
  "serde_json",
- "uselesskey-core-jwk",
+ "uselesskey-core-jwk-shape",
+ "uselesskey-core-jwks-order",
 ]
+
+[[package]]
+name = "uselesskey-core-jwk-shape"
+version = "0.3.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "uselesskey-core-jwks-order"
+version = "0.3.0"
 
 [[package]]
 name = "uselesskey-core-keypair-material"
@@ -987,7 +1006,15 @@ dependencies = [
 name = "uselesskey-core-negative"
 version = "0.3.0"
 dependencies = [
- "uselesskey-core-id",
+ "uselesskey-core-hash",
+ "uselesskey-core-negative-pem",
+]
+
+[[package]]
+name = "uselesskey-core-negative-pem"
+version = "0.3.0"
+dependencies = [
+ "uselesskey-core-hash",
 ]
 
 [[package]]
@@ -1008,10 +1035,28 @@ dependencies = [
 name = "uselesskey-core-token"
 version = "0.3.0"
 dependencies = [
+ "uselesskey-core-token-shape",
+]
+
+[[package]]
+name = "uselesskey-core-token-shape"
+version = "0.3.0"
+dependencies = [
  "base64",
  "rand_core",
  "serde_json",
 ]
+
+[[package]]
+name = "uselesskey-core-x509-negative"
+version = "0.3.0"
+dependencies = [
+ "uselesskey-core-x509-spec",
+]
+
+[[package]]
+name = "uselesskey-core-x509-spec"
+version = "0.3.0"
 
 [[package]]
 name = "uselesskey-ecdsa"
@@ -1029,14 +1074,23 @@ dependencies = [
 name = "uselesskey-fuzz"
 version = "0.0.0"
 dependencies = [
+ "blake3",
  "libfuzzer-sys",
  "p256",
+ "rand_chacha",
  "rand_core",
  "rsa",
  "serde_json",
  "uselesskey",
  "uselesskey-core-factory",
+ "uselesskey-core-hash",
+ "uselesskey-core-jwk-shape",
+ "uselesskey-core-jwks-order",
  "uselesskey-core-keypair-material",
+ "uselesskey-core-negative-pem",
+ "uselesskey-core-token-shape",
+ "uselesskey-core-x509-negative",
+ "uselesskey-core-x509-spec",
  "uselesskey-jwk",
 ]
 
