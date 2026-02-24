@@ -71,6 +71,15 @@ Feature: JWKS (JSON Web Key Set) builder
     And I build another JWKS containing all keys with kids "z-key", "a-key", "m-key"
     Then both JWKS outputs should be identical
 
+  Scenario: JWKS preserves duplicate kid insertion order
+    Given a deterministic factory seeded with "jwks-dup-order-test"
+    When I generate an RSA key for label "rsa-dup" with spec RS256
+    And I generate an RSA key for label "rsa-dup-2" with spec RS256
+    And I build a JWKS with the RSA keys with kids "same", "same"
+    Then the JWKS should contain 2 keys
+    And the JWKS key at index 0 should have kid "same"
+    And the JWKS key at index 1 should have kid "same"
+
   # --- JWKS JSON format ---
 
   Scenario: JWKS JSON structure is valid

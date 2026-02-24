@@ -14,5 +14,4 @@ documentation = "https://docs.rs/uselesskey-core-keypair"
 authors.workspace = true
 
 [dependencies]
-uselesskey-core = { path = "../uselesskey-core", version = "0.3.0" }
-uselesskey-core-kid = { path = "../uselesskey-core-kid", version = "0.3.0" }
+uselesskey-core-keypair-material.workspace = true

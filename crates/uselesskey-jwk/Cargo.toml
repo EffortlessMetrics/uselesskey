@@ -15,6 +15,7 @@ authors.workspace = true
 
 [dependencies]
 uselesskey-core-jwk = { path = "../uselesskey-core-jwk", version = "0.3.0" }
+uselesskey-core-jwk-builder = { path = "../uselesskey-core-jwk-builder", version = "0.3.0" }
 
 [dev-dependencies]
 serde_json.workspace = true

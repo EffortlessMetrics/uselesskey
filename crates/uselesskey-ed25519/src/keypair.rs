@@ -7,7 +7,7 @@ use rand_core::RngCore;
 use uselesskey_core::negative::CorruptPem;
 use uselesskey_core::sink::TempArtifact;
 use uselesskey_core::{Error, Factory};
-use uselesskey_core_keypair::Pkcs8SpkiKeyMaterial;
+use uselesskey_core_keypair_material::Pkcs8SpkiKeyMaterial;
 
 use crate::Ed25519Spec;
 

@@ -5,6 +5,9 @@ use cucumber::{World, given, then, when};
 use jsonwebtoken::{Algorithm, Header, Validation, decode, decode_header, encode};
 use serde_json::Value;
 
+#[cfg(feature = "uk-core-factory")]
+#[path = "steps/core_factory_steps.rs"]
+mod core_factory_steps;
 #[cfg(feature = "uk-core-id")]
 #[path = "steps/core_id_steps.rs"]
 mod core_id_steps;
@@ -20,6 +23,9 @@ mod core_negative_steps;
 #[cfg(feature = "uk-core-seed")]
 #[path = "steps/core_seed_steps.rs"]
 mod core_seed_steps;
+#[cfg(feature = "uk-core-token-shape")]
+#[path = "steps/core_token_shape_steps.rs"]
+mod core_token_shape_steps;
 
 use uselesskey::jwk::JwksBuilder;
 use uselesskey::negative::CorruptPem;
@@ -154,12 +160,22 @@ struct UselessWorld {
     core_seed_seed: Option<uselesskey_core_seed::Seed>,
     #[cfg(feature = "uk-core-seed")]
     core_seed_error: Option<String>,
+    #[cfg(feature = "uk-core-factory")]
+    core_factory_value_1: Option<u64>,
+    #[cfg(feature = "uk-core-factory")]
+    core_factory_value_2: Option<u64>,
+    #[cfg(feature = "uk-core-factory")]
+    core_factory_type_mismatch_panic: Option<bool>,
     #[cfg(any(feature = "uk-core-kid", feature = "uk-core-keypair"))]
     core_kid_first: Option<String>,
     #[cfg(any(feature = "uk-core-kid", feature = "uk-core-keypair"))]
     core_kid_second: Option<String>,
     #[cfg(feature = "uk-core-keypair")]
-    core_keypair_material: Option<uselesskey_core_keypair::Pkcs8SpkiKeyMaterial>,
+    core_keypair_material: Option<uselesskey_core_keypair_material::Pkcs8SpkiKeyMaterial>,
+    #[cfg(feature = "uk-core-token-shape")]
+    core_token_shape_value_1: Option<String>,
+    #[cfg(feature = "uk-core-token-shape")]
+    core_token_shape_value_2: Option<String>,
 
     // Tempfile handles.
     private_tempfile: Option<uselesskey_core::sink::TempArtifact>,
@@ -3333,6 +3349,25 @@ fn jwks_outputs_identical(world: &mut UselessWorld) {
     let jwks1 = world.jwks_output_1.as_ref().expect("jwks_output_1 not set");
     let jwks2 = world.jwks_output_2.as_ref().expect("jwks_output_2 not set");
     assert_eq!(jwks1, jwks2);
+}
+
+#[then(regex = r#"^the JWKS key at index (\d+) should have kid "([^"]+)"$"#)]
+fn jwks_key_at_index_has_kid(world: &mut UselessWorld, index: usize, kid: String) {
+    let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
+    let keys = jwks["keys"].as_array().expect("keys should be an array");
+
+    let key = keys
+        .get(index)
+        .expect("key at requested index should exist");
+    let actual = key["kid"].as_str().expect("key kid should be a string");
+
+    assert_eq!(
+        actual,
+        kid.as_str(),
+        "key at index {} should have kid '{}'",
+        index,
+        kid
+    );
 }
 
 #[then("the JWKS JSON should have a \"keys\" array")]

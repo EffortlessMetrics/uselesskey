@@ -1,7 +1,8 @@
 use std::collections::BTreeMap;
 
 use proptest::prelude::*;
-use uselesskey_core_jwk::{AnyJwk, JwksBuilder, PublicJwk, RsaPublicJwk};
+use uselesskey_core_jwk_builder::JwksBuilder;
+use uselesskey_core_jwk_shape::{AnyJwk, PublicJwk, RsaPublicJwk};
 
 fn sample_rsa_public(kid: &str, n: &str) -> PublicJwk {
     PublicJwk::Rsa(RsaPublicJwk {

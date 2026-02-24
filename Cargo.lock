@@ -3321,17 +3321,22 @@ dependencies = [
  "p256",
  "p384",
  "pgp",
+ "rand_chacha 0.3.1",
+ "rand_core 0.6.4",
  "rsa",
  "serde_json",
  "uselesskey",
  "uselesskey-aws-lc-rs",
  "uselesskey-core",
+ "uselesskey-core-hash",
  "uselesskey-core-id",
- "uselesskey-core-keypair",
+ "uselesskey-core-keypair-material",
  "uselesskey-core-kid",
  "uselesskey-core-negative",
+ "uselesskey-core-negative-pem",
  "uselesskey-core-seed",
  "uselesskey-core-sink",
+ "uselesskey-core-token-shape",
  "uselesskey-jsonwebtoken",
  "uselesskey-ring",
  "uselesskey-rustcrypto",
@@ -3350,6 +3355,7 @@ dependencies = [
  "rstest",
  "thiserror 2.0.18",
  "uselesskey-core-cache",
+ "uselesskey-core-factory",
  "uselesskey-core-id",
  "uselesskey-core-negative",
  "uselesskey-core-sink",
@@ -3367,17 +3373,53 @@ dependencies = [
 ]
 
 [[package]]
-name = "uselesskey-core-id"
+name = "uselesskey-core-factory"
+version = "0.3.0"
+dependencies = [
+ "proptest",
+ "rand_chacha 0.3.1",
+ "rand_core 0.6.4",
+ "uselesskey-core-cache",
+ "uselesskey-core-id",
+]
+
+[[package]]
+name = "uselesskey-core-hash"
 version = "0.3.0"
 dependencies = [
  "blake3",
  "proptest",
+]
+
+[[package]]
+name = "uselesskey-core-id"
+version = "0.3.0"
+dependencies = [
+ "proptest",
  "rstest",
+ "uselesskey-core-hash",
  "uselesskey-core-seed",
 ]
 
 [[package]]
 name = "uselesskey-core-jwk"
+version = "0.3.0"
+dependencies = [
+ "uselesskey-core-jwk-shape",
+]
+
+[[package]]
+name = "uselesskey-core-jwk-builder"
+version = "0.3.0"
+dependencies = [
+ "proptest",
+ "serde_json",
+ "uselesskey-core-jwk-shape",
+ "uselesskey-core-jwks-order",
+]
+
+[[package]]
+name = "uselesskey-core-jwk-shape"
 version = "0.3.0"
 dependencies = [
  "proptest",
@@ -3386,9 +3428,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "uselesskey-core-jwks-order"
+version = "0.3.0"
+dependencies = [
+ "proptest",
+]
+
+[[package]]
 name = "uselesskey-core-keypair"
 version = "0.3.0"
 dependencies = [
+ "uselesskey-core-keypair-material",
+]
+
+[[package]]
+name = "uselesskey-core-keypair-material"
+version = "0.3.0"
+dependencies = [
+ "proptest",
  "uselesskey-core",
  "uselesskey-core-kid",
 ]
@@ -3407,7 +3464,16 @@ version = "0.3.0"
 dependencies = [
  "proptest",
  "rstest",
- "uselesskey-core-id",
+ "uselesskey-core-hash",
+ "uselesskey-core-negative-pem",
+]
+
+[[package]]
+name = "uselesskey-core-negative-pem"
+version = "0.3.0"
+dependencies = [
+ "proptest",
+ "uselesskey-core-hash",
 ]
 
 [[package]]
@@ -3432,6 +3498,15 @@ dependencies = [
 name = "uselesskey-core-token"
 version = "0.3.0"
 dependencies = [
+ "proptest",
+ "rand_chacha 0.3.1",
+ "uselesskey-core-token-shape",
+]
+
+[[package]]
+name = "uselesskey-core-token-shape"
+version = "0.3.0"
+dependencies = [
  "base64",
  "proptest",
  "rand_chacha 0.3.1",
@@ -3446,6 +3521,7 @@ dependencies = [
  "proptest",
  "rstest",
  "uselesskey-core-x509-derive",
+ "uselesskey-core-x509-negative",
  "uselesskey-core-x509-spec",
 ]
 
@@ -3453,11 +3529,20 @@ dependencies = [
 name = "uselesskey-core-x509-derive"
 version = "0.3.0"
 dependencies = [
- "blake3",
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
  "rcgen",
  "time",
+ "uselesskey-core-hash",
+]
+
+[[package]]
+name = "uselesskey-core-x509-negative"
+version = "0.3.0"
+dependencies = [
+ "proptest",
+ "rstest",
+ "uselesskey-core-x509-spec",
 ]
 
 [[package]]
@@ -3481,7 +3566,7 @@ dependencies = [
  "rstest",
  "serde_json",
  "uselesskey-core",
- "uselesskey-core-keypair",
+ "uselesskey-core-keypair-material",
  "uselesskey-core-kid",
  "uselesskey-jwk",
 ]
@@ -3498,7 +3583,7 @@ dependencies = [
  "rstest",
  "serde_json",
  "uselesskey-core",
- "uselesskey-core-keypair",
+ "uselesskey-core-keypair-material",
  "uselesskey-core-kid",
  "uselesskey-jwk",
 ]
@@ -3580,6 +3665,7 @@ version = "0.3.0"
 dependencies = [
  "serde_json",
  "uselesskey-core-jwk",
+ "uselesskey-core-jwk-builder",
 ]
 
 [[package]]
@@ -3613,7 +3699,7 @@ dependencies = [
  "rstest",
  "serde_json",
  "uselesskey-core",
- "uselesskey-core-keypair",
+ "uselesskey-core-keypair-material",
  "uselesskey-jwk",
 ]
 

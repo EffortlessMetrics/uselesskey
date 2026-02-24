@@ -1,0 +1,23 @@
+[package]
+name = "uselesskey-core-token-shape"
+version = "0.3.0"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "Token shape generation primitives shared across uselesskey token crates."
+categories = ["development-tools::testing"]
+keywords = ["token", "api-key", "oauth", "fixtures", "testing"]
+readme = "README.md"
+homepage = "https://github.com/EffortlessMetrics/uselesskey"
+documentation = "https://docs.rs/uselesskey-core-token-shape"
+authors.workspace = true
+
+[dependencies]
+base64.workspace = true
+rand_core.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+rand_chacha.workspace = true

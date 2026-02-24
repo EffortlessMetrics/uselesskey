@@ -18,3 +18,9 @@ Feature: Core ID derivation primitives
 
   Scenario: seed debug output is redacted
     Then the core-id master seed should be redacted in debug output
+
+  Scenario: hash helper is deterministic for stable input
+    Then core-id hash32 should be deterministic for input "fixture-core-hash"
+
+  Scenario: length-prefixed hashing keeps boundaries unambiguous
+    Then core-id length-prefixed hashing should distinguish split boundaries

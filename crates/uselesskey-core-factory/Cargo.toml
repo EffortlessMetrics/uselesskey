@@ -1,0 +1,32 @@
+[package]
+name = "uselesskey-core-factory"
+version = "0.3.0"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "Factory orchestration and cache lookup behavior for uselesskey fixtures."
+readme = "README.md"
+categories = ["development-tools::testing"]
+keywords = ["fixtures", "deterministic", "cache", "factory", "testing"]
+homepage = "https://github.com/EffortlessMetrics/uselesskey"
+documentation = "https://docs.rs/uselesskey-core-factory"
+authors.workspace = true
+
+[dependencies]
+rand_core.workspace = true
+rand_chacha.workspace = true
+uselesskey-core-cache = { path = "../uselesskey-core-cache", version = "0.3.0", default-features = false }
+uselesskey-core-id = { path = "../uselesskey-core-id", version = "0.3.0", default-features = false }
+
+[dev-dependencies]
+proptest.workspace = true
+
+[features]
+default = ["std"]
+std = [
+    "rand_core/std",
+    "rand_chacha/std",
+    "uselesskey-core-cache/std",
+    "uselesskey-core-id/std",
+]

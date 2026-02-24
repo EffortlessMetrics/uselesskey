@@ -15,7 +15,7 @@ authors.workspace = true
 
 [dependencies]
 uselesskey-core = { path = "../uselesskey-core", version = "0.3.0" }
-uselesskey-core-keypair.workspace = true
+uselesskey-core-keypair-material.workspace = true
 
 # Elliptic curve support from RustCrypto
 p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "pem"] }

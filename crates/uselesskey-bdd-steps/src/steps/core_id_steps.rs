@@ -1,6 +1,8 @@
 #[cfg(feature = "uk-core-id")]
 use cucumber::{given, then, when};
 #[cfg(feature = "uk-core-id")]
+use uselesskey_core_hash::{Hasher, hash32};
+#[cfg(feature = "uk-core-id")]
 use uselesskey_core_id::{ArtifactId, DerivationVersion, Seed, derive_seed};
 
 #[cfg(feature = "uk-core-id")]
@@ -65,4 +67,26 @@ fn core_id_seed_redacted(world: &mut crate::UselessWorld) {
         .as_ref()
         .expect("core-id master seed not set");
     assert_eq!(format!("{seed:?}"), "Seed(**redacted**)");
+}
+
+#[cfg(feature = "uk-core-id")]
+#[then(regex = r#"^core-id hash32 should be deterministic for input "([^"]+)"$"#)]
+fn core_id_hash32_stable(_world: &mut crate::UselessWorld, input: String) {
+    let left = hash32(input.as_bytes());
+    let right = hash32(input.as_bytes());
+    assert_eq!(left, right);
+}
+
+#[cfg(feature = "uk-core-id")]
+#[then("core-id length-prefixed hashing should distinguish split boundaries")]
+fn core_id_length_prefix_boundary_safe(_world: &mut crate::UselessWorld) {
+    let mut first = Hasher::new();
+    uselesskey_core_id::write_len_prefixed(&mut first, b"ab");
+    uselesskey_core_id::write_len_prefixed(&mut first, b"c");
+
+    let mut second = Hasher::new();
+    uselesskey_core_id::write_len_prefixed(&mut second, b"a");
+    uselesskey_core_id::write_len_prefixed(&mut second, b"bc");
+
+    assert_ne!(first.finalize(), second.finalize());
 }

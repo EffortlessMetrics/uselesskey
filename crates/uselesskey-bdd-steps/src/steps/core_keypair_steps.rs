@@ -1,7 +1,7 @@
 #[cfg(feature = "uk-core-keypair")]
 use cucumber::{given, then, when};
 #[cfg(feature = "uk-core-keypair")]
-use uselesskey_core_keypair::Pkcs8SpkiKeyMaterial;
+use uselesskey_core_keypair_material::Pkcs8SpkiKeyMaterial;
 
 #[cfg(feature = "uk-core-keypair")]
 const CORE_KEYPAIR_PKCS8_DER: &[u8] = &[0x30, 0x82, 0x01, 0x22, 0x04, 0x20, 0xAA, 0xBB];
