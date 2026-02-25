@@ -95,9 +95,21 @@ pub fn random_base62(rng: &mut impl RngCore, len: usize) -> String {
 
     while out.len() < len {
         rng.fill_bytes(&mut buf);
+        let before = out.len();
         for &b in &buf {
             if b < ACCEPT_MAX {
                 out.push(BASE62[(b % 62) as usize] as char);
+                if out.len() == len {
+                    break;
+                }
+            }
+        }
+
+        // Progress guarantee for pathological RNGs (e.g. constant values that are always rejected).
+        // Keep fallback bounded and deterministic to avoid hangs while preserving unbiased path for normal RNGs.
+        if out.len() == before {
+            for &b in &buf {
+                out.push(BASE62[(b as usize) % 62] as char);
                 if out.len() == len {
                     break;
                 }
@@ -254,6 +266,37 @@ mod tests {
         assert_eq!(&value[..4], "A9A9");
         // Fifth char comes from byte 0 (after 255 rejected) -> 'A'
         assert_eq!(value, "A9A9A");
+    }
+
+    #[test]
+    fn random_base62_constant_rng_terminates() {
+        struct ConstantRng(u8);
+
+        impl RngCore for ConstantRng {
+            fn next_u32(&mut self) -> u32 {
+                u32::from(self.0) * 0x0101_0101
+            }
+
+            fn next_u64(&mut self) -> u64 {
+                u64::from(self.0) * 0x0101_0101_0101_0101
+            }
+
+            fn fill_bytes(&mut self, dest: &mut [u8]) {
+                dest.fill(self.0);
+            }
+
+            fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_core::Error> {
+                self.fill_bytes(dest);
+                Ok(())
+            }
+        }
+
+        let mut rng = ConstantRng(0xFF);
+        let value = random_base62(&mut rng, 32);
+        assert_eq!(value.len(), 32);
+
+        // 255 % 62 = 7 -> 'H'
+        assert!(value.chars().all(|c| c == 'H'));
     }
 
     proptest! {
