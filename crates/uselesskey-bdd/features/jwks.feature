@@ -75,7 +75,7 @@ Feature: JWKS (JSON Web Key Set) builder
     Given a deterministic factory seeded with "jwks-dup-order-test"
     When I generate an RSA key for label "rsa-dup" with spec RS256
     And I generate an RSA key for label "rsa-dup-2" with spec RS256
-    And I build a JWKS with the RSA keys with kids "same", "same"
+    And I build a JWKS with the RSA keys with kids "same" and "same"
     Then the JWKS should contain 2 keys
     And the JWKS key at index 0 should have kid "same"
     And the JWKS key at index 1 should have kid "same"
