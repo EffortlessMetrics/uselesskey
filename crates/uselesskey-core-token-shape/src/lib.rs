@@ -88,14 +88,33 @@ pub fn generate_oauth_access_token(label: &str, rng: &mut impl RngCore) -> Strin
 /// Generate a random base62 string of the requested length.
 pub fn random_base62(rng: &mut impl RngCore, len: usize) -> String {
     const BASE62: &[u8; 62] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    const ACCEPT_MAX: u8 = 248; // 62 * 4; accept 0..=247 for unbiased mod 62
 
     let mut out = String::with_capacity(len);
-    let mut byte = [0u8; 1];
+    let mut buf = [0u8; 64];
 
     while out.len() < len {
-        rng.fill_bytes(&mut byte);
-        let idx = byte[0] as usize % BASE62.len();
-        out.push(BASE62[idx] as char);
+        rng.fill_bytes(&mut buf);
+        let before = out.len();
+        for &b in &buf {
+            if b < ACCEPT_MAX {
+                out.push(BASE62[(b % 62) as usize] as char);
+                if out.len() == len {
+                    break;
+                }
+            }
+        }
+
+        // Progress guarantee for pathological RNGs (e.g. constant values that are always rejected).
+        // Keep fallback bounded and deterministic to avoid hangs while preserving unbiased path for normal RNGs.
+        if out.len() == before {
+            for &b in &buf {
+                out.push(BASE62[(b as usize) % 62] as char);
+                if out.len() == len {
+                    break;
+                }
+            }
+        }
     }
 
     out
@@ -185,7 +204,7 @@ mod tests {
     }
 
     #[test]
-    fn random_base62_uses_modulo_indexing() {
+    fn random_base62_rejects_biased_bytes() {
         struct ByteSeqRng {
             bytes: [u8; 5],
             pos: usize,
@@ -240,7 +259,44 @@ mod tests {
         };
         let value = random_base62(&mut rng, 5);
 
-        assert_eq!(value, "A9A9H");
+        // byte 255 >= 248 is rejected; 0 % 62 = 0 => 'A', 61 % 62 = 61 => '9',
+        // 62 % 62 = 0 => 'A', 123 % 62 = 61 => '9', (255 rejected),
+        // next cycle: 0 => 'A'
+        assert_eq!(value.len(), 5);
+        assert_eq!(&value[..4], "A9A9");
+        // Fifth char comes from byte 0 (after 255 rejected) -> 'A'
+        assert_eq!(value, "A9A9A");
+    }
+
+    #[test]
+    fn random_base62_constant_rng_terminates() {
+        struct ConstantRng(u8);
+
+        impl RngCore for ConstantRng {
+            fn next_u32(&mut self) -> u32 {
+                u32::from(self.0) * 0x0101_0101
+            }
+
+            fn next_u64(&mut self) -> u64 {
+                u64::from(self.0) * 0x0101_0101_0101_0101
+            }
+
+            fn fill_bytes(&mut self, dest: &mut [u8]) {
+                dest.fill(self.0);
+            }
+
+            fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_core::Error> {
+                self.fill_bytes(dest);
+                Ok(())
+            }
+        }
+
+        let mut rng = ConstantRng(0xFF);
+        let value = random_base62(&mut rng, 32);
+        assert_eq!(value.len(), 32);
+
+        // 255 % 62 = 7 -> 'H'
+        assert!(value.chars().all(|c| c == 'H'));
     }
 
     proptest! {
