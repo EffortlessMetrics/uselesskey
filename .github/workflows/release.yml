@@ -1,0 +1,134 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@1.92
+        with:
+          components: rustfmt, clippy
+
+      - uses: dtolnay/rust-toolchain@nightly
+
+      - name: Install NASM (for aws-lc-rs)
+        run: sudo apt-get update && sudo apt-get install -y nasm
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz
+
+      - name: Install cargo-mutants
+        run: cargo install cargo-mutants
+
+      - name: xtask ci
+        run: cargo xtask ci
+
+  publish:
+    needs: ci
+    runs-on: ubuntu-latest
+    env:
+      CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@1.92
+
+      - name: Install NASM (for aws-lc-rs)
+        run: sudo apt-get update && sudo apt-get install -y nasm
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Publish all crates
+        run: |
+          PUBLISH_CRATES=(
+            uselesskey-core-seed
+            uselesskey-core-hash
+            uselesskey-core-id
+            uselesskey-core-cache
+            uselesskey-core-factory
+            uselesskey-core-kid
+            uselesskey-core-negative-pem
+            uselesskey-core-negative
+            uselesskey-core-sink
+            uselesskey-core-token
+            uselesskey-core-token-shape
+            uselesskey-core-jwk-shape
+            uselesskey-core-jwks-order
+            uselesskey-core-jwk-builder
+            uselesskey-core-jwk
+            uselesskey-core-x509-spec
+            uselesskey-core-x509-derive
+            uselesskey-core-x509-negative
+            uselesskey-core-x509
+            uselesskey-core
+            uselesskey-core-keypair-material
+            uselesskey-core-keypair
+            uselesskey-jwk
+            uselesskey-rsa
+            uselesskey-ecdsa
+            uselesskey-ed25519
+            uselesskey-hmac
+            uselesskey-token
+            uselesskey-pgp
+            uselesskey-x509
+            uselesskey
+            uselesskey-jsonwebtoken
+            uselesskey-rustls
+            uselesskey-tonic
+            uselesskey-ring
+            uselesskey-rustcrypto
+            uselesskey-aws-lc-rs
+          )
+
+          for crate in "${PUBLISH_CRATES[@]}"; do
+            echo "::group::Publishing $crate"
+            success=false
+            for attempt in 1 2 3; do
+              echo "Attempt $attempt for $crate..."
+              if cargo publish -p "$crate" 2>&1 | tee /tmp/publish-output.txt; then
+                echo "$crate published successfully."
+                success=true
+                break
+              fi
+              if grep -qi 'not found\|failed to select a version\|no matching package' /tmp/publish-output.txt; then
+                echo "Dependency indexing race detected. Waiting 60s before retry..."
+                sleep 60
+              else
+                echo "::error::$crate publish failed with a non-retriable error."
+                cat /tmp/publish-output.txt
+                exit 1
+              fi
+            done
+            if [ "$success" != "true" ]; then
+              echo "::error::$crate failed after 3 attempts."
+              exit 1
+            fi
+            echo "::endgroup::"
+            echo "Sleeping 30s for crates.io indexing..."
+            sleep 30
+          done
+
+  release:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "${{ github.ref_name }}" --generate-notes

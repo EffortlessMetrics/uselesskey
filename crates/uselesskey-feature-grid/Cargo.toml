@@ -10,7 +10,7 @@ description = "Canonical feature and matrix definitions for uselesskey automatio
 categories = ["development-tools::testing"]
 keywords = ["testing", "feature-flags", "feature-matrix", "bdd", "fixtures"]
 authors.workspace = true
-publish = true
+publish = false
 readme = "README.md"
 documentation = "https://docs.rs/uselesskey-feature-grid"
 

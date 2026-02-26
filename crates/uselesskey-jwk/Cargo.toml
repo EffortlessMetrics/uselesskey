@@ -19,3 +19,6 @@ uselesskey-core-jwk-builder = { path = "../uselesskey-core-jwk-builder", version
 
 [dev-dependencies]
 serde_json.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true

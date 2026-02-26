@@ -21,3 +21,6 @@ serde_json.workspace = true
 [dev-dependencies]
 proptest.workspace = true
 rand_chacha.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true

@@ -39,3 +39,6 @@ uselesskey-core-negative = { path = "../uselesskey-core-negative", version = "0.
 rand_core.workspace = true
 proptest.workspace = true
 rstest.workspace = true
+
+[package.metadata.docs.rs]
+features = ["std"]

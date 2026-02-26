@@ -12,7 +12,7 @@ description = "Compatibility façade for `uselesskey-feature-grid` data exports.
 categories = ["development-tools::testing"]
 keywords = ["testing", "fixtures", "feature-flags", "feature-matrix", "bdd"]
 authors.workspace = true
-publish = true
+publish = false
 
 [dependencies]
 uselesskey-feature-grid.workspace = true

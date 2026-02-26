@@ -25,3 +25,6 @@ rstest.workspace = true
 [features]
 default = ["std"]
 std = ["uselesskey-core-hash/std", "uselesskey-core-negative-pem/std"]
+
+[package.metadata.docs.rs]
+features = ["std"]

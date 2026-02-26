@@ -16,3 +16,6 @@ authors.workspace = true
 [dependencies]
 uselesskey-core-jwk-shape = { path = "../uselesskey-core-jwk-shape", version = "0.3.0" }
 uselesskey-core-jwk-builder = { path = "../uselesskey-core-jwk-builder", version = "0.3.0" }
+
+[package.metadata.docs.rs]
+all-features = true

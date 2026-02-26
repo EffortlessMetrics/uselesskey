@@ -30,3 +30,6 @@ std = [
     "uselesskey-core-cache/std",
     "uselesskey-core-id/std",
 ]
+
+[package.metadata.docs.rs]
+features = ["std"]

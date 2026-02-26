@@ -21,3 +21,6 @@ time = "0.3"
 
 [dev-dependencies]
 rand_chacha.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
