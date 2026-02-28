@@ -169,3 +169,19 @@ Feature: RSA fixtures
     And I deterministically corrupt the RSA PKCS8 DER with variant "v1" again
     Then the deterministic binary artifacts should be identical
     And the deterministic RSA DER artifact should fail to parse
+
+  # --- Multiple labels and caching ---
+
+  Scenario: random factory produces distinct keys for different labels
+    Given a random factory
+    When I generate an RSA key for label "service-alpha"
+    And I generate another RSA key for label "service-beta"
+    Then the keys should have different moduli
+
+  Scenario: deterministic factory reuse returns identical key and valid formats
+    Given a deterministic factory seeded with "factory-reuse-test"
+    When I generate an RSA key for label "reused-key"
+    And I generate an RSA key for label "reused-key" again
+    Then the PKCS8 PEM should be identical
+    And the PKCS8 DER should be parseable
+    And the SPKI PEM should be parseable

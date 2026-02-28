@@ -139,3 +139,21 @@ Feature: Ed25519 fixtures
     And I generate an Ed25519 key for label "issuer" again
     And I capture the Ed25519 kid again
     Then the Ed25519 kids should be identical
+
+  # --- Key format completeness ---
+
+  Scenario: Ed25519 produces parseable keys in all export formats
+    Given a deterministic factory seeded with "ed25519-all-formats-test"
+    When I generate an Ed25519 key for label "all-formats"
+    Then the Ed25519 PKCS8 DER should be parseable
+    And the Ed25519 SPKI PEM should be parseable
+    And the Ed25519 SPKI DER should be parseable
+
+  Scenario: Ed25519 JWK export has OKP type with Ed25519 curve and key material
+    Given a deterministic factory seeded with "ed25519-jwk-complete-test"
+    When I generate an Ed25519 key for label "complete-jwk"
+    Then the Ed25519 public JWK should have kty "OKP"
+    And the Ed25519 public JWK should have crv "Ed25519"
+    And the Ed25519 public JWK should have x parameter
+    And the Ed25519 private JWK should have d parameter
+    And the Ed25519 public JWK should have a kid

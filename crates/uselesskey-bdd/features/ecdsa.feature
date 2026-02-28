@@ -163,3 +163,20 @@ Feature: ECDSA fixtures
     And the ECDSA public JWK should have crv "P-384"
     And the ECDSA public JWK should have alg "ES384"
     And the ECDSA public JWK should have use "sig"
+
+  # --- Curve-specific key validation ---
+
+  Scenario: ES256 and ES384 produce valid but distinct keys
+    Given a deterministic factory seeded with "ecdsa-size-diff-test"
+    When I generate an ECDSA ES256 key for label "p256-size"
+    And I generate another ECDSA ES384 key for label "p384-size"
+    Then the ECDSA keys should have different public keys
+    And the ECDSA PKCS8 DER should be parseable
+
+  Scenario: ES384 private JWK export includes curve and key material
+    Given a deterministic factory seeded with "es384-jwk-full-test"
+    When I generate an ECDSA ES384 key for label "p384-full-jwk"
+    Then the ECDSA public JWK should have kty "EC"
+    And the ECDSA public JWK should have crv "P-384"
+    And the ECDSA public JWK should have x and y parameters
+    And the ECDSA private JWK should have d parameter
