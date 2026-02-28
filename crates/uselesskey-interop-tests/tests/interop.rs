@@ -58,6 +58,8 @@ fn skip_tag_and_length(data: &[u8]) -> (usize, &[u8]) {
     }
 }
 
+// ── Existing tests ──────────────────────────────────────────────────────
+
 /// ECDSA P-256: sign with `p256` crate, verify with `ring`.
 mod ecdsa_p256_to_ring {
     use super::*;
@@ -209,5 +211,576 @@ mod rsa_rustcrypto_to_ring {
             result.is_err(),
             "ring should reject RSA signature for wrong message"
         );
+    }
+}
+
+// ── New cross-backend tests ─────────────────────────────────────────────
+
+/// RSA: sign with `ring`, verify with `rsa` crate (reverse direction).
+mod rsa_ring_to_rustcrypto {
+    use super::*;
+    use ring::rand::SystemRandom;
+    use ring::signature as ring_sig;
+    use rsa::pkcs1v15::VerifyingKey;
+    use rsa::pkcs8::DecodePublicKey;
+    use rsa::signature::Verifier;
+    use sha2::Sha256;
+    use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+
+    #[test]
+    fn ring_sign_rustcrypto_verify() {
+        let fx = fx();
+        let keypair = fx.rsa("interop-rsa-ring-to-rc", RsaSpec::rs256());
+        let message = b"ring-sign rustcrypto-verify RSA interop";
+
+        // Sign with ring
+        let ring_kp = ring_sig::RsaKeyPair::from_pkcs8(keypair.private_key_pkcs8_der())
+            .expect("ring should parse PKCS#8 RSA key");
+        let rng = SystemRandom::new();
+        let mut sig = vec![0u8; ring_kp.public().modulus_len()];
+        ring_kp
+            .sign(&ring_sig::RSA_PKCS1_SHA256, &rng, message, &mut sig)
+            .expect("ring RSA sign");
+
+        // Verify with RustCrypto rsa crate
+        let public_key = rsa::RsaPublicKey::from_public_key_der(keypair.public_key_spki_der())
+            .expect("valid SPKI DER for rsa crate");
+        let verifying_key = VerifyingKey::<Sha256>::new(public_key);
+        let signature = rsa::pkcs1v15::Signature::try_from(sig.as_slice())
+            .expect("valid PKCS1v15 signature");
+        verifying_key
+            .verify(message, &signature)
+            .expect("rsa crate should verify ring-signed RSA signature");
+    }
+}
+
+/// RSA: sign with `ring`, verify with `aws-lc-rs` (and vice versa).
+#[cfg(feature = "aws-lc")]
+mod rsa_ring_to_aws_lc {
+    use super::*;
+    use ring::rand::SystemRandom;
+    use ring::signature as ring_sig;
+    use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+
+    #[test]
+    fn ring_sign_aws_lc_verify() {
+        let fx = fx();
+        let keypair = fx.rsa("interop-rsa-ring-to-aws", RsaSpec::rs256());
+        let message = b"ring-sign aws-lc-verify RSA interop";
+
+        // Sign with ring
+        let ring_kp = ring_sig::RsaKeyPair::from_pkcs8(keypair.private_key_pkcs8_der())
+            .expect("ring should parse PKCS#8 RSA key");
+        let rng = SystemRandom::new();
+        let mut sig = vec![0u8; ring_kp.public().modulus_len()];
+        ring_kp
+            .sign(&ring_sig::RSA_PKCS1_SHA256, &rng, message, &mut sig)
+            .expect("ring RSA sign");
+
+        // Verify with aws-lc-rs
+        let raw_pubkey = extract_public_key_from_spki(keypair.public_key_spki_der());
+        let public_key = aws_lc_rs::signature::UnparsedPublicKey::new(
+            &aws_lc_rs::signature::RSA_PKCS1_2048_8192_SHA256,
+            raw_pubkey,
+        );
+        public_key
+            .verify(message, &sig)
+            .expect("aws-lc-rs should verify ring-signed RSA signature");
+    }
+
+    #[test]
+    fn aws_lc_sign_ring_verify() {
+        let fx = fx();
+        let keypair = fx.rsa("interop-rsa-aws-to-ring", RsaSpec::rs256());
+        let message = b"aws-lc-sign ring-verify RSA interop";
+
+        // Sign with aws-lc-rs
+        let aws_kp = aws_lc_rs::signature::RsaKeyPair::from_pkcs8(keypair.private_key_pkcs8_der())
+            .expect("aws-lc-rs should parse PKCS#8 RSA key");
+        let rng = aws_lc_rs::rand::SystemRandom::new();
+        let mut sig = vec![0u8; aws_kp.public().modulus_len()];
+        aws_kp
+            .sign(&aws_lc_rs::signature::RSA_PKCS1_SHA256, &rng, message, &mut sig)
+            .expect("aws-lc-rs RSA sign");
+
+        // Verify with ring
+        let raw_pubkey = extract_public_key_from_spki(keypair.public_key_spki_der());
+        let public_key = ring_sig::UnparsedPublicKey::new(
+            &ring_sig::RSA_PKCS1_2048_8192_SHA256,
+            raw_pubkey,
+        );
+        public_key
+            .verify(message, &sig)
+            .expect("ring should verify aws-lc-rs-signed RSA signature");
+    }
+}
+
+/// ECDSA P-256: sign with `ring`, verify with `p256` crate (and vice versa).
+mod ecdsa_ring_to_rustcrypto {
+    use super::*;
+    use p256::ecdsa::signature::Verifier;
+    use p256::pkcs8::DecodePublicKey;
+    use ring::rand::SystemRandom;
+    use ring::signature as ring_sig;
+    use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
+
+    #[test]
+    fn ring_sign_p256_verify() {
+        let fx = fx();
+        let keypair = fx.ecdsa("interop-ecdsa-ring-to-p256", EcdsaSpec::es256());
+        let message = b"ring-sign p256-verify ECDSA interop";
+
+        // Sign with ring
+        let rng = SystemRandom::new();
+        let ring_kp = ring_sig::EcdsaKeyPair::from_pkcs8(
+            &ring_sig::ECDSA_P256_SHA256_ASN1_SIGNING,
+            keypair.private_key_pkcs8_der(),
+            &rng,
+        )
+        .expect("ring should parse PKCS#8 P-256 key");
+        let sig = ring_kp.sign(&rng, message).expect("ring ECDSA sign");
+
+        // Verify with p256 crate
+        let verifying_key =
+            p256::ecdsa::VerifyingKey::from_public_key_der(keypair.public_key_spki_der())
+                .expect("valid SPKI DER for p256 crate");
+        let der_sig = p256::ecdsa::DerSignature::try_from(sig.as_ref())
+            .expect("valid DER ECDSA signature");
+        verifying_key
+            .verify(message, &der_sig)
+            .expect("p256 crate should verify ring-signed ECDSA signature");
+    }
+
+    #[test]
+    fn ring_sign_p256_verify_rejects_wrong_message() {
+        let fx = fx();
+        let keypair = fx.ecdsa("interop-ecdsa-ring-to-p256-tamper", EcdsaSpec::es256());
+
+        let rng = SystemRandom::new();
+        let ring_kp = ring_sig::EcdsaKeyPair::from_pkcs8(
+            &ring_sig::ECDSA_P256_SHA256_ASN1_SIGNING,
+            keypair.private_key_pkcs8_der(),
+            &rng,
+        )
+        .expect("ring should parse PKCS#8 P-256 key");
+        let sig = ring_kp
+            .sign(&rng, b"original message")
+            .expect("ring ECDSA sign");
+
+        let verifying_key =
+            p256::ecdsa::VerifyingKey::from_public_key_der(keypair.public_key_spki_der())
+                .expect("valid SPKI DER");
+        let der_sig = p256::ecdsa::DerSignature::try_from(sig.as_ref()).expect("valid DER sig");
+        let result = verifying_key.verify(b"tampered message", &der_sig);
+        assert!(
+            result.is_err(),
+            "p256 should reject ring ECDSA signature for wrong message"
+        );
+    }
+}
+
+/// Ed25519: sign with `ring`, verify with `ed25519-dalek` (reverse of existing test).
+mod ed25519_ring_to_dalek {
+    use super::*;
+    use ed25519_dalek::Verifier;
+    use ring::signature as ring_sig;
+    use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
+
+    #[test]
+    fn ring_sign_dalek_verify() {
+        let fx = fx();
+        let keypair = fx.ed25519("interop-ed25519-ring-to-dalek", Ed25519Spec::new());
+        let message = b"ring-sign dalek-verify Ed25519 interop";
+
+        // Sign with ring
+        let ring_kp = ring_sig::Ed25519KeyPair::from_pkcs8(keypair.private_key_pkcs8_der())
+            .expect("ring should parse PKCS#8 Ed25519 key");
+        let sig = ring_kp.sign(message);
+
+        // Verify with ed25519-dalek
+        let raw_pubkey = extract_public_key_from_spki(keypair.public_key_spki_der());
+        let verifying_key = ed25519_dalek::VerifyingKey::from_bytes(
+            raw_pubkey.try_into().expect("32-byte Ed25519 public key"),
+        )
+        .expect("valid Ed25519 public key");
+        let dalek_sig = ed25519_dalek::Signature::from_bytes(
+            sig.as_ref().try_into().expect("64-byte Ed25519 signature"),
+        );
+        verifying_key
+            .verify(message, &dalek_sig)
+            .expect("dalek should verify ring-signed Ed25519 signature");
+    }
+
+    #[test]
+    fn ring_sign_dalek_verify_rejects_wrong_message() {
+        let fx = fx();
+        let keypair = fx.ed25519("interop-ed25519-ring-to-dalek-tamper", Ed25519Spec::new());
+
+        let ring_kp = ring_sig::Ed25519KeyPair::from_pkcs8(keypair.private_key_pkcs8_der())
+            .expect("ring should parse PKCS#8 Ed25519 key");
+        let sig = ring_kp.sign(b"original message");
+
+        let raw_pubkey = extract_public_key_from_spki(keypair.public_key_spki_der());
+        let verifying_key = ed25519_dalek::VerifyingKey::from_bytes(
+            raw_pubkey.try_into().expect("32 bytes"),
+        )
+        .expect("valid Ed25519 public key");
+        let dalek_sig = ed25519_dalek::Signature::from_bytes(
+            sig.as_ref().try_into().expect("64 bytes"),
+        );
+        let result = verifying_key.verify(b"tampered message", &dalek_sig);
+        assert!(
+            result.is_err(),
+            "dalek should reject ring Ed25519 signature for wrong message"
+        );
+    }
+}
+
+/// Ed25519: sign with `ring`, verify with `aws-lc-rs`.
+#[cfg(feature = "aws-lc")]
+mod ed25519_ring_to_aws_lc {
+    use super::*;
+    use ring::signature as ring_sig;
+    use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
+
+    #[test]
+    fn ring_sign_aws_lc_verify() {
+        let fx = fx();
+        let keypair = fx.ed25519("interop-ed25519-ring-to-aws", Ed25519Spec::new());
+        let message = b"ring-sign aws-lc-verify Ed25519 interop";
+
+        let ring_kp = ring_sig::Ed25519KeyPair::from_pkcs8(keypair.private_key_pkcs8_der())
+            .expect("ring should parse PKCS#8 Ed25519 key");
+        let sig = ring_kp.sign(message);
+
+        let raw_pubkey = extract_public_key_from_spki(keypair.public_key_spki_der());
+        let public_key =
+            aws_lc_rs::signature::UnparsedPublicKey::new(&aws_lc_rs::signature::ED25519, raw_pubkey);
+        public_key
+            .verify(message, sig.as_ref())
+            .expect("aws-lc-rs should verify ring-signed Ed25519 signature");
+    }
+}
+
+/// X.509: certificate generated by uselesskey-x509, verified by rustls.
+mod x509_rustls_verify {
+    use super::*;
+    use rustls::RootCertStore;
+    use rustls_pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
+    use uselesskey_x509::{X509FactoryExt, X509Spec};
+
+    #[test]
+    fn self_signed_cert_accepted_by_rustls_root_store() {
+        let fx = fx();
+        let cert = fx.x509_self_signed("interop-x509-rustls", X509Spec::self_signed("interop.test"));
+
+        let cert_der = CertificateDer::from(cert.cert_der().to_vec());
+
+        // rustls should parse and accept this as a trusted root
+        let mut root_store = RootCertStore::empty();
+        root_store
+            .add(cert_der)
+            .expect("rustls should accept uselesskey X.509 certificate as root");
+    }
+
+    #[test]
+    fn self_signed_cert_builds_rustls_server_config() {
+        let fx = fx();
+        let cert = fx.x509_self_signed(
+            "interop-x509-server",
+            X509Spec::self_signed("server.interop.test"),
+        );
+
+        let cert_der = CertificateDer::from(cert.cert_der().to_vec());
+        let key_der = PrivateKeyDer::Pkcs8(PrivatePkcs8KeyDer::from(
+            cert.private_key_pkcs8_der().to_vec(),
+        ));
+
+        // rustls should be able to build a complete server config
+        let _server_config = rustls::ServerConfig::builder()
+            .with_no_client_auth()
+            .with_single_cert(vec![cert_der], key_der)
+            .expect("rustls should build ServerConfig with uselesskey cert + key");
+    }
+}
+
+/// JWK: key exported as JWK from uselesskey, imported by jsonwebtoken for verification.
+mod jwk_to_jsonwebtoken {
+    use super::*;
+    use jsonwebtoken::jwk::Jwk;
+    use jsonwebtoken::{Algorithm, DecodingKey, Header, Validation, decode, encode};
+    use serde::{Deserialize, Serialize};
+    use uselesskey_jsonwebtoken::JwtKeyExt;
+
+    #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    struct Claims {
+        sub: String,
+        exp: usize,
+    }
+
+    /// RSA: sign with jsonwebtoken adapter, verify via JWK-derived DecodingKey.
+    mod rsa_jwk {
+        use super::*;
+        use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+
+        #[test]
+        fn sign_then_verify_via_jwk() {
+            let fx = fx();
+            let keypair = fx.rsa("interop-jwk-rsa", RsaSpec::rs256());
+
+            // Sign a JWT using the adapter's encoding key
+            let claims = Claims {
+                sub: "jwk-interop-rsa".into(),
+                exp: 2_000_000_000,
+            };
+            let token = encode(&Header::new(Algorithm::RS256), &claims, &keypair.encoding_key())
+                .expect("JWT encode with RS256");
+
+            // Export the public key as JWK and import into jsonwebtoken
+            let jwk_value = keypair.public_jwk_json();
+            let jwk: Jwk =
+                serde_json::from_value(jwk_value).expect("uselesskey JWK parses as jsonwebtoken Jwk");
+            let decoding_key =
+                DecodingKey::from_jwk(&jwk).expect("DecodingKey from uselesskey RSA JWK");
+
+            // Verify the token using the JWK-derived key
+            let mut validation = Validation::new(Algorithm::RS256);
+            validation.validate_aud = false;
+            let decoded = decode::<Claims>(&token, &decoding_key, &validation)
+                .expect("JWT decode via RSA JWK should succeed");
+            assert_eq!(decoded.claims.sub, "jwk-interop-rsa");
+        }
+    }
+
+    /// ECDSA: sign with jsonwebtoken adapter, verify via JWK-derived DecodingKey.
+    mod ecdsa_jwk {
+        use super::*;
+        use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
+
+        #[test]
+        fn sign_then_verify_via_jwk() {
+            let fx = fx();
+            let keypair = fx.ecdsa("interop-jwk-ecdsa", EcdsaSpec::es256());
+
+            let claims = Claims {
+                sub: "jwk-interop-ecdsa".into(),
+                exp: 2_000_000_000,
+            };
+            let token = encode(&Header::new(Algorithm::ES256), &claims, &keypair.encoding_key())
+                .expect("JWT encode with ES256");
+
+            let jwk_value = keypair.public_jwk_json();
+            let jwk: Jwk = serde_json::from_value(jwk_value)
+                .expect("uselesskey JWK parses as jsonwebtoken Jwk");
+            let decoding_key =
+                DecodingKey::from_jwk(&jwk).expect("DecodingKey from uselesskey ECDSA JWK");
+
+            let mut validation = Validation::new(Algorithm::ES256);
+            validation.validate_aud = false;
+            let decoded = decode::<Claims>(&token, &decoding_key, &validation)
+                .expect("JWT decode via ECDSA JWK should succeed");
+            assert_eq!(decoded.claims.sub, "jwk-interop-ecdsa");
+        }
+    }
+
+    /// Ed25519: sign with jsonwebtoken adapter, verify via JWK-derived DecodingKey.
+    mod ed25519_jwk {
+        use super::*;
+        use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
+
+        #[test]
+        fn sign_then_verify_via_jwk() {
+            let fx = fx();
+            let keypair = fx.ed25519("interop-jwk-ed25519", Ed25519Spec::new());
+
+            let claims = Claims {
+                sub: "jwk-interop-ed25519".into(),
+                exp: 2_000_000_000,
+            };
+            let token = encode(&Header::new(Algorithm::EdDSA), &claims, &keypair.encoding_key())
+                .expect("JWT encode with EdDSA");
+
+            let jwk_value = keypair.public_jwk_json();
+            let jwk: Jwk = serde_json::from_value(jwk_value)
+                .expect("uselesskey JWK parses as jsonwebtoken Jwk");
+            let decoding_key =
+                DecodingKey::from_jwk(&jwk).expect("DecodingKey from uselesskey Ed25519 JWK");
+
+            let mut validation = Validation::new(Algorithm::EdDSA);
+            validation.validate_aud = false;
+            let decoded = decode::<Claims>(&token, &decoding_key, &validation)
+                .expect("JWT decode via Ed25519 JWK should succeed");
+            assert_eq!(decoded.claims.sub, "jwk-interop-ed25519");
+        }
+    }
+}
+
+/// Multiple backends verify the same RSA signature.
+mod multi_backend_rsa_verify {
+    use super::*;
+    use ring::rand::SystemRandom;
+    use ring::signature as ring_sig;
+    use rsa::pkcs1v15::VerifyingKey;
+    use rsa::pkcs8::DecodePublicKey;
+    use rsa::signature::Verifier;
+    use sha2::Sha256;
+    use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+
+    #[test]
+    fn ring_signature_verified_by_ring_and_rustcrypto() {
+        let fx = fx();
+        let keypair = fx.rsa("interop-multi-rsa", RsaSpec::rs256());
+        let message = b"multi-backend RSA verification interop";
+
+        // Sign once with ring
+        let ring_kp = ring_sig::RsaKeyPair::from_pkcs8(keypair.private_key_pkcs8_der())
+            .expect("ring parses RSA key");
+        let rng = SystemRandom::new();
+        let mut sig = vec![0u8; ring_kp.public().modulus_len()];
+        ring_kp
+            .sign(&ring_sig::RSA_PKCS1_SHA256, &rng, message, &mut sig)
+            .expect("ring RSA sign");
+
+        // Verify with ring
+        let raw_pubkey = extract_public_key_from_spki(keypair.public_key_spki_der());
+        let ring_pub = ring_sig::UnparsedPublicKey::new(
+            &ring_sig::RSA_PKCS1_2048_8192_SHA256,
+            raw_pubkey,
+        );
+        ring_pub
+            .verify(message, &sig)
+            .expect("ring should verify its own RSA signature");
+
+        // Verify the same signature with RustCrypto
+        let rc_pub = rsa::RsaPublicKey::from_public_key_der(keypair.public_key_spki_der())
+            .expect("rsa crate parses SPKI DER");
+        let rc_verifying = VerifyingKey::<Sha256>::new(rc_pub);
+        let rc_sig =
+            rsa::pkcs1v15::Signature::try_from(sig.as_slice()).expect("valid PKCS1v15 sig");
+        rc_verifying
+            .verify(message, &rc_sig)
+            .expect("rsa crate should verify ring-signed RSA signature");
+    }
+
+    /// Same test extended to aws-lc-rs when the feature is enabled.
+    #[cfg(feature = "aws-lc")]
+    #[test]
+    fn ring_signature_verified_by_all_three_backends() {
+        let fx = fx();
+        let keypair = fx.rsa("interop-multi-rsa-3", RsaSpec::rs256());
+        let message = b"three-backend RSA verification interop";
+
+        let ring_kp = ring_sig::RsaKeyPair::from_pkcs8(keypair.private_key_pkcs8_der())
+            .expect("ring parses RSA key");
+        let rng = SystemRandom::new();
+        let mut sig = vec![0u8; ring_kp.public().modulus_len()];
+        ring_kp
+            .sign(&ring_sig::RSA_PKCS1_SHA256, &rng, message, &mut sig)
+            .expect("ring RSA sign");
+
+        // ring
+        let raw_pubkey = extract_public_key_from_spki(keypair.public_key_spki_der());
+        ring_sig::UnparsedPublicKey::new(&ring_sig::RSA_PKCS1_2048_8192_SHA256, raw_pubkey)
+            .verify(message, &sig)
+            .expect("ring verifies");
+
+        // RustCrypto
+        let rc_pub = rsa::RsaPublicKey::from_public_key_der(keypair.public_key_spki_der())
+            .expect("rsa crate parses key");
+        VerifyingKey::<Sha256>::new(rc_pub)
+            .verify(
+                message,
+                &rsa::pkcs1v15::Signature::try_from(sig.as_slice()).unwrap(),
+            )
+            .expect("rsa crate verifies");
+
+        // aws-lc-rs
+        aws_lc_rs::signature::UnparsedPublicKey::new(
+            &aws_lc_rs::signature::RSA_PKCS1_2048_8192_SHA256,
+            raw_pubkey,
+        )
+        .verify(message, &sig)
+        .expect("aws-lc-rs verifies");
+    }
+}
+
+/// Multiple backends verify the same ECDSA P-256 signature.
+mod multi_backend_ecdsa_verify {
+    use super::*;
+    use p256::ecdsa::signature::Verifier;
+    use p256::pkcs8::DecodePublicKey;
+    use ring::rand::SystemRandom;
+    use ring::signature as ring_sig;
+    use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
+
+    #[test]
+    fn ring_ecdsa_verified_by_ring_and_p256() {
+        let fx = fx();
+        let keypair = fx.ecdsa("interop-multi-ecdsa", EcdsaSpec::es256());
+        let message = b"multi-backend ECDSA verification interop";
+
+        // Sign with ring
+        let rng = SystemRandom::new();
+        let ring_kp = ring_sig::EcdsaKeyPair::from_pkcs8(
+            &ring_sig::ECDSA_P256_SHA256_ASN1_SIGNING,
+            keypair.private_key_pkcs8_der(),
+            &rng,
+        )
+        .expect("ring parses ECDSA key");
+        let sig = ring_kp.sign(&rng, message).expect("ring ECDSA sign");
+
+        // Verify with ring
+        let raw_pubkey = extract_public_key_from_spki(keypair.public_key_spki_der());
+        ring_sig::UnparsedPublicKey::new(&ring_sig::ECDSA_P256_SHA256_ASN1, raw_pubkey)
+            .verify(message, sig.as_ref())
+            .expect("ring should verify its own ECDSA signature");
+
+        // Verify with p256 crate
+        let p256_vk =
+            p256::ecdsa::VerifyingKey::from_public_key_der(keypair.public_key_spki_der())
+                .expect("p256 parses SPKI DER");
+        let der_sig =
+            p256::ecdsa::DerSignature::try_from(sig.as_ref()).expect("valid DER ECDSA sig");
+        p256_vk
+            .verify(message, &der_sig)
+            .expect("p256 crate should verify ring-signed ECDSA signature");
+    }
+}
+
+/// Multiple backends verify the same Ed25519 signature.
+mod multi_backend_ed25519_verify {
+    use super::*;
+    use ed25519_dalek::Verifier;
+    use ring::signature as ring_sig;
+    use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
+
+    #[test]
+    fn ring_ed25519_verified_by_ring_and_dalek() {
+        let fx = fx();
+        let keypair = fx.ed25519("interop-multi-ed25519", Ed25519Spec::new());
+        let message = b"multi-backend Ed25519 verification interop";
+
+        // Sign with ring
+        let ring_kp = ring_sig::Ed25519KeyPair::from_pkcs8(keypair.private_key_pkcs8_der())
+            .expect("ring parses Ed25519 key");
+        let sig = ring_kp.sign(message);
+
+        // Verify with ring
+        let raw_pubkey = extract_public_key_from_spki(keypair.public_key_spki_der());
+        ring_sig::UnparsedPublicKey::new(&ring_sig::ED25519, raw_pubkey)
+            .verify(message, sig.as_ref())
+            .expect("ring should verify its own Ed25519 signature");
+
+        // Verify with ed25519-dalek
+        let dalek_vk = ed25519_dalek::VerifyingKey::from_bytes(
+            raw_pubkey.try_into().expect("32-byte Ed25519 public key"),
+        )
+        .expect("valid Ed25519 public key");
+        let dalek_sig = ed25519_dalek::Signature::from_bytes(
+            sig.as_ref().try_into().expect("64-byte Ed25519 signature"),
+        );
+        dalek_vk
+            .verify(message, &dalek_sig)
+            .expect("dalek should verify ring-signed Ed25519 signature");
     }
 }

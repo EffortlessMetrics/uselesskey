@@ -6,11 +6,18 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 
+[dependencies]
+# Optional: aws-lc-rs backend (requires NASM on Windows)
+aws-lc-rs = { workspace = true, optional = true }
+
 [dev-dependencies]
 uselesskey-core = { path = "../uselesskey-core" }
-uselesskey-rsa = { path = "../uselesskey-rsa" }
-uselesskey-ecdsa = { path = "../uselesskey-ecdsa" }
-uselesskey-ed25519 = { path = "../uselesskey-ed25519" }
+uselesskey-rsa = { path = "../uselesskey-rsa", features = ["jwk"] }
+uselesskey-ecdsa = { path = "../uselesskey-ecdsa", features = ["jwk"] }
+uselesskey-ed25519 = { path = "../uselesskey-ed25519", features = ["jwk"] }
+uselesskey-x509 = { path = "../uselesskey-x509" }
+uselesskey-jsonwebtoken = { path = "../uselesskey-jsonwebtoken", features = ["all"] }
+uselesskey-rustls = { path = "../uselesskey-rustls", features = ["all"] }
 
 # Crypto backends for verification
 ring = { workspace = true }
@@ -19,3 +26,15 @@ ed25519-dalek = { workspace = true }
 rsa = { workspace = true }
 sha2 = { version = "0.10", features = ["oid"] }
 signature = "2"
+
+# JWT
+jsonwebtoken = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# TLS
+rustls = { workspace = true }
+rustls-pki-types = { workspace = true }
+
+[features]
+aws-lc = ["dep:aws-lc-rs"]
