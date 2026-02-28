@@ -18,6 +18,15 @@ pub struct Seed(pub(crate) [u8; 32]);
 
 impl Seed {
     /// Create a seed from raw bytes.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core_seed::Seed;
+    ///
+    /// let seed = Seed::new([0u8; 32]);
+    /// assert_eq!(seed.bytes(), &[0u8; 32]);
+    /// ```
     pub fn new(bytes: [u8; 32]) -> Self {
         Self(bytes)
     }
@@ -32,6 +41,21 @@ impl Seed {
     /// Accepted formats:
     /// - 64-char hex (with optional `0x` prefix)
     /// - any other string (hashed with BLAKE3)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core_seed::Seed;
+    ///
+    /// // From a passphrase (hashed with BLAKE3):
+    /// let seed = Seed::from_env_value("my-test-seed").unwrap();
+    /// assert_eq!(seed.bytes().len(), 32);
+    ///
+    /// // From a 64-char hex string:
+    /// let hex = "0".repeat(64);
+    /// let seed = Seed::from_env_value(&hex).unwrap();
+    /// assert_eq!(seed.bytes(), &[0u8; 32]);
+    /// ```
     pub fn from_env_value(value: &str) -> Result<Self, String> {
         let v = value.trim();
         let hex = v.strip_prefix("0x").unwrap_or(v);

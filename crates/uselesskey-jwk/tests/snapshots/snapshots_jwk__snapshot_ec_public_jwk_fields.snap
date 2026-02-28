@@ -1,0 +1,12 @@
+---
+source: crates/uselesskey-jwk/tests/snapshots_jwk.rs
+assertion_line: 76
+expression: redacted
+---
+alg: ES256
+crv: P-256
+kid: ec-kid-1
+kty: EC
+use: sig
+x: "[REDACTED]"
+y: "[REDACTED]"

@@ -20,6 +20,17 @@ pub const DEFAULT_KID_PREFIX_BYTES: usize = 12;
 ///
 /// Uses BLAKE3 and base64url (no padding), truncating to
 /// [`DEFAULT_KID_PREFIX_BYTES`].
+///
+/// # Examples
+///
+/// ```
+/// use uselesskey_core_kid::kid_from_bytes;
+///
+/// let kid = kid_from_bytes(b"my-public-key-bytes");
+/// assert!(!kid.is_empty());
+/// // Same input always produces the same kid.
+/// assert_eq!(kid, kid_from_bytes(b"my-public-key-bytes"));
+/// ```
 pub fn kid_from_bytes(bytes: &[u8]) -> String {
     kid_from_bytes_with_prefix(bytes, DEFAULT_KID_PREFIX_BYTES)
 }
@@ -27,6 +38,16 @@ pub fn kid_from_bytes(bytes: &[u8]) -> String {
 /// Generate a deterministic key ID from key bytes with a custom hash prefix length.
 ///
 /// `prefix_bytes` must be in `1..=32`.
+///
+/// # Examples
+///
+/// ```
+/// use uselesskey_core_kid::kid_from_bytes_with_prefix;
+///
+/// let kid = kid_from_bytes_with_prefix(b"my-public-key-bytes", 8);
+/// // 8 bytes → 12-char base64url (ceil(8*4/3) with no padding)
+/// assert!(!kid.is_empty());
+/// ```
 pub fn kid_from_bytes_with_prefix(bytes: &[u8], prefix_bytes: usize) -> String {
     assert!(
         (1..=blake3::OUT_LEN).contains(&prefix_bytes),

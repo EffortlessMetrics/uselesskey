@@ -1,0 +1,29 @@
+---
+source: crates/uselesskey-core-jwk-builder/tests/snapshots_jwk_builder.rs
+expression: redacted
+---
+keys:
+  - alg: ES256
+    crv: P-256
+    kid: key-ec
+    kty: EC
+    use: sig
+    x: "[REDACTED]"
+    y: "[REDACTED]"
+  - alg: HS256
+    k: "[REDACTED]"
+    kid: key-oct
+    kty: oct
+    use: sig
+  - alg: EdDSA
+    crv: Ed25519
+    kid: key-okp
+    kty: OKP
+    use: sig
+    x: "[REDACTED]"
+  - alg: RS256
+    e: "[REDACTED]"
+    kid: key-rsa
+    kty: RSA
+    n: "[REDACTED]"
+    use: sig

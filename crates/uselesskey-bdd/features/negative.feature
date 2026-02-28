@@ -43,3 +43,24 @@ Feature: Negative fixtures
   Scenario: truncating beyond length returns original
     When I truncate the PKCS8 DER to 99999 bytes
     Then the truncated DER should equal the original
+
+  Scenario: truncated DER to 1 byte fails to parse
+    When I truncate the PKCS8 DER to 1 bytes
+    Then the truncated DER should have length 1
+    And the truncated DER should fail to parse
+
+  Scenario: truncated DER to 0 bytes is empty
+    When I truncate the PKCS8 DER to 0 bytes
+    Then the truncated DER should have length 0
+
+  # --- Deterministic corruption variants ---
+
+  Scenario: different deterministic PEM variants produce different outputs
+    When I deterministically corrupt the RSA PKCS8 PEM with variant "alpha"
+    And I deterministically corrupt the RSA PKCS8 PEM with variant "beta" into slot 2
+    Then the deterministic text artifacts should differ
+
+  Scenario: different deterministic DER variants produce different outputs
+    When I deterministically corrupt the RSA PKCS8 DER with variant "alpha"
+    And I deterministically corrupt the RSA PKCS8 DER with variant "beta" into slot 2
+    Then the deterministic binary artifacts should differ

@@ -60,11 +60,30 @@ impl Factory {
     }
 
     /// Create a factory in random mode.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core_factory::Factory;
+    ///
+    /// let fx = Factory::random();
+    /// assert!(matches!(fx.mode(), uselesskey_core_factory::Mode::Random));
+    /// ```
     pub fn random() -> Self {
         Self::new(Mode::Random)
     }
 
     /// Create a factory in deterministic mode from a master seed.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core_factory::Factory;
+    /// use uselesskey_core_id::Seed;
+    ///
+    /// let fx = Factory::deterministic(Seed::new([42u8; 32]));
+    /// assert!(matches!(fx.mode(), uselesskey_core_factory::Mode::Deterministic { .. }));
+    /// ```
     pub fn deterministic(master: Seed) -> Self {
         Self::new(Mode::Deterministic { master })
     }
@@ -75,6 +94,16 @@ impl Factory {
     }
 
     /// Clear the artifact cache.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core_factory::Factory;
+    ///
+    /// let fx = Factory::random();
+    /// let _ = fx.get_or_init("domain:test", "lbl", b"spec", "good", |_rng| 42u8);
+    /// fx.clear_cache();
+    /// ```
     pub fn clear_cache(&self) {
         self.inner.cache.clear();
     }

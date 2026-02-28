@@ -1,0 +1,11 @@
+---
+source: crates/uselesskey-jwk/tests/snapshots_jwk.rs
+assertion_line: 68
+expression: redacted
+---
+alg: RS256
+e: "[REDACTED]"
+kid: rsa-kid-1
+kty: RSA
+n: "[REDACTED]"
+use: sig

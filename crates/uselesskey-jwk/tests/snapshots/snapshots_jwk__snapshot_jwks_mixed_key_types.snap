@@ -1,0 +1,25 @@
+---
+source: crates/uselesskey-jwk/tests/snapshots_jwk.rs
+assertion_line: 115
+expression: redacted
+---
+keys:
+  - alg: ES256
+    crv: P-256
+    kid: ec-kid
+    kty: EC
+    use: sig
+    x: "[REDACTED]"
+    y: "[REDACTED]"
+  - alg: EdDSA
+    crv: Ed25519
+    kid: okp-kid
+    kty: OKP
+    use: sig
+    x: "[REDACTED]"
+  - alg: RS256
+    e: "[REDACTED]"
+    kid: rsa-kid
+    kty: RSA
+    n: "[REDACTED]"
+    use: sig

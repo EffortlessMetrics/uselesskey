@@ -34,6 +34,15 @@ type Cache = DashMap<ArtifactId, CacheValue>;
 type Cache = Mutex<BTreeMap<ArtifactId, CacheValue>>;
 
 /// Cache keyed by [`ArtifactId`] that stores typed values behind `Arc<dyn Any>`.
+///
+/// # Examples
+///
+/// ```
+/// use uselesskey_core_cache::ArtifactCache;
+///
+/// let cache = ArtifactCache::new();
+/// assert!(cache.is_empty());
+/// ```
 pub struct ArtifactCache {
     inner: Cache,
 }
@@ -63,6 +72,22 @@ impl ArtifactCache {
     }
 
     /// Remove all entries from the cache.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::sync::Arc;
+    /// use uselesskey_core_cache::ArtifactCache;
+    /// use uselesskey_core_id::{ArtifactId, DerivationVersion};
+    ///
+    /// let cache = ArtifactCache::new();
+    /// let id = ArtifactId::new("domain:test", "lbl", b"spec", "good", DerivationVersion::V1);
+    /// cache.insert_if_absent_typed(id, Arc::new(1u32));
+    /// assert_eq!(cache.len(), 1);
+    ///
+    /// cache.clear();
+    /// assert!(cache.is_empty());
+    /// ```
     pub fn clear(&self) {
         cache_clear(&self.inner);
     }
@@ -70,6 +95,21 @@ impl ArtifactCache {
     /// Retrieve a typed value by id.
     ///
     /// Panics if the id exists with a different concrete type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::sync::Arc;
+    /// use uselesskey_core_cache::ArtifactCache;
+    /// use uselesskey_core_id::{ArtifactId, DerivationVersion};
+    ///
+    /// let cache = ArtifactCache::new();
+    /// let id = ArtifactId::new("domain:test", "lbl", b"spec", "good", DerivationVersion::V1);
+    /// cache.insert_if_absent_typed(id.clone(), Arc::new(42u32));
+    ///
+    /// let value = cache.get_typed::<u32>(&id).unwrap();
+    /// assert_eq!(*value, 42);
+    /// ```
     pub fn get_typed<T>(&self, id: &ArtifactId) -> Option<Arc<T>>
     where
         T: Any + Send + Sync + 'static,
@@ -80,6 +120,22 @@ impl ArtifactCache {
     /// Insert a typed value if the id is vacant and return the winning cached value.
     ///
     /// Panics if an existing value for the same id has a different concrete type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::sync::Arc;
+    /// use uselesskey_core_cache::ArtifactCache;
+    /// use uselesskey_core_id::{ArtifactId, DerivationVersion};
+    ///
+    /// let cache = ArtifactCache::new();
+    /// let id = ArtifactId::new("domain:test", "lbl", b"spec", "good", DerivationVersion::V1);
+    ///
+    /// let first = cache.insert_if_absent_typed(id.clone(), Arc::new(10u32));
+    /// let second = cache.insert_if_absent_typed(id, Arc::new(20u32));
+    /// // The first value wins.
+    /// assert_eq!(*second, 10);
+    /// ```
     pub fn insert_if_absent_typed<T>(&self, id: ArtifactId, value: Arc<T>) -> Arc<T>
     where
         T: Any + Send + Sync + 'static,

@@ -17,6 +17,16 @@ use alloc::vec::Vec;
 use uselesskey_core_hash::hash32;
 
 /// Strategies for corrupting PEM-encoded data.
+///
+/// # Examples
+///
+/// ```
+/// use uselesskey_core_negative_pem::{CorruptPem, corrupt_pem};
+///
+/// let pem = "-----BEGIN RSA PRIVATE KEY-----\nAAA=\n-----END RSA PRIVATE KEY-----\n";
+/// let bad = corrupt_pem(pem, CorruptPem::BadHeader);
+/// assert!(bad.starts_with("-----BEGIN CORRUPTED KEY-----"));
+/// ```
 #[derive(Clone, Copy, Debug)]
 pub enum CorruptPem {
     BadHeader,
@@ -26,6 +36,21 @@ pub enum CorruptPem {
     ExtraBlankLine,
 }
 
+/// Apply a specific corruption strategy to a PEM string.
+///
+/// # Examples
+///
+/// ```
+/// use uselesskey_core_negative_pem::{CorruptPem, corrupt_pem};
+///
+/// let pem = "-----BEGIN TEST-----\nAAA=\n-----END TEST-----\n";
+///
+/// let truncated = corrupt_pem(pem, CorruptPem::Truncate { bytes: 10 });
+/// assert_eq!(truncated.len(), 10);
+///
+/// let bad_footer = corrupt_pem(pem, CorruptPem::BadFooter);
+/// assert!(bad_footer.contains("END CORRUPTED KEY"));
+/// ```
 pub fn corrupt_pem(pem: &str, how: CorruptPem) -> String {
     match how {
         CorruptPem::BadHeader => replace_first_line(pem, "-----BEGIN CORRUPTED KEY-----"),
@@ -36,6 +61,21 @@ pub fn corrupt_pem(pem: &str, how: CorruptPem) -> String {
     }
 }
 
+/// Apply a deterministic corruption derived from a variant string.
+///
+/// The same `variant` always produces the same corruption shape, making
+/// negative-fixture tests reproducible.
+///
+/// # Examples
+///
+/// ```
+/// use uselesskey_core_negative_pem::corrupt_pem_deterministic;
+///
+/// let pem = "-----BEGIN TEST-----\nAAA=\n-----END TEST-----\n";
+/// let a = corrupt_pem_deterministic(pem, "corrupt:v1");
+/// let b = corrupt_pem_deterministic(pem, "corrupt:v1");
+/// assert_eq!(a, b); // deterministic
+/// ```
 pub fn corrupt_pem_deterministic(pem: &str, variant: &str) -> String {
     let digest = hash32(variant.as_bytes());
     let bytes = digest.as_bytes();

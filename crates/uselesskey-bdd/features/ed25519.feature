@@ -84,12 +84,47 @@ Feature: Ed25519 fixtures
     When I generate an Ed25519 key for label "corrupted"
     And I corrupt the Ed25519 PKCS8 PEM with BadHeader
     Then the corrupted Ed25519 PEM should contain "-----BEGIN CORRUPTED KEY-----"
+    And the corrupted Ed25519 PEM should fail to parse
+
+  Scenario: Ed25519 corrupted PEM with BadFooter
+    Given a deterministic factory seeded with "corrupt-test"
+    When I generate an Ed25519 key for label "corrupted-footer"
+    And I corrupt the Ed25519 PKCS8 PEM with BadFooter
+    Then the corrupted Ed25519 PEM should contain "-----END CORRUPTED KEY-----"
+    And the corrupted Ed25519 PEM should fail to parse
+
+  Scenario: Ed25519 corrupted PEM with BadBase64
+    Given a deterministic factory seeded with "corrupt-test"
+    When I generate an Ed25519 key for label "corrupted-b64"
+    And I corrupt the Ed25519 PKCS8 PEM with BadBase64
+    Then the corrupted Ed25519 PEM should contain "THIS_IS_NOT_BASE64"
+    And the corrupted Ed25519 PEM should fail to parse
+
+  Scenario: Ed25519 corrupted PEM with Truncate
+    Given a deterministic factory seeded with "corrupt-test"
+    When I generate an Ed25519 key for label "corrupted-trunc"
+    And I corrupt the Ed25519 PKCS8 PEM with Truncate to 30 bytes
+    Then the corrupted Ed25519 PEM should have length 30
+    And the corrupted Ed25519 PEM should fail to parse
+
+  Scenario: Ed25519 corrupted PEM with ExtraBlankLine
+    Given a deterministic factory seeded with "corrupt-test"
+    When I generate an Ed25519 key for label "corrupted-blank"
+    And I corrupt the Ed25519 PKCS8 PEM with ExtraBlankLine
+    Then the corrupted Ed25519 PEM should fail to parse
 
   Scenario: Ed25519 truncated DER fails to parse
     Given a deterministic factory seeded with "truncate-test"
     When I generate an Ed25519 key for label "truncated"
     And I truncate the Ed25519 PKCS8 DER to 10 bytes
     Then the truncated Ed25519 DER should have length 10
+    And the truncated Ed25519 DER should fail to parse
+
+  Scenario: Ed25519 truncated DER to 1 byte fails to parse
+    Given a deterministic factory seeded with "truncate-test"
+    When I generate an Ed25519 key for label "truncated-1"
+    And I truncate the Ed25519 PKCS8 DER to 1 bytes
+    Then the truncated Ed25519 DER should have length 1
     And the truncated Ed25519 DER should fail to parse
 
   Scenario: deterministic Ed25519 PEM corruption with variant is stable
@@ -100,6 +135,13 @@ Feature: Ed25519 fixtures
     Then the deterministic text artifacts should be identical
     And the deterministic Ed25519 PEM artifact should fail to parse
 
+  Scenario: different Ed25519 deterministic PEM variants produce different outputs
+    Given a deterministic factory seeded with "ed25519-det-corrupt-pem-diff"
+    When I generate an Ed25519 key for label "ed25519-det-pem-diff"
+    And I deterministically corrupt the Ed25519 PKCS8 PEM with variant "alpha"
+    And I deterministically corrupt the Ed25519 PKCS8 PEM with variant "beta" again
+    Then the deterministic text artifacts should differ
+
   Scenario: deterministic Ed25519 DER corruption with variant is stable
     Given a deterministic factory seeded with "ed25519-det-corrupt-der"
     When I generate an Ed25519 key for label "ed25519-det-der"
@@ -107,6 +149,13 @@ Feature: Ed25519 fixtures
     And I deterministically corrupt the Ed25519 PKCS8 DER with variant "v1" again
     Then the deterministic binary artifacts should be identical
     And the deterministic Ed25519 DER artifact should fail to parse
+
+  Scenario: different Ed25519 deterministic DER variants produce different outputs
+    Given a deterministic factory seeded with "ed25519-det-corrupt-der-diff"
+    When I generate an Ed25519 key for label "ed25519-det-der-diff"
+    And I deterministically corrupt the Ed25519 PKCS8 DER with variant "alpha"
+    And I deterministically corrupt the Ed25519 PKCS8 DER with variant "beta" again
+    Then the deterministic binary artifacts should differ
 
   # --- JWK support ---
 

@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-pgp/tests/snapshots_pgp.rs
+assertion_line: 95
+expression: "serde_json::json!({\n    \"spec\": key.spec().kind_name(), \"user_id\": key.user_id(),\n    \"fingerprint_len\": key.fingerprint().len(),\n})"
+---
+fingerprint_len: 40
+spec: ed25519
+user_id: snapshot-ed25519 <snapshot-ed25519@uselesskey.test>

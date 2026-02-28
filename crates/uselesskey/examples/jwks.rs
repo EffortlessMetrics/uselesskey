@@ -1,3 +1,13 @@
+//! Build a JWKS (JSON Web Key Set) from multiple key types.
+//!
+//! Demonstrates combining RSA and ECDSA public keys into a single JWKS,
+//! suitable for serving at `/.well-known/jwks.json` in a test mock.
+//!
+//! Run with:
+//! ```sh
+//! cargo run -p uselesskey --example jwks --features "jwk,rsa,ecdsa"
+//! ```
+
 #[cfg(all(feature = "jwk", feature = "rsa", feature = "ecdsa"))]
 fn main() {
     use uselesskey::jwk::JwksBuilder;

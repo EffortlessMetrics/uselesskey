@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-pgp/tests/snapshots_pgp.rs
+assertion_line: 79
+expression: "serde_json::json!({\n    \"length\": fp.len(), \"all_hex\": fp.chars().all(|c| c.is_ascii_hexdigit()),\n})"
+---
+all_hex: true
+length: 40

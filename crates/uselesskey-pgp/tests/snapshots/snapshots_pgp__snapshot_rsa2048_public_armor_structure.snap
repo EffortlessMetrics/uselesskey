@@ -1,0 +1,23 @@
+---
+source: crates/uselesskey-pgp/tests/snapshots_pgp.rs
+assertion_line: 66
+expression: redacted
+---
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+[REDACTED]
+[REDACTED]
+[REDACTED]
+[REDACTED]
+[REDACTED]
+[REDACTED]
+[REDACTED]
+[REDACTED]
+[REDACTED]
+[REDACTED]
+[REDACTED]
+[REDACTED]
+[REDACTED]
+[REDACTED]
+[REDACTED]
+-----END PGP PUBLIC KEY BLOCK-----

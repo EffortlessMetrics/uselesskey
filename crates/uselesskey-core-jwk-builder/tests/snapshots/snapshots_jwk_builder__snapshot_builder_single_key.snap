@@ -1,0 +1,11 @@
+---
+source: crates/uselesskey-core-jwk-builder/tests/snapshots_jwk_builder.rs
+expression: redacted
+---
+keys:
+  - alg: EdDSA
+    crv: Ed25519
+    kid: only-key
+    kty: OKP
+    use: sig
+    x: "[REDACTED]"

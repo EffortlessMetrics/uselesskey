@@ -246,8 +246,8 @@ mod rsa_ring_to_rustcrypto {
         let public_key = rsa::RsaPublicKey::from_public_key_der(keypair.public_key_spki_der())
             .expect("valid SPKI DER for rsa crate");
         let verifying_key = VerifyingKey::<Sha256>::new(public_key);
-        let signature = rsa::pkcs1v15::Signature::try_from(sig.as_slice())
-            .expect("valid PKCS1v15 signature");
+        let signature =
+            rsa::pkcs1v15::Signature::try_from(sig.as_slice()).expect("valid PKCS1v15 signature");
         verifying_key
             .verify(message, &signature)
             .expect("rsa crate should verify ring-signed RSA signature");
@@ -298,17 +298,20 @@ mod rsa_ring_to_aws_lc {
         let aws_kp = aws_lc_rs::signature::RsaKeyPair::from_pkcs8(keypair.private_key_pkcs8_der())
             .expect("aws-lc-rs should parse PKCS#8 RSA key");
         let rng = aws_lc_rs::rand::SystemRandom::new();
-        let mut sig = vec![0u8; aws_kp.public().modulus_len()];
+        let mut sig = vec![0u8; aws_kp.public_modulus_len()];
         aws_kp
-            .sign(&aws_lc_rs::signature::RSA_PKCS1_SHA256, &rng, message, &mut sig)
+            .sign(
+                &aws_lc_rs::signature::RSA_PKCS1_SHA256,
+                &rng,
+                message,
+                &mut sig,
+            )
             .expect("aws-lc-rs RSA sign");
 
         // Verify with ring
         let raw_pubkey = extract_public_key_from_spki(keypair.public_key_spki_der());
-        let public_key = ring_sig::UnparsedPublicKey::new(
-            &ring_sig::RSA_PKCS1_2048_8192_SHA256,
-            raw_pubkey,
-        );
+        let public_key =
+            ring_sig::UnparsedPublicKey::new(&ring_sig::RSA_PKCS1_2048_8192_SHA256, raw_pubkey);
         public_key
             .verify(message, &sig)
             .expect("ring should verify aws-lc-rs-signed RSA signature");
@@ -344,8 +347,8 @@ mod ecdsa_ring_to_rustcrypto {
         let verifying_key =
             p256::ecdsa::VerifyingKey::from_public_key_der(keypair.public_key_spki_der())
                 .expect("valid SPKI DER for p256 crate");
-        let der_sig = p256::ecdsa::DerSignature::try_from(sig.as_ref())
-            .expect("valid DER ECDSA signature");
+        let der_sig =
+            p256::ecdsa::DerSignature::try_from(sig.as_ref()).expect("valid DER ECDSA signature");
         verifying_key
             .verify(message, &der_sig)
             .expect("p256 crate should verify ring-signed ECDSA signature");
@@ -421,13 +424,11 @@ mod ed25519_ring_to_dalek {
         let sig = ring_kp.sign(b"original message");
 
         let raw_pubkey = extract_public_key_from_spki(keypair.public_key_spki_der());
-        let verifying_key = ed25519_dalek::VerifyingKey::from_bytes(
-            raw_pubkey.try_into().expect("32 bytes"),
-        )
-        .expect("valid Ed25519 public key");
-        let dalek_sig = ed25519_dalek::Signature::from_bytes(
-            sig.as_ref().try_into().expect("64 bytes"),
-        );
+        let verifying_key =
+            ed25519_dalek::VerifyingKey::from_bytes(raw_pubkey.try_into().expect("32 bytes"))
+                .expect("valid Ed25519 public key");
+        let dalek_sig =
+            ed25519_dalek::Signature::from_bytes(sig.as_ref().try_into().expect("64 bytes"));
         let result = verifying_key.verify(b"tampered message", &dalek_sig);
         assert!(
             result.is_err(),
@@ -454,8 +455,10 @@ mod ed25519_ring_to_aws_lc {
         let sig = ring_kp.sign(message);
 
         let raw_pubkey = extract_public_key_from_spki(keypair.public_key_spki_der());
-        let public_key =
-            aws_lc_rs::signature::UnparsedPublicKey::new(&aws_lc_rs::signature::ED25519, raw_pubkey);
+        let public_key = aws_lc_rs::signature::UnparsedPublicKey::new(
+            &aws_lc_rs::signature::ED25519,
+            raw_pubkey,
+        );
         public_key
             .verify(message, sig.as_ref())
             .expect("aws-lc-rs should verify ring-signed Ed25519 signature");
@@ -472,7 +475,8 @@ mod x509_rustls_verify {
     #[test]
     fn self_signed_cert_accepted_by_rustls_root_store() {
         let fx = fx();
-        let cert = fx.x509_self_signed("interop-x509-rustls", X509Spec::self_signed("interop.test"));
+        let cert =
+            fx.x509_self_signed("interop-x509-rustls", X509Spec::self_signed("interop.test"));
 
         let cert_der = CertificateDer::from(cert.cert_der().to_vec());
 
@@ -533,13 +537,17 @@ mod jwk_to_jsonwebtoken {
                 sub: "jwk-interop-rsa".into(),
                 exp: 2_000_000_000,
             };
-            let token = encode(&Header::new(Algorithm::RS256), &claims, &keypair.encoding_key())
-                .expect("JWT encode with RS256");
+            let token = encode(
+                &Header::new(Algorithm::RS256),
+                &claims,
+                &keypair.encoding_key(),
+            )
+            .expect("JWT encode with RS256");
 
             // Export the public key as JWK and import into jsonwebtoken
             let jwk_value = keypair.public_jwk_json();
-            let jwk: Jwk =
-                serde_json::from_value(jwk_value).expect("uselesskey JWK parses as jsonwebtoken Jwk");
+            let jwk: Jwk = serde_json::from_value(jwk_value)
+                .expect("uselesskey JWK parses as jsonwebtoken Jwk");
             let decoding_key =
                 DecodingKey::from_jwk(&jwk).expect("DecodingKey from uselesskey RSA JWK");
 
@@ -566,8 +574,12 @@ mod jwk_to_jsonwebtoken {
                 sub: "jwk-interop-ecdsa".into(),
                 exp: 2_000_000_000,
             };
-            let token = encode(&Header::new(Algorithm::ES256), &claims, &keypair.encoding_key())
-                .expect("JWT encode with ES256");
+            let token = encode(
+                &Header::new(Algorithm::ES256),
+                &claims,
+                &keypair.encoding_key(),
+            )
+            .expect("JWT encode with ES256");
 
             let jwk_value = keypair.public_jwk_json();
             let jwk: Jwk = serde_json::from_value(jwk_value)
@@ -597,8 +609,12 @@ mod jwk_to_jsonwebtoken {
                 sub: "jwk-interop-ed25519".into(),
                 exp: 2_000_000_000,
             };
-            let token = encode(&Header::new(Algorithm::EdDSA), &claims, &keypair.encoding_key())
-                .expect("JWT encode with EdDSA");
+            let token = encode(
+                &Header::new(Algorithm::EdDSA),
+                &claims,
+                &keypair.encoding_key(),
+            )
+            .expect("JWT encode with EdDSA");
 
             let jwk_value = keypair.public_jwk_json();
             let jwk: Jwk = serde_json::from_value(jwk_value)
@@ -643,10 +659,8 @@ mod multi_backend_rsa_verify {
 
         // Verify with ring
         let raw_pubkey = extract_public_key_from_spki(keypair.public_key_spki_der());
-        let ring_pub = ring_sig::UnparsedPublicKey::new(
-            &ring_sig::RSA_PKCS1_2048_8192_SHA256,
-            raw_pubkey,
-        );
+        let ring_pub =
+            ring_sig::UnparsedPublicKey::new(&ring_sig::RSA_PKCS1_2048_8192_SHA256, raw_pubkey);
         ring_pub
             .verify(message, &sig)
             .expect("ring should verify its own RSA signature");
@@ -736,9 +750,8 @@ mod multi_backend_ecdsa_verify {
             .expect("ring should verify its own ECDSA signature");
 
         // Verify with p256 crate
-        let p256_vk =
-            p256::ecdsa::VerifyingKey::from_public_key_der(keypair.public_key_spki_der())
-                .expect("p256 parses SPKI DER");
+        let p256_vk = p256::ecdsa::VerifyingKey::from_public_key_der(keypair.public_key_spki_der())
+            .expect("p256 parses SPKI DER");
         let der_sig =
             p256::ecdsa::DerSignature::try_from(sig.as_ref()).expect("valid DER ECDSA sig");
         p256_vk

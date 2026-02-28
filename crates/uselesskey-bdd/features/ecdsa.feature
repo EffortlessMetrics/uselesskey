@@ -98,12 +98,47 @@ Feature: ECDSA fixtures
     When I generate an ECDSA ES256 key for label "corrupted"
     And I corrupt the ECDSA PKCS8 PEM with BadHeader
     Then the corrupted ECDSA PEM should contain "-----BEGIN CORRUPTED KEY-----"
+    And the corrupted ECDSA PEM should fail to parse
+
+  Scenario: ECDSA corrupted PEM with BadFooter
+    Given a deterministic factory seeded with "corrupt-test"
+    When I generate an ECDSA ES256 key for label "corrupted-footer"
+    And I corrupt the ECDSA PKCS8 PEM with BadFooter
+    Then the corrupted ECDSA PEM should contain "-----END CORRUPTED KEY-----"
+    And the corrupted ECDSA PEM should fail to parse
+
+  Scenario: ECDSA corrupted PEM with BadBase64
+    Given a deterministic factory seeded with "corrupt-test"
+    When I generate an ECDSA ES256 key for label "corrupted-b64"
+    And I corrupt the ECDSA PKCS8 PEM with BadBase64
+    Then the corrupted ECDSA PEM should contain "THIS_IS_NOT_BASE64"
+    And the corrupted ECDSA PEM should fail to parse
+
+  Scenario: ECDSA corrupted PEM with Truncate
+    Given a deterministic factory seeded with "corrupt-test"
+    When I generate an ECDSA ES256 key for label "corrupted-trunc"
+    And I corrupt the ECDSA PKCS8 PEM with Truncate to 30 bytes
+    Then the corrupted ECDSA PEM should have length 30
+    And the corrupted ECDSA PEM should fail to parse
+
+  Scenario: ECDSA corrupted PEM with ExtraBlankLine
+    Given a deterministic factory seeded with "corrupt-test"
+    When I generate an ECDSA ES256 key for label "corrupted-blank"
+    And I corrupt the ECDSA PKCS8 PEM with ExtraBlankLine
+    Then the corrupted ECDSA PEM should fail to parse
 
   Scenario: ECDSA truncated DER fails to parse
     Given a deterministic factory seeded with "truncate-test"
     When I generate an ECDSA ES256 key for label "truncated"
     And I truncate the ECDSA PKCS8 DER to 10 bytes
     Then the truncated ECDSA DER should have length 10
+    And the truncated ECDSA DER should fail to parse
+
+  Scenario: ECDSA truncated DER to 1 byte fails to parse
+    Given a deterministic factory seeded with "truncate-test"
+    When I generate an ECDSA ES256 key for label "truncated-1"
+    And I truncate the ECDSA PKCS8 DER to 1 bytes
+    Then the truncated ECDSA DER should have length 1
     And the truncated ECDSA DER should fail to parse
 
   Scenario: deterministic ECDSA PEM corruption with variant is stable
@@ -114,6 +149,13 @@ Feature: ECDSA fixtures
     Then the deterministic text artifacts should be identical
     And the deterministic ECDSA PEM artifact should fail to parse
 
+  Scenario: different ECDSA deterministic PEM variants produce different outputs
+    Given a deterministic factory seeded with "ecdsa-det-corrupt-pem-diff"
+    When I generate an ECDSA ES256 key for label "ecdsa-det-pem-diff"
+    And I deterministically corrupt the ECDSA PKCS8 PEM with variant "alpha"
+    And I deterministically corrupt the ECDSA PKCS8 PEM with variant "beta" again
+    Then the deterministic text artifacts should differ
+
   Scenario: deterministic ECDSA DER corruption with variant is stable
     Given a deterministic factory seeded with "ecdsa-det-corrupt-der"
     When I generate an ECDSA ES256 key for label "ecdsa-det-der"
@@ -121,6 +163,13 @@ Feature: ECDSA fixtures
     And I deterministically corrupt the ECDSA PKCS8 DER with variant "v1" again
     Then the deterministic binary artifacts should be identical
     And the deterministic ECDSA DER artifact should fail to parse
+
+  Scenario: different ECDSA deterministic DER variants produce different outputs
+    Given a deterministic factory seeded with "ecdsa-det-corrupt-der-diff"
+    When I generate an ECDSA ES256 key for label "ecdsa-det-der-diff"
+    And I deterministically corrupt the ECDSA PKCS8 DER with variant "alpha"
+    And I deterministically corrupt the ECDSA PKCS8 DER with variant "beta" again
+    Then the deterministic binary artifacts should differ
 
   # --- JWK support (ES256) ---
 

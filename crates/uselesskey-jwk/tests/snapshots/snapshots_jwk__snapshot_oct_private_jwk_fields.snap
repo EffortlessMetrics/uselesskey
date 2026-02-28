@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-jwk/tests/snapshots_jwk.rs
+assertion_line: 98
+expression: redacted
+---
+alg: HS256
+k: "[REDACTED]"
+kid: oct-kid-1
+kty: oct
+use: sig

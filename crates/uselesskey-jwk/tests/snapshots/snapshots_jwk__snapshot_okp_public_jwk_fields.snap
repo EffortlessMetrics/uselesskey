@@ -1,0 +1,11 @@
+---
+source: crates/uselesskey-jwk/tests/snapshots_jwk.rs
+assertion_line: 84
+expression: redacted
+---
+alg: EdDSA
+crv: Ed25519
+kid: okp-kid-1
+kty: OKP
+use: sig
+x: "[REDACTED]"
