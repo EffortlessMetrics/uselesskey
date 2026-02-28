@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+description: "HS256 JWK via facade — redact secret, keep shape"
+expression: jwk
+---
+alg: HS256
+k: "[secret]"
+kid: "[kid]"
+kty: oct
+use: sig

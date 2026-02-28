@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: info
+---
+prefix: uk_test_
+suffix_len: 32
+total_len: 40

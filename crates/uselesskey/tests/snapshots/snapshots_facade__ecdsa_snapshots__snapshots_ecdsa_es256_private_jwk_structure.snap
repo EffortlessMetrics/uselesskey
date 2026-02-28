@@ -1,0 +1,12 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: redacted
+---
+alg: ES256
+crv: P-256
+d: "[REDACTED]"
+kid: "[REDACTED]"
+kty: EC
+use: sig
+x: "[REDACTED]"
+y: "[REDACTED]"

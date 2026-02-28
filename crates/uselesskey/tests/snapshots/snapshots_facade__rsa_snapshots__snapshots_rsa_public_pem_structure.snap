@@ -1,0 +1,13 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: redact_pem(kp.public_key_spki_pem())
+---
+-----BEGIN PUBLIC KEY-----
+[REDACTED]
+[REDACTED]
+[REDACTED]
+[REDACTED]
+[REDACTED]
+[REDACTED]
+[REDACTED]
+-----END PUBLIC KEY-----

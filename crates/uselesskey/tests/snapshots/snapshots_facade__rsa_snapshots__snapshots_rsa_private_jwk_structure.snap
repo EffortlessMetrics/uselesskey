@@ -1,0 +1,16 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: redacted
+---
+alg: RS256
+d: "[REDACTED]"
+dp: "[REDACTED]"
+dq: "[REDACTED]"
+e: "[REDACTED]"
+kid: "[REDACTED]"
+kty: RSA
+n: "[REDACTED]"
+p: "[REDACTED]"
+q: "[REDACTED]"
+qi: "[REDACTED]"
+use: sig

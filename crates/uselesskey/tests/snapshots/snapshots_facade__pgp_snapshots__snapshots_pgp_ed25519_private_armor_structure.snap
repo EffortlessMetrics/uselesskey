@@ -1,0 +1,14 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: redact_armor(kp.private_key_armored())
+---
+-----BEGIN PGP PRIVATE KEY BLOCK-----
+
+[REDACTED]
+[REDACTED]
+[REDACTED]
+[REDACTED]
+[REDACTED]
+[REDACTED]
+[REDACTED]
+-----END PGP PRIVATE KEY BLOCK-----

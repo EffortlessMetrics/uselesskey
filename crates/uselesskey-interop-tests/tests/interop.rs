@@ -500,8 +500,11 @@ mod x509_rustls_verify {
             cert.private_key_pkcs8_der().to_vec(),
         ));
 
-        // rustls should be able to build a complete server config
-        let _server_config = rustls::ServerConfig::builder()
+        // Use an explicit provider to avoid process-global races in parallel test runs
+        let provider = rustls::crypto::ring::default_provider();
+        let _server_config = rustls::ServerConfig::builder_with_provider(provider.into())
+            .with_safe_default_protocol_versions()
+            .expect("protocol versions")
             .with_no_client_auth()
             .with_single_cert(vec![cert_der], key_der)
             .expect("rustls should build ServerConfig with uselesskey cert + key");

@@ -1,0 +1,6 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: info
+---
+auth_header_prefix: "Bearer "
+len: 43

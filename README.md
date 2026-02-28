@@ -324,6 +324,22 @@ Extension traits by feature:
 - `token`: `TokenFactoryExt`
 - `x509`: `X509FactoryExt`
 
+## Microcrate Architecture
+
+The workspace decomposes `uselesskey-core` into focused, single-responsibility microcrates:
+
+| Layer | Crates |
+|-------|--------|
+| Identity & derivation | `core-id`, `core-seed`, `core-hash`, `core-kid` |
+| Caching & factory | `core-cache`, `core-factory` |
+| Key material | `core-keypair`, `core-keypair-material`, `core-sink` |
+| Negative fixtures | `core-negative`, `core-negative-pem` |
+| JWK | `core-jwk`, `core-jwk-shape`, `core-jwk-builder`, `core-jwks-order` |
+| Token | `core-token`, `core-token-shape` |
+| X.509 | `core-x509`, `core-x509-spec`, `core-x509-derive`, `core-x509-negative` |
+
+Users interact through the `uselesskey` facade crate; the microcrates are implementation details that enable fine-grained dependency control and independent testing.
+
 ## Why This Crate?
 
 ### Order-independent determinism

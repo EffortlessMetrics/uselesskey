@@ -1,0 +1,6 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: info
+---
+private_der_len: 1217
+public_der_len: 294

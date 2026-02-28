@@ -34,6 +34,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `uselesskey-core` now supports `no_std` builds:
   - New `std` default feature gate in `uselesskey-core`
   - Deterministic derivation/caching and negative helpers compile with `--no-default-features`
+- Decomposed `uselesskey-core` into focused microcrates:
+  - `core-factory`, `core-cache` — factory lifecycle and concurrent caching
+  - `core-hash`, `core-id`, `core-seed`, `core-kid` — deterministic derivation and identity
+  - `core-keypair`, `core-keypair-material`, `core-sink` — key material abstractions
+  - `core-negative`, `core-negative-pem` — negative fixture generation
+  - `core-jwk-builder`, `core-jwks-order`, `core-jwk-shape` — JWK internals
+  - `core-token`, `core-token-shape` — token fixture internals
+  - `core-x509-derive`, `core-x509-negative` — X.509 derivation and negative helpers
+- Snapshot tests via `insta` across key type and JWK crates
+- Property-based tests via `proptest` across all core microcrates
+- Fuzz targets for core-hash, core-cache, core-kid, core-negative-pem, core-token-shape, jwk-builder, jwks-order, jwk-shape, x509-spec, seed-parse, and key format parsing
+- New internal test infrastructure: `uselesskey-test-grid`, `uselesskey-feature-grid`, `uselesskey-interop-tests`, `uselesskey-bdd-steps`
+- Integration test suite covering cross-adapter, crypto-backend, e2e workflows, JWT, key rotation, and TLS scenarios
+- Crate-level module documentation (`//!` doc comments) for all public and internal crates
 
 ## [0.2.1] - 2026-02-16
 

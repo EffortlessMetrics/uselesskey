@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: info
+---
+hs256_len: 32
+hs384_len: 48
+hs512_len: 64

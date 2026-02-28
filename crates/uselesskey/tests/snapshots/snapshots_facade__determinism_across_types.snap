@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: "serde_json::Value::Object(checks)"
+---
+ecdsa_stable: true
+ed25519_stable: true
+hmac_stable: true
+pgp_stable: true
+rsa_stable: true
+token_stable: true

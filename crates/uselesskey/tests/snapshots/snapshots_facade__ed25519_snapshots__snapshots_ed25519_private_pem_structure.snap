@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: redact_pem(kp.private_key_pkcs8_pem())
+---
+-----BEGIN PRIVATE KEY-----
+[REDACTED]
+[REDACTED]
+-----END PRIVATE KEY-----

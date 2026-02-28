@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: "serde_json::json!({\n    \"spec\": kp.spec().kind_name(), \"user_id\": kp.user_id(), \"fingerprint_len\":\n    kp.fingerprint().len(),\n})"
+---
+fingerprint_len: 40
+spec: ed25519
+user_id: facade-pgp <facade-pgp@uselesskey.test>

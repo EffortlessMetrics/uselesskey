@@ -61,4 +61,6 @@ all-keys = ["rsa", "ecdsa", "ed25519", "hmac", "pgp"]
 full = ["all-keys", "token", "x509", "jwk"]
 
 [dev-dependencies]
+insta = { workspace = true }
+serde_json = { workspace = true }
 tempfile.workspace = true
