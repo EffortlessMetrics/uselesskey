@@ -1,5 +1,5 @@
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine as _;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use proptest::prelude::*;
 use rand_chacha::ChaCha20Rng;
 use rand_chacha::rand_core::SeedableRng;

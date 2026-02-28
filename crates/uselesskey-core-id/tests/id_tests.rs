@@ -8,7 +8,13 @@ use uselesskey_core_id::{ArtifactId, DerivationVersion, Seed, derive_seed};
 
 #[test]
 fn new_preserves_all_fields() {
-    let id = ArtifactId::new("domain:rsa", "issuer", b"RS256", "default", DerivationVersion::V1);
+    let id = ArtifactId::new(
+        "domain:rsa",
+        "issuer",
+        b"RS256",
+        "default",
+        DerivationVersion::V1,
+    );
 
     assert_eq!(id.domain, "domain:rsa");
     assert_eq!(id.label, "issuer");
@@ -84,13 +90,22 @@ fn changing_derivation_version_produces_different_id() {
 
 #[test]
 fn debug_contains_all_component_names() {
-    let id = ArtifactId::new("domain:rsa", "issuer", b"RS256", "default", DerivationVersion::V1);
+    let id = ArtifactId::new(
+        "domain:rsa",
+        "issuer",
+        b"RS256",
+        "default",
+        DerivationVersion::V1,
+    );
     let dbg = format!("{id:?}");
 
     assert!(dbg.contains("domain:rsa"), "debug missing domain");
     assert!(dbg.contains("issuer"), "debug missing label");
     assert!(dbg.contains("default"), "debug missing variant");
-    assert!(dbg.contains("DerivationVersion"), "debug missing version wrapper");
+    assert!(
+        dbg.contains("DerivationVersion"),
+        "debug missing version wrapper"
+    );
 }
 
 #[test]

@@ -67,9 +67,7 @@ fn chain_negative_debug_contains_variant_info() {
 
     assert!(format!("{:?}", ChainNegative::UnknownCa).contains("UnknownCa"));
     assert!(format!("{:?}", ChainNegative::ExpiredLeaf).contains("ExpiredLeaf"));
-    assert!(
-        format!("{:?}", ChainNegative::ExpiredIntermediate).contains("ExpiredIntermediate")
-    );
+    assert!(format!("{:?}", ChainNegative::ExpiredIntermediate).contains("ExpiredIntermediate"));
     assert!(format!("{:?}", ChainNegative::RevokedLeaf).contains("RevokedLeaf"));
 }
 

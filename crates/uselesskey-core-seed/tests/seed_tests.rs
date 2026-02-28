@@ -29,9 +29,12 @@ fn new_from_single_byte_set() {
     arr[15] = 0xAB;
     let seed = Seed::new(arr);
     assert_eq!(seed.bytes()[15], 0xAB);
-    assert!(seed.bytes().iter().enumerate().all(|(i, &b)| {
-        if i == 15 { b == 0xAB } else { b == 0 }
-    }));
+    assert!(
+        seed.bytes()
+            .iter()
+            .enumerate()
+            .all(|(i, &b)| { if i == 15 { b == 0xAB } else { b == 0 } })
+    );
 }
 
 // ── .bytes() accessor ───────────────────────────────────────────────
@@ -93,10 +96,22 @@ fn debug_does_not_contain_hex_bytes() {
     let seed = Seed::new([0xFF; 32]);
     let dbg = format!("{:?}", seed);
     // Must not contain any representation of the actual bytes
-    assert!(!dbg.contains("ff"), "Debug output must not leak byte values");
-    assert!(!dbg.contains("FF"), "Debug output must not leak byte values");
-    assert!(!dbg.contains("255"), "Debug output must not leak byte values");
-    assert!(!dbg.contains("0xff"), "Debug output must not leak byte values");
+    assert!(
+        !dbg.contains("ff"),
+        "Debug output must not leak byte values"
+    );
+    assert!(
+        !dbg.contains("FF"),
+        "Debug output must not leak byte values"
+    );
+    assert!(
+        !dbg.contains("255"),
+        "Debug output must not leak byte values"
+    );
+    assert!(
+        !dbg.contains("0xff"),
+        "Debug output must not leak byte values"
+    );
 }
 
 #[test]
@@ -214,7 +229,7 @@ fn from_env_value_0x_prefix() {
 
 #[test]
 fn from_env_value_trims_whitespace() {
-    let hex = "  " .to_string() + &"ab".repeat(32) + "  ";
+    let hex = "  ".to_string() + &"ab".repeat(32) + "  ";
     let seed = Seed::from_env_value(&hex).unwrap();
     assert!(seed.bytes().iter().all(|&b| b == 0xAB));
 }

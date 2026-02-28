@@ -244,7 +244,12 @@ fn truncation_to_full_length_preserves_all_chars() {
 #[test]
 fn truncation_beyond_length_returns_full_input() {
     let full_len = RSA_PEM.chars().count();
-    let out = corrupt_pem(RSA_PEM, CorruptPem::Truncate { bytes: full_len + 100 });
+    let out = corrupt_pem(
+        RSA_PEM,
+        CorruptPem::Truncate {
+            bytes: full_len + 100,
+        },
+    );
     assert_eq!(out.chars().count(), full_len);
 }
 

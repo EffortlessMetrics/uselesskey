@@ -293,7 +293,9 @@ fn rsa_public_required_fields_present() {
 #[test]
 fn rsa_private_required_fields_present() {
     let v = PrivateJwk::Rsa(rsa_private("req-rsa-priv")).to_value();
-    for field in ["kty", "use", "alg", "kid", "n", "e", "d", "p", "q", "dp", "dq", "qi"] {
+    for field in [
+        "kty", "use", "alg", "kid", "n", "e", "d", "p", "q", "dp", "dq", "qi",
+    ] {
         assert!(v.get(field).is_some(), "field {field} missing");
     }
 }
@@ -409,7 +411,15 @@ fn debug_rsa_private_omits_key_material() {
     let dbg = format!("{jwk:?}");
     assert!(dbg.contains("RsaPrivateJwk"), "should contain type name");
     assert!(dbg.contains("dbg-rsa"), "should contain kid");
-    for secret in ["private-d", "prime-p", "prime-q", "dp-val", "dq-val", "qi-val", "n-val"] {
+    for secret in [
+        "private-d",
+        "prime-p",
+        "prime-q",
+        "dp-val",
+        "dq-val",
+        "qi-val",
+        "n-val",
+    ] {
         assert!(!dbg.contains(secret), "leaked {secret} in Debug output");
     }
 }

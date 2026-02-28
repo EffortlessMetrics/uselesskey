@@ -129,7 +129,10 @@ fn mixed_unique_and_duplicate_kids() {
 
     let result = s.build();
     let out: Vec<_> = result.iter().map(|i| (i.kid.as_str(), i.tag)).collect();
-    assert_eq!(out, vec![("a", "a1"), ("a", "a2"), ("b", "b1"), ("b", "b2")]);
+    assert_eq!(
+        out,
+        vec![("a", "a1"), ("a", "a2"), ("b", "b1"), ("b", "b2")]
+    );
 }
 
 // ---------------------------------------------------------------------------

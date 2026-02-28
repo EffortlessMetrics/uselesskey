@@ -71,7 +71,10 @@ fn construction_accepts_string_and_str() {
 #[test]
 fn public_key_spki_der_returns_correct_bytes() {
     let m = rsa_like_material();
-    assert_eq!(m.public_key_spki_der(), &[0x30, 0x82, 0x01, 0x22, 0x30, 0x0D]);
+    assert_eq!(
+        m.public_key_spki_der(),
+        &[0x30, 0x82, 0x01, 0x22, 0x30, 0x0D]
+    );
 }
 
 #[test]
@@ -105,7 +108,11 @@ fn private_key_pkcs8_pem_has_private_key_markers() {
 
 #[test]
 fn pem_private_has_begin_end_markers() {
-    for m in [rsa_like_material(), ec_like_material(), ed25519_like_material()] {
+    for m in [
+        rsa_like_material(),
+        ec_like_material(),
+        ed25519_like_material(),
+    ] {
         let pem = m.private_key_pkcs8_pem();
         assert!(
             pem.contains("-----BEGIN PRIVATE KEY-----"),
@@ -120,7 +127,11 @@ fn pem_private_has_begin_end_markers() {
 
 #[test]
 fn pem_public_has_begin_end_markers() {
-    for m in [rsa_like_material(), ec_like_material(), ed25519_like_material()] {
+    for m in [
+        rsa_like_material(),
+        ec_like_material(),
+        ed25519_like_material(),
+    ] {
         let pem = m.public_key_spki_pem();
         assert!(
             pem.contains("-----BEGIN PUBLIC KEY-----"),
@@ -137,14 +148,22 @@ fn pem_public_has_begin_end_markers() {
 
 #[test]
 fn der_private_key_is_non_empty() {
-    for m in [rsa_like_material(), ec_like_material(), ed25519_like_material()] {
+    for m in [
+        rsa_like_material(),
+        ec_like_material(),
+        ed25519_like_material(),
+    ] {
         assert!(!m.private_key_pkcs8_der().is_empty());
     }
 }
 
 #[test]
 fn der_public_key_is_non_empty() {
-    for m in [rsa_like_material(), ec_like_material(), ed25519_like_material()] {
+    for m in [
+        rsa_like_material(),
+        ec_like_material(),
+        ed25519_like_material(),
+    ] {
         assert!(!m.public_key_spki_der().is_empty());
     }
 }
@@ -156,10 +175,22 @@ fn debug_does_not_contain_pem_headers() {
     let m = rsa_like_material();
     let dbg = format!("{m:?}");
     assert!(dbg.contains("Pkcs8SpkiKeyMaterial"));
-    assert!(!dbg.contains("BEGIN PRIVATE KEY"), "debug leaked private PEM header");
-    assert!(!dbg.contains("END PRIVATE KEY"), "debug leaked private PEM footer");
-    assert!(!dbg.contains("BEGIN PUBLIC KEY"), "debug leaked public PEM header");
-    assert!(!dbg.contains("END PUBLIC KEY"), "debug leaked public PEM footer");
+    assert!(
+        !dbg.contains("BEGIN PRIVATE KEY"),
+        "debug leaked private PEM header"
+    );
+    assert!(
+        !dbg.contains("END PRIVATE KEY"),
+        "debug leaked private PEM footer"
+    );
+    assert!(
+        !dbg.contains("BEGIN PUBLIC KEY"),
+        "debug leaked public PEM header"
+    );
+    assert!(
+        !dbg.contains("END PUBLIC KEY"),
+        "debug leaked public PEM footer"
+    );
 }
 
 #[test]
@@ -202,7 +233,10 @@ fn rsa_ec_ed25519_produce_distinct_kids() {
 #[test]
 fn ec_material_accessors_work() {
     let m = ec_like_material();
-    assert_eq!(m.private_key_pkcs8_der(), &[0x30, 0x81, 0x87, 0x02, 0x01, 0x00]);
+    assert_eq!(
+        m.private_key_pkcs8_der(),
+        &[0x30, 0x81, 0x87, 0x02, 0x01, 0x00]
+    );
     assert_eq!(m.public_key_spki_der(), &[0x30, 0x59, 0x30, 0x13]);
     assert!(m.private_key_pkcs8_pem().contains("PRIVATE KEY"));
     assert!(m.public_key_spki_pem().contains("PUBLIC KEY"));
@@ -224,8 +258,14 @@ fn clone_preserves_all_fields() {
     let original = rsa_like_material();
     let cloned = original.clone();
 
-    assert_eq!(original.private_key_pkcs8_der(), cloned.private_key_pkcs8_der());
-    assert_eq!(original.private_key_pkcs8_pem(), cloned.private_key_pkcs8_pem());
+    assert_eq!(
+        original.private_key_pkcs8_der(),
+        cloned.private_key_pkcs8_der()
+    );
+    assert_eq!(
+        original.private_key_pkcs8_pem(),
+        cloned.private_key_pkcs8_pem()
+    );
     assert_eq!(original.public_key_spki_der(), cloned.public_key_spki_der());
     assert_eq!(original.public_key_spki_pem(), cloned.public_key_spki_pem());
     assert_eq!(original.kid(), cloned.kid());
@@ -361,7 +401,11 @@ fn kid_differs_for_different_spki() {
 
 #[test]
 fn kid_is_non_empty_for_all_key_types() {
-    for m in [rsa_like_material(), ec_like_material(), ed25519_like_material()] {
+    for m in [
+        rsa_like_material(),
+        ec_like_material(),
+        ed25519_like_material(),
+    ] {
         assert!(!m.kid().is_empty());
     }
 }

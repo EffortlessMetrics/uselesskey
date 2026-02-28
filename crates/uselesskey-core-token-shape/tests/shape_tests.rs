@@ -39,7 +39,11 @@ fn oauth_token_is_non_empty() {
 
 #[test]
 fn generate_token_non_empty_for_all_kinds() {
-    for kind in [TokenKind::ApiKey, TokenKind::Bearer, TokenKind::OAuthAccessToken] {
+    for kind in [
+        TokenKind::ApiKey,
+        TokenKind::Bearer,
+        TokenKind::OAuthAccessToken,
+    ] {
         let mut rng = ChaCha20Rng::from_seed([4u8; 32]);
         let token = generate_token("lbl", kind, &mut rng);
         assert!(!token.is_empty(), "token for {kind:?} must be non-empty");
@@ -74,7 +78,11 @@ fn oauth_token_is_dot_separated_three_parts() {
     let mut rng = ChaCha20Rng::from_seed([12u8; 32]);
     let token = generate_oauth_access_token("test-subject", &mut rng);
     let parts: Vec<&str> = token.split('.').collect();
-    assert_eq!(parts.len(), 3, "OAuth token must have header.payload.signature");
+    assert_eq!(
+        parts.len(),
+        3,
+        "OAuth token must have header.payload.signature"
+    );
     for (i, part) in parts.iter().enumerate() {
         assert!(
             URL_SAFE_NO_PAD.decode(part).is_ok(),
@@ -138,7 +146,11 @@ fn oauth_token_deterministic() {
 #[test]
 fn generate_token_deterministic_all_kinds() {
     let seed = [25u8; 32];
-    for kind in [TokenKind::ApiKey, TokenKind::Bearer, TokenKind::OAuthAccessToken] {
+    for kind in [
+        TokenKind::ApiKey,
+        TokenKind::Bearer,
+        TokenKind::OAuthAccessToken,
+    ] {
         let a = generate_token("lbl", kind, &mut ChaCha20Rng::from_seed(seed));
         let b = generate_token("lbl", kind, &mut ChaCha20Rng::from_seed(seed));
         assert_eq!(a, b, "determinism broken for {kind:?}");
@@ -154,7 +166,11 @@ fn different_kinds_produce_different_tokens() {
     let seed = [30u8; 32];
     let api = generate_token("x", TokenKind::ApiKey, &mut ChaCha20Rng::from_seed(seed));
     let bearer = generate_token("x", TokenKind::Bearer, &mut ChaCha20Rng::from_seed(seed));
-    let oauth = generate_token("x", TokenKind::OAuthAccessToken, &mut ChaCha20Rng::from_seed(seed));
+    let oauth = generate_token(
+        "x",
+        TokenKind::OAuthAccessToken,
+        &mut ChaCha20Rng::from_seed(seed),
+    );
 
     assert_ne!(api, bearer);
     assert_ne!(api, oauth);
@@ -260,7 +276,9 @@ fn bearer_token_is_base64url_charset() {
     let mut rng = ChaCha20Rng::from_seed([81u8; 32]);
     let token = generate_bearer_token(&mut rng);
     assert!(
-        token.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_'),
+        token
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_'),
         "bearer token must use base64url charset (no padding)"
     );
 }
