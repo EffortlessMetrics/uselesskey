@@ -369,10 +369,7 @@ mod tests {
         let out = inject_blank_line(pem);
         let lines: Vec<&str> = out.lines().collect();
         // After header, there should be an empty line
-        assert_eq!(
-            lines[1], "",
-            "blank line should be inserted after header"
-        );
+        assert_eq!(lines[1], "", "blank line should be inserted after header");
         assert_eq!(lines.len(), 4, "should have 4 lines after insertion");
     }
 
