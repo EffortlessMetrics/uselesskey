@@ -272,4 +272,118 @@ mod tests {
         let out = corrupt_pem_deterministic(pem, &find_variant(4));
         assert!(out.len() < pem.len());
     }
+
+    // --- Mutation-killing tests for derived_truncate_len ---
+
+    #[test]
+    fn derived_truncate_len_single_char_returns_zero() {
+        // Kills mutant: replace derived_truncate_len -> usize with 1
+        let pem = "X";
+        let digest = [0u8; 32];
+        let result = derived_truncate_len(pem, &digest);
+        assert_eq!(result, 0, "single-char PEM must truncate to 0");
+    }
+
+    #[test]
+    fn derived_truncate_len_empty_returns_zero() {
+        let pem = "";
+        let digest = [0u8; 32];
+        let result = derived_truncate_len(pem, &digest);
+        assert_eq!(result, 0, "empty PEM must truncate to 0");
+    }
+
+    #[test]
+    fn derived_truncate_len_two_chars_returns_one() {
+        // With chars=2, span=1, so result = 1 + (x % 1) = 1
+        // Kills mutants: <= vs >, - vs +, - vs /, + vs *
+        let pem = "XY";
+        let digest = [0u8; 32];
+        let result = derived_truncate_len(pem, &digest);
+        assert_eq!(result, 1, "two-char PEM must truncate to exactly 1");
+    }
+
+    #[test]
+    fn derived_truncate_len_range_is_1_to_chars_minus_1() {
+        // For a longer PEM, the result must be in [1, chars)
+        // This kills mutants that swap arithmetic operators
+        let pem = "ABCDEFGHIJ"; // 10 chars
+        for byte1 in 0..=255u8 {
+            let mut digest = [0u8; 32];
+            digest[1] = byte1;
+            let result = derived_truncate_len(pem, &digest);
+            assert!(result >= 1, "truncate len must be >= 1, got {result}");
+            assert!(
+                result < 10,
+                "truncate len must be < char count (10), got {result}"
+            );
+        }
+    }
+
+    #[test]
+    fn derived_truncate_len_varies_with_digest() {
+        // Different digests should produce different truncation lengths (for sufficiently long PEM)
+        let pem = "A".repeat(1000);
+        let mut results = HashSet::new();
+        for i in 0u8..=255 {
+            let mut digest = [0u8; 32];
+            digest[1] = i;
+            results.insert(derived_truncate_len(&pem, &digest));
+        }
+        assert!(
+            results.len() > 1,
+            "different digests should produce different truncate lengths"
+        );
+    }
+
+    // --- Mutation-killing tests for inject_bad_base64_line ---
+
+    #[test]
+    fn inject_bad_base64_line_with_exactly_3_lines() {
+        // Kills mutant: < vs <= in lines.len() < 3
+        let pem = "-----BEGIN TEST-----\nAAA=\n-----END TEST-----\n";
+        let out = inject_bad_base64_line(pem);
+        // Should insert after header, so line[1] should be the injected line
+        let lines: Vec<&str> = out.lines().collect();
+        assert_eq!(
+            lines[1], "THIS_IS_NOT_BASE64!!!",
+            "bad base64 should be inserted after header"
+        );
+    }
+
+    #[test]
+    fn inject_bad_base64_line_with_2_lines_uses_fallback() {
+        let pem = "header\nbody\n";
+        let out = inject_bad_base64_line(pem);
+        assert!(
+            out.contains("THIS_IS_NOT_BASE64!!!"),
+            "fallback should still contain bad base64"
+        );
+    }
+
+    // --- Mutation-killing tests for inject_blank_line ---
+
+    #[test]
+    fn inject_blank_line_with_exactly_3_lines() {
+        // Kills mutant: < vs > in lines.len() < 3
+        let pem = "-----BEGIN TEST-----\nAAA=\n-----END TEST-----\n";
+        let out = inject_blank_line(pem);
+        let lines: Vec<&str> = out.lines().collect();
+        // After header, there should be an empty line
+        assert_eq!(
+            lines[1], "",
+            "blank line should be inserted after header"
+        );
+        assert_eq!(lines.len(), 4, "should have 4 lines after insertion");
+    }
+
+    #[test]
+    fn inject_blank_line_with_2_lines_uses_fallback() {
+        let pem = "header\nbody\n";
+        let out = inject_blank_line(pem);
+        // Fallback appends two newlines
+        assert!(
+            out.ends_with("\n\n"),
+            "fallback should append double newline"
+        );
+    }
 }
