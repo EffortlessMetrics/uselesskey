@@ -60,6 +60,8 @@ enum Cmd {
     Coverage,
     /// Validate publish metadata and run `cargo package --no-verify` for all crates.
     PublishPreflight,
+    /// Publish all crates to crates.io in dependency order (with retry logic).
+    Publish,
     /// Run fuzz targets (requires `cargo-fuzz` installed).
     Fuzz {
         /// Name of the fuzz target (e.g. `rsa_pkcs8_pem_parse`).
@@ -90,6 +92,7 @@ fn main() -> Result<()> {
         Cmd::BddMatrix => bdd_matrix(),
         Cmd::Coverage => coverage(),
         Cmd::PublishPreflight => publish_preflight(),
+        Cmd::Publish => publish(),
         Cmd::Mutants => run_mutants(PUBLISH_CRATES),
         Cmd::Fuzz { target, args } => fuzz(target.as_deref(), &args),
     }
@@ -241,21 +244,26 @@ fn feature_matrix_cmd() -> Result<()> {
 
 const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-core-seed",
+    "uselesskey-core-hash",
     "uselesskey-core-id",
     "uselesskey-core-cache",
     "uselesskey-core-factory",
     "uselesskey-core-kid",
+    "uselesskey-core-negative-pem",
     "uselesskey-core-negative",
     "uselesskey-core-sink",
     "uselesskey-core-token",
     "uselesskey-core-token-shape",
+    "uselesskey-core-jwk-shape",
+    "uselesskey-core-jwks-order",
+    "uselesskey-core-jwk-builder",
     "uselesskey-core-jwk",
     "uselesskey-core-x509-spec",
     "uselesskey-core-x509-derive",
+    "uselesskey-core-x509-negative",
     "uselesskey-core-x509",
     "uselesskey-core",
     "uselesskey-core-keypair-material",
-    "uselesskey-core-jwk-shape",
     "uselesskey-core-keypair",
     "uselesskey-jwk",
     "uselesskey-rsa",
@@ -277,6 +285,47 @@ const PUBLISH_CRATES: &[&str] = &[
 fn publish_check() -> Result<()> {
     for name in PUBLISH_CRATES {
         run(Command::new("cargo").args(["publish", "--dry-run", "-p", name]))?;
+    }
+    Ok(())
+}
+
+fn publish() -> Result<()> {
+    for name in PUBLISH_CRATES {
+        eprintln!("==> Publishing {name}");
+        let mut success = false;
+        for attempt in 1..=3 {
+            eprintln!("    Attempt {attempt} for {name}...");
+            let output = Command::new("cargo")
+                .args(["publish", "-p", name])
+                .stdout(Stdio::inherit())
+                .stderr(Stdio::piped())
+                .output()
+                .with_context(|| format!("failed to run cargo publish for {name}"))?;
+
+            if output.status.success() {
+                eprintln!("    {name} published successfully.");
+                success = true;
+                break;
+            }
+
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            let retriable = stderr.contains("failed to select a version")
+                || stderr.contains("no matching package")
+                || stderr.to_lowercase().contains("not found");
+
+            if retriable {
+                eprintln!("    Dependency indexing race detected. Waiting 60s before retry...");
+                std::thread::sleep(std::time::Duration::from_secs(60));
+            } else {
+                eprint!("{stderr}");
+                bail!("{name} publish failed with a non-retriable error");
+            }
+        }
+        if !success {
+            bail!("{name} failed after 3 attempts");
+        }
+        eprintln!("    Sleeping 30s for crates.io indexing...");
+        std::thread::sleep(std::time::Duration::from_secs(30));
     }
     Ok(())
 }

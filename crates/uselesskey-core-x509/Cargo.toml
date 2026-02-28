@@ -21,3 +21,6 @@ uselesskey-core-x509-spec = { path = "../uselesskey-core-x509-spec", version = "
 [dev-dependencies]
 proptest.workspace = true
 rstest.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true

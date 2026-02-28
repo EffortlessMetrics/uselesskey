@@ -19,3 +19,6 @@ serde_json.workspace = true
 
 [dev-dependencies]
 proptest.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true

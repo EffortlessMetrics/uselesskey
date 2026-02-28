@@ -136,7 +136,7 @@ impl Ed25519KeyPair {
         self.inner.material.kid()
     }
 
-    /// Alias for [`public_jwk`].
+    /// Alias for [`Self::public_jwk`].
     ///
     /// Requires the `jwk` feature.
     #[cfg(feature = "jwk")]

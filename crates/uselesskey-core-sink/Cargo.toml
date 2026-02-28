@@ -19,3 +19,6 @@ tempfile.workspace = true
 [dev-dependencies]
 proptest.workspace = true
 rstest.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true

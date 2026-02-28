@@ -15,3 +15,6 @@ authors.workspace = true
 
 [dependencies]
 uselesskey-core-keypair-material.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true

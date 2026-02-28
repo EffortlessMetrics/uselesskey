@@ -23,3 +23,6 @@ rstest.workspace = true
 [features]
 default = ["std"]
 std = ["blake3/std"]
+
+[package.metadata.docs.rs]
+features = ["std"]
