@@ -16,5 +16,10 @@ authors.workspace = true
 [dependencies]
 uselesskey-core-keypair-material.workspace = true
 
+[dev-dependencies]
+uselesskey-core-negative-pem.workspace = true
+proptest.workspace = true
+uselesskey-core = { path = "../uselesskey-core", version = "0.3.0" }
+
 [package.metadata.docs.rs]
 all-features = true
