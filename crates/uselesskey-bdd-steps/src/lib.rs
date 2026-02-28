@@ -329,6 +329,20 @@ struct UselessWorld {
     pgp_tempfile: Option<uselesskey_core::sink::TempArtifact>,
     #[cfg(feature = "uk-pgp")]
     pgp_public_tempfile: Option<uselesskey_core::sink::TempArtifact>,
+
+    // Adapter round-trip result
+    #[cfg(any(feature = "uk-ring", feature = "uk-rustcrypto"))]
+    adapter_round_trip_ok: Option<bool>,
+
+    // rustls adapter storage
+    #[cfg(feature = "uk-rustls")]
+    rustls_cert_der_len: Option<usize>,
+    #[cfg(feature = "uk-rustls")]
+    rustls_key_der_len: Option<usize>,
+    #[cfg(feature = "uk-rustls")]
+    rustls_chain_cert_count: Option<usize>,
+    #[cfg(feature = "uk-rustls")]
+    rustls_root_cert_len: Option<usize>,
 }
 
 #[cfg(feature = "uk-jwt")]
@@ -566,6 +580,22 @@ fn det_corrupt_rsa_der_again(world: &mut UselessWorld, variant: String) {
     world.deterministic_bytes_2 = Some(rsa.private_key_pkcs8_der_corrupt_deterministic(&variant));
 }
 
+#[when(
+    regex = r#"^I deterministically corrupt the RSA PKCS8 PEM with variant "([^"]+)" into slot 2$"#
+)]
+fn det_corrupt_rsa_pem_slot2(world: &mut UselessWorld, variant: String) {
+    let rsa = world.rsa.as_ref().expect("rsa not set");
+    world.deterministic_text_2 = Some(rsa.private_key_pkcs8_pem_corrupt_deterministic(&variant));
+}
+
+#[when(
+    regex = r#"^I deterministically corrupt the RSA PKCS8 DER with variant "([^"]+)" into slot 2$"#
+)]
+fn det_corrupt_rsa_der_slot2(world: &mut UselessWorld, variant: String) {
+    let rsa = world.rsa.as_ref().expect("rsa not set");
+    world.deterministic_bytes_2 = Some(rsa.private_key_pkcs8_der_corrupt_deterministic(&variant));
+}
+
 // --- Tempfile steps ---
 
 #[when("I write the private key to a tempfile")]
@@ -718,9 +748,25 @@ fn deterministic_text_artifacts_identical(world: &mut UselessWorld) {
     assert_eq!(world.deterministic_text_1, world.deterministic_text_2);
 }
 
+#[then("the deterministic text artifacts should differ")]
+fn deterministic_text_artifacts_differ(world: &mut UselessWorld) {
+    assert_ne!(
+        world.deterministic_text_1, world.deterministic_text_2,
+        "expected deterministic text artifacts to differ"
+    );
+}
+
 #[then("the deterministic binary artifacts should be identical")]
 fn deterministic_binary_artifacts_identical(world: &mut UselessWorld) {
     assert_eq!(world.deterministic_bytes_1, world.deterministic_bytes_2);
+}
+
+#[then("the deterministic binary artifacts should differ")]
+fn deterministic_binary_artifacts_differ(world: &mut UselessWorld) {
+    assert_ne!(
+        world.deterministic_bytes_1, world.deterministic_bytes_2,
+        "expected deterministic binary artifacts to differ"
+    );
 }
 
 #[then(regex = r#"^the deterministic text artifact should contain "([^"]+)"$"#)]
@@ -1010,6 +1056,34 @@ fn corrupt_ed25519_bad_header(world: &mut UselessWorld) {
         Some(ed25519.private_key_pkcs8_pem_corrupt(CorruptPem::BadHeader));
 }
 
+#[when("I corrupt the Ed25519 PKCS8 PEM with BadFooter")]
+fn corrupt_ed25519_bad_footer(world: &mut UselessWorld) {
+    let ed25519 = world.ed25519.as_ref().expect("ed25519 not set");
+    world.ed25519_corrupted_pem =
+        Some(ed25519.private_key_pkcs8_pem_corrupt(CorruptPem::BadFooter));
+}
+
+#[when("I corrupt the Ed25519 PKCS8 PEM with BadBase64")]
+fn corrupt_ed25519_bad_base64(world: &mut UselessWorld) {
+    let ed25519 = world.ed25519.as_ref().expect("ed25519 not set");
+    world.ed25519_corrupted_pem =
+        Some(ed25519.private_key_pkcs8_pem_corrupt(CorruptPem::BadBase64));
+}
+
+#[when(regex = r"^I corrupt the Ed25519 PKCS8 PEM with Truncate to (\d+) bytes$")]
+fn corrupt_ed25519_truncate(world: &mut UselessWorld, bytes: usize) {
+    let ed25519 = world.ed25519.as_ref().expect("ed25519 not set");
+    world.ed25519_corrupted_pem =
+        Some(ed25519.private_key_pkcs8_pem_corrupt(CorruptPem::Truncate { bytes }));
+}
+
+#[when("I corrupt the Ed25519 PKCS8 PEM with ExtraBlankLine")]
+fn corrupt_ed25519_extra_blank(world: &mut UselessWorld) {
+    let ed25519 = world.ed25519.as_ref().expect("ed25519 not set");
+    world.ed25519_corrupted_pem =
+        Some(ed25519.private_key_pkcs8_pem_corrupt(CorruptPem::ExtraBlankLine));
+}
+
 #[when(regex = r"^I truncate the Ed25519 PKCS8 DER to (\d+) bytes$")]
 fn truncate_ed25519_der(world: &mut UselessWorld, len: usize) {
     let ed25519 = world.ed25519.as_ref().expect("ed25519 not set");
@@ -1151,6 +1225,31 @@ fn ed25519_corrupted_pem_contains(world: &mut UselessWorld, needle: String) {
     assert!(
         pem.contains(&needle),
         "expected Ed25519 PEM to contain '{needle}'"
+    );
+}
+
+#[then(regex = r"^the corrupted Ed25519 PEM should have length (\d+)$")]
+fn ed25519_corrupted_pem_length(world: &mut UselessWorld, expected: usize) {
+    let pem = world
+        .ed25519_corrupted_pem
+        .as_ref()
+        .expect("ed25519_corrupted_pem not set");
+    assert_eq!(pem.len(), expected);
+}
+
+#[then("the corrupted Ed25519 PEM should fail to parse")]
+fn ed25519_corrupted_pem_fails(world: &mut UselessWorld) {
+    use ed25519_dalek::SigningKey;
+    use ed25519_dalek::pkcs8::DecodePrivateKey;
+
+    let pem = world
+        .ed25519_corrupted_pem
+        .as_ref()
+        .expect("ed25519_corrupted_pem not set");
+    let result = SigningKey::from_pkcs8_pem(pem);
+    assert!(
+        result.is_err(),
+        "corrupted Ed25519 PEM should fail to parse"
     );
 }
 
@@ -1378,6 +1477,32 @@ fn corrupt_ecdsa_bad_header(world: &mut UselessWorld) {
     world.ecdsa_corrupted_pem = Some(ecdsa.private_key_pkcs8_pem_corrupt(CorruptPem::BadHeader));
 }
 
+#[when("I corrupt the ECDSA PKCS8 PEM with BadFooter")]
+fn corrupt_ecdsa_bad_footer(world: &mut UselessWorld) {
+    let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
+    world.ecdsa_corrupted_pem = Some(ecdsa.private_key_pkcs8_pem_corrupt(CorruptPem::BadFooter));
+}
+
+#[when("I corrupt the ECDSA PKCS8 PEM with BadBase64")]
+fn corrupt_ecdsa_bad_base64(world: &mut UselessWorld) {
+    let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
+    world.ecdsa_corrupted_pem = Some(ecdsa.private_key_pkcs8_pem_corrupt(CorruptPem::BadBase64));
+}
+
+#[when(regex = r"^I corrupt the ECDSA PKCS8 PEM with Truncate to (\d+) bytes$")]
+fn corrupt_ecdsa_truncate(world: &mut UselessWorld, bytes: usize) {
+    let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
+    world.ecdsa_corrupted_pem =
+        Some(ecdsa.private_key_pkcs8_pem_corrupt(CorruptPem::Truncate { bytes }));
+}
+
+#[when("I corrupt the ECDSA PKCS8 PEM with ExtraBlankLine")]
+fn corrupt_ecdsa_extra_blank(world: &mut UselessWorld) {
+    let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
+    world.ecdsa_corrupted_pem =
+        Some(ecdsa.private_key_pkcs8_pem_corrupt(CorruptPem::ExtraBlankLine));
+}
+
 #[when(regex = r"^I truncate the ECDSA PKCS8 DER to (\d+) bytes$")]
 fn truncate_ecdsa_der(world: &mut UselessWorld, len: usize) {
     let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
@@ -1542,6 +1667,31 @@ fn ecdsa_corrupted_pem_contains(world: &mut UselessWorld, needle: String) {
     assert!(
         pem.contains(&needle),
         "expected ECDSA PEM to contain '{needle}'"
+    );
+}
+
+#[then(regex = r"^the corrupted ECDSA PEM should have length (\d+)$")]
+fn ecdsa_corrupted_pem_length(world: &mut UselessWorld, expected: usize) {
+    let pem = world
+        .ecdsa_corrupted_pem
+        .as_ref()
+        .expect("ecdsa_corrupted_pem not set");
+    assert_eq!(pem.len(), expected);
+}
+
+#[then("the corrupted ECDSA PEM should fail to parse")]
+fn ecdsa_corrupted_pem_fails(world: &mut UselessWorld) {
+    use p256::pkcs8::DecodePrivateKey as _;
+
+    let pem = world
+        .ecdsa_corrupted_pem
+        .as_ref()
+        .expect("ecdsa_corrupted_pem not set");
+    let p256_result = p256::SecretKey::from_pkcs8_pem(pem);
+    let p384_result = p384::SecretKey::from_pkcs8_pem(pem);
+    assert!(
+        p256_result.is_err() && p384_result.is_err(),
+        "corrupted ECDSA PEM should fail to parse"
     );
 }
 
@@ -4908,7 +5058,371 @@ fn pgp_debug_has_fingerprint(world: &mut UselessWorld) {
     );
 }
 
+// =============================================================================
+// JWT algorithm-variant sign steps
+// =============================================================================
+
+#[cfg(feature = "uk-jwt")]
+#[when(regex = r#"^I sign a JWT with the RSA key using ([A-Za-z0-9]+)$"#)]
+fn sign_jwt_with_rsa_alg(world: &mut UselessWorld, alg: String) {
+    let rsa = world.rsa.as_ref().expect("rsa not set");
+    let algorithm = jwt_algorithm_from_str(&alg);
+    let token = sign_jwt(rsa, algorithm, JWT_TEST_SUBJECT);
+    world.jwt_token = Some(token);
+    world.jwt_signed_with = Some(JwtSigner::Rsa);
+    world.jwt_algorithm = Some(algorithm);
+    reset_jwt_verification(world);
+}
+
+#[cfg(feature = "uk-jwt")]
+#[when(regex = r#"^I sign a JWT with the ECDSA key using ([A-Za-z0-9]+)$"#)]
+fn sign_jwt_with_ecdsa_alg(world: &mut UselessWorld, alg: String) {
+    let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
+    let algorithm = jwt_algorithm_from_str(&alg);
+    let token = sign_jwt(ecdsa, algorithm, JWT_TEST_SUBJECT);
+    world.jwt_token = Some(token);
+    world.jwt_signed_with = Some(JwtSigner::Ecdsa);
+    world.jwt_algorithm = Some(algorithm);
+    reset_jwt_verification(world);
+}
+
+#[cfg(feature = "uk-jwt")]
+#[when(regex = r#"^I sign a JWT with the HMAC key using ([A-Za-z0-9]+)$"#)]
+fn sign_jwt_with_hmac_alg(world: &mut UselessWorld, alg: String) {
+    let hmac = world.hmac.as_ref().expect("hmac not set");
+    let algorithm = jwt_algorithm_from_str(&alg);
+    let token = sign_jwt(hmac, algorithm, JWT_TEST_SUBJECT);
+    world.jwt_token = Some(token);
+    world.jwt_signed_with = Some(JwtSigner::Hmac);
+    world.jwt_algorithm = Some(algorithm);
+    reset_jwt_verification(world);
+}
+
+// =============================================================================
+// ring adapter steps
+// =============================================================================
+
+#[cfg(feature = "uk-ring")]
+#[when("I sign and verify test data using the ring RSA adapter")]
+fn ring_rsa_sign_verify(world: &mut UselessWorld) {
+    use ring::rand::SystemRandom;
+    use ring::signature;
+    use uselesskey_ring::RingRsaKeyPairExt;
+
+    let rsa = world.rsa.as_ref().expect("rsa not set");
+    let ring_kp = rsa.rsa_key_pair_ring();
+    let rng = SystemRandom::new();
+    let msg = b"uselesskey-bdd-ring-test";
+
+    let mut sig = vec![0u8; ring_kp.public().modulus_len()];
+    ring_kp
+        .sign(&signature::RSA_PKCS1_SHA256, &rng, msg, &mut sig)
+        .expect("ring RSA sign");
+
+    let public_key_bytes = ring_kp.public().as_ref();
+    let public_key =
+        signature::UnparsedPublicKey::new(&signature::RSA_PKCS1_2048_8192_SHA256, public_key_bytes);
+    public_key.verify(msg, &sig).expect("ring RSA verify");
+
+    world.adapter_round_trip_ok = Some(true);
+}
+
+#[cfg(feature = "uk-ring")]
+#[when("I sign and verify test data using the ring ECDSA adapter")]
+fn ring_ecdsa_sign_verify(world: &mut UselessWorld) {
+    use ring::rand::SystemRandom;
+    use ring::signature;
+    use ring::signature::KeyPair;
+    use uselesskey_ring::RingEcdsaKeyPairExt;
+
+    let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
+    let ring_kp = ecdsa.ecdsa_key_pair_ring();
+    let rng = SystemRandom::new();
+    let msg = b"uselesskey-bdd-ring-ecdsa-test";
+
+    let sig = ring_kp.sign(&rng, msg).expect("ring ECDSA sign");
+
+    let verify_alg = match ecdsa.spec().curve_name() {
+        "P-256" => &signature::ECDSA_P256_SHA256_ASN1,
+        "P-384" => &signature::ECDSA_P384_SHA384_ASN1,
+        other => panic!("unsupported curve: {other}"),
+    };
+    let public_key_bytes = ring_kp.public_key().as_ref();
+    let public_key = signature::UnparsedPublicKey::new(verify_alg, public_key_bytes);
+    public_key
+        .verify(msg, sig.as_ref())
+        .expect("ring ECDSA verify");
+
+    world.adapter_round_trip_ok = Some(true);
+}
+
+#[cfg(feature = "uk-ring")]
+#[when("I sign and verify test data using the ring Ed25519 adapter")]
+fn ring_ed25519_sign_verify(world: &mut UselessWorld) {
+    use ring::signature;
+    use ring::signature::KeyPair;
+    use uselesskey_ring::RingEd25519KeyPairExt;
+
+    let ed = world.ed25519.as_ref().expect("ed25519 not set");
+    let ring_kp = ed.ed25519_key_pair_ring();
+    let msg = b"uselesskey-bdd-ring-ed25519-test";
+
+    let sig = ring_kp.sign(msg);
+
+    let public_key_bytes = ring_kp.public_key().as_ref();
+    let public_key = signature::UnparsedPublicKey::new(&signature::ED25519, public_key_bytes);
+    public_key
+        .verify(msg, sig.as_ref())
+        .expect("ring Ed25519 verify");
+
+    world.adapter_round_trip_ok = Some(true);
+}
+
+// =============================================================================
+// rustls adapter steps
+// =============================================================================
+
+#[cfg(feature = "uk-rustls")]
+#[when("I convert the X.509 certificate to rustls types")]
+fn rustls_convert_x509(world: &mut UselessWorld) {
+    use uselesskey_rustls::{RustlsCertExt, RustlsPrivateKeyExt};
+
+    let x509 = world.x509.as_ref().expect("x509 not set");
+    let cert_der = x509.certificate_der_rustls();
+    let key_der = x509.private_key_der_rustls();
+
+    world.rustls_cert_der_len = Some(cert_der.as_ref().len());
+    world.rustls_key_der_len = Some(key_der.secret_der().len());
+}
+
+#[cfg(feature = "uk-rustls")]
+#[when("I convert the certificate chain to rustls types")]
+fn rustls_convert_chain(world: &mut UselessWorld) {
+    use uselesskey_rustls::{RustlsChainExt, RustlsPrivateKeyExt};
+
+    let chain = world.x509_chain.as_ref().expect("x509 chain not set");
+    let chain_certs = chain.chain_der_rustls();
+    let root = chain.root_certificate_der_rustls();
+    let _key = chain.private_key_der_rustls();
+
+    world.rustls_chain_cert_count = Some(chain_certs.len());
+    world.rustls_root_cert_len = Some(root.as_ref().len());
+}
+
+#[cfg(feature = "uk-rustls")]
+#[when("I convert the key pair to a rustls PrivateKeyDer")]
+fn rustls_convert_rsa_key(world: &mut UselessWorld) {
+    use uselesskey_rustls::RustlsPrivateKeyExt;
+
+    let rsa = world.rsa.as_ref().expect("rsa not set");
+    let key = rsa.private_key_der_rustls();
+    world.rustls_key_der_len = Some(key.secret_der().len());
+}
+
+#[cfg(feature = "uk-rustls")]
+#[when("I convert the ECDSA key pair to a rustls PrivateKeyDer")]
+fn rustls_convert_ecdsa_key(world: &mut UselessWorld) {
+    use uselesskey_rustls::RustlsPrivateKeyExt;
+
+    let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
+    let key = ecdsa.private_key_der_rustls();
+    world.rustls_key_der_len = Some(key.secret_der().len());
+}
+
+#[cfg(feature = "uk-rustls")]
+#[when("I convert the Ed25519 key pair to a rustls PrivateKeyDer")]
+fn rustls_convert_ed25519_key(world: &mut UselessWorld) {
+    use uselesskey_rustls::RustlsPrivateKeyExt;
+
+    let ed = world.ed25519.as_ref().expect("ed25519 not set");
+    let key = ed.private_key_der_rustls();
+    world.rustls_key_der_len = Some(key.secret_der().len());
+}
+
+#[cfg(feature = "uk-rustls")]
+#[then("the rustls certificate DER should be non-empty")]
+fn rustls_cert_non_empty(world: &mut UselessWorld) {
+    let len = world.rustls_cert_der_len.expect("rustls cert DER not set");
+    assert!(len > 0, "rustls certificate DER should be non-empty");
+}
+
+#[cfg(feature = "uk-rustls")]
+#[then("the rustls private key DER should be non-empty")]
+fn rustls_key_non_empty(world: &mut UselessWorld) {
+    let len = world.rustls_key_der_len.expect("rustls key DER not set");
+    assert!(len > 0, "rustls private key DER should be non-empty");
+}
+
+#[cfg(feature = "uk-rustls")]
+#[then(regex = r"^the rustls chain should have (\d+) certificates$")]
+fn rustls_chain_count(world: &mut UselessWorld, expected: usize) {
+    let count = world
+        .rustls_chain_cert_count
+        .expect("rustls chain count not set");
+    assert_eq!(count, expected, "rustls chain certificate count mismatch");
+}
+
+#[cfg(feature = "uk-rustls")]
+#[then("the rustls root certificate should be non-empty")]
+fn rustls_root_non_empty(world: &mut UselessWorld) {
+    let len = world
+        .rustls_root_cert_len
+        .expect("rustls root cert not set");
+    assert!(len > 0, "rustls root certificate should be non-empty");
+}
+
+// =============================================================================
+// RustCrypto adapter steps
+// =============================================================================
+
+#[cfg(feature = "uk-rustcrypto")]
+#[when("I sign and verify test data using the RustCrypto RSA adapter")]
+fn rustcrypto_rsa_sign_verify(world: &mut UselessWorld) {
+    use rsa::pkcs1v15::{SigningKey, VerifyingKey};
+    use rsa::signature::Verifier;
+    use sha2::Sha256;
+    use uselesskey_rustcrypto::RustCryptoRsaExt;
+
+    let keypair = world.rsa.as_ref().expect("rsa not set");
+    let private_key = keypair.rsa_private_key();
+    let public_key = keypair.rsa_public_key();
+    let msg = b"uselesskey-bdd-rustcrypto-rsa-test";
+
+    let signing_key = SigningKey::<Sha256>::new_unprefixed(private_key);
+    let signature = rsa::signature::Signer::sign(&signing_key, msg);
+
+    let verifying_key = VerifyingKey::<Sha256>::new_unprefixed(public_key);
+    verifying_key
+        .verify(msg, &signature)
+        .expect("RustCrypto RSA verify");
+
+    world.adapter_round_trip_ok = Some(true);
+}
+
+#[cfg(feature = "uk-rustcrypto")]
+#[when("I sign and verify test data using the RustCrypto ECDSA P-256 adapter")]
+fn rustcrypto_p256_sign_verify(world: &mut UselessWorld) {
+    use p256::ecdsa::signature::{Signer, Verifier};
+    use uselesskey_rustcrypto::RustCryptoEcdsaExt;
+
+    let keypair = world.ecdsa.as_ref().expect("ecdsa not set");
+    let signing_key = keypair.p256_signing_key();
+    let verifying_key = keypair.p256_verifying_key();
+    let msg = b"uselesskey-bdd-rustcrypto-p256-test";
+
+    let signature: p256::ecdsa::Signature = signing_key.sign(msg);
+    verifying_key
+        .verify(msg, &signature)
+        .expect("RustCrypto P-256 verify");
+
+    world.adapter_round_trip_ok = Some(true);
+}
+
+#[cfg(feature = "uk-rustcrypto")]
+#[when("I sign and verify test data using the RustCrypto ECDSA P-384 adapter")]
+fn rustcrypto_p384_sign_verify(world: &mut UselessWorld) {
+    use p384::ecdsa::signature::{Signer, Verifier};
+    use uselesskey_rustcrypto::RustCryptoEcdsaExt;
+
+    let keypair = world.ecdsa.as_ref().expect("ecdsa not set");
+    let signing_key = keypair.p384_signing_key();
+    let verifying_key = keypair.p384_verifying_key();
+    let msg = b"uselesskey-bdd-rustcrypto-p384-test";
+
+    let signature: p384::ecdsa::Signature = signing_key.sign(msg);
+    verifying_key
+        .verify(msg, &signature)
+        .expect("RustCrypto P-384 verify");
+
+    world.adapter_round_trip_ok = Some(true);
+}
+
+#[cfg(feature = "uk-rustcrypto")]
+#[when("I sign and verify test data using the RustCrypto Ed25519 adapter")]
+fn rustcrypto_ed25519_sign_verify(world: &mut UselessWorld) {
+    use ed25519_dalek::Signer;
+    use ed25519_dalek::Verifier;
+    use uselesskey_rustcrypto::RustCryptoEd25519Ext;
+
+    let keypair = world.ed25519.as_ref().expect("ed25519 not set");
+    let signing_key = keypair.ed25519_signing_key();
+    let verifying_key = keypair.ed25519_verifying_key();
+    let msg = b"uselesskey-bdd-rustcrypto-ed25519-test";
+
+    let signature = signing_key.sign(msg);
+    verifying_key
+        .verify(msg, &signature)
+        .expect("RustCrypto Ed25519 verify");
+
+    world.adapter_round_trip_ok = Some(true);
+}
+
+#[cfg(feature = "uk-rustcrypto")]
+#[when("I compute and verify a HMAC-SHA256 tag using the RustCrypto adapter")]
+fn rustcrypto_hmac_sign_verify(world: &mut UselessWorld) {
+    use hmac::Mac;
+    use uselesskey_rustcrypto::RustCryptoHmacExt;
+
+    let secret = world.hmac.as_ref().expect("hmac not set");
+    let msg = b"uselesskey-bdd-rustcrypto-hmac-test";
+
+    let mut mac = secret.hmac_sha256();
+    mac.update(msg);
+    let result = mac.finalize();
+
+    let mut mac2 = secret.hmac_sha256();
+    mac2.update(msg);
+    mac2.verify(&result.into_bytes())
+        .expect("RustCrypto HMAC verify");
+
+    world.adapter_round_trip_ok = Some(true);
+}
+
+// Shared adapter assertion step
+#[cfg(any(feature = "uk-ring", feature = "uk-rustcrypto"))]
+#[then("the adapter round-trip should succeed")]
+fn adapter_round_trip_ok(world: &mut UselessWorld) {
+    assert_eq!(
+        world.adapter_round_trip_ok,
+        Some(true),
+        "adapter sign/verify round-trip should succeed"
+    );
+}
+
 /// Execute the BDD suite from the selected test harness.
+///
+/// Scenarios tagged with adapter names (e.g. `@ring`, `@rustls`) are skipped
+/// when the corresponding feature is not enabled.
 pub async fn run() {
-    UselessWorld::run("features").await;
+    UselessWorld::cucumber()
+        .filter_run_and_exit("features", |feature, _rule, scenario| {
+            adapter_scenario_enabled(feature, scenario)
+        })
+        .await;
+}
+
+fn adapter_scenario_enabled(
+    feature: &cucumber::gherkin::Feature,
+    scenario: &cucumber::gherkin::Scenario,
+) -> bool {
+    let mut tags: Vec<&str> = scenario.tags.iter().map(|s| s.as_str()).collect();
+    tags.extend(feature.tags.iter().map(|s| s.as_str()));
+
+    if tags.contains(&"ring") && !cfg!(feature = "uk-ring") {
+        return false;
+    }
+    if tags.contains(&"rustls") && !cfg!(feature = "uk-rustls") {
+        return false;
+    }
+    if tags.contains(&"rustcrypto") && !cfg!(feature = "uk-rustcrypto") {
+        return false;
+    }
+    if tags.contains(&"aws-lc-rs") && !cfg!(feature = "uk-aws-lc-rs") {
+        return false;
+    }
+    if tags.contains(&"tonic") && !cfg!(feature = "uk-tonic") {
+        return false;
+    }
+
+    true
 }

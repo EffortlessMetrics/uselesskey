@@ -3400,14 +3400,17 @@ dependencies = [
  "base64",
  "cucumber",
  "ed25519-dalek",
+ "hmac",
  "jsonwebtoken",
  "p256",
  "p384",
  "pgp",
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
+ "ring",
  "rsa",
  "serde_json",
+ "sha2",
  "uselesskey",
  "uselesskey-aws-lc-rs",
  "uselesskey-core",
@@ -3496,6 +3499,7 @@ dependencies = [
 name = "uselesskey-core-jwk-builder"
 version = "0.3.0"
 dependencies = [
+ "insta",
  "proptest",
  "serde_json",
  "uselesskey-core-jwk-shape",
@@ -3726,16 +3730,25 @@ dependencies = [
 name = "uselesskey-interop-tests"
 version = "0.0.0"
 dependencies = [
+ "aws-lc-rs",
  "ed25519-dalek",
+ "jsonwebtoken",
  "p256",
  "ring",
  "rsa",
+ "rustls",
+ "rustls-pki-types",
+ "serde",
+ "serde_json",
  "sha2",
  "signature",
  "uselesskey-core",
  "uselesskey-ecdsa",
  "uselesskey-ed25519",
+ "uselesskey-jsonwebtoken",
  "uselesskey-rsa",
+ "uselesskey-rustls",
+ "uselesskey-x509",
 ]
 
 [[package]]
@@ -3756,6 +3769,7 @@ dependencies = [
 name = "uselesskey-jwk"
 version = "0.3.0"
 dependencies = [
+ "insta",
  "serde_json",
  "uselesskey-core-jwk",
  "uselesskey-core-jwk-builder",
@@ -3765,8 +3779,10 @@ dependencies = [
 name = "uselesskey-pgp"
 version = "0.3.0"
 dependencies = [
+ "insta",
  "pgp",
  "proptest",
+ "serde_json",
  "uselesskey-core",
 ]
 
