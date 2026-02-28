@@ -1,0 +1,20 @@
+---
+source: crates/uselesskey-x509/tests/snapshots_x509.rs
+assertion_line: 193
+expression: cert_metadata(expired.cert_der())
+---
+version: V3
+subject: CN=expired.snapshot.example.com
+issuer: CN=expired.snapshot.example.com
+serial: "3b:73:bf:86:09:0a:f8:d9:7e:94:4a:34:24:c2:67:99"
+signature_algorithm: 1.2.840.113549.1.1.11
+not_before: "Mon, 25 Dec 2023 00:00:00 +0000"
+not_after: "Tue, 24 Dec 2024 00:00:00 +0000"
+is_ca: false
+extensions:
+  - oid: 2.5.29.15
+    critical: true
+    parsed: "KeyUsage(digital_signature=true, key_encipherment=true, key_cert_sign=false, crl_sign=false)"
+  - oid: 2.5.29.37
+    critical: false
+    parsed: "ExtendedKeyUsage(server_auth=true, client_auth=true)"

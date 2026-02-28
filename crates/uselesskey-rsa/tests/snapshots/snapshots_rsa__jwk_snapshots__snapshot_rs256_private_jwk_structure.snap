@@ -1,0 +1,16 @@
+---
+source: crates/uselesskey-rsa/tests/snapshots_rsa.rs
+expression: jwk
+---
+alg: RS256
+d: "[REDACTED]"
+dp: "[REDACTED]"
+dq: "[REDACTED]"
+e: "[REDACTED]"
+kid: ptKUQ96fHKy1sBMD
+kty: RSA
+n: "[REDACTED]"
+p: "[REDACTED]"
+q: "[REDACTED]"
+qi: "[REDACTED]"
+use: sig

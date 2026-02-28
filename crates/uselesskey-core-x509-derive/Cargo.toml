@@ -21,6 +21,7 @@ time = "0.3"
 
 [dev-dependencies]
 rand_chacha.workspace = true
+uselesskey-core-hash = { workspace = true }
 
 [package.metadata.docs.rs]
 all-features = true

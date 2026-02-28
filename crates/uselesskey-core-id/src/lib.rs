@@ -1,6 +1,14 @@
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
+//! Core identity and deterministic derivation primitives for uselesskey.
+//!
+//! An [`ArtifactId`] uniquely identifies a fixture via `(domain, label,
+//! spec_fingerprint, variant, derivation_version)`. The [`derive_seed`]
+//! function transforms a master [`Seed`] and an `ArtifactId` into a
+//! per-artifact seed using BLAKE3 keyed hashing, ensuring order-independent
+//! determinism across tests.
+
 extern crate alloc;
 
 use alloc::string::String;

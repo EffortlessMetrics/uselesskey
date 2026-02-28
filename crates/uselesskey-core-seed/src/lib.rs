@@ -1,6 +1,13 @@
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
+//! Master seed parsing and redaction for uselesskey deterministic mode.
+//!
+//! [`Seed`] wraps a 32-byte value used as the root of deterministic fixture
+//! derivation. It can be constructed from raw bytes or parsed from a hex string
+//! or arbitrary passphrase via [`Seed::from_env_value`]. Its `Debug` impl
+//! always prints `Seed(**redacted**)` to prevent accidental key leakage.
+
 extern crate alloc;
 
 use alloc::string::String;

@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-token/tests/snapshots_token.rs
+assertion_line: 102
+expression: info
+---
+spec: api_key
+values_match: true

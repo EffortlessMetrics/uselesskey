@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-rsa/tests/snapshots_rsa.rs
+expression: "serde_json::json!({ \"kid\": kid, \"alg\": alg, \"kty\": kty, \"use\": use_, })"
+---
+alg: RS256
+kid: ptKUQ96fHKy1sBMD
+kty: RSA
+use: sig

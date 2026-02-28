@@ -1,5 +1,13 @@
 #![forbid(unsafe_code)]
 
+//! PKCS#8 / SPKI key-material helpers shared by asymmetric fixture crates.
+//!
+//! [`Pkcs8SpkiKeyMaterial`] bundles private (PKCS#8) and public (SPKI) keys in
+//! both DER and PEM form, plus convenience accessors for temp-file writing,
+//! deterministic corruption (negative fixtures), and stable `kid` generation.
+//!
+//! Used by `uselesskey-rsa`, `uselesskey-ecdsa`, and `uselesskey-ed25519`.
+
 use std::fmt;
 use std::sync::Arc;
 

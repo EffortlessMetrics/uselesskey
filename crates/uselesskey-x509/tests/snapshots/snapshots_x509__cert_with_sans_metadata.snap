@@ -1,0 +1,23 @@
+---
+source: crates/uselesskey-x509/tests/snapshots_x509.rs
+assertion_line: 179
+expression: cert_metadata(cert.cert_der())
+---
+version: V3
+subject: CN=san.snapshot.example.com
+issuer: CN=san.snapshot.example.com
+serial: "67:20:06:00:8d:6b:9f:93:11:04:5a:be:1d:35:b1:2c"
+signature_algorithm: 1.2.840.113549.1.1.11
+not_before: "Thu, 25 Dec 2025 00:00:00 +0000"
+not_after: "Sun, 23 Dec 2035 00:00:00 +0000"
+is_ca: false
+extensions:
+  - oid: 2.5.29.17
+    critical: false
+    parsed: "SubjectAlternativeName([\"DNSName(alt.snapshot.example.com)\", \"DNSName(san.snapshot.example.com)\"])"
+  - oid: 2.5.29.15
+    critical: true
+    parsed: "KeyUsage(digital_signature=true, key_encipherment=true, key_cert_sign=false, crl_sign=false)"
+  - oid: 2.5.29.37
+    critical: false
+    parsed: "ExtendedKeyUsage(server_auth=true, client_auth=true)"

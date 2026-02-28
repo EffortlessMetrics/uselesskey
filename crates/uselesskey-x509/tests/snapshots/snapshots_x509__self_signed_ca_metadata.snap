@@ -1,0 +1,23 @@
+---
+source: crates/uselesskey-x509/tests/snapshots_x509.rs
+assertion_line: 162
+expression: cert_metadata(cert.cert_der())
+---
+version: V3
+subject: CN=ca.snapshot.example.com
+issuer: CN=ca.snapshot.example.com
+serial: "53:a3:f3:f0:68:8f:8b:79:d2:46:96:b4:02:6d:92:81"
+signature_algorithm: 1.2.840.113549.1.1.11
+not_before: "Mon, 10 Feb 2025 00:00:00 +0000"
+not_after: "Thu, 08 Feb 2035 00:00:00 +0000"
+is_ca: true
+extensions:
+  - oid: 2.5.29.15
+    critical: true
+    parsed: "KeyUsage(digital_signature=true, key_encipherment=false, key_cert_sign=true, crl_sign=true)"
+  - oid: 2.5.29.14
+    critical: false
+    parsed: other
+  - oid: 2.5.29.19
+    critical: true
+    parsed: "BasicConstraints(ca=true, pathlen=None)"

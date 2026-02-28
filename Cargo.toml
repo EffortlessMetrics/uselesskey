@@ -97,6 +97,7 @@ tempfile = "3.24.0"
 uselesskey-core-sink = { path = "crates/uselesskey-core-sink", version = "0.3.0" }
 
 # testing
+insta = { version = "1.42.2", features = ["yaml", "redactions"] }
 proptest = "1.10.0"
 rstest = "0.26.1"
 

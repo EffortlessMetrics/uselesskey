@@ -1,0 +1,9 @@
+---
+source: crates/uselesskey-token/tests/snapshots_token.rs
+assertion_line: 44
+description: "Bearer token: base64url body with Bearer auth scheme"
+expression: info
+---
+authorization_header_prefix: "Bearer "
+is_base64url_chars: true
+len: 43

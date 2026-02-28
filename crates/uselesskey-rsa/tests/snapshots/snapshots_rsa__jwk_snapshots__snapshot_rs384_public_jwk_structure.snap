@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-rsa/tests/snapshots_rsa.rs
+expression: jwk
+---
+alg: RS384
+e: "[REDACTED]"
+kid: IQpgyE6LJ-yyCNAg
+kty: RSA
+n: "[REDACTED]"
+use: sig

@@ -1,0 +1,11 @@
+---
+source: crates/uselesskey-hmac/tests/snapshots_hmac.rs
+assertion_line: 48
+description: "HS512 JWK structure — redact secret material, keep shape"
+expression: jwk
+---
+alg: HS512
+k: "[secret]"
+kid: "[kid]"
+kty: oct
+use: sig

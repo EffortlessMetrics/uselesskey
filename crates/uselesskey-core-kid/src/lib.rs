@@ -1,5 +1,13 @@
 #![forbid(unsafe_code)]
 
+//! Deterministic key-ID (`kid`) generation for uselesskey fixture crates.
+//!
+//! Derives a stable, URL-safe key identifier from raw key bytes using BLAKE3
+//! and base64url encoding. The default output uses 12 bytes (96 bits) of the
+//! hash, which is sufficient to avoid collisions in test-fixture contexts.
+//!
+//! Primary function: [`kid_from_bytes`].
+
 use base64::Engine as _;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 

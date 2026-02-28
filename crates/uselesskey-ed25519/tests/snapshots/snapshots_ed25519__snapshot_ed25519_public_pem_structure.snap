@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-ed25519/tests/snapshots_ed25519.rs
+expression: redacted
+---
+-----BEGIN PUBLIC KEY-----
+[REDACTED]
+-----END PUBLIC KEY-----

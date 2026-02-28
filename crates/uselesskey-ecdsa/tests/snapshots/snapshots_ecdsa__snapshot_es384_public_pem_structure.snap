@@ -1,0 +1,9 @@
+---
+source: crates/uselesskey-ecdsa/tests/snapshots_ecdsa.rs
+expression: redacted
+---
+-----BEGIN PUBLIC KEY-----
+[REDACTED]
+[REDACTED]
+[REDACTED]
+-----END PUBLIC KEY-----

@@ -1,0 +1,15 @@
+---
+source: crates/uselesskey-token/tests/snapshots_token.rs
+assertion_line: 131
+description: All token kinds side by side — shape comparison
+expression: info
+---
+api_key:
+  len: 40
+  starts_with_prefix: true
+bearer:
+  has_dot_segments: false
+  len: 43
+oauth:
+  has_dot_segments: true
+  segment_count: 3

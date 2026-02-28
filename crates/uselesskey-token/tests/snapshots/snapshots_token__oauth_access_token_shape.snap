@@ -1,0 +1,16 @@
+---
+source: crates/uselesskey-token/tests/snapshots_token.rs
+assertion_line: 87
+description: "OAuth access token: JWT shape with 3 segments, RS256 header, issuer payload"
+expression: info
+---
+authorization_header_prefix: "Bearer "
+header:
+  alg: RS256
+  typ: JWT
+payload:
+  has_exp: true
+  has_iat: false
+  iss: uselesskey
+  sub: snapshot-issuer
+segment_count: 3

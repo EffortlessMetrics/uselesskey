@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-ecdsa/tests/snapshots_ecdsa.rs
+expression: redacted
+---
+-----BEGIN PRIVATE KEY-----
+[REDACTED]
+[REDACTED]
+[REDACTED]
+[REDACTED]
+-----END PRIVATE KEY-----

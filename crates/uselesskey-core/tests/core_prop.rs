@@ -52,6 +52,46 @@ fn deterministic_is_order_independent_for_cache_keys() {
     assert_eq!(*b, *b2);
 }
 
+#[test]
+fn factory_debug_output_is_not_empty() {
+    let fx = Factory::deterministic(Seed::new([1u8; 32]));
+    let dbg = format!("{fx:?}");
+    assert!(
+        dbg.contains("Factory"),
+        "Debug should mention type name, got: {dbg}"
+    );
+}
+
+#[test]
+fn clear_cache_evicts_entries() {
+    let fx = Factory::random();
+    let counter = std::sync::atomic::AtomicUsize::new(0);
+
+    let _first = fx.get_or_init("domain:test", "lbl", b"spec", "good", |_rng| {
+        counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        42u8
+    });
+    // Cached — init closure should NOT run again.
+    let _second = fx.get_or_init("domain:test", "lbl", b"spec", "good", |_rng| {
+        counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        99u8
+    });
+    assert_eq!(counter.load(std::sync::atomic::Ordering::SeqCst), 1);
+
+    fx.clear_cache();
+
+    // After clear, init MUST run again.
+    let _third = fx.get_or_init("domain:test", "lbl", b"spec", "good", |_rng| {
+        counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        77u8
+    });
+    assert_eq!(
+        counter.load(std::sync::atomic::Ordering::SeqCst),
+        2,
+        "clear_cache must evict"
+    );
+}
+
 proptest! {
     #[test]
     fn deterministic_factory_returns_same_value_for_same_id(seed_bytes in any::<[u8;32]>(), label in "[-_a-zA-Z0-9]{1,32}") {

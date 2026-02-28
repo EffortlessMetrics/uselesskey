@@ -1,0 +1,23 @@
+---
+source: crates/uselesskey-x509/tests/snapshots_x509.rs
+assertion_line: 240
+expression: cert_metadata(chain.leaf_cert_der())
+---
+version: V3
+subject: CN=chain.snapshot.example.com
+issuer: CN=chain.snapshot.example.com Intermediate CA
+serial: "06:a0:39:65:50:0a:e6:65:6e:73:22:19:64:e1:52:54"
+signature_algorithm: 1.2.840.113549.1.1.11
+not_before: "Sat, 05 Jul 2025 00:00:00 +0000"
+not_after: "Tue, 03 Jul 2035 00:00:00 +0000"
+is_ca: false
+extensions:
+  - oid: 2.5.29.17
+    critical: false
+    parsed: "SubjectAlternativeName([\"DNSName(chain.snapshot.example.com)\"])"
+  - oid: 2.5.29.15
+    critical: true
+    parsed: "KeyUsage(digital_signature=true, key_encipherment=true, key_cert_sign=false, crl_sign=false)"
+  - oid: 2.5.29.37
+    critical: false
+    parsed: "ExtendedKeyUsage(server_auth=true, client_auth=true)"

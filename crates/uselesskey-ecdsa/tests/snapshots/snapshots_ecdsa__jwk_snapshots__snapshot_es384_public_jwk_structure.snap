@@ -1,0 +1,11 @@
+---
+source: crates/uselesskey-ecdsa/tests/snapshots_ecdsa.rs
+expression: redacted
+---
+alg: ES384
+crv: P-384
+kid: "[REDACTED]"
+kty: EC
+use: sig
+x: "[REDACTED]"
+y: "[REDACTED]"

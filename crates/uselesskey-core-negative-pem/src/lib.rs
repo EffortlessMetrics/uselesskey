@@ -1,6 +1,14 @@
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
+//! PEM-focused negative-fixture corruption helpers.
+//!
+//! Provides [`CorruptPem`] strategies (bad header, bad footer, bad base64,
+//! truncation, extra blank lines) and the [`corrupt_pem`] /
+//! [`corrupt_pem_deterministic`] functions. Deterministic corruption derives
+//! the strategy from a variant string so the same variant always produces the
+//! same corruption shape.
+
 extern crate alloc;
 
 use alloc::string::{String, ToString};

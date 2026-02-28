@@ -252,8 +252,8 @@ const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-core-negative-pem",
     "uselesskey-core-negative",
     "uselesskey-core-sink",
-    "uselesskey-core-token",
     "uselesskey-core-token-shape",
+    "uselesskey-core-token",
     "uselesskey-core-jwk-shape",
     "uselesskey-core-jwks-order",
     "uselesskey-core-jwk-builder",
@@ -313,7 +313,11 @@ fn publish() -> Result<()> {
                 || stderr.contains("no matching package")
                 || stderr.to_lowercase().contains("not found");
 
-            if retriable {
+            if stderr.contains("is already uploaded") {
+                eprintln!("    {name} already published, skipping.");
+                success = true;
+                break;
+            } else if retriable {
                 eprintln!("    Dependency indexing race detected. Waiting 60s before retry...");
                 std::thread::sleep(std::time::Duration::from_secs(60));
             } else {

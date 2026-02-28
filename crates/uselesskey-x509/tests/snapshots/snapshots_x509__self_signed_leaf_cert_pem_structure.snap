@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-x509/tests/snapshots_x509.rs
+assertion_line: 134
+expression: pem_structure(cert.cert_pem())
+---
+header: "-----BEGIN CERTIFICATE-----"
+footer: "-----END CERTIFICATE-----"
+body_lines: "[16 base64 lines]"

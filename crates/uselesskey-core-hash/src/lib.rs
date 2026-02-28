@@ -1,6 +1,14 @@
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
+//! BLAKE3 hashing primitives shared across uselesskey derivation paths.
+//!
+//! Provides [`hash32`] for simple digests and [`write_len_prefixed`] for
+//! length-prefixed streaming into a [`Hasher`]. Length-prefixing preserves
+//! field boundaries so that `("a","bc")` and `("ab","c")` yield distinct hashes.
+//!
+//! Re-exports [`blake3::Hash`] and [`blake3::Hasher`] for downstream convenience.
+
 pub use blake3::{Hash, Hasher};
 
 /// Compute a BLAKE3 digest over input bytes.

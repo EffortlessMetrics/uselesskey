@@ -1,0 +1,11 @@
+---
+source: crates/uselesskey-hmac/tests/snapshots_hmac.rs
+assertion_line: 32
+description: "HS384 JWK structure — redact secret material, keep shape"
+expression: jwk
+---
+alg: HS384
+k: "[secret]"
+kid: "[kid]"
+kty: oct
+use: sig

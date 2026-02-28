@@ -1,6 +1,15 @@
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
+//! Identity-keyed typed cache for uselesskey fixture factories.
+//!
+//! Stores generated artifacts (key material, certificates, tokens) behind
+//! `Arc<dyn Any>`, keyed by [`ArtifactId`].
+//! Uses `DashMap` with `std` or a `spin::Mutex<BTreeMap>` in `no_std` mode.
+//!
+//! The main entry point is [`ArtifactCache`], which supports typed
+//! insert-if-absent and retrieval to avoid redundant key generation.
+
 extern crate alloc;
 
 #[cfg(not(feature = "std"))]

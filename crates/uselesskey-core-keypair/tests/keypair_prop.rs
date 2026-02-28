@@ -5,9 +5,8 @@ use uselesskey_core_keypair::Pkcs8SpkiKeyMaterial;
 /// Strategy for generating fake PEM-like strings with a given label.
 fn fake_pem(label: &'static str) -> impl Strategy<Value = String> {
     // Generate a base64-like body (4-128 chars of valid base64 alphabet).
-    "[A-Za-z0-9+/]{4,128}".prop_map(move |body| {
-        format!("-----BEGIN {label}-----\n{body}\n-----END {label}-----\n")
-    })
+    "[A-Za-z0-9+/]{4,128}"
+        .prop_map(move |body| format!("-----BEGIN {label}-----\n{body}\n-----END {label}-----\n"))
 }
 
 proptest! {

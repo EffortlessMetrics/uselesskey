@@ -1,0 +1,13 @@
+---
+source: crates/uselesskey-rsa/tests/snapshots_rsa.rs
+expression: redacted
+---
+-----BEGIN PUBLIC KEY-----
+[REDACTED]
+[REDACTED]
+[REDACTED]
+[REDACTED]
+[REDACTED]
+[REDACTED]
+[REDACTED]
+-----END PUBLIC KEY-----

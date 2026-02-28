@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-ed25519/tests/snapshots_ed25519.rs
+expression: redacted
+---
+-----BEGIN PRIVATE KEY-----
+[REDACTED]
+[REDACTED]
+-----END PRIVATE KEY-----

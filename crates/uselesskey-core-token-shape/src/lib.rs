@@ -1,5 +1,13 @@
 #![forbid(unsafe_code)]
 
+//! Token shape generation primitives for uselesskey token fixtures.
+//!
+//! Generates realistic-looking but non-functional tokens in three shapes:
+//! API keys (`uk_test_<base62>`), opaque bearer tokens (base64url), and
+//! OAuth/JWT-shaped access tokens (`header.payload.signature`).
+//!
+//! Primary entry point: [`generate_token`] dispatches by [`TokenKind`].
+
 use base64::Engine as _;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use rand_core::RngCore;

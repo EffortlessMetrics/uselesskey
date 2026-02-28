@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-x509/tests/snapshots_x509.rs
+assertion_line: 146
+expression: pem_structure(cert.private_key_pkcs8_pem())
+---
+header: "-----BEGIN PRIVATE KEY-----"
+footer: "-----END PRIVATE KEY-----"
+body_lines: "[26 base64 lines]"

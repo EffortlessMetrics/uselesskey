@@ -31,5 +31,7 @@ jwk = ["dep:serde_json", "dep:base64", "dep:uselesskey-jwk"]
 features = ["jwk"]
 
 [dev-dependencies]
+insta = { workspace = true }
 proptest.workspace = true
 rstest.workspace = true
+serde_json = { workspace = true }

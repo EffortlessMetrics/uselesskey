@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-token/tests/snapshots_token.rs
+assertion_line: 22
+description: "API key shape: uk_test_ prefix + 32 alphanumeric chars"
+expression: info
+---
+prefix: uk_test_
+suffix_is_alphanumeric: true
+suffix_len: 32
+total_len: 40

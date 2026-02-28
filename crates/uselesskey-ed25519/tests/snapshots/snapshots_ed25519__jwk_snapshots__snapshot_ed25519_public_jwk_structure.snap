@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-ed25519/tests/snapshots_ed25519.rs
+expression: redacted
+---
+alg: EdDSA
+crv: Ed25519
+kid: "[REDACTED]"
+kty: OKP
+use: sig
+x: "[REDACTED]"
