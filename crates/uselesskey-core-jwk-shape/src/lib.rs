@@ -4,6 +4,34 @@
 //!
 //! Provides structured JWK types ([`RsaPublicJwk`], [`EcPublicJwk`], [`OkpPublicJwk`], etc.)
 //! and [`Jwks`] for serializing collections of JWK values.
+//!
+//! # Examples
+//!
+//! Build an Ed25519 public JWK and serialize it to JSON:
+//!
+//! ```
+//! use uselesskey_core_jwk_shape::{OkpPublicJwk, PublicJwk, Jwks, AnyJwk};
+//!
+//! let jwk = OkpPublicJwk {
+//!     kty: "OKP",
+//!     use_: "sig",
+//!     alg: "EdDSA",
+//!     crv: "Ed25519",
+//!     kid: "my-key-1".to_string(),
+//!     x: "dGVzdC1wdWJsaWMta2V5".to_string(),
+//! };
+//!
+//! // Wrap in the enum and convert to a JSON value
+//! let public = PublicJwk::Okp(jwk);
+//! let value = public.to_value();
+//! assert_eq!(value["kty"], "OKP");
+//! assert_eq!(value["kid"], "my-key-1");
+//!
+//! // Collect into a JWKS
+//! let jwks = Jwks { keys: vec![AnyJwk::Public(public)] };
+//! let json = jwks.to_value();
+//! assert_eq!(json["keys"].as_array().unwrap().len(), 1);
+//! ```
 
 use serde::Serialize;
 use serde_json::Value;

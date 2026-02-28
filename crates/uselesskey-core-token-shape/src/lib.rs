@@ -1,5 +1,33 @@
 #![forbid(unsafe_code)]
 
+//! Token shape generation primitives for test fixtures.
+//!
+//! Generates realistic-looking API keys, bearer tokens, and OAuth access
+//! tokens from any [`RngCore`] source — including a seeded RNG for
+//! deterministic tests.
+//!
+//! # Examples
+//!
+//! ```
+//! use rand_chacha::ChaCha20Rng;
+//! use rand_core::SeedableRng;
+//! use uselesskey_core_token_shape::{generate_token, TokenKind, authorization_scheme};
+//!
+//! let mut rng = ChaCha20Rng::from_seed([42u8; 32]);
+//!
+//! // Generate an API key (prefixed with `uk_test_`)
+//! let api_key = generate_token("my-service", TokenKind::ApiKey, &mut rng);
+//! assert!(api_key.starts_with("uk_test_"));
+//!
+//! // Generate a bearer token (base64url-encoded random bytes)
+//! let bearer = generate_token("my-service", TokenKind::Bearer, &mut rng);
+//! assert_eq!(authorization_scheme(TokenKind::Bearer), "Bearer");
+//!
+//! // Generate an OAuth access token (JWT-shaped: header.payload.signature)
+//! let oauth = generate_token("my-service", TokenKind::OAuthAccessToken, &mut rng);
+//! assert_eq!(oauth.matches('.').count(), 2);
+//! ```
+
 use base64::Engine as _;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use rand_core::RngCore;

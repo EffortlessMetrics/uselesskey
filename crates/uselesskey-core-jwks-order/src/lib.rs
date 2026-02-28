@@ -1,5 +1,32 @@
 #![forbid(unsafe_code)]
 
+//! Stable kid-based ordering helper for JWKS-like collections.
+//!
+//! [`KidSorted`] collects items that implement [`HasKid`] and returns them
+//! sorted lexicographically by `kid`, with ties broken by insertion order.
+//! This guarantees deterministic JWKS output regardless of the order keys
+//! are generated.
+//!
+//! # Examples
+//!
+//! ```
+//! use uselesskey_core_jwks_order::{HasKid, KidSorted};
+//!
+//! struct Key { kid: String }
+//! impl HasKid for Key {
+//!     fn kid(&self) -> &str { &self.kid }
+//! }
+//!
+//! let mut sorter = KidSorted::new();
+//! sorter.push(Key { kid: "c".into() });
+//! sorter.push(Key { kid: "a".into() });
+//! sorter.push(Key { kid: "b".into() });
+//!
+//! let keys = sorter.build();
+//! let kids: Vec<&str> = keys.iter().map(|k| k.kid()).collect();
+//! assert_eq!(kids, ["a", "b", "c"]);
+//! ```
+
 use core::fmt;
 
 /// A minimal trait for items with a stable key-id used for ordering.

@@ -1,6 +1,40 @@
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
+//! PEM-focused negative fixture corruption helpers for test fixtures.
+//!
+//! Use [`corrupt_pem`] to apply a specific corruption strategy, or
+//! [`corrupt_pem_deterministic`] to let the variant string choose the
+//! strategy deterministically.
+//!
+//! # Examples
+//!
+//! ```
+//! use uselesskey_core_negative_pem::{corrupt_pem, CorruptPem};
+//!
+//! let pem = "-----BEGIN RSA PRIVATE KEY-----\nABC=\n-----END RSA PRIVATE KEY-----\n";
+//!
+//! // Replace the header with an invalid one
+//! let bad = corrupt_pem(pem, CorruptPem::BadHeader);
+//! assert!(bad.starts_with("-----BEGIN CORRUPTED KEY-----"));
+//!
+//! // Inject invalid base64 so decoders reject it
+//! let bad = corrupt_pem(pem, CorruptPem::BadBase64);
+//! assert!(bad.contains("THIS_IS_NOT_BASE64!!!"));
+//! ```
+//!
+//! Deterministic corruption picks a strategy from the variant string,
+//! producing the same output every time:
+//!
+//! ```
+//! use uselesskey_core_negative_pem::corrupt_pem_deterministic;
+//!
+//! let pem = "-----BEGIN PUBLIC KEY-----\nABC=\n-----END PUBLIC KEY-----\n";
+//! let a = corrupt_pem_deterministic(pem, "corrupt:test-v1");
+//! let b = corrupt_pem_deterministic(pem, "corrupt:test-v1");
+//! assert_eq!(a, b); // same variant ⇒ same corruption
+//! ```
+
 extern crate alloc;
 
 use alloc::string::{String, ToString};

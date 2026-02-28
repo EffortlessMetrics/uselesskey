@@ -118,3 +118,21 @@ name = "jwk_shape"
 path = "fuzz_targets/jwk_shape.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "negative_pem_roundtrip"
+path = "fuzz_targets/negative_pem_roundtrip.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "jwk_serde"
+path = "fuzz_targets/jwk_serde.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "x509_negative"
+path = "fuzz_targets/x509_negative.rs"
+test = false
+doc = false

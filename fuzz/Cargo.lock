@@ -962,6 +962,7 @@ dependencies = [
 name = "uselesskey-core-jwk"
 version = "0.3.0"
 dependencies = [
+ "uselesskey-core-jwk-builder",
  "uselesskey-core-jwk-shape",
 ]
 
