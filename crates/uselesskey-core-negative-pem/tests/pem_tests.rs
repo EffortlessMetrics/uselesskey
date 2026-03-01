@@ -497,6 +497,235 @@ fn single_line_pem_extra_blank_line() {
 }
 
 // ---------------------------------------------------------------------------
+// Mutation-killing boundary tests for inject_bad_base64_line / inject_blank_line
+// These test the `if lines.len() < 3` boundary that cargo-mutants targets.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn bad_base64_two_line_input_uses_fallback_path() {
+    // 2 lines: lines.len() == 2 < 3 → true → early return (append, not insert)
+    // Kills mutant: replace < with == (2 == 3 → false, would insert instead)
+    // Kills mutant: replace < with >  (2 > 3 → false, would insert instead)
+    let pem = "HEADER\nFOOTER";
+    let out = corrupt_pem(pem, CorruptPem::BadBase64);
+    // Fallback path appends to the end, so marker comes after original content
+    assert!(
+        out.ends_with("THIS_IS_NOT_BASE64!!!\n"),
+        "2-line input should use fallback (append), got: {out:?}"
+    );
+    // The original content should appear before the marker
+    assert!(
+        out.starts_with("HEADER\nFOOTER"),
+        "original content must be preserved, got: {out:?}"
+    );
+}
+
+#[test]
+fn bad_base64_three_line_input_inserts_after_header() {
+    // 3 lines: lines.len() == 3, 3 < 3 → false → insert at position 1
+    // Kills mutant: replace < with <= (3 <= 3 → true, would take fallback)
+    let pem = "HEADER\nBODY\nFOOTER";
+    let out = corrupt_pem(pem, CorruptPem::BadBase64);
+    let lines: Vec<&str> = out.lines().collect();
+    assert_eq!(lines.len(), 4, "should have 4 lines after insert");
+    assert_eq!(lines[0], "HEADER");
+    assert_eq!(lines[1], "THIS_IS_NOT_BASE64!!!");
+    assert_eq!(lines[2], "BODY");
+    assert_eq!(lines[3], "FOOTER");
+}
+
+#[test]
+fn extra_blank_line_two_line_input_uses_fallback_path() {
+    // 2 lines: lines.len() == 2 < 3 → true → early return (append newlines)
+    // Kills mutant: replace < with == (2 == 3 → false, would insert instead)
+    // Kills mutant: replace < with >  (2 > 3 → false, would insert instead)
+    let pem = "HEADER\nFOOTER";
+    let out = corrupt_pem(pem, CorruptPem::ExtraBlankLine);
+    // Fallback appends \n\n to original
+    assert!(
+        out.ends_with("\n\n"),
+        "2-line input should use fallback path, got: {out:?}"
+    );
+    assert!(
+        out.starts_with("HEADER\nFOOTER"),
+        "original content should be preserved, got: {out:?}"
+    );
+}
+
+#[test]
+fn extra_blank_line_three_line_input_inserts_after_header() {
+    // 3 lines: lines.len() == 3, 3 < 3 → false → insert blank at position 1
+    // Kills mutant: replace < with <= (3 <= 3 → true, would take fallback)
+    // Kills mutant: replace < with >  (3 > 3 → false, same as original—
+    //   but this is already killed by the 2-line test above)
+    let pem = "HEADER\nBODY\nFOOTER";
+    let out = corrupt_pem(pem, CorruptPem::ExtraBlankLine);
+    let lines: Vec<&str> = out.lines().collect();
+    assert_eq!(lines.len(), 4, "should have 4 lines after insert");
+    assert_eq!(lines[0], "HEADER");
+    assert_eq!(lines[1], "", "blank line should be inserted after header");
+    assert_eq!(lines[2], "BODY");
+    assert_eq!(lines[3], "FOOTER");
+}
+
+#[test]
+fn bad_base64_four_line_inserts_marker_at_position_1() {
+    // 4+ lines should also insert at position 1 (not append)
+    // Kills mutant: replace < with > in inject_bad_base64_line
+    let pem = "H\nA\nB\nF";
+    let out = corrupt_pem(pem, CorruptPem::BadBase64);
+    let lines: Vec<&str> = out.lines().collect();
+    assert_eq!(
+        lines[1], "THIS_IS_NOT_BASE64!!!",
+        "marker must be at index 1"
+    );
+    assert_ne!(
+        *lines.last().unwrap(),
+        "THIS_IS_NOT_BASE64!!!",
+        "marker must NOT be at the end for multi-line input"
+    );
+}
+
+#[test]
+fn extra_blank_line_four_line_inserts_blank_at_position_1() {
+    // 4+ lines should insert blank at position 1
+    let pem = "H\nA\nB\nF";
+    let out = corrupt_pem(pem, CorruptPem::ExtraBlankLine);
+    let lines: Vec<&str> = out.lines().collect();
+    assert_eq!(lines[1], "", "blank line must be at index 1");
+    assert_eq!(lines[0], "H");
+    assert_eq!(lines[2], "A");
+}
+
+#[test]
+fn deterministic_truncate_on_single_char_produces_empty() {
+    // When PEM is a single char, derived_truncate_len returns 0, producing empty output.
+    // Kills mutants in derived_truncate_len: chars <= 1 boundary, return 0 → 1
+    // Find a variant that triggers the Truncate arm (bytes[0] % 5 == 4)
+    let variant = find_truncate_variant();
+    let out = corrupt_pem_deterministic("X", &variant);
+    assert!(
+        out.is_empty(),
+        "single-char PEM with truncate arm should produce empty string, got: {out:?}"
+    );
+}
+
+#[test]
+fn deterministic_truncate_on_empty_produces_empty() {
+    // Empty PEM: chars=0, chars <= 1 → true → return 0 → Truncate { bytes: 0 } → ""
+    let variant = find_truncate_variant();
+    let out = corrupt_pem_deterministic("", &variant);
+    assert!(
+        out.is_empty(),
+        "empty PEM with truncate arm should produce empty string, got: {out:?}"
+    );
+}
+
+#[test]
+fn deterministic_truncate_two_char_pem_keeps_exactly_one() {
+    // chars=2, span=2-1=1, any D%1=0, result=1+0=1 → keeps 1 char.
+    // Kills mutant: replace + with * in derived_truncate_len
+    //   (mutant gives 1*0=0 → empty, but we assert exactly 1 char)
+    let variant = find_truncate_variant();
+    let out = corrupt_pem_deterministic("AB", &variant);
+    assert_eq!(
+        out.chars().count(),
+        1,
+        "2-char PEM must keep exactly 1 char, got: {out:?}"
+    );
+}
+
+#[test]
+fn deterministic_truncate_result_always_strictly_shorter() {
+    // Compute D from the truncate variant's digest, then find a PEM length N
+    // such that N divides (D+1). With the mutant (chars/1 = chars instead of
+    // chars-1), span=N, and 1+(D%N)=N (full length), violating strict-shorter.
+    // Kills mutant: replace - with / in derived_truncate_len
+    use uselesskey_core_hash::hash32;
+    let variant = find_truncate_variant();
+    let digest = hash32(variant.as_bytes());
+    let d = u16::from_be_bytes([digest.as_bytes()[1], digest.as_bytes()[2]]) as usize;
+
+    // Find N in [2, 512] that divides d+1
+    let target = d + 1;
+    let n = (2..=target.min(512))
+        .find(|n| target.is_multiple_of(*n))
+        .expect("d+1 should have a factor in 2..=512");
+
+    let pem: String = core::iter::repeat_n('A', n).collect();
+    let out = corrupt_pem_deterministic(&pem, &variant);
+    let out_chars = out.chars().count();
+    assert!(
+        out_chars >= 1,
+        "len={n}: truncated must have >=1 char, got {out_chars}"
+    );
+    assert!(
+        out_chars < n,
+        "len={n}: truncated ({out_chars}) must be < original ({n})"
+    );
+}
+
+#[test]
+fn deterministic_truncate_many_lengths_bounded() {
+    // Sweep many lengths to confirm result ∈ [1, chars-1] for all.
+    let variant = find_truncate_variant();
+    for len in 2..=128 {
+        let pem: String = core::iter::repeat_n('A', len).collect();
+        let out = corrupt_pem_deterministic(&pem, &variant);
+        let out_chars = out.chars().count();
+        assert!(out_chars >= 1, "len={len}: truncated must keep >=1 char");
+        assert!(
+            out_chars < len,
+            "len={len}: truncated ({out_chars}) must be < ({len})"
+        );
+    }
+}
+
+/// Find a variant string that triggers the Truncate arm (bytes[0] % 5 == 4)
+fn find_truncate_variant() -> String {
+    use uselesskey_core_hash::hash32;
+    for i in 0u64.. {
+        let v = format!("trunc-{i}");
+        if hash32(v.as_bytes()).as_bytes()[0] % 5 == 4 {
+            return v;
+        }
+    }
+    unreachable!()
+}
+
+// ---------------------------------------------------------------------------
+// 8. Kill mutants in inject_bad_base64_line / inject_blank_line boundary
+// ---------------------------------------------------------------------------
+
+#[test]
+fn bad_base64_three_line_pem_inserts_at_line_one() {
+    // Exactly 3 lines: header, body, footer.
+    // Kills mutant: replace < with <= in inject_bad_base64_line (line 125).
+    // With <= mutant, a 3-line PEM hits fallback (append) instead of insert.
+    let pem = "-----BEGIN TEST-----\nQUJD\n-----END TEST-----\n";
+    let out = corrupt_pem(pem, CorruptPem::BadBase64);
+    let lines: Vec<&str> = out.lines().collect();
+    assert_eq!(
+        lines[1], "THIS_IS_NOT_BASE64!!!",
+        "3-line PEM: marker must be at line 1 (inserted), not appended"
+    );
+}
+
+#[test]
+fn blank_line_four_line_pem_inserts_at_line_one() {
+    // 4 lines: header, body1, body2, footer.
+    // Kills mutant: replace < with > in inject_blank_line (line 141).
+    // With > mutant, a 4-line PEM hits fallback (append \n\n) instead of insert.
+    let pem = "-----BEGIN TEST-----\nQUJD\nREVG\n-----END TEST-----\n";
+    let out = corrupt_pem(pem, CorruptPem::ExtraBlankLine);
+    let lines: Vec<&str> = out.lines().collect();
+    assert_eq!(
+        lines[1], "",
+        "4-line PEM: blank line must be at line 1 (inserted), not appended"
+    );
+}
+
+// ---------------------------------------------------------------------------
 // Property-based tests
 // ---------------------------------------------------------------------------
 
