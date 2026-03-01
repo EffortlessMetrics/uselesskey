@@ -35,6 +35,13 @@ exclude_re = [
     # "replace | with ^" is semantically equivalent and unkillable.
     "replace \\| with \\^ in parse_hex_32",
 
+    # ── infinite loop: rejection-sampling fallback guard ─────────────────
+    # random_base62's fallback guard `if out.len() == before` detects zero
+    # progress from rejection sampling. Replacing == with != inverts the
+    # guard so the modulo fallback runs on *every* iteration while the
+    # rejection path never appends, causing an infinite loop → timeout.
+    "replace == with != in random_base62",
+
     # ── opaque third-party return types ───────────────────────────────────
     # tonic::transport::{ServerTlsConfig, ClientTlsConfig, Identity} have
     # no PartialEq, no public field accessors, and opaque Debug impls.
