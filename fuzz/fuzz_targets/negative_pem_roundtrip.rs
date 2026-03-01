@@ -6,9 +6,11 @@ use uselesskey_core_negative_pem::{corrupt_pem, corrupt_pem_deterministic, Corru
 
 // Fuzz PEM corruption with realistic PEM-shaped input.
 // Unlike `core_negative_pem` (which feeds raw bytes), this target wraps
-// fuzz data inside a valid PEM envelope so the corruption functions
+// fuzz data inside a PEM-shaped envelope so the corruption functions
 // exercise their internal parsing paths more deeply.
 fuzz_target!(|data: &[u8]| {
+    // Cap input size to avoid large allocations.
+    let data = &data[..data.len().min(1024)];
     let body = String::from_utf8_lossy(data);
 
     // Build a realistic PEM envelope around fuzz data.

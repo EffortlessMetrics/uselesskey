@@ -26,10 +26,10 @@ fn string_from_bytes(bytes: &[u8], fallback: &str) -> String {
 
 fuzz_target!(|data: &[u8]| {
     // --- Part 1: Fuzz arbitrary JSON parsing (panic-freedom). ---
-    // Feed raw fuzz bytes as a JSON string to serde_json; this exercises
-    // the JSON parser with arbitrary input that might look like JWK/JWKS.
-    let raw = String::from_utf8_lossy(data);
-    let _ = serde_json::from_str::<serde_json::Value>(&raw);
+    // Feed raw fuzz bytes directly to serde_json; this exercises the JSON
+    // parser with arbitrary input that might look like JWK/JWKS without
+    // allocating an owned String for non-UTF8 inputs.
+    let _ = serde_json::from_slice::<serde_json::Value>(data);
 
     // --- Part 2: Build JWKs from fuzz data and round-trip through JSON. ---
     if data.len() < 4 {
