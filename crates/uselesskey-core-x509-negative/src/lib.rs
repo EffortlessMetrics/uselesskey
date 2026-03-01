@@ -2,6 +2,31 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 //! X.509 negative-fixture policy helpers.
+//!
+//! # Examples
+//!
+//! Apply a negative policy to a base X.509 spec:
+//!
+//! ```
+//! use uselesskey_core_x509_negative::X509Negative;
+//! use uselesskey_core_x509_spec::{X509Spec, NotBeforeOffset};
+//!
+//! let base = X509Spec::self_signed("test.example.com");
+//! let expired = X509Negative::Expired.apply_to_spec(&base);
+//! assert_eq!(expired.not_before_offset, NotBeforeOffset::DaysAgo(395));
+//! ```
+//!
+//! Chain-level negative fixtures:
+//!
+//! ```
+//! use uselesskey_core_x509_negative::ChainNegative;
+//! use uselesskey_core_x509_spec::ChainSpec;
+//!
+//! let base = ChainSpec::new("api.example.com");
+//! let neg = ChainNegative::UnknownCa;
+//! let modified = neg.apply_to_spec(&base);
+//! assert!(modified.root_cn.contains("Unknown"));
+//! ```
 
 extern crate alloc;
 

@@ -6,6 +6,37 @@
 //! - deterministic base-time derivation from stable identity inputs
 //! - deterministic positive serial number generation
 //! - length-prefixed hashing to avoid input-boundary collisions
+//!
+//! # Examples
+//!
+//! Derive a deterministic base time from identity parts:
+//!
+//! ```
+//! use uselesskey_core_x509_derive::{
+//!     deterministic_base_time_from_parts, BASE_TIME_EPOCH_UNIX, BASE_TIME_WINDOW_DAYS,
+//! };
+//! use time::OffsetDateTime;
+//!
+//! let t = deterministic_base_time_from_parts(&[b"my-label", b"leaf"]);
+//!
+//! let epoch = OffsetDateTime::from_unix_timestamp(BASE_TIME_EPOCH_UNIX).unwrap();
+//! let max = epoch + time::Duration::days(i64::from(BASE_TIME_WINDOW_DAYS));
+//! assert!(t >= epoch && t < max);
+//! ```
+//!
+//! Generate a deterministic serial number from an RNG:
+//!
+//! ```
+//! use uselesskey_core_x509_derive::{deterministic_serial_number, SERIAL_NUMBER_BYTES};
+//! use rand_chacha::ChaCha20Rng;
+//! use rand_core::SeedableRng;
+//!
+//! let mut rng = ChaCha20Rng::from_seed([42u8; 32]);
+//! let serial = deterministic_serial_number(&mut rng);
+//! let bytes = serial.to_bytes();
+//! assert_eq!(bytes.len(), SERIAL_NUMBER_BYTES);
+//! assert_eq!(bytes[0] & 0x80, 0, "high bit must be cleared");
+//! ```
 
 use rand_core::RngCore;
 use rcgen::SerialNumber;

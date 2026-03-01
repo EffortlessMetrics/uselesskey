@@ -14,6 +14,22 @@
 //! - `ecdsa` - ECDSA keypairs -> `ring::signature::EcdsaKeyPair`
 //! - `ed25519` - Ed25519 keypairs -> `ring::signature::Ed25519KeyPair`
 //! - `all` - All of the above
+//!
+//! # Examples
+//!
+//! Convert an RSA fixture to a `ring` key pair (requires `rsa` feature):
+//!
+#![cfg_attr(feature = "rsa", doc = "```")]
+#![cfg_attr(not(feature = "rsa"), doc = "```ignore")]
+//! use uselesskey_core::Factory;
+//! use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+//! use uselesskey_ring::RingRsaKeyPairExt;
+//!
+//! let fx = Factory::random();
+//! let kp = fx.rsa("test", RsaSpec::rs256());
+//! let ring_pair = kp.rsa_key_pair_ring();
+//! assert!(ring_pair.public().modulus_len() > 0);
+//! ```
 
 // =========================================================================
 // RSA
