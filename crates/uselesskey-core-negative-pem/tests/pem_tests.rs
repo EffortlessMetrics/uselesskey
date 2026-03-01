@@ -649,7 +649,7 @@ fn deterministic_truncate_result_always_strictly_shorter() {
     // Find N in [2, 512] that divides d+1
     let target = d + 1;
     let n = (2..=target.min(512))
-        .find(|n| target % n == 0)
+        .find(|n| target.is_multiple_of(*n))
         .expect("d+1 should have a factor in 2..=512");
 
     let pem: String = core::iter::repeat_n('A', n).collect();
@@ -691,6 +691,38 @@ fn find_truncate_variant() -> String {
         }
     }
     unreachable!()
+}
+
+// ---------------------------------------------------------------------------
+// 8. Kill mutants in inject_bad_base64_line / inject_blank_line boundary
+// ---------------------------------------------------------------------------
+
+#[test]
+fn bad_base64_three_line_pem_inserts_at_line_one() {
+    // Exactly 3 lines: header, body, footer.
+    // Kills mutant: replace < with <= in inject_bad_base64_line (line 125).
+    // With <= mutant, a 3-line PEM hits fallback (append) instead of insert.
+    let pem = "-----BEGIN TEST-----\nQUJD\n-----END TEST-----\n";
+    let out = corrupt_pem(pem, CorruptPem::BadBase64);
+    let lines: Vec<&str> = out.lines().collect();
+    assert_eq!(
+        lines[1], "THIS_IS_NOT_BASE64!!!",
+        "3-line PEM: marker must be at line 1 (inserted), not appended"
+    );
+}
+
+#[test]
+fn blank_line_four_line_pem_inserts_at_line_one() {
+    // 4 lines: header, body1, body2, footer.
+    // Kills mutant: replace < with > in inject_blank_line (line 141).
+    // With > mutant, a 4-line PEM hits fallback (append \n\n) instead of insert.
+    let pem = "-----BEGIN TEST-----\nQUJD\nREVG\n-----END TEST-----\n";
+    let out = corrupt_pem(pem, CorruptPem::ExtraBlankLine);
+    let lines: Vec<&str> = out.lines().collect();
+    assert_eq!(
+        lines[1], "",
+        "4-line PEM: blank line must be at line 1 (inserted), not appended"
+    );
 }
 
 // ---------------------------------------------------------------------------
