@@ -114,7 +114,7 @@ doc = false
 
 [[bin]]
 name = "jwk_order"
-path = "fuzz_targets/jwks_order.rs"
+path = "fuzz_targets/jwk_order.rs"
 test = false
 doc = false
 
