@@ -622,22 +622,69 @@ fn deterministic_truncate_on_empty_produces_empty() {
 }
 
 #[test]
-fn deterministic_truncate_always_shorter_than_original() {
-    // For multi-char PEM, derived_truncate_len produces 1..chars, so output is shorter.
-    // Kills mutants: chars - 1 → chars + 1, 1 + → 0 +, etc.
+fn deterministic_truncate_two_char_pem_keeps_exactly_one() {
+    // chars=2, span=2-1=1, any D%1=0, result=1+0=1 → keeps 1 char.
+    // Kills mutant: replace + with * in derived_truncate_len
+    //   (mutant gives 1*0=0 → empty, but we assert exactly 1 char)
     let variant = find_truncate_variant();
-    let pem = "ABCDEFGHIJKLMNOP"; // 16 chars, single line
-    let out = corrupt_pem_deterministic(pem, &variant);
+    let out = corrupt_pem_deterministic("AB", &variant);
+    assert_eq!(
+        out.chars().count(),
+        1,
+        "2-char PEM must keep exactly 1 char, got: {out:?}"
+    );
+}
+
+#[test]
+fn deterministic_truncate_result_always_strictly_shorter() {
+    // Compute D from the truncate variant's digest, then find a PEM length N
+    // such that N divides (D+1). With the mutant (chars/1 = chars instead of
+    // chars-1), span=N, and 1+(D%N)=N (full length), violating strict-shorter.
+    // Kills mutant: replace - with / in derived_truncate_len
+    use uselesskey_core_hash::hash32;
+    let variant = find_truncate_variant();
+    let digest = hash32(variant.as_bytes());
+    let d = u16::from_be_bytes([
+        digest.as_bytes()[1],
+        digest.as_bytes()[2],
+    ]) as usize;
+
+    // Find N in [2, 512] that divides d+1
+    let target = d + 1;
+    let n = (2..=target.min(512))
+        .find(|n| target % n == 0)
+        .expect("d+1 should have a factor in 2..=512");
+
+    let pem: String = core::iter::repeat_n('A', n).collect();
+    let out = corrupt_pem_deterministic(&pem, &variant);
+    let out_chars = out.chars().count();
     assert!(
-        !out.is_empty(),
-        "multi-char truncation should produce non-empty output"
+        out_chars >= 1,
+        "len={n}: truncated must have ≥1 char, got {out_chars}"
     );
     assert!(
-        out.len() < pem.len(),
-        "truncated output ({}) should be shorter than original ({})",
-        out.len(),
-        pem.len()
+        out_chars < n,
+        "len={n}: truncated ({out_chars}) must be < original ({n})"
     );
+}
+
+#[test]
+fn deterministic_truncate_many_lengths_bounded() {
+    // Sweep many lengths to confirm result ∈ [1, chars-1] for all.
+    let variant = find_truncate_variant();
+    for len in 2..=128 {
+        let pem: String = core::iter::repeat_n('A', len).collect();
+        let out = corrupt_pem_deterministic(&pem, &variant);
+        let out_chars = out.chars().count();
+        assert!(
+            out_chars >= 1,
+            "len={len}: truncated must keep ≥1 char"
+        );
+        assert!(
+            out_chars < len,
+            "len={len}: truncated ({out_chars}) must be < ({len})"
+        );
+    }
 }
 
 /// Find a variant string that triggers the Truncate arm (bytes[0] % 5 == 4)
