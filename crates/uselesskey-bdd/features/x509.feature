@@ -77,6 +77,16 @@ Feature: X.509 certificate fixtures
     When I generate an X.509 certificate for domain "myservice.example.com" with label "cn-check"
     Then the X.509 certificate should have common name "myservice.example.com"
 
+  Scenario: X.509 self-signed certificate has issuer CN matching subject CN
+    Given a deterministic factory seeded with "issuer-test"
+    When I generate an X.509 certificate for domain "selfsigned.example.com" with label "issuer-check"
+    Then the X.509 certificate should have issuer common name "selfsigned.example.com"
+
+  Scenario: X.509 certificate has a positive serial number
+    Given a deterministic factory seeded with "serial-test"
+    When I generate an X.509 certificate for domain "serial.example.com" with label "serial-check"
+    Then the X.509 certificate serial number should be positive
+
   # --- Negative fixtures: expired ---
 
   Scenario: expired X.509 certificate is different from valid

@@ -71,3 +71,23 @@ Feature: Seed parsing
     And I switch to a deterministic factory seeded with "ed25519-seed-two"
     And I generate another Ed25519 key for label "service"
     Then the Ed25519 keys should have different public keys
+
+  # --- KID Determinism Across Factory Instances ---
+
+  Scenario: same seed produces same RSA KID across factory instances
+    Given a deterministic factory seeded with "kid-stability-rsa"
+    When I generate an RSA key for label "kid-check"
+    And I capture the kid
+    And I switch to a deterministic factory seeded with "kid-stability-rsa"
+    And I generate an RSA key for label "kid-check" again
+    And I capture the kid again
+    Then the kids should be identical
+
+  Scenario: same seed produces same ECDSA KID across factory instances
+    Given a deterministic factory seeded with "kid-stability-ecdsa"
+    When I generate an ECDSA ES256 key for label "kid-check"
+    And I capture the ECDSA kid
+    And I switch to a deterministic factory seeded with "kid-stability-ecdsa"
+    And I generate an ECDSA ES256 key for label "kid-check" again
+    And I capture the ECDSA kid again
+    Then the ECDSA kids should be identical

@@ -1950,6 +1950,38 @@ fn x509_has_common_name(world: &mut UselessWorld, expected_cn: String) {
     assert_eq!(cn, expected_cn);
 }
 
+#[then(regex = r#"^the X\.509 certificate should have issuer common name "([^"]+)"$"#)]
+fn x509_has_issuer_cn(world: &mut UselessWorld, expected_cn: String) {
+    let x509 = world.x509.as_ref().expect("x509 not set");
+    let der = x509.cert_der();
+    let (_, cert) = x509_parser::parse_x509_certificate(der).expect("parse cert");
+
+    let cn = cert
+        .issuer()
+        .iter_common_name()
+        .next()
+        .expect("should have issuer CN")
+        .as_str()
+        .expect("issuer CN should be string");
+
+    assert_eq!(cn, expected_cn);
+}
+
+#[then("the X.509 certificate serial number should be positive")]
+fn x509_serial_positive(world: &mut UselessWorld) {
+    let x509 = world.x509.as_ref().expect("x509 not set");
+    let der = x509.cert_der();
+    let (_, cert) = x509_parser::parse_x509_certificate(der).expect("parse cert");
+
+    let serial = &cert.serial;
+    let bytes = serial.to_bytes_be();
+    assert!(!bytes.is_empty(), "serial number should be non-empty");
+    assert!(
+        bytes.iter().any(|b| *b != 0),
+        "serial number should be positive (non-zero)"
+    );
+}
+
 #[then("the expired X.509 certificate should be parseable")]
 fn x509_expired_parseable(world: &mut UselessWorld) {
     let expired = world.x509_expired.as_ref().expect("expired cert not set");
