@@ -233,6 +233,35 @@ Feature: JWKS (JSON Web Key Set) builder
     Then the filtered JWKS should contain 1 key
     And the filtered JWKS should contain a key with kid "key-b"
 
+  # --- JWKS Deterministic Rebuild ---
+
+  Scenario: JWKS is identical when rebuilt from same keys
+    Given a deterministic factory seeded with "jwks-rebuild-test"
+    When I generate an RSA key for label "rebuild-rsa" with spec RS256
+    And I generate an ECDSA ES256 key for label "rebuild-ecdsa"
+    And I generate an Ed25519 key for label "rebuild-ed"
+    And I build a JWKS containing all keys with kids "rsa-kid", "ecdsa-kid", "ed-kid"
+    And I build another JWKS containing all keys with kids "rsa-kid", "ecdsa-kid", "ed-kid"
+    Then both JWKS outputs should be identical
+
+  Scenario: JWKS with three RSA keys has correct count
+    Given a deterministic factory seeded with "jwks-triple-rsa"
+    When I generate an RSA key for label "rsa-triple-1" with spec RS256
+    And I generate an RSA key for label "rsa-triple-2" with spec RS256
+    And I generate an RSA key for label "rsa-triple-3" with spec RS256
+    And I build a JWKS containing all keys with kids "key-a", "key-b", "key-c"
+    Then the JWKS should contain 3 keys
+    And each key in the JWKS should have kty "RSA"
+
+  Scenario: JWKS private key fields are absent from public-only JWKS
+    Given a deterministic factory seeded with "jwks-public-fields-test"
+    When I generate an ECDSA ES256 key for label "ecdsa-public-check"
+    And I build a JWKS containing the ECDSA key with kid "pub-ecdsa"
+    Then the JWKS EC key should contain field "x"
+    And the JWKS EC key should contain field "y"
+    And the JWKS EC key should contain field "kty"
+    And the JWKS EC key should contain field "kid"
+
   # --- JWKS from X.509 ---
   # X.509 certificate JWK scenarios are disabled because X509Cert does not
   # currently expose a private_key_jwk() method.
