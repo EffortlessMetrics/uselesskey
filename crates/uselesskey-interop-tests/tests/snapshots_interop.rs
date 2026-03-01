@@ -128,10 +128,9 @@ mod ring_to_dalek {
         let fx = fx();
         let keypair = fx.ed25519("snap-interop-ed25519-r2d", Ed25519Spec::new());
 
-        let key_pair = ring_sig::Ed25519KeyPair::from_pkcs8_maybe_unchecked(
-            keypair.private_key_pkcs8_der(),
-        )
-        .expect("ring should parse Ed25519 PKCS#8");
+        let key_pair =
+            ring_sig::Ed25519KeyPair::from_pkcs8_maybe_unchecked(keypair.private_key_pkcs8_der())
+                .expect("ring should parse Ed25519 PKCS#8");
 
         let message = b"ring-to-dalek interop snapshot test";
         let sig = key_pair.sign(message);
@@ -227,9 +226,8 @@ mod p256_to_ring {
         let fx = fx();
         let keypair = fx.ecdsa("snap-interop-ecdsa-p2r", EcdsaSpec::es256());
 
-        let signing_key =
-            p256::ecdsa::SigningKey::from_pkcs8_der(keypair.private_key_pkcs8_der())
-                .expect("valid P-256 PKCS#8 DER");
+        let signing_key = p256::ecdsa::SigningKey::from_pkcs8_der(keypair.private_key_pkcs8_der())
+            .expect("valid P-256 PKCS#8 DER");
         let message = b"p256-to-ring interop snapshot test";
         let sig: p256::ecdsa::DerSignature = signing_key.sign(message);
 
@@ -253,8 +251,8 @@ mod p256_to_ring {
 
 mod dalek_to_ring {
     use super::*;
-    use ed25519_dalek::pkcs8::DecodePrivateKey;
     use ed25519_dalek::Signer;
+    use ed25519_dalek::pkcs8::DecodePrivateKey;
     use ring::signature::{self, UnparsedPublicKey};
     use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
 
@@ -309,8 +307,7 @@ mod rsa_crate_to_ring {
         let sig = signing_key.sign(message);
 
         let raw_pubkey = extract_public_key_from_spki(keypair.public_key_spki_der());
-        let public_key =
-            UnparsedPublicKey::new(&signature::RSA_PKCS1_2048_8192_SHA256, raw_pubkey);
+        let public_key = UnparsedPublicKey::new(&signature::RSA_PKCS1_2048_8192_SHA256, raw_pubkey);
         public_key
             .verify(message, &sig.to_bytes())
             .expect("ring should verify rsa-crate-signed signature");
@@ -394,7 +391,12 @@ mod interop_matrix {
         let matrix = InteropMatrixSnapshot {
             total_pairs: pairs.len(),
             key_types: vec!["ECDSA", "Ed25519", "RSA"],
-            backends: vec!["ring", "p256 (RustCrypto)", "ed25519-dalek", "rsa (RustCrypto)"],
+            backends: vec![
+                "ring",
+                "p256 (RustCrypto)",
+                "ed25519-dalek",
+                "rsa (RustCrypto)",
+            ],
             pairs,
         };
 

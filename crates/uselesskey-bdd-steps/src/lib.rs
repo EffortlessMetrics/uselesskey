@@ -34,12 +34,12 @@ mod core_token_shape_steps;
 #[cfg(feature = "uk-ring")]
 #[path = "steps/ring_steps.rs"]
 mod ring_steps;
-#[cfg(feature = "uk-rustls")]
-#[path = "steps/rustls_steps.rs"]
-mod rustls_steps;
 #[cfg(feature = "uk-rustcrypto")]
 #[path = "steps/rustcrypto_steps.rs"]
 mod rustcrypto_steps;
+#[cfg(feature = "uk-rustls")]
+#[path = "steps/rustls_steps.rs"]
+mod rustls_steps;
 // NOTE: aws-lc-rs steps require NASM on Windows. The step file exists at
 // steps/aws_lc_rs_steps.rs but is not wired in because the traits are
 // conditionally compiled behind `cfg(all(feature = "native", any(not(windows), has_nasm)))`.
