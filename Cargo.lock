@@ -3642,6 +3642,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "uselesskey",
  "uselesskey-core",
  "uselesskey-ecdsa",
  "uselesskey-ed25519",

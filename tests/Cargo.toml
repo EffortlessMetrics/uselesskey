@@ -26,6 +26,9 @@ uselesskey-rustls = { path = "../crates/uselesskey-rustls", version = "0.3.0", o
 uselesskey-ring = { path = "../crates/uselesskey-ring", version = "0.3.0", optional = true, features = ["all"] }
 uselesskey-rustcrypto = { path = "../crates/uselesskey-rustcrypto", version = "0.3.0", optional = true, features = ["all"] }
 
+# Facade crate (for determinism tests)
+uselesskey = { path = "../crates/uselesskey", version = "0.3.0", optional = true, features = ["full"] }
+
 # External dependencies
 jsonwebtoken = { workspace = true, optional = true }
 ring = { workspace = true, optional = true }
@@ -110,8 +113,11 @@ cross-adapter = [
     "dep:sha2",
 ]
 
+# Cross-crate determinism tests
+determinism = ["dep:uselesskey"]
+
 # All integration tests
-all = ["jwt", "tls", "crypto-backend", "e2e", "key-rotation", "cross-adapter"]
+all = ["jwt", "tls", "crypto-backend", "e2e", "key-rotation", "cross-adapter", "determinism"]
 
 [[test]]
 name = "jwt_integration"
@@ -142,3 +148,8 @@ required-features = ["key-rotation"]
 name = "cross_adapter"
 path = "cross_adapter.rs"
 required-features = ["cross-adapter"]
+
+[[test]]
+name = "determinism"
+path = "determinism.rs"
+required-features = ["determinism"]
