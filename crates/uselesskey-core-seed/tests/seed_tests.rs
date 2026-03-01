@@ -69,17 +69,17 @@ fn copy_produces_independent_equal_value() {
 // ── Clone ───────────────────────────────────────────────────────────
 
 #[test]
-fn clone_produces_identical_bytes() {
+fn copy_produces_identical_bytes() {
     let seed = Seed::new([0xDE; 32]);
-    let cloned = seed.clone();
-    assert_eq!(seed.bytes(), cloned.bytes());
+    let copied = seed;
+    assert_eq!(seed.bytes(), copied.bytes());
 }
 
 #[test]
-fn clone_equals_original() {
+fn copy_equals_original() {
     let seed = Seed::new(core::array::from_fn(|i| (i * 7) as u8));
-    let cloned = seed.clone();
-    assert_eq!(seed, cloned);
+    let copied = seed;
+    assert_eq!(seed, copied);
 }
 
 // ── Debug does NOT leak seed bytes ──────────────────────────────────
@@ -297,9 +297,10 @@ mod prop {
         }
 
         #[test]
-        fn clone_always_equals_original(bytes in any::<[u8; 32]>()) {
+        fn copy_always_equals_original(bytes in any::<[u8; 32]>()) {
             let seed = Seed::new(bytes);
-            prop_assert_eq!(seed.clone(), seed);
+            let copied = seed;
+            prop_assert_eq!(copied, seed);
         }
 
         #[test]
