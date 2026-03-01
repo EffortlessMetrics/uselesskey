@@ -36,3 +36,4 @@ uselesskey-core = { path = "../uselesskey-core", version = "0.3.0" }
 hex = "0.4"
 serde.workspace = true
 insta.workspace = true
+proptest.workspace = true

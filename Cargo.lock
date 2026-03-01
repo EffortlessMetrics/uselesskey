@@ -3310,6 +3310,7 @@ dependencies = [
  "aws-lc-rs",
  "hex",
  "insta",
+ "proptest",
  "serde",
  "uselesskey-core",
  "uselesskey-ecdsa",
@@ -3666,9 +3667,11 @@ name = "uselesskey-interop-tests"
 version = "0.0.0"
 dependencies = [
  "ed25519-dalek",
+ "insta",
  "p256",
  "ring",
  "rsa",
+ "serde",
  "sha2",
  "signature",
  "uselesskey-core",
@@ -3718,6 +3721,7 @@ version = "0.3.0"
 dependencies = [
  "hex",
  "insta",
+ "proptest",
  "ring",
  "serde",
  "uselesskey-core",

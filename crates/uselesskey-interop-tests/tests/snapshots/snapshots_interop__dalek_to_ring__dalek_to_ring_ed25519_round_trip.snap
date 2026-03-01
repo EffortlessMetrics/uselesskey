@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-interop-tests/tests/snapshots_interop.rs
+expression: result
+---
+key_type: Ed25519
+algorithm: Ed25519
+signer_backend: ed25519-dalek
+verifier_backend: ring
+signature_len: 64
+success: true

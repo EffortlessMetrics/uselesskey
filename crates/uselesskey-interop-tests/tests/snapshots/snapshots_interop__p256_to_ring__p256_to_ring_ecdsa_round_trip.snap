@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-interop-tests/tests/snapshots_interop.rs
+expression: result
+---
+key_type: ECDSA
+algorithm: P-256/SHA-256
+signer_backend: p256 (RustCrypto)
+verifier_backend: ring
+signature_len: 70
+success: true

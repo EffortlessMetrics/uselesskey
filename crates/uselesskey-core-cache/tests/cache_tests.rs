@@ -116,4 +116,62 @@ proptest! {
         prop_assert!(cache.len() <= labels.len());
         prop_assert!(cache.len() > 0);
     }
+
+    #[test]
+    fn proptest_insert_if_absent_idempotent(
+        label in "[a-z]{1,8}",
+        first_val in any::<u64>(),
+        second_val in any::<u64>(),
+    ) {
+        let cache = ArtifactCache::new();
+        let id = make_id(&label);
+        let winner = cache.insert_if_absent_typed(id.clone(), Arc::new(first_val));
+        let repeat = cache.insert_if_absent_typed(id.clone(), Arc::new(second_val));
+        prop_assert!(Arc::ptr_eq(&winner, &repeat));
+        prop_assert_eq!(*repeat, first_val);
+    }
+
+    #[test]
+    fn proptest_get_after_insert_roundtrips(
+        label in "[a-z]{1,8}",
+        val in any::<u64>(),
+    ) {
+        let cache = ArtifactCache::new();
+        let id = make_id(&label);
+        cache.insert_if_absent_typed(id.clone(), Arc::new(val));
+        let fetched = cache.get_typed::<u64>(&id);
+        prop_assert!(fetched.is_some());
+        prop_assert_eq!(*fetched.unwrap(), val);
+    }
+
+    #[test]
+    fn proptest_distinct_keys_independent(
+        labels in prop::collection::hash_set("[a-z]{1,8}", 2..20),
+    ) {
+        let cache = ArtifactCache::new();
+        let labels: Vec<String> = labels.into_iter().collect();
+        for (i, label) in labels.iter().enumerate() {
+            let id = make_id(label);
+            cache.insert_if_absent_typed(id, Arc::new(i as u64));
+        }
+        prop_assert_eq!(cache.len(), labels.len());
+        for (i, label) in labels.iter().enumerate() {
+            let id = make_id(label);
+            let val = cache.get_typed::<u64>(&id).unwrap();
+            prop_assert_eq!(*val, i as u64);
+        }
+    }
+
+    #[test]
+    fn proptest_clear_resets_all(labels in prop::collection::vec("[a-z]{1,8}", 1..30)) {
+        let cache = ArtifactCache::new();
+        for label in &labels {
+            let id = make_id(label);
+            cache.insert_if_absent_typed(id, Arc::new(label.clone()));
+        }
+        prop_assert!(!cache.is_empty());
+        cache.clear();
+        prop_assert!(cache.is_empty());
+        prop_assert_eq!(cache.len(), 0);
+    }
 }

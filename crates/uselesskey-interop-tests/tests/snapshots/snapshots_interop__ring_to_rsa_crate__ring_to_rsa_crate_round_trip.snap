@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-interop-tests/tests/snapshots_interop.rs
+expression: result
+---
+key_type: RSA
+algorithm: RSA-PKCS1v15-SHA256
+signer_backend: ring
+verifier_backend: rsa (RustCrypto)
+signature_len: 256
+success: true

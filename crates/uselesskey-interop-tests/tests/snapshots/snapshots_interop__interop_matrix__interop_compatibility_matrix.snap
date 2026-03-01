@@ -1,0 +1,39 @@
+---
+source: crates/uselesskey-interop-tests/tests/snapshots_interop.rs
+expression: matrix
+---
+total_pairs: 6
+key_types:
+  - ECDSA
+  - Ed25519
+  - RSA
+backends:
+  - ring
+  - p256 (RustCrypto)
+  - ed25519-dalek
+  - rsa (RustCrypto)
+pairs:
+  - key_type: ECDSA
+    algorithm: P-256/SHA-256
+    signer: p256 (RustCrypto)
+    verifier: ring
+  - key_type: ECDSA
+    algorithm: P-256/SHA-256
+    signer: ring
+    verifier: p256 (RustCrypto)
+  - key_type: Ed25519
+    algorithm: Ed25519
+    signer: ed25519-dalek
+    verifier: ring
+  - key_type: Ed25519
+    algorithm: Ed25519
+    signer: ring
+    verifier: ed25519-dalek
+  - key_type: RSA
+    algorithm: RSA-PKCS1v15-SHA256
+    signer: rsa (RustCrypto)
+    verifier: ring
+  - key_type: RSA
+    algorithm: RSA-PKCS1v15-SHA256
+    signer: ring
+    verifier: rsa (RustCrypto)
