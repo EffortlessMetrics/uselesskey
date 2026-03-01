@@ -1,0 +1,12 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: entries
+---
+- key_type: RSA
+  labels_differ: true
+- key_type: ECDSA
+  labels_differ: true
+- key_type: Ed25519
+  labels_differ: true
+- key_type: HMAC
+  labels_differ: true

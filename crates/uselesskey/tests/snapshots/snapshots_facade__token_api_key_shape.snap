@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: shape
+---
+kind: api_key
+value_len: 40
+starts_with_prefix: true
+deterministic: true

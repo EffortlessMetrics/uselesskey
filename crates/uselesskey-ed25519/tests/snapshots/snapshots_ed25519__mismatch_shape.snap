@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-ed25519/tests/snapshots_ed25519.rs
+expression: result
+---
+good_public_der_len: 44
+mismatched_public_der_len: 44
+keys_differ: true

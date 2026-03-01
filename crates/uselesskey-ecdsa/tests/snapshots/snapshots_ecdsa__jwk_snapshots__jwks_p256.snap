@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-ecdsa/tests/snapshots_ecdsa.rs
+expression: result
+---
+curve: P-256
+key_count: 1
+first_key_kty: EC
+first_key_crv: P-256

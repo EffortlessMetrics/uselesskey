@@ -1,0 +1,12 @@
+---
+source: crates/uselesskey-ecdsa/tests/snapshots_ecdsa.rs
+expression: entries
+---
+- curve: P-256
+  requested_len: 10
+  actual_len: 10
+  shorter_than_original: true
+- curve: P-384
+  requested_len: 10
+  actual_len: 10
+  shorter_than_original: true

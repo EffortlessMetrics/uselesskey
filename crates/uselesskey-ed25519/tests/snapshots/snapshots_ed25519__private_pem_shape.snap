@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-ed25519/tests/snapshots_ed25519.rs
+expression: result
+---
+header: "-----BEGIN PRIVATE KEY-----"
+trailer: "-----END PRIVATE KEY-----"
+line_count: 4
+pem_len: 168

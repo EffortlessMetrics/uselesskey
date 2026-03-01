@@ -1,0 +1,16 @@
+---
+source: crates/uselesskey-rsa/tests/snapshots_rsa.rs
+expression: variants
+---
+- variant: BadHeader
+  first_line: "-----BEGIN CORRUPTED KEY-----"
+  differs_from_original: true
+- variant: BadFooter
+  first_line: "-----BEGIN PRIVATE KEY-----"
+  differs_from_original: true
+- variant: BadBase64
+  first_line: "-----BEGIN PRIVATE KEY-----"
+  differs_from_original: true
+- variant: ExtraBlankLine
+  first_line: "-----BEGIN PRIVATE KEY-----"
+  differs_from_original: true

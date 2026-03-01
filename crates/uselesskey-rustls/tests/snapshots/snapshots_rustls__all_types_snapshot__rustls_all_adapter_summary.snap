@@ -1,0 +1,34 @@
+---
+source: crates/uselesskey-rustls/tests/snapshots_rustls.rs
+expression: items
+---
+- key_type: RSA
+  algorithm: RS256 (2048-bit)
+  conversion_ok: true
+  key_format: PKCS8
+  private_key_der_len: 1218
+- key_type: ECDSA
+  algorithm: ES256 (P-256)
+  conversion_ok: true
+  key_format: PKCS8
+  private_key_der_len: 138
+- key_type: ECDSA
+  algorithm: ES384 (P-384)
+  conversion_ok: true
+  key_format: PKCS8
+  private_key_der_len: 185
+- key_type: Ed25519
+  algorithm: Ed25519
+  conversion_ok: true
+  key_format: PKCS8
+  private_key_der_len: 83
+- key_type: X509-SelfSigned
+  algorithm: ECDSA-P256 (default)
+  conversion_ok: true
+  key_format: PKCS8
+  private_key_der_len: 1217
+- key_type: X509-Chain
+  algorithm: ECDSA-P256 (default)
+  conversion_ok: true
+  key_format: PKCS8
+  private_key_der_len: 1217

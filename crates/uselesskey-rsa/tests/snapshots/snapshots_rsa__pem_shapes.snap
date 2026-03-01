@@ -1,0 +1,58 @@
+---
+source: crates/uselesskey-rsa/tests/snapshots_rsa.rs
+expression: shapes
+---
+- label: snap-pem-RS256
+  spec_name: RS256
+  bits: 2048
+  private_pem_first_line: "-----BEGIN PRIVATE KEY-----"
+  private_pem_last_line: "-----END PRIVATE KEY-----"
+  private_der_len: 1217
+  public_pem_first_line: "-----BEGIN PUBLIC KEY-----"
+  public_pem_last_line: "-----END PUBLIC KEY-----"
+  public_der_len: 294
+- label: snap-pem-RS384
+  spec_name: RS384
+  bits: 3072
+  private_pem_first_line: "-----BEGIN PRIVATE KEY-----"
+  private_pem_last_line: "-----END PRIVATE KEY-----"
+  private_der_len: 1795
+  public_pem_first_line: "-----BEGIN PUBLIC KEY-----"
+  public_pem_last_line: "-----END PUBLIC KEY-----"
+  public_der_len: 422
+- label: snap-pem-RS512
+  spec_name: RS512
+  bits: 4096
+  private_pem_first_line: "-----BEGIN PRIVATE KEY-----"
+  private_pem_last_line: "-----END PRIVATE KEY-----"
+  private_der_len: 2375
+  public_pem_first_line: "-----BEGIN PUBLIC KEY-----"
+  public_pem_last_line: "-----END PUBLIC KEY-----"
+  public_der_len: 550
+- label: snap-pem-PS256
+  spec_name: PS256
+  bits: 2048
+  private_pem_first_line: "-----BEGIN PRIVATE KEY-----"
+  private_pem_last_line: "-----END PRIVATE KEY-----"
+  private_der_len: 1216
+  public_pem_first_line: "-----BEGIN PUBLIC KEY-----"
+  public_pem_last_line: "-----END PUBLIC KEY-----"
+  public_der_len: 294
+- label: snap-pem-PS384
+  spec_name: PS384
+  bits: 3072
+  private_pem_first_line: "-----BEGIN PRIVATE KEY-----"
+  private_pem_last_line: "-----END PRIVATE KEY-----"
+  private_der_len: 1793
+  public_pem_first_line: "-----BEGIN PUBLIC KEY-----"
+  public_pem_last_line: "-----END PUBLIC KEY-----"
+  public_der_len: 422
+- label: snap-pem-PS512
+  spec_name: PS512
+  bits: 4096
+  private_pem_first_line: "-----BEGIN PRIVATE KEY-----"
+  private_pem_last_line: "-----END PRIVATE KEY-----"
+  private_der_len: 2374
+  public_pem_first_line: "-----BEGIN PUBLIC KEY-----"
+  public_pem_last_line: "-----END PUBLIC KEY-----"
+  public_der_len: 550

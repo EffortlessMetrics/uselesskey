@@ -1,0 +1,38 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: matrix
+---
+rsa:
+  key_type: RSA
+  algorithm: RS256
+  pem_header: "-----BEGIN PRIVATE KEY-----"
+  private_der_len: "[DER_LEN]"
+  public_der_len: "[DER_LEN]"
+  has_kid: true
+  deterministic: true
+ecdsa:
+  key_type: EC
+  algorithm: ES256
+  pem_header: "-----BEGIN PRIVATE KEY-----"
+  private_der_len: "[DER_LEN]"
+  public_der_len: "[DER_LEN]"
+  has_kid: true
+  deterministic: true
+ed25519:
+  key_type: OKP
+  algorithm: EdDSA
+  pem_header: "-----BEGIN PRIVATE KEY-----"
+  private_der_len: "[DER_LEN]"
+  public_der_len: "[DER_LEN]"
+  has_kid: true
+  deterministic: true
+hmac:
+  algorithm: HS256
+  secret_byte_len: 32
+  has_kid: true
+  deterministic: true
+token:
+  kind: api_key
+  value_len: 40
+  starts_with_prefix: true
+  deterministic: true

@@ -1,0 +1,13 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: entries
+---
+- key_type: RSA
+  contains_struct_name: true
+  leaks_pem_header: false
+- key_type: ECDSA
+  contains_struct_name: true
+  leaks_pem_header: false
+- key_type: Ed25519
+  contains_struct_name: true
+  leaks_pem_header: false

@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-rustls/tests/snapshots_rustls.rs
+expression: result
+---
+algorithm: ECDSA-P256
+same_output: true
+der_len: 138

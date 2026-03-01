@@ -1,0 +1,22 @@
+---
+source: crates/uselesskey-rsa/tests/snapshots_rsa.rs
+expression: entries
+---
+- spec_name: RS256
+  private_keys_differ: true
+  public_keys_differ: true
+- spec_name: RS384
+  private_keys_differ: true
+  public_keys_differ: true
+- spec_name: RS512
+  private_keys_differ: true
+  public_keys_differ: true
+- spec_name: PS256
+  private_keys_differ: true
+  public_keys_differ: true
+- spec_name: PS384
+  private_keys_differ: true
+  public_keys_differ: true
+- spec_name: PS512
+  private_keys_differ: true
+  public_keys_differ: true

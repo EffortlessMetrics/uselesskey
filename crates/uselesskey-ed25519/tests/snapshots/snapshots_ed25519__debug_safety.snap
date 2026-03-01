@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-ed25519/tests/snapshots_ed25519.rs
+expression: result
+---
+contains_struct_name: true
+contains_label: true
+contains_private_pem_material: false
+uses_non_exhaustive: true

@@ -1,0 +1,14 @@
+---
+source: crates/uselesskey-ecdsa/tests/snapshots_ecdsa.rs
+expression: entries
+---
+- curve: P-256
+  variant: BadBase64
+  contains_begin_private_key: true
+  contains_begin_corrupted: false
+  differs_from_good: true
+- curve: P-384
+  variant: BadBase64
+  contains_begin_private_key: true
+  contains_begin_corrupted: false
+  differs_from_good: true

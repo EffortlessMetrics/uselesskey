@@ -1,0 +1,34 @@
+---
+source: crates/uselesskey-rsa/tests/snapshots_rsa.rs
+expression: entries
+---
+- spec_name: RS256
+  bits: 2048
+  private_der_len: 1217
+  public_der_len: 294
+  deterministic: true
+- spec_name: RS384
+  bits: 3072
+  private_der_len: 1793
+  public_der_len: 422
+  deterministic: true
+- spec_name: RS512
+  bits: 4096
+  private_der_len: 2375
+  public_der_len: 550
+  deterministic: true
+- spec_name: PS256
+  bits: 2048
+  private_der_len: 1217
+  public_der_len: 294
+  deterministic: true
+- spec_name: PS384
+  bits: 3072
+  private_der_len: 1793
+  public_der_len: 422
+  deterministic: true
+- spec_name: PS512
+  bits: 4096
+  private_der_len: 2374
+  public_der_len: 550
+  deterministic: true

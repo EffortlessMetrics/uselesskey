@@ -1,0 +1,19 @@
+---
+source: crates/uselesskey-rsa/tests/snapshots_rsa.rs
+expression: entries
+---
+- spec_name: RS256
+  has_keys_array: true
+  keys_count: 1
+  first_key_kty: RSA
+  first_key_alg: RS256
+- spec_name: RS384
+  has_keys_array: true
+  keys_count: 1
+  first_key_kty: RSA
+  first_key_alg: RS384
+- spec_name: RS512
+  has_keys_array: true
+  keys_count: 1
+  first_key_kty: RSA
+  first_key_alg: RS512

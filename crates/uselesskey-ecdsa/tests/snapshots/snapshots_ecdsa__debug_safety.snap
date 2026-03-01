@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-ecdsa/tests/snapshots_ecdsa.rs
+expression: result
+---
+contains_struct_name: true
+contains_label: true
+contains_private_key_material: false
+uses_non_exhaustive: true

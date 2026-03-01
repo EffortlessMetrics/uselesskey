@@ -1,0 +1,9 @@
+---
+source: crates/uselesskey-rustls/tests/snapshots_rustls.rs
+expression: result
+---
+description: X.509 chain determinism
+same_private_key: true
+same_leaf_cert: true
+same_root_cert: true
+chain_len: 2

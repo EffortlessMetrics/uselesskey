@@ -1,0 +1,12 @@
+---
+source: crates/uselesskey-rsa/tests/snapshots_rsa.rs
+expression: result
+---
+kty: RSA
+alg: RS256
+has_d: true
+has_p: true
+has_q: true
+has_dp: true
+has_dq: true
+has_qi: true

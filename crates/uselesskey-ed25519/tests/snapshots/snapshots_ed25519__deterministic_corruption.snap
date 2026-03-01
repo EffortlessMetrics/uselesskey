@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-ed25519/tests/snapshots_ed25519.rs
+expression: result
+---
+pem_differs_from_good: true
+pem_starts_with_dash: true
+pem_stable: true
+der_differs_from_good: true
+der_same_len_as_good: true
+der_stable: true

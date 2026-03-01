@@ -1,0 +1,13 @@
+---
+source: crates/uselesskey-ecdsa/tests/snapshots_ecdsa.rs
+expression: result
+---
+curve: P-384
+private_pem_header: "-----BEGIN PRIVATE KEY-----"
+private_pem_has_footer: true
+private_pem_line_count: 6
+public_pem_header: "-----BEGIN PUBLIC KEY-----"
+public_pem_has_footer: true
+public_pem_line_count: 5
+private_der_len: 185
+public_der_len: 120

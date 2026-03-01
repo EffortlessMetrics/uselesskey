@@ -1,0 +1,16 @@
+---
+source: crates/uselesskey-ed25519/tests/snapshots_ed25519.rs
+expression: entries
+---
+- requested_len: 0
+  actual_len: 0
+  shorter_than_original: true
+- requested_len: 1
+  actual_len: 1
+  shorter_than_original: true
+- requested_len: 10
+  actual_len: 10
+  shorter_than_original: true
+- requested_len: 16
+  actual_len: 16
+  shorter_than_original: true

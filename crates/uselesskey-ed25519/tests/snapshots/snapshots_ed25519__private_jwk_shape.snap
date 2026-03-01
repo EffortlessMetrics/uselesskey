@@ -1,0 +1,11 @@
+---
+source: crates/uselesskey-ed25519/tests/snapshots_ed25519.rs
+expression: result
+---
+kty: OKP
+crv: Ed25519
+alg: EdDSA
+use_: sig
+kid_len: 16
+x_len: 43
+d_len: 43

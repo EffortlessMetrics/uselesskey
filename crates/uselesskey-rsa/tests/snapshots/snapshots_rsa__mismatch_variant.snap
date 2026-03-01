@@ -1,0 +1,12 @@
+---
+source: crates/uselesskey-rsa/tests/snapshots_rsa.rs
+expression: entries
+---
+- spec_name: RS256
+  good_public_der_len: 294
+  mismatched_public_der_len: 294
+  keys_differ: true
+- spec_name: RS512
+  good_public_der_len: 550
+  mismatched_public_der_len: 550
+  keys_differ: true

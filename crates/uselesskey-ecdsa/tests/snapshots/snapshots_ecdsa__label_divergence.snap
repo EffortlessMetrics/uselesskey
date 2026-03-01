@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-ecdsa/tests/snapshots_ecdsa.rs
+expression: entries
+---
+- curve: P-256
+  private_keys_differ: true
+  public_keys_differ: true
+- curve: P-384
+  private_keys_differ: true
+  public_keys_differ: true

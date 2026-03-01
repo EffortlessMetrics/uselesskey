@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-ed25519/tests/snapshots_ed25519.rs
+expression: result
+---
+header: "-----BEGIN PUBLIC KEY-----"
+trailer: "-----END PUBLIC KEY-----"
+line_count: 3
+pem_len: 113

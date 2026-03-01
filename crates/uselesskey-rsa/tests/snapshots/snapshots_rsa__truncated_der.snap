@@ -1,0 +1,6 @@
+---
+source: crates/uselesskey-rsa/tests/snapshots_rsa.rs
+expression: result
+---
+original_len: 1217
+truncated_len: 10

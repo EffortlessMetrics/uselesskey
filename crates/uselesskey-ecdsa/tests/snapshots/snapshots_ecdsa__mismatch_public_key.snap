@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-ecdsa/tests/snapshots_ecdsa.rs
+expression: entries
+---
+- curve: P-256
+  mismatch_der_parseable: true
+  mismatch_differs_from_good: true
+- curve: P-384
+  mismatch_der_parseable: true
+  mismatch_differs_from_good: true

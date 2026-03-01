@@ -1,0 +1,14 @@
+---
+source: crates/uselesskey-ecdsa/tests/snapshots_ecdsa.rs
+expression: result
+---
+curve: P-384
+kty: EC
+crv: P-384
+alg: ES384
+use_: sig
+kid_len: 16
+has_x: true
+has_y: true
+x_byte_len: 48
+y_byte_len: 48

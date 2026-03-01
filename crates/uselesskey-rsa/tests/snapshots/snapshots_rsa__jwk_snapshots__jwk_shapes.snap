@@ -1,0 +1,28 @@
+---
+source: crates/uselesskey-rsa/tests/snapshots_rsa.rs
+expression: entries
+---
+- spec_name: RS256
+  kty: RSA
+  alg: RS256
+  use_: sig
+  kid_len: 16
+  kid_is_base64url_shaped: true
+  has_n: true
+  has_e: true
+- spec_name: RS384
+  kty: RSA
+  alg: RS384
+  use_: sig
+  kid_len: 16
+  kid_is_base64url_shaped: true
+  has_n: true
+  has_e: true
+- spec_name: RS512
+  kty: RSA
+  alg: RS512
+  use_: sig
+  kid_len: 16
+  kid_is_base64url_shaped: true
+  has_n: true
+  has_e: true

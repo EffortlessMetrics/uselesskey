@@ -1,0 +1,11 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: shape
+---
+key_type: RSA
+algorithm: RS256
+pem_header: "-----BEGIN PRIVATE KEY-----"
+private_der_len: "[DER_LEN]"
+public_der_len: "[DER_LEN]"
+has_kid: true
+deterministic: true

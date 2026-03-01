@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-rustls/tests/snapshots_rustls.rs
+expression: meta
+---
+algorithm: RSA-4096
+key_format: PKCS8
+der_len: 2375

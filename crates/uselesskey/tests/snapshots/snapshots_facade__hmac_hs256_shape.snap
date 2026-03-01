@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: shape
+---
+algorithm: HS256
+secret_byte_len: 32
+has_kid: true
+deterministic: true

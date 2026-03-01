@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-ed25519/tests/snapshots_ed25519.rs
+expression: result
+---
+keys_count: 1
+first_key_kty: OKP
+first_key_crv: Ed25519

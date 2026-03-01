@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: shape
+---
+bad_header_available: true
+bad_footer_available: true
+bad_base64_available: false

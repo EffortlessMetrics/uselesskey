@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-ed25519/tests/snapshots_ed25519.rs
+expression: result
+---
+private_pem_differs: true
+public_pem_differs: true
+private_der_differs: true
+public_der_differs: true
