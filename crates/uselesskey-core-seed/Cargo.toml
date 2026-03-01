@@ -10,7 +10,7 @@ readme = "README.md"
 exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
 categories = ["development-tools::testing"]
 keywords = ["fixtures", "seed", "determinism", "testing", "crypto"]
-homepage = "https://github.com/EffortlessMetrics/uselesskey"
+homepage.workspace = true
 documentation = "https://docs.rs/uselesskey-core-seed"
 authors.workspace = true
 

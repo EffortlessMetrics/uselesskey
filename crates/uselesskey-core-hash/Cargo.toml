@@ -10,7 +10,7 @@ readme = "README.md"
 exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
 categories = ["development-tools::testing"]
 keywords = ["hash", "blake3", "fixtures", "testing", "determinism"]
-homepage = "https://github.com/EffortlessMetrics/uselesskey"
+homepage.workspace = true
 documentation = "https://docs.rs/uselesskey-core-hash"
 authors.workspace = true
 

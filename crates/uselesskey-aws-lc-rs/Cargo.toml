@@ -10,7 +10,7 @@ categories = ["development-tools::testing"]
 keywords = ["aws-lc-rs", "signing", "fixtures", "testing", "adapter"]
 readme = "README.md"
 exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
-homepage = "https://github.com/EffortlessMetrics/uselesskey"
+homepage.workspace = true
 documentation = "https://docs.rs/uselesskey-aws-lc-rs"
 authors.workspace = true
 

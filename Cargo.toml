@@ -53,6 +53,7 @@ edition = "2024"
 license = "MIT OR Apache-2.0"
 rust-version = "1.92"
 repository = "https://github.com/EffortlessMetrics/uselesskey"
+homepage = "https://github.com/EffortlessMetrics/uselesskey"
 authors = ["Effortless Metrics <opensource@effortlessmetrics.com>"]
 
 [workspace.dependencies]
