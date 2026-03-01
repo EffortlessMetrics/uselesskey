@@ -1,5 +1,3 @@
-mod testutil;
-
 use proptest::prelude::*;
 use uselesskey_core::{Factory, Seed};
 use uselesskey_x509::{ChainSpec, X509FactoryExt, X509Spec};
