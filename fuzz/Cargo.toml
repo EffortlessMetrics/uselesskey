@@ -9,6 +9,7 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
+arbitrary = { version = "1", features = ["derive"] }
 rand_core = "0.6.4"
 rand_chacha = "0.3.1"
 blake3 = "1.8.3"
@@ -20,6 +21,7 @@ uselesskey-core-jwks-order = { path = "../crates/uselesskey-core-jwks-order" }
 uselesskey-core-keypair-material = { path = "../crates/uselesskey-core-keypair-material" }
 uselesskey-core-factory = { path = "../crates/uselesskey-core-factory" }
 uselesskey-core-hash = { path = "../crates/uselesskey-core-hash" }
+uselesskey-core-id = { path = "../crates/uselesskey-core-id" }
 uselesskey-core-negative-pem = { path = "../crates/uselesskey-core-negative-pem" }
 uselesskey-core-x509-negative = { path = "../crates/uselesskey-core-x509-negative" }
 uselesskey-core-x509-spec = { path = "../crates/uselesskey-core-x509-spec" }
@@ -134,5 +136,29 @@ doc = false
 [[bin]]
 name = "x509_negative"
 path = "fuzz_targets/x509_negative.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "token_shape"
+path = "fuzz_targets/token_shape.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "keypair_material"
+path = "fuzz_targets/keypair_material.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "seed_derivation"
+path = "fuzz_targets/seed_derivation.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "jwks_builder"
+path = "fuzz_targets/jwks_builder.rs"
 test = false
 doc = false
