@@ -47,7 +47,7 @@ mod rsa_snapshots {
         #[derive(Serialize)]
         struct RsaModulusInfo {
             label: &'static str,
-            bits: u32,
+            bits: usize,
             modulus_len: usize,
         }
 

@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-ring/tests/snapshots_ring.rs
+assertion_line: 38
+expression: result
+---
+algorithm: RSA-2048
+public_key_hex: "[REDACTED]"
+public_key_len: 270

@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-aws-lc-rs/tests/snapshots_aws_lc_rs.rs
+assertion_line: 97
+expression: result
+---
+algorithm: ECDSA-P256
+public_key_hex: "[REDACTED]"
+public_key_len: 65

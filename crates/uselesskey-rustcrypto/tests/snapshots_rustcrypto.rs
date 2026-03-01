@@ -172,7 +172,7 @@ mod hmac_snapshots {
 
         let result = HmacInfo {
             algorithm: "HMAC-SHA256",
-            tag_hex: hex::encode(&tag),
+            tag_hex: hex::encode(tag),
             tag_len: tag.len(),
         };
 
