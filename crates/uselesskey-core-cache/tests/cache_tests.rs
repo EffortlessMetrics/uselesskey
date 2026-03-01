@@ -126,7 +126,7 @@ proptest! {
             prop_assert_eq!(&*val, label);
         }
         prop_assert!(cache.len() <= labels.len());
-        prop_assert!(cache.len() > 0);
+        prop_assert!(!cache.is_empty());
     }
 
     #[test]

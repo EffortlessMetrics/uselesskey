@@ -322,7 +322,7 @@ mod all_types_snapshot {
     use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
     use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
     use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
-    use uselesskey_rustls::{RustlsCertExt, RustlsChainExt, RustlsPrivateKeyExt};
+    use uselesskey_rustls::RustlsPrivateKeyExt;
     use uselesskey_x509::{ChainSpec, X509FactoryExt, X509Spec};
 
     #[derive(Serialize)]

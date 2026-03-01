@@ -147,8 +147,8 @@ fn snapshot_self_signed_leaf() {
 
     let result = SelfSignedSnapshot {
         label: cert.label().to_string(),
-        subject_cn: get_cn(&parsed.subject()),
-        issuer_cn: get_cn(&parsed.issuer()),
+        subject_cn: get_cn(parsed.subject()),
+        issuer_cn: get_cn(parsed.issuer()),
         is_ca: parsed.is_ca(),
         validity_days,
         serial_number_len: parsed.serial.to_bytes_be().len(),
@@ -192,8 +192,8 @@ fn snapshot_self_signed_ca() {
 
     let result = SelfSignedSnapshot {
         label: cert.label().to_string(),
-        subject_cn: get_cn(&parsed.subject()),
-        issuer_cn: get_cn(&parsed.issuer()),
+        subject_cn: get_cn(parsed.subject()),
+        issuer_cn: get_cn(parsed.issuer()),
         is_ca: parsed.is_ca(),
         validity_days,
         serial_number_len: parsed.serial.to_bytes_be().len(),
@@ -239,7 +239,7 @@ fn snapshot_negative_expired() {
 
     let result = NegativeCertSnapshot {
         variant: "expired".to_string(),
-        subject_cn: get_cn(&parsed.subject()),
+        subject_cn: get_cn(parsed.subject()),
         is_ca: parsed.is_ca(),
         validity_days,
         differs_from_good: good.cert_der() != expired.cert_der(),
@@ -262,7 +262,7 @@ fn snapshot_negative_not_yet_valid() {
 
     let result = NegativeCertSnapshot {
         variant: "not_yet_valid".to_string(),
-        subject_cn: get_cn(&parsed.subject()),
+        subject_cn: get_cn(parsed.subject()),
         is_ca: parsed.is_ca(),
         validity_days,
         differs_from_good: good.cert_der() != nyv.cert_der(),
@@ -285,7 +285,7 @@ fn snapshot_negative_wrong_key_usage() {
 
     let result = NegativeCertSnapshot {
         variant: "wrong_key_usage".to_string(),
-        subject_cn: get_cn(&parsed.subject()),
+        subject_cn: get_cn(parsed.subject()),
         is_ca: parsed.is_ca(),
         validity_days,
         differs_from_good: good.cert_der() != wku.cert_der(),
