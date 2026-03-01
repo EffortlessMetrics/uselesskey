@@ -27,7 +27,9 @@ features = ["jwk"]
 
 [dev-dependencies]
 base64 = { workspace = true }
+insta.workspace = true
 proptest.workspace = true
+serde.workspace = true
 
 [features]
 default = []

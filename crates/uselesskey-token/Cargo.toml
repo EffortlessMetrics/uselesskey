@@ -19,8 +19,10 @@ uselesskey-core-token.workspace = true
 
 [dev-dependencies]
 base64.workspace = true
-serde_json.workspace = true
+insta.workspace = true
 proptest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
 
 [package.metadata.docs.rs]
 all-features = true

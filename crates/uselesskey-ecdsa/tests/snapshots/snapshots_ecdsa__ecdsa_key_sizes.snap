@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-ecdsa/tests/snapshots_ecdsa.rs
+expression: sizes
+---
+- curve: P-256
+  private_der_len: 138
+  public_der_len: 91
+- curve: P-384
+  private_der_len: 185
+  public_der_len: 120

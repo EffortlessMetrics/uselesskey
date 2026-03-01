@@ -3536,6 +3536,8 @@ name = "uselesskey-core-x509"
 version = "0.3.0"
 dependencies = [
  "proptest",
+ "rand_chacha 0.3.1",
+ "rand_core 0.6.4",
  "rstest",
  "uselesskey-core-x509-derive",
  "uselesskey-core-x509-negative",
@@ -3576,11 +3578,13 @@ version = "0.3.0"
 dependencies = [
  "base64",
  "elliptic-curve",
+ "insta",
  "p256",
  "p384",
  "proptest",
  "rand_core 0.6.4",
  "rstest",
+ "serde",
  "serde_json",
  "uselesskey-core",
  "uselesskey-core-keypair-material",
@@ -3594,10 +3598,12 @@ version = "0.3.0"
 dependencies = [
  "base64",
  "ed25519-dalek",
+ "insta",
  "pkcs8",
  "proptest",
  "rand_core 0.6.4",
  "rstest",
+ "serde",
  "serde_json",
  "uselesskey-core",
  "uselesskey-core-keypair-material",
@@ -3614,8 +3620,10 @@ name = "uselesskey-hmac"
 version = "0.3.0"
 dependencies = [
  "base64",
+ "insta",
  "proptest",
  "rand_core 0.6.4",
+ "serde",
  "uselesskey-core",
  "uselesskey-core-kid",
  "uselesskey-jwk",
@@ -3714,9 +3722,11 @@ name = "uselesskey-rsa"
 version = "0.3.0"
 dependencies = [
  "base64",
+ "insta",
  "proptest",
  "rsa",
  "rstest",
+ "serde",
  "serde_json",
  "uselesskey-core",
  "uselesskey-core-keypair-material",
@@ -3769,7 +3779,9 @@ name = "uselesskey-token"
 version = "0.3.0"
 dependencies = [
  "base64",
+ "insta",
  "proptest",
+ "serde",
  "serde_json",
  "uselesskey-core",
  "uselesskey-core-token",

@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-token/tests/snapshots_token.rs
+expression: result
+---
+label: snapshot-oauth
+value_len: 252
+has_three_segments: true
+authorization_header_prefix: Bearer

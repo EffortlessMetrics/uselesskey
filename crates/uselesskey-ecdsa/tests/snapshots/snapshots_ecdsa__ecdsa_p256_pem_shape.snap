@@ -1,0 +1,14 @@
+---
+source: crates/uselesskey-ecdsa/tests/snapshots_ecdsa.rs
+expression: result
+---
+label: snapshot-p256
+curve: P-256
+private_pem_starts_with: "-----BEGIN PRIVATE KEY-----"
+private_pem_ends_with: "-----END PRIVATE KEY-----"
+private_pem_line_count: 5
+public_pem_starts_with: "-----BEGIN PUBLIC KEY-----"
+public_pem_ends_with: "-----END PUBLIC KEY-----"
+public_pem_line_count: 4
+private_der_len: 138
+public_der_len: 91
