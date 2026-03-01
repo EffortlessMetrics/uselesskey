@@ -965,7 +965,7 @@ fn contains_pem_markers(path: &Path) -> Result<bool> {
         .and_then(|s| s.to_str())
         .unwrap_or("")
         .to_ascii_lowercase();
-    if matches!(ext.as_str(), "rs" | "feature" | "md" | "toml") {
+    if matches!(ext.as_str(), "rs" | "feature" | "md" | "toml" | "snap") {
         return Ok(false);
     }
     let content = fs::read(path).with_context(|| format!("failed to read {path:?}"))?;
