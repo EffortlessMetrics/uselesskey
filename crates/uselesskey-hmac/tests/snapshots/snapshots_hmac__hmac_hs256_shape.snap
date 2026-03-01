@@ -1,7 +1,9 @@
 ---
 source: crates/uselesskey-hmac/tests/snapshots_hmac.rs
+assertion_line: 33
 expression: result
 ---
 label: snapshot-hs256
-algorithm: HS256
+alg: HS256
 secret_len: 32
+secret_b64: "[REDACTED]"

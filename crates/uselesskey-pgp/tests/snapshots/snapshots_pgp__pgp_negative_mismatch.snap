@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-pgp/tests/snapshots_pgp.rs
+assertion_line: 125
+expression: result
+---
+normal_header: "-----BEGIN PGP PUBLIC KEY BLOCK-----"
+mismatch_header: "-----BEGIN PGP PUBLIC KEY BLOCK-----"
+keys_differ: true

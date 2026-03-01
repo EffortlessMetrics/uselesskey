@@ -3700,8 +3700,10 @@ dependencies = [
 name = "uselesskey-pgp"
 version = "0.3.0"
 dependencies = [
+ "insta",
  "pgp",
  "proptest",
+ "serde",
  "uselesskey-core",
 ]
 

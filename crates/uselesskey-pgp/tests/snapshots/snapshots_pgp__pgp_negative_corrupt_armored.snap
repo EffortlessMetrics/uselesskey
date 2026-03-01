@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-pgp/tests/snapshots_pgp.rs
+assertion_line: 102
+expression: result
+---
+original_header: "-----BEGIN PGP PRIVATE KEY BLOCK-----"
+corrupt_header: "-----BEGIN PGP PRIVATE KEY BLOCK-----"
+original_len: 423
+corrupt_len: 424
+differs: true

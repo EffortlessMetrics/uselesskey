@@ -1,0 +1,14 @@
+---
+source: crates/uselesskey-hmac/tests/snapshots_hmac.rs
+assertion_line: 99
+expression: specs
+---
+- alg: HS256
+  byte_len: 32
+  actual_secret_len: 32
+- alg: HS384
+  byte_len: 48
+  actual_secret_len: 48
+- alg: HS512
+  byte_len: 64
+  actual_secret_len: 64

@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-pgp/tests/snapshots_pgp.rs
+assertion_line: 148
+expression: result
+---
+full_len: 256
+truncated_len: 128
+is_shorter: true
