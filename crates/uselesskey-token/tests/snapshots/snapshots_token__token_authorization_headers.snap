@@ -1,0 +1,13 @@
+---
+source: crates/uselesskey-token/tests/snapshots_token.rs
+expression: cases
+---
+- kind: api_key
+  scheme: ApiKey
+  header_len: 47
+- kind: bearer
+  scheme: Bearer
+  header_len: 50
+- kind: oauth
+  scheme: Bearer
+  header_len: 260

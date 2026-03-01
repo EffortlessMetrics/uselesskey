@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-ecdsa/tests/snapshots_ecdsa.rs
+expression: shape
+---
+first_line: "-----BEGIN PRIVATE KEY-----"
+last_line: "-----END PRIVATE KEY-----"
+line_count: 5
+total_len: 241

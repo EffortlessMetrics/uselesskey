@@ -1,0 +1,12 @@
+---
+source: crates/uselesskey-ecdsa/tests/snapshots_ecdsa.rs
+expression: cases
+---
+- algorithm: ES256
+  curve: P-256
+  private_key_der_len: 138
+  public_key_der_len: 91
+- algorithm: ES384
+  curve: P-384
+  private_key_der_len: 185
+  public_key_der_len: 120

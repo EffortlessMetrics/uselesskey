@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-x509/tests/snapshots_x509.rs
+expression: shape
+---
+first_line: "-----BEGIN PRIVATE KEY-----"
+last_line: "-----END PRIVATE KEY-----"
+line_count: "[VOLATILE]"
+total_len: "[VOLATILE]"

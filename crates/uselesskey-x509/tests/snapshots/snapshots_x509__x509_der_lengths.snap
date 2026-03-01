@@ -1,0 +1,6 @@
+---
+source: crates/uselesskey-x509/tests/snapshots_x509.rs
+expression: result
+---
+cert_der_len: "[VOLATILE]"
+private_key_der_len: "[VOLATILE]"

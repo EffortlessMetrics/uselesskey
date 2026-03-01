@@ -1,0 +1,6 @@
+---
+source: crates/uselesskey-ecdsa/tests/snapshots_ecdsa.rs
+expression: info
+---
+len: 16
+is_base64url_chars: true

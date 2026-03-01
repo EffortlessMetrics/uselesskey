@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-token/tests/snapshots_token.rs
+expression: shape
+---
+kind: oauth_access_token
+len: 247
+segment_count: 3
+value: "[REDACTED]"

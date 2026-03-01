@@ -1,0 +1,9 @@
+---
+source: crates/uselesskey-x509/tests/snapshots_x509.rs
+expression: meta
+---
+subject_cn: snap.example.com
+issuer_cn: snap.example.com
+is_self_signed: true
+version: 2
+serial_number: "[REDACTED]"
