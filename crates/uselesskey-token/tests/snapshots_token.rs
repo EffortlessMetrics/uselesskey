@@ -14,7 +14,7 @@ struct TokenSnapshot {
     label: &'static str,
     kind: &'static str,
     value_len: usize,
-    starts_with_uk_test: bool,
+    prefix: String,
     authorization_header_prefix: String,
 }
 
@@ -27,7 +27,7 @@ fn snapshot_api_key_shape() {
         label: "snapshot-api-key",
         kind: "api_key",
         value_len: tok.value().len(),
-        starts_with_uk_test: tok.value().starts_with("uk_test_"),
+        prefix: tok.value().chars().take(8).collect::<String>(),
         authorization_header_prefix: tok
             .authorization_header()
             .split(' ')
@@ -48,7 +48,7 @@ fn snapshot_bearer_shape() {
         label: "snapshot-bearer",
         kind: "bearer",
         value_len: tok.value().len(),
-        starts_with_uk_test: tok.value().starts_with("uk_test_"),
+        prefix: tok.value().chars().take(8).collect::<String>(),
         authorization_header_prefix: tok
             .authorization_header()
             .split(' ')
