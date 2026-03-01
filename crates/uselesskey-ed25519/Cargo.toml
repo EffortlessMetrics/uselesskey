@@ -33,6 +33,8 @@ jwk = ["dep:serde_json", "dep:base64", "dep:uselesskey-jwk"]
 features = ["jwk"]
 
 [dev-dependencies]
-uselesskey-core-kid.workspace = true
+insta.workspace = true
 proptest.workspace = true
 rstest.workspace = true
+serde.workspace = true
+uselesskey-core-kid.workspace = true

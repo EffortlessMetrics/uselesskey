@@ -1,0 +1,12 @@
+---
+source: crates/uselesskey-rsa/tests/snapshots_rsa.rs
+expression: results
+---
+- variant: BadBase64
+  differs_from_original: true
+- variant: BadHeader
+  differs_from_original: true
+- variant: BadFooter
+  differs_from_original: true
+- variant: ExtraBlankLine
+  differs_from_original: true

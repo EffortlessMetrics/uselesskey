@@ -1,0 +1,13 @@
+---
+source: crates/uselesskey-ed25519/tests/snapshots_ed25519.rs
+expression: result
+---
+label: snapshot-ed25519
+private_pem_starts_with: "-----BEGIN PRIVATE KEY-----"
+private_pem_ends_with: "-----END PRIVATE KEY-----"
+private_pem_line_count: 4
+public_pem_starts_with: "-----BEGIN PUBLIC KEY-----"
+public_pem_ends_with: "-----END PUBLIC KEY-----"
+public_pem_line_count: 3
+private_der_len: 83
+public_der_len: 44

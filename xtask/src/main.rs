@@ -429,7 +429,21 @@ fn run_publish_preflight(runner: &mut receipt::Runner) -> Result<()> {
     for name in PUBLISH_CRATES {
         let step_name = format!("preflight:package:{name}");
         runner.step(&step_name, None, || {
-            run(Command::new("cargo").args(["package", "--no-verify", "-p", name]))
+            let output = Command::new("cargo")
+                .args(["package", "--no-verify", "-p", name])
+                .output()
+                .context("failed to spawn cargo package")?;
+            if output.status.success() {
+                return Ok(());
+            }
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            // Tolerate "no matching package" errors for workspace siblings
+            // that haven't been published to crates.io yet.
+            if stderr.contains("no matching package named") {
+                eprintln!("  [warn] {name}: skipped (workspace dep not yet on crates.io)");
+                return Ok(());
+            }
+            bail!("cargo package -p {name} failed:\n{stderr}");
         })?;
     }
     Ok(())
@@ -965,7 +979,7 @@ fn contains_pem_markers(path: &Path) -> Result<bool> {
         .and_then(|s| s.to_str())
         .unwrap_or("")
         .to_ascii_lowercase();
-    if matches!(ext.as_str(), "rs" | "feature" | "md" | "toml") {
+    if matches!(ext.as_str(), "rs" | "feature" | "md" | "toml" | "snap") {
         return Ok(false);
     }
     let content = fs::read(path).with_context(|| format!("failed to read {path:?}"))?;

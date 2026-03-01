@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-hmac/tests/snapshots_hmac.rs
+expression: result
+---
+label: snapshot-hs512
+algorithm: HS512
+secret_len: 64
