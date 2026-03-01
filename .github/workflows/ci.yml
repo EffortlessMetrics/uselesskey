@@ -44,6 +44,7 @@ jobs:
         with:
           name: receipt-pr
           path: target/xtask/receipt.json
+        if: always()
 
   main:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -79,3 +80,4 @@ jobs:
         with:
           name: receipt-main
           path: target/xtask/receipt.json
+        if: always()

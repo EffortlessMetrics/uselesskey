@@ -43,3 +43,27 @@ Feature: Negative fixtures
   Scenario: truncating beyond length returns original
     When I truncate the PKCS8 DER to 99999 bytes
     Then the truncated DER should equal the original
+
+  # --- Corruption variant distinctness ---
+
+  Scenario: deterministic PEM corruption with variant is stable
+    When I deterministically corrupt the RSA PKCS8 PEM with variant "neg-v1"
+    And I deterministically corrupt the RSA PKCS8 PEM with variant "neg-v1" again
+    Then the deterministic text artifacts should be identical
+    And the deterministic RSA PEM artifact should fail to parse
+
+  Scenario: deterministic DER corruption with variant is stable
+    When I deterministically corrupt the RSA PKCS8 DER with variant "neg-v1"
+    And I deterministically corrupt the RSA PKCS8 DER with variant "neg-v1" again
+    Then the deterministic binary artifacts should be identical
+    And the deterministic RSA DER artifact should fail to parse
+
+  # --- Mismatched keys ---
+
+  Scenario: mismatched public key does not match the original private key
+    Then a mismatched SPKI DER should parse and differ
+
+  Scenario: mismatched key variant is deterministic
+    When I get the mismatched public key
+    And I get the mismatched public key again
+    Then the mismatched keys should be identical
