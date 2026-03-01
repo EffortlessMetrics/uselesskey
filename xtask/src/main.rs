@@ -445,10 +445,9 @@ fn run_publish_preflight(runner: &mut receipt::Runner) -> Result<()> {
                 return Ok(());
             }
             bail!("cargo package -p {name} failed:\n{stderr}");
-        }) {
-            if first_err.is_none() {
-                first_err = Some(e);
-            }
+        }) && first_err.is_none()
+        {
+            first_err = Some(e);
         }
     }
     match first_err {
