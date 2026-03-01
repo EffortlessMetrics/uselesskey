@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-ring/tests/snapshots_ring.rs
+assertion_line: 92
+expression: result
+---
+algorithm: ECDSA-P256
+public_key_hex: "[REDACTED]"
+public_key_len: 65

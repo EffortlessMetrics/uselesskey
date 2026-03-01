@@ -1,0 +1,11 @@
+---
+source: crates/uselesskey-jsonwebtoken/tests/snapshots_jwt.rs
+assertion_line: 104
+expression: result
+---
+algorithm: ES256
+token_parts: 3
+token_header_len: 36
+claims_sub: user-ec
+claims_iss: snapshot-ecdsa
+roundtrip_ok: true

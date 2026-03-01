@@ -1,3 +1,10 @@
+//! Sink types for writing key material to temporary files or in-memory buffers.
+//!
+//! This crate provides [`TempArtifact`], a tempfile-backed container that holds
+//! generated key material on disk and cleans up automatically on drop.  It is
+//! useful when downstream libraries require `Path`-based APIs rather than
+//! in-memory byte slices.
+
 #![forbid(unsafe_code)]
 
 use std::fmt;

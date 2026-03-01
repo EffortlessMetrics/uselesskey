@@ -1,0 +1,11 @@
+---
+source: crates/uselesskey-aws-lc-rs/tests/snapshots_aws_lc_rs.rs
+assertion_line: 72
+expression: cases
+---
+- label: rsa-2048
+  bits: 2048
+  modulus_len: 256
+- label: rsa-4096
+  bits: 4096
+  modulus_len: 512
