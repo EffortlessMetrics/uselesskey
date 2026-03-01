@@ -1,0 +1,6 @@
+---
+source: crates/uselesskey-ed25519/tests/snapshots_ed25519.rs
+expression: info
+---
+len: 16
+is_base64url_chars: true

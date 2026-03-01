@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-ed25519/tests/snapshots_ed25519.rs
+expression: shape
+---
+kty: OKP
+crv: Ed25519
+alg: EdDSA
+use_: sig
+kid: "[REDACTED]"
+x: "[REDACTED]"

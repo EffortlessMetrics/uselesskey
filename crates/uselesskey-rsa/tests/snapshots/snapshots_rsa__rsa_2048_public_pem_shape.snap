@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-rsa/tests/snapshots_rsa.rs
+expression: shape
+---
+first_line: "-----BEGIN PUBLIC KEY-----"
+last_line: "-----END PUBLIC KEY-----"
+line_count: 9
+total_len: 451

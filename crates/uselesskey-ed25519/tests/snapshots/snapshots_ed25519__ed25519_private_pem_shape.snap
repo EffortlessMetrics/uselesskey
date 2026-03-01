@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-ed25519/tests/snapshots_ed25519.rs
+expression: shape
+---
+first_line: "-----BEGIN PRIVATE KEY-----"
+last_line: "-----END PRIVATE KEY-----"
+line_count: 4
+total_len: 168

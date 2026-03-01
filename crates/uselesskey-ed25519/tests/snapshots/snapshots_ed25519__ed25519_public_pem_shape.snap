@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-ed25519/tests/snapshots_ed25519.rs
+expression: shape
+---
+first_line: "-----BEGIN PUBLIC KEY-----"
+last_line: "-----END PUBLIC KEY-----"
+line_count: 3
+total_len: 113

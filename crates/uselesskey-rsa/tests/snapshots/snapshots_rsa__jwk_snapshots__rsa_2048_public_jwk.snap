@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-rsa/tests/snapshots_rsa.rs
+expression: shape
+---
+kty: RSA
+alg: RS256
+use_: sig
+kid: "[REDACTED]"
+n: "[REDACTED]"
+e: "[REDACTED]"

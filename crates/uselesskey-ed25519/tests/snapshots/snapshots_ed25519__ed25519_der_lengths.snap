@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-ed25519/tests/snapshots_ed25519.rs
+expression: result
+---
+algorithm: Ed25519
+private_key_der_len: 83
+public_key_der_len: 44

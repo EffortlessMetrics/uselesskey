@@ -1,0 +1,13 @@
+---
+source: crates/uselesskey-hmac/tests/snapshots_hmac.rs
+expression: cases
+---
+- algorithm: HS256
+  kid_len: 16
+  is_base64url_chars: true
+- algorithm: HS384
+  kid_len: 16
+  is_base64url_chars: true
+- algorithm: HS512
+  kid_len: 16
+  is_base64url_chars: true
