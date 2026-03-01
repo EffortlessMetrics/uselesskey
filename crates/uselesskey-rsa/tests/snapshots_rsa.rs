@@ -112,7 +112,7 @@ fn snapshot_rsa_corrupt_pem_variants() {
         .iter()
         .map(|(name, corrupt)| RsaCorruptSnapshot {
             variant: name,
-            differs_from_original: corrupt != &original,
+            differs_from_original: corrupt != original,
         })
         .collect();
 
@@ -133,7 +133,7 @@ fn snapshot_rsa_key_sizes() {
     let sizes: Vec<RsaSizeInfo> = [2048, 4096]
         .into_iter()
         .map(|bits| {
-            let kp = fx.rsa(&format!("size-{bits}"), RsaSpec::new(bits));
+            let kp = fx.rsa(format!("size-{bits}"), RsaSpec::new(bits));
             RsaSizeInfo {
                 bits,
                 private_der_len: kp.private_key_pkcs8_der().len(),

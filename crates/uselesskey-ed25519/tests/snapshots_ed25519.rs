@@ -103,7 +103,7 @@ fn snapshot_ed25519_corrupt_pem_variants() {
         .iter()
         .map(|(name, corrupt)| CorruptInfo {
             variant: name,
-            differs_from_original: corrupt != &original,
+            differs_from_original: corrupt != original,
         })
         .collect();
 
