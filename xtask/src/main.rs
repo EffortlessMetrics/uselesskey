@@ -440,9 +440,7 @@ fn run_publish_preflight(runner: &mut receipt::Runner) -> Result<()> {
             // Tolerate "no matching package" errors for workspace siblings
             // that haven't been published to crates.io yet.
             if stderr.contains("no matching package named") {
-                eprintln!(
-                    "  [warn] {name}: skipped (workspace dep not yet on crates.io)"
-                );
+                eprintln!("  [warn] {name}: skipped (workspace dep not yet on crates.io)");
                 return Ok(());
             }
             bail!("cargo package -p {name} failed:\n{stderr}");
