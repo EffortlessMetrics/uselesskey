@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-rustls/tests/snapshots_rustls.rs
+expression: result
+---
+label: self-signed
+key_type: PKCS8
+key_der_len: "[REDACTED]"

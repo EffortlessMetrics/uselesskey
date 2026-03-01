@@ -1,0 +1,6 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: result
+---
+private_starts_with: true
+public_starts_with: true

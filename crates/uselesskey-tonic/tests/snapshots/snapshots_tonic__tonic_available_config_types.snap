@@ -1,0 +1,12 @@
+---
+source: crates/uselesskey-tonic/tests/snapshots_tonic.rs
+expression: result
+---
+identity_from_self_signed: true
+identity_from_chain: true
+server_tls_from_self_signed: true
+server_tls_from_chain: true
+client_tls_from_self_signed: true
+client_tls_from_chain: true
+mtls_server_from_chain: true
+mtls_client_from_chain: true

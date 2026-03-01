@@ -1,0 +1,13 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: cases
+---
+- kind: api_key
+  value_len: 40
+  value_non_empty: true
+- kind: bearer
+  value_len: 43
+  value_non_empty: true
+- kind: oauth_access_token
+  value_len: 252
+  value_non_empty: true

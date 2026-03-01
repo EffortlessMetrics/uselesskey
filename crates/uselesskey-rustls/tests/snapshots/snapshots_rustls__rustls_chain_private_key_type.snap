@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-rustls/tests/snapshots_rustls.rs
+expression: result
+---
+label: chain-leaf
+key_type: PKCS8
+key_der_len: "[REDACTED]"

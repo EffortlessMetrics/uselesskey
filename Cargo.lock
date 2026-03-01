@@ -3289,6 +3289,8 @@ checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
 name = "uselesskey"
 version = "0.3.0"
 dependencies = [
+ "insta",
+ "serde",
  "tempfile",
  "uselesskey-core",
  "uselesskey-ecdsa",
@@ -3769,8 +3771,10 @@ dependencies = [
 name = "uselesskey-rustls"
 version = "0.3.0"
 dependencies = [
+ "insta",
  "rustls",
  "rustls-pki-types",
+ "serde",
  "uselesskey-core",
  "uselesskey-ecdsa",
  "uselesskey-ed25519",
@@ -3802,7 +3806,9 @@ dependencies = [
 name = "uselesskey-tonic"
 version = "0.3.0"
 dependencies = [
+ "insta",
  "proptest",
+ "serde",
  "tonic",
  "uselesskey-core",
  "uselesskey-x509",

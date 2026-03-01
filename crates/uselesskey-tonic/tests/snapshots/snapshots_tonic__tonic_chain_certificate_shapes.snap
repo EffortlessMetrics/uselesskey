@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-tonic/tests/snapshots_tonic.rs
+expression: result
+---
+chain_pem_cert_count: 2
+root_pem_starts_with_cert_header: true
+leaf_pem_starts_with_cert_header: true
+leaf_key_pem_starts_with_key_header: true

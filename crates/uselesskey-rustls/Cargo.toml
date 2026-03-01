@@ -47,3 +47,5 @@ uselesskey-rsa = { path = "../uselesskey-rsa", version = "0.3.0" }
 uselesskey-ecdsa = { path = "../uselesskey-ecdsa", version = "0.3.0" }
 uselesskey-ed25519 = { path = "../uselesskey-ed25519", version = "0.3.0" }
 rustls = { version = "0.23", features = ["ring"] }
+serde.workspace = true
+insta.workspace = true

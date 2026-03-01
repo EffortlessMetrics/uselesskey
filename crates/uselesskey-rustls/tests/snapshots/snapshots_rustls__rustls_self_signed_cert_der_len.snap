@@ -1,0 +1,6 @@
+---
+source: crates/uselesskey-rustls/tests/snapshots_rustls.rs
+expression: result
+---
+label: self-signed
+cert_der_len: 758

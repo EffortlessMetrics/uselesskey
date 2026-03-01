@@ -63,3 +63,5 @@ full = ["all-keys", "token", "x509", "jwk"]
 
 [dev-dependencies]
 tempfile.workspace = true
+serde.workspace = true
+insta.workspace = true

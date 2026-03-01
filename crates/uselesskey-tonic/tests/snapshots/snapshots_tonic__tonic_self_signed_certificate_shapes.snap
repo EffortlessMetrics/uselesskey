@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-tonic/tests/snapshots_tonic.rs
+expression: result
+---
+cert_der_len: 758
+private_key_der_len: 1217
+cert_pem_starts_with_cert_header: true
+key_pem_starts_with_key_header: true

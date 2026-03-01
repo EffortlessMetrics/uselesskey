@@ -1,0 +1,9 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: result
+---
+algorithm: Ed25519
+private_key_pem_header: "-----BEGIN PRIVATE KEY-----"
+private_key_der_len: 83
+public_key_pem_header: "-----BEGIN PUBLIC KEY-----"
+public_key_der_len: 44

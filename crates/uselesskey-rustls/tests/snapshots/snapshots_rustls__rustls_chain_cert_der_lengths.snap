@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-rustls/tests/snapshots_rustls.rs
+expression: result
+---
+leaf_cert_der_len: 803
+intermediate_cert_der_len: 802
+root_cert_der_len: 794
+chain_count: 2
