@@ -27,7 +27,7 @@ fn token_kind_clone_is_equal() {
         TokenKind::OAuthAccessToken,
     ];
     for kind in &kinds {
-        assert_eq!(*kind, kind.clone());
+        assert_eq!(*kind, (*kind).clone());
     }
 }
 

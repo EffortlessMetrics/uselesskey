@@ -13,17 +13,38 @@ use uselesskey_core_x509_spec::{ChainSpec, KeyUsage, NotBeforeOffset, X509Spec};
 
 #[test]
 fn x509_negative_all_variants_construct() {
+    fn assert_exhaustive(variant: X509Negative) {
+        match variant {
+            X509Negative::Expired => {}
+            X509Negative::NotYetValid => {}
+            X509Negative::WrongKeyUsage => {}
+            X509Negative::SelfSignedButClaimsCA => {}
+        }
+    }
+
     let variants = [
         X509Negative::Expired,
         X509Negative::NotYetValid,
         X509Negative::WrongKeyUsage,
         X509Negative::SelfSignedButClaimsCA,
     ];
-    assert_eq!(variants.len(), 4, "update test if new variants are added");
+    for variant in variants {
+        assert_exhaustive(variant);
+    }
 }
 
 #[test]
 fn chain_negative_all_variants_construct() {
+    fn assert_exhaustive(variant: ChainNegative) {
+        match variant {
+            ChainNegative::HostnameMismatch { .. } => {}
+            ChainNegative::UnknownCa => {}
+            ChainNegative::ExpiredLeaf => {}
+            ChainNegative::ExpiredIntermediate => {}
+            ChainNegative::RevokedLeaf => {}
+        }
+    }
+
     let variants: Vec<ChainNegative> = vec![
         ChainNegative::HostnameMismatch {
             wrong_hostname: "evil.example.com".into(),
@@ -33,7 +54,9 @@ fn chain_negative_all_variants_construct() {
         ChainNegative::ExpiredIntermediate,
         ChainNegative::RevokedLeaf,
     ];
-    assert_eq!(variants.len(), 5, "update test if new variants are added");
+    for variant in variants {
+        assert_exhaustive(variant);
+    }
 }
 
 // ---------------------------------------------------------------------------
