@@ -1,3 +1,30 @@
+//! Deterministic key-ID (`kid`) generation for test fixtures.
+//!
+//! Produces stable, URL-safe key identifiers by hashing public key bytes with
+//! BLAKE3 and encoding the result as base64url (no padding). The default
+//! output uses 12 bytes (96 bits) of hash — enough to avoid collisions in
+//! test suites without being unwieldy.
+//!
+//! # Key functions
+//!
+//! - [`kid_from_bytes`] — generate a `kid` using the default 12-byte prefix
+//! - [`kid_from_bytes_with_prefix`] — generate a `kid` with a custom prefix
+//!   length (1–32 bytes)
+//!
+//! # Example
+//!
+//! ```
+//! use uselesskey_core_kid::kid_from_bytes;
+//!
+//! let kid = kid_from_bytes(b"my-test-public-key");
+//! assert!(!kid.is_empty());
+//! ```
+//!
+//! # Note
+//!
+//! This crate is part of the `uselesskey` test-fixture library and is intended
+//! for **testing purposes only**.
+
 #![forbid(unsafe_code)]
 //! Deterministic key-id (kid) helpers for uselesskey fixture crates.
 //!

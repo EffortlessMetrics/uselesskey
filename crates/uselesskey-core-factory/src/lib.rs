@@ -1,3 +1,30 @@
+//! Central factory for generating and caching cryptographic test fixtures.
+//!
+//! [`Factory`] is the main entry point for the `uselesskey` workspace. It
+//! operates in two modes:
+//!
+//! - [`Mode::Random`] — each artifact uses platform randomness (default).
+//! - [`Mode::Deterministic`] — artifacts are derived from a master [`Seed`] via
+//!   BLAKE3, producing order-independent, reproducible output.
+//!
+//! Extension traits (e.g. `RsaFactoryExt`, `EcdsaFactoryExt`) add key-type
+//! specific helpers on top of `Factory`.
+//!
+//! # Example
+//!
+//! ```
+//! use uselesskey_core_factory::Factory;
+//! use uselesskey_core_id::Seed;
+//!
+//! // Deterministic factory — same seed always produces the same fixtures.
+//! let fx = Factory::deterministic(Seed::new([42u8; 32]));
+//! ```
+//!
+//! # Note
+//!
+//! This crate generates **test fixtures only** — never use the output as
+//! production cryptographic material.
+
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
 //! Factory orchestration and cache lookup for uselesskey fixtures.

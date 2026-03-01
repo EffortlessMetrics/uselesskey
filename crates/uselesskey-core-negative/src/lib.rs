@@ -1,3 +1,22 @@
+//! Negative-fixture helpers for the `uselesskey` test-fixture library.
+//!
+//! Provides functions that intentionally corrupt DER and PEM blobs so tests can
+//! verify that parsers and validators reject malformed input.
+//!
+//! # Key functions
+//!
+//! - [`truncate_der`] — shorten a DER blob to a given length
+//! - [`flip_byte`] — XOR a single byte in a DER blob
+//! - [`corrupt_der_deterministic`] — deterministically corrupt DER using a
+//!   variant string (truncation, bit-flip, or both)
+//! - [`corrupt_pem`] / [`corrupt_pem_deterministic`] — PEM-level corruption
+//!   (re-exported from `uselesskey-core-negative-pem`)
+//!
+//! # Note
+//!
+//! This crate is intended for **testing purposes only**. The corrupted output
+//! is designed to exercise error paths in cryptographic parsers.
+
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
 //! Negative fixture builders for PEM/DER corruption.
@@ -13,6 +32,7 @@ use alloc::vec::Vec;
 use uselesskey_core_hash::hash32;
 pub use uselesskey_core_negative_pem::{CorruptPem, corrupt_pem, corrupt_pem_deterministic};
 
+/// Truncate a DER blob to `len` bytes. Returns an unmodified copy if `len >= der.len()`.
 pub fn truncate_der(der: &[u8], len: usize) -> Vec<u8> {
     if len >= der.len() {
         return der.to_vec();
@@ -20,6 +40,7 @@ pub fn truncate_der(der: &[u8], len: usize) -> Vec<u8> {
     der[..len].to_vec()
 }
 
+/// XOR the byte at `offset` with `0x01`. Returns an unmodified copy if `offset` is out of bounds.
 pub fn flip_byte(der: &[u8], offset: usize) -> Vec<u8> {
     if offset >= der.len() {
         return der.to_vec();
@@ -30,6 +51,11 @@ pub fn flip_byte(der: &[u8], offset: usize) -> Vec<u8> {
     out
 }
 
+/// Deterministically corrupt a DER blob based on `variant`.
+///
+/// The variant string is hashed to select a corruption strategy (truncation,
+/// byte-flip, or both). The same `(der, variant)` pair always produces the
+/// same output.
 pub fn corrupt_der_deterministic(der: &[u8], variant: &str) -> Vec<u8> {
     let digest = hash32(variant.as_bytes());
     let bytes = digest.as_bytes();

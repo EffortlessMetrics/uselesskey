@@ -39,6 +39,7 @@ all = ["rsa", "ecdsa", "ed25519", "hmac"]
 uselesskey-core = { path = "../uselesskey-core", version = "0.3.0" }
 serde.workspace = true
 insta.workspace = true
+proptest.workspace = true
 
 # Enable rust_crypto for tests
 [dev-dependencies.jsonwebtoken]

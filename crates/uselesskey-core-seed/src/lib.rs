@@ -1,3 +1,27 @@
+//! Master seed type for deterministic test-fixture generation.
+//!
+//! [`Seed`] wraps a 32-byte value used by `uselesskey` to derive reproducible
+//! cryptographic test artifacts. Seeds can be created from raw bytes, 64-char
+//! hex strings, or arbitrary strings (hashed via BLAKE3).
+//!
+//! # Example
+//!
+//! ```
+//! use uselesskey_core_seed::Seed;
+//!
+//! // From raw bytes:
+//! let seed = Seed::new([42u8; 32]);
+//!
+//! // From a human-readable string (hashed with BLAKE3):
+//! let seed = Seed::from_env_value("my-test-seed").unwrap();
+//! ```
+//!
+//! # Security
+//!
+//! `Debug` output is redacted — seed bytes are never printed. This crate is
+//! for **testing purposes only**; do not use these seeds for production
+//! cryptography.
+
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
 //! Seed parsing and redaction primitives for uselesskey.

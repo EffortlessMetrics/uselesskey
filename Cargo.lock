@@ -3686,6 +3686,7 @@ version = "0.3.0"
 dependencies = [
  "insta",
  "jsonwebtoken",
+ "proptest",
  "serde",
  "uselesskey-core",
  "uselesskey-ecdsa",

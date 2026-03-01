@@ -1,3 +1,19 @@
+//! Per-process artifact cache for the `uselesskey` test-fixture library.
+//!
+//! Stores generated test artifacts (keys, certificates, etc.) in a concurrent
+//! cache keyed by [`ArtifactId`], so expensive operations like RSA key
+//! generation only run once per unique `(domain, label, spec, variant)` tuple.
+//!
+//! # Key types
+//!
+//! - [`ArtifactCache`] — thread-safe cache mapping [`ArtifactId`] → `Arc<T>`
+//! - [`downcast_or_panic`] — helper to downcast cached `Arc<dyn Any>` values
+//!
+//! # Note
+//!
+//! This crate is an internal building block of `uselesskey` and is intended for
+//! **testing purposes only**. It should not be used in production systems.
+
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
 //! Identity-keyed typed cache primitives for uselesskey fixture factories.

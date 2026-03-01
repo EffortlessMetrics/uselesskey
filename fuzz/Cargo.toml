@@ -14,7 +14,7 @@ rand_chacha = "0.3.1"
 blake3 = "1.8.3"
 
 # fuzz targets
-uselesskey = { path = "../crates/uselesskey", features = ["ecdsa", "token"] }
+uselesskey = { path = "../crates/uselesskey", features = ["ecdsa", "ed25519", "token", "pgp"] }
 uselesskey-jwk = { path = "../crates/uselesskey-jwk" }
 uselesskey-core-jwks-order = { path = "../crates/uselesskey-core-jwks-order" }
 uselesskey-core-keypair-material = { path = "../crates/uselesskey-core-keypair-material" }
@@ -25,8 +25,14 @@ uselesskey-core-x509-negative = { path = "../crates/uselesskey-core-x509-negativ
 uselesskey-core-x509-spec = { path = "../crates/uselesskey-core-x509-spec" }
 uselesskey-core-token-shape = { path = "../crates/uselesskey-core-token-shape" }
 uselesskey-core-jwk-shape = { path = "../crates/uselesskey-core-jwk-shape" }
+uselesskey-core-id = { path = "../crates/uselesskey-core-id" }
+uselesskey-core-kid = { path = "../crates/uselesskey-core-kid" }
 rsa = { version = "0.9", features = ["pem"] }
 p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "pem"] }
+ed25519-dalek = { version = "2", features = ["pkcs8", "pem"] }
+pgp = { version = "0.19.0", default-features = false }
+pkcs8 = { version = "0.10", features = ["pem"] }
+base64 = "0.22"
 serde_json = "1"
 
 [[bin]]
@@ -134,5 +140,29 @@ doc = false
 [[bin]]
 name = "x509_negative"
 path = "fuzz_targets/x509_negative.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "ed25519_pkcs8_pem_parse"
+path = "fuzz_targets/ed25519_pkcs8_pem_parse.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "pgp_armored_parse"
+path = "fuzz_targets/pgp_armored_parse.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "core_id"
+path = "fuzz_targets/core_id.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "core_kid"
+path = "fuzz_targets/core_kid.rs"
 test = false
 doc = false
