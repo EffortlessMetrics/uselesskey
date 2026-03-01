@@ -127,6 +127,7 @@ fn factory_clear_cache_on_clone_affects_original() {
     "domain:x", "label", b"spec-1", "v", "domain:x", "label", b"spec-2", "v"
 )]
 #[case("domain:x", "label", b"spec", "v1", "domain:x", "label", b"spec", "v2")]
+#[allow(clippy::too_many_arguments)]
 fn different_keys_produce_distinct_entries(
     #[case] d1: &'static str,
     #[case] l1: &str,
