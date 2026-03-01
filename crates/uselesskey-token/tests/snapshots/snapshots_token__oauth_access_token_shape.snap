@@ -1,0 +1,16 @@
+---
+source: crates/uselesskey-token/tests/snapshots_token.rs
+assertion_line: 139
+expression: result
+---
+kind: oauth_access_token
+segment_count: 3
+header_alg: RS256
+header_typ: JWT
+payload_iss: uselesskey
+payload_sub: snap-oauth
+payload_aud: tests
+payload_scope: fixture.read
+has_jti: true
+has_exp: true
+authorization_scheme: Bearer

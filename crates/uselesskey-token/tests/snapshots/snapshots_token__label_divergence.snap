@@ -1,0 +1,11 @@
+---
+source: crates/uselesskey-token/tests/snapshots_token.rs
+assertion_line: 206
+expression: entries
+---
+- spec: api_key
+  labels_differ: true
+- spec: bearer
+  labels_differ: true
+- spec: oauth_access_token
+  labels_differ: true

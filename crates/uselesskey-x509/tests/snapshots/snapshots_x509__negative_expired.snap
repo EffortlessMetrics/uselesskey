@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-x509/tests/snapshots_x509.rs
+assertion_line: 250
+expression: result
+---
+variant: expired
+subject_cn: neg-expired.example.com
+is_ca: false
+validity_days: 365
+differs_from_good: true

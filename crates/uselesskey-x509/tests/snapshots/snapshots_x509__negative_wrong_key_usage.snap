@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-x509/tests/snapshots_x509.rs
+assertion_line: 296
+expression: result
+---
+variant: wrong_key_usage
+subject_cn: neg-wku.example.com
+is_ca: true
+validity_days: 3650
+differs_from_good: true

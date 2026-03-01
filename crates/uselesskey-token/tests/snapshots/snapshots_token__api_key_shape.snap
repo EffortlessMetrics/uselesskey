@@ -1,0 +1,11 @@
+---
+source: crates/uselesskey-token/tests/snapshots_token.rs
+assertion_line: 81
+expression: result
+---
+kind: api_key
+prefix: uk_test_
+suffix_len: 32
+suffix_all_alphanumeric: true
+total_len: 40
+authorization_scheme: ApiKey

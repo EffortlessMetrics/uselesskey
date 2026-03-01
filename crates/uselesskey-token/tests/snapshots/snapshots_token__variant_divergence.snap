@@ -1,0 +1,11 @@
+---
+source: crates/uselesskey-token/tests/snapshots_token.rs
+assertion_line: 242
+expression: entries
+---
+- spec: api_key
+  good_vs_custom_differ: true
+- spec: bearer
+  good_vs_custom_differ: true
+- spec: oauth_access_token
+  good_vs_custom_differ: true

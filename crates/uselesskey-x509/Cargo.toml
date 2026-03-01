@@ -35,3 +35,5 @@ jwk = ["dep:uselesskey-jwk", "uselesskey-rsa/jwk"]
 proptest.workspace = true
 rstest.workspace = true
 rand_chacha.workspace = true
+insta.workspace = true
+serde.workspace = true

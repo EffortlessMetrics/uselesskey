@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-x509/tests/snapshots_x509.rs
+assertion_line: 319
+expression: result
+---
+variant: BadHeader
+contains_begin_certificate: false
+contains_begin_corrupted: true

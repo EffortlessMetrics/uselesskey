@@ -1,0 +1,18 @@
+---
+source: crates/uselesskey-x509/tests/snapshots_x509.rs
+assertion_line: 361
+expression: result
+---
+label: snapshot-chain
+root_cn: chain-snapshot.example.com Root CA
+root_is_ca: true
+intermediate_cn: chain-snapshot.example.com Intermediate CA
+intermediate_is_ca: true
+leaf_cn: chain-snapshot.example.com
+leaf_is_ca: false
+chain_pem_cert_count: 2
+full_chain_pem_cert_count: 3
+root_serial_len: "[REDACTED]"
+intermediate_serial_len: "[REDACTED]"
+leaf_serial_len: "[REDACTED]"
+issuer_chain_valid: true

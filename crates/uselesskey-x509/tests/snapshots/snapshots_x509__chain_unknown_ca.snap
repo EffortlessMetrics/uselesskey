@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-x509/tests/snapshots_x509.rs
+assertion_line: 432
+expression: result
+---
+variant: unknown_ca
+leaf_cn: chain-uca.example.com
+root_cn: chain-uca.example.com Unknown Root CA
+leaf_differs_from_good: true
+has_crl: false

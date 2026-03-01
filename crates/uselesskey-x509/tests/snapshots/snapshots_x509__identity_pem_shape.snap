@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-x509/tests/snapshots_x509.rs
+assertion_line: 459
+expression: result
+---
+contains_cert: true
+contains_key: true
+section_count: 2

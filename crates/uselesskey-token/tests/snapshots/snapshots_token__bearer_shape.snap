@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-token/tests/snapshots_token.rs
+assertion_line: 103
+expression: result
+---
+kind: bearer
+value_len: 43
+decoded_byte_count: 32
+is_valid_base64url: true
+authorization_scheme: Bearer

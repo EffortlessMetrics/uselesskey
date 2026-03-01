@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-x509/tests/snapshots_x509.rs
+assertion_line: 273
+expression: result
+---
+variant: not_yet_valid
+subject_cn: neg-nyv.example.com
+is_ca: false
+validity_days: 365
+differs_from_good: true

@@ -1,0 +1,17 @@
+---
+source: crates/uselesskey-token/tests/snapshots_token.rs
+assertion_line: 171
+expression: entries
+---
+- label: matrix-label
+  spec: api_key
+  value_len: 40
+  deterministic: true
+- label: matrix-label
+  spec: bearer
+  value_len: 43
+  deterministic: true
+- label: matrix-label
+  spec: oauth_access_token
+  value_len: 249
+  deterministic: true

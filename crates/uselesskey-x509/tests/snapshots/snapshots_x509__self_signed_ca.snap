@@ -1,0 +1,23 @@
+---
+source: crates/uselesskey-x509/tests/snapshots_x509.rs
+assertion_line: 220
+expression: result
+---
+label: snapshot-ca
+subject_cn: snapshot-ca.example.com
+issuer_cn: snapshot-ca.example.com
+is_ca: true
+validity_days: 3650
+serial_number_len: "[REDACTED]"
+cert_pem_has_header: true
+cert_pem_has_footer: true
+private_key_pem_has_header: true
+private_key_pem_has_footer: true
+cert_der_len: "[REDACTED]"
+key_usage_digital_signature: true
+key_usage_key_encipherment: false
+key_usage_key_cert_sign: true
+key_usage_crl_sign: true
+has_eku: false
+eku_server_auth: ~
+eku_client_auth: ~
