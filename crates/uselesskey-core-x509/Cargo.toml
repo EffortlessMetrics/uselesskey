@@ -23,6 +23,7 @@ proptest.workspace = true
 rand_chacha.workspace = true
 rand_core.workspace = true
 rstest.workspace = true
+time = "0.3"
 
 [package.metadata.docs.rs]
 all-features = true

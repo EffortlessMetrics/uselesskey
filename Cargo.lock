@@ -3471,6 +3471,7 @@ version = "0.3.0"
 dependencies = [
  "base64",
  "blake3",
+ "proptest",
 ]
 
 [[package]]
@@ -3539,6 +3540,7 @@ dependencies = [
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
  "rstest",
+ "time",
  "uselesskey-core-x509-derive",
  "uselesskey-core-x509-negative",
  "uselesskey-core-x509-spec",
@@ -3548,6 +3550,7 @@ dependencies = [
 name = "uselesskey-core-x509-derive"
 version = "0.3.0"
 dependencies = [
+ "proptest",
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
  "rcgen",

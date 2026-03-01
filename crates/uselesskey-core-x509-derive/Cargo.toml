@@ -20,7 +20,10 @@ rcgen = "0.13"
 time = "0.3"
 
 [dev-dependencies]
+proptest.workspace = true
 rand_chacha.workspace = true
+rand_core.workspace = true
+uselesskey-core-hash = { workspace = true }
 
 [package.metadata.docs.rs]
 all-features = true

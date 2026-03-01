@@ -17,5 +17,9 @@ authors.workspace = true
 blake3.workspace = true
 base64.workspace = true
 
+[dev-dependencies]
+proptest.workspace = true
+base64.workspace = true
+
 [package.metadata.docs.rs]
 all-features = true
