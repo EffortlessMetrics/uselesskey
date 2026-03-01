@@ -15,7 +15,7 @@ rand_chacha = "0.3.1"
 blake3 = "1.8.3"
 
 # fuzz targets
-uselesskey = { path = "../crates/uselesskey", features = ["ecdsa", "token"] }
+uselesskey = { path = "../crates/uselesskey", features = ["ecdsa", "ed25519", "hmac", "token", "x509"] }
 uselesskey-jwk = { path = "../crates/uselesskey-jwk" }
 uselesskey-core-jwks-order = { path = "../crates/uselesskey-core-jwks-order" }
 uselesskey-core-keypair-material = { path = "../crates/uselesskey-core-keypair-material" }
@@ -27,8 +27,13 @@ uselesskey-core-x509-negative = { path = "../crates/uselesskey-core-x509-negativ
 uselesskey-core-x509-spec = { path = "../crates/uselesskey-core-x509-spec" }
 uselesskey-core-token-shape = { path = "../crates/uselesskey-core-token-shape" }
 uselesskey-core-jwk-shape = { path = "../crates/uselesskey-core-jwk-shape" }
+uselesskey-ecdsa = { path = "../crates/uselesskey-ecdsa" }
+uselesskey-ed25519 = { path = "../crates/uselesskey-ed25519" }
+uselesskey-hmac = { path = "../crates/uselesskey-hmac" }
+uselesskey-x509 = { path = "../crates/uselesskey-x509" }
 rsa = { version = "0.9", features = ["pem"] }
 p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "pem"] }
+ed25519-dalek = { version = "2", features = ["pkcs8"] }
 serde_json = "1"
 
 [[bin]]
@@ -160,5 +165,47 @@ doc = false
 [[bin]]
 name = "jwks_builder"
 path = "fuzz_targets/jwks_builder.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_ecdsa_keygen"
+path = "fuzz_targets/fuzz_ecdsa_keygen.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_ed25519_keygen"
+path = "fuzz_targets/fuzz_ed25519_keygen.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_hmac_keygen"
+path = "fuzz_targets/fuzz_hmac_keygen.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_x509_cert"
+path = "fuzz_targets/fuzz_x509_cert.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_negative_fixtures"
+path = "fuzz_targets/fuzz_negative_fixtures.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_derivation_stability"
+path = "fuzz_targets/fuzz_derivation_stability.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_token_generation"
+path = "fuzz_targets/fuzz_token_generation.rs"
 test = false
 doc = false
