@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-rustls/tests/snapshots_rustls.rs
+expression: result
+---
+key_type: ECDSA-P256
+der_variant: Pkcs8
+der_len: 138
+der_hex: "[REDACTED]"
