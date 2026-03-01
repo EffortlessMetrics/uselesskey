@@ -1,5 +1,10 @@
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
+//! Negative fixture builders for PEM/DER corruption.
+//!
+//! Re-exports and extends `uselesskey-core-negative-pem` with DER truncation
+//! and corruption helpers. Used by key-type crates to generate intentionally
+//! broken artifacts for error-handling tests.
 
 extern crate alloc;
 

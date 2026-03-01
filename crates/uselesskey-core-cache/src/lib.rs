@@ -1,5 +1,10 @@
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
+//! Identity-keyed typed cache primitives for uselesskey fixture factories.
+//!
+//! Provides a concurrent, identity-based cache that stores generated cryptographic
+//! artifacts keyed by [`ArtifactId`](uselesskey_core_id::ArtifactId). This avoids
+//! expensive re-generation (especially RSA) across test runs.
 
 extern crate alloc;
 
@@ -8,7 +13,6 @@ use alloc::collections::BTreeMap;
 use alloc::sync::Arc;
 use core::any::Any;
 use core::fmt;
-
 #[cfg(feature = "std")]
 use dashmap::DashMap;
 #[cfg(not(feature = "std"))]

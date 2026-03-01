@@ -1,4 +1,9 @@
 #![forbid(unsafe_code)]
+//! Canonical feature and matrix definitions for uselesskey automation.
+//!
+//! Defines `FeatureSet` entries consumed by `cargo xtask feature-matrix` to
+//! drive the CI feature-combination matrix. Each entry specifies a stable
+//! label and the corresponding Cargo CLI arguments.
 
 /// Canonical matrix entry used by automation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

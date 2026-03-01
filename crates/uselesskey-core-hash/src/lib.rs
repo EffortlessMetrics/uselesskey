@@ -1,5 +1,9 @@
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
+//! Length-prefixed hashing helpers for deterministic fixture derivation.
+//!
+//! Wraps BLAKE3 to provide collision-resistant, deterministic digests used
+//! throughout the `uselesskey` workspace for seed derivation and artifact identity.
 
 pub use blake3::{Hash, Hasher};
 

@@ -1,5 +1,10 @@
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
+//! Seed parsing and redaction primitives for uselesskey.
+//!
+//! Provides the [`Seed`] type that wraps 32 bytes of entropy used for
+//! deterministic fixture derivation. Implements `Debug` with redaction
+//! to prevent accidental leakage of seed material in logs.
 
 extern crate alloc;
 
