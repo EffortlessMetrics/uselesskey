@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Comprehensive insta snapshot tests for RSA, ECDSA, Ed25519, HMAC, PGP, X.509, token, tonic, rustls, and facade crates
+- Property-based tests (proptest) for core-factory, core-negative, core-cache, core-jwk-shape, core-jwks-order, ring, aws-lc-rs, jsonwebtoken adapters
+- Integration tests for 6 previously untested core crates (core-cache, core-kid, core-x509, core-sink, core-x509-spec, core-x509-derive)
+- Cross-adapter interop snapshot tests (`uselesskey-interop-tests`)
+- 4 new fuzz targets (`ed25519_pkcs8_pem_parse`, `pgp_armored_parse`, `core_id`, `core_kid`)
+- Module-level documentation for 11 core crates
+- BDD adapter feature files and step definitions for ring, rustls, rustcrypto, aws-lc-rs
+
+### Changed
+
+- Mutant coverage improvements in core-negative-pem (killed 9 previously missed mutants)
+
+### Fixed
+
+- Cross-platform snapshot compatibility for PGP RSA binary lengths
+- `publish-preflight` now tolerates unpublished workspace deps
+
 ## [0.3.0] - 2026-02-17
 
 ### Added
