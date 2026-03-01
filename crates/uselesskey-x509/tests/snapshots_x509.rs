@@ -336,11 +336,11 @@ fn snapshot_chain_three_level() {
 
     let result = ChainSnapshot {
         label: chain.label().to_string(),
-        root_cn: get_cn(&root.subject()),
+        root_cn: get_cn(root.subject()),
         root_is_ca: root.is_ca(),
-        intermediate_cn: get_cn(&int.subject()),
+        intermediate_cn: get_cn(int.subject()),
         intermediate_is_ca: int.is_ca(),
-        leaf_cn: get_cn(&leaf.subject()),
+        leaf_cn: get_cn(leaf.subject()),
         leaf_is_ca: leaf.is_ca(),
         chain_pem_cert_count: chain
             .chain_pem()
@@ -379,8 +379,8 @@ fn snapshot_chain_hostname_mismatch() {
 
     let result = ChainNegativeSnapshot {
         variant: "hostname_mismatch".to_string(),
-        leaf_cn: get_cn(&leaf.subject()),
-        root_cn: get_cn(&root.subject()),
+        leaf_cn: get_cn(leaf.subject()),
+        root_cn: get_cn(root.subject()),
         leaf_differs_from_good: good.leaf_cert_der() != mismatched.leaf_cert_der(),
         has_crl: mismatched.crl_der().is_some(),
     };
@@ -400,8 +400,8 @@ fn snapshot_chain_revoked_leaf() {
 
     let result = ChainNegativeSnapshot {
         variant: "revoked_leaf".to_string(),
-        leaf_cn: get_cn(&leaf.subject()),
-        root_cn: get_cn(&root.subject()),
+        leaf_cn: get_cn(leaf.subject()),
+        root_cn: get_cn(root.subject()),
         leaf_differs_from_good: good.leaf_cert_der() != revoked.leaf_cert_der(),
         has_crl: revoked.crl_der().is_some(),
     };
@@ -421,8 +421,8 @@ fn snapshot_chain_unknown_ca() {
 
     let result = ChainNegativeSnapshot {
         variant: "unknown_ca".to_string(),
-        leaf_cn: get_cn(&leaf.subject()),
-        root_cn: get_cn(&root.subject()),
+        leaf_cn: get_cn(leaf.subject()),
+        root_cn: get_cn(root.subject()),
         leaf_differs_from_good: good.leaf_cert_der() != unknown.leaf_cert_der(),
         has_crl: unknown.crl_der().is_some(),
     };
