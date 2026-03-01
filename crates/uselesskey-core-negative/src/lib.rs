@@ -1,3 +1,10 @@
+//! Negative-fixture helpers for corrupting DER and PEM encodings.
+//!
+//! Provides [`truncate_der`], [`flip_byte`], and [`corrupt_der_deterministic`]
+//! for generating intentionally broken key material. PEM corruption is
+//! re-exported from `uselesskey-core-negative-pem` ([`CorruptPem`],
+//! [`corrupt_pem`], [`corrupt_pem_deterministic`]).
+
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
 //! Negative fixture builders for PEM/DER corruption.

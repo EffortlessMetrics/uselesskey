@@ -1,3 +1,8 @@
+//! Canonical feature-matrix definitions for workspace CI and BDD automation.
+//!
+//! Exports [`FeatureSet`] entries and the [`CORE_FEATURE_MATRIX`] /
+//! [`BDD_FEATURE_MATRIX`] slices consumed by `xtask` and CI receipts.
+
 #![forbid(unsafe_code)]
 //! Canonical feature and matrix definitions for uselesskey automation.
 //!

@@ -1,3 +1,11 @@
+//! Per-process artifact cache keyed by [`ArtifactId`].
+//!
+//! Stores generated fixtures behind `Arc<dyn Any>` so expensive key generation
+//! (especially RSA) only happens once per unique identity tuple. Thread-safe:
+//! uses `DashMap` with `std`, `spin::Mutex` without.
+//!
+//! The primary type is [`ArtifactCache`].
+
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
 //! Identity-keyed typed cache primitives for uselesskey fixture factories.
