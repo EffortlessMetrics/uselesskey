@@ -108,8 +108,8 @@ test = false
 doc = false
 
 [[bin]]
-name = "jwk_order"
-path = "fuzz_targets/jwk_order.rs"
+name = "jwks_order"
+path = "fuzz_targets/jwks_order.rs"
 test = false
 doc = false
 
