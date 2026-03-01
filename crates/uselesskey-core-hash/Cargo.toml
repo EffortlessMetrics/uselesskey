@@ -8,9 +8,9 @@ repository.workspace = true
 description = "Length-prefixed hashing helpers shared by deterministic fixture derivation paths."
 readme = "README.md"
 exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
-categories = ["development-tools::testing"]
+categories.workspace = true
 keywords = ["hash", "blake3", "fixtures", "testing", "determinism"]
-homepage = "https://github.com/EffortlessMetrics/uselesskey"
+homepage.workspace = true
 documentation = "https://docs.rs/uselesskey-core-hash"
 authors.workspace = true
 

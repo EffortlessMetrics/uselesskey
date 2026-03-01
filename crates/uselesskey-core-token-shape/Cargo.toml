@@ -6,11 +6,11 @@ license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
 description = "Token shape generation primitives shared across uselesskey token crates."
-categories = ["development-tools::testing"]
+categories.workspace = true
 keywords = ["token", "api-key", "oauth", "fixtures", "testing"]
 readme = "README.md"
 exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
-homepage = "https://github.com/EffortlessMetrics/uselesskey"
+homepage.workspace = true
 documentation = "https://docs.rs/uselesskey-core-token-shape"
 authors.workspace = true
 

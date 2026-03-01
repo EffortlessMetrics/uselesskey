@@ -8,9 +8,9 @@ repository.workspace = true
 description = "Identity-keyed typed cache primitives for uselesskey fixture factories."
 readme = "README.md"
 exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
-categories = ["development-tools::testing"]
+categories.workspace = true
 keywords = ["fixtures", "cache", "deterministic", "testing", "core"]
-homepage = "https://github.com/EffortlessMetrics/uselesskey"
+homepage.workspace = true
 documentation = "https://docs.rs/uselesskey-core-cache"
 authors.workspace = true
 
