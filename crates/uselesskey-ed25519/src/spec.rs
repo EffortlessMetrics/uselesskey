@@ -2,6 +2,16 @@
 ///
 /// Ed25519 has no configurable parameters like RSA bit size,
 /// so this struct is simple and always returns the same spec.
+///
+/// # Examples
+///
+/// ```
+/// use uselesskey_ed25519::Ed25519Spec;
+///
+/// let spec = Ed25519Spec::new();
+/// // Ed25519 has no configurable parameters
+/// assert_eq!(spec, Ed25519Spec::default());
+/// ```
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Default)]
 pub struct Ed25519Spec {
     // Ed25519 has fixed parameters, but we keep this struct for API consistency

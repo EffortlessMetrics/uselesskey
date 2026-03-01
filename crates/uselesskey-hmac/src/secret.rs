@@ -13,6 +13,22 @@ use crate::HmacSpec;
 /// Keep this stable: changing it changes deterministic outputs.
 pub const DOMAIN_HMAC_SECRET: &str = "uselesskey:hmac:secret";
 
+/// An HMAC secret fixture.
+///
+/// Created via [`HmacFactoryExt::hmac()`]. Provides access to raw secret bytes
+/// and JWK output (with the `jwk` feature).
+///
+/// # Examples
+///
+/// ```
+/// use uselesskey_core::Factory;
+/// use uselesskey_hmac::{HmacFactoryExt, HmacSpec};
+///
+/// let fx = Factory::random();
+/// let secret = fx.hmac("jwt-signing", HmacSpec::hs256());
+///
+/// assert_eq!(secret.secret_bytes().len(), 32);
+/// ```
 #[derive(Clone)]
 pub struct HmacSecret {
     factory: Factory,
@@ -36,6 +52,25 @@ impl fmt::Debug for HmacSecret {
 
 /// Extension trait to hang HMAC helpers off the core [`Factory`].
 pub trait HmacFactoryExt {
+    /// Generate (or retrieve from cache) an HMAC secret fixture.
+    ///
+    /// The `label` identifies this secret within your test suite.
+    /// In deterministic mode, `seed + label + spec` always produces the same secret.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core::{Factory, Seed};
+    /// use uselesskey_hmac::{HmacFactoryExt, HmacSpec};
+    ///
+    /// let seed = Seed::from_env_value("test-seed").unwrap();
+    /// let fx = Factory::deterministic(seed);
+    /// let secret = fx.hmac("jwt-signing", HmacSpec::hs256());
+    ///
+    /// // Same seed + label + spec = same secret
+    /// let secret2 = fx.hmac("jwt-signing", HmacSpec::hs256());
+    /// assert_eq!(secret.secret_bytes(), secret2.secret_bytes());
+    /// ```
     fn hmac(&self, label: impl AsRef<str>, spec: HmacSpec) -> HmacSecret;
 }
 

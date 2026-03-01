@@ -16,6 +16,29 @@ use crate::Ed25519Spec;
 /// Keep this stable: changing it changes deterministic outputs.
 pub const DOMAIN_ED25519_KEYPAIR: &str = "uselesskey:ed25519:keypair";
 
+/// An Ed25519 keypair fixture with various output formats.
+///
+/// Created via [`Ed25519FactoryExt::ed25519()`]. Provides access to:
+/// - Private key in PKCS#8 PEM and DER formats
+/// - Public key in SPKI PEM and DER formats
+/// - Negative fixtures (corrupted PEM, truncated DER, mismatched keys)
+/// - JWK output (with the `jwk` feature)
+///
+/// # Examples
+///
+/// ```
+/// use uselesskey_core::Factory;
+/// use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
+///
+/// let fx = Factory::random();
+/// let keypair = fx.ed25519("my-service", Ed25519Spec::new());
+///
+/// let private_pem = keypair.private_key_pkcs8_pem();
+/// let public_der = keypair.public_key_spki_der();
+///
+/// assert!(private_pem.contains("BEGIN PRIVATE KEY"));
+/// assert!(!public_der.is_empty());
+/// ```
 #[derive(Clone)]
 pub struct Ed25519KeyPair {
     factory: Factory,
@@ -46,6 +69,24 @@ impl fmt::Debug for Ed25519KeyPair {
 
 /// Extension trait to hang Ed25519 helpers off the core [`Factory`].
 pub trait Ed25519FactoryExt {
+    /// Generate (or retrieve from cache) an Ed25519 keypair fixture.
+    ///
+    /// The `label` identifies this keypair within your test suite.
+    /// In deterministic mode, `seed + label + spec` always produces the same key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core::{Factory, Seed};
+    /// use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
+    ///
+    /// let seed = Seed::from_env_value("test-seed").unwrap();
+    /// let fx = Factory::deterministic(seed);
+    /// let keypair = fx.ed25519("signing-key", Ed25519Spec::new());
+    ///
+    /// let pem = keypair.private_key_pkcs8_pem();
+    /// assert!(pem.contains("BEGIN PRIVATE KEY"));
+    /// ```
     fn ed25519(&self, label: impl AsRef<str>, spec: Ed25519Spec) -> Ed25519KeyPair;
 }
 

@@ -1,4 +1,18 @@
 /// Specification for HMAC secret generation.
+///
+/// # Examples
+///
+/// ```
+/// use uselesskey_hmac::HmacSpec;
+///
+/// let hs256 = HmacSpec::hs256();
+/// assert_eq!(hs256.byte_len(), 32);
+/// assert_eq!(hs256.alg_name(), "HS256");
+///
+/// let hs512 = HmacSpec::hs512();
+/// assert_eq!(hs512.byte_len(), 64);
+/// assert_eq!(hs512.alg_name(), "HS512");
+/// ```
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum HmacSpec {
     /// HS256 (HMAC-SHA256)
@@ -10,14 +24,47 @@ pub enum HmacSpec {
 }
 
 impl HmacSpec {
+    /// HS256 (HMAC-SHA256). Produces a 32-byte secret.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_hmac::HmacSpec;
+    ///
+    /// let spec = HmacSpec::hs256();
+    /// assert_eq!(spec.byte_len(), 32);
+    /// assert_eq!(spec.alg_name(), "HS256");
+    /// ```
     pub fn hs256() -> Self {
         Self::Hs256
     }
 
+    /// HS384 (HMAC-SHA384). Produces a 48-byte secret.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_hmac::HmacSpec;
+    ///
+    /// let spec = HmacSpec::hs384();
+    /// assert_eq!(spec.byte_len(), 48);
+    /// assert_eq!(spec.alg_name(), "HS384");
+    /// ```
     pub fn hs384() -> Self {
         Self::Hs384
     }
 
+    /// HS512 (HMAC-SHA512). Produces a 64-byte secret.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_hmac::HmacSpec;
+    ///
+    /// let spec = HmacSpec::hs512();
+    /// assert_eq!(spec.byte_len(), 64);
+    /// assert_eq!(spec.alg_name(), "HS512");
+    /// ```
     pub fn hs512() -> Self {
         Self::Hs512
     }
