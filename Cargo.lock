@@ -3773,8 +3773,11 @@ dependencies = [
 name = "uselesskey-rustls"
 version = "0.3.0"
 dependencies = [
+ "hex",
+ "insta",
  "rustls",
  "rustls-pki-types",
+ "serde",
  "uselesskey-core",
  "uselesskey-ecdsa",
  "uselesskey-ed25519",
