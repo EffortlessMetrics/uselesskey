@@ -1,3 +1,9 @@
+//! Deterministic key-ID generation from raw key bytes.
+//!
+//! Produces URL-safe, base64url-encoded BLAKE3 hashes truncated to 96 bits
+//! by default. Use [`kid_from_bytes`] for the standard length or
+//! [`kid_from_bytes_with_prefix`] for a custom hash prefix.
+
 #![forbid(unsafe_code)]
 //! Deterministic key-id (kid) helpers for uselesskey fixture crates.
 //!
