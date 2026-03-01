@@ -277,34 +277,81 @@ mod tests {
     }
 
     #[test]
-    fn random_base62_constant_rng_terminates() {
-        struct ConstantRng(u8);
+    fn random_base62_rejects_boundary_byte_248() {
+        // Byte 248 is exactly ACCEPT_MAX and must be rejected by the `b < ACCEPT_MAX` guard.
+        // If the guard were `b <= ACCEPT_MAX`, byte 248 would be accepted as BASE62[248%62]=BASE62[0]='A'.
+        // With correct rejection, the next byte (1) is used instead: BASE62[1]='B'.
+        struct Boundary248Rng;
 
-        impl RngCore for ConstantRng {
+        impl RngCore for Boundary248Rng {
             fn next_u32(&mut self) -> u32 {
-                u32::from(self.0) * 0x0101_0101
+                u32::from_le_bytes([248, 1, 248, 1])
             }
 
             fn next_u64(&mut self) -> u64 {
-                u64::from(self.0) * 0x0101_0101_0101_0101
+                u64::from_le_bytes([248, 1, 248, 1, 248, 1, 248, 1])
             }
 
-            fn fill_bytes(&mut self, dest: &mut [u8]) {
-                dest.fill(self.0);
+            fn fill_bytes(&mut self, dst: &mut [u8]) {
+                for (i, b) in dst.iter_mut().enumerate() {
+                    *b = if i % 2 == 0 { 248 } else { 1 };
+                }
             }
 
-            fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_core::Error> {
-                self.fill_bytes(dest);
+            fn try_fill_bytes(&mut self, dst: &mut [u8]) -> Result<(), rand_core::Error> {
+                self.fill_bytes(dst);
                 Ok(())
             }
         }
 
-        let mut rng = ConstantRng(0xFF);
-        let value = random_base62(&mut rng, 32);
-        assert_eq!(value.len(), 32);
+        let mut rng = Boundary248Rng;
+        let value = random_base62(&mut rng, 4);
+        // Only odd-index bytes (value 1) are accepted: BASE62[1]='B'
+        assert_eq!(value, "BBBB");
+    }
 
-        // 255 % 62 = 7 -> 'H'
-        assert!(value.chars().all(|c| c == 'H'));
+    #[test]
+    fn random_base62_fallback_handles_all_rejected_batch() {
+        // First call fills with all-rejected bytes (248..255 cycling), triggering the fallback.
+        // Subsequent calls fill with accepted bytes (value 5) in case the while-loop iterates.
+        // This tests the fallback path without risking an infinite loop if the fallback guard
+        // were mutated from `==` to `!=`.
+        struct FallbackRng {
+            call: usize,
+        }
+
+        impl RngCore for FallbackRng {
+            fn next_u32(&mut self) -> u32 {
+                0
+            }
+
+            fn next_u64(&mut self) -> u64 {
+                0
+            }
+
+            fn fill_bytes(&mut self, dst: &mut [u8]) {
+                self.call += 1;
+                if self.call == 1 {
+                    // All bytes >= ACCEPT_MAX (248): rejected in primary path, triggers fallback
+                    for (i, b) in dst.iter_mut().enumerate() {
+                        *b = 248 + (i % 8) as u8;
+                    }
+                } else {
+                    // Accepted bytes to avoid infinite loop under mutated guard
+                    dst.fill(5);
+                }
+            }
+
+            fn try_fill_bytes(&mut self, dst: &mut [u8]) -> Result<(), rand_core::Error> {
+                self.fill_bytes(dst);
+                Ok(())
+            }
+        }
+
+        let mut rng = FallbackRng { call: 0 };
+        let value = random_base62(&mut rng, 4);
+        // Fallback uses biased path: 248%62=0→'A', 249%62=1→'B', 250%62=2→'C', 251%62=3→'D'
+        assert_eq!(value, "ABCD");
     }
 
     proptest! {
