@@ -20,3 +20,6 @@ mutants.out*/
 # OS
 Thumbs.db
 nul
+
+# Build logs
+output.txt
