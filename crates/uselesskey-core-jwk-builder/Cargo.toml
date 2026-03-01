@@ -9,6 +9,7 @@ description = "JWKS builder with deterministic, stable key ordering."
 categories = ["development-tools::testing"]
 keywords = ["jwk", "jwks", "fixtures", "testing"]
 readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
 homepage = "https://github.com/EffortlessMetrics/uselesskey"
 documentation = "https://docs.rs/uselesskey-core-jwk-builder"
 authors.workspace = true

@@ -9,6 +9,7 @@ description = "Deterministic X.509 derivation helpers for uselesskey fixture cra
 categories = ["development-tools::testing"]
 keywords = ["x509", "deterministic", "serial", "time", "fixtures"]
 readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
 homepage = "https://github.com/EffortlessMetrics/uselesskey"
 documentation = "https://docs.rs/uselesskey-core-x509-derive"
 authors.workspace = true

@@ -9,6 +9,7 @@ description = "PEM-focused negative fixture corruption helpers for test fixtures
 categories = ["development-tools::testing"]
 keywords = ["testing", "fixtures", "negative", "pem", "corruption"]
 readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
 homepage = "https://github.com/EffortlessMetrics/uselesskey"
 documentation = "https://docs.rs/uselesskey-core-negative-pem"
 authors.workspace = true

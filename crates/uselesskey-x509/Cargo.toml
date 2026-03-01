@@ -9,6 +9,7 @@ description = "X.509 self-signed and chain certificate fixtures with negative va
 categories = ["development-tools::testing"]
 keywords = ["x509", "certificate", "tls", "fixtures", "testing"]
 readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
 homepage = "https://github.com/EffortlessMetrics/uselesskey"
 documentation = "https://docs.rs/uselesskey-x509"
 authors.workspace = true

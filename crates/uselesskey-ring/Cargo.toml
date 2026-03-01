@@ -9,6 +9,7 @@ description = "ring 0.17 adapter traits for uselesskey RSA/ECDSA/Ed25519 fixture
 categories = ["development-tools::testing"]
 keywords = ["ring", "signing", "fixtures", "testing", "adapter"]
 readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
 homepage = "https://github.com/EffortlessMetrics/uselesskey"
 documentation = "https://docs.rs/uselesskey-ring"
 authors.workspace = true

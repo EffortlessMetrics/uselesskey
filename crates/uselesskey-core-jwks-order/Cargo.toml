@@ -9,6 +9,7 @@ description = "Stable kid-based ordering helper for JWKS-like collections."
 categories = ["development-tools::testing"]
 keywords = ["jwk", "jwks", "fixtures", "testing"]
 readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
 homepage = "https://github.com/EffortlessMetrics/uselesskey"
 documentation = "https://docs.rs/uselesskey-core-jwks-order"
 authors.workspace = true

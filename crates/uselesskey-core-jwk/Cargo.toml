@@ -9,6 +9,7 @@ description = "Compatibility façade for typed JWK/JWKS models used by uselesske
 categories = ["development-tools::testing"]
 keywords = ["jwk", "jwks", "jwt", "fixtures", "testing"]
 readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
 homepage = "https://github.com/EffortlessMetrics/uselesskey"
 documentation = "https://docs.rs/uselesskey-core-jwk"
 authors.workspace = true

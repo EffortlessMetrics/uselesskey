@@ -9,6 +9,7 @@ description = "Deterministic X.509 policy helpers shared by uselesskey fixture c
 categories = ["development-tools::testing"]
 keywords = ["x509", "deterministic", "fixtures", "certificate", "testing"]
 readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
 homepage = "https://github.com/EffortlessMetrics/uselesskey"
 documentation = "https://docs.rs/uselesskey-core-x509"
 authors.workspace = true

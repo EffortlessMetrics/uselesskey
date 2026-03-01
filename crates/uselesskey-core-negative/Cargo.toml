@@ -7,6 +7,7 @@ rust-version.workspace = true
 repository.workspace = true
 description = "Negative fixture builders for PEM/DER corruption used by uselesskey."
 readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
 categories = ["development-tools::testing"]
 keywords = ["fixtures", "negative", "pem", "der", "testing"]
 homepage = "https://github.com/EffortlessMetrics/uselesskey"

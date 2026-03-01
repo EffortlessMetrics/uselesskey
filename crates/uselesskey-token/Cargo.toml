@@ -9,6 +9,7 @@ description = "API key, bearer, and OAuth access-token fixture generator for tes
 categories = ["development-tools::testing"]
 keywords = ["token", "api-key", "oauth", "fixtures", "testing"]
 readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
 homepage = "https://github.com/EffortlessMetrics/uselesskey"
 documentation = "https://docs.rs/uselesskey-token"
 authors.workspace = true

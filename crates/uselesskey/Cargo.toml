@@ -9,6 +9,7 @@ description = "Deterministic cryptographic key and certificate fixtures for Rust
 categories = ["development-tools::testing"]
 keywords = ["test", "fixtures", "crypto", "deterministic", "x509"]
 readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
 homepage = "https://github.com/EffortlessMetrics/uselesskey"
 documentation = "https://docs.rs/uselesskey"
 authors.workspace = true

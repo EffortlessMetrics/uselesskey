@@ -9,6 +9,7 @@ description = "Tempfile-backed artifact sinks used by uselesskey."
 categories = ["development-tools::testing"]
 keywords = ["fixtures", "tempfile", "testing", "pki", "interop"]
 readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
 homepage = "https://github.com/EffortlessMetrics/uselesskey"
 documentation = "https://docs.rs/uselesskey-core-sink"
 authors.workspace = true
