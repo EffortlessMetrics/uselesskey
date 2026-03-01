@@ -1,6 +1,37 @@
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
+//! DER corruption utilities for negative testing.
+//!
+//! This crate provides deterministic and non-deterministic helpers for producing
+//! invalid DER payloads: truncation, single-byte bit-flips, and combined
+//! flip-then-truncate mutations. It also re-exports the PEM corruption helpers
+//! from `uselesskey-core-negative-pem`.
+//!
+//! All deterministic variants derive their corruption parameters from a
+//! variant string so the same `(der, variant)` pair always produces the
+//! same corrupted output.
+//!
+//! # Example
+//!
+//! ```
+//! use uselesskey_core_negative::{truncate_der, flip_byte, corrupt_der_deterministic};
+//!
+//! let der = vec![0x30, 0x82, 0x01, 0x22, 0x10, 0x20];
+//!
+//! // Truncate to 3 bytes
+//! let short = truncate_der(&der, 3);
+//! assert_eq!(short.len(), 3);
+//!
+//! // Flip byte at offset 0
+//! let flipped = flip_byte(&der, 0);
+//! assert_ne!(flipped[0], der[0]);
+//!
+//! // Deterministic corruption from a variant string
+//! let corrupted = corrupt_der_deterministic(&der, "corrupt:my-variant");
+//! assert_ne!(corrupted, der);
+//! ```
+
 extern crate alloc;
 
 use alloc::vec::Vec;

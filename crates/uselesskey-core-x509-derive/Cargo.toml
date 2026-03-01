@@ -20,6 +20,7 @@ rcgen = "0.13"
 time = "0.3"
 
 [dev-dependencies]
+proptest.workspace = true
 rand_chacha.workspace = true
 uselesskey-core-hash = { workspace = true }
 
