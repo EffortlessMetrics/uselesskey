@@ -217,10 +217,8 @@ fn snapshot_debug_safety() {
 fn snapshot_mismatch_variant() {
     let fx = fx();
 
-    let specs: Vec<(&str, RsaSpec)> = vec![
-        ("RS256", RsaSpec::rs256()),
-        ("RS512", RsaSpec::new(4096)),
-    ];
+    let specs: Vec<(&str, RsaSpec)> =
+        vec![("RS256", RsaSpec::rs256()), ("RS512", RsaSpec::new(4096))];
 
     let entries: Vec<MismatchShape> = specs
         .into_iter()

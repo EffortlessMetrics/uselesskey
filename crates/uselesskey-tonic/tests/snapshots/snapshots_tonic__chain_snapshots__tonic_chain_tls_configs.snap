@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-tonic/tests/snapshots_tonic.rs
+expression: meta
+---
+description: Chain TLS config conversions
+identity_ok: true
+server_tls_ok: true
+client_tls_ok: true

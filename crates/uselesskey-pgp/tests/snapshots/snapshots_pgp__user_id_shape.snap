@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-pgp/tests/snapshots_pgp.rs
+expression: result
+---
+user_id_contains_label: true
+user_id_contains_domain: true
+user_id_len: 39

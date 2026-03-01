@@ -1,0 +1,9 @@
+---
+source: crates/uselesskey-pgp/tests/snapshots_pgp.rs
+expression: result
+---
+fingerprints_match: true
+private_armor_matches: true
+public_armor_matches: true
+private_binary_matches: true
+public_binary_matches: true

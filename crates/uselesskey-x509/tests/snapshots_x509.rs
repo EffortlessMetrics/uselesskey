@@ -102,9 +102,7 @@ fn parse_key_usage(parsed: &X509Certificate<'_>) -> (bool, bool, bool, bool) {
     }
 }
 
-fn parse_eku(
-    parsed: &X509Certificate<'_>,
-) -> (bool, Option<bool>, Option<bool>) {
+fn parse_eku(parsed: &X509Certificate<'_>) -> (bool, Option<bool>, Option<bool>) {
     let eku_ext = parsed
         .extensions()
         .iter()

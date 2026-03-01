@@ -1,0 +1,9 @@
+---
+source: crates/uselesskey-tonic/tests/snapshots_tonic.rs
+expression: result
+---
+contains_struct_name: true
+contains_label: true
+contains_private_key_marker: false
+contains_certificate_marker: false
+uses_non_exhaustive: true

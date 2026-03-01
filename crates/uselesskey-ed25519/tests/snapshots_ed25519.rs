@@ -390,10 +390,7 @@ fn snapshot_debug_safety() {
     let dbg = format!("{key:?}");
     let pem = key.private_key_pkcs8_pem();
     // Extract the base64 body (second line of PEM) to check it doesn't leak
-    let pem_body = pem
-        .lines()
-        .find(|l| !l.starts_with("-----"))
-        .unwrap_or("");
+    let pem_body = pem.lines().find(|l| !l.starts_with("-----")).unwrap_or("");
 
     let result = DebugSafety {
         contains_struct_name: dbg.contains("Ed25519KeyPair"),

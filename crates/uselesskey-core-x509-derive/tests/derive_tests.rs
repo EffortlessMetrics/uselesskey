@@ -2,11 +2,11 @@ use proptest::prelude::*;
 use rand_chacha::ChaCha8Rng;
 use rand_core::SeedableRng;
 use time::OffsetDateTime;
-use uselesskey_core_x509_derive::{
-    deterministic_base_time_from_parts, deterministic_serial_number, write_len_prefixed,
-    BASE_TIME_EPOCH_UNIX, BASE_TIME_WINDOW_DAYS, SERIAL_NUMBER_BYTES,
-};
 use uselesskey_core_hash::Hasher;
+use uselesskey_core_x509_derive::{
+    BASE_TIME_EPOCH_UNIX, BASE_TIME_WINDOW_DAYS, SERIAL_NUMBER_BYTES,
+    deterministic_base_time_from_parts, deterministic_serial_number, write_len_prefixed,
+};
 
 #[test]
 fn base_time_from_parts_is_deterministic() {
@@ -41,7 +41,11 @@ fn serial_number_is_positive() {
     let mut rng = ChaCha8Rng::from_seed([99u8; 32]);
     let serial = deterministic_serial_number(&mut rng);
     let bytes = serial.to_bytes();
-    assert_eq!(bytes[0] & 0x80, 0, "high bit must be cleared for positive serial");
+    assert_eq!(
+        bytes[0] & 0x80,
+        0,
+        "high bit must be cleared for positive serial"
+    );
 }
 
 #[test]

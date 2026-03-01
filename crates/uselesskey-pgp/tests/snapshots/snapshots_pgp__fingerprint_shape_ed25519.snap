@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-pgp/tests/snapshots_pgp.rs
+expression: result
+---
+spec: ed25519
+fingerprint_len: 40
+fingerprint_is_hex: true

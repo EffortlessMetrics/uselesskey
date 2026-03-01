@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-pgp/tests/snapshots_pgp.rs
+expression: result
+---
+ed25519_vs_rsa2048_fingerprint_differs: true
+ed25519_vs_rsa3072_fingerprint_differs: true
+rsa2048_vs_rsa3072_fingerprint_differs: true

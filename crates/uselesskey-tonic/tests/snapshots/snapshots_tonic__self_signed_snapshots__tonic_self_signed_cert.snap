@@ -1,0 +1,9 @@
+---
+source: crates/uselesskey-tonic/tests/snapshots_tonic.rs
+expression: meta
+---
+description: Self-signed X.509 cert for tonic
+cert_pem_starts_with: "-----BEGIN CERTIFICATE-----"
+key_pem_starts_with: "-----BEGIN PRIVATE KEY-----"
+cert_der_len: 758
+private_key_der_len: 1216

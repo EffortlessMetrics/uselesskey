@@ -50,7 +50,10 @@ fn x509_spec_default_is_self_signed() {
     let spec = X509Spec::self_signed("example.com");
 
     assert_eq!(spec.subject_cn, "example.com");
-    assert_eq!(spec.issuer_cn, "example.com", "self-signed: issuer == subject");
+    assert_eq!(
+        spec.issuer_cn, "example.com",
+        "self-signed: issuer == subject"
+    );
     assert_eq!(spec.not_before_offset, NotBeforeOffset::DaysAgo(1));
     assert_eq!(spec.validity_days, 3650, "default validity is 10 years");
     assert!(!spec.is_ca);

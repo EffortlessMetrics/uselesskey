@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-pgp/tests/snapshots_pgp.rs
+expression: result
+---
+good_public_binary_len: 219
+mismatched_public_binary_len: 219
+binary_keys_differ: true
+armored_keys_differ: true

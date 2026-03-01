@@ -1,0 +1,20 @@
+---
+source: crates/uselesskey-pgp/tests/snapshots_pgp.rs
+expression: entries
+---
+- variant: BadHeader
+  has_begin_line: true
+  has_end_line: true
+  differs_from_original: true
+- variant: BadFooter
+  has_begin_line: true
+  has_end_line: true
+  differs_from_original: true
+- variant: BadBase64
+  has_begin_line: true
+  has_end_line: true
+  differs_from_original: true
+- variant: ExtraBlankLine
+  has_begin_line: true
+  has_end_line: true
+  differs_from_original: true

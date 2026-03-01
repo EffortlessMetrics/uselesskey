@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-tonic/tests/snapshots_tonic.rs
+expression: meta
+---
+description: mTLS config conversions
+server_mtls_ok: true
+client_mtls_ok: true

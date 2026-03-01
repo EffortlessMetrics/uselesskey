@@ -1,0 +1,9 @@
+---
+source: crates/uselesskey-pgp/tests/snapshots_pgp.rs
+expression: result
+---
+contains_struct_name: true
+contains_label: true
+contains_private_armor_header: false
+contains_public_armor_header: false
+uses_non_exhaustive: true

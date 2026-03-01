@@ -200,12 +200,8 @@ mod jwk_snapshots {
             kid_len: jwk["kid"].as_str().map_or(0, str::len),
             has_x: jwk["x"].is_string(),
             has_y: jwk["y"].is_string(),
-            x_byte_len: jwk["x"]
-                .as_str()
-                .map_or(0, decode_b64url_len),
-            y_byte_len: jwk["y"]
-                .as_str()
-                .map_or(0, decode_b64url_len),
+            x_byte_len: jwk["x"].as_str().map_or(0, decode_b64url_len),
+            y_byte_len: jwk["y"].as_str().map_or(0, decode_b64url_len),
         };
 
         insta::assert_yaml_snapshot!("public_jwk_p256", result);
@@ -226,12 +222,8 @@ mod jwk_snapshots {
             kid_len: jwk["kid"].as_str().map_or(0, str::len),
             has_x: jwk["x"].is_string(),
             has_y: jwk["y"].is_string(),
-            x_byte_len: jwk["x"]
-                .as_str()
-                .map_or(0, decode_b64url_len),
-            y_byte_len: jwk["y"]
-                .as_str()
-                .map_or(0, decode_b64url_len),
+            x_byte_len: jwk["x"].as_str().map_or(0, decode_b64url_len),
+            y_byte_len: jwk["y"].as_str().map_or(0, decode_b64url_len),
         };
 
         insta::assert_yaml_snapshot!("public_jwk_p384", result);
@@ -249,9 +241,7 @@ mod jwk_snapshots {
             crv: jwk["crv"].as_str().unwrap_or("").to_string(),
             alg: jwk["alg"].as_str().unwrap_or("").to_string(),
             has_d: jwk["d"].is_string(),
-            d_byte_len: jwk["d"]
-                .as_str()
-                .map_or(0, decode_b64url_len),
+            d_byte_len: jwk["d"].as_str().map_or(0, decode_b64url_len),
         };
 
         insta::assert_yaml_snapshot!("private_jwk_p256", result);
@@ -269,9 +259,7 @@ mod jwk_snapshots {
             crv: jwk["crv"].as_str().unwrap_or("").to_string(),
             alg: jwk["alg"].as_str().unwrap_or("").to_string(),
             has_d: jwk["d"].is_string(),
-            d_byte_len: jwk["d"]
-                .as_str()
-                .map_or(0, decode_b64url_len),
+            d_byte_len: jwk["d"].as_str().map_or(0, decode_b64url_len),
         };
 
         insta::assert_yaml_snapshot!("private_jwk_p384", result);
@@ -430,12 +418,8 @@ fn snapshot_spec_matrix() {
             curve,
             alg,
             deterministic: k1.private_key_pkcs8_der() == k2.private_key_pkcs8_der(),
-            private_pem_starts_with_begin: k1
-                .private_key_pkcs8_pem()
-                .starts_with("-----BEGIN "),
-            public_pem_starts_with_begin: k1
-                .public_key_spki_pem()
-                .starts_with("-----BEGIN "),
+            private_pem_starts_with_begin: k1.private_key_pkcs8_pem().starts_with("-----BEGIN "),
+            public_pem_starts_with_begin: k1.public_key_spki_pem().starts_with("-----BEGIN "),
         }
     })
     .collect();

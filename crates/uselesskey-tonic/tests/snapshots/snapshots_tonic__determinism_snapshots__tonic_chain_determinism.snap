@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-tonic/tests/snapshots_tonic.rs
+expression: result
+---
+description: Chain determinism
+same_chain_pem: true
+same_root_cert: true
+same_leaf_cert: true
+same_leaf_key: true
+leaf_cert_der_len: 818

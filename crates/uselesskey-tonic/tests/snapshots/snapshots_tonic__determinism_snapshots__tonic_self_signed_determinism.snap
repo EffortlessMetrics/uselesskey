@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-tonic/tests/snapshots_tonic.rs
+expression: result
+---
+description: Self-signed cert determinism
+same_cert_pem: true
+same_private_key_pem: true
+cert_der_len: 756

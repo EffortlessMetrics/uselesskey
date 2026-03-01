@@ -1,0 +1,13 @@
+---
+source: crates/uselesskey-pgp/tests/snapshots_pgp.rs
+expression: result
+---
+spec: ed25519
+private_has_begin: true
+private_has_end: true
+private_line_count: 10
+private_armor_len: 427
+public_has_begin: true
+public_has_end: true
+public_line_count: 9
+public_armor_len: 376

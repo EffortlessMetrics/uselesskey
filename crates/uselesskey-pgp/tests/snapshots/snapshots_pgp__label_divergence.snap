@@ -1,0 +1,9 @@
+---
+source: crates/uselesskey-pgp/tests/snapshots_pgp.rs
+expression: result
+---
+fingerprints_differ: true
+private_armor_differs: true
+public_armor_differs: true
+private_binary_differs: true
+public_binary_differs: true

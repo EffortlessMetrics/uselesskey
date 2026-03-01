@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-pgp/tests/snapshots_pgp.rs
+expression: entries
+---
+- spec: ed25519
+  private_binary_len: 250
+  public_binary_len: 215
+- spec: rsa2048
+  private_binary_len: 1293
+  public_binary_len: 642

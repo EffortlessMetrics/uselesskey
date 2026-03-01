@@ -1,0 +1,16 @@
+---
+source: crates/uselesskey-pgp/tests/snapshots_pgp.rs
+expression: entries
+---
+- requested_len: 0
+  actual_len: 0
+  shorter_than_original: true
+- requested_len: 1
+  actual_len: 1
+  shorter_than_original: true
+- requested_len: 10
+  actual_len: 10
+  shorter_than_original: true
+- requested_len: 32
+  actual_len: 32
+  shorter_than_original: true

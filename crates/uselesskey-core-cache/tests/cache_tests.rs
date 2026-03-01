@@ -6,13 +6,7 @@ use uselesskey_core_cache::ArtifactCache;
 use uselesskey_core_id::{ArtifactId, DerivationVersion};
 
 fn make_id(label: &str) -> ArtifactId {
-    ArtifactId::new(
-        "domain:test",
-        label,
-        b"spec",
-        "good",
-        DerivationVersion::V1,
-    )
+    ArtifactId::new("domain:test", label, b"spec", "good", DerivationVersion::V1)
 }
 
 #[test]

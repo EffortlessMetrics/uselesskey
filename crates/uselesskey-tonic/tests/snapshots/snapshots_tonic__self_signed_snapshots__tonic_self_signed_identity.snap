@@ -1,0 +1,6 @@
+---
+source: crates/uselesskey-tonic/tests/snapshots_tonic.rs
+expression: meta
+---
+description: Self-signed identity conversion
+conversion_ok: true

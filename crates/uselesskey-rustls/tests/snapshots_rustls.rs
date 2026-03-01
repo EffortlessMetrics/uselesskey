@@ -311,7 +311,12 @@ mod x509_snapshots {
 // All key types summary
 // =========================================================================
 
-#[cfg(all(feature = "rsa", feature = "ecdsa", feature = "ed25519", feature = "x509"))]
+#[cfg(all(
+    feature = "rsa",
+    feature = "ecdsa",
+    feature = "ed25519",
+    feature = "x509"
+))]
 mod all_types_snapshot {
     use super::*;
     use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};

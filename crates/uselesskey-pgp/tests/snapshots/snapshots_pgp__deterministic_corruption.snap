@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-pgp/tests/snapshots_pgp.rs
+expression: result
+---
+armor_differs_from_good: true
+armor_starts_with_dash: true
+armor_stable: true
+binary_differs_from_good: true
+binary_same_len_as_good: true
+binary_stable: true

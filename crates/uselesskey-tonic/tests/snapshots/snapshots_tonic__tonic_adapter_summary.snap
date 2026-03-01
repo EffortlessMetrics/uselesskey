@@ -1,0 +1,14 @@
+---
+source: crates/uselesskey-tonic/tests/snapshots_tonic.rs
+expression: items
+---
+- fixture_type: X509Cert (self-signed)
+  identity_ok: true
+  server_tls_ok: true
+  client_tls_ok: true
+  cert_der_len: 758
+- fixture_type: X509Chain
+  identity_ok: true
+  server_tls_ok: true
+  client_tls_ok: true
+  cert_der_len: 803

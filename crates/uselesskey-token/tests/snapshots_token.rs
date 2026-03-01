@@ -115,12 +115,10 @@ fn snapshot_oauth_access_token_shape() {
     let parts: Vec<&str> = value.split('.').collect();
 
     let header_bytes = URL_SAFE_NO_PAD.decode(parts[0]).expect("decode header");
-    let header: serde_json::Value =
-        serde_json::from_slice(&header_bytes).expect("parse header");
+    let header: serde_json::Value = serde_json::from_slice(&header_bytes).expect("parse header");
 
     let payload_bytes = URL_SAFE_NO_PAD.decode(parts[1]).expect("decode payload");
-    let payload: serde_json::Value =
-        serde_json::from_slice(&payload_bytes).expect("parse payload");
+    let payload: serde_json::Value = serde_json::from_slice(&payload_bytes).expect("parse payload");
 
     let result = OAuthShape {
         kind: "oauth_access_token",
@@ -230,8 +228,7 @@ fn snapshot_variant_divergence() {
         .into_iter()
         .map(|(name, spec)| {
             let good = fx.token("variant-snap", spec);
-            let custom =
-                fx.token_with_variant("variant-snap", spec, "custom");
+            let custom = fx.token_with_variant("variant-snap", spec, "custom");
             VariantDivergence {
                 spec: name,
                 good_vs_custom_differ: good.value() != custom.value(),

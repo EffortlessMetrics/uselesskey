@@ -43,19 +43,15 @@ fn x509_spec_san_deduplication() {
         "dup.example.com".into(),
         "dup.example.com".into(),
     ]);
-    let without_dupes = X509Spec::self_signed("test").with_sans(vec![
-        "dup.example.com".into(),
-        "unique.example.com".into(),
-    ]);
+    let without_dupes = X509Spec::self_signed("test")
+        .with_sans(vec!["dup.example.com".into(), "unique.example.com".into()]);
 
     // stable_bytes deduplicates SANs, so both must produce identical output
     assert_eq!(with_dupes.stable_bytes(), without_dupes.stable_bytes());
 
     // Order should not matter either
-    let reversed = X509Spec::self_signed("test").with_sans(vec![
-        "unique.example.com".into(),
-        "dup.example.com".into(),
-    ]);
+    let reversed = X509Spec::self_signed("test")
+        .with_sans(vec!["unique.example.com".into(), "dup.example.com".into()]);
     assert_eq!(with_dupes.stable_bytes(), reversed.stable_bytes());
 }
 
@@ -159,9 +155,7 @@ fn stable_bytes_differs_with_any_change() {
     assert_ne!(changed.stable_bytes(), base_bytes, "rsa_bits");
 
     // sans
-    let changed = base
-        .clone()
-        .with_sans(vec!["different.example.com".into()]);
+    let changed = base.clone().with_sans(vec!["different.example.com".into()]);
     assert_ne!(changed.stable_bytes(), base_bytes, "sans");
 }
 
@@ -223,12 +217,12 @@ mod proptest_specs {
 fn not_before_offset_variants() {
     let same_day = 10u32;
 
-    let days_ago = X509Spec::self_signed("offset-test")
-        .with_not_before(NotBeforeOffset::DaysAgo(same_day));
+    let days_ago =
+        X509Spec::self_signed("offset-test").with_not_before(NotBeforeOffset::DaysAgo(same_day));
     let days_from_now = X509Spec::self_signed("offset-test")
         .with_not_before(NotBeforeOffset::DaysFromNow(same_day));
-    let default_offset = X509Spec::self_signed("offset-test")
-        .with_not_before(NotBeforeOffset::default());
+    let default_offset =
+        X509Spec::self_signed("offset-test").with_not_before(NotBeforeOffset::default());
 
     let bytes_ago = days_ago.stable_bytes();
     let bytes_from_now = days_from_now.stable_bytes();
@@ -253,8 +247,8 @@ fn not_before_offset_variants() {
     );
 
     // Two DaysAgo with different values must differ
-    let days_ago_20 = X509Spec::self_signed("offset-test")
-        .with_not_before(NotBeforeOffset::DaysAgo(20));
+    let days_ago_20 =
+        X509Spec::self_signed("offset-test").with_not_before(NotBeforeOffset::DaysAgo(20));
     assert_ne!(
         bytes_ago,
         days_ago_20.stable_bytes(),
@@ -262,8 +256,8 @@ fn not_before_offset_variants() {
     );
 
     // Two DaysFromNow with different values must differ
-    let days_from_now_20 = X509Spec::self_signed("offset-test")
-        .with_not_before(NotBeforeOffset::DaysFromNow(20));
+    let days_from_now_20 =
+        X509Spec::self_signed("offset-test").with_not_before(NotBeforeOffset::DaysFromNow(20));
     assert_ne!(
         bytes_from_now,
         days_from_now_20.stable_bytes(),

@@ -1,0 +1,13 @@
+---
+source: crates/uselesskey-pgp/tests/snapshots_pgp.rs
+expression: result
+---
+spec: rsa2048
+private_has_begin: true
+private_has_end: true
+private_line_count: 32
+private_armor_len: 1845
+public_has_begin: true
+public_has_end: true
+public_line_count: 18
+public_armor_len: 961

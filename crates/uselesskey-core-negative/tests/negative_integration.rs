@@ -4,8 +4,8 @@
 //! re-exported PEM corruption surface.
 
 use uselesskey_core_negative::{
-    corrupt_der_deterministic, corrupt_pem, corrupt_pem_deterministic, flip_byte, truncate_der,
-    CorruptPem,
+    CorruptPem, corrupt_der_deterministic, corrupt_pem, corrupt_pem_deterministic, flip_byte,
+    truncate_der,
 };
 
 // ---------------------------------------------------------------------------

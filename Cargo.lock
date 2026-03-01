@@ -3341,6 +3341,7 @@ dependencies = [
  "rand_core 0.6.4",
  "rsa",
  "serde_json",
+ "sha2",
  "uselesskey",
  "uselesskey-aws-lc-rs",
  "uselesskey-core",
@@ -3694,6 +3695,7 @@ dependencies = [
 name = "uselesskey-jwk"
 version = "0.3.0"
 dependencies = [
+ "proptest",
  "serde_json",
  "uselesskey-core-jwk",
  "uselesskey-core-jwk-builder",
@@ -3703,8 +3705,10 @@ dependencies = [
 name = "uselesskey-pgp"
 version = "0.3.0"
 dependencies = [
+ "insta",
  "pgp",
  "proptest",
+ "serde",
  "uselesskey-core",
 ]
 
@@ -3798,7 +3802,9 @@ dependencies = [
 name = "uselesskey-tonic"
 version = "0.3.0"
 dependencies = [
+ "insta",
  "proptest",
+ "serde",
  "tonic",
  "uselesskey-core",
  "uselesskey-x509",

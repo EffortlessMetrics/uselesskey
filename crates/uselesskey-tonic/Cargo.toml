@@ -28,3 +28,5 @@ x509 = ["dep:uselesskey-x509"]
 uselesskey-core = { path = "../uselesskey-core", version = "0.3.0" }
 uselesskey-x509 = { path = "../uselesskey-x509", version = "0.3.0" }
 proptest.workspace = true
+insta.workspace = true
+serde.workspace = true
