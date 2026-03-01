@@ -14,7 +14,29 @@ use crate::EcdsaSpec;
 /// Keep this stable: changing it changes deterministic outputs.
 pub const DOMAIN_ECDSA_KEYPAIR: &str = "uselesskey:ecdsa:keypair";
 
-/// An ECDSA keypair fixture.
+/// An ECDSA keypair fixture with various output formats.
+///
+/// Created via [`EcdsaFactoryExt::ecdsa()`]. Provides access to:
+/// - Private key in PKCS#8 PEM and DER formats
+/// - Public key in SPKI PEM and DER formats
+/// - Negative fixtures (corrupted PEM, truncated DER, mismatched keys)
+/// - JWK output (with the `jwk` feature)
+///
+/// # Examples
+///
+/// ```
+/// use uselesskey_core::Factory;
+/// use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
+///
+/// let fx = Factory::random();
+/// let keypair = fx.ecdsa("my-service", EcdsaSpec::es256());
+///
+/// let private_pem = keypair.private_key_pkcs8_pem();
+/// let public_der = keypair.public_key_spki_der();
+///
+/// assert!(private_pem.contains("BEGIN PRIVATE KEY"));
+/// assert!(!public_der.is_empty());
+/// ```
 #[derive(Clone)]
 pub struct EcdsaKeyPair {
     factory: Factory,
@@ -48,6 +70,24 @@ impl fmt::Debug for EcdsaKeyPair {
 
 /// Extension trait to hang ECDSA helpers off the core [`Factory`].
 pub trait EcdsaFactoryExt {
+    /// Generate (or retrieve from cache) an ECDSA keypair fixture.
+    ///
+    /// The `label` identifies this keypair within your test suite.
+    /// In deterministic mode, `seed + label + spec` always produces the same key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core::{Factory, Seed};
+    /// use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
+    ///
+    /// let seed = Seed::from_env_value("test-seed").unwrap();
+    /// let fx = Factory::deterministic(seed);
+    /// let keypair = fx.ecdsa("auth-service", EcdsaSpec::es256());
+    ///
+    /// let pem = keypair.private_key_pkcs8_pem();
+    /// assert!(pem.contains("BEGIN PRIVATE KEY"));
+    /// ```
     fn ecdsa(&self, label: impl AsRef<str>, spec: EcdsaSpec) -> EcdsaKeyPair;
 }
 

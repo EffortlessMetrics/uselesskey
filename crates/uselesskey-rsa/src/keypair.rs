@@ -66,6 +66,24 @@ impl fmt::Debug for RsaKeyPair {
 
 /// Extension trait to hang RSA helpers off the core [`Factory`].
 pub trait RsaFactoryExt {
+    /// Generate (or retrieve from cache) an RSA keypair fixture.
+    ///
+    /// The `label` identifies this keypair within your test suite.
+    /// In deterministic mode, `seed + label + spec` always produces the same key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core::{Factory, Seed};
+    /// use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+    ///
+    /// let seed = Seed::from_env_value("test-seed").unwrap();
+    /// let fx = Factory::deterministic(seed);
+    /// let keypair = fx.rsa("my-service", RsaSpec::rs256());
+    ///
+    /// let pem = keypair.private_key_pkcs8_pem();
+    /// assert!(pem.contains("BEGIN PRIVATE KEY"));
+    /// ```
     fn rsa(&self, label: impl AsRef<str>, spec: RsaSpec) -> RsaKeyPair;
 }
 

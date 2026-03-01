@@ -1,4 +1,18 @@
 /// ECDSA algorithm specification.
+///
+/// # Examples
+///
+/// ```
+/// use uselesskey_ecdsa::EcdsaSpec;
+///
+/// let es256 = EcdsaSpec::es256();
+/// assert_eq!(es256.alg_name(), "ES256");
+/// assert_eq!(es256.curve_name(), "P-256");
+///
+/// let es384 = EcdsaSpec::es384();
+/// assert_eq!(es384.alg_name(), "ES384");
+/// assert_eq!(es384.curve_name(), "P-384");
+/// ```
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum EcdsaSpec {
     /// P-256 / secp256r1 / prime256v1 (for ES256 JWT signing).
@@ -9,11 +23,31 @@ pub enum EcdsaSpec {
 
 impl EcdsaSpec {
     /// Spec suitable for ES256 JWT signing.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_ecdsa::EcdsaSpec;
+    ///
+    /// let spec = EcdsaSpec::es256();
+    /// assert_eq!(spec.alg_name(), "ES256");
+    /// assert_eq!(spec.curve_name(), "P-256");
+    /// ```
     pub fn es256() -> Self {
         Self::Es256
     }
 
     /// Spec suitable for ES384 JWT signing.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_ecdsa::EcdsaSpec;
+    ///
+    /// let spec = EcdsaSpec::es384();
+    /// assert_eq!(spec.alg_name(), "ES384");
+    /// assert_eq!(spec.curve_name(), "P-384");
+    /// ```
     pub fn es384() -> Self {
         Self::Es384
     }
