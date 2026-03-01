@@ -3659,16 +3659,25 @@ dependencies = [
 name = "uselesskey-interop-tests"
 version = "0.0.0"
 dependencies = [
+ "aws-lc-rs",
  "ed25519-dalek",
+ "hmac",
  "p256",
  "ring",
  "rsa",
+ "rustls",
  "sha2",
  "signature",
+ "uselesskey-aws-lc-rs",
  "uselesskey-core",
  "uselesskey-ecdsa",
  "uselesskey-ed25519",
+ "uselesskey-hmac",
+ "uselesskey-ring",
  "uselesskey-rsa",
+ "uselesskey-rustcrypto",
+ "uselesskey-rustls",
+ "uselesskey-x509",
 ]
 
 [[package]]
