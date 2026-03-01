@@ -5,5 +5,5 @@ expression: result
 label: snapshot-bearer
 kind: bearer
 value_len: 43
-value_prefix_len: 4
+starts_with_uk_test: false
 authorization_header_prefix: Bearer
