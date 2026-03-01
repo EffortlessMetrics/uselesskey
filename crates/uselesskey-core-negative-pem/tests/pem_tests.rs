@@ -575,7 +575,10 @@ fn bad_base64_four_line_inserts_marker_at_position_1() {
     let pem = "H\nA\nB\nF";
     let out = corrupt_pem(pem, CorruptPem::BadBase64);
     let lines: Vec<&str> = out.lines().collect();
-    assert_eq!(lines[1], "THIS_IS_NOT_BASE64!!!", "marker must be at index 1");
+    assert_eq!(
+        lines[1], "THIS_IS_NOT_BASE64!!!",
+        "marker must be at index 1"
+    );
     assert_ne!(
         *lines.last().unwrap(),
         "THIS_IS_NOT_BASE64!!!",
