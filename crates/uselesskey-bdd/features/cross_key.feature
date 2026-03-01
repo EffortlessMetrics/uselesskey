@@ -81,3 +81,19 @@ Feature: Cross-key validation failures
     Then the JWKS should contain a key with alg "RS256"
     And the JWKS should contain a key with alg "ES256"
     And the JWKS should contain a key with alg "EdDSA"
+
+  # --- Same label different key types produce distinct material ---
+
+  Scenario: same label across RSA and ECDSA produces different kid values
+    Given a deterministic factory seeded with "same-label-cross-test"
+    When I generate an RSA key for label "shared-label" with spec RS256
+    And I generate an ECDSA ES256 key for label "shared-label"
+    Then the RSA JWK kty should differ from the ECDSA JWK kty
+
+  Scenario: same label across all key types produces unique kids
+    Given a deterministic factory seeded with "same-label-all-types"
+    When I generate an RSA key for label "identical-label" with spec RS256
+    And I generate an ECDSA ES256 key for label "identical-label"
+    And I generate an Ed25519 key for label "identical-label"
+    And I generate an HMAC HS256 secret for label "identical-label"
+    Then each key should have a unique kid

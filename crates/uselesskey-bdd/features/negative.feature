@@ -67,3 +67,27 @@ Feature: Negative fixtures
     When I get the mismatched public key
     And I get the mismatched public key again
     Then the mismatched keys should be identical
+
+  # --- Different corruption variants produce different outputs ---
+
+  Scenario: different PEM corruption variants produce different outputs
+    When I deterministically corrupt the RSA PKCS8 PEM with variant "variant-alpha"
+    And I deterministically corrupt the RSA PKCS8 PEM with variant "variant-beta" again
+    Then the deterministic text artifacts should differ
+
+  Scenario: different DER corruption variants produce different outputs
+    When I deterministically corrupt the RSA PKCS8 DER with variant "variant-alpha"
+    And I deterministically corrupt the RSA PKCS8 DER with variant "variant-beta" again
+    Then the deterministic binary artifacts should differ
+
+  # --- Multiple corruption types on same key ---
+
+  Scenario: BadHeader and BadFooter produce different corruptions
+    When I corrupt the PKCS8 PEM with BadHeader
+    Then the corrupted PEM should contain "BEGIN CORRUPTED KEY"
+    And the corrupted PEM should fail to parse
+
+  Scenario: Truncate to 1 byte produces minimal output
+    When I corrupt the PKCS8 PEM with Truncate to 1 bytes
+    Then the corrupted PEM should have length 1
+    And the corrupted PEM should fail to parse

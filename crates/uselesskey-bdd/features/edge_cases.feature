@@ -64,3 +64,55 @@ Feature: Edge cases and error handling
     And I generate an Ed25519 key for label "kid-ed25519"
     And I generate an HMAC HS256 secret for label "kid-hmac"
     Then each key should have a unique kid
+
+  # --- Special Label Edge Cases for All Key Types ---
+
+  Scenario: label with unicode characters generates valid RSA key
+    Given a deterministic factory seeded with "unicode-label-test"
+    When I generate an RSA key for label "日本語テスト" with spec RS256
+    Then the PKCS8 PEM should be parseable
+
+  Scenario: label with unicode characters generates valid ECDSA key
+    Given a deterministic factory seeded with "unicode-ecdsa-test"
+    When I generate an ECDSA ES256 key for label "émoji-🔑"
+    Then the ECDSA PKCS8 DER should be parseable
+
+  Scenario: label with whitespace generates valid key
+    Given a deterministic factory seeded with "whitespace-label-test"
+    When I generate an RSA key for label "  spaces  " with spec RS256
+    Then the PKCS8 PEM should be parseable
+
+  Scenario: label with newlines generates valid key
+    Given a deterministic factory seeded with "newline-label-test"
+    When I generate an Ed25519 key for label "line1\nline2"
+    Then the Ed25519 PKCS8 DER should be parseable
+
+  # --- Factory Re-creation Determinism ---
+
+  Scenario: recreating factory with same seed yields identical RSA key
+    Given a deterministic factory seeded with "recreation-rsa-test"
+    When I generate an RSA key for label "stable"
+    And I switch to a deterministic factory seeded with "recreation-rsa-test"
+    And I generate an RSA key for label "stable" again
+    Then the PKCS8 PEM should be identical
+
+  Scenario: recreating factory with same seed yields identical ECDSA key
+    Given a deterministic factory seeded with "recreation-ecdsa-test"
+    When I generate an ECDSA ES256 key for label "stable"
+    And I switch to a deterministic factory seeded with "recreation-ecdsa-test"
+    And I generate an ECDSA ES256 key for label "stable" again
+    Then the ECDSA PKCS8 PEM should be identical
+
+  Scenario: recreating factory with same seed yields identical Ed25519 key
+    Given a deterministic factory seeded with "recreation-ed25519-test"
+    When I generate an Ed25519 key for label "stable"
+    And I switch to a deterministic factory seeded with "recreation-ed25519-test"
+    And I generate an Ed25519 key for label "stable" again
+    Then the Ed25519 PKCS8 PEM should be identical
+
+  Scenario: recreating factory with same seed yields identical HMAC secret
+    Given a deterministic factory seeded with "recreation-hmac-test"
+    When I generate an HMAC HS256 secret for label "stable"
+    And I switch to a deterministic factory seeded with "recreation-hmac-test"
+    And I generate an HMAC HS256 secret for label "stable" again
+    Then the HMAC secrets should be identical

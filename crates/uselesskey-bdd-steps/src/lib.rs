@@ -718,9 +718,25 @@ fn deterministic_text_artifacts_identical(world: &mut UselessWorld) {
     assert_eq!(world.deterministic_text_1, world.deterministic_text_2);
 }
 
+#[then("the deterministic text artifacts should differ")]
+fn deterministic_text_artifacts_differ(world: &mut UselessWorld) {
+    assert_ne!(
+        world.deterministic_text_1, world.deterministic_text_2,
+        "deterministic text artifacts should differ for different variants"
+    );
+}
+
 #[then("the deterministic binary artifacts should be identical")]
 fn deterministic_binary_artifacts_identical(world: &mut UselessWorld) {
     assert_eq!(world.deterministic_bytes_1, world.deterministic_bytes_2);
+}
+
+#[then("the deterministic binary artifacts should differ")]
+fn deterministic_binary_artifacts_differ(world: &mut UselessWorld) {
+    assert_ne!(
+        world.deterministic_bytes_1, world.deterministic_bytes_2,
+        "deterministic binary artifacts should differ for different variants"
+    );
 }
 
 #[then(regex = r#"^the deterministic text artifact should contain "([^"]+)"$"#)]

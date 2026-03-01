@@ -34,3 +34,40 @@ Feature: Seed parsing
     Given a deterministic factory seeded with "this-is-a-very-long-seed-value-that-exceeds-32-characters-significantly"
     When I generate an RSA key for label "long-seed"
     Then the PKCS8 DER should be parseable
+
+  # --- Seed Determinism Across Factory Instances ---
+
+  Scenario: same seed across factory instances produces same ECDSA key
+    Given a deterministic factory seeded with "ecdsa-seed-instance"
+    When I generate an ECDSA ES256 key for label "instance-test"
+    And I switch to a deterministic factory seeded with "ecdsa-seed-instance"
+    And I generate an ECDSA ES256 key for label "instance-test" again
+    Then the ECDSA PKCS8 PEM should be identical
+
+  Scenario: same seed across factory instances produces same Ed25519 key
+    Given a deterministic factory seeded with "ed25519-seed-instance"
+    When I generate an Ed25519 key for label "instance-test"
+    And I switch to a deterministic factory seeded with "ed25519-seed-instance"
+    And I generate an Ed25519 key for label "instance-test" again
+    Then the Ed25519 PKCS8 PEM should be identical
+
+  Scenario: same seed across factory instances produces same HMAC secret
+    Given a deterministic factory seeded with "hmac-seed-instance"
+    When I generate an HMAC HS256 secret for label "instance-test"
+    And I switch to a deterministic factory seeded with "hmac-seed-instance"
+    And I generate an HMAC HS256 secret for label "instance-test" again
+    Then the HMAC secrets should be identical
+
+  Scenario: different seeds produce different ECDSA keys
+    Given a deterministic factory seeded with "ecdsa-seed-one"
+    When I generate an ECDSA ES256 key for label "service"
+    And I switch to a deterministic factory seeded with "ecdsa-seed-two"
+    And I generate another ECDSA ES256 key for label "service"
+    Then the ECDSA keys should have different public keys
+
+  Scenario: different seeds produce different Ed25519 keys
+    Given a deterministic factory seeded with "ed25519-seed-one"
+    When I generate an Ed25519 key for label "service"
+    And I switch to a deterministic factory seeded with "ed25519-seed-two"
+    And I generate another Ed25519 key for label "service"
+    Then the Ed25519 keys should have different public keys
