@@ -80,8 +80,11 @@ fn x509_spec_not_after_duration_includes_offset() {
 
 #[test]
 fn chain_spec_stable_bytes_deduplicates_sans() {
-    let with_dupes = ChainSpec::new("test.example.com")
-        .with_sans(vec!["a.com".into(), "a.com".into(), "b.com".into()]);
+    let with_dupes = ChainSpec::new("test.example.com").with_sans(vec![
+        "a.com".into(),
+        "a.com".into(),
+        "b.com".into(),
+    ]);
     let without_dupes =
         ChainSpec::new("test.example.com").with_sans(vec!["a.com".into(), "b.com".into()]);
     assert_eq!(with_dupes.stable_bytes(), without_dupes.stable_bytes());

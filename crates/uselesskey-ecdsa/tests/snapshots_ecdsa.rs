@@ -24,7 +24,12 @@ struct EcdsaPemSnapshot {
     public_der_len: usize,
 }
 
-fn build_snapshot(fx: &uselesskey_core::Factory, label: &'static str, curve: &'static str, spec: EcdsaSpec) -> EcdsaPemSnapshot {
+fn build_snapshot(
+    fx: &uselesskey_core::Factory,
+    label: &'static str,
+    curve: &'static str,
+    spec: EcdsaSpec,
+) -> EcdsaPemSnapshot {
     let kp = fx.ecdsa(label, spec);
     let priv_pem = kp.private_key_pkcs8_pem();
     let pub_pem = kp.public_key_spki_pem();
@@ -106,10 +111,22 @@ fn snapshot_ecdsa_corrupt_pem_variants() {
     }
 
     let variants = [
-        ("BadBase64", kp.private_key_pkcs8_pem_corrupt(CorruptPem::BadBase64)),
-        ("BadHeader", kp.private_key_pkcs8_pem_corrupt(CorruptPem::BadHeader)),
-        ("BadFooter", kp.private_key_pkcs8_pem_corrupt(CorruptPem::BadFooter)),
-        ("ExtraBlankLine", kp.private_key_pkcs8_pem_corrupt(CorruptPem::ExtraBlankLine)),
+        (
+            "BadBase64",
+            kp.private_key_pkcs8_pem_corrupt(CorruptPem::BadBase64),
+        ),
+        (
+            "BadHeader",
+            kp.private_key_pkcs8_pem_corrupt(CorruptPem::BadHeader),
+        ),
+        (
+            "BadFooter",
+            kp.private_key_pkcs8_pem_corrupt(CorruptPem::BadFooter),
+        ),
+        (
+            "ExtraBlankLine",
+            kp.private_key_pkcs8_pem_corrupt(CorruptPem::ExtraBlankLine),
+        ),
     ];
 
     let results: Vec<CorruptInfo> = variants

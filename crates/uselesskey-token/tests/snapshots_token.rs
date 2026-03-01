@@ -28,7 +28,12 @@ fn snapshot_api_key_shape() {
         kind: "api_key",
         value_len: tok.value().len(),
         value_prefix_len: tok.value().chars().take(4).count(),
-        authorization_header_prefix: tok.authorization_header().split(' ').next().unwrap_or("").to_string(),
+        authorization_header_prefix: tok
+            .authorization_header()
+            .split(' ')
+            .next()
+            .unwrap_or("")
+            .to_string(),
     };
 
     insta::assert_yaml_snapshot!("token_api_key_shape", result);
@@ -44,7 +49,12 @@ fn snapshot_bearer_shape() {
         kind: "bearer",
         value_len: tok.value().len(),
         value_prefix_len: tok.value().chars().take(4).count(),
-        authorization_header_prefix: tok.authorization_header().split(' ').next().unwrap_or("").to_string(),
+        authorization_header_prefix: tok
+            .authorization_header()
+            .split(' ')
+            .next()
+            .unwrap_or("")
+            .to_string(),
     };
 
     insta::assert_yaml_snapshot!("token_bearer_shape", result);
@@ -69,7 +79,12 @@ fn snapshot_oauth_jwt_shape() {
         label: "snapshot-oauth",
         value_len: tok.value().len(),
         has_three_segments: segments.len() == 3,
-        authorization_header_prefix: tok.authorization_header().split(' ').next().unwrap_or("").to_string(),
+        authorization_header_prefix: tok
+            .authorization_header()
+            .split(' ')
+            .next()
+            .unwrap_or("")
+            .to_string(),
     };
 
     insta::assert_yaml_snapshot!("token_oauth_jwt_shape", result);

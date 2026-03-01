@@ -90,10 +90,22 @@ fn snapshot_rsa_corrupt_pem_variants() {
     let original = kp.private_key_pkcs8_pem();
 
     let variants = [
-        ("BadBase64", kp.private_key_pkcs8_pem_corrupt(CorruptPem::BadBase64)),
-        ("BadHeader", kp.private_key_pkcs8_pem_corrupt(CorruptPem::BadHeader)),
-        ("BadFooter", kp.private_key_pkcs8_pem_corrupt(CorruptPem::BadFooter)),
-        ("ExtraBlankLine", kp.private_key_pkcs8_pem_corrupt(CorruptPem::ExtraBlankLine)),
+        (
+            "BadBase64",
+            kp.private_key_pkcs8_pem_corrupt(CorruptPem::BadBase64),
+        ),
+        (
+            "BadHeader",
+            kp.private_key_pkcs8_pem_corrupt(CorruptPem::BadHeader),
+        ),
+        (
+            "BadFooter",
+            kp.private_key_pkcs8_pem_corrupt(CorruptPem::BadFooter),
+        ),
+        (
+            "ExtraBlankLine",
+            kp.private_key_pkcs8_pem_corrupt(CorruptPem::ExtraBlankLine),
+        ),
     ];
 
     let results: Vec<RsaCorruptSnapshot> = variants
