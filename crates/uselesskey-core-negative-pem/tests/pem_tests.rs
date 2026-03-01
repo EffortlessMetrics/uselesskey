@@ -644,10 +644,7 @@ fn deterministic_truncate_result_always_strictly_shorter() {
     use uselesskey_core_hash::hash32;
     let variant = find_truncate_variant();
     let digest = hash32(variant.as_bytes());
-    let d = u16::from_be_bytes([
-        digest.as_bytes()[1],
-        digest.as_bytes()[2],
-    ]) as usize;
+    let d = u16::from_be_bytes([digest.as_bytes()[1], digest.as_bytes()[2]]) as usize;
 
     // Find N in [2, 512] that divides d+1
     let target = d + 1;
