@@ -3308,6 +3308,7 @@ dependencies = [
  "aws-lc-rs",
  "hex",
  "insta",
+ "proptest",
  "serde",
  "uselesskey-core",
  "uselesskey-ecdsa",
@@ -3471,7 +3472,11 @@ version = "0.3.0"
 dependencies = [
  "base64",
  "blake3",
+<<<<<<< HEAD
  "rstest",
+=======
+ "proptest",
+>>>>>>> 94882ef (test: property-based tests for core microcrates and adapters)
 ]
 
 [[package]]
@@ -3720,6 +3725,7 @@ version = "0.3.0"
 dependencies = [
  "hex",
  "insta",
+ "proptest",
  "ring",
  "serde",
  "uselesskey-core",
