@@ -9,6 +9,7 @@ description = "jsonwebtoken adapter traits for uselesskey fixtures (EncodingKey/
 categories = ["development-tools::testing"]
 keywords = ["jwt", "jsonwebtoken", "fixtures", "testing", "adapter"]
 readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
 homepage = "https://github.com/EffortlessMetrics/uselesskey"
 documentation = "https://docs.rs/uselesskey-jsonwebtoken"
 authors.workspace = true

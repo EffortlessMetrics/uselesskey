@@ -9,6 +9,7 @@ description = "RustCrypto adapter traits for uselesskey RSA/ECDSA/Ed25519/HMAC f
 categories = ["development-tools::testing"]
 keywords = ["rustcrypto", "crypto", "fixtures", "testing", "adapter"]
 readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
 homepage = "https://github.com/EffortlessMetrics/uselesskey"
 documentation = "https://docs.rs/uselesskey-rustcrypto"
 authors.workspace = true

@@ -9,6 +9,7 @@ description = "PKCS#8/SPKI key-material helpers shared by key fixture crates."
 categories = ["development-tools::testing"]
 keywords = ["pkcs8", "spki", "fixtures", "testing", "key-material"]
 readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
 homepage = "https://github.com/EffortlessMetrics/uselesskey"
 documentation = "https://docs.rs/uselesskey-core-keypair-material"
 authors.workspace = true

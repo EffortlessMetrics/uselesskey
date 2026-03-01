@@ -9,6 +9,7 @@ description = "Core factory, deterministic derivation, and cache engine for usel
 categories = ["development-tools::testing"]
 keywords = ["test", "fixtures", "deterministic", "cache", "seeded"]
 readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
 homepage = "https://github.com/EffortlessMetrics/uselesskey"
 documentation = "https://docs.rs/uselesskey-core"
 authors.workspace = true
