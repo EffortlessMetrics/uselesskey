@@ -82,9 +82,10 @@ fn chain_negative_all_variants_accessible() {
 
 #[test]
 fn derive_helpers_accessible() {
-    assert!(BASE_TIME_EPOCH_UNIX > 0);
-    assert!(BASE_TIME_WINDOW_DAYS > 0);
-    assert!(SERIAL_NUMBER_BYTES > 0);
+    // Verify constants are non-zero (compile-time check).
+    const { assert!(BASE_TIME_EPOCH_UNIX > 0) };
+    const { assert!(BASE_TIME_WINDOW_DAYS > 0) };
+    const { assert!(SERIAL_NUMBER_BYTES > 0) };
 
     let _time = deterministic_base_time_from_parts(&[b"test-label"]);
 
