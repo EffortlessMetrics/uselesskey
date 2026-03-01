@@ -9,6 +9,18 @@
 //! - API key style tokens
 //! - Opaque bearer tokens
 //! - OAuth-style JWT access tokens
+//!
+//! # Examples
+//!
+//! ```
+//! use uselesskey_core::Factory;
+//! use uselesskey_token::{TokenFactoryExt, TokenSpec};
+//!
+//! let fx = Factory::random();
+//! let tok = fx.token("api-key", TokenSpec::api_key());
+//! let value = tok.value();
+//! assert!(!value.is_empty());
+//! ```
 
 mod spec;
 mod token;
