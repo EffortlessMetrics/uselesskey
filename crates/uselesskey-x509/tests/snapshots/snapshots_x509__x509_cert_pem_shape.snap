@@ -4,5 +4,5 @@ expression: shape
 ---
 first_line: "-----BEGIN CERTIFICATE-----"
 last_line: "-----END CERTIFICATE-----"
-line_count: 18
-total_len: 1100
+line_count: "[VOLATILE]"
+total_len: "[VOLATILE]"

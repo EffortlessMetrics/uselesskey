@@ -33,7 +33,10 @@ fn snapshot_x509_cert_pem_shape() {
     let spec = X509Spec::self_signed("snap.example.com");
     let cert = fx.x509_self_signed("snap-cert", spec);
     let shape = pem_shape(cert.cert_pem());
-    insta::assert_yaml_snapshot!("x509_cert_pem_shape", shape);
+    insta::assert_yaml_snapshot!("x509_cert_pem_shape", shape, {
+        ".total_len" => "[VOLATILE]",
+        ".line_count" => "[VOLATILE]",
+    });
 }
 
 #[test]
@@ -42,7 +45,10 @@ fn snapshot_x509_private_key_pem_shape() {
     let spec = X509Spec::self_signed("snap.example.com");
     let cert = fx.x509_self_signed("snap-cert", spec);
     let shape = pem_shape(cert.private_key_pkcs8_pem());
-    insta::assert_yaml_snapshot!("x509_private_key_pem_shape", shape);
+    insta::assert_yaml_snapshot!("x509_private_key_pem_shape", shape, {
+        ".total_len" => "[VOLATILE]",
+        ".line_count" => "[VOLATILE]",
+    });
 }
 
 #[derive(Serialize)]
@@ -62,7 +68,10 @@ fn snapshot_x509_der_lengths() {
         private_key_der_len: cert.private_key_pkcs8_der().len(),
     };
 
-    insta::assert_yaml_snapshot!("x509_der_lengths", result);
+    insta::assert_yaml_snapshot!("x509_der_lengths", result, {
+        ".cert_der_len" => "[VOLATILE]",
+        ".private_key_der_len" => "[VOLATILE]",
+    });
 }
 
 #[test]

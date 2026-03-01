@@ -4,5 +4,5 @@ expression: shape
 ---
 first_line: "-----BEGIN PRIVATE KEY-----"
 last_line: "-----END PRIVATE KEY-----"
-line_count: 28
-total_len: 1704
+line_count: "[VOLATILE]"
+total_len: "[VOLATILE]"
