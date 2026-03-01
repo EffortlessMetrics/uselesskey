@@ -123,6 +123,19 @@ impl RsaKeyPair {
     }
 
     /// PKCS#8 PEM-encoded private key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core::Factory;
+    /// use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+    ///
+    /// let fx = Factory::random();
+    /// let kp = fx.rsa("test", RsaSpec::rs256());
+    /// let pem = kp.private_key_pkcs8_pem();
+    /// assert!(pem.starts_with("-----BEGIN PRIVATE KEY-----"));
+    /// assert!(pem.ends_with("-----END PRIVATE KEY-----\n"));
+    /// ```
     pub fn private_key_pkcs8_pem(&self) -> &str {
         self.inner.material.private_key_pkcs8_pem()
     }
@@ -133,6 +146,19 @@ impl RsaKeyPair {
     }
 
     /// SPKI PEM-encoded public key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core::Factory;
+    /// use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+    ///
+    /// let fx = Factory::random();
+    /// let kp = fx.rsa("test", RsaSpec::rs256());
+    /// let pem = kp.public_key_spki_pem();
+    /// assert!(pem.starts_with("-----BEGIN PUBLIC KEY-----"));
+    /// assert!(pem.ends_with("-----END PUBLIC KEY-----\n"));
+    /// ```
     pub fn public_key_spki_pem(&self) -> &str {
         self.inner.material.public_key_spki_pem()
     }
@@ -172,6 +198,19 @@ impl RsaKeyPair {
     }
 
     /// Return a valid (parseable) public key that does *not* match this private key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core::Factory;
+    /// use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+    ///
+    /// let fx = Factory::random();
+    /// let kp = fx.rsa("test", RsaSpec::rs256());
+    /// let wrong_pub = kp.mismatched_public_key_spki_der();
+    /// assert!(!wrong_pub.is_empty());
+    /// assert_ne!(wrong_pub, kp.public_key_spki_der());
+    /// ```
     pub fn mismatched_public_key_spki_der(&self) -> Vec<u8> {
         let other = self.load_variant("mismatch");
         other.material.public_key_spki_der().to_vec()

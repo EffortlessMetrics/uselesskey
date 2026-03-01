@@ -117,6 +117,19 @@ impl Ed25519KeyPair {
     }
 
     /// PKCS#8 PEM-encoded private key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core::Factory;
+    /// use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
+    ///
+    /// let fx = Factory::random();
+    /// let kp = fx.ed25519("test", Ed25519Spec::new());
+    /// let pem = kp.private_key_pkcs8_pem();
+    /// assert!(pem.starts_with("-----BEGIN PRIVATE KEY-----"));
+    /// assert!(pem.ends_with("-----END PRIVATE KEY-----\n"));
+    /// ```
     pub fn private_key_pkcs8_pem(&self) -> &str {
         self.inner.material.private_key_pkcs8_pem()
     }
@@ -127,6 +140,19 @@ impl Ed25519KeyPair {
     }
 
     /// SPKI PEM-encoded public key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core::Factory;
+    /// use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
+    ///
+    /// let fx = Factory::random();
+    /// let kp = fx.ed25519("test", Ed25519Spec::new());
+    /// let pem = kp.public_key_spki_pem();
+    /// assert!(pem.starts_with("-----BEGIN PUBLIC KEY-----"));
+    /// assert!(pem.ends_with("-----END PUBLIC KEY-----\n"));
+    /// ```
     pub fn public_key_spki_pem(&self) -> &str {
         self.inner.material.public_key_spki_pem()
     }
@@ -166,6 +192,19 @@ impl Ed25519KeyPair {
     }
 
     /// Return a valid (parseable) public key that does *not* match this private key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core::Factory;
+    /// use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
+    ///
+    /// let fx = Factory::random();
+    /// let kp = fx.ed25519("test", Ed25519Spec::new());
+    /// let wrong_pub = kp.mismatched_public_key_spki_der();
+    /// assert!(!wrong_pub.is_empty());
+    /// assert_ne!(wrong_pub, kp.public_key_spki_der());
+    /// ```
     pub fn mismatched_public_key_spki_der(&self) -> Vec<u8> {
         let other = self.load_variant("mismatch");
         other.material.public_key_spki_der().to_vec()

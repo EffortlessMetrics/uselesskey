@@ -97,6 +97,18 @@ impl HmacSecret {
     }
 
     /// Access raw secret bytes.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core::Factory;
+    /// use uselesskey_hmac::{HmacFactoryExt, HmacSpec};
+    ///
+    /// let fx = Factory::random();
+    /// let secret = fx.hmac("signing", HmacSpec::hs256());
+    /// let bytes = secret.secret_bytes();
+    /// assert_eq!(bytes.len(), 32);
+    /// ```
     pub fn secret_bytes(&self) -> &[u8] {
         &self.inner.secret
     }

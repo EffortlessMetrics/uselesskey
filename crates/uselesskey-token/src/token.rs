@@ -11,6 +11,18 @@ use crate::TokenSpec;
 /// Keep this stable: changing it changes deterministic outputs.
 pub const DOMAIN_TOKEN_FIXTURE: &str = "uselesskey:token:fixture";
 
+/// A generated token fixture.
+///
+/// # Examples
+///
+/// ```
+/// use uselesskey_core::Factory;
+/// use uselesskey_token::{TokenFactoryExt, TokenSpec};
+///
+/// let fx = Factory::random();
+/// let tok = fx.token("api-key", TokenSpec::api_key());
+/// assert!(!tok.value().is_empty());
+/// ```
 #[derive(Clone)]
 pub struct TokenFixture {
     factory: Factory,
@@ -34,7 +46,33 @@ impl fmt::Debug for TokenFixture {
 
 /// Extension trait to hang token helpers off the core [`Factory`].
 pub trait TokenFactoryExt {
+    /// Generate a token fixture for the given label and spec.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core::Factory;
+    /// use uselesskey_token::{TokenFactoryExt, TokenSpec};
+    ///
+    /// let fx = Factory::random();
+    /// let tok = fx.token("my-api-key", TokenSpec::api_key());
+    /// assert!(!tok.value().is_empty());
+    /// ```
     fn token(&self, label: impl AsRef<str>, spec: TokenSpec) -> TokenFixture;
+
+    /// Generate a token fixture with a specific variant.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core::Factory;
+    /// use uselesskey_token::{TokenFactoryExt, TokenSpec};
+    ///
+    /// let fx = Factory::random();
+    /// let a = fx.token_with_variant("svc", TokenSpec::bearer(), "v1");
+    /// let b = fx.token_with_variant("svc", TokenSpec::bearer(), "v2");
+    /// assert_ne!(a.value(), b.value());
+    /// ```
     fn token_with_variant(
         &self,
         label: impl AsRef<str>,
@@ -84,6 +122,18 @@ impl TokenFixture {
     }
 
     /// Access the token value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core::Factory;
+    /// use uselesskey_token::{TokenFactoryExt, TokenSpec};
+    ///
+    /// let fx = Factory::random();
+    /// let tok = fx.token("key", TokenSpec::bearer());
+    /// let val = tok.value();
+    /// assert!(!val.is_empty());
+    /// ```
     pub fn value(&self) -> &str {
         &self.inner.value
     }
@@ -92,6 +142,18 @@ impl TokenFixture {
     ///
     /// - API keys use `ApiKey <token>`
     /// - Bearer and OAuth access tokens use `Bearer <token>`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core::Factory;
+    /// use uselesskey_token::{TokenFactoryExt, TokenSpec};
+    ///
+    /// let fx = Factory::random();
+    /// let tok = fx.token("key", TokenSpec::api_key());
+    /// let hdr = tok.authorization_header();
+    /// assert!(hdr.starts_with("ApiKey "));
+    /// ```
     pub fn authorization_header(&self) -> String {
         let scheme = authorization_scheme(token_kind(self.spec));
         format!("{scheme} {}", self.value())

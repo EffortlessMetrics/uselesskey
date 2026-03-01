@@ -21,6 +21,19 @@
 //! let value = tok.value();
 //! assert!(!value.is_empty());
 //! ```
+//!
+//! # Deterministic mode
+//!
+//! ```
+//! use uselesskey_core::{Factory, Seed};
+//! use uselesskey_token::{TokenFactoryExt, TokenSpec};
+//!
+//! let seed = Seed::from_env_value("test-seed").unwrap();
+//! let fx = Factory::deterministic(seed);
+//! let a = fx.token("key", TokenSpec::api_key());
+//! let b = fx.token("key", TokenSpec::api_key());
+//! assert_eq!(a.value(), b.value()); // same seed + label → same value
+//! ```
 
 mod spec;
 mod token;

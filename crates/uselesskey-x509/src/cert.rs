@@ -30,6 +30,18 @@ use crate::negative::{
 pub const DOMAIN_X509_CERT: &str = "uselesskey:x509:cert";
 
 /// An X.509 certificate fixture.
+///
+/// # Examples
+///
+/// ```
+/// use uselesskey_core::Factory;
+/// use uselesskey_x509::X509FactoryExt;
+/// use uselesskey_core_x509::X509Spec;
+///
+/// let fx = Factory::random();
+/// let cert = fx.x509_self_signed("test", X509Spec::default());
+/// assert!(cert.cert_pem().starts_with("-----BEGIN CERTIFICATE-----"));
+/// ```
 #[derive(Clone)]
 pub struct X509Cert {
     factory: Factory,
@@ -60,12 +72,38 @@ pub trait X509FactoryExt {
     ///
     /// The certificate is cached by `(label, spec)` and will be reused on subsequent calls
     /// with the same parameters.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core::Factory;
+    /// use uselesskey_x509::X509FactoryExt;
+    /// use uselesskey_core_x509::X509Spec;
+    ///
+    /// let fx = Factory::random();
+    /// let cert = fx.x509_self_signed("server", X509Spec::default());
+    /// assert!(!cert.cert_der().is_empty());
+    /// assert!(cert.cert_pem().contains("CERTIFICATE"));
+    /// ```
     fn x509_self_signed(&self, label: impl AsRef<str>, spec: X509Spec) -> X509Cert;
 
     /// Generate a three-level X.509 certificate chain (root CA → intermediate CA → leaf).
     ///
     /// The chain is cached by `(label, spec)` and will be reused on subsequent calls
     /// with the same parameters.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core::Factory;
+    /// use uselesskey_x509::X509FactoryExt;
+    /// use uselesskey_core_x509::ChainSpec;
+    ///
+    /// let fx = Factory::random();
+    /// let chain = fx.x509_chain("my-chain", ChainSpec::new("leaf.example.com"));
+    /// assert!(chain.leaf_cert_pem().contains("CERTIFICATE"));
+    /// assert!(chain.root_cert_pem().contains("CERTIFICATE"));
+    /// ```
     fn x509_chain(&self, label: impl AsRef<str>, spec: ChainSpec) -> X509Chain;
 }
 
@@ -123,6 +161,20 @@ impl X509Cert {
     ///
     /// This is a common format for TLS server configuration where
     /// a single file holds the server identity (cert + key).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core::Factory;
+    /// use uselesskey_x509::X509FactoryExt;
+    /// use uselesskey_core_x509::X509Spec;
+    ///
+    /// let fx = Factory::random();
+    /// let cert = fx.x509_self_signed("server", X509Spec::default());
+    /// let id = cert.identity_pem();
+    /// assert!(id.contains("CERTIFICATE"));
+    /// assert!(id.contains("PRIVATE KEY"));
+    /// ```
     pub fn identity_pem(&self) -> String {
         format!("{}\n{}", self.cert_pem(), self.private_key_pkcs8_pem())
     }
@@ -192,11 +244,37 @@ impl X509Cert {
     }
 
     /// Get a certificate that is already expired.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core::Factory;
+    /// use uselesskey_x509::X509FactoryExt;
+    /// use uselesskey_core_x509::X509Spec;
+    ///
+    /// let fx = Factory::random();
+    /// let cert = fx.x509_self_signed("test", X509Spec::default());
+    /// let exp = cert.expired();
+    /// assert!(exp.cert_pem().contains("CERTIFICATE"));
+    /// ```
     pub fn expired(&self) -> X509Cert {
         self.negative(X509Negative::Expired)
     }
 
     /// Get a certificate that is not yet valid.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core::Factory;
+    /// use uselesskey_x509::X509FactoryExt;
+    /// use uselesskey_core_x509::X509Spec;
+    ///
+    /// let fx = Factory::random();
+    /// let cert = fx.x509_self_signed("test", X509Spec::default());
+    /// let future = cert.not_yet_valid();
+    /// assert!(future.cert_pem().contains("CERTIFICATE"));
+    /// ```
     pub fn not_yet_valid(&self) -> X509Cert {
         self.negative(X509Negative::NotYetValid)
     }
