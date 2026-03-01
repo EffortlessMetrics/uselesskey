@@ -2,8 +2,6 @@
 //!
 //! Verifies core determinism contract under random seeds.
 
-mod testutil;
-
 use proptest::prelude::*;
 use uselesskey::prelude::*;
 

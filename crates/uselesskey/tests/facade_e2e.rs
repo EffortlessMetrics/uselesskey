@@ -4,8 +4,6 @@
 //! These tests confirm that the deterministic derivation contract
 //! holds when accessed through the public facade API.
 
-mod testutil;
-
 use uselesskey::prelude::*;
 
 fn deterministic_fx(seed_str: &str) -> Factory {
