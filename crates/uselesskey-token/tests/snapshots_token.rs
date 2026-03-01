@@ -5,8 +5,8 @@
 
 mod testutil;
 
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine as _;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use serde::Serialize;
 use testutil::fx;
 use uselesskey_token::{TokenFactoryExt, TokenSpec};

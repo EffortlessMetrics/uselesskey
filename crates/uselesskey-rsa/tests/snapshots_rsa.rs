@@ -40,7 +40,6 @@ struct PemShape {
 }
 
 #[derive(Serialize)]
-#[derive(Serialize)]
 struct SpecMatrixEntry {
     spec_name: &'static str,
     bits: usize,
