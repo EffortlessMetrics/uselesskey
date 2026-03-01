@@ -383,4 +383,47 @@ mod tests {
             "fallback should append double newline"
         );
     }
+
+    // --- Additional mutation-killing tests ---
+
+    #[test]
+    fn derived_truncate_len_always_shorter_than_original() {
+        // Kills mutant: replace - with / in derived_truncate_len (line 101)
+        // If chars-1 became chars/1, truncation could equal the full length.
+        let pem = "ABCDE"; // 5 chars
+        // Try ALL possible digests to ensure result is always < chars
+        for b1 in 0u8..=255 {
+            for b2 in [0u8, 127, 255] {
+                let mut digest = [0u8; 32];
+                digest[1] = b1;
+                digest[2] = b2;
+                let len = derived_truncate_len(pem, &digest);
+                assert!(
+                    len < pem.chars().count(),
+                    "truncate_len {len} must be < original {}, digest[1]={b1}, digest[2]={b2}",
+                    pem.chars().count()
+                );
+                assert!(len >= 1, "truncate_len must be >= 1");
+            }
+        }
+    }
+
+    #[test]
+    fn inject_bad_base64_inserts_after_header_not_appended() {
+        // Kills mutant: replace < with > in inject_bad_base64_line (line 139)
+        // A normal multi-line PEM (>3 lines) must have bad line INSERTED at line 1
+        let pem = "-----BEGIN RSA PRIVATE KEY-----\nMIIB=\nMore=\n-----END RSA PRIVATE KEY-----\n";
+        let out = inject_bad_base64_line(pem);
+        let lines: Vec<&str> = out.lines().collect();
+        assert_eq!(
+            lines[1], "THIS_IS_NOT_BASE64!!!",
+            "bad base64 must be at line index 1 (after header)"
+        );
+        // Verify it wasn't just appended at the end
+        assert_ne!(
+            lines.last().unwrap(),
+            &"THIS_IS_NOT_BASE64!!!",
+            "bad base64 should NOT be at the end"
+        );
+    }
 }
