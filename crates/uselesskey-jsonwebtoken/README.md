@@ -1,8 +1,14 @@
 # uselesskey-jsonwebtoken
 
-`jsonwebtoken` adapter traits for `uselesskey` fixtures.
+[![Crates.io](https://img.shields.io/crates/v/uselesskey-jsonwebtoken.svg)](https://crates.io/crates/uselesskey-jsonwebtoken)
+[![docs.rs](https://docs.rs/uselesskey-jsonwebtoken/badge.svg)](https://docs.rs/uselesskey-jsonwebtoken)
+[![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 
-Implements `JwtKeyExt` so fixture types return `jsonwebtoken::EncodingKey` and `jsonwebtoken::DecodingKey` directly.
+[`jsonwebtoken`](https://crates.io/crates/jsonwebtoken) adapter for
+[`uselesskey`](https://crates.io/crates/uselesskey) test fixtures.
+
+Implements `JwtKeyExt` so fixture types return `jsonwebtoken::EncodingKey` and
+`jsonwebtoken::DecodingKey` directly — no manual PEM parsing needed in tests.
 
 ## Features
 
@@ -14,7 +20,7 @@ Implements `JwtKeyExt` so fixture types return `jsonwebtoken::EncodingKey` and `
 | `hmac` | HMAC secrets (HS256/HS384/HS512) |
 | `all` | All key types |
 
-## Example
+## Usage
 
 ```toml
 [dev-dependencies]
@@ -47,6 +53,8 @@ assert_eq!(decoded.claims, claims);
 
 ## License
 
-Licensed under either of [Apache License, Version 2.0](../../LICENSE-APACHE) or [MIT license](../../LICENSE-MIT) at your option.
+Licensed under either of [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0)
+or [MIT license](https://opensource.org/licenses/MIT) at your option.
 
-See the [main uselesskey README](../../README.md) for full documentation.
+See the [`uselesskey` crate](https://crates.io/crates/uselesskey) for full
+documentation.
