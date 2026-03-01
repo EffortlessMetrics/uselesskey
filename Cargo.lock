@@ -3493,6 +3493,9 @@ dependencies = [
 name = "uselesskey-core-jwk"
 version = "0.3.0"
 dependencies = [
+ "insta",
+ "proptest",
+ "serde_json",
  "uselesskey-core-jwk-builder",
  "uselesskey-core-jwk-shape",
 ]
@@ -3592,8 +3595,10 @@ dependencies = [
 name = "uselesskey-core-token"
 version = "0.3.0"
 dependencies = [
+ "base64",
  "proptest",
  "rand_chacha 0.3.1",
+ "serde_json",
  "uselesskey-core-token-shape",
 ]
 
