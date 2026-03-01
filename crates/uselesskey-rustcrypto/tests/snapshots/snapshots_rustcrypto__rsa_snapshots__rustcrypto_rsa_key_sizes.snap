@@ -1,0 +1,11 @@
+---
+source: crates/uselesskey-rustcrypto/tests/snapshots_rustcrypto.rs
+assertion_line: 73
+expression: cases
+---
+- label: rsa-2048
+  bits: 2048
+  modulus_bits: 2048
+- label: rsa-4096
+  bits: 4096
+  modulus_bits: 4096

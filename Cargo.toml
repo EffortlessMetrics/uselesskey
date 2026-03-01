@@ -99,6 +99,7 @@ uselesskey-core-sink = { path = "crates/uselesskey-core-sink", version = "0.3.0"
 # testing
 proptest = "1.10.0"
 rstest = "0.26.1"
+insta = { version = "1", features = ["yaml", "redactions"] }
 
 # CLI helpers (xtask)
 anyhow = "1.0.101"
