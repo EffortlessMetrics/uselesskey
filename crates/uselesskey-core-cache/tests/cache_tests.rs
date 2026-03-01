@@ -59,7 +59,7 @@ fn concurrent_insert_different_keys() {
 }
 
 #[test]
-fn get_typed_wrong_type_returns_none() {
+fn get_typed_missing_key_returns_none() {
     let cache = ArtifactCache::new();
     let string_id = make_id("string-val");
     let u64_id = make_id("u64-val");
@@ -68,6 +68,18 @@ fn get_typed_wrong_type_returns_none() {
 
     // Different key that was never inserted — should return None.
     assert!(cache.get_typed::<u64>(&u64_id).is_none());
+}
+
+#[test]
+#[should_panic(expected = "artifact type mismatch")]
+fn get_typed_wrong_type_panics() {
+    let cache = ArtifactCache::new();
+    let id = make_id("string-val");
+
+    cache.insert_if_absent_typed(id.clone(), Arc::new(String::from("hello")));
+
+    // Same key but wrong type — should panic.
+    let _ = cache.get_typed::<u64>(&id);
 }
 
 #[test]
