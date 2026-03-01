@@ -6,7 +6,7 @@ expression: result
 label: snapshot-ed25519
 spec: Ed25519
 user_id: snapshot-ed25519 <snapshot-ed25519@uselesskey.test>
-fingerprint_len: "[FINGERPRINT_LEN_OK]"
+fingerprint_len: 40
 private_armored_starts_with: "-----BEGIN PGP PRIVATE KEY BLOCK-----"
 public_armored_starts_with: "-----BEGIN PGP PUBLIC KEY BLOCK-----"
 private_binary_len: 260

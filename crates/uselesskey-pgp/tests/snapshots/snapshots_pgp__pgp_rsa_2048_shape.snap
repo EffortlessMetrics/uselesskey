@@ -1,12 +1,12 @@
 ---
 source: crates/uselesskey-pgp/tests/snapshots_pgp.rs
-assertion_line: 69
+assertion_line: 63
 expression: result
 ---
 label: snapshot-rsa2048
 spec: RSA-2048
 user_id: snapshot-rsa2048 <snapshot-rsa2048@uselesskey.test>
-fingerprint_len: "[FINGERPRINT_LEN_OK]"
+fingerprint_len: 40
 private_armored_starts_with: "-----BEGIN PGP PRIVATE KEY BLOCK-----"
 public_armored_starts_with: "-----BEGIN PGP PUBLIC KEY BLOCK-----"
 private_binary_len: 1303

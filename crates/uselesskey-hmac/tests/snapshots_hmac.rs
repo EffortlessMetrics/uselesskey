@@ -87,7 +87,7 @@ fn snapshot_hmac_all_specs() {
     ]
     .into_iter()
     .map(|(alg, spec)| {
-        let secret = fx.hmac("spec-test", spec.clone());
+        let secret = fx.hmac("spec-test", spec);
         HmacSpecInfo {
             alg,
             byte_len: spec.byte_len(),

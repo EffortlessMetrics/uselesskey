@@ -41,13 +41,7 @@ fn snapshot_pgp_ed25519_shape() {
         public_binary_len: kp.public_key_binary().len(),
     };
 
-    insta::assert_yaml_snapshot!("pgp_ed25519_shape", result, {
-        ".fingerprint_len" => insta::dynamic_redaction(|val, _| {
-            let n = val.as_u64().unwrap();
-            assert!(n >= 40, "fingerprint too short: {n}");
-            "[FINGERPRINT_LEN_OK]"
-        }),
-    });
+    insta::assert_yaml_snapshot!("pgp_ed25519_shape", result);
 }
 
 #[test]
@@ -66,13 +60,7 @@ fn snapshot_pgp_rsa_2048_shape() {
         public_binary_len: kp.public_key_binary().len(),
     };
 
-    insta::assert_yaml_snapshot!("pgp_rsa_2048_shape", result, {
-        ".fingerprint_len" => insta::dynamic_redaction(|val, _| {
-            let n = val.as_u64().unwrap();
-            assert!(n >= 40, "fingerprint too short: {n}");
-            "[FINGERPRINT_LEN_OK]"
-        }),
-    });
+    insta::assert_yaml_snapshot!("pgp_rsa_2048_shape", result);
 }
 
 #[test]
