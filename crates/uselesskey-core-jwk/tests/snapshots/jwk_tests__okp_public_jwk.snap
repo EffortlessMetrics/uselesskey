@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-core-jwk/tests/jwk_tests.rs
+expression: val
+---
+alg: EdDSA
+crv: Ed25519
+kid: snap-okp
+kty: OKP
+use: sig
+x: "[REDACTED]"

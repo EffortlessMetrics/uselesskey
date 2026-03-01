@@ -1,0 +1,11 @@
+---
+source: crates/uselesskey-core-jwk/tests/jwk_tests.rs
+expression: val
+---
+alg: ES256
+crv: P-256
+kid: snap-ec
+kty: EC
+use: sig
+x: "[REDACTED]"
+y: "[REDACTED]"
