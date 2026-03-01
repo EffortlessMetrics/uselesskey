@@ -60,7 +60,10 @@ fn snapshot_pgp_rsa_2048_shape() {
         public_binary_len: kp.public_key_binary().len(),
     };
 
-    insta::assert_yaml_snapshot!("pgp_rsa_2048_shape", result);
+    insta::assert_yaml_snapshot!("pgp_rsa_2048_shape", result, {
+        ".private_binary_len" => "[RSA_PRIV_LEN]",
+        ".public_binary_len" => "[RSA_PUB_LEN]",
+    });
 }
 
 #[test]
