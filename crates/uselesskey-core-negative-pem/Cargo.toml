@@ -20,6 +20,7 @@ uselesskey-core-hash = { workspace = true }
 [dev-dependencies]
 uselesskey-core-hash = { workspace = true }
 proptest = { workspace = true }
+rstest = { workspace = true }
 
 [features]
 default = ["std"]

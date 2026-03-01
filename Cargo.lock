@@ -3393,6 +3393,7 @@ dependencies = [
  "proptest",
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
+ "rstest",
  "uselesskey-core-cache",
  "uselesskey-core-id",
 ]
@@ -3461,6 +3462,7 @@ name = "uselesskey-core-keypair-material"
 version = "0.3.0"
 dependencies = [
  "proptest",
+ "rstest",
  "uselesskey-core",
  "uselesskey-core-kid",
 ]
@@ -3489,6 +3491,7 @@ name = "uselesskey-core-negative-pem"
 version = "0.3.0"
 dependencies = [
  "proptest",
+ "rstest",
  "uselesskey-core-hash",
 ]
 
