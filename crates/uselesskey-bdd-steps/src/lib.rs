@@ -333,6 +333,16 @@ struct UselessWorld {
     pgp_tempfile: Option<uselesskey_core::sink::TempArtifact>,
     #[cfg(feature = "uk-pgp")]
     pgp_public_tempfile: Option<uselesskey_core::sink::TempArtifact>,
+
+    // RustCrypto adapter storage
+    #[cfg(feature = "uk-rustcrypto")]
+    rustcrypto_signature_bytes: Option<Vec<u8>>,
+
+    // aws-lc-rs adapter storage
+    #[cfg(all(feature = "uk-aws-lc-rs", any(not(windows), has_nasm)))]
+    aws_lc_rs_signature_bytes: Option<Vec<u8>>,
+    #[cfg(all(feature = "uk-aws-lc-rs", any(not(windows), has_nasm)))]
+    aws_lc_rs_public_key_bytes: Option<Vec<u8>>,
 }
 
 #[cfg(feature = "uk-jwt")]
@@ -4925,6 +4935,517 @@ fn pgp_debug_has_fingerprint(world: &mut UselessWorld) {
     assert!(
         debug_output.contains(fingerprint),
         "debug output should contain fingerprint"
+    );
+}
+
+// =====================================================================
+// RustCrypto adapter steps
+// =====================================================================
+
+#[cfg(feature = "uk-rustcrypto")]
+const RUSTCRYPTO_TEST_MSG: &[u8] = b"rustcrypto-bdd-test-message";
+
+// --- RSA ---
+
+#[cfg(feature = "uk-rustcrypto")]
+#[when("I sign a message with the RustCrypto RSA key")]
+fn rustcrypto_rsa_sign(world: &mut UselessWorld) {
+    use rsa::pkcs1v15::SigningKey;
+    use rsa::signature::{SignatureEncoding, Signer};
+    use uselesskey_rustcrypto::RustCryptoRsaExt;
+
+    let kp = world.rsa.as_ref().expect("RSA key not set");
+    let private_key = kp.rsa_private_key();
+    let signing_key = SigningKey::<sha2::Sha256>::new_unprefixed(private_key);
+    let sig = signing_key.sign(RUSTCRYPTO_TEST_MSG);
+    world.rustcrypto_signature_bytes = Some(sig.to_vec());
+}
+
+#[cfg(feature = "uk-rustcrypto")]
+#[then("the RustCrypto RSA signature should verify")]
+fn rustcrypto_rsa_verify(world: &mut UselessWorld) {
+    use rsa::pkcs1v15::VerifyingKey;
+    use rsa::signature::Verifier;
+    use uselesskey_rustcrypto::RustCryptoRsaExt;
+
+    let kp = world.rsa.as_ref().expect("RSA key not set");
+    let public_key = kp.rsa_public_key();
+    let verifying_key = VerifyingKey::<sha2::Sha256>::new_unprefixed(public_key);
+    let sig_bytes = world
+        .rustcrypto_signature_bytes
+        .as_ref()
+        .expect("signature not set");
+    let sig = rsa::pkcs1v15::Signature::try_from(sig_bytes.as_slice()).expect("parse sig");
+    verifying_key
+        .verify(RUSTCRYPTO_TEST_MSG, &sig)
+        .expect("RSA signature should verify");
+}
+
+#[cfg(feature = "uk-rustcrypto")]
+#[then("the RustCrypto RSA signature should not verify with the other key")]
+fn rustcrypto_rsa_wrong_key(world: &mut UselessWorld) {
+    use rsa::pkcs1v15::VerifyingKey;
+    use rsa::signature::Verifier;
+    use uselesskey_rustcrypto::RustCryptoRsaExt;
+
+    let kp = world.rsa.as_ref().expect("RSA key not set");
+    let public_key = kp.rsa_public_key();
+    let verifying_key = VerifyingKey::<sha2::Sha256>::new_unprefixed(public_key);
+    let sig_bytes = world
+        .rustcrypto_signature_bytes
+        .as_ref()
+        .expect("signature not set");
+    let sig = rsa::pkcs1v15::Signature::try_from(sig_bytes.as_slice()).expect("parse sig");
+    assert!(
+        verifying_key.verify(RUSTCRYPTO_TEST_MSG, &sig).is_err(),
+        "RSA signature should NOT verify with wrong key"
+    );
+}
+
+// --- ECDSA P-256 ---
+
+#[cfg(feature = "uk-rustcrypto")]
+#[when("I sign a message with the RustCrypto P-256 key")]
+fn rustcrypto_p256_sign(world: &mut UselessWorld) {
+    use p256::ecdsa::signature::Signer;
+    use uselesskey_rustcrypto::RustCryptoEcdsaExt;
+
+    let kp = world.ecdsa.as_ref().expect("ECDSA key not set");
+    let signing_key = kp.p256_signing_key();
+    let sig: p256::ecdsa::Signature = signing_key.sign(RUSTCRYPTO_TEST_MSG);
+    world.rustcrypto_signature_bytes = Some(sig.to_der().as_bytes().to_vec());
+}
+
+#[cfg(feature = "uk-rustcrypto")]
+#[then("the RustCrypto P-256 signature should verify")]
+fn rustcrypto_p256_verify(world: &mut UselessWorld) {
+    use p256::ecdsa::signature::Verifier;
+    use uselesskey_rustcrypto::RustCryptoEcdsaExt;
+
+    let kp = world.ecdsa.as_ref().expect("ECDSA key not set");
+    let verifying_key = kp.p256_verifying_key();
+    let sig_bytes = world
+        .rustcrypto_signature_bytes
+        .as_ref()
+        .expect("signature not set");
+    let sig = p256::ecdsa::DerSignature::from_bytes(sig_bytes).expect("parse sig");
+    verifying_key
+        .verify(RUSTCRYPTO_TEST_MSG, &sig)
+        .expect("P-256 signature should verify");
+}
+
+#[cfg(feature = "uk-rustcrypto")]
+#[then("the RustCrypto P-256 signature should not verify with the other key")]
+fn rustcrypto_p256_wrong_key(world: &mut UselessWorld) {
+    use p256::ecdsa::signature::Verifier;
+    use uselesskey_rustcrypto::RustCryptoEcdsaExt;
+
+    let kp = world.ecdsa.as_ref().expect("ECDSA key not set");
+    let verifying_key = kp.p256_verifying_key();
+    let sig_bytes = world
+        .rustcrypto_signature_bytes
+        .as_ref()
+        .expect("signature not set");
+    let sig = p256::ecdsa::DerSignature::from_bytes(sig_bytes).expect("parse sig");
+    assert!(
+        verifying_key.verify(RUSTCRYPTO_TEST_MSG, &sig).is_err(),
+        "P-256 signature should NOT verify with wrong key"
+    );
+}
+
+// --- ECDSA P-384 ---
+
+#[cfg(feature = "uk-rustcrypto")]
+#[when("I sign a message with the RustCrypto P-384 key")]
+fn rustcrypto_p384_sign(world: &mut UselessWorld) {
+    use p384::ecdsa::signature::Signer;
+    use uselesskey_rustcrypto::RustCryptoEcdsaExt;
+
+    let kp = world.ecdsa.as_ref().expect("ECDSA key not set");
+    let signing_key = kp.p384_signing_key();
+    let sig: p384::ecdsa::Signature = signing_key.sign(RUSTCRYPTO_TEST_MSG);
+    world.rustcrypto_signature_bytes = Some(sig.to_der().as_bytes().to_vec());
+}
+
+#[cfg(feature = "uk-rustcrypto")]
+#[then("the RustCrypto P-384 signature should verify")]
+fn rustcrypto_p384_verify(world: &mut UselessWorld) {
+    use p384::ecdsa::signature::Verifier;
+    use uselesskey_rustcrypto::RustCryptoEcdsaExt;
+
+    let kp = world.ecdsa.as_ref().expect("ECDSA key not set");
+    let verifying_key = kp.p384_verifying_key();
+    let sig_bytes = world
+        .rustcrypto_signature_bytes
+        .as_ref()
+        .expect("signature not set");
+    let sig = p384::ecdsa::DerSignature::from_bytes(sig_bytes).expect("parse sig");
+    verifying_key
+        .verify(RUSTCRYPTO_TEST_MSG, &sig)
+        .expect("P-384 signature should verify");
+}
+
+#[cfg(feature = "uk-rustcrypto")]
+#[then("the RustCrypto P-384 signature should not verify with the other key")]
+fn rustcrypto_p384_wrong_key(world: &mut UselessWorld) {
+    use p384::ecdsa::signature::Verifier;
+    use uselesskey_rustcrypto::RustCryptoEcdsaExt;
+
+    let kp = world.ecdsa.as_ref().expect("ECDSA key not set");
+    let verifying_key = kp.p384_verifying_key();
+    let sig_bytes = world
+        .rustcrypto_signature_bytes
+        .as_ref()
+        .expect("signature not set");
+    let sig = p384::ecdsa::DerSignature::from_bytes(sig_bytes).expect("parse sig");
+    assert!(
+        verifying_key.verify(RUSTCRYPTO_TEST_MSG, &sig).is_err(),
+        "P-384 signature should NOT verify with wrong key"
+    );
+}
+
+// --- Ed25519 ---
+
+#[cfg(feature = "uk-rustcrypto")]
+#[when("I sign a message with the RustCrypto Ed25519 key")]
+fn rustcrypto_ed25519_sign(world: &mut UselessWorld) {
+    use ed25519_dalek::Signer;
+    use uselesskey_rustcrypto::RustCryptoEd25519Ext;
+
+    let kp = world.ed25519.as_ref().expect("Ed25519 key not set");
+    let signing_key = kp.ed25519_signing_key();
+    let sig = signing_key.sign(RUSTCRYPTO_TEST_MSG);
+    world.rustcrypto_signature_bytes = Some(sig.to_bytes().to_vec());
+}
+
+#[cfg(feature = "uk-rustcrypto")]
+#[then("the RustCrypto Ed25519 signature should verify")]
+fn rustcrypto_ed25519_verify(world: &mut UselessWorld) {
+    use ed25519_dalek::Verifier;
+    use uselesskey_rustcrypto::RustCryptoEd25519Ext;
+
+    let kp = world.ed25519.as_ref().expect("Ed25519 key not set");
+    let verifying_key = kp.ed25519_verifying_key();
+    let sig_bytes = world
+        .rustcrypto_signature_bytes
+        .as_ref()
+        .expect("signature not set");
+    let sig = ed25519_dalek::Signature::from_bytes(sig_bytes.as_slice().try_into().unwrap());
+    verifying_key
+        .verify(RUSTCRYPTO_TEST_MSG, &sig)
+        .expect("Ed25519 signature should verify");
+}
+
+#[cfg(feature = "uk-rustcrypto")]
+#[then("the RustCrypto Ed25519 signature should not verify with the other key")]
+fn rustcrypto_ed25519_wrong_key(world: &mut UselessWorld) {
+    use ed25519_dalek::Verifier;
+    use uselesskey_rustcrypto::RustCryptoEd25519Ext;
+
+    let kp = world.ed25519.as_ref().expect("Ed25519 key not set");
+    let verifying_key = kp.ed25519_verifying_key();
+    let sig_bytes = world
+        .rustcrypto_signature_bytes
+        .as_ref()
+        .expect("signature not set");
+    let sig = ed25519_dalek::Signature::from_bytes(sig_bytes.as_slice().try_into().unwrap());
+    assert!(
+        verifying_key.verify(RUSTCRYPTO_TEST_MSG, &sig).is_err(),
+        "Ed25519 signature should NOT verify with wrong key"
+    );
+}
+
+// --- HMAC ---
+
+#[cfg(feature = "uk-rustcrypto")]
+#[when("I compute a RustCrypto HMAC-SHA256 tag")]
+fn rustcrypto_hmac_sha256_compute(world: &mut UselessWorld) {
+    use hmac::Mac;
+    use uselesskey_rustcrypto::RustCryptoHmacExt;
+
+    let secret = world.hmac.as_ref().expect("HMAC secret not set");
+    let mut mac = secret.hmac_sha256();
+    mac.update(RUSTCRYPTO_TEST_MSG);
+    let result = mac.finalize();
+    world.rustcrypto_signature_bytes = Some(result.into_bytes().to_vec());
+}
+
+#[cfg(feature = "uk-rustcrypto")]
+#[then("the RustCrypto HMAC-SHA256 tag should verify")]
+fn rustcrypto_hmac_sha256_verify(world: &mut UselessWorld) {
+    use hmac::Mac;
+    use uselesskey_rustcrypto::RustCryptoHmacExt;
+
+    let secret = world.hmac.as_ref().expect("HMAC secret not set");
+    let mut mac = secret.hmac_sha256();
+    mac.update(RUSTCRYPTO_TEST_MSG);
+    let tag_bytes = world
+        .rustcrypto_signature_bytes
+        .as_ref()
+        .expect("tag not set");
+    mac.verify_slice(tag_bytes)
+        .expect("HMAC-SHA256 tag should verify");
+}
+
+#[cfg(feature = "uk-rustcrypto")]
+#[when("I compute a RustCrypto HMAC-SHA384 tag")]
+fn rustcrypto_hmac_sha384_compute(world: &mut UselessWorld) {
+    use hmac::Mac;
+    use uselesskey_rustcrypto::RustCryptoHmacExt;
+
+    let secret = world.hmac.as_ref().expect("HMAC secret not set");
+    let mut mac = secret.hmac_sha384();
+    mac.update(RUSTCRYPTO_TEST_MSG);
+    let result = mac.finalize();
+    world.rustcrypto_signature_bytes = Some(result.into_bytes().to_vec());
+}
+
+#[cfg(feature = "uk-rustcrypto")]
+#[then("the RustCrypto HMAC-SHA384 tag should verify")]
+fn rustcrypto_hmac_sha384_verify(world: &mut UselessWorld) {
+    use hmac::Mac;
+    use uselesskey_rustcrypto::RustCryptoHmacExt;
+
+    let secret = world.hmac.as_ref().expect("HMAC secret not set");
+    let mut mac = secret.hmac_sha384();
+    mac.update(RUSTCRYPTO_TEST_MSG);
+    let tag_bytes = world
+        .rustcrypto_signature_bytes
+        .as_ref()
+        .expect("tag not set");
+    mac.verify_slice(tag_bytes)
+        .expect("HMAC-SHA384 tag should verify");
+}
+
+#[cfg(feature = "uk-rustcrypto")]
+#[when("I compute a RustCrypto HMAC-SHA512 tag")]
+fn rustcrypto_hmac_sha512_compute(world: &mut UselessWorld) {
+    use hmac::Mac;
+    use uselesskey_rustcrypto::RustCryptoHmacExt;
+
+    let secret = world.hmac.as_ref().expect("HMAC secret not set");
+    let mut mac = secret.hmac_sha512();
+    mac.update(RUSTCRYPTO_TEST_MSG);
+    let result = mac.finalize();
+    world.rustcrypto_signature_bytes = Some(result.into_bytes().to_vec());
+}
+
+#[cfg(feature = "uk-rustcrypto")]
+#[then("the RustCrypto HMAC-SHA512 tag should verify")]
+fn rustcrypto_hmac_sha512_verify(world: &mut UselessWorld) {
+    use hmac::Mac;
+    use uselesskey_rustcrypto::RustCryptoHmacExt;
+
+    let secret = world.hmac.as_ref().expect("HMAC secret not set");
+    let mut mac = secret.hmac_sha512();
+    mac.update(RUSTCRYPTO_TEST_MSG);
+    let tag_bytes = world
+        .rustcrypto_signature_bytes
+        .as_ref()
+        .expect("tag not set");
+    mac.verify_slice(tag_bytes)
+        .expect("HMAC-SHA512 tag should verify");
+}
+
+// =====================================================================
+// aws-lc-rs adapter steps
+// =====================================================================
+
+#[cfg(all(feature = "uk-aws-lc-rs", any(not(windows), has_nasm)))]
+const AWS_LC_RS_TEST_MSG: &[u8] = b"aws-lc-rs-bdd-test-message";
+
+// --- RSA ---
+
+#[cfg(all(feature = "uk-aws-lc-rs", any(not(windows), has_nasm)))]
+#[when("I sign a message with the aws-lc-rs RSA key")]
+fn aws_lc_rs_rsa_sign(world: &mut UselessWorld) {
+    use aws_lc_rs::signature::KeyPair;
+    use uselesskey_aws_lc_rs::AwsLcRsRsaKeyPairExt;
+
+    let kp = world.rsa.as_ref().expect("RSA key not set");
+    let ring_kp = kp.rsa_key_pair_aws_lc_rs();
+    let rng = aws_lc_rs::rand::SystemRandom::new();
+    let mut sig = vec![0u8; ring_kp.public_modulus_len()];
+    ring_kp
+        .sign(
+            &aws_lc_rs::signature::RSA_PKCS1_SHA256,
+            &rng,
+            AWS_LC_RS_TEST_MSG,
+            &mut sig,
+        )
+        .expect("sign");
+    world.aws_lc_rs_public_key_bytes = Some(ring_kp.public_key().as_ref().to_vec());
+    world.aws_lc_rs_signature_bytes = Some(sig);
+}
+
+#[cfg(all(feature = "uk-aws-lc-rs", any(not(windows), has_nasm)))]
+#[then("the aws-lc-rs RSA signature should verify")]
+fn aws_lc_rs_rsa_verify(world: &mut UselessWorld) {
+    let public_key_bytes = world
+        .aws_lc_rs_public_key_bytes
+        .as_ref()
+        .expect("public key not set");
+    let sig = world
+        .aws_lc_rs_signature_bytes
+        .as_ref()
+        .expect("signature not set");
+    let public_key = aws_lc_rs::signature::UnparsedPublicKey::new(
+        &aws_lc_rs::signature::RSA_PKCS1_2048_8192_SHA256,
+        public_key_bytes,
+    );
+    public_key
+        .verify(AWS_LC_RS_TEST_MSG, sig)
+        .expect("RSA signature should verify");
+}
+
+#[cfg(all(feature = "uk-aws-lc-rs", any(not(windows), has_nasm)))]
+#[then("the aws-lc-rs RSA signature should not verify with the other key")]
+fn aws_lc_rs_rsa_wrong_key(world: &mut UselessWorld) {
+    use aws_lc_rs::signature::KeyPair;
+    use uselesskey_aws_lc_rs::AwsLcRsRsaKeyPairExt;
+
+    let kp = world.rsa.as_ref().expect("RSA key not set");
+    let other_kp = kp.rsa_key_pair_aws_lc_rs();
+    let other_pub = other_kp.public_key().as_ref();
+    let sig = world
+        .aws_lc_rs_signature_bytes
+        .as_ref()
+        .expect("signature not set");
+    let public_key = aws_lc_rs::signature::UnparsedPublicKey::new(
+        &aws_lc_rs::signature::RSA_PKCS1_2048_8192_SHA256,
+        other_pub,
+    );
+    assert!(
+        public_key.verify(AWS_LC_RS_TEST_MSG, sig).is_err(),
+        "RSA signature should NOT verify with wrong key"
+    );
+}
+
+// --- ECDSA P-256 ---
+
+#[cfg(all(feature = "uk-aws-lc-rs", any(not(windows), has_nasm)))]
+#[when("I sign a message with the aws-lc-rs ECDSA P-256 key")]
+fn aws_lc_rs_ecdsa_p256_sign(world: &mut UselessWorld) {
+    use aws_lc_rs::signature::KeyPair;
+    use uselesskey_aws_lc_rs::AwsLcRsEcdsaKeyPairExt;
+
+    let kp = world.ecdsa.as_ref().expect("ECDSA key not set");
+    let ring_kp = kp.ecdsa_key_pair_aws_lc_rs();
+    let rng = aws_lc_rs::rand::SystemRandom::new();
+    let sig = ring_kp.sign(&rng, AWS_LC_RS_TEST_MSG).expect("sign");
+    world.aws_lc_rs_public_key_bytes = Some(ring_kp.public_key().as_ref().to_vec());
+    world.aws_lc_rs_signature_bytes = Some(sig.as_ref().to_vec());
+}
+
+#[cfg(all(feature = "uk-aws-lc-rs", any(not(windows), has_nasm)))]
+#[then("the aws-lc-rs ECDSA P-256 signature should verify")]
+fn aws_lc_rs_ecdsa_p256_verify(world: &mut UselessWorld) {
+    let public_key_bytes = world
+        .aws_lc_rs_public_key_bytes
+        .as_ref()
+        .expect("public key not set");
+    let sig = world
+        .aws_lc_rs_signature_bytes
+        .as_ref()
+        .expect("signature not set");
+    let public_key = aws_lc_rs::signature::UnparsedPublicKey::new(
+        &aws_lc_rs::signature::ECDSA_P256_SHA256_ASN1,
+        public_key_bytes,
+    );
+    public_key
+        .verify(AWS_LC_RS_TEST_MSG, sig)
+        .expect("ECDSA P-256 signature should verify");
+}
+
+// --- ECDSA P-384 ---
+
+#[cfg(all(feature = "uk-aws-lc-rs", any(not(windows), has_nasm)))]
+#[when("I sign a message with the aws-lc-rs ECDSA P-384 key")]
+fn aws_lc_rs_ecdsa_p384_sign(world: &mut UselessWorld) {
+    use aws_lc_rs::signature::KeyPair;
+    use uselesskey_aws_lc_rs::AwsLcRsEcdsaKeyPairExt;
+
+    let kp = world.ecdsa.as_ref().expect("ECDSA key not set");
+    let ring_kp = kp.ecdsa_key_pair_aws_lc_rs();
+    let rng = aws_lc_rs::rand::SystemRandom::new();
+    let sig = ring_kp.sign(&rng, AWS_LC_RS_TEST_MSG).expect("sign");
+    world.aws_lc_rs_public_key_bytes = Some(ring_kp.public_key().as_ref().to_vec());
+    world.aws_lc_rs_signature_bytes = Some(sig.as_ref().to_vec());
+}
+
+#[cfg(all(feature = "uk-aws-lc-rs", any(not(windows), has_nasm)))]
+#[then("the aws-lc-rs ECDSA P-384 signature should verify")]
+fn aws_lc_rs_ecdsa_p384_verify(world: &mut UselessWorld) {
+    let public_key_bytes = world
+        .aws_lc_rs_public_key_bytes
+        .as_ref()
+        .expect("public key not set");
+    let sig = world
+        .aws_lc_rs_signature_bytes
+        .as_ref()
+        .expect("signature not set");
+    let public_key = aws_lc_rs::signature::UnparsedPublicKey::new(
+        &aws_lc_rs::signature::ECDSA_P384_SHA384_ASN1,
+        public_key_bytes,
+    );
+    public_key
+        .verify(AWS_LC_RS_TEST_MSG, sig)
+        .expect("ECDSA P-384 signature should verify");
+}
+
+// --- Ed25519 ---
+
+#[cfg(all(feature = "uk-aws-lc-rs", any(not(windows), has_nasm)))]
+#[when("I sign a message with the aws-lc-rs Ed25519 key")]
+fn aws_lc_rs_ed25519_sign(world: &mut UselessWorld) {
+    use aws_lc_rs::signature::KeyPair;
+    use uselesskey_aws_lc_rs::AwsLcRsEd25519KeyPairExt;
+
+    let kp = world.ed25519.as_ref().expect("Ed25519 key not set");
+    let ring_kp = kp.ed25519_key_pair_aws_lc_rs();
+    let sig = ring_kp.sign(AWS_LC_RS_TEST_MSG);
+    world.aws_lc_rs_public_key_bytes = Some(ring_kp.public_key().as_ref().to_vec());
+    world.aws_lc_rs_signature_bytes = Some(sig.as_ref().to_vec());
+}
+
+#[cfg(all(feature = "uk-aws-lc-rs", any(not(windows), has_nasm)))]
+#[then("the aws-lc-rs Ed25519 signature should verify")]
+fn aws_lc_rs_ed25519_verify(world: &mut UselessWorld) {
+    let public_key_bytes = world
+        .aws_lc_rs_public_key_bytes
+        .as_ref()
+        .expect("public key not set");
+    let sig = world
+        .aws_lc_rs_signature_bytes
+        .as_ref()
+        .expect("signature not set");
+    let public_key = aws_lc_rs::signature::UnparsedPublicKey::new(
+        &aws_lc_rs::signature::ED25519,
+        public_key_bytes,
+    );
+    public_key
+        .verify(AWS_LC_RS_TEST_MSG, sig)
+        .expect("Ed25519 signature should verify");
+}
+
+#[cfg(all(feature = "uk-aws-lc-rs", any(not(windows), has_nasm)))]
+#[then("the aws-lc-rs Ed25519 signature should not verify with the other key")]
+fn aws_lc_rs_ed25519_wrong_key(world: &mut UselessWorld) {
+    use aws_lc_rs::signature::KeyPair;
+    use uselesskey_aws_lc_rs::AwsLcRsEd25519KeyPairExt;
+
+    let kp = world.ed25519.as_ref().expect("Ed25519 key not set");
+    let other_kp = kp.ed25519_key_pair_aws_lc_rs();
+    let other_pub = other_kp.public_key().as_ref();
+    let sig = world
+        .aws_lc_rs_signature_bytes
+        .as_ref()
+        .expect("signature not set");
+    let public_key =
+        aws_lc_rs::signature::UnparsedPublicKey::new(&aws_lc_rs::signature::ED25519, other_pub);
+    assert!(
+        public_key.verify(AWS_LC_RS_TEST_MSG, sig).is_err(),
+        "Ed25519 signature should NOT verify with wrong key"
     );
 }
 

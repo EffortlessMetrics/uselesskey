@@ -3329,9 +3329,11 @@ dependencies = [
 name = "uselesskey-bdd-steps"
 version = "0.3.0"
 dependencies = [
+ "aws-lc-rs",
  "base64",
  "cucumber",
  "ed25519-dalek",
+ "hmac",
  "jsonwebtoken",
  "p256",
  "p384",
@@ -3340,6 +3342,7 @@ dependencies = [
  "rand_core 0.6.4",
  "rsa",
  "serde_json",
+ "sha2",
  "uselesskey",
  "uselesskey-aws-lc-rs",
  "uselesskey-core",
