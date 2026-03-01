@@ -426,9 +426,10 @@ fn publish_preflight() -> Result<()> {
 
 fn run_publish_preflight(runner: &mut receipt::Runner) -> Result<()> {
     runner.step("preflight:metadata", None, check_crate_metadata)?;
+    let mut first_err: Option<anyhow::Error> = None;
     for name in PUBLISH_CRATES {
         let step_name = format!("preflight:package:{name}");
-        runner.step(&step_name, None, || {
+        if let Err(e) = runner.step(&step_name, None, || {
             let output = Command::new("cargo")
                 .args(["package", "--no-verify", "-p", name])
                 .output()
@@ -444,9 +445,15 @@ fn run_publish_preflight(runner: &mut receipt::Runner) -> Result<()> {
                 return Ok(());
             }
             bail!("cargo package -p {name} failed:\n{stderr}");
-        })?;
+        }) && first_err.is_none()
+        {
+            first_err = Some(e);
+        }
     }
-    Ok(())
+    match first_err {
+        Some(e) => Err(e),
+        None => Ok(()),
+    }
 }
 
 fn check_crate_metadata() -> Result<()> {
