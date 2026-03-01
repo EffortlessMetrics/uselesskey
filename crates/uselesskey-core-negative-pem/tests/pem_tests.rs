@@ -660,7 +660,7 @@ fn deterministic_truncate_result_always_strictly_shorter() {
     let out_chars = out.chars().count();
     assert!(
         out_chars >= 1,
-        "len={n}: truncated must have ≥1 char, got {out_chars}"
+        "len={n}: truncated must have >=1 char, got {out_chars}"
     );
     assert!(
         out_chars < n,
@@ -676,10 +676,7 @@ fn deterministic_truncate_many_lengths_bounded() {
         let pem: String = core::iter::repeat_n('A', len).collect();
         let out = corrupt_pem_deterministic(&pem, &variant);
         let out_chars = out.chars().count();
-        assert!(
-            out_chars >= 1,
-            "len={len}: truncated must keep ≥1 char"
-        );
+        assert!(out_chars >= 1, "len={len}: truncated must keep >=1 char");
         assert!(
             out_chars < len,
             "len={len}: truncated ({out_chars}) must be < ({len})"
