@@ -19,7 +19,8 @@
 //!
 //! Convert an RSA fixture to a `ring` key pair (requires `rsa` feature):
 //!
-//! ```
+#![cfg_attr(feature = "rsa", doc = "```")]
+#![cfg_attr(not(feature = "rsa"), doc = "```ignore")]
 //! use uselesskey_core::Factory;
 //! use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 //! use uselesskey_ring::RingRsaKeyPairExt;
