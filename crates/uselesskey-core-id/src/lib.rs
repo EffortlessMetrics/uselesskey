@@ -1,5 +1,10 @@
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
+//! Core identity and derivation primitives for uselesskey.
+//!
+//! Defines `ArtifactId` — the `(domain, label, spec_fingerprint, variant,
+//! derivation_version)` tuple that uniquely identifies each generated artifact.
+//! Provides deterministic seed derivation from a master seed and artifact id.
 
 extern crate alloc;
 

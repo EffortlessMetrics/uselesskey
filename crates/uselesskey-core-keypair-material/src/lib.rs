@@ -1,4 +1,9 @@
 #![forbid(unsafe_code)]
+//! PKCS#8 / SPKI key-material helpers shared by key fixture crates.
+//!
+//! Provides the `Pkcs8SpkiKeyMaterial` trait and related types for consistent
+//! access to private (PKCS#8) and public (SPKI) key encodings in PEM and DER
+//! formats, plus corrupt PEM/DER negative fixture support.
 
 use std::fmt;
 use std::sync::Arc;

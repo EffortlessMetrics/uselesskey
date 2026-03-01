@@ -1,5 +1,10 @@
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
+//! Factory orchestration and cache lookup for uselesskey fixtures.
+//!
+//! Implements the core `Factory` type that manages deterministic derivation,
+//! caching, and artifact generation. Operates in either Random or Deterministic
+//! mode based on seed configuration.
 
 extern crate alloc;
 

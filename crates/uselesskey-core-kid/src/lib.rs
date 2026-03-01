@@ -1,4 +1,9 @@
 #![forbid(unsafe_code)]
+//! Deterministic key-id (kid) helpers for uselesskey fixture crates.
+//!
+//! Generates URL-safe base64 key identifiers by hashing public key material
+//! with BLAKE3. The default prefix length (12 bytes / 96 bits) provides
+//! sufficient collision resistance for test fixture scenarios.
 
 use base64::Engine as _;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;

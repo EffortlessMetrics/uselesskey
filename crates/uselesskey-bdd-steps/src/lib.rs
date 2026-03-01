@@ -1,4 +1,8 @@
 #![forbid(unsafe_code)]
+//! Cucumber BDD step definitions for uselesskey integration testing.
+//!
+//! Implements Given/When/Then steps that exercise the full uselesskey API
+//! across all key types, adapters, and negative fixture scenarios.
 
 use cucumber::{World, given, then, when};
 #[cfg(feature = "uk-jwt")]
