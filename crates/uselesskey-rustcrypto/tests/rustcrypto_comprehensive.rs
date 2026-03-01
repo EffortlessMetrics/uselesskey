@@ -73,7 +73,11 @@ mod rsa_comprehensive {
         let pk1 = fx.rsa("label-a", RsaSpec::rs256()).rsa_public_key();
         let pk2 = fx.rsa("label-b", RsaSpec::rs256()).rsa_public_key();
 
-        assert_ne!(pk1.n(), pk2.n(), "different labels must produce different keys");
+        assert_ne!(
+            pk1.n(),
+            pk2.n(),
+            "different labels must produce different keys"
+        );
     }
 
     #[test]
@@ -165,12 +169,8 @@ mod ecdsa_comprehensive {
         let fx1 = deterministic_factory("rc-det-ecdsa-v1");
         let fx2 = deterministic_factory("rc-det-ecdsa-v1");
 
-        let vk1 = fx1
-            .ecdsa("det-ec", EcdsaSpec::es256())
-            .p256_verifying_key();
-        let vk2 = fx2
-            .ecdsa("det-ec", EcdsaSpec::es256())
-            .p256_verifying_key();
+        let vk1 = fx1.ecdsa("det-ec", EcdsaSpec::es256()).p256_verifying_key();
+        let vk2 = fx2.ecdsa("det-ec", EcdsaSpec::es256()).p256_verifying_key();
 
         assert_eq!(vk1, vk2, "deterministic P-256 keys must match");
     }
@@ -436,14 +436,19 @@ mod hmac_comprehensive {
 // Cross-adapter tests
 // =========================================================================
 
-#[cfg(all(feature = "rsa", feature = "ecdsa", feature = "ed25519", feature = "hmac"))]
+#[cfg(all(
+    feature = "rsa",
+    feature = "ecdsa",
+    feature = "ed25519",
+    feature = "hmac"
+))]
 mod cross_type_tests {
     use super::*;
+    use rsa::traits::PublicKeyParts;
     use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
     use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
     use uselesskey_hmac::{HmacFactoryExt, HmacSpec};
     use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
-    use rsa::traits::PublicKeyParts;
     use uselesskey_rustcrypto::{
         RustCryptoEcdsaExt, RustCryptoEd25519Ext, RustCryptoHmacExt, RustCryptoRsaExt,
     };
@@ -474,12 +479,8 @@ mod cross_type_tests {
         let rsa2 = fx2.rsa("stable", RsaSpec::rs256()).rsa_public_key();
         assert_eq!(rsa1.n(), rsa2.n());
 
-        let ec1 = fx1
-            .ecdsa("stable", EcdsaSpec::es256())
-            .p256_verifying_key();
-        let ec2 = fx2
-            .ecdsa("stable", EcdsaSpec::es256())
-            .p256_verifying_key();
+        let ec1 = fx1.ecdsa("stable", EcdsaSpec::es256()).p256_verifying_key();
+        let ec2 = fx2.ecdsa("stable", EcdsaSpec::es256()).p256_verifying_key();
         assert_eq!(ec1, ec2);
 
         let ed1 = fx1
@@ -490,8 +491,14 @@ mod cross_type_tests {
             .ed25519_verifying_key();
         assert_eq!(ed1, ed2);
 
-        let h1 = fx1.hmac("stable", HmacSpec::hs256()).secret_bytes().to_vec();
-        let h2 = fx2.hmac("stable", HmacSpec::hs256()).secret_bytes().to_vec();
+        let h1 = fx1
+            .hmac("stable", HmacSpec::hs256())
+            .secret_bytes()
+            .to_vec();
+        let h2 = fx2
+            .hmac("stable", HmacSpec::hs256())
+            .secret_bytes()
+            .to_vec();
         assert_eq!(h1, h2);
     }
 }

@@ -221,8 +221,7 @@ mod tls_handshake_tests {
         let server_config = Arc::new(chain.server_config_rustls_with_provider(provider.clone()));
         let client_config = Arc::new(chain.client_config_rustls_with_provider(provider));
 
-        let server_name: rustls::pki_types::ServerName<'_> =
-            "test.example.com".try_into().unwrap();
+        let server_name: rustls::pki_types::ServerName<'_> = "test.example.com".try_into().unwrap();
         let mut server = rustls::ServerConnection::new(server_config).unwrap();
         let mut client =
             rustls::ClientConnection::new(client_config, server_name.to_owned()).unwrap();
@@ -259,8 +258,7 @@ mod tls_handshake_tests {
             Arc::new(chain.server_config_mtls_rustls_with_provider(provider.clone()));
         let client_config = Arc::new(chain.client_config_mtls_rustls_with_provider(provider));
 
-        let server_name: rustls::pki_types::ServerName<'_> =
-            "test.example.com".try_into().unwrap();
+        let server_name: rustls::pki_types::ServerName<'_> = "test.example.com".try_into().unwrap();
         let mut server = rustls::ServerConnection::new(server_config).unwrap();
         let mut client =
             rustls::ClientConnection::new(client_config, server_name.to_owned()).unwrap();
@@ -281,17 +279,13 @@ mod tls_handshake_tests {
         let client_config = Arc::new(chain.client_config_rustls_with_provider(provider));
 
         // Client connects with wrong SNI
-        let wrong_name: rustls::pki_types::ServerName<'_> =
-            "wrong.example.com".try_into().unwrap();
+        let wrong_name: rustls::pki_types::ServerName<'_> = "wrong.example.com".try_into().unwrap();
         let mut server = rustls::ServerConnection::new(server_config).unwrap();
         let mut client =
             rustls::ClientConnection::new(client_config, wrong_name.to_owned()).unwrap();
 
         let result = try_handshake(&mut server, &mut client);
-        assert!(
-            result.is_err(),
-            "TLS handshake with wrong SNI should fail"
-        );
+        assert!(result.is_err(), "TLS handshake with wrong SNI should fail");
     }
 
     #[test]
@@ -306,20 +300,15 @@ mod tls_handshake_tests {
         // Server uses chain_server's cert, client trusts chain_client's CA
         let server_config =
             Arc::new(chain_server.server_config_rustls_with_provider(provider.clone()));
-        let client_config =
-            Arc::new(chain_client.client_config_rustls_with_provider(provider));
+        let client_config = Arc::new(chain_client.client_config_rustls_with_provider(provider));
 
-        let server_name: rustls::pki_types::ServerName<'_> =
-            "test.example.com".try_into().unwrap();
+        let server_name: rustls::pki_types::ServerName<'_> = "test.example.com".try_into().unwrap();
         let mut server = rustls::ServerConnection::new(server_config).unwrap();
         let mut client =
             rustls::ClientConnection::new(client_config, server_name.to_owned()).unwrap();
 
         let result = try_handshake(&mut server, &mut client);
-        assert!(
-            result.is_err(),
-            "TLS handshake with cross-CA should fail"
-        );
+        assert!(result.is_err(), "TLS handshake with cross-CA should fail");
     }
 }
 
@@ -355,10 +344,7 @@ mod determinism_tests {
         let cert2 = fx2.x509_self_signed("det-ss", X509Spec::self_signed("test.example.com"));
 
         assert_eq!(cert1.cert_der(), cert2.cert_der());
-        assert_eq!(
-            cert1.private_key_pkcs8_der(),
-            cert2.private_key_pkcs8_der()
-        );
+        assert_eq!(cert1.private_key_pkcs8_der(), cert2.private_key_pkcs8_der());
     }
 
     #[test]

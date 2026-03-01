@@ -97,7 +97,9 @@ fn token_deterministic_through_facade() {
 #[test]
 #[cfg(all(feature = "rsa", feature = "ecdsa", feature = "ed25519"))]
 fn order_independent_derivation() {
-    use uselesskey::{EcdsaFactoryExt, EcdsaSpec, Ed25519FactoryExt, Ed25519Spec, RsaFactoryExt, RsaSpec};
+    use uselesskey::{
+        EcdsaFactoryExt, EcdsaSpec, Ed25519FactoryExt, Ed25519Spec, RsaFactoryExt, RsaSpec,
+    };
 
     // Generate in order: RSA then ECDSA then Ed25519
     let fx_abc = deterministic_fx("facade-order-v1");
