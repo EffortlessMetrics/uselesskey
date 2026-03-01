@@ -6,11 +6,11 @@ license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
 description = "Shared PKCS#8/SPKI key-material helpers for uselesskey fixture crates."
-categories = ["development-tools::testing"]
+categories.workspace = true
 keywords = ["pkcs8", "spki", "fixtures", "testing", "deterministic"]
 readme = "README.md"
 exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
-homepage = "https://github.com/EffortlessMetrics/uselesskey"
+homepage.workspace = true
 documentation = "https://docs.rs/uselesskey-core-keypair"
 authors.workspace = true
 

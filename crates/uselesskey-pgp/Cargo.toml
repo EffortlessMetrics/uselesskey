@@ -6,11 +6,11 @@ license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
 description = "OpenPGP key fixtures (armored and binary) for deterministic and random tests."
-categories = ["development-tools::testing"]
+categories.workspace = true
 keywords = ["openpgp", "pgp", "fixtures", "testing", "deterministic"]
 readme = "README.md"
 exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
-homepage = "https://github.com/EffortlessMetrics/uselesskey"
+homepage.workspace = true
 documentation = "https://docs.rs/uselesskey-pgp"
 authors.workspace = true
 

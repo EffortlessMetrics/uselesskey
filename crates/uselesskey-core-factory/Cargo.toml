@@ -8,9 +8,9 @@ repository.workspace = true
 description = "Factory orchestration and cache lookup behavior for uselesskey fixtures."
 readme = "README.md"
 exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
-categories = ["development-tools::testing"]
+categories.workspace = true
 keywords = ["fixtures", "deterministic", "cache", "factory", "testing"]
-homepage = "https://github.com/EffortlessMetrics/uselesskey"
+homepage.workspace = true
 documentation = "https://docs.rs/uselesskey-core-factory"
 authors.workspace = true
 

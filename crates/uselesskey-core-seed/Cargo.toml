@@ -8,9 +8,9 @@ repository.workspace = true
 description = "Seed parsing and redaction primitives for uselesskey."
 readme = "README.md"
 exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
-categories = ["development-tools::testing"]
+categories.workspace = true
 keywords = ["fixtures", "seed", "determinism", "testing", "crypto"]
-homepage = "https://github.com/EffortlessMetrics/uselesskey"
+homepage.workspace = true
 documentation = "https://docs.rs/uselesskey-core-seed"
 authors.workspace = true
 
