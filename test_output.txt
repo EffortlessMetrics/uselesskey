@@ -1,0 +1,87 @@
+    Finished `test` profile [optimized + debuginfo] target(s) in 0.12s
+     Running unittests src\lib.rs (target\debug\deps\uselesskey_test_grid-f54acccda7adc663.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\reexport_tests.rs (target\debug\deps\reexport_tests-0be7f2e40469e89c.exe)
+
+running 15 tests
+test all_feature_constants_are_non_empty ... ok
+test all_feature_constants_start_with_uk_prefix ... ok
+test bdd_feature_matrix_matches_canonical ... ok
+test bdd_feature_sets_matches_canonical ... ok
+test uk_feature_sets_is_non_empty_via_facade ... ok
+test core_feature_matrix_matches_canonical ... ok
+test core_matrix_is_non_empty_via_facade ... ok
+test feature_set_clone_via_facade ... ok
+test feature_set_constructible_via_facade ... ok
+test feature_set_debug_via_facade ... ok
+test feature_set_equality_via_facade ... ok
+test feature_set_inequality_different_args ... ok
+test feature_set_inequality_different_name ... ok
+test bdd_matrix_is_non_empty_via_facade ... ok
+test uk_feature_sets_matches_canonical ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests uselesskey_test_grid
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+    Finished `test` profile [optimized + debuginfo] target(s) in 0.09s
+     Running unittests src\lib.rs (target\debug\deps\uselesskey_feature_grid-9386c0076e6c0f12.exe)
+
+running 28 tests
+test tests::bdd_feature_set_is_explicit ... ok
+test tests::bdd_feature_sets_are_non_empty_strings ... ok
+test tests::bdd_feature_sets_len_matches_matrix ... ok
+test tests::bdd_matrix_names_are_non_empty ... ok
+test tests::bdd_matrix_all_entries_have_features_arg ... ok
+test tests::bdd_matrix_has_unique_names ... ok
+test tests::bdd_matrix_includes_all_features_flag ... ok
+test tests::bdd_matrix_is_not_empty ... ok
+test tests::bdd_matrix_names_are_ascii_lowercase_or_punctuation ... ok
+test tests::core_matrix_all_features_has_flag ... ok
+test tests::feature_set_new_constructs_correctly ... ok
+test tests::core_matrix_default_has_no_args ... ok
+test tests::core_matrix_feature_entries_use_no_default_features ... ok
+test tests::core_matrix_has_unique_names ... ok
+test tests::core_matrix_names_are_ascii_lowercase_or_punctuation ... ok
+test tests::core_matrix_names_are_non_empty ... ok
+test tests::core_matrix_no_default_has_flag ... ok
+test tests::feature_set_clone ... ok
+test tests::bdd_feature_sets_match_bdd_matrix_names ... ok
+test tests::feature_set_equality ... ok
+test tests::feature_set_inequality_different_args ... ok
+test tests::uk_feature_constants_match_uk_feature_sets_entries ... ok
+test tests::uk_feature_sets_contains_all ... ok
+test tests::uk_feature_sets_has_no_duplicates ... ok
+test tests::core_matrix_includes_default_and_all_features ... ok
+test tests::core_matrix_no_duplicate_cargo_args ... ok
+test tests::feature_set_empty_args ... ok
+test tests::feature_set_debug_includes_name ... ok
+
+test result: ok. 28 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests uselesskey_feature_grid
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Compiling uselesskey-core-x509-derive v0.3.0 (C:\Code\Rust\uselesskey-wt-81\crates\uselesskey-core-x509-derive)
+error[E0515]: cannot return value referencing function parameter `i`
+  --> crates\uselesskey-core-x509-derive\tests\edge_cases.rs:34:47
+   |
+34 |     let parts: Vec<&[u8]> = (0u8..20).map(|i| std::slice::from_ref(&i)).collect();
+   |                                               ^^^^^^^^^^^^^^^^^^^^^--^
+   |                                               |                    |
+   |                                               |                    `i` is borrowed here
+   |                                               returns a value referencing data owned by the current function
+
+For more information about this error, try `rustc --explain E0515`.
+error: could not compile `uselesskey-core-x509-derive` (test "edge_cases") due to 1 previous error

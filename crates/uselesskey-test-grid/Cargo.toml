@@ -16,3 +16,6 @@ publish = false
 
 [dependencies]
 uselesskey-feature-grid.workspace = true
+
+[dev-dependencies]
+uselesskey-feature-grid.workspace = true

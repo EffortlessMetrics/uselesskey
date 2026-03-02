@@ -308,4 +308,153 @@ mod tests {
         let cloned = original;
         assert_eq!(original, cloned);
     }
+
+    // --- Wave 81: additional coverage ---
+
+    #[test]
+    fn core_matrix_all_features_has_flag() {
+        let all = CORE_FEATURE_MATRIX
+            .iter()
+            .find(|e| e.name == "all-features")
+            .expect("matrix must include 'all-features'");
+        assert!(
+            all.cargo_args.contains(&"--all-features"),
+            "all-features entry must pass --all-features"
+        );
+    }
+
+    #[test]
+    fn core_matrix_feature_entries_use_no_default_features() {
+        for entry in CORE_FEATURE_MATRIX {
+            if entry.name != "default" && entry.name != "all-features" {
+                assert!(
+                    entry.cargo_args.contains(&"--no-default-features"),
+                    "non-default entry '{}' should use --no-default-features",
+                    entry.name
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn core_matrix_names_are_ascii_lowercase_or_punctuation() {
+        for entry in CORE_FEATURE_MATRIX {
+            assert!(
+                entry
+                    .name
+                    .chars()
+                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-' || c == '+'),
+                "matrix name '{}' should be lowercase ascii/digits with dashes/plus",
+                entry.name
+            );
+        }
+    }
+
+    #[test]
+    fn bdd_matrix_names_are_ascii_lowercase_or_punctuation() {
+        for entry in BDD_FEATURE_MATRIX {
+            assert!(
+                entry
+                    .name
+                    .chars()
+                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-' || c == '+'),
+                "BDD matrix name '{}' should be lowercase ascii/digits with dashes/plus",
+                entry.name
+            );
+        }
+    }
+
+    #[test]
+    fn bdd_matrix_all_entries_have_features_arg() {
+        for entry in BDD_FEATURE_MATRIX {
+            assert!(
+                entry.cargo_args.contains(&"--features"),
+                "BDD entry '{}' should pass --features",
+                entry.name
+            );
+        }
+    }
+
+    #[test]
+    fn uk_feature_constants_match_uk_feature_sets_entries() {
+        let constants = [
+            UK_FEATURE_ALL,
+            UK_FEATURE_RSA,
+            UK_FEATURE_ECDSA,
+            UK_FEATURE_ED25519,
+            UK_FEATURE_HMAC,
+            UK_FEATURE_PGP,
+            UK_FEATURE_X509,
+            UK_FEATURE_JWK,
+            UK_FEATURE_TOKEN,
+            UK_FEATURE_JWT,
+            UK_FEATURE_CORE_ID,
+            UK_FEATURE_CORE_SEED,
+            UK_FEATURE_CORE_FACTORY,
+            UK_FEATURE_CORE_KID,
+            UK_FEATURE_CORE_KEYPAIR,
+            UK_FEATURE_CORE_TOKEN_SHAPE,
+            UK_FEATURE_CORE_NEGATIVE,
+            UK_FEATURE_CORE_SINK,
+            UK_FEATURE_AWS_LC_RS,
+            UK_FEATURE_RING,
+            UK_FEATURE_RUSTCRYPTO,
+            UK_FEATURE_RUSTLS,
+            UK_FEATURE_TONIC,
+        ];
+        assert_eq!(
+            constants.len(),
+            UK_FEATURE_SETS.len(),
+            "constants count must match UK_FEATURE_SETS length"
+        );
+        for c in constants {
+            assert!(
+                UK_FEATURE_SETS.contains(&c),
+                "constant '{c}' missing from UK_FEATURE_SETS"
+            );
+        }
+    }
+
+    #[test]
+    fn feature_set_inequality_different_args() {
+        let a = FeatureSet::new("same", &["--all-features"]);
+        let b = FeatureSet::new("same", &["--no-default-features"]);
+        assert_ne!(a, b);
+    }
+
+    #[test]
+    fn feature_set_empty_args() {
+        let fs = FeatureSet::new("empty", &[]);
+        assert!(fs.cargo_args.is_empty());
+    }
+
+    #[test]
+    fn bdd_feature_sets_len_matches_matrix() {
+        assert_eq!(
+            BDD_FEATURE_SETS.len(),
+            BDD_FEATURE_MATRIX.len(),
+            "BDD_FEATURE_SETS and BDD_FEATURE_MATRIX must have same length"
+        );
+    }
+
+    #[test]
+    fn core_matrix_no_duplicate_cargo_args() {
+        for (i, entry) in CORE_FEATURE_MATRIX.iter().enumerate() {
+            for prev in CORE_FEATURE_MATRIX.iter().take(i) {
+                if entry.cargo_args == prev.cargo_args {
+                    panic!(
+                        "duplicate cargo_args between '{}' and '{}'",
+                        entry.name, prev.name
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn bdd_feature_sets_are_non_empty_strings() {
+        for name in BDD_FEATURE_SETS {
+            assert!(!name.is_empty(), "BDD_FEATURE_SETS entry must not be empty");
+        }
+    }
 }
