@@ -476,4 +476,169 @@ mod tests {
             assert!(!name.is_empty(), "BDD_FEATURE_SETS entry must not be empty");
         }
     }
+
+    // --- Wave 153: additional coverage ---
+
+    #[test]
+    fn core_matrix_cargo_args_strings_are_non_empty() {
+        for entry in CORE_FEATURE_MATRIX {
+            for arg in entry.cargo_args {
+                assert!(
+                    !arg.is_empty(),
+                    "cargo_args in '{}' must not contain empty strings",
+                    entry.name
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn bdd_matrix_cargo_args_strings_are_non_empty() {
+        for entry in BDD_FEATURE_MATRIX {
+            for arg in entry.cargo_args {
+                assert!(
+                    !arg.is_empty(),
+                    "cargo_args in BDD entry '{}' must not contain empty strings",
+                    entry.name
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn bdd_matrix_feature_values_are_valid_uk_tags() {
+        for entry in BDD_FEATURE_MATRIX {
+            // Find the value after "--features"
+            let feature_idx = entry
+                .cargo_args
+                .iter()
+                .position(|a| *a == "--features")
+                .expect("BDD entry must have --features");
+            let features_csv = entry.cargo_args[feature_idx + 1];
+            for tag in features_csv.split(',') {
+                assert!(
+                    UK_FEATURE_SETS.contains(&tag),
+                    "BDD entry '{}' references unknown tag '{tag}'",
+                    entry.name
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn core_matrix_covers_all_individual_facade_features() {
+        let expected_singles = [
+            "rsa", "ecdsa", "ed25519", "hmac", "token", "pgp", "x509", "jwk",
+        ];
+        let names: Vec<&str> = CORE_FEATURE_MATRIX.iter().map(|e| e.name).collect();
+        for feature in expected_singles {
+            assert!(
+                names.contains(&feature),
+                "CORE_FEATURE_MATRIX must include single-feature entry '{feature}'"
+            );
+        }
+    }
+
+    #[test]
+    fn core_matrix_single_feature_entries_pass_correct_feature() {
+        let singles = [
+            "rsa", "ecdsa", "ed25519", "hmac", "token", "pgp", "x509", "jwk",
+        ];
+        for name in singles {
+            let entry = CORE_FEATURE_MATRIX
+                .iter()
+                .find(|e| e.name == name)
+                .unwrap_or_else(|| panic!("missing entry '{name}'"));
+            let feat_idx = entry
+                .cargo_args
+                .iter()
+                .position(|a| *a == "--features")
+                .unwrap_or_else(|| panic!("'{name}' should have --features"));
+            let value = entry.cargo_args[feat_idx + 1];
+            assert!(
+                value.contains(name),
+                "single-feature entry '{name}' should pass feature '{name}', got '{value}'"
+            );
+        }
+    }
+
+    #[test]
+    fn bdd_matrix_no_duplicate_cargo_args() {
+        for (i, entry) in BDD_FEATURE_MATRIX.iter().enumerate() {
+            for prev in BDD_FEATURE_MATRIX.iter().take(i) {
+                if entry.cargo_args == prev.cargo_args {
+                    panic!(
+                        "duplicate cargo_args between BDD entries '{}' and '{}'",
+                        entry.name, prev.name
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn bdd_feature_sets_has_no_duplicates() {
+        for (i, name) in BDD_FEATURE_SETS.iter().enumerate() {
+            for prev in BDD_FEATURE_SETS.iter().take(i) {
+                assert_ne!(name, prev, "duplicate in BDD_FEATURE_SETS");
+            }
+        }
+    }
+
+    #[test]
+    fn core_matrix_has_minimum_expected_size() {
+        // default + no-default + 8 singles + combos + all-features
+        assert!(
+            CORE_FEATURE_MATRIX.len() >= 11,
+            "CORE_FEATURE_MATRIX should have at least 11 entries, got {}",
+            CORE_FEATURE_MATRIX.len()
+        );
+    }
+
+    #[test]
+    fn bdd_matrix_every_entry_references_uk_all() {
+        for entry in BDD_FEATURE_MATRIX {
+            let feat_idx = entry
+                .cargo_args
+                .iter()
+                .position(|a| *a == "--features")
+                .expect("BDD entry must have --features");
+            let features_csv = entry.cargo_args[feat_idx + 1];
+            let tags: Vec<&str> = features_csv.split(',').collect();
+            assert!(
+                tags.contains(&UK_FEATURE_ALL),
+                "BDD entry '{}' should include '{UK_FEATURE_ALL}' tag",
+                entry.name
+            );
+        }
+    }
+
+    #[test]
+    fn uk_feature_sets_are_non_empty() {
+        for feature in UK_FEATURE_SETS {
+            assert!(
+                !feature.is_empty(),
+                "UK_FEATURE_SETS must not have empty entries"
+            );
+        }
+    }
+
+    #[test]
+    fn core_matrix_combo_entries_reference_valid_features() {
+        let known_features = [
+            "rsa", "ecdsa", "ed25519", "hmac", "token", "pgp", "x509", "jwk",
+        ];
+        for entry in CORE_FEATURE_MATRIX {
+            if let Some(feat_idx) = entry.cargo_args.iter().position(|a| *a == "--features") {
+                let value = entry.cargo_args[feat_idx + 1];
+                for feat in value.split(',') {
+                    assert!(
+                        known_features.contains(&feat),
+                        "core entry '{}' references unknown feature '{feat}'",
+                        entry.name
+                    );
+                }
+            }
+        }
+    }
 }
