@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-core-cache/tests/snapshots_cache.rs
+expression: result
+---
+len: 3
+is_empty: false
+debug_contains_type_name: true

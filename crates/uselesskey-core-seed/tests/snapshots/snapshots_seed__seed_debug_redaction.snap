@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-core-seed/tests/snapshots_seed.rs
+expression: result
+---
+debug_output: Seed(**redacted**)
+contains_redacted: true
+does_not_contain_bytes: true

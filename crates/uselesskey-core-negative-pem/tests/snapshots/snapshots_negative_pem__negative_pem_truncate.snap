@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-core-negative-pem/tests/snapshots_negative_pem.rs
+expression: result
+---
+variant: Truncate
+original_len: 58
+truncated_len: 20
+truncate_target: 20

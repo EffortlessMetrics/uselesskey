@@ -1,0 +1,28 @@
+---
+source: crates/uselesskey-core-base62/tests/snapshots_base62.rs
+expression: results
+---
+- requested_len: 0
+  actual_len: 0
+  all_base62_chars: true
+  alphabet_size: 62
+- requested_len: 1
+  actual_len: 1
+  all_base62_chars: true
+  alphabet_size: 62
+- requested_len: 16
+  actual_len: 16
+  all_base62_chars: true
+  alphabet_size: 62
+- requested_len: 32
+  actual_len: 32
+  all_base62_chars: true
+  alphabet_size: 62
+- requested_len: 64
+  actual_len: 64
+  all_base62_chars: true
+  alphabet_size: 62
+- requested_len: 128
+  actual_len: 128
+  all_base62_chars: true
+  alphabet_size: 62

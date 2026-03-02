@@ -1,0 +1,16 @@
+---
+source: crates/uselesskey-core-seed/tests/snapshots_seed.rs
+expression: results
+---
+- input_description: plain string (hashed via BLAKE3)
+  parsed_ok: true
+  seed_len: 32
+- input_description: 64-char hex string
+  parsed_ok: true
+  seed_len: 32
+- input_description: "0x-prefixed hex string"
+  parsed_ok: true
+  seed_len: 32
+- input_description: whitespace-padded string
+  parsed_ok: true
+  seed_len: 32

@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-core-id/tests/snapshots_id.rs
+expression: result
+---
+domain: "domain:rsa"
+label: my-issuer
+variant: good
+derivation_version: 1
+debug_contains_domain: true
+debug_contains_label: true

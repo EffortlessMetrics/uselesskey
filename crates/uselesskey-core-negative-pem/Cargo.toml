@@ -18,8 +18,10 @@ authors.workspace = true
 uselesskey-core-hash = { workspace = true }
 
 [dev-dependencies]
+insta.workspace = true
 uselesskey-core-hash = { workspace = true }
 proptest = { workspace = true }
+serde.workspace = true
 
 [features]
 default = ["std"]
