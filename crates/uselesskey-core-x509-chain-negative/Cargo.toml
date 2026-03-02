@@ -1,21 +1,20 @@
 [package]
-name = "uselesskey-core-x509-negative"
+name = "uselesskey-core-x509-chain-negative"
 version = "0.3.0"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "X.509 negative-fixture policy helpers for uselesskey."
+description = "X.509 chain negative-fixture policy helpers for uselesskey."
 readme = "README.md"
 exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
 categories.workspace = true
-keywords = ["x509", "fixtures", "negative", "testing", "ca"]
+keywords = ["x509", "fixtures", "negative", "testing", "chain"]
 homepage.workspace = true
-documentation = "https://docs.rs/uselesskey-core-x509-negative"
+documentation = "https://docs.rs/uselesskey-core-x509-chain-negative"
 authors.workspace = true
 
 [dependencies]
-uselesskey-core-x509-chain-negative = { path = "../uselesskey-core-x509-chain-negative", version = "0.3.0" }
 uselesskey-core-x509-spec = { path = "../uselesskey-core-x509-spec", version = "0.3.0" }
 
 [dev-dependencies]
@@ -28,4 +27,3 @@ std = []
 
 [package.metadata.docs.rs]
 features = ["std"]
-

@@ -3550,6 +3550,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "uselesskey-core-x509-chain-negative"
+version = "0.3.0"
+dependencies = [
+ "proptest",
+ "rstest",
+ "uselesskey-core-x509-spec",
+]
+
+[[package]]
 name = "uselesskey-core-x509-derive"
 version = "0.3.0"
 dependencies = [
@@ -3566,6 +3575,7 @@ version = "0.3.0"
 dependencies = [
  "proptest",
  "rstest",
+ "uselesskey-core-x509-chain-negative",
  "uselesskey-core-x509-spec",
 ]
 
@@ -3820,12 +3830,14 @@ name = "uselesskey-x509"
 version = "0.3.0"
 dependencies = [
  "base64",
+ "insta",
  "proptest",
  "rand_chacha 0.3.1",
  "rcgen",
  "rsa",
  "rstest",
  "rustls-pki-types",
+ "serde",
  "time",
  "uselesskey-core",
  "uselesskey-core-x509",
