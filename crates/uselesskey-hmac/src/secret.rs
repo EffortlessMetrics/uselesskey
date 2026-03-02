@@ -115,6 +115,17 @@ impl HmacSecret {
     }
 
     /// A stable key identifier derived from the secret bytes (base64url blake3 hash prefix).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_hmac::{HmacFactoryExt, HmacSpec};
+    /// let fx = Factory::random();
+    /// let secret = fx.hmac("jwt", HmacSpec::hs256());
+    /// let kid = secret.kid();
+    /// assert!(!kid.is_empty());
+    /// ```
     #[cfg(feature = "jwk")]
     pub fn kid(&self) -> String {
         kid_from_bytes(self.secret_bytes())
@@ -123,6 +134,19 @@ impl HmacSecret {
     /// HMAC secret as an octet JWK (kty=oct).
     ///
     /// Requires the `jwk` feature.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_hmac::{HmacFactoryExt, HmacSpec};
+    /// let fx = Factory::random();
+    /// let secret = fx.hmac("jwt", HmacSpec::hs256());
+    /// let jwk = secret.jwk();
+    /// let val = jwk.to_value();
+    /// assert_eq!(val["kty"], "oct");
+    /// assert_eq!(val["alg"], "HS256");
+    /// ```
     #[cfg(feature = "jwk")]
     pub fn jwk(&self) -> uselesskey_jwk::PrivateJwk {
         use base64::Engine as _;
@@ -143,6 +167,18 @@ impl HmacSecret {
     /// JWKS containing this HMAC secret as an octet key.
     ///
     /// Requires the `jwk` feature.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_hmac::{HmacFactoryExt, HmacSpec};
+    /// let fx = Factory::random();
+    /// let secret = fx.hmac("jwt", HmacSpec::hs256());
+    /// let jwks = secret.jwks();
+    /// let val = jwks.to_value();
+    /// assert!(val["keys"].is_array());
+    /// ```
     #[cfg(feature = "jwk")]
     pub fn jwks(&self) -> uselesskey_jwk::Jwks {
         use uselesskey_jwk::JwksBuilder;

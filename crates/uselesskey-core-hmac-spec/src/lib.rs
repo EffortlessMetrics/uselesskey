@@ -18,21 +18,52 @@ pub enum HmacSpec {
 
 impl HmacSpec {
     /// HS256 (HMAC-SHA256). Produces a 32-byte secret.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core_hmac_spec::HmacSpec;
+    /// let spec = HmacSpec::hs256();
+    /// assert_eq!(spec.byte_len(), 32);
+    /// ```
     pub fn hs256() -> Self {
         Self::Hs256
     }
 
     /// HS384 (HMAC-SHA384). Produces a 48-byte secret.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core_hmac_spec::HmacSpec;
+    /// let spec = HmacSpec::hs384();
+    /// assert_eq!(spec.byte_len(), 48);
+    /// ```
     pub fn hs384() -> Self {
         Self::Hs384
     }
 
     /// HS512 (HMAC-SHA512). Produces a 64-byte secret.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core_hmac_spec::HmacSpec;
+    /// let spec = HmacSpec::hs512();
+    /// assert_eq!(spec.byte_len(), 64);
+    /// ```
     pub fn hs512() -> Self {
         Self::Hs512
     }
 
     /// JOSE/JWT `alg` name for this HMAC algorithm.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core_hmac_spec::HmacSpec;
+    /// assert_eq!(HmacSpec::hs256().alg_name(), "HS256");
+    /// ```
     pub fn alg_name(&self) -> &'static str {
         match self {
             Self::Hs256 => "HS256",
@@ -42,6 +73,15 @@ impl HmacSpec {
     }
 
     /// Secret length, in bytes.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core_hmac_spec::HmacSpec;
+    /// assert_eq!(HmacSpec::hs256().byte_len(), 32);
+    /// assert_eq!(HmacSpec::hs384().byte_len(), 48);
+    /// assert_eq!(HmacSpec::hs512().byte_len(), 64);
+    /// ```
     pub fn byte_len(&self) -> usize {
         match self {
             Self::Hs256 => 32,
@@ -53,6 +93,14 @@ impl HmacSpec {
     /// Stable encoding for cache keys / deterministic derivation.
     ///
     /// If you change this, bump the derivation version in `uselesskey-core`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_core_hmac_spec::HmacSpec;
+    /// let bytes = HmacSpec::hs256().stable_bytes();
+    /// assert_eq!(bytes.len(), 4);
+    /// ```
     pub fn stable_bytes(&self) -> [u8; 4] {
         match self {
             Self::Hs256 => [0, 0, 0, 1],

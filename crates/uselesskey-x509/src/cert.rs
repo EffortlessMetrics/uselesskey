@@ -169,11 +169,31 @@ impl X509Cert {
     }
 
     /// DER-encoded PKCS#8 private key bytes.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, X509Spec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let cert = fx.x509_self_signed("svc", X509Spec::self_signed("svc.example.com"));
+    /// assert!(!cert.private_key_pkcs8_der().is_empty());
+    /// ```
     pub fn private_key_pkcs8_der(&self) -> &[u8] {
         &self.inner.private_key_pkcs8_der
     }
 
     /// PEM-encoded PKCS#8 private key.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, X509Spec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let cert = fx.x509_self_signed("svc", X509Spec::self_signed("svc.example.com"));
+    /// assert!(cert.private_key_pkcs8_pem().contains("-----BEGIN PRIVATE KEY-----"));
+    /// ```
     pub fn private_key_pkcs8_pem(&self) -> &str {
         &self.inner.private_key_pkcs8_pem
     }
@@ -203,21 +223,65 @@ impl X509Cert {
     // =========================================================================
 
     /// Write the PEM certificate to a tempfile.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, X509Spec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let cert = fx.x509_self_signed("svc", X509Spec::self_signed("svc.example.com"));
+    /// let temp = cert.write_cert_pem().unwrap();
+    /// assert!(temp.path().exists());
+    /// ```
     pub fn write_cert_pem(&self) -> Result<TempArtifact, Error> {
         TempArtifact::new_string("uselesskey-", ".crt.pem", self.cert_pem())
     }
 
     /// Write the DER certificate to a tempfile.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, X509Spec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let cert = fx.x509_self_signed("svc", X509Spec::self_signed("svc.example.com"));
+    /// let temp = cert.write_cert_der().unwrap();
+    /// assert!(temp.path().exists());
+    /// ```
     pub fn write_cert_der(&self) -> Result<TempArtifact, Error> {
         TempArtifact::new_bytes("uselesskey-", ".crt.der", self.cert_der())
     }
 
     /// Write the PEM private key to a tempfile.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, X509Spec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let cert = fx.x509_self_signed("svc", X509Spec::self_signed("svc.example.com"));
+    /// let temp = cert.write_private_key_pem().unwrap();
+    /// assert!(temp.path().exists());
+    /// ```
     pub fn write_private_key_pem(&self) -> Result<TempArtifact, Error> {
         TempArtifact::new_string("uselesskey-", ".key.pem", self.private_key_pkcs8_pem())
     }
 
     /// Write the combined identity PEM (cert + key) to a tempfile.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, X509Spec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let cert = fx.x509_self_signed("svc", X509Spec::self_signed("svc.example.com"));
+    /// let temp = cert.write_identity_pem().unwrap();
+    /// assert!(temp.path().exists());
+    /// ```
     pub fn write_identity_pem(&self) -> Result<TempArtifact, Error> {
         TempArtifact::new_string("uselesskey-", ".identity.pem", &self.identity_pem())
     }
@@ -227,21 +291,66 @@ impl X509Cert {
     // =========================================================================
 
     /// Produce a corrupted variant of the certificate PEM.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_core::negative::CorruptPem;
+    /// # use uselesskey_x509::{X509FactoryExt, X509Spec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let cert = fx.x509_self_signed("svc", X509Spec::self_signed("svc.example.com"));
+    /// let bad = cert.corrupt_cert_pem(CorruptPem::BadHeader);
+    /// assert!(bad.contains("CORRUPTED"));
+    /// ```
     pub fn corrupt_cert_pem(&self, how: CorruptPem) -> String {
         corrupt_cert_pem(self.cert_pem(), how)
     }
 
     /// Produce a deterministic corrupted certificate PEM using a variant string.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, X509Spec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let cert = fx.x509_self_signed("svc", X509Spec::self_signed("svc.example.com"));
+    /// let bad = cert.corrupt_cert_pem_deterministic("corrupt:v1");
+    /// assert!(!bad.is_empty());
+    /// ```
     pub fn corrupt_cert_pem_deterministic(&self, variant: &str) -> String {
         corrupt_cert_pem_deterministic(self.cert_pem(), variant)
     }
 
     /// Produce a truncated variant of the certificate DER.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, X509Spec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let cert = fx.x509_self_signed("svc", X509Spec::self_signed("svc.example.com"));
+    /// let truncated = cert.truncate_cert_der(10);
+    /// assert_eq!(truncated.len(), 10);
+    /// ```
     pub fn truncate_cert_der(&self, len: usize) -> Vec<u8> {
         truncate_cert_der(self.cert_der(), len)
     }
 
     /// Produce a deterministic corrupted certificate DER using a variant string.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, X509Spec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let cert = fx.x509_self_signed("svc", X509Spec::self_signed("svc.example.com"));
+    /// let bad = cert.corrupt_cert_der_deterministic("corrupt:v1");
+    /// assert!(!bad.is_empty());
+    /// ```
     pub fn corrupt_cert_der_deterministic(&self, variant: &str) -> Vec<u8> {
         corrupt_cert_der_deterministic(self.cert_der(), variant)
     }
@@ -249,6 +358,17 @@ impl X509Cert {
     /// Generate a negative fixture variant of this certificate.
     ///
     /// The variant is cached separately from the valid certificate.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, X509Spec, X509Negative};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let cert = fx.x509_self_signed("svc", X509Spec::self_signed("svc.example.com"));
+    /// let expired = cert.negative(X509Negative::Expired);
+    /// assert_ne!(cert.cert_der(), expired.cert_der());
+    /// ```
     pub fn negative(&self, negative_type: X509Negative) -> X509Cert {
         let modified_spec = negative_type.apply_to_spec(&self.spec);
         let variant = negative_type.variant_name();
@@ -295,6 +415,17 @@ impl X509Cert {
     }
 
     /// Get a certificate with wrong key usage flags.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, X509Spec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let cert = fx.x509_self_signed("svc", X509Spec::self_signed("svc.example.com"));
+    /// let wrong = cert.wrong_key_usage();
+    /// assert!(wrong.spec().is_ca);
+    /// ```
     pub fn wrong_key_usage(&self) -> X509Cert {
         self.negative(X509Negative::WrongKeyUsage)
     }
@@ -304,11 +435,32 @@ impl X509Cert {
     // =========================================================================
 
     /// Get the specification used to create this certificate.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, X509Spec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let spec = X509Spec::self_signed("svc.example.com");
+    /// let cert = fx.x509_self_signed("svc", spec.clone());
+    /// assert_eq!(cert.spec().subject_cn, "svc.example.com");
+    /// ```
     pub fn spec(&self) -> &X509Spec {
         &self.spec
     }
 
     /// Get the label used to create this certificate.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, X509Spec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let cert = fx.x509_self_signed("my-svc", X509Spec::self_signed("svc.example.com"));
+    /// assert_eq!(cert.label(), "my-svc");
+    /// ```
     pub fn label(&self) -> &str {
         &self.label
     }

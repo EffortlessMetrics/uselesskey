@@ -176,11 +176,33 @@ impl Ed25519KeyPair {
     }
 
     /// Write the PKCS#8 PEM private key to a tempfile and return the handle.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
+    /// let fx = Factory::random();
+    /// let kp = fx.ed25519("svc", Ed25519Spec::new());
+    /// let temp = kp.write_private_key_pkcs8_pem().unwrap();
+    /// assert!(temp.path().exists());
+    /// ```
     pub fn write_private_key_pkcs8_pem(&self) -> Result<TempArtifact, Error> {
         self.inner.material.write_private_key_pkcs8_pem()
     }
 
     /// Write the SPKI PEM public key to a tempfile and return the handle.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
+    /// let fx = Factory::random();
+    /// let kp = fx.ed25519("svc", Ed25519Spec::new());
+    /// let temp = kp.write_public_key_spki_pem().unwrap();
+    /// assert!(temp.path().exists());
+    /// ```
     pub fn write_public_key_spki_pem(&self) -> Result<TempArtifact, Error> {
         self.inner.material.write_public_key_spki_pem()
     }
@@ -203,6 +225,17 @@ impl Ed25519KeyPair {
     }
 
     /// Produce a deterministic corrupted PKCS#8 PEM using a variant string.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
+    /// let fx = Factory::random();
+    /// let kp = fx.ed25519("svc", Ed25519Spec::new());
+    /// let bad = kp.private_key_pkcs8_pem_corrupt_deterministic("corrupt:v1");
+    /// assert!(!bad.is_empty());
+    /// ```
     pub fn private_key_pkcs8_pem_corrupt_deterministic(&self, variant: &str) -> String {
         self.inner
             .material
@@ -226,6 +259,17 @@ impl Ed25519KeyPair {
     }
 
     /// Produce a deterministic corrupted PKCS#8 DER using a variant string.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
+    /// let fx = Factory::random();
+    /// let kp = fx.ed25519("svc", Ed25519Spec::new());
+    /// let bad = kp.private_key_pkcs8_der_corrupt_deterministic("corrupt:v1");
+    /// assert!(!bad.is_empty());
+    /// ```
     pub fn private_key_pkcs8_der_corrupt_deterministic(&self, variant: &str) -> Vec<u8> {
         self.inner
             .material
@@ -250,6 +294,17 @@ impl Ed25519KeyPair {
     }
 
     /// A stable key identifier derived from the public key (base64url blake3 hash prefix).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
+    /// let fx = Factory::random();
+    /// let kp = fx.ed25519("svc", Ed25519Spec::new());
+    /// let kid = kp.kid();
+    /// assert!(!kid.is_empty());
+    /// ```
     #[cfg(feature = "jwk")]
     pub fn kid(&self) -> String {
         self.inner.material.kid()
@@ -258,6 +313,17 @@ impl Ed25519KeyPair {
     /// Alias for [`Self::public_jwk`].
     ///
     /// Requires the `jwk` feature.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
+    /// let fx = Factory::random();
+    /// let kp = fx.ed25519("svc", Ed25519Spec::new());
+    /// let jwk = kp.public_key_jwk();
+    /// assert_eq!(jwk.to_value()["kty"], "OKP");
+    /// ```
     #[cfg(feature = "jwk")]
     pub fn public_key_jwk(&self) -> uselesskey_jwk::PublicJwk {
         self.public_jwk()
@@ -266,6 +332,19 @@ impl Ed25519KeyPair {
     /// Public JWK for this keypair (kty=OKP, crv=Ed25519, use=sig, kid=...).
     ///
     /// Requires the `jwk` feature.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
+    /// let fx = Factory::random();
+    /// let kp = fx.ed25519("svc", Ed25519Spec::new());
+    /// let jwk = kp.public_jwk();
+    /// let val = jwk.to_value();
+    /// assert_eq!(val["kty"], "OKP");
+    /// assert_eq!(val["crv"], "Ed25519");
+    /// ```
     #[cfg(feature = "jwk")]
     pub fn public_jwk(&self) -> uselesskey_jwk::PublicJwk {
         use base64::Engine as _;
@@ -288,6 +367,19 @@ impl Ed25519KeyPair {
     /// Private JWK for this keypair (kty=OKP, crv=Ed25519, d=...).
     ///
     /// Requires the `jwk` feature.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
+    /// let fx = Factory::random();
+    /// let kp = fx.ed25519("svc", Ed25519Spec::new());
+    /// let jwk = kp.private_key_jwk();
+    /// let val = jwk.to_value();
+    /// assert_eq!(val["kty"], "OKP");
+    /// assert!(val["d"].is_string());
+    /// ```
     #[cfg(feature = "jwk")]
     pub fn private_key_jwk(&self) -> uselesskey_jwk::PrivateJwk {
         use base64::Engine as _;
@@ -309,6 +401,17 @@ impl Ed25519KeyPair {
     }
 
     /// JWKS containing a single public key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
+    /// let fx = Factory::random();
+    /// let kp = fx.ed25519("svc", Ed25519Spec::new());
+    /// let jwks = kp.public_jwks();
+    /// assert!(jwks.to_value()["keys"].is_array());
+    /// ```
     #[cfg(feature = "jwk")]
     pub fn public_jwks(&self) -> uselesskey_jwk::Jwks {
         use uselesskey_jwk::JwksBuilder;
@@ -321,6 +424,17 @@ impl Ed25519KeyPair {
     /// Public JWK serialized to `serde_json::Value`.
     ///
     /// Requires the `jwk` feature.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
+    /// let fx = Factory::random();
+    /// let kp = fx.ed25519("svc", Ed25519Spec::new());
+    /// let val = kp.public_jwk_json();
+    /// assert_eq!(val["kty"], "OKP");
+    /// ```
     #[cfg(feature = "jwk")]
     pub fn public_jwk_json(&self) -> serde_json::Value {
         self.public_jwk().to_value()
@@ -329,6 +443,17 @@ impl Ed25519KeyPair {
     /// JWKS serialized to `serde_json::Value`.
     ///
     /// Requires the `jwk` feature.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
+    /// let fx = Factory::random();
+    /// let kp = fx.ed25519("svc", Ed25519Spec::new());
+    /// let val = kp.public_jwks_json();
+    /// assert!(val["keys"].is_array());
+    /// ```
     #[cfg(feature = "jwk")]
     pub fn public_jwks_json(&self) -> serde_json::Value {
         self.public_jwks().to_value()
@@ -337,6 +462,18 @@ impl Ed25519KeyPair {
     /// Private JWK serialized to `serde_json::Value`.
     ///
     /// Requires the `jwk` feature.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
+    /// let fx = Factory::random();
+    /// let kp = fx.ed25519("svc", Ed25519Spec::new());
+    /// let val = kp.private_key_jwk_json();
+    /// assert_eq!(val["kty"], "OKP");
+    /// assert!(val["d"].is_string());
+    /// ```
     #[cfg(feature = "jwk")]
     pub fn private_key_jwk_json(&self) -> serde_json::Value {
         self.private_key_jwk().to_value()

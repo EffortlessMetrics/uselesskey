@@ -70,6 +70,16 @@ impl RsaSpec {
     /// Stable encoding for cache keys / deterministic derivation.
     ///
     /// If you change this, bump the derivation version in `uselesskey-core`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_rsa::RsaSpec;
+    ///
+    /// let spec = RsaSpec::rs256();
+    /// let bytes = spec.stable_bytes();
+    /// assert_eq!(bytes.len(), 8);
+    /// ```
     pub fn stable_bytes(&self) -> [u8; 8] {
         let bits = u32::try_from(self.bits).unwrap_or(u32::MAX);
         let mut out = [0u8; 8];
