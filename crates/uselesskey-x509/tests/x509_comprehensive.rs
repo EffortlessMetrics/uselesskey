@@ -1075,7 +1075,8 @@ fn all_chain_negative_variants_produce_parseable_certs() {
     let fx = fx();
     let chain = fx.x509_chain("neg-chain-p", ChainSpec::new("neg-chain-p.example.com"));
 
-    let variants: Vec<(&str, Box<dyn Fn() -> uselesskey_x509::X509Chain>)> = vec![
+    type NegativeVariant<'a> = (&'a str, Box<dyn Fn() -> uselesskey_x509::X509Chain>);
+    let variants: Vec<NegativeVariant<'_>> = vec![
         ("expired_leaf", Box::new(|| chain.expired_leaf())),
         (
             "expired_intermediate",
