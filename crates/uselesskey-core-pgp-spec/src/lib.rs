@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 /// Specification for OpenPGP fixture generation.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum PgpSpec {

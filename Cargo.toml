@@ -18,6 +18,7 @@ members = [
   "crates/uselesskey-core-sink",
   "crates/uselesskey-core-token",
   "crates/uselesskey-core-token-shape",
+  "crates/uselesskey-core-pgp-spec",
   "crates/uselesskey-core-jwk-builder",
   "crates/uselesskey-core-jwks-order",
   "crates/uselesskey-core-jwk",

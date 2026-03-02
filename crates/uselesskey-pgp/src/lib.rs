@@ -6,7 +6,6 @@
 //! [`Factory`](uselesskey_core::Factory).
 
 mod keypair;
-mod spec;
 
 pub use keypair::{DOMAIN_PGP_KEYPAIR, PgpFactoryExt, PgpKeyPair};
-pub use spec::PgpSpec;
+pub use uselesskey_core_pgp_spec::PgpSpec;
