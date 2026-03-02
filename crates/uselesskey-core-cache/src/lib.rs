@@ -37,6 +37,22 @@ type Cache = DashMap<ArtifactId, CacheValue>;
 type Cache = Mutex<BTreeMap<ArtifactId, CacheValue>>;
 
 /// Cache keyed by [`ArtifactId`] that stores typed values behind `Arc<dyn Any>`.
+///
+/// # Examples
+///
+/// ```
+/// use std::sync::Arc;
+/// use uselesskey_core_cache::ArtifactCache;
+/// use uselesskey_core_id::{ArtifactId, DerivationVersion};
+///
+/// let cache = ArtifactCache::new();
+/// let id = ArtifactId::new("domain:rsa", "issuer", b"RS256", "good", DerivationVersion::V1);
+///
+/// // Insert once, retrieve many times
+/// cache.insert_if_absent_typed(id.clone(), Arc::new(42u32));
+/// let value = cache.get_typed::<u32>(&id).unwrap();
+/// assert_eq!(*value, 42);
+/// ```
 pub struct ArtifactCache {
     inner: Cache,
 }
