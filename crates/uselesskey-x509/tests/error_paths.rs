@@ -81,6 +81,7 @@ fn wrong_key_usage_cert_is_ca_without_cert_sign() {
             "wrong_key_usage cert must NOT have keyCertSign"
         );
     }
+}
 
 // =========================================================================
 // Corrupt cert PEM variants
