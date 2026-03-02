@@ -3380,6 +3380,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "uselesskey-core-base62"
+version = "0.3.0"
+dependencies = [
+ "rand_chacha 0.3.1",
+ "rand_core 0.6.4",
+ "rstest",
+]
+
+[[package]]
 name = "uselesskey-core-cache"
 version = "0.3.0"
 dependencies = [
@@ -3534,6 +3543,7 @@ dependencies = [
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
  "serde_json",
+ "uselesskey-core-base62",
 ]
 
 [[package]]
@@ -3820,12 +3830,14 @@ name = "uselesskey-x509"
 version = "0.3.0"
 dependencies = [
  "base64",
+ "insta",
  "proptest",
  "rand_chacha 0.3.1",
  "rcgen",
  "rsa",
  "rstest",
  "rustls-pki-types",
+ "serde",
  "time",
  "uselesskey-core",
  "uselesskey-core-x509",
