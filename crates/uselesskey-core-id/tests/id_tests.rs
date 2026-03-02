@@ -397,5 +397,52 @@ mod proptest_tests {
             let s_domain = derive_seed(&master, &alt_domain);
             prop_assert_ne!(base_seed.bytes(), s_domain.bytes());
         }
+
+        /// Different spec bytes produce different spec fingerprints in ArtifactId.
+        #[test]
+        fn prop_different_spec_fingerprints_produce_different_ids(
+            spec_a in proptest::collection::vec(any::<u8>(), 1..64),
+            spec_b in proptest::collection::vec(any::<u8>(), 1..64),
+        ) {
+            prop_assume!(spec_a != spec_b);
+            let a = ArtifactId::new("d", "l", &spec_a, "v", DerivationVersion::V1);
+            let b = ArtifactId::new("d", "l", &spec_b, "v", DerivationVersion::V1);
+            prop_assert_ne!(
+                a.spec_fingerprint, b.spec_fingerprint,
+                "different spec bytes should produce different fingerprints"
+            );
+        }
+
+        /// ArtifactId Debug output always contains the domain, label, and variant.
+        #[test]
+        fn prop_artifact_id_debug_format_is_consistent(
+            label in "[a-zA-Z0-9_]{1,20}",
+            variant in "[a-zA-Z0-9_]{1,20}",
+        ) {
+            let id = ArtifactId::new("domain:prop", &label, b"spec", &variant, DerivationVersion::V1);
+            let dbg = format!("{id:?}");
+
+            prop_assert!(dbg.contains("domain:prop"), "Debug missing domain: {dbg}");
+            prop_assert!(dbg.contains(&label), "Debug missing label: {dbg}");
+            prop_assert!(dbg.contains(&variant), "Debug missing variant: {dbg}");
+            prop_assert!(dbg.contains("DerivationVersion"), "Debug missing version wrapper: {dbg}");
+        }
+
+        /// derive_seed output is always 32 bytes and never all-zero.
+        #[test]
+        fn prop_derived_seed_is_32_bytes_nonzero(
+            master_bytes in any::<[u8; 32]>(),
+            label in "[a-zA-Z0-9]{1,16}",
+        ) {
+            let master = Seed::new(master_bytes);
+            let id = ArtifactId::new("d", &label, b"spec", "v", DerivationVersion::V1);
+            let derived = derive_seed(&master, &id);
+
+            prop_assert_eq!(derived.bytes().len(), 32);
+            prop_assert!(
+                derived.bytes().iter().any(|&b| b != 0),
+                "derived seed should not be all-zero"
+            );
+        }
     }
 }

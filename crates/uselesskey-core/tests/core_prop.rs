@@ -230,4 +230,105 @@ proptest! {
             );
         }
     }
+
+    // =========================================================================
+    // Order-independence (proptest)
+    // =========================================================================
+
+    /// Derivation order does not affect results: requesting artifacts in any
+    /// order produces the same values.
+    #[test]
+    fn prop_order_independence(
+        seed_bytes in any::<[u8; 32]>(),
+        label_a in "[a-zA-Z]{1,8}",
+        label_b in "[a-zA-Z]{1,8}",
+    ) {
+        prop_assume!(label_a != label_b);
+        let spec = spec_bytes(2048, 65537);
+
+        // Order 1: a then b.
+        let fx1 = Factory::deterministic(Seed::new(seed_bytes));
+        let a1 = fx1.get_or_init("domain:ord", &label_a, &spec, "good", |rng| {
+            use rand_core::RngCore;
+            let mut out = [0u8; 32];
+            rng.fill_bytes(&mut out);
+            out
+        });
+        let b1 = fx1.get_or_init("domain:ord", &label_b, &spec, "good", |rng| {
+            use rand_core::RngCore;
+            let mut out = [0u8; 32];
+            rng.fill_bytes(&mut out);
+            out
+        });
+
+        // Order 2: b then a (fresh factory, same seed).
+        let fx2 = Factory::deterministic(Seed::new(seed_bytes));
+        let b2 = fx2.get_or_init("domain:ord", &label_b, &spec, "good", |rng| {
+            use rand_core::RngCore;
+            let mut out = [0u8; 32];
+            rng.fill_bytes(&mut out);
+            out
+        });
+        let a2 = fx2.get_or_init("domain:ord", &label_a, &spec, "good", |rng| {
+            use rand_core::RngCore;
+            let mut out = [0u8; 32];
+            rng.fill_bytes(&mut out);
+            out
+        });
+
+        prop_assert_eq!(*a1, *a2, "label_a value should be identical regardless of order");
+        prop_assert_eq!(*b1, *b2, "label_b value should be identical regardless of order");
+    }
+
+    // =========================================================================
+    // Cache Arc pointer identity
+    // =========================================================================
+
+    /// Cache hits return the exact same Arc pointer, not just equal values.
+    #[test]
+    fn prop_cache_hit_returns_same_arc(
+        seed_bytes in any::<[u8; 32]>(),
+        label in "[a-zA-Z0-9]{1,16}",
+    ) {
+        let fx = Factory::deterministic(Seed::new(seed_bytes));
+        let spec = spec_bytes(2048, 65537);
+
+        let first = fx.get_or_init("domain:arc", &label, &spec, "good", |rng| {
+            use rand_core::RngCore;
+            let mut out = [0u8; 32];
+            rng.fill_bytes(&mut out);
+            out
+        });
+        let second = fx.get_or_init("domain:arc", &label, &spec, "good", |rng| {
+            use rand_core::RngCore;
+            let mut out = [0u8; 32];
+            rng.fill_bytes(&mut out);
+            out
+        });
+
+        prop_assert!(
+            std::sync::Arc::ptr_eq(&first, &second),
+            "cache hit should return the same Arc pointer"
+        );
+    }
+
+    // =========================================================================
+    // Derived seeds are 32 bytes and non-zero
+    // =========================================================================
+
+    /// Derived seeds are always 32 bytes and never all-zero.
+    #[test]
+    fn prop_derived_seed_is_32_bytes_nonzero(
+        seed_bytes in any::<[u8; 32]>(),
+        label in "[a-zA-Z0-9]{1,16}",
+    ) {
+        let master = Seed::new(seed_bytes);
+        let derived = derive_seed_for_test(&master, "domain:sz", &label, "good");
+
+        prop_assert_eq!(derived.bytes().len(), 32);
+        prop_assert!(
+            derived.bytes().iter().any(|&b| b != 0),
+            "derived seed should not be all-zero"
+        );
+    }
 }
