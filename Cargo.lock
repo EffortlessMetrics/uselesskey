@@ -3495,6 +3495,7 @@ dependencies = [
  "aws-lc-rs",
  "hex",
  "insta",
+ "proptest",
  "serde",
  "uselesskey-core",
  "uselesskey-ecdsa",
@@ -3952,6 +3953,7 @@ version = "0.3.0"
 dependencies = [
  "insta",
  "jsonwebtoken",
+ "proptest",
  "serde",
  "uselesskey-core",
  "uselesskey-ecdsa",
@@ -4039,6 +4041,7 @@ version = "0.3.0"
 dependencies = [
  "hex",
  "insta",
+ "proptest",
  "rustls",
  "rustls-pki-types",
  "serde",
