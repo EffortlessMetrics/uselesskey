@@ -8,8 +8,8 @@
 
 use uselesskey::negative::CorruptPem;
 use uselesskey::{
-    ChainSpec, EcdsaFactoryExt, EcdsaSpec, Ed25519FactoryExt, Ed25519Spec, Factory,
-    RsaFactoryExt, RsaSpec, Seed, X509FactoryExt, X509Spec,
+    ChainSpec, EcdsaFactoryExt, EcdsaSpec, Ed25519FactoryExt, Ed25519Spec, Factory, RsaFactoryExt,
+    RsaSpec, Seed, X509FactoryExt, X509Spec,
 };
 use x509_parser::prelude::FromDer;
 
@@ -455,7 +455,12 @@ mod chain_negative {
         assert!(c.crl_der().is_none());
         let revoked = c.revoked_leaf();
         assert!(revoked.crl_der().is_some());
-        assert!(revoked.crl_pem().unwrap().contains("-----BEGIN X509 CRL-----"));
+        assert!(
+            revoked
+                .crl_pem()
+                .unwrap()
+                .contains("-----BEGIN X509 CRL-----")
+        );
     }
 
     #[test]
@@ -469,7 +474,10 @@ mod chain_negative {
             c.revoked_leaf(),
         ];
         for v in &variants {
-            assert_eq!(c.leaf_private_key_pkcs8_der(), v.leaf_private_key_pkcs8_der());
+            assert_eq!(
+                c.leaf_private_key_pkcs8_der(),
+                v.leaf_private_key_pkcs8_der()
+            );
         }
     }
 }
@@ -552,8 +560,7 @@ mod deterministic_corruption {
         let cert1 = fx.x509_self_signed("det-x509-der", X509Spec::self_signed("det.example.com"));
         let c1 = cert1.corrupt_cert_der_deterministic("corrupt:der-v1");
         fx.clear_cache();
-        let cert2 =
-            fx.x509_self_signed("det-x509-der", X509Spec::self_signed("det.example.com"));
+        let cert2 = fx.x509_self_signed("det-x509-der", X509Spec::self_signed("det.example.com"));
         let c2 = cert2.corrupt_cert_der_deterministic("corrupt:der-v1");
         assert_eq!(c1, c2);
     }
@@ -585,7 +592,10 @@ mod corrupt_pem_parsing {
         let bad = kp.private_key_pkcs8_pem_corrupt(CorruptPem::BadFooter);
         // Mismatched header/footer should cause parse failure
         let parsed = pem::parse(bad);
-        assert!(parsed.is_err(), "mismatched header/footer should fail pem parse");
+        assert!(
+            parsed.is_err(),
+            "mismatched header/footer should fail pem parse"
+        );
     }
 
     #[test]
@@ -620,7 +630,10 @@ mod corrupt_pem_parsing {
         let kp = fx().ed25519("pem-parse-ed25519", Ed25519Spec::new());
         let bad = kp.private_key_pkcs8_pem_corrupt(CorruptPem::BadBase64);
         let parsed = pem::parse(bad);
-        assert!(parsed.is_err(), "invalid base64 should fail pem parse for ed25519");
+        assert!(
+            parsed.is_err(),
+            "invalid base64 should fail pem parse for ed25519"
+        );
     }
 }
 
@@ -654,7 +667,10 @@ mod der_validity {
         let full_len = cert.cert_der().len();
         let truncated = cert.truncate_cert_der(full_len / 2);
         let result = x509_parser::prelude::X509Certificate::from_der(&truncated);
-        assert!(result.is_err(), "half-truncated cert DER should fail x509 parse");
+        assert!(
+            result.is_err(),
+            "half-truncated cert DER should fail x509 parse"
+        );
     }
 
     #[test]

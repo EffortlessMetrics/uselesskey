@@ -388,7 +388,12 @@ fn negative_corrupt_pem_truncate_to_one() {
 #[test]
 fn negative_corrupt_pem_truncate_beyond_length() {
     let char_count = SAMPLE_PEM.chars().count();
-    let out = corrupt_pem(SAMPLE_PEM, CorruptPem::Truncate { bytes: char_count + 100 });
+    let out = corrupt_pem(
+        SAMPLE_PEM,
+        CorruptPem::Truncate {
+            bytes: char_count + 100,
+        },
+    );
     // Truncate with bytes >= char count returns the full PEM
     assert_eq!(out.chars().count(), char_count);
 }
@@ -540,7 +545,10 @@ fn negative_der_corruption_covers_all_three_arms() {
         }
     }
 
-    assert!(saw_shorter || saw_shorter_with_diff, "should see truncation");
+    assert!(
+        saw_shorter || saw_shorter_with_diff,
+        "should see truncation"
+    );
     assert!(saw_same_len, "should see same-length flip");
 }
 
