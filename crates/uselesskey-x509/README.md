@@ -79,8 +79,8 @@ let crl_pem = revoked.crl_pem().expect("CRL present for revoked variant");
 
 ## License
 
-Licensed under either of [Apache License, Version 2.0](../../LICENSE-APACHE) or
-[MIT license](../../LICENSE-MIT) at your option.
+Licensed under either of [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0)
+or [MIT license](https://opensource.org/licenses/MIT) at your option.
 
 See the [`uselesskey` crate](https://crates.io/crates/uselesskey) for full
 documentation.
