@@ -284,7 +284,22 @@ const PUBLISH_CRATES: &[&str] = &[
 
 fn publish_check() -> Result<()> {
     for name in PUBLISH_CRATES {
-        run(Command::new("cargo").args(["publish", "--dry-run", "-p", name]))?;
+        let output = Command::new("cargo")
+            .args(["publish", "--dry-run", "-p", name])
+            .output()
+            .with_context(|| format!("failed to spawn cargo publish --dry-run for {name}"))?;
+
+        if output.status.success() {
+            continue;
+        }
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        if stderr.contains("no matching package named") {
+            eprintln!(
+                "  [warn] {name} publish check: skipped (workspace dep not yet on crates.io)"
+            );
+            continue;
+        }
+        bail!("cargo publish --dry-run -p {name} failed:\n{stderr}");
     }
     Ok(())
 }
