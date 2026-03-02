@@ -3340,6 +3340,7 @@ checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
 name = "uselesskey"
 version = "0.3.0"
 dependencies = [
+ "pem",
  "proptest",
  "tempfile",
  "uselesskey-core",
@@ -3351,6 +3352,7 @@ dependencies = [
  "uselesskey-rsa",
  "uselesskey-token",
  "uselesskey-x509",
+ "x509-parser",
 ]
 
 [[package]]

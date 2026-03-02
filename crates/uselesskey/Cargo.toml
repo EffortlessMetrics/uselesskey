@@ -64,3 +64,5 @@ full = ["all-keys", "token", "x509", "jwk"]
 [dev-dependencies]
 tempfile.workspace = true
 proptest.workspace = true
+pem = "3"
+x509-parser = "0.18"
