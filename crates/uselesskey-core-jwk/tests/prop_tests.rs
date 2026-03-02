@@ -156,7 +156,7 @@ proptest! {
             .add_public(arb_okp_public(kid_c.clone(), "x".into()))
             .build();
 
-        let mut expected = vec![kid_a, kid_b, kid_c];
+        let mut expected = [kid_a, kid_b, kid_c];
         expected.sort();
 
         let actual: Vec<&str> = jwks.keys.iter().map(|k| k.kid()).collect();
