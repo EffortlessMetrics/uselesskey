@@ -7,6 +7,31 @@
 //! strategies for DER-encoded blobs. Used by higher-level negative fixture
 //! crates (`uselesskey-core-negative`) to generate invalid DER artifacts
 //! that exercise parser error paths in tests.
+//!
+//! # Examples
+//!
+//! ```
+//! use uselesskey_core_negative_der::{truncate_der, flip_byte, corrupt_der_deterministic};
+//!
+//! let der = vec![0x30, 0x82, 0x01, 0x22];
+//!
+//! // Truncate to 2 bytes
+//! let short = truncate_der(&der, 2);
+//! assert_eq!(short, vec![0x30, 0x82]);
+//!
+//! // Flip a single byte
+//! let flipped = flip_byte(&der, 0);
+//! assert_eq!(flipped[0], 0x31); // XOR with 0x01
+//!
+//! // Deterministic corruption from a variant string
+//! let bad = corrupt_der_deterministic(&der, "corrupt:test");
+//! assert_ne!(bad, der);
+//! ```
+//!
+//! # This is a test utility
+//!
+//! This crate is part of the [uselesskey](https://crates.io/crates/uselesskey)
+//! test-fixture ecosystem. It is **not** intended for production use.
 
 extern crate alloc;
 

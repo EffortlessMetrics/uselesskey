@@ -2,14 +2,25 @@
 //!
 //! Produces URL-safe, base64url-encoded BLAKE3 hashes truncated to 96 bits
 //! by default. Use [`kid_from_bytes`] for the standard length or
-//! [`kid_from_bytes_with_prefix`] for a custom hash prefix.
+//! [`kid_from_bytes_with_prefix`] for a custom hash prefix length.
+//!
+//! # Examples
+//!
+//! ```
+//! use uselesskey_core_kid::kid_from_bytes;
+//!
+//! let kid = kid_from_bytes(b"my-public-key-bytes");
+//! assert!(!kid.is_empty());
+//! // Same input always produces the same kid
+//! assert_eq!(kid, kid_from_bytes(b"my-public-key-bytes"));
+//! ```
+//!
+//! # This is a test utility
+//!
+//! This crate is part of the [uselesskey](https://crates.io/crates/uselesskey)
+//! test-fixture ecosystem. It is **not** intended for production use.
 
 #![forbid(unsafe_code)]
-//! Deterministic key-id (kid) helpers for uselesskey fixture crates.
-//!
-//! Generates URL-safe base64 key identifiers by hashing public key material
-//! with BLAKE3. The default prefix length (12 bytes / 96 bits) provides
-//! sufficient collision resistance for test fixture scenarios.
 
 use base64::Engine as _;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;

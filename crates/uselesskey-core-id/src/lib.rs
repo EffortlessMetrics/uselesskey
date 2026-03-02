@@ -2,9 +2,29 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 //! Core identity and derivation primitives for uselesskey.
 //!
-//! Defines `ArtifactId` — the `(domain, label, spec_fingerprint, variant,
+//! Defines [`ArtifactId`] — the `(domain, label, spec_fingerprint, variant,
 //! derivation_version)` tuple that uniquely identifies each generated artifact.
-//! Provides deterministic seed derivation from a master seed and artifact id.
+//! Provides deterministic seed derivation from a master seed and artifact id
+//! via [`derive_seed`].
+//!
+//! # Examples
+//!
+//! ```
+//! use uselesskey_core_id::{ArtifactId, DerivationVersion, Seed, derive_seed};
+//!
+//! let master = Seed::from_env_value("my-test-seed").unwrap();
+//! let id = ArtifactId::new("domain:rsa", "issuer", b"RS256", "good", DerivationVersion::V1);
+//!
+//! // Same master + id always produces the same derived seed
+//! let seed_a = derive_seed(&master, &id);
+//! let seed_b = derive_seed(&master, &id);
+//! assert_eq!(seed_a.bytes(), seed_b.bytes());
+//! ```
+//!
+//! # This is a test utility
+//!
+//! This crate is part of the [uselesskey](https://crates.io/crates/uselesskey)
+//! test-fixture ecosystem. It is **not** intended for production use.
 
 extern crate alloc;
 

@@ -2,9 +2,29 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 //! Factory orchestration and cache lookup for uselesskey fixtures.
 //!
-//! Implements the core `Factory` type that manages deterministic derivation,
-//! caching, and artifact generation. Operates in either Random or Deterministic
-//! mode based on seed configuration.
+//! Implements the core [`Factory`] type that manages deterministic derivation,
+//! caching, and artifact generation. Operates in either [`Mode::Random`] or
+//! [`Mode::Deterministic`] based on seed configuration. Clones of a `Factory`
+//! share the same underlying cache.
+//!
+//! # Examples
+//!
+//! ```
+//! use uselesskey_core_factory::Factory;
+//! use uselesskey_core_id::Seed;
+//!
+//! // Random mode — each run produces different fixtures
+//! let fx = Factory::random();
+//!
+//! // Deterministic mode — reproducible across runs
+//! let seed = Seed::from_env_value("my-test-seed").unwrap();
+//! let fx = Factory::deterministic(seed);
+//! ```
+//!
+//! # This is a test utility
+//!
+//! This crate is part of the [uselesskey](https://crates.io/crates/uselesskey)
+//! test-fixture ecosystem. It is **not** intended for production use.
 
 extern crate alloc;
 

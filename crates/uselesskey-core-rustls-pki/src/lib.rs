@@ -1,7 +1,19 @@
 //! rustls-pki-types adapter traits for uselesskey fixtures.
 //!
-//! This crate is intentionally focused on PKI conversion only:
-//! converting fixture outputs into `rustls_pki_types` key and certificate types.
+//! Converts fixture outputs into [`rustls_pki_types`] key and certificate
+//! types via extension traits:
+//!
+//! - [`RustlsPrivateKeyExt`] — PKCS#8 private key → `PrivateKeyDer`
+//! - [`RustlsCertExt`] — single certificate → `CertificateDer`
+//! - [`RustlsChainExt`] (with `x509` feature) — chain → `Vec<CertificateDer>`
+//!
+//! Enable cargo features (`rsa`, `ecdsa`, `ed25519`, `x509`) to get
+//! blanket impls for the corresponding fixture types.
+//!
+//! # This is a test utility
+//!
+//! This crate is part of the [uselesskey](https://crates.io/crates/uselesskey)
+//! test-fixture ecosystem. It is **not** intended for production use.
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]

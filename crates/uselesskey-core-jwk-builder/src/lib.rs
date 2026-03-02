@@ -3,8 +3,29 @@
 //! JWKS composition with deterministic ordering semantics.
 //!
 //! This crate centralizes JWKS assembly behavior that is shared across JWK-producing
-//! key fixtures. Entries are sorted by `kid` and preserve insertion order for duplicate
-//! `kid` values.
+//! key fixtures. [`JwksBuilder`] collects public, private, and any-typed JWK
+//! entries and emits a [`Jwks`] with entries sorted by `kid` (preserving insertion
+//! order for duplicate `kid` values).
+//!
+//! # Examples
+//!
+//! ```
+//! use uselesskey_core_jwk_builder::JwksBuilder;
+//! use uselesskey_core_jwk_shape::{RsaPublicJwk, PublicJwk};
+//!
+//! let jwk = PublicJwk::Rsa(RsaPublicJwk {
+//!     kty: "RSA", use_: "sig", alg: "RS256",
+//!     kid: "my-key".into(), n: "modulus".into(), e: "AQAB".into(),
+//! });
+//!
+//! let jwks = JwksBuilder::new().add_public(jwk).build();
+//! assert_eq!(jwks.keys.len(), 1);
+//! ```
+//!
+//! # This is a test utility
+//!
+//! This crate is part of the [uselesskey](https://crates.io/crates/uselesskey)
+//! test-fixture ecosystem. It is **not** intended for production use.
 
 use uselesskey_core_jwk_shape::{AnyJwk, Jwks, PrivateJwk, PublicJwk};
 use uselesskey_core_jwks_order::{HasKid, KidSorted};

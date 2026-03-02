@@ -3,8 +3,28 @@
 //! Seed parsing and redaction primitives for uselesskey.
 //!
 //! Provides the [`Seed`] type that wraps 32 bytes of entropy used for
-//! deterministic fixture derivation. Implements `Debug` with redaction
-//! to prevent accidental leakage of seed material in logs.
+//! deterministic fixture derivation. Supports creation from raw bytes,
+//! 64-char hex strings, or arbitrary strings (hashed with BLAKE3).
+//! Implements `Debug` with redaction to prevent accidental leakage of
+//! seed material in logs.
+//!
+//! # Examples
+//!
+//! ```
+//! use uselesskey_core_seed::Seed;
+//!
+//! // From an arbitrary string (hashed via BLAKE3)
+//! let seed = Seed::from_env_value("my-test-seed").unwrap();
+//! assert_eq!(seed.bytes().len(), 32);
+//!
+//! // Debug output never leaks the seed
+//! assert_eq!(format!("{seed:?}"), "Seed(**redacted**)");
+//! ```
+//!
+//! # This is a test utility
+//!
+//! This crate is part of the [uselesskey](https://crates.io/crates/uselesskey)
+//! test-fixture ecosystem. It is **not** intended for production use.
 
 extern crate alloc;
 

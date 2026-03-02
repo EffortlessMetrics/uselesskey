@@ -4,6 +4,25 @@
 //! generated key material on disk and cleans up automatically on drop.  It is
 //! useful when downstream libraries require `Path`-based APIs rather than
 //! in-memory byte slices.
+//!
+//! # Examples
+//!
+//! ```
+//! use uselesskey_core_sink::TempArtifact;
+//!
+//! let temp = TempArtifact::new_string("prefix-", ".pem", "-----BEGIN KEY-----\n").unwrap();
+//! let path = temp.path();
+//! assert!(path.exists());
+//!
+//! let content = temp.read_to_string().unwrap();
+//! assert!(content.contains("BEGIN KEY"));
+//! // File is deleted when `temp` goes out of scope
+//! ```
+//!
+//! # This is a test utility
+//!
+//! This crate is part of the [uselesskey](https://crates.io/crates/uselesskey)
+//! test-fixture ecosystem. It is **not** intended for production use.
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]

@@ -5,6 +5,27 @@
 //! uses `DashMap` with `std`, `spin::Mutex` without.
 //!
 //! The primary type is [`ArtifactCache`].
+//!
+//! # Examples
+//!
+//! ```
+//! use std::sync::Arc;
+//! use uselesskey_core_cache::ArtifactCache;
+//! use uselesskey_core_id::{ArtifactId, DerivationVersion};
+//!
+//! let cache = ArtifactCache::new();
+//! let id = ArtifactId::new("domain:rsa", "issuer", b"RS256", "good", DerivationVersion::V1);
+//!
+//! // Insert once, retrieve many times
+//! cache.insert_if_absent_typed(id.clone(), Arc::new(42u32));
+//! let value = cache.get_typed::<u32>(&id).unwrap();
+//! assert_eq!(*value, 42);
+//! ```
+//!
+//! # This is a test utility
+//!
+//! This crate is part of the [uselesskey](https://crates.io/crates/uselesskey)
+//! test-fixture ecosystem. It is **not** intended for production use.
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]

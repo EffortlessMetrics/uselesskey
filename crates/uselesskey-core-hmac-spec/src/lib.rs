@@ -2,8 +2,23 @@
 
 //! Core HMAC algorithm specification model.
 //!
-//! Provides a stable enum used by fixture crates to select HS256/HS384/HS512 and
-//! derive deterministic cache keys.
+//! Provides [`HmacSpec`], a stable enum used by fixture crates to select
+//! HS256/HS384/HS512 and derive deterministic cache keys.
+//!
+//! # Examples
+//!
+//! ```
+//! use uselesskey_core_hmac_spec::HmacSpec;
+//!
+//! let spec = HmacSpec::hs256();
+//! assert_eq!(spec.alg_name(), "HS256");
+//! assert_eq!(spec.byte_len(), 32);
+//! ```
+//!
+//! # This is a test utility
+//!
+//! This crate is part of the [uselesskey](https://crates.io/crates/uselesskey)
+//! test-fixture ecosystem. It is **not** intended for production use.
 
 /// Specification for HMAC secret generation.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]

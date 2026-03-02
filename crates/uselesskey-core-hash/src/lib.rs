@@ -4,6 +4,27 @@
 //!
 //! Wraps BLAKE3 to provide collision-resistant, deterministic digests used
 //! throughout the `uselesskey` workspace for seed derivation and artifact identity.
+//!
+//! # Examples
+//!
+//! ```
+//! use uselesskey_core_hash::{hash32, write_len_prefixed, Hasher};
+//!
+//! // Simple hash
+//! let digest = hash32(b"my-fixture-data");
+//! assert_eq!(digest, hash32(b"my-fixture-data")); // deterministic
+//!
+//! // Length-prefixed hashing preserves field boundaries
+//! let mut hasher = Hasher::new();
+//! write_len_prefixed(&mut hasher, b"field-a");
+//! write_len_prefixed(&mut hasher, b"field-b");
+//! let _ = hasher.finalize();
+//! ```
+//!
+//! # This is a test utility
+//!
+//! This crate is part of the [uselesskey](https://crates.io/crates/uselesskey)
+//! test-fixture ecosystem. It is **not** intended for production use.
 
 pub use blake3::{Hash, Hasher};
 

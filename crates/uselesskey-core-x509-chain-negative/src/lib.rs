@@ -5,6 +5,24 @@
 //! [`ChainNegative::apply_to_spec`] to derive a modified [`ChainSpec`]
 //! for each scenario. Used by `uselesskey-x509` to produce invalid
 //! certificate chains for TLS error-handling tests.
+//!
+//! # Examples
+//!
+//! ```
+//! use uselesskey_core_x509_chain_negative::ChainNegative;
+//! use uselesskey_core_x509_spec::ChainSpec;
+//!
+//! let base = ChainSpec::new("test.example.com");
+//! let bad = ChainNegative::HostnameMismatch {
+//!     wrong_hostname: "wrong.example.com".into(),
+//! }.apply_to_spec(&base);
+//! assert_eq!(bad.leaf_cn, "wrong.example.com");
+//! ```
+//!
+//! # This is a test utility
+//!
+//! This crate is part of the [uselesskey](https://crates.io/crates/uselesskey)
+//! test-fixture ecosystem. It is **not** intended for production use.
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]

@@ -1,9 +1,31 @@
 #![forbid(unsafe_code)]
 //! PKCS#8 / SPKI key-material helpers shared by key fixture crates.
 //!
-//! Provides the `Pkcs8SpkiKeyMaterial` trait and related types for consistent
-//! access to private (PKCS#8) and public (SPKI) key encodings in PEM and DER
-//! formats, plus corrupt PEM/DER negative fixture support.
+//! Provides [`Pkcs8SpkiKeyMaterial`], a container for consistent access to
+//! private (PKCS#8) and public (SPKI) key encodings in PEM and DER formats,
+//! plus corrupt PEM/DER negative fixture support and deterministic key-ID
+//! generation.
+//!
+//! # Examples
+//!
+//! ```
+//! use uselesskey_core_keypair_material::Pkcs8SpkiKeyMaterial;
+//!
+//! let material = Pkcs8SpkiKeyMaterial::new(
+//!     vec![0x30, 0x82],                        // PKCS#8 DER (placeholder)
+//!     "-----BEGIN PRIVATE KEY-----\nAA==\n-----END PRIVATE KEY-----\n",
+//!     vec![0x30, 0x59],                        // SPKI DER (placeholder)
+//!     "-----BEGIN PUBLIC KEY-----\nAA==\n-----END PUBLIC KEY-----\n",
+//! );
+//!
+//! assert_eq!(material.private_key_pkcs8_der(), &[0x30, 0x82]);
+//! assert!(material.public_key_spki_pem().contains("PUBLIC KEY"));
+//! ```
+//!
+//! # This is a test utility
+//!
+//! This crate is part of the [uselesskey](https://crates.io/crates/uselesskey)
+//! test-fixture ecosystem. It is **not** intended for production use.
 
 use std::fmt;
 use std::sync::Arc;

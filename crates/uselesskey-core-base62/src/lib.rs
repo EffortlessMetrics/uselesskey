@@ -3,7 +3,26 @@
 //! Base62 generation primitives for test fixtures.
 //!
 //! Provides deterministic, RNG-driven generation of base62 strings without
-//! modulo bias under normal RNG behavior.
+//! modulo bias under normal RNG behavior. Used internally by token fixture
+//! crates to produce realistic-looking API keys and bearer tokens.
+//!
+//! # Examples
+//!
+//! ```
+//! use rand_chacha::ChaCha20Rng;
+//! use rand_core::SeedableRng;
+//! use uselesskey_core_base62::random_base62;
+//!
+//! let mut rng = ChaCha20Rng::from_seed([42u8; 32]);
+//! let value = random_base62(&mut rng, 24);
+//! assert_eq!(value.len(), 24);
+//! assert!(value.chars().all(|c| c.is_ascii_alphanumeric()));
+//! ```
+//!
+//! # This is a test utility
+//!
+//! This crate is part of the [uselesskey](https://crates.io/crates/uselesskey)
+//! test-fixture ecosystem. It is **not** intended for production use.
 
 use rand_core::RngCore;
 
