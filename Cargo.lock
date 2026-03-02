@@ -3383,6 +3383,7 @@ dependencies = [
 name = "uselesskey-core-base62"
 version = "0.3.0"
 dependencies = [
+ "proptest",
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
  "rstest",
@@ -3488,6 +3489,7 @@ version = "0.3.0"
 dependencies = [
  "base64",
  "blake3",
+ "proptest",
  "rstest",
 ]
 
