@@ -1,0 +1,34 @@
+---
+source: crates/uselesskey-core-negative/tests/snapshots_negative.rs
+expression: results
+---
+- variant: BadHeader
+  original_len: 65
+  corrupted_len: 68
+  first_line: "-----BEGIN CORRUPTED KEY-----"
+  last_nonempty_line: "-----END PUBLIC KEY-----"
+  differs_from_original: true
+- variant: BadFooter
+  original_len: 65
+  corrupted_len: 68
+  first_line: "-----BEGIN PUBLIC KEY-----"
+  last_nonempty_line: "-----END CORRUPTED KEY-----"
+  differs_from_original: true
+- variant: BadBase64
+  original_len: 65
+  corrupted_len: 87
+  first_line: "-----BEGIN PUBLIC KEY-----"
+  last_nonempty_line: "-----END PUBLIC KEY-----"
+  differs_from_original: true
+- variant: ExtraBlankLine
+  original_len: 65
+  corrupted_len: 66
+  first_line: "-----BEGIN PUBLIC KEY-----"
+  last_nonempty_line: "-----END PUBLIC KEY-----"
+  differs_from_original: true
+- variant: Truncate_20
+  original_len: 65
+  corrupted_len: 20
+  first_line: "-----BEGIN PUBLIC KE"
+  last_nonempty_line: "-----BEGIN PUBLIC KE"
+  differs_from_original: true

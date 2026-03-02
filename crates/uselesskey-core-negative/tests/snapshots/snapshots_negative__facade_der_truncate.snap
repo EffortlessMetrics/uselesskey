@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-core-negative/tests/snapshots_negative.rs
+expression: result
+---
+operation: truncate_to_4
+original_len: 8
+result_len: 4
+differs_from_original: true

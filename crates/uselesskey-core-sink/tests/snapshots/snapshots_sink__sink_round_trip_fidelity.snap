@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-core-sink/tests/snapshots_sink.rs
+expression: result
+---
+bytes_match: true
+string_match: true
+byte_len: 6
+string_len: 23

@@ -20,8 +20,10 @@ uselesskey-core-negative-der = { workspace = true }
 uselesskey-core-negative-pem = { workspace = true }
 
 [dev-dependencies]
+insta.workspace = true
 proptest.workspace = true
 rstest.workspace = true
+serde.workspace = true
 
 [features]
 default = ["std"]
