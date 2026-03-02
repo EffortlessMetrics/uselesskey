@@ -67,33 +67,33 @@ authors = ["Effortless Metrics <opensource@effortlessmetrics.com>"]
 # error handling
 thiserror = "2.0.18"
 
-uselesskey-test-grid = { path = "crates/uselesskey-test-grid", version = "0.3.0" }
-uselesskey-feature-grid = { path = "crates/uselesskey-feature-grid", version = "0.3.0" }
-uselesskey-core-base62 = { path = "crates/uselesskey-core-base62", version = "0.3.0" }
-uselesskey-core-cache = { path = "crates/uselesskey-core-cache", version = "0.3.0", default-features = false }
-uselesskey-core-factory = { path = "crates/uselesskey-core-factory", version = "0.3.0" }
-uselesskey-core-jwks-order = { path = "crates/uselesskey-core-jwks-order", version = "0.3.0" }
-uselesskey-core-hash = { path = "crates/uselesskey-core-hash", version = "0.3.0", default-features = false }
-uselesskey-core-token-shape = { path = "crates/uselesskey-core-token-shape", version = "0.3.0" }
-uselesskey-core-id = { path = "crates/uselesskey-core-id", version = "0.3.0", default-features = false }
-uselesskey-core-seed = { path = "crates/uselesskey-core-seed", version = "0.3.0", default-features = false }
-uselesskey-core-kid = { path = "crates/uselesskey-core-kid", version = "0.3.0" }
-uselesskey-core-keypair = { path = "crates/uselesskey-core-keypair", version = "0.3.0" }
-uselesskey-core-keypair-material = { path = "crates/uselesskey-core-keypair-material", version = "0.3.0" }
-uselesskey-core-negative = { path = "crates/uselesskey-core-negative", version = "0.3.0", default-features = false }
-uselesskey-core-negative-der = { path = "crates/uselesskey-core-negative-der", version = "0.3.0", default-features = false }
-uselesskey-core-negative-pem = { path = "crates/uselesskey-core-negative-pem", version = "0.3.0", default-features = false }
-uselesskey-core-token = { path = "crates/uselesskey-core-token", version = "0.3.0" }
-uselesskey-token-spec = { path = "crates/uselesskey-token-spec", version = "0.3.0" }
-uselesskey-core-jwk-builder = { path = "crates/uselesskey-core-jwk-builder", version = "0.3.0" }
-uselesskey-core-jwk = { path = "crates/uselesskey-core-jwk", version = "0.3.0" }
-uselesskey-core-hmac-spec = { path = "crates/uselesskey-core-hmac-spec", version = "0.3.0" }
-uselesskey-core-jwk-shape = { path = "crates/uselesskey-core-jwk-shape", version = "0.3.0" }
-uselesskey-core-x509-derive = { path = "crates/uselesskey-core-x509-derive", version = "0.3.0" }
-uselesskey-core-x509-chain-negative = { path = "crates/uselesskey-core-x509-chain-negative", version = "0.3.0" }
-uselesskey-core-x509-negative = { path = "crates/uselesskey-core-x509-negative", version = "0.3.0" }
-uselesskey-core-x509-spec = { path = "crates/uselesskey-core-x509-spec", version = "0.3.0" }
-uselesskey-core-x509 = { path = "crates/uselesskey-core-x509", version = "0.3.0" }
+uselesskey-test-grid = { path = "crates/uselesskey-test-grid", version = "0.1.0" }
+uselesskey-feature-grid = { path = "crates/uselesskey-feature-grid", version = "0.1.0" }
+uselesskey-core-base62 = { path = "crates/uselesskey-core-base62", version = "0.1.0" }
+uselesskey-core-cache = { path = "crates/uselesskey-core-cache", version = "0.1.0", default-features = false }
+uselesskey-core-factory = { path = "crates/uselesskey-core-factory", version = "0.1.0" }
+uselesskey-core-jwks-order = { path = "crates/uselesskey-core-jwks-order", version = "0.1.0" }
+uselesskey-core-hash = { path = "crates/uselesskey-core-hash", version = "0.1.0", default-features = false }
+uselesskey-core-token-shape = { path = "crates/uselesskey-core-token-shape", version = "0.1.0" }
+uselesskey-core-id = { path = "crates/uselesskey-core-id", version = "0.1.0", default-features = false }
+uselesskey-core-seed = { path = "crates/uselesskey-core-seed", version = "0.1.0", default-features = false }
+uselesskey-core-kid = { path = "crates/uselesskey-core-kid", version = "0.1.0" }
+uselesskey-core-keypair = { path = "crates/uselesskey-core-keypair", version = "0.1.0" }
+uselesskey-core-keypair-material = { path = "crates/uselesskey-core-keypair-material", version = "0.1.0" }
+uselesskey-core-negative = { path = "crates/uselesskey-core-negative", version = "0.1.0", default-features = false }
+uselesskey-core-negative-der = { path = "crates/uselesskey-core-negative-der", version = "0.1.0", default-features = false }
+uselesskey-core-negative-pem = { path = "crates/uselesskey-core-negative-pem", version = "0.1.0", default-features = false }
+uselesskey-core-token = { path = "crates/uselesskey-core-token", version = "0.1.0" }
+uselesskey-token-spec = { path = "crates/uselesskey-token-spec", version = "0.1.0" }
+uselesskey-core-jwk-builder = { path = "crates/uselesskey-core-jwk-builder", version = "0.1.0" }
+uselesskey-core-jwk = { path = "crates/uselesskey-core-jwk", version = "0.1.0" }
+uselesskey-core-hmac-spec = { path = "crates/uselesskey-core-hmac-spec", version = "0.1.0" }
+uselesskey-core-jwk-shape = { path = "crates/uselesskey-core-jwk-shape", version = "0.1.0" }
+uselesskey-core-x509-derive = { path = "crates/uselesskey-core-x509-derive", version = "0.1.0" }
+uselesskey-core-x509-chain-negative = { path = "crates/uselesskey-core-x509-chain-negative", version = "0.1.0" }
+uselesskey-core-x509-negative = { path = "crates/uselesskey-core-x509-negative", version = "0.1.0" }
+uselesskey-core-x509-spec = { path = "crates/uselesskey-core-x509-spec", version = "0.1.0" }
+uselesskey-core-x509 = { path = "crates/uselesskey-core-x509", version = "0.1.0" }
 
 # determinism / hashing
 blake3 = "1.8.3"
@@ -107,7 +107,7 @@ rand_chacha = "0.3.1"
 
 # sinks
 tempfile = "3.26.0"
-uselesskey-core-sink = { path = "crates/uselesskey-core-sink", version = "0.3.0" }
+uselesskey-core-sink = { path = "crates/uselesskey-core-sink", version = "0.1.0" }
 
 # testing
 proptest = "1.10.0"
