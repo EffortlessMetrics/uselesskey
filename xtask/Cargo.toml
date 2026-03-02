@@ -5,6 +5,12 @@ publish = false
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+description = "Build automation tasks (CI, test, lint, publish) for the uselesskey workspace."
+categories.workspace = true
+keywords = ["xtask", "build", "automation", "ci", "testing"]
 
 [dependencies]
 anyhow.workspace = true
