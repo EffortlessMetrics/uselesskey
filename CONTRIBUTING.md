@@ -40,7 +40,7 @@ cargo xtask nextest         # Run tests via cargo-nextest (requires cargo-nextes
 - **`crates/uselesskey-jwk`**: Typed JWK/JWKS helpers and `JwksBuilder`.
 - **`crates/uselesskey-<adapter>`**: Adapt uselesskey fixtures to third-party library types. Adapter crates are separate crates (not features) to avoid coupling versioning.
 
-Current adapter crates: `uselesskey-jsonwebtoken`, `uselesskey-rustls`, `uselesskey-ring`, `uselesskey-rustcrypto`, `uselesskey-aws-lc-rs`.
+Current adapter crates: `uselesskey-jsonwebtoken`, `uselesskey-rustls`, `uselesskey-tonic`, `uselesskey-ring`, `uselesskey-rustcrypto`, `uselesskey-aws-lc-rs`.
 
 ### Adding a new Key Type
 

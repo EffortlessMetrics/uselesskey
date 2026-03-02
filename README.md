@@ -386,11 +386,19 @@ Corrupt PEM, truncated DER, mismatched keys, expired certs, revoked leaves with 
 
 Use uselesskey when you need **test fixtures that don't trip secret scanners**. If you need runtime certificate generation for production (e.g., an internal CA), reach for [`rcgen`](https://docs.rs/rcgen) directly. If you need certificate validation logic, see [`rustls`](https://docs.rs/rustls) or [`x509-parser`](https://docs.rs/x509-parser).
 
+## Community
+
+- [CHANGELOG](CHANGELOG.md) — release history
+- [CONTRIBUTING](CONTRIBUTING.md) — how to build, test, and add new key types
+- [SECURITY](SECURITY.md) — security policy (this is a test-only crate)
+- [CODE_OF_CONDUCT](CODE_OF_CONDUCT.md) — Contributor Covenant
+- [SUPPORT](SUPPORT.md) — how to get help
+
 ## License
 
 Licensed under either of:
 
-- Apache License, Version 2.0 (`LICENSE-APACHE`)
-- MIT license (`LICENSE-MIT`)
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE))
+- MIT license ([LICENSE-MIT](LICENSE-MIT))
 
 at your option.
