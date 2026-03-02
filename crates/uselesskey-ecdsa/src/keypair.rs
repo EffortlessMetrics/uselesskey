@@ -113,6 +113,16 @@ impl EcdsaKeyPair {
     }
 
     /// Returns the spec used to create this keypair.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
+    /// let fx = Factory::random();
+    /// let kp = fx.ecdsa("svc", EcdsaSpec::es256());
+    /// assert_eq!(kp.spec(), EcdsaSpec::es256());
+    /// ```
     pub fn spec(&self) -> EcdsaSpec {
         self.spec
     }
@@ -182,11 +192,33 @@ impl EcdsaKeyPair {
     }
 
     /// Write the PKCS#8 PEM private key to a tempfile and return the handle.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
+    /// let fx = Factory::random();
+    /// let kp = fx.ecdsa("svc", EcdsaSpec::es256());
+    /// let temp = kp.write_private_key_pkcs8_pem().unwrap();
+    /// assert!(temp.path().exists());
+    /// ```
     pub fn write_private_key_pkcs8_pem(&self) -> Result<TempArtifact, Error> {
         self.inner.material.write_private_key_pkcs8_pem()
     }
 
     /// Write the SPKI PEM public key to a tempfile and return the handle.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
+    /// let fx = Factory::random();
+    /// let kp = fx.ecdsa("svc", EcdsaSpec::es256());
+    /// let temp = kp.write_public_key_spki_pem().unwrap();
+    /// assert!(temp.path().exists());
+    /// ```
     pub fn write_public_key_spki_pem(&self) -> Result<TempArtifact, Error> {
         self.inner.material.write_public_key_spki_pem()
     }
@@ -209,6 +241,17 @@ impl EcdsaKeyPair {
     }
 
     /// Produce a deterministic corrupted PKCS#8 PEM using a variant string.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
+    /// let fx = Factory::random();
+    /// let kp = fx.ecdsa("svc", EcdsaSpec::es256());
+    /// let bad = kp.private_key_pkcs8_pem_corrupt_deterministic("corrupt:v1");
+    /// assert!(!bad.is_empty());
+    /// ```
     pub fn private_key_pkcs8_pem_corrupt_deterministic(&self, variant: &str) -> String {
         self.inner
             .material
@@ -232,6 +275,17 @@ impl EcdsaKeyPair {
     }
 
     /// Produce a deterministic corrupted PKCS#8 DER using a variant string.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
+    /// let fx = Factory::random();
+    /// let kp = fx.ecdsa("svc", EcdsaSpec::es256());
+    /// let bad = kp.private_key_pkcs8_der_corrupt_deterministic("corrupt:v1");
+    /// assert!(!bad.is_empty());
+    /// ```
     pub fn private_key_pkcs8_der_corrupt_deterministic(&self, variant: &str) -> Vec<u8> {
         self.inner
             .material
@@ -256,6 +310,17 @@ impl EcdsaKeyPair {
     }
 
     /// A stable key identifier derived from the public key (base64url blake3 hash prefix).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
+    /// let fx = Factory::random();
+    /// let kp = fx.ecdsa("svc", EcdsaSpec::es256());
+    /// let kid = kp.kid();
+    /// assert!(!kid.is_empty());
+    /// ```
     #[cfg(feature = "jwk")]
     pub fn kid(&self) -> String {
         self.inner.material.kid()
@@ -264,6 +329,17 @@ impl EcdsaKeyPair {
     /// Alias for [`Self::public_jwk`].
     ///
     /// Requires the `jwk` feature.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
+    /// let fx = Factory::random();
+    /// let kp = fx.ecdsa("svc", EcdsaSpec::es256());
+    /// let jwk = kp.public_key_jwk();
+    /// assert_eq!(jwk.to_value()["kty"], "EC");
+    /// ```
     #[cfg(feature = "jwk")]
     pub fn public_key_jwk(&self) -> uselesskey_jwk::PublicJwk {
         self.public_jwk()
@@ -272,6 +348,19 @@ impl EcdsaKeyPair {
     /// Public JWK for this keypair (kty=EC, crv=P-256 or P-384, alg=ES256 or ES384).
     ///
     /// Requires the `jwk` feature.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
+    /// let fx = Factory::random();
+    /// let kp = fx.ecdsa("svc", EcdsaSpec::es256());
+    /// let jwk = kp.public_jwk();
+    /// let val = jwk.to_value();
+    /// assert_eq!(val["kty"], "EC");
+    /// assert_eq!(val["crv"], "P-256");
+    /// ```
     #[cfg(feature = "jwk")]
     pub fn public_jwk(&self) -> uselesskey_jwk::PublicJwk {
         use base64::Engine as _;
@@ -305,6 +394,19 @@ impl EcdsaKeyPair {
     /// Private JWK for this keypair (kty=EC, crv=..., alg=..., d=...).
     ///
     /// Requires the `jwk` feature.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
+    /// let fx = Factory::random();
+    /// let kp = fx.ecdsa("svc", EcdsaSpec::es256());
+    /// let jwk = kp.private_key_jwk();
+    /// let val = jwk.to_value();
+    /// assert_eq!(val["kty"], "EC");
+    /// assert!(val["d"].is_string());
+    /// ```
     #[cfg(feature = "jwk")]
     pub fn private_key_jwk(&self) -> uselesskey_jwk::PrivateJwk {
         use base64::Engine as _;
@@ -337,6 +439,17 @@ impl EcdsaKeyPair {
     }
 
     /// JWKS containing a single public key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
+    /// let fx = Factory::random();
+    /// let kp = fx.ecdsa("svc", EcdsaSpec::es256());
+    /// let jwks = kp.public_jwks();
+    /// assert!(jwks.to_value()["keys"].is_array());
+    /// ```
     #[cfg(feature = "jwk")]
     pub fn public_jwks(&self) -> uselesskey_jwk::Jwks {
         use uselesskey_jwk::JwksBuilder;
@@ -349,6 +462,17 @@ impl EcdsaKeyPair {
     /// Public JWK serialized to `serde_json::Value`.
     ///
     /// Requires the `jwk` feature.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
+    /// let fx = Factory::random();
+    /// let kp = fx.ecdsa("svc", EcdsaSpec::es256());
+    /// let val = kp.public_jwk_json();
+    /// assert_eq!(val["kty"], "EC");
+    /// ```
     #[cfg(feature = "jwk")]
     pub fn public_jwk_json(&self) -> serde_json::Value {
         self.public_jwk().to_value()
@@ -357,6 +481,17 @@ impl EcdsaKeyPair {
     /// JWKS serialized to `serde_json::Value`.
     ///
     /// Requires the `jwk` feature.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
+    /// let fx = Factory::random();
+    /// let kp = fx.ecdsa("svc", EcdsaSpec::es256());
+    /// let val = kp.public_jwks_json();
+    /// assert!(val["keys"].is_array());
+    /// ```
     #[cfg(feature = "jwk")]
     pub fn public_jwks_json(&self) -> serde_json::Value {
         self.public_jwks().to_value()
@@ -365,6 +500,18 @@ impl EcdsaKeyPair {
     /// Private JWK serialized to `serde_json::Value`.
     ///
     /// Requires the `jwk` feature.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
+    /// let fx = Factory::random();
+    /// let kp = fx.ecdsa("svc", EcdsaSpec::es256());
+    /// let val = kp.private_key_jwk_json();
+    /// assert_eq!(val["kty"], "EC");
+    /// assert!(val["d"].is_string());
+    /// ```
     #[cfg(feature = "jwk")]
     pub fn private_key_jwk_json(&self) -> serde_json::Value {
         self.private_key_jwk().to_value()

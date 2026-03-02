@@ -24,6 +24,15 @@ impl Ed25519Spec {
     ///
     /// Ed25519 has no configurable parameters, so this always
     /// returns the same spec.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_ed25519::Ed25519Spec;
+    ///
+    /// let spec = Ed25519Spec::new();
+    /// assert_eq!(spec, Ed25519Spec::default());
+    /// ```
     pub fn new() -> Self {
         Self { _private: () }
     }
@@ -31,6 +40,15 @@ impl Ed25519Spec {
     /// Stable encoding for cache keys / deterministic derivation.
     ///
     /// If you change this, bump the derivation version in `uselesskey-core`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use uselesskey_ed25519::Ed25519Spec;
+    ///
+    /// let bytes = Ed25519Spec::new().stable_bytes();
+    /// assert_eq!(bytes.len(), 4);
+    /// ```
     pub fn stable_bytes(&self) -> [u8; 4] {
         // Fixed identifier for Ed25519 keys.
         // Format: [magic byte, version, reserved, reserved]

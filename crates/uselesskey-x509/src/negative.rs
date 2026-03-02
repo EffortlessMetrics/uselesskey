@@ -8,11 +8,34 @@ pub use uselesskey_core_x509::X509Negative;
 /// Corrupt a PEM-encoded certificate.
 ///
 /// Delegates to the core negative fixture helpers.
+///
+/// # Examples
+///
+/// ```
+/// use uselesskey_core::negative::CorruptPem;
+/// use uselesskey_x509::negative::corrupt_cert_pem;
+///
+/// let pem = "-----BEGIN CERTIFICATE-----\nAAA=\n-----END CERTIFICATE-----\n";
+/// let corrupted = corrupt_cert_pem(pem, CorruptPem::BadHeader);
+/// assert_ne!(corrupted, pem);
+/// ```
 pub fn corrupt_cert_pem(pem: &str, how: uselesskey_core::negative::CorruptPem) -> String {
     uselesskey_core::negative::corrupt_pem(pem, how)
 }
 
 /// Corrupt a PEM-encoded certificate using a deterministic variant string.
+///
+/// # Examples
+///
+/// ```
+/// use uselesskey_x509::negative::corrupt_cert_pem_deterministic;
+///
+/// let pem = "-----BEGIN CERTIFICATE-----\nAAA=\n-----END CERTIFICATE-----\n";
+/// let corrupted = corrupt_cert_pem_deterministic(pem, "corrupt:v1");
+/// assert_ne!(corrupted, pem);
+/// // Same variant always produces the same result
+/// assert_eq!(corrupted, corrupt_cert_pem_deterministic(pem, "corrupt:v1"));
+/// ```
 pub fn corrupt_cert_pem_deterministic(pem: &str, variant: &str) -> String {
     uselesskey_core::negative::corrupt_pem_deterministic(pem, variant)
 }
@@ -20,11 +43,33 @@ pub fn corrupt_cert_pem_deterministic(pem: &str, variant: &str) -> String {
 /// Truncate a DER-encoded certificate.
 ///
 /// Delegates to the core negative fixture helpers.
+///
+/// # Examples
+///
+/// ```
+/// use uselesskey_x509::negative::truncate_cert_der;
+///
+/// let der = vec![0x30, 0x03, 0x02, 0x01, 0x01];
+/// let truncated = truncate_cert_der(&der, 2);
+/// assert_eq!(truncated.len(), 2);
+/// ```
 pub fn truncate_cert_der(der: &[u8], len: usize) -> Vec<u8> {
     uselesskey_core::negative::truncate_der(der, len)
 }
 
 /// Corrupt a DER-encoded certificate using a deterministic variant string.
+///
+/// # Examples
+///
+/// ```
+/// use uselesskey_x509::negative::corrupt_cert_der_deterministic;
+///
+/// let der = vec![0x30, 0x03, 0x02, 0x01, 0x01];
+/// let corrupted = corrupt_cert_der_deterministic(&der, "corrupt:v1");
+/// assert_ne!(corrupted, der);
+/// // Same variant always produces the same result
+/// assert_eq!(corrupted, corrupt_cert_der_deterministic(&der, "corrupt:v1"));
+/// ```
 pub fn corrupt_cert_der_deterministic(der: &[u8], variant: &str) -> Vec<u8> {
     uselesskey_core::negative::corrupt_der_deterministic(der, variant)
 }

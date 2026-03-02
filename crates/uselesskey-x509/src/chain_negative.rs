@@ -8,6 +8,19 @@ impl X509Chain {
     /// Generate a negative fixture variant of this chain.
     ///
     /// The variant is cached separately from the valid chain.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// use uselesskey_core_x509::ChainNegative;
+    ///
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// let expired = chain.negative(ChainNegative::ExpiredLeaf);
+    /// assert_ne!(chain.leaf_cert_der(), expired.leaf_cert_der());
+    /// ```
     pub fn negative(&self, neg: ChainNegative) -> X509Chain {
         let modified_spec = neg.apply_to_spec(self.spec());
         let variant = neg.variant_name();
@@ -20,6 +33,17 @@ impl X509Chain {
     }
 
     /// Get a chain where the leaf cert has a hostname mismatch.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// let wrong = chain.hostname_mismatch("wrong.example.com");
+    /// assert_ne!(chain.leaf_cert_der(), wrong.leaf_cert_der());
+    /// ```
     pub fn hostname_mismatch(&self, hostname: impl Into<String>) -> X509Chain {
         self.negative(ChainNegative::HostnameMismatch {
             wrong_hostname: hostname.into(),
@@ -29,16 +53,49 @@ impl X509Chain {
     /// Get a chain anchored to a different (unknown) root certificate identity.
     ///
     /// This keeps key material stable and changes root certificate identity fields.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// let untrusted = chain.unknown_ca();
+    /// assert_ne!(chain.root_cert_der(), untrusted.root_cert_der());
+    /// ```
     pub fn unknown_ca(&self) -> X509Chain {
         self.negative(ChainNegative::UnknownCa)
     }
 
     /// Get a chain where the leaf certificate has a very short validity period.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// let expired = chain.expired_leaf();
+    /// assert_ne!(chain.leaf_cert_der(), expired.leaf_cert_der());
+    /// ```
     pub fn expired_leaf(&self) -> X509Chain {
         self.negative(ChainNegative::ExpiredLeaf)
     }
 
     /// Get a chain where the intermediate certificate has a very short validity period.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// let expired = chain.expired_intermediate();
+    /// assert_ne!(chain.intermediate_cert_der(), expired.intermediate_cert_der());
+    /// ```
     pub fn expired_intermediate(&self) -> X509Chain {
         self.negative(ChainNegative::ExpiredIntermediate)
     }
@@ -48,6 +105,17 @@ impl X509Chain {
     /// The chain itself is structurally valid. The CRL is signed by the
     /// intermediate CA and lists the leaf serial as revoked with reason
     /// `KeyCompromise`.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// let revoked = chain.revoked_leaf();
+    /// assert!(revoked.crl_der().is_some());
+    /// ```
     pub fn revoked_leaf(&self) -> X509Chain {
         self.negative(ChainNegative::RevokedLeaf)
     }

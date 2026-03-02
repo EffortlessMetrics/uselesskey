@@ -91,21 +91,61 @@ impl X509Chain {
     // =========================================================================
 
     /// DER-encoded root CA certificate bytes.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// assert!(!chain.root_cert_der().is_empty());
+    /// ```
     pub fn root_cert_der(&self) -> &[u8] {
         &self.inner.root_cert_der
     }
 
     /// PEM-encoded root CA certificate.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// assert!(chain.root_cert_pem().contains("BEGIN CERTIFICATE"));
+    /// ```
     pub fn root_cert_pem(&self) -> &str {
         &self.inner.root_cert_pem
     }
 
     /// DER-encoded root CA PKCS#8 private key bytes.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// assert!(!chain.root_private_key_pkcs8_der().is_empty());
+    /// ```
     pub fn root_private_key_pkcs8_der(&self) -> &[u8] {
         &self.inner.root_key_pkcs8_der
     }
 
     /// PEM-encoded root CA PKCS#8 private key.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// assert!(chain.root_private_key_pkcs8_pem().contains("BEGIN PRIVATE KEY"));
+    /// ```
     pub fn root_private_key_pkcs8_pem(&self) -> &str {
         &self.inner.root_key_pkcs8_pem
     }
@@ -115,21 +155,61 @@ impl X509Chain {
     // =========================================================================
 
     /// DER-encoded intermediate CA certificate bytes.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// assert!(!chain.intermediate_cert_der().is_empty());
+    /// ```
     pub fn intermediate_cert_der(&self) -> &[u8] {
         &self.inner.intermediate_cert_der
     }
 
     /// PEM-encoded intermediate CA certificate.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// assert!(chain.intermediate_cert_pem().contains("BEGIN CERTIFICATE"));
+    /// ```
     pub fn intermediate_cert_pem(&self) -> &str {
         &self.inner.intermediate_cert_pem
     }
 
     /// DER-encoded intermediate CA PKCS#8 private key bytes.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// assert!(!chain.intermediate_private_key_pkcs8_der().is_empty());
+    /// ```
     pub fn intermediate_private_key_pkcs8_der(&self) -> &[u8] {
         &self.inner.intermediate_key_pkcs8_der
     }
 
     /// PEM-encoded intermediate CA PKCS#8 private key.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// assert!(chain.intermediate_private_key_pkcs8_pem().contains("BEGIN PRIVATE KEY"));
+    /// ```
     pub fn intermediate_private_key_pkcs8_pem(&self) -> &str {
         &self.inner.intermediate_key_pkcs8_pem
     }
@@ -139,21 +219,61 @@ impl X509Chain {
     // =========================================================================
 
     /// DER-encoded leaf certificate bytes.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// assert!(!chain.leaf_cert_der().is_empty());
+    /// ```
     pub fn leaf_cert_der(&self) -> &[u8] {
         &self.inner.leaf_cert_der
     }
 
     /// PEM-encoded leaf certificate.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// assert!(chain.leaf_cert_pem().contains("BEGIN CERTIFICATE"));
+    /// ```
     pub fn leaf_cert_pem(&self) -> &str {
         &self.inner.leaf_cert_pem
     }
 
     /// DER-encoded leaf PKCS#8 private key bytes.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// assert!(!chain.leaf_private_key_pkcs8_der().is_empty());
+    /// ```
     pub fn leaf_private_key_pkcs8_der(&self) -> &[u8] {
         &self.inner.leaf_key_pkcs8_der
     }
 
     /// PEM-encoded leaf PKCS#8 private key.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// assert!(chain.leaf_private_key_pkcs8_pem().contains("BEGIN PRIVATE KEY"));
+    /// ```
     pub fn leaf_private_key_pkcs8_pem(&self) -> &str {
         &self.inner.leaf_key_pkcs8_pem
     }
@@ -165,6 +285,18 @@ impl X509Chain {
     /// Certificate chain PEM in standard TLS order: leaf + intermediate (no root).
     ///
     /// This is the format expected by most TLS servers.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// let pem = chain.chain_pem();
+    /// // Contains leaf and intermediate certificates
+    /// assert!(pem.matches("BEGIN CERTIFICATE").count() >= 2);
+    /// ```
     pub fn chain_pem(&self) -> String {
         format!(
             "{}\n{}",
@@ -173,6 +305,18 @@ impl X509Chain {
     }
 
     /// Full certificate chain PEM: leaf + intermediate + root.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// let pem = chain.full_chain_pem();
+    /// // Contains leaf, intermediate, and root certificates
+    /// assert!(pem.matches("BEGIN CERTIFICATE").count() >= 3);
+    /// ```
     pub fn full_chain_pem(&self) -> String {
         format!(
             "{}\n{}\n{}",
@@ -185,16 +329,49 @@ impl X509Chain {
     // =========================================================================
 
     /// Write the leaf PEM certificate to a tempfile.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// let temp = chain.write_leaf_cert_pem().unwrap();
+    /// assert!(temp.path().exists());
+    /// ```
     pub fn write_leaf_cert_pem(&self) -> Result<TempArtifact, Error> {
         TempArtifact::new_string("uselesskey-", ".leaf.crt.pem", self.leaf_cert_pem())
     }
 
     /// Write the leaf DER certificate to a tempfile.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// let temp = chain.write_leaf_cert_der().unwrap();
+    /// assert!(temp.path().exists());
+    /// ```
     pub fn write_leaf_cert_der(&self) -> Result<TempArtifact, Error> {
         TempArtifact::new_bytes("uselesskey-", ".leaf.crt.der", self.leaf_cert_der())
     }
 
     /// Write the leaf PEM private key to a tempfile.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// let temp = chain.write_leaf_private_key_pem().unwrap();
+    /// assert!(temp.path().exists());
+    /// ```
     pub fn write_leaf_private_key_pem(&self) -> Result<TempArtifact, Error> {
         TempArtifact::new_string(
             "uselesskey-",
@@ -204,16 +381,49 @@ impl X509Chain {
     }
 
     /// Write the chain PEM (leaf + intermediate) to a tempfile.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// let temp = chain.write_chain_pem().unwrap();
+    /// assert!(temp.path().exists());
+    /// ```
     pub fn write_chain_pem(&self) -> Result<TempArtifact, Error> {
         TempArtifact::new_string("uselesskey-", ".chain.pem", &self.chain_pem())
     }
 
     /// Write the full chain PEM (leaf + intermediate + root) to a tempfile.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// let temp = chain.write_full_chain_pem().unwrap();
+    /// assert!(temp.path().exists());
+    /// ```
     pub fn write_full_chain_pem(&self) -> Result<TempArtifact, Error> {
         TempArtifact::new_string("uselesskey-", ".fullchain.pem", &self.full_chain_pem())
     }
 
     /// Write the root CA PEM certificate to a tempfile.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// let temp = chain.write_root_cert_pem().unwrap();
+    /// assert!(temp.path().exists());
+    /// ```
     pub fn write_root_cert_pem(&self) -> Result<TempArtifact, Error> {
         TempArtifact::new_string("uselesskey-", ".root.crt.pem", self.root_cert_pem())
     }
@@ -223,16 +433,50 @@ impl X509Chain {
     // =========================================================================
 
     /// DER-encoded CRL bytes, if this chain was generated with the `RevokedLeaf` variant.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// // Good chain has no CRL
+    /// assert!(chain.crl_der().is_none());
+    /// // Revoked leaf chain has a CRL
+    /// let revoked = chain.revoked_leaf();
+    /// assert!(revoked.crl_der().is_some());
+    /// ```
     pub fn crl_der(&self) -> Option<&[u8]> {
         self.inner.crl_der.as_deref()
     }
 
     /// PEM-encoded CRL, if this chain was generated with the `RevokedLeaf` variant.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// assert!(chain.crl_pem().is_none());
+    /// ```
     pub fn crl_pem(&self) -> Option<&str> {
         self.inner.crl_pem.as_deref()
     }
 
     /// Write the CRL PEM to a tempfile. Returns `None` if no CRL is present.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// assert!(chain.write_crl_pem().is_none());
+    /// ```
     pub fn write_crl_pem(&self) -> Option<Result<TempArtifact, Error>> {
         self.inner
             .crl_pem
@@ -241,6 +485,16 @@ impl X509Chain {
     }
 
     /// Write the CRL DER to a tempfile. Returns `None` if no CRL is present.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// assert!(chain.write_crl_der().is_none());
+    /// ```
     pub fn write_crl_der(&self) -> Option<Result<TempArtifact, Error>> {
         self.inner
             .crl_der
@@ -253,11 +507,31 @@ impl X509Chain {
     // =========================================================================
 
     /// Get the specification used to create this chain.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
+    /// assert_eq!(chain.spec().leaf_cn, "svc.example.com");
+    /// ```
     pub fn spec(&self) -> &ChainSpec {
         &self.spec
     }
 
     /// Get the label used to create this chain.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let chain = fx.x509_chain("my-svc", ChainSpec::new("svc.example.com"));
+    /// assert_eq!(chain.label(), "my-svc");
+    /// ```
     pub fn label(&self) -> &str {
         &self.label
     }

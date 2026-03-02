@@ -182,11 +182,33 @@ impl RsaKeyPair {
     }
 
     /// Write the PKCS#8 PEM private key to a tempfile and return the handle.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let kp = fx.rsa("svc", RsaSpec::rs256());
+    /// let temp = kp.write_private_key_pkcs8_pem().unwrap();
+    /// assert!(temp.path().exists());
+    /// ```
     pub fn write_private_key_pkcs8_pem(&self) -> Result<TempArtifact, Error> {
         self.inner.material.write_private_key_pkcs8_pem()
     }
 
     /// Write the SPKI PEM public key to a tempfile and return the handle.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let kp = fx.rsa("svc", RsaSpec::rs256());
+    /// let temp = kp.write_public_key_spki_pem().unwrap();
+    /// assert!(temp.path().exists());
+    /// ```
     pub fn write_public_key_spki_pem(&self) -> Result<TempArtifact, Error> {
         self.inner.material.write_public_key_spki_pem()
     }
@@ -209,6 +231,17 @@ impl RsaKeyPair {
     }
 
     /// Produce a deterministic corrupted PKCS#8 PEM using a variant string.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let kp = fx.rsa("svc", RsaSpec::rs256());
+    /// let bad = kp.private_key_pkcs8_pem_corrupt_deterministic("corrupt:v1");
+    /// assert!(!bad.is_empty());
+    /// ```
     pub fn private_key_pkcs8_pem_corrupt_deterministic(&self, variant: &str) -> String {
         self.inner
             .material
@@ -232,6 +265,17 @@ impl RsaKeyPair {
     }
 
     /// Produce a deterministic corrupted PKCS#8 DER using a variant string.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let kp = fx.rsa("svc", RsaSpec::rs256());
+    /// let bad = kp.private_key_pkcs8_der_corrupt_deterministic("corrupt:v1");
+    /// assert!(!bad.is_empty());
+    /// ```
     pub fn private_key_pkcs8_der_corrupt_deterministic(&self, variant: &str) -> Vec<u8> {
         self.inner
             .material
@@ -256,6 +300,17 @@ impl RsaKeyPair {
     }
 
     /// A stable key identifier derived from the public key (base64url blake3 hash prefix).
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let kp = fx.rsa("svc", RsaSpec::rs256());
+    /// let kid = kp.kid();
+    /// assert!(!kid.is_empty());
+    /// ```
     #[cfg(feature = "jwk")]
     pub fn kid(&self) -> String {
         self.inner.material.kid()
@@ -264,6 +319,17 @@ impl RsaKeyPair {
     /// Alias for [`Self::public_jwk`].
     ///
     /// Requires the `jwk` feature.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let kp = fx.rsa("svc", RsaSpec::rs256());
+    /// let jwk = kp.public_key_jwk();
+    /// assert_eq!(jwk.to_value()["kty"], "RSA");
+    /// ```
     #[cfg(feature = "jwk")]
     pub fn public_key_jwk(&self) -> uselesskey_jwk::PublicJwk {
         self.public_jwk()
@@ -272,6 +338,19 @@ impl RsaKeyPair {
     /// Public JWK for this keypair (kty=RSA, use=sig, kid=...).
     ///
     /// Requires the `jwk` feature.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let kp = fx.rsa("svc", RsaSpec::rs256());
+    /// let jwk = kp.public_jwk();
+    /// let val = jwk.to_value();
+    /// assert_eq!(val["kty"], "RSA");
+    /// assert_eq!(val["alg"], "RS256");
+    /// ```
     #[cfg(feature = "jwk")]
     pub fn public_jwk(&self) -> uselesskey_jwk::PublicJwk {
         use base64::Engine as _;
@@ -295,6 +374,19 @@ impl RsaKeyPair {
     /// Private JWK for this keypair (kty=RSA, use=sig, kid=...).
     ///
     /// Requires the `jwk` feature.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let kp = fx.rsa("svc", RsaSpec::rs256());
+    /// let jwk = kp.private_key_jwk();
+    /// let val = jwk.to_value();
+    /// assert_eq!(val["kty"], "RSA");
+    /// assert!(val["d"].is_string());
+    /// ```
     #[cfg(feature = "jwk")]
     pub fn private_key_jwk(&self) -> uselesskey_jwk::PrivateJwk {
         use base64::Engine as _;
@@ -332,6 +424,17 @@ impl RsaKeyPair {
     }
 
     /// JWKS containing a single public key.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let kp = fx.rsa("svc", RsaSpec::rs256());
+    /// let jwks = kp.public_jwks();
+    /// assert!(jwks.to_value()["keys"].is_array());
+    /// ```
     #[cfg(feature = "jwk")]
     pub fn public_jwks(&self) -> uselesskey_jwk::Jwks {
         use uselesskey_jwk::JwksBuilder;
@@ -344,6 +447,17 @@ impl RsaKeyPair {
     /// Public JWK serialized to `serde_json::Value`.
     ///
     /// Requires the `jwk` feature.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let kp = fx.rsa("svc", RsaSpec::rs256());
+    /// let val = kp.public_jwk_json();
+    /// assert_eq!(val["kty"], "RSA");
+    /// ```
     #[cfg(feature = "jwk")]
     pub fn public_jwk_json(&self) -> serde_json::Value {
         self.public_jwk().to_value()
@@ -352,6 +466,17 @@ impl RsaKeyPair {
     /// JWKS serialized to `serde_json::Value`.
     ///
     /// Requires the `jwk` feature.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let kp = fx.rsa("svc", RsaSpec::rs256());
+    /// let val = kp.public_jwks_json();
+    /// assert!(val["keys"].is_array());
+    /// ```
     #[cfg(feature = "jwk")]
     pub fn public_jwks_json(&self) -> serde_json::Value {
         self.public_jwks().to_value()
@@ -360,6 +485,18 @@ impl RsaKeyPair {
     /// Private JWK serialized to `serde_json::Value`.
     ///
     /// Requires the `jwk` feature.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let kp = fx.rsa("svc", RsaSpec::rs256());
+    /// let val = kp.private_key_jwk_json();
+    /// assert_eq!(val["kty"], "RSA");
+    /// assert!(val["d"].is_string());
+    /// ```
     #[cfg(feature = "jwk")]
     pub fn private_key_jwk_json(&self) -> serde_json::Value {
         self.private_key_jwk().to_value()
