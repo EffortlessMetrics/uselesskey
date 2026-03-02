@@ -178,4 +178,90 @@ mod tests {
             "Self-signed certificate that claims to be a CA"
         );
     }
+
+    #[test]
+    fn x509_negative_descriptions_are_distinguishable() {
+        let variants = [
+            X509Negative::Expired,
+            X509Negative::NotYetValid,
+            X509Negative::WrongKeyUsage,
+            X509Negative::SelfSignedButClaimsCA,
+        ];
+        let descriptions: Vec<&str> = variants.iter().map(|v| v.description()).collect();
+        for (i, a) in descriptions.iter().enumerate() {
+            for b in &descriptions[i + 1..] {
+                assert_ne!(a, b, "descriptions must be unique per variant");
+            }
+        }
+    }
+
+    #[test]
+    fn x509_negative_variant_names_are_distinguishable() {
+        let variants = [
+            X509Negative::Expired,
+            X509Negative::NotYetValid,
+            X509Negative::WrongKeyUsage,
+            X509Negative::SelfSignedButClaimsCA,
+        ];
+        let names: Vec<&str> = variants.iter().map(|v| v.variant_name()).collect();
+        for (i, a) in names.iter().enumerate() {
+            for b in &names[i + 1..] {
+                assert_ne!(a, b, "variant names must be unique");
+            }
+        }
+    }
+
+    #[test]
+    fn x509_negative_debug_variants_are_distinguishable() {
+        let variants = [
+            X509Negative::Expired,
+            X509Negative::NotYetValid,
+            X509Negative::WrongKeyUsage,
+            X509Negative::SelfSignedButClaimsCA,
+        ];
+        let debug_strs: Vec<String> = variants.iter().map(|v| format!("{v:?}")).collect();
+        for (i, a) in debug_strs.iter().enumerate() {
+            for b in &debug_strs[i + 1..] {
+                assert_ne!(a, b, "Debug output must be unique per variant");
+            }
+        }
+    }
+
+    #[test]
+    fn x509_negative_descriptions_are_human_readable() {
+        for variant in [
+            X509Negative::Expired,
+            X509Negative::NotYetValid,
+            X509Negative::WrongKeyUsage,
+            X509Negative::SelfSignedButClaimsCA,
+        ] {
+            let desc = variant.description();
+            assert!(desc.len() > 10, "description should be meaningful: {desc}");
+            assert!(
+                desc.starts_with(|c: char| c.is_uppercase()),
+                "description should start with uppercase: {desc}"
+            );
+        }
+    }
+
+    #[test]
+    fn x509_negative_each_variant_produces_different_spec() {
+        let base = X509Spec::self_signed("test");
+        let specs: Vec<X509Spec> = [
+            X509Negative::Expired,
+            X509Negative::NotYetValid,
+            X509Negative::WrongKeyUsage,
+            X509Negative::SelfSignedButClaimsCA,
+        ]
+        .iter()
+        .map(|v| v.apply_to_spec(&base))
+        .collect();
+        for (i, a) in specs.iter().enumerate() {
+            for (j, b) in specs.iter().enumerate() {
+                if i != j {
+                    assert_ne!(a, b, "variant {i} and {j} must produce different specs");
+                }
+            }
+        }
+    }
 }

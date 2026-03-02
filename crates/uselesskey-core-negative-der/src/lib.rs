@@ -175,4 +175,49 @@ mod tests {
         }
         unreachable!()
     }
+
+    #[test]
+    fn truncation_and_flip_produce_distinguishable_results() {
+        let der = [0x30, 0x82, 0x01, 0x22, 0x10, 0x20];
+        let truncated = truncate_der(&der, 3);
+        let flipped = flip_byte(&der, 0);
+        assert_ne!(truncated, flipped, "truncation vs flip must differ");
+    }
+
+    #[test]
+    fn flip_byte_out_of_bounds_returns_original() {
+        let der = [0x30, 0x82];
+        let result = flip_byte(&der, 99);
+        assert_eq!(result, der, "out-of-bounds flip must return original");
+    }
+
+    #[test]
+    fn truncate_der_larger_len_returns_original() {
+        let der = [0x30, 0x82];
+        let result = truncate_der(&der, 100);
+        assert_eq!(result, der, "oversized truncation must return original");
+    }
+
+    #[test]
+    fn deterministic_arms_produce_distinguishable_results() {
+        let der = [0x30, 0x82, 0x01, 0x22, 0x10, 0x20, 0x30, 0x40];
+        let arm0 = corrupt_der_deterministic(&der, &find_der_variant(0));
+        let arm1 = corrupt_der_deterministic(&der, &find_der_variant(1));
+        let arm2 = corrupt_der_deterministic(&der, &find_der_variant(2));
+
+        // arm0 = truncation (shorter), arm1 = flip (same length), arm2 = flip+truncate (shorter)
+        assert_ne!(arm0, arm1, "arm0 and arm1 must differ");
+        assert_ne!(arm1, arm2, "arm1 and arm2 must differ");
+        // arm1 preserves length, arm0 and arm2 do not.
+        assert_eq!(arm1.len(), der.len(), "arm1 (flip) preserves length");
+        assert!(arm0.len() < der.len(), "arm0 (truncate) shortens");
+        assert!(arm2.len() < der.len(), "arm2 (flip+truncate) shortens");
+    }
+
+    #[test]
+    fn corrupt_der_deterministic_on_empty_input() {
+        let der: [u8; 0] = [];
+        let result = corrupt_der_deterministic(&der, "variant");
+        assert!(result.is_empty(), "corruption of empty input must be empty");
+    }
 }

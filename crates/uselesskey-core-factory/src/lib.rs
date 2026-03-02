@@ -321,4 +321,34 @@ mod tests {
             "seed must be redacted in debug output: {dbg}"
         );
     }
+
+    #[test]
+    fn mode_debug_random_is_distinguishable() {
+        let dbg = format!("{:?}", Mode::Random);
+        assert_eq!(dbg, "Random");
+    }
+
+    #[test]
+    fn mode_debug_deterministic_includes_variant_name() {
+        let mode = Mode::Deterministic {
+            master: Seed::new([0u8; 32]),
+        };
+        let dbg = format!("{mode:?}");
+        assert!(
+            dbg.contains("Deterministic"),
+            "Debug must include variant name: {dbg}"
+        );
+    }
+
+    #[test]
+    fn mode_debug_variants_are_distinguishable() {
+        let random_dbg = format!("{:?}", Mode::Random);
+        let det_dbg = format!(
+            "{:?}",
+            Mode::Deterministic {
+                master: Seed::new([0u8; 32]),
+            }
+        );
+        assert_ne!(random_dbg, det_dbg);
+    }
 }

@@ -258,4 +258,59 @@ mod tests {
         let out = corrupt_pem_deterministic(pem, &find_variant(4));
         assert!(out.len() < pem.len());
     }
+
+    #[test]
+    fn corrupt_pem_debug_variants_are_distinguishable() {
+        let variants: [CorruptPem; 5] = [
+            CorruptPem::BadHeader,
+            CorruptPem::BadFooter,
+            CorruptPem::BadBase64,
+            CorruptPem::Truncate { bytes: 10 },
+            CorruptPem::ExtraBlankLine,
+        ];
+        let debug_strs: Vec<String> = variants.iter().map(|v| format!("{v:?}")).collect();
+        for (i, a) in debug_strs.iter().enumerate() {
+            for b in &debug_strs[i + 1..] {
+                assert_ne!(a, b, "Debug output must be unique per variant");
+            }
+        }
+    }
+
+    #[test]
+    fn corrupt_pem_debug_includes_variant_names() {
+        assert!(format!("{:?}", CorruptPem::BadHeader).contains("BadHeader"));
+        assert!(format!("{:?}", CorruptPem::BadFooter).contains("BadFooter"));
+        assert!(format!("{:?}", CorruptPem::BadBase64).contains("BadBase64"));
+        assert!(format!("{:?}", CorruptPem::Truncate { bytes: 5 }).contains("Truncate"));
+        assert!(format!("{:?}", CorruptPem::ExtraBlankLine).contains("ExtraBlankLine"));
+    }
+
+    #[test]
+    fn each_corruption_strategy_produces_different_output() {
+        let pem = "-----BEGIN TEST-----\nAAA=\n-----END TEST-----\n";
+        let outputs: Vec<String> = [
+            CorruptPem::BadHeader,
+            CorruptPem::BadFooter,
+            CorruptPem::BadBase64,
+            CorruptPem::ExtraBlankLine,
+        ]
+        .iter()
+        .map(|v| corrupt_pem(pem, *v))
+        .collect();
+        for (i, a) in outputs.iter().enumerate() {
+            for b in &outputs[i + 1..] {
+                assert_ne!(a, b, "each strategy must produce distinct output");
+            }
+        }
+    }
+
+    #[test]
+    fn corrupt_pem_truncate_bytes_field_affects_output() {
+        let pem = "-----BEGIN TEST-----\nAAA=\n-----END TEST-----\n";
+        let short = corrupt_pem(pem, CorruptPem::Truncate { bytes: 5 });
+        let long = corrupt_pem(pem, CorruptPem::Truncate { bytes: 20 });
+        assert_ne!(short, long);
+        assert_eq!(short.len(), 5);
+        assert_eq!(long.len(), 20);
+    }
 }
