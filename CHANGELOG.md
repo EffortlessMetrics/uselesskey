@@ -11,11 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### New microcrates
 
-Six internal modules were extracted into dedicated core microcrates to improve
+Seven internal modules were extracted into dedicated core microcrates to improve
 publish granularity and cross-crate reuse:
 
 - **`uselesskey-core-base62`** — base62 generation logic
 - **`uselesskey-core-hmac-spec`** — `HmacSpec` model for cross-crate reuse
+- **`uselesskey-core-jwks-order`** — stable kid-based ordering helper for JWKS collections
 - **`uselesskey-core-negative-der`** — DER negative-fixture helpers
 - **`uselesskey-core-rustls-pki`** — rustls PKI type adapters
 - **`uselesskey-core-x509-chain-negative`** — X.509 chain negative policy types
@@ -40,21 +41,21 @@ publish granularity and cross-crate reuse:
 - Comprehensive adapter and facade integration tests
 - 12 new fuzz targets covering under-fuzzed and untested code paths
 
-### Fixed
-
-- `publish-preflight` now runs all `cargo package` steps before reporting failures
-
-### Documentation
+#### Documentation
 
 - Improved sub-crate READMEs and `lib.rs` docs for crates.io readiness
 - Doc examples added to public API crates
 - Module-level documentation for previously undocumented crates
 
-### Internal
+### Changed
 
 - Handle unpublished workspace deps in `publish-check` xtask
 - Complete `Cargo.toml` metadata (description, license, repository, keywords) for crates.io readiness
 - Packaging excludes added to publishable crates
+
+### Fixed
+
+- `publish-preflight` now runs all `cargo package` steps before reporting failures
 
 ## [0.3.0] - 2026-02-17
 

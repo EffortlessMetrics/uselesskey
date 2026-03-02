@@ -326,6 +326,36 @@ Extension traits by feature:
 - `token`: `TokenFactoryExt`
 - `x509`: `X509FactoryExt`
 
+## Feature Matrix
+
+### Facade features (`uselesskey` crate)
+
+| Feature | Extension Trait | Algorithms / Outputs | Implies |
+|---------|----------------|---------------------|---------|
+| `rsa` *(default)* | `RsaFactoryExt` | RSA 2048/3072/4096 — PKCS#8, SPKI, PEM, DER | — |
+| `ecdsa` | `EcdsaFactoryExt` | P-256 (ES256), P-384 (ES384) — PKCS#8, SPKI | — |
+| `ed25519` | `Ed25519FactoryExt` | Ed25519 — PKCS#8, SPKI | — |
+| `hmac` | `HmacFactoryExt` | HS256, HS384, HS512 | — |
+| `pgp` | `PgpFactoryExt` | OpenPGP RSA 2048/3072, Ed25519 — armored, binary | — |
+| `token` | `TokenFactoryExt` | API key, bearer, OAuth access token | — |
+| `x509` | `X509FactoryExt` | Self-signed certs, cert chains, negative certs | `rsa` |
+| `jwk` | — | JWK/JWKS output for all enabled key types | — |
+| `all-keys` | — | *(bundle)* | `rsa` `ecdsa` `ed25519` `hmac` `pgp` |
+| `full` | — | *(everything)* | `all-keys` `token` `x509` `jwk` |
+
+### Adapter crate key-type support
+
+Each adapter crate has per-algorithm feature flags (`rsa`, `ecdsa`, `ed25519`, `hmac`) and an `all` convenience flag.
+
+| Adapter | RSA | ECDSA | Ed25519 | HMAC | X.509 / TLS | Extra features |
+|---------|:---:|:-----:|:-------:|:----:|:-----------:|----------------|
+| `uselesskey-jsonwebtoken` | ✓ | ✓ | ✓ | ✓ | — | — |
+| `uselesskey-ring` | ✓ | ✓ | ✓ | — | — | — |
+| `uselesskey-rustcrypto` | ✓ | ✓ | ✓ | ✓ | — | — |
+| `uselesskey-aws-lc-rs` | ✓ | ✓ | ✓ | — | — | `native` (enables aws-lc-rs dep) |
+| `uselesskey-rustls` | ✓ | ✓ | ✓ | — | ✓ | `tls-config`, `rustls-ring`, `rustls-aws-lc-rs` |
+| `uselesskey-tonic` | — | — | — | — | ✓ | — |
+
 ## Why This Crate?
 
 ### Order-independent determinism
