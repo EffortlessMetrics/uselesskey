@@ -1,3 +1,7 @@
+#![forbid(unsafe_code)]
+
+//! Stable token fixture specification shared across token-generation crates.
+
 /// Specification for token fixture generation.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum TokenSpec {
@@ -10,19 +14,19 @@ pub enum TokenSpec {
 }
 
 impl TokenSpec {
-    pub fn api_key() -> Self {
+    pub const fn api_key() -> Self {
         Self::ApiKey
     }
 
-    pub fn bearer() -> Self {
+    pub const fn bearer() -> Self {
         Self::Bearer
     }
 
-    pub fn oauth_access_token() -> Self {
+    pub const fn oauth_access_token() -> Self {
         Self::OAuthAccessToken
     }
 
-    pub fn kind_name(&self) -> &'static str {
+    pub const fn kind_name(&self) -> &'static str {
         match self {
             Self::ApiKey => "api_key",
             Self::Bearer => "bearer",
@@ -33,7 +37,7 @@ impl TokenSpec {
     /// Stable encoding for cache keys / deterministic derivation.
     ///
     /// If you change this, bump the derivation version in `uselesskey-core`.
-    pub fn stable_bytes(&self) -> [u8; 4] {
+    pub const fn stable_bytes(&self) -> [u8; 4] {
         match self {
             Self::ApiKey => [0, 0, 0, 1],
             Self::Bearer => [0, 0, 0, 2],

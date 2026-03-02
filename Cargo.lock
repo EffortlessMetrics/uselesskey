@@ -3803,7 +3803,12 @@ dependencies = [
  "serde_json",
  "uselesskey-core",
  "uselesskey-core-token",
+ "uselesskey-token-spec",
 ]
+
+[[package]]
+name = "uselesskey-token-spec"
+version = "0.3.0"
 
 [[package]]
 name = "uselesskey-tonic"
@@ -3820,12 +3825,14 @@ name = "uselesskey-x509"
 version = "0.3.0"
 dependencies = [
  "base64",
+ "insta",
  "proptest",
  "rand_chacha 0.3.1",
  "rcgen",
  "rsa",
  "rstest",
  "rustls-pki-types",
+ "serde",
  "time",
  "uselesskey-core",
  "uselesskey-core-x509",

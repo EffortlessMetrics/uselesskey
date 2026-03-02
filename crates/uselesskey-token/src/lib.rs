@@ -22,8 +22,7 @@
 //! assert!(!value.is_empty());
 //! ```
 
-mod spec;
 mod token;
 
-pub use spec::TokenSpec;
 pub use token::{DOMAIN_TOKEN_FIXTURE, TokenFactoryExt, TokenFixture};
+pub use uselesskey_token_spec::TokenSpec;
