@@ -39,6 +39,7 @@ ed25519-dalek = { workspace = true, optional = true }
 sha2 = { version = "0.10", features = ["oid"], optional = true }
 serde.workspace = true
 serde_json.workspace = true
+toml = "0.8"
 
 [features]
 # JWT integration tests
@@ -153,3 +154,7 @@ required-features = ["cross-adapter"]
 name = "determinism"
 path = "determinism.rs"
 required-features = ["determinism"]
+
+[[test]]
+name = "governance"
+path = "governance.rs"
