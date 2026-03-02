@@ -1506,6 +1506,7 @@ name = "uselesskey-fuzz"
 version = "0.0.0"
 dependencies = [
  "arbitrary",
+ "base64",
  "blake3",
  "ed25519-dalek",
  "libfuzzer-sys",
@@ -1523,6 +1524,7 @@ dependencies = [
  "uselesskey-core-jwk-shape",
  "uselesskey-core-jwks-order",
  "uselesskey-core-keypair-material",
+ "uselesskey-core-kid",
  "uselesskey-core-negative-pem",
  "uselesskey-core-token-shape",
  "uselesskey-core-x509-negative",

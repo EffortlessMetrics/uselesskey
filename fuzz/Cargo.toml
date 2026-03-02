@@ -22,6 +22,8 @@ uselesskey-core-keypair-material = { path = "../crates/uselesskey-core-keypair-m
 uselesskey-core-factory = { path = "../crates/uselesskey-core-factory" }
 uselesskey-core-hash = { path = "../crates/uselesskey-core-hash" }
 uselesskey-core-id = { path = "../crates/uselesskey-core-id" }
+uselesskey-core-kid = { path = "../crates/uselesskey-core-kid" }
+base64 = "0.22"
 uselesskey-core-negative-pem = { path = "../crates/uselesskey-core-negative-pem" }
 uselesskey-core-x509-negative = { path = "../crates/uselesskey-core-x509-negative" }
 uselesskey-core-x509-spec = { path = "../crates/uselesskey-core-x509-spec" }
@@ -248,5 +250,41 @@ doc = false
 [[bin]]
 name = "jwks_builder_ordering"
 path = "fuzz_targets/jwks_builder_ordering.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_token_shape"
+path = "fuzz_targets/fuzz_token_shape.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_negative_pem"
+path = "fuzz_targets/fuzz_negative_pem.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_negative_der"
+path = "fuzz_targets/fuzz_negative_der.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_x509_spec"
+path = "fuzz_targets/fuzz_x509_spec.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_kid_generation"
+path = "fuzz_targets/fuzz_kid_generation.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_factory_concurrent"
+path = "fuzz_targets/fuzz_factory_concurrent.rs"
 test = false
 doc = false
