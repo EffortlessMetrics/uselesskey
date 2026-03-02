@@ -3782,6 +3782,19 @@ dependencies = [
  "uselesskey-ecdsa",
  "uselesskey-ed25519",
  "uselesskey-rsa",
+ "uselesskey-rustls-der",
+ "uselesskey-x509",
+]
+
+[[package]]
+name = "uselesskey-rustls-der"
+version = "0.3.0"
+dependencies = [
+ "rustls-pki-types",
+ "uselesskey-core",
+ "uselesskey-ecdsa",
+ "uselesskey-ed25519",
+ "uselesskey-rsa",
  "uselesskey-x509",
 ]
 
@@ -3820,12 +3833,14 @@ name = "uselesskey-x509"
 version = "0.3.0"
 dependencies = [
  "base64",
+ "insta",
  "proptest",
  "rand_chacha 0.3.1",
  "rcgen",
  "rsa",
  "rstest",
  "rustls-pki-types",
+ "serde",
  "time",
  "uselesskey-core",
  "uselesskey-core-x509",

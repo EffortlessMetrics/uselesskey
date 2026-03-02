@@ -5,7 +5,7 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "rustls-pki-types and rustls config adapters for uselesskey X.509/key fixtures."
+description = "rustls config adapters for uselesskey fixtures with DER conversion re-exports."
 categories.workspace = true
 keywords = ["rustls", "tls", "fixtures", "testing", "adapter"]
 readme = "README.md"
@@ -15,24 +15,21 @@ documentation = "https://docs.rs/uselesskey-rustls"
 authors.workspace = true
 
 [dependencies]
-rustls-pki-types = "1"
+uselesskey-rustls-der.workspace = true
 rustls = { version = "0.23", default-features = false, features = ["std", "tls12"], optional = true }
 
-# Key type crates (all optional)
+# Needed directly for config trait impl targets
 uselesskey-x509 = { path = "../uselesskey-x509", version = "0.3.0", optional = true }
-uselesskey-rsa = { path = "../uselesskey-rsa", version = "0.3.0", optional = true }
-uselesskey-ecdsa = { path = "../uselesskey-ecdsa", version = "0.3.0", optional = true }
-uselesskey-ed25519 = { path = "../uselesskey-ed25519", version = "0.3.0", optional = true }
 
 [package.metadata.docs.rs]
 features = ["all", "tls-config", "rustls-ring"]
 
 [features]
 default = ["x509"]
-x509 = ["dep:uselesskey-x509"]
-rsa = ["dep:uselesskey-rsa"]
-ecdsa = ["dep:uselesskey-ecdsa"]
-ed25519 = ["dep:uselesskey-ed25519"]
+x509 = ["uselesskey-rustls-der/x509", "dep:uselesskey-x509"]
+rsa = ["uselesskey-rustls-der/rsa"]
+ecdsa = ["uselesskey-rustls-der/ecdsa"]
+ed25519 = ["uselesskey-rustls-der/ed25519"]
 all = ["x509", "rsa", "ecdsa", "ed25519"]
 server-config = ["dep:rustls", "x509"]
 client-config = ["dep:rustls", "x509"]
@@ -47,6 +44,7 @@ uselesskey-rsa = { path = "../uselesskey-rsa", version = "0.3.0" }
 uselesskey-ecdsa = { path = "../uselesskey-ecdsa", version = "0.3.0" }
 uselesskey-ed25519 = { path = "../uselesskey-ed25519", version = "0.3.0" }
 rustls = { version = "0.23", features = ["ring"] }
+rustls-pki-types = "1"
 hex = "0.4"
 serde.workspace = true
 insta.workspace = true

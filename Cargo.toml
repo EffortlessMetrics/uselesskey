@@ -35,6 +35,7 @@ members = [
   "crates/uselesskey-pgp",
   "crates/uselesskey-x509",
   "crates/uselesskey-jsonwebtoken",
+  "crates/uselesskey-rustls-der",
   "crates/uselesskey-rustls",
   "crates/uselesskey-tonic",
   "crates/uselesskey-ring",
@@ -83,6 +84,7 @@ uselesskey-core-x509-derive = { path = "crates/uselesskey-core-x509-derive", ver
 uselesskey-core-x509-negative = { path = "crates/uselesskey-core-x509-negative", version = "0.3.0" }
 uselesskey-core-x509-spec = { path = "crates/uselesskey-core-x509-spec", version = "0.3.0" }
 uselesskey-core-x509 = { path = "crates/uselesskey-core-x509", version = "0.3.0" }
+uselesskey-rustls-der = { path = "crates/uselesskey-rustls-der", version = "0.3.0" }
 
 # determinism / hashing
 blake3 = "1.8.3"
