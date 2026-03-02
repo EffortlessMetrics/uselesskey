@@ -14,13 +14,14 @@ uselesskey-aws-lc-rs = { path = "../uselesskey-aws-lc-rs", features = ["all"], o
 uselesskey-rustls = { path = "../uselesskey-rustls", features = ["tls-config", "all", "rustls-ring"], optional = true }
 uselesskey-x509 = { path = "../uselesskey-x509", optional = true }
 uselesskey-hmac = { path = "../uselesskey-hmac", optional = true }
+uselesskey-jsonwebtoken = { path = "../uselesskey-jsonwebtoken", features = ["all"], optional = true }
 aws-lc-rs = { workspace = true, optional = true }
 
 [dev-dependencies]
 uselesskey-core = { path = "../uselesskey-core" }
-uselesskey-rsa = { path = "../uselesskey-rsa" }
-uselesskey-ecdsa = { path = "../uselesskey-ecdsa" }
-uselesskey-ed25519 = { path = "../uselesskey-ed25519" }
+uselesskey-rsa = { path = "../uselesskey-rsa", features = ["jwk"] }
+uselesskey-ecdsa = { path = "../uselesskey-ecdsa", features = ["jwk"] }
+uselesskey-ed25519 = { path = "../uselesskey-ed25519", features = ["jwk"] }
 
 # Crypto backends for verification
 ring = { workspace = true }
@@ -31,10 +32,14 @@ sha2 = { version = "0.10", features = ["oid"] }
 signature = "2"
 hmac = "0.12"
 rustls = { workspace = true }
+jsonwebtoken = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
 
 [features]
 default = []
 cross-signing = ["dep:uselesskey-ring", "dep:uselesskey-rustcrypto", "dep:uselesskey-hmac"]
 cross-tls = ["dep:uselesskey-x509", "dep:uselesskey-rustls"]
+jwt-interop = ["dep:uselesskey-jsonwebtoken"]
 aws-lc-rs-interop = ["dep:uselesskey-aws-lc-rs", "dep:aws-lc-rs", "uselesskey-rustls?/rustls-aws-lc-rs"]
-all = ["cross-signing", "cross-tls", "aws-lc-rs-interop"]
+all = ["cross-signing", "cross-tls", "jwt-interop", "aws-lc-rs-interop"]
