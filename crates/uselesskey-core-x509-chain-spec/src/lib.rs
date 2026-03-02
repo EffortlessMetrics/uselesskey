@@ -1,4 +1,6 @@
-//! X.509 certificate chain specification.
+#![forbid(unsafe_code)]
+
+//! X.509 certificate chain specification and stable encoding helpers.
 
 /// Specification for generating a three-level X.509 certificate chain
 /// (root CA -> intermediate CA -> leaf).

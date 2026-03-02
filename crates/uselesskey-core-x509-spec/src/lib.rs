@@ -38,8 +38,7 @@
 //! assert!(ca.key_usage.key_cert_sign);
 //! ```
 
-mod chain_spec;
 mod spec;
 
-pub use chain_spec::ChainSpec;
 pub use spec::{KeyUsage, NotBeforeOffset, X509Spec};
+pub use uselesskey_core_x509_chain_spec::ChainSpec;
