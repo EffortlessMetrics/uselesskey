@@ -1,12 +1,12 @@
 # uselesskey-core-negative
 
-Negative fixture builders for DER corruption and DER-oriented compatibility APIs.
+Compatibility façade for negative fixture builders.
 
 ## Purpose
 
-- Truncate DER vectors and flip bytes at deterministic offsets.
-- Provide deterministic DER mutation helpers used for parser-failure fixtures.
-- Re-export PEM corruption helpers for existing `uselesskey_core_negative` callers.
+- Preserve the existing `uselesskey_core_negative` import path.
+- Re-export DER helpers from `uselesskey-core-negative-der`.
+- Re-export PEM helpers from `uselesskey-core-negative-pem`.
 
-This crate intentionally only manipulates byte/text shape and does not parse or
-validate cryptographic semantics.
+This crate intentionally contains no fixture-generation logic directly; logic
+lives in focused SRP microcrates.
