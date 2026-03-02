@@ -1,6 +1,11 @@
 #![forbid(unsafe_code)]
 
 //! Stable token fixture specification shared across token-generation crates.
+//!
+//! Defines [`TokenSpec`], the enum of supported token shapes (API key,
+//! bearer, OAuth/JWT-shape) used by `uselesskey-token` and related crates.
+//! Kept in a separate micro-crate so that spec types can be depended on
+//! without pulling in the full token generation machinery.
 
 /// Specification for token fixture generation.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
