@@ -369,6 +369,9 @@ struct UselessWorld {
     // JWT recorded token for stability tests
     #[cfg(feature = "uk-jwt")]
     jwt_recorded_token: Option<String>,
+
+    // Generic DER recording for determinism-across-instances tests
+    recorded_der: Option<Vec<u8>>,
 }
 
 #[cfg(feature = "uk-jwt")]
@@ -5937,6 +5940,241 @@ fn rustcrypto_signature_identical_to_recorded(world: &mut UselessWorld) {
         .as_ref()
         .expect("recorded signature not set");
     assert_eq!(current, recorded, "signatures should be identical");
+}
+
+// =============================================================================
+// Additional HMAC steps
+// =============================================================================
+
+#[when(regex = r#"^I generate another HMAC HS256 secret for label "([^"]+)"$"#)]
+fn gen_hmac_hs256_second(world: &mut UselessWorld, label: String) {
+    let fx = world.factory.as_ref().expect("factory not set");
+    let secret = fx.hmac(&label, HmacSpec::hs256());
+    world.hmac_secret_2 = Some(secret.secret_bytes().to_vec());
+    world.hmac = Some(secret);
+}
+
+// =============================================================================
+// Additional token assertion steps
+// =============================================================================
+
+#[cfg(feature = "uk-token")]
+#[then("the token value should contain only printable ASCII")]
+fn token_value_printable_ascii(world: &mut UselessWorld) {
+    let value = world.token_value_1.as_ref().expect("token_value_1 not set");
+    assert!(
+        value.chars().all(|c| c.is_ascii_graphic()),
+        "token value should contain only printable ASCII characters, got: {value}"
+    );
+}
+
+#[cfg(feature = "uk-token")]
+#[then("the OAuth payload should contain an exp claim")]
+fn oauth_payload_has_exp(world: &mut UselessWorld) {
+    let value = world.token_value_1.as_ref().expect("token_value_1 not set");
+    let payload = value.split('.').nth(1).expect("payload segment");
+    let decoded = URL_SAFE_NO_PAD
+        .decode(payload)
+        .expect("payload base64url decode");
+    let json: Value = serde_json::from_slice(&decoded).expect("payload JSON parse");
+    assert!(
+        json.get("exp").is_some(),
+        "OAuth payload should contain exp claim"
+    );
+}
+
+#[cfg(feature = "uk-token")]
+#[then("the OAuth payload should contain a scope claim")]
+fn oauth_payload_has_scope(world: &mut UselessWorld) {
+    let value = world.token_value_1.as_ref().expect("token_value_1 not set");
+    let payload = value.split('.').nth(1).expect("payload segment");
+    let decoded = URL_SAFE_NO_PAD
+        .decode(payload)
+        .expect("payload base64url decode");
+    let json: Value = serde_json::from_slice(&decoded).expect("payload JSON parse");
+    assert!(
+        json.get("scope").is_some(),
+        "OAuth payload should contain scope claim"
+    );
+}
+
+// =============================================================================
+// Additional RSA assertion steps
+// =============================================================================
+
+#[then("the PKCS8 PEM should differ")]
+fn pem_should_differ(world: &mut UselessWorld) {
+    assert_ne!(
+        world.pkcs8_pem_1.as_deref(),
+        world.pkcs8_pem_2.as_deref(),
+        "PKCS8 PEMs should differ"
+    );
+}
+
+// =============================================================================
+// X.509 negative variant recording steps
+// =============================================================================
+
+#[when("I record the expired X.509 certificate DER")]
+fn record_expired_x509_der(world: &mut UselessWorld) {
+    let expired = world.x509_expired.as_ref().expect("x509_expired not set");
+    world.recorded_der = Some(expired.cert_der().to_vec());
+}
+
+#[then("the expired X.509 certificate DER should match the recorded one")]
+fn expired_x509_der_matches_recorded(world: &mut UselessWorld) {
+    let expired = world.x509_expired.as_ref().expect("x509_expired not set");
+    let recorded = world.recorded_der.as_ref().expect("recorded_der not set");
+    assert_eq!(
+        expired.cert_der(),
+        recorded.as_slice(),
+        "expired X.509 DER should match recorded"
+    );
+}
+
+#[when("I record the not-yet-valid X.509 certificate DER")]
+fn record_not_yet_valid_x509_der(world: &mut UselessWorld) {
+    let nyv = world
+        .x509_not_yet_valid
+        .as_ref()
+        .expect("x509_not_yet_valid not set");
+    world.recorded_der = Some(nyv.cert_der().to_vec());
+}
+
+#[then("the not-yet-valid X.509 certificate DER should match the recorded one")]
+fn not_yet_valid_x509_der_matches_recorded(world: &mut UselessWorld) {
+    let nyv = world
+        .x509_not_yet_valid
+        .as_ref()
+        .expect("x509_not_yet_valid not set");
+    let recorded = world.recorded_der.as_ref().expect("recorded_der not set");
+    assert_eq!(
+        nyv.cert_der(),
+        recorded.as_slice(),
+        "not-yet-valid X.509 DER should match recorded"
+    );
+}
+
+#[when("I record the wrong-key-usage X.509 certificate DER")]
+fn record_wrong_key_usage_x509_der(world: &mut UselessWorld) {
+    let wku = world
+        .x509_wrong_key_usage
+        .as_ref()
+        .expect("x509_wrong_key_usage not set");
+    world.recorded_der = Some(wku.cert_der().to_vec());
+}
+
+#[then("the wrong-key-usage X.509 certificate DER should match the recorded one")]
+fn wrong_key_usage_x509_der_matches_recorded(world: &mut UselessWorld) {
+    let wku = world
+        .x509_wrong_key_usage
+        .as_ref()
+        .expect("x509_wrong_key_usage not set");
+    let recorded = world.recorded_der.as_ref().expect("recorded_der not set");
+    assert_eq!(
+        wku.cert_der(),
+        recorded.as_slice(),
+        "wrong-key-usage X.509 DER should match recorded"
+    );
+}
+
+#[then("the not-yet-valid X.509 certificate DER should differ from the expired one")]
+fn not_yet_valid_differs_from_expired(world: &mut UselessWorld) {
+    let nyv = world
+        .x509_not_yet_valid
+        .as_ref()
+        .expect("x509_not_yet_valid not set");
+    let recorded = world.recorded_der.as_ref().expect("recorded_der not set");
+    assert_ne!(
+        nyv.cert_der(),
+        recorded.as_slice(),
+        "not-yet-valid and expired X.509 DER should differ"
+    );
+}
+
+#[then("the wrong-key-usage X.509 certificate DER should differ from the expired one")]
+fn wrong_key_usage_differs_from_expired(world: &mut UselessWorld) {
+    let wku = world
+        .x509_wrong_key_usage
+        .as_ref()
+        .expect("x509_wrong_key_usage not set");
+    let recorded = world.recorded_der.as_ref().expect("recorded_der not set");
+    assert_ne!(
+        wku.cert_der(),
+        recorded.as_slice(),
+        "wrong-key-usage and expired X.509 DER should differ"
+    );
+}
+
+// --- Chain negative variant recording steps ---
+
+#[when("I record the unknown CA root DER")]
+fn record_unknown_ca_root_der(world: &mut UselessWorld) {
+    let chain = world
+        .x509_chain_unknown_ca
+        .as_ref()
+        .expect("x509_chain_unknown_ca not set");
+    world.recorded_der = Some(chain.root_cert_der().to_vec());
+}
+
+#[then("the unknown CA root DER should match the recorded one")]
+fn unknown_ca_root_der_matches_recorded(world: &mut UselessWorld) {
+    let chain = world
+        .x509_chain_unknown_ca
+        .as_ref()
+        .expect("x509_chain_unknown_ca not set");
+    let recorded = world.recorded_der.as_ref().expect("recorded_der not set");
+    assert_eq!(
+        chain.root_cert_der(),
+        recorded.as_slice(),
+        "unknown CA root DER should match recorded"
+    );
+}
+
+#[when("I record the revoked leaf DER")]
+fn record_revoked_leaf_der(world: &mut UselessWorld) {
+    let chain = world
+        .x509_chain_revoked_leaf
+        .as_ref()
+        .expect("x509_chain_revoked_leaf not set");
+    world.recorded_der = Some(chain.leaf_cert_der().to_vec());
+}
+
+#[then("the revoked leaf DER should match the recorded one")]
+fn revoked_leaf_der_matches_recorded(world: &mut UselessWorld) {
+    let chain = world
+        .x509_chain_revoked_leaf
+        .as_ref()
+        .expect("x509_chain_revoked_leaf not set");
+    let recorded = world.recorded_der.as_ref().expect("recorded_der not set");
+    assert_eq!(
+        chain.leaf_cert_der(),
+        recorded.as_slice(),
+        "revoked leaf DER should match recorded"
+    );
+}
+
+#[when("I record the hostname mismatch leaf DER")]
+fn record_hostname_mismatch_leaf_der(world: &mut UselessWorld) {
+    let chain = world
+        .x509_chain_hostname_mismatch
+        .as_ref()
+        .expect("x509_chain_hostname_mismatch not set");
+    world.recorded_der = Some(chain.leaf_cert_der().to_vec());
+}
+
+#[then("the hostname mismatch leaf DER should match the recorded one")]
+fn hostname_mismatch_leaf_der_matches_recorded(world: &mut UselessWorld) {
+    let chain = world
+        .x509_chain_hostname_mismatch
+        .as_ref()
+        .expect("x509_chain_hostname_mismatch not set");
+    let recorded = world.recorded_der.as_ref().expect("recorded_der not set");
+    assert_eq!(
+        chain.leaf_cert_der(),
+        recorded.as_slice(),
+        "hostname mismatch leaf DER should match recorded"
+    );
 }
 
 /// Execute the BDD suite from the selected test harness.
