@@ -168,6 +168,10 @@ name = "governance"
 path = "governance.rs"
 
 [[test]]
+name = "no_blob_policy"
+path = "no_blob_policy.rs"
+
+[[test]]
 name = "concurrency"
 path = "concurrency.rs"
 required-features = ["concurrency"]
