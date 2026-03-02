@@ -111,3 +111,183 @@ fn chain_spec_not_before_offsets() {
     let bytes = spec.stable_bytes();
     assert!(!bytes.is_empty());
 }
+
+// ---------------------------------------------------------------------------
+// Trait implementations — Clone, Debug, PartialEq, Hash
+// ---------------------------------------------------------------------------
+
+#[test]
+fn x509_spec_clone_equals_original() {
+    let spec = X509Spec::self_signed("clone-test")
+        .with_validity_days(90)
+        .with_sans(vec!["a.test".into()]);
+    let cloned = spec.clone();
+    assert_eq!(spec, cloned);
+    assert_eq!(spec.stable_bytes(), cloned.stable_bytes());
+}
+
+#[test]
+fn x509_spec_debug_contains_type_name() {
+    let spec = X509Spec::self_signed("debug-test");
+    let dbg = format!("{spec:?}");
+    assert!(dbg.contains("X509Spec"));
+    assert!(dbg.contains("debug-test"));
+}
+
+#[test]
+fn x509_spec_ne_for_different_cn() {
+    let a = X509Spec::self_signed("alpha");
+    let b = X509Spec::self_signed("beta");
+    assert_ne!(a, b);
+}
+
+#[test]
+fn x509_spec_hash_equal_for_equal_specs() {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+
+    let a = X509Spec::self_signed("hash-test");
+    let b = X509Spec::self_signed("hash-test");
+
+    let mut ha = DefaultHasher::new();
+    a.hash(&mut ha);
+    let mut hb = DefaultHasher::new();
+    b.hash(&mut hb);
+    assert_eq!(ha.finish(), hb.finish());
+}
+
+#[test]
+fn chain_spec_clone_equals_original() {
+    let spec = ChainSpec::new("clone.example.com")
+        .with_rsa_bits(4096)
+        .with_sans(vec!["a.com".into()]);
+    let cloned = spec.clone();
+    assert_eq!(spec, cloned);
+    assert_eq!(spec.stable_bytes(), cloned.stable_bytes());
+}
+
+#[test]
+fn chain_spec_debug_contains_type_name() {
+    let spec = ChainSpec::new("debug.example.com");
+    let dbg = format!("{spec:?}");
+    assert!(dbg.contains("ChainSpec"));
+    assert!(dbg.contains("debug.example.com"));
+}
+
+#[test]
+fn chain_spec_ne_for_different_leaf_cn() {
+    let a = ChainSpec::new("alpha.example.com");
+    let b = ChainSpec::new("beta.example.com");
+    assert_ne!(a, b);
+}
+
+#[test]
+fn chain_spec_hash_equal_for_equal_specs() {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+
+    let a = ChainSpec::new("hash.example.com");
+    let b = ChainSpec::new("hash.example.com");
+
+    let mut ha = DefaultHasher::new();
+    a.hash(&mut ha);
+    let mut hb = DefaultHasher::new();
+    b.hash(&mut hb);
+    assert_eq!(ha.finish(), hb.finish());
+}
+
+#[test]
+fn key_usage_clone_equals_original() {
+    let leaf = KeyUsage::leaf();
+    let cloned = leaf;
+    assert_eq!(leaf, cloned);
+
+    let ca = KeyUsage::ca();
+    let cloned = ca;
+    assert_eq!(ca, cloned);
+}
+
+#[test]
+fn key_usage_debug_contains_type_name() {
+    let ku = KeyUsage::leaf();
+    let dbg = format!("{ku:?}");
+    assert!(dbg.contains("KeyUsage"));
+}
+
+#[test]
+fn key_usage_hash_equal_for_equal_values() {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+
+    let a = KeyUsage::leaf();
+    let b = KeyUsage::leaf();
+
+    let mut ha = DefaultHasher::new();
+    a.hash(&mut ha);
+    let mut hb = DefaultHasher::new();
+    b.hash(&mut hb);
+    assert_eq!(ha.finish(), hb.finish());
+}
+
+#[test]
+fn not_before_offset_clone_equals_original() {
+    let ago = NotBeforeOffset::DaysAgo(5);
+    let cloned = ago;
+    assert_eq!(ago, cloned);
+
+    let future = NotBeforeOffset::DaysFromNow(10);
+    let cloned = future;
+    assert_eq!(future, cloned);
+}
+
+#[test]
+fn not_before_offset_debug_contains_variant() {
+    let ago = NotBeforeOffset::DaysAgo(5);
+    let dbg = format!("{ago:?}");
+    assert!(dbg.contains("DaysAgo"));
+    assert!(dbg.contains("5"));
+
+    let future = NotBeforeOffset::DaysFromNow(10);
+    let dbg = format!("{future:?}");
+    assert!(dbg.contains("DaysFromNow"));
+    assert!(dbg.contains("10"));
+}
+
+#[test]
+fn not_before_offset_ne_across_variants() {
+    assert_ne!(NotBeforeOffset::DaysAgo(1), NotBeforeOffset::DaysFromNow(1));
+}
+
+#[test]
+fn not_before_offset_ne_different_values() {
+    assert_ne!(NotBeforeOffset::DaysAgo(1), NotBeforeOffset::DaysAgo(2));
+    assert_ne!(
+        NotBeforeOffset::DaysFromNow(1),
+        NotBeforeOffset::DaysFromNow(2)
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Fingerprint stability — snapshot values
+// ---------------------------------------------------------------------------
+
+#[test]
+fn x509_spec_stable_bytes_starts_with_version_4() {
+    let spec = X509Spec::self_signed("test");
+    assert_eq!(spec.stable_bytes()[0], 4);
+}
+
+#[test]
+fn chain_spec_stable_bytes_starts_with_version_2() {
+    let spec = ChainSpec::new("test.example.com");
+    assert_eq!(spec.stable_bytes()[0], 2);
+}
+
+#[test]
+fn x509_spec_stable_bytes_snapshot() {
+    let spec = X509Spec::self_signed("snapshot.test").with_validity_days(365);
+    let bytes = spec.stable_bytes();
+    let again = spec.stable_bytes();
+    assert_eq!(bytes, again);
+    assert!(bytes.len() > 10);
+}
