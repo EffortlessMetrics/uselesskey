@@ -22,20 +22,30 @@ pub type ArtifactDomain = &'static str;
 pub struct DerivationVersion(pub u16);
 
 impl DerivationVersion {
+    /// The initial (and currently only) derivation scheme version.
     pub const V1: Self = Self(1);
 }
 
 /// Identifier used for deterministic artifact cache entries.
+///
+/// Each field contributes to the derived seed, so two artifacts with the
+/// same `ArtifactId` are guaranteed to be identical across runs.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, PartialOrd, Ord)]
 pub struct ArtifactId {
+    /// Namespace that separates unrelated fixture types (e.g. `"rsa"`, `"ecdsa"`).
     pub domain: ArtifactDomain,
+    /// User-supplied label for this fixture (e.g. `"issuer"`, `"audience"`).
     pub label: String,
+    /// BLAKE3 hash of the spec's stable byte representation.
     pub spec_fingerprint: [u8; 32],
+    /// Variant tag (e.g. `"default"`, `"mismatch"`, `"corrupt:bad-header"`).
     pub variant: String,
+    /// Which derivation algorithm version to use.
     pub derivation_version: DerivationVersion,
 }
 
 impl ArtifactId {
+    /// Create a new artifact identifier by hashing `spec_bytes` into a fingerprint.
     pub fn new(
         domain: ArtifactDomain,
         label: impl Into<String>,

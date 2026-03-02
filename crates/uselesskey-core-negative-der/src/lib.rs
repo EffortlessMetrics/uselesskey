@@ -14,6 +14,7 @@ use alloc::vec::Vec;
 
 use uselesskey_core_hash::hash32;
 
+/// Truncate `der` to at most `len` bytes, returning the original if already shorter.
 pub fn truncate_der(der: &[u8], len: usize) -> Vec<u8> {
     if len >= der.len() {
         return der.to_vec();
@@ -21,6 +22,7 @@ pub fn truncate_der(der: &[u8], len: usize) -> Vec<u8> {
     der[..len].to_vec()
 }
 
+/// XOR the byte at `offset` with `0x01`, returning the original if `offset` is out of range.
 pub fn flip_byte(der: &[u8], offset: usize) -> Vec<u8> {
     if offset >= der.len() {
         return der.to_vec();
@@ -31,6 +33,9 @@ pub fn flip_byte(der: &[u8], offset: usize) -> Vec<u8> {
     out
 }
 
+/// Choose a corruption strategy deterministically from `variant` and apply it to `der`.
+///
+/// The same `(der, variant)` pair always produces the same corrupted output.
 pub fn corrupt_der_deterministic(der: &[u8], variant: &str) -> Vec<u8> {
     let digest = hash32(variant.as_bytes());
     let bytes = digest.as_bytes();

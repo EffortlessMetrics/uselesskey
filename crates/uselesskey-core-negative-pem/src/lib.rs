@@ -45,13 +45,22 @@ use uselesskey_core_hash::hash32;
 /// Strategies for corrupting PEM-encoded data.
 #[derive(Clone, Copy, Debug)]
 pub enum CorruptPem {
+    /// Replace the `-----BEGIN …-----` line with an invalid header.
     BadHeader,
+    /// Replace the `-----END …-----` line with an invalid footer.
     BadFooter,
+    /// Inject a non-base64 line into the body so decoders reject the payload.
     BadBase64,
-    Truncate { bytes: usize },
+    /// Keep only the first `bytes` characters of the PEM string.
+    Truncate {
+        /// Maximum number of characters to keep.
+        bytes: usize,
+    },
+    /// Insert a blank line after the header, breaking strict PEM parsers.
     ExtraBlankLine,
 }
 
+/// Apply a specific [`CorruptPem`] corruption strategy to the given PEM string.
 pub fn corrupt_pem(pem: &str, how: CorruptPem) -> String {
     match how {
         CorruptPem::BadHeader => replace_first_line(pem, "-----BEGIN CORRUPTED KEY-----"),
@@ -62,6 +71,9 @@ pub fn corrupt_pem(pem: &str, how: CorruptPem) -> String {
     }
 }
 
+/// Choose a corruption strategy deterministically from `variant` and apply it to `pem`.
+///
+/// The same `(pem, variant)` pair always produces the same corrupted output.
 pub fn corrupt_pem_deterministic(pem: &str, variant: &str) -> String {
     let digest = hash32(variant.as_bytes());
     let bytes = digest.as_bytes();

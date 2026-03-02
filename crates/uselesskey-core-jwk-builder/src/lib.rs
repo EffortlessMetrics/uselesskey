@@ -9,6 +9,10 @@
 use uselesskey_core_jwk_shape::{AnyJwk, Jwks, PrivateJwk, PublicJwk};
 use uselesskey_core_jwks_order::{HasKid, KidSorted};
 
+/// Incrementally assembles a [`Jwks`] set with deterministic `kid`-based ordering.
+///
+/// Keys are sorted lexicographically by `kid`; duplicate `kid` values
+/// preserve insertion order.
 #[derive(Clone, Default)]
 pub struct JwksBuilder {
     entries: KidSorted<OrderedJwk>,
@@ -24,38 +28,46 @@ impl HasKid for OrderedJwk {
 }
 
 impl JwksBuilder {
+    /// Create an empty builder.
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Append a public JWK and return `self` for chaining.
     pub fn add_public(mut self, jwk: PublicJwk) -> Self {
         self.push_public(jwk);
         self
     }
 
+    /// Append a private JWK and return `self` for chaining.
     pub fn add_private(mut self, jwk: PrivateJwk) -> Self {
         self.push_private(jwk);
         self
     }
 
+    /// Append any JWK variant and return `self` for chaining.
     pub fn add_any(mut self, jwk: AnyJwk) -> Self {
         self.push_any(jwk);
         self
     }
 
+    /// Append a public JWK by mutable reference.
     pub fn push_public(&mut self, jwk: PublicJwk) -> &mut Self {
         self.push_any(AnyJwk::from(jwk))
     }
 
+    /// Append a private JWK by mutable reference.
     pub fn push_private(&mut self, jwk: PrivateJwk) -> &mut Self {
         self.push_any(AnyJwk::from(jwk))
     }
 
+    /// Append any JWK variant by mutable reference.
     pub fn push_any(&mut self, jwk: AnyJwk) -> &mut Self {
         self.entries.push(OrderedJwk(jwk));
         self
     }
 
+    /// Consume the builder and return the sorted [`Jwks`] set.
     pub fn build(self) -> Jwks {
         Jwks {
             keys: self.entries.build().into_iter().map(|jwk| jwk.0).collect(),
