@@ -580,9 +580,8 @@ mod corrupt_pem_parsing {
         // The pem crate should still parse it (it parses any BEGIN/END pair),
         // but the tag won't match "PRIVATE KEY"
         let parsed = pem::parse(bad);
-        match parsed {
-            Ok(p) => assert_ne!(p.tag(), "PRIVATE KEY"),
-            Err(_) => {} // Also acceptable: parser rejects it
+        if let Ok(p) = parsed {
+            assert_ne!(p.tag(), "PRIVATE KEY");
         }
     }
 
@@ -619,9 +618,8 @@ mod corrupt_pem_parsing {
         let kp = fx().ecdsa("pem-parse-ecdsa", EcdsaSpec::es256());
         let bad = kp.private_key_pkcs8_pem_corrupt(CorruptPem::BadHeader);
         let parsed = pem::parse(&bad);
-        match parsed {
-            Ok(p) => assert_ne!(p.tag(), "PRIVATE KEY"),
-            Err(_) => {}
+        if let Ok(p) = parsed {
+            assert_ne!(p.tag(), "PRIVATE KEY");
         }
     }
 
