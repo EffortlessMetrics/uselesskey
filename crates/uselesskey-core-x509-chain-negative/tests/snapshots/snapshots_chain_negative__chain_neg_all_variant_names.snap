@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-core-x509-chain-negative/tests/snapshots_chain_negative.rs
+expression: result
+---
+variants:
+  - "hostname_mismatch:wrong.example.com"
+  - unknown_ca
+  - expired_leaf
+  - expired_intermediate
+  - revoked_leaf

@@ -18,8 +18,10 @@ authors.workspace = true
 tempfile.workspace = true
 
 [dev-dependencies]
+insta.workspace = true
 proptest.workspace = true
 rstest.workspace = true
+serde.workspace = true
 
 [package.metadata.docs.rs]
 all-features = true

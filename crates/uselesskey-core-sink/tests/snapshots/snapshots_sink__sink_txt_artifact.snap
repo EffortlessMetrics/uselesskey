@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-core-sink/tests/snapshots_sink.rs
+expression: result
+---
+description: plain text artifact
+suffix: ".txt"
+content_len: 11
+path_exists: true
+has_expected_extension: true
+debug_contains_type_name: true

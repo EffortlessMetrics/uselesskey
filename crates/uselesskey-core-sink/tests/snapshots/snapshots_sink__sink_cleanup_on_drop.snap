@@ -1,0 +1,6 @@
+---
+source: crates/uselesskey-core-sink/tests/snapshots_sink.rs
+expression: result
+---
+exists_before_drop: true
+exists_after_drop: false

@@ -1,0 +1,22 @@
+---
+source: crates/uselesskey-core-x509-spec/tests/snapshots_x509_spec.rs
+expression: result
+---
+subject_cn: myapp.example.com
+issuer_cn: myapp.example.com
+validity_days: 90
+is_ca: false
+rsa_bits: 4096
+sans_count: 2
+not_before_offset: DaysAgo(1)
+key_usage:
+  key_cert_sign: false
+  crl_sign: false
+  digital_signature: true
+  key_encipherment: true
+  stable_bytes:
+    - 0
+    - 0
+    - 1
+    - 1
+stable_bytes_len: 105

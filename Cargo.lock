@@ -3699,8 +3699,10 @@ dependencies = [
 name = "uselesskey-core-negative"
 version = "0.3.0"
 dependencies = [
+ "insta",
  "proptest",
  "rstest",
+ "serde",
  "uselesskey-core-negative-der",
  "uselesskey-core-negative-pem",
 ]
@@ -3751,8 +3753,10 @@ dependencies = [
 name = "uselesskey-core-sink"
 version = "0.3.0"
 dependencies = [
+ "insta",
  "proptest",
  "rstest",
+ "serde",
  "tempfile",
 ]
 
@@ -3798,8 +3802,10 @@ dependencies = [
 name = "uselesskey-core-x509-chain-negative"
 version = "0.3.0"
 dependencies = [
+ "insta",
  "proptest",
  "rstest",
+ "serde",
  "uselesskey-core-x509-spec",
 ]
 
@@ -3828,8 +3834,10 @@ dependencies = [
 name = "uselesskey-core-x509-spec"
 version = "0.3.0"
 dependencies = [
+ "insta",
  "proptest",
  "rstest",
+ "serde",
 ]
 
 [[package]]

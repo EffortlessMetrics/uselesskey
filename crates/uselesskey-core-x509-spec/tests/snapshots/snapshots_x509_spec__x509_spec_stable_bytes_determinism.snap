@@ -1,0 +1,19 @@
+---
+source: crates/uselesskey-core-x509-spec/tests/snapshots_x509_spec.rs
+expression: results
+---
+- spec_description: default
+  stable_bytes_len: 63
+  is_deterministic: true
+- spec_description: self_signed_leaf
+  stable_bytes_len: 47
+  is_deterministic: true
+- spec_description: ca
+  stable_bytes_len: 35
+  is_deterministic: true
+- spec_description: with_sans
+  stable_bytes_len: 63
+  is_deterministic: true
+- spec_description: future_not_before
+  stable_bytes_len: 51
+  is_deterministic: true

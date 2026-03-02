@@ -1,0 +1,24 @@
+---
+source: crates/uselesskey-core-x509-spec/tests/snapshots_x509_spec.rs
+expression: result
+---
+leaf:
+  key_cert_sign: false
+  crl_sign: false
+  digital_signature: true
+  key_encipherment: true
+  stable_bytes:
+    - 0
+    - 0
+    - 1
+    - 1
+ca:
+  key_cert_sign: true
+  crl_sign: true
+  digital_signature: true
+  key_encipherment: false
+  stable_bytes:
+    - 1
+    - 1
+    - 1
+    - 0

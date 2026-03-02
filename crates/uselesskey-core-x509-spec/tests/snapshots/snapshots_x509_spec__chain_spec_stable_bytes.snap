@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-core-x509-spec/tests/snapshots_x509_spec.rs
+expression: result
+---
+description: "ChainSpec::new default"
+stable_bytes_len: 123
+is_deterministic: true
