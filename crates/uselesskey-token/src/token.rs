@@ -11,6 +11,20 @@ use crate::TokenSpec;
 /// Keep this stable: changing it changes deterministic outputs.
 pub const DOMAIN_TOKEN_FIXTURE: &str = "uselesskey:token:fixture";
 
+/// A token fixture with a generated value.
+///
+/// Created via [`TokenFactoryExt::token()`]. Provides access to
+/// the generated token value and an HTTP `Authorization` header.
+///
+/// # Examples
+///
+/// ```
+/// # use uselesskey_core::{Factory, Seed};
+/// # use uselesskey_token::{TokenFactoryExt, TokenSpec};
+/// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+/// let tok = fx.token("api-key", TokenSpec::api_key());
+/// assert!(tok.value().starts_with("uk_test_"));
+/// ```
 #[derive(Clone)]
 pub struct TokenFixture {
     factory: Factory,
@@ -34,7 +48,36 @@ impl fmt::Debug for TokenFixture {
 
 /// Extension trait to hang token helpers off the core [`Factory`].
 pub trait TokenFactoryExt {
+    /// Generate (or retrieve from cache) a token fixture.
+    ///
+    /// The `label` identifies this token within your test suite.
+    /// In deterministic mode, `seed + label + spec` always produces the same token.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_token::{TokenFactoryExt, TokenSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let tok = fx.token("billing", TokenSpec::bearer());
+    /// assert!(!tok.value().is_empty());
+    /// ```
     fn token(&self, label: impl AsRef<str>, spec: TokenSpec) -> TokenFixture;
+
+    /// Generate a token fixture with an explicit variant.
+    ///
+    /// Different variants for the same `(label, spec)` produce different tokens.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_token::{TokenFactoryExt, TokenSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let good = fx.token("svc", TokenSpec::api_key());
+    /// let alt = fx.token_with_variant("svc", TokenSpec::api_key(), "alt");
+    /// assert_ne!(good.value(), alt.value());
+    /// ```
     fn token_with_variant(
         &self,
         label: impl AsRef<str>,
@@ -84,6 +127,17 @@ impl TokenFixture {
     }
 
     /// Access the token value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_token::{TokenFactoryExt, TokenSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let tok = fx.token("svc", TokenSpec::api_key());
+    /// let val = tok.value();
+    /// assert!(val.starts_with("uk_test_"));
+    /// ```
     pub fn value(&self) -> &str {
         &self.inner.value
     }
@@ -92,6 +146,20 @@ impl TokenFixture {
     ///
     /// - API keys use `ApiKey <token>`
     /// - Bearer and OAuth access tokens use `Bearer <token>`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_token::{TokenFactoryExt, TokenSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    ///
+    /// let bearer = fx.token("svc", TokenSpec::bearer());
+    /// assert!(bearer.authorization_header().starts_with("Bearer "));
+    ///
+    /// let api = fx.token("svc", TokenSpec::api_key());
+    /// assert!(api.authorization_header().starts_with("ApiKey "));
+    /// ```
     pub fn authorization_header(&self) -> String {
         let scheme = authorization_scheme(token_kind(self.spec));
         format!("{scheme} {}", self.value())

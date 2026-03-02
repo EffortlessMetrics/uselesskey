@@ -118,21 +118,65 @@ impl RsaKeyPair {
     }
 
     /// PKCS#8 DER-encoded private key bytes.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let kp = fx.rsa("svc", RsaSpec::rs256());
+    /// let der = kp.private_key_pkcs8_der();
+    /// assert!(!der.is_empty());
+    /// ```
     pub fn private_key_pkcs8_der(&self) -> &[u8] {
         self.inner.material.private_key_pkcs8_der()
     }
 
     /// PKCS#8 PEM-encoded private key.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let kp = fx.rsa("svc", RsaSpec::rs256());
+    /// let pem = kp.private_key_pkcs8_pem();
+    /// assert!(pem.starts_with("-----BEGIN PRIVATE KEY-----"));
+    /// ```
     pub fn private_key_pkcs8_pem(&self) -> &str {
         self.inner.material.private_key_pkcs8_pem()
     }
 
     /// SPKI DER-encoded public key bytes.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let kp = fx.rsa("svc", RsaSpec::rs256());
+    /// let der = kp.public_key_spki_der();
+    /// assert!(!der.is_empty());
+    /// ```
     pub fn public_key_spki_der(&self) -> &[u8] {
         self.inner.material.public_key_spki_der()
     }
 
     /// SPKI PEM-encoded public key.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let kp = fx.rsa("svc", RsaSpec::rs256());
+    /// let pem = kp.public_key_spki_pem();
+    /// assert!(pem.starts_with("-----BEGIN PUBLIC KEY-----"));
+    /// ```
     pub fn public_key_spki_pem(&self) -> &str {
         self.inner.material.public_key_spki_pem()
     }
@@ -148,6 +192,18 @@ impl RsaKeyPair {
     }
 
     /// Produce a corrupted variant of the PKCS#8 PEM.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_core::negative::CorruptPem;
+    /// # use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let kp = fx.rsa("svc", RsaSpec::rs256());
+    /// let bad = kp.private_key_pkcs8_pem_corrupt(CorruptPem::BadHeader);
+    /// assert!(bad.contains("CORRUPTED"));
+    /// ```
     pub fn private_key_pkcs8_pem_corrupt(&self, how: CorruptPem) -> String {
         self.inner.material.private_key_pkcs8_pem_corrupt(how)
     }
@@ -160,6 +216,17 @@ impl RsaKeyPair {
     }
 
     /// Produce a truncated variant of the PKCS#8 DER.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let kp = fx.rsa("svc", RsaSpec::rs256());
+    /// let truncated = kp.private_key_pkcs8_der_truncated(10);
+    /// assert_eq!(truncated.len(), 10);
+    /// ```
     pub fn private_key_pkcs8_der_truncated(&self, len: usize) -> Vec<u8> {
         self.inner.material.private_key_pkcs8_der_truncated(len)
     }
@@ -172,6 +239,17 @@ impl RsaKeyPair {
     }
 
     /// Return a valid (parseable) public key that does *not* match this private key.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let kp = fx.rsa("svc", RsaSpec::rs256());
+    /// let wrong_pub = kp.mismatched_public_key_spki_der();
+    /// assert_ne!(wrong_pub, kp.public_key_spki_der());
+    /// ```
     pub fn mismatched_public_key_spki_der(&self) -> Vec<u8> {
         let other = self.load_variant("mismatch");
         other.material.public_key_spki_der().to_vec()
