@@ -6,16 +6,27 @@ on:
       - main
   pull_request:
 
+# Cancel redundant runs: on PRs cancel previous runs for the same PR;
+# on main each push gets its own run.
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
 jobs:
   pr:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - uses: dtolnay/rust-toolchain@1.92
+      - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
 
@@ -26,12 +37,14 @@ jobs:
 
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
 
       - name: Install cargo-fuzz
-        run: cargo install cargo-fuzz
+        run: cargo install cargo-fuzz --locked
 
       - name: Install cargo-mutants
-        run: cargo install cargo-mutants
+        run: cargo install cargo-mutants --locked
 
       - name: Fetch base branch
         if: github.base_ref != ''
@@ -39,6 +52,7 @@ jobs:
 
       - name: xtask pr
         run: cargo xtask pr
+
       - name: Upload receipt
         uses: actions/upload-artifact@v4
         with:
@@ -49,12 +63,13 @@ jobs:
   main:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - uses: dtolnay/rust-toolchain@1.92
+      - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
 
@@ -65,12 +80,14 @@ jobs:
 
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
 
       - name: Install cargo-fuzz
-        run: cargo install cargo-fuzz
+        run: cargo install cargo-fuzz --locked
 
       - name: Install cargo-mutants
-        run: cargo install cargo-mutants
+        run: cargo install cargo-mutants --locked
 
       - name: xtask ci
         run: cargo xtask ci
