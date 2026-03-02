@@ -5,6 +5,12 @@ publish = false
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+description = "Cucumber BDD test runner for uselesskey fixture crates."
+categories.workspace = true
+keywords = ["testing", "bdd", "cucumber", "fixtures", "crypto"]
 
 [dependencies]
 uselesskey-bdd-steps = { path = "../uselesskey-bdd-steps", default-features = false, features = [] }

@@ -5,6 +5,12 @@ publish = false
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+description = "Cross-adapter interoperability tests for uselesskey fixture crates."
+categories.workspace = true
+keywords = ["testing", "interop", "fixtures", "crypto", "adapter"]
 
 [dependencies]
 # Adapter crates — optional, gated behind features
