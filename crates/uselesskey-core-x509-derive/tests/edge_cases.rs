@@ -131,10 +131,12 @@ fn epoch_is_in_the_past_or_near_present() {
 
 #[test]
 fn window_days_is_positive() {
-    assert!(BASE_TIME_WINDOW_DAYS > 0);
+    let days = BASE_TIME_WINDOW_DAYS;
+    assert!(days > 0);
 }
 
 #[test]
 fn serial_number_bytes_is_positive() {
-    assert!(SERIAL_NUMBER_BYTES > 0);
+    let bytes = SERIAL_NUMBER_BYTES;
+    assert!(bytes > 0);
 }
