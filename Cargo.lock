@@ -3657,6 +3657,7 @@ dependencies = [
  "proptest",
  "rustls-pki-types",
  "serde",
+ "serde_json",
  "tempfile",
  "uselesskey-core",
  "uselesskey-ecdsa",
