@@ -198,18 +198,9 @@ assert!(bearer.authorization_header().starts_with("Bearer "));
 assert_eq!(oauth.value().split('.').count(), 3);
 ```
 
-## Adapter Crates
+## Adapter Examples
 
-Adapter crates bridge uselesskey fixtures to third-party library types. They are separate crates (not features) to avoid coupling versioning.
-
-| Crate | Purpose |
-|-------|---------|
-| `uselesskey-jsonwebtoken` | Returns `jsonwebtoken::EncodingKey` / `DecodingKey` directly |
-| `uselesskey-rustls` | `rustls-pki-types` conversions + `ServerConfig` / `ClientConfig` builders |
-| `uselesskey-tonic` | `tonic::transport` TLS identity/certificate/config builders for gRPC tests |
-| `uselesskey-ring` | `ring` 0.17 native signing key types |
-| `uselesskey-rustcrypto` | RustCrypto native types (`rsa::RsaPrivateKey`, `p256::ecdsa::SigningKey`, etc.) |
-| `uselesskey-aws-lc-rs` | `aws-lc-rs` native types with `native` feature for wasm-safe builds |
+Adapter crates bridge uselesskey fixtures to third-party library types. They are separate crates (not features) to avoid coupling versioning. See the [Workspace Crates](#workspace-crates) section for the full list.
 
 ### TLS Config Builders (uselesskey-rustls)
 
@@ -301,6 +292,37 @@ let chain = fx.x509_chain("grpc", ChainSpec::new("test.example.com"));
 let server_tls = chain.server_tls_config_tonic();
 let client_tls = chain.client_tls_config_tonic("test.example.com");
 ```
+
+## Workspace Crates
+
+`uselesskey` is a **facade crate** that re-exports from focused implementation crates.
+Depend on the facade for convenience, or on individual crates to minimize compile time.
+
+### Implementation Crates
+
+| Crate | Description |
+|-------|-------------|
+| [`uselesskey`](https://crates.io/crates/uselesskey) | Public facade — re-exports all key types and traits behind feature flags |
+| [`uselesskey-core`](https://crates.io/crates/uselesskey-core) | Factory, deterministic derivation, caching, and negative-fixture helpers |
+| [`uselesskey-rsa`](https://crates.io/crates/uselesskey-rsa) | RSA 2048/3072/4096 keypairs (PKCS#8, SPKI, PEM, DER) |
+| [`uselesskey-ecdsa`](https://crates.io/crates/uselesskey-ecdsa) | ECDSA P-256 / P-384 keypairs |
+| [`uselesskey-ed25519`](https://crates.io/crates/uselesskey-ed25519) | Ed25519 keypairs |
+| [`uselesskey-hmac`](https://crates.io/crates/uselesskey-hmac) | HMAC HS256/HS384/HS512 secrets |
+| [`uselesskey-pgp`](https://crates.io/crates/uselesskey-pgp) | OpenPGP key fixtures (armored + binary keyblocks) |
+| [`uselesskey-token`](https://crates.io/crates/uselesskey-token) | API key, bearer token, and OAuth access-token fixtures |
+| [`uselesskey-jwk`](https://crates.io/crates/uselesskey-jwk) | Typed JWK/JWKS models and builders |
+| [`uselesskey-x509`](https://crates.io/crates/uselesskey-x509) | X.509 self-signed certificates and certificate chains |
+
+### Adapter Crates
+
+| Crate | Integrates with |
+|-------|-----------------|
+| [`uselesskey-jsonwebtoken`](https://crates.io/crates/uselesskey-jsonwebtoken) | `jsonwebtoken` `EncodingKey` / `DecodingKey` |
+| [`uselesskey-rustls`](https://crates.io/crates/uselesskey-rustls) | `rustls` `ServerConfig` / `ClientConfig` builders |
+| [`uselesskey-tonic`](https://crates.io/crates/uselesskey-tonic) | `tonic::transport` TLS identity / config for gRPC |
+| [`uselesskey-ring`](https://crates.io/crates/uselesskey-ring) | `ring` 0.17 native signing key types |
+| [`uselesskey-rustcrypto`](https://crates.io/crates/uselesskey-rustcrypto) | RustCrypto native types (`rsa::RsaPrivateKey`, etc.) |
+| [`uselesskey-aws-lc-rs`](https://crates.io/crates/uselesskey-aws-lc-rs) | `aws-lc-rs` native types |
 
 ## Feature Flags
 
