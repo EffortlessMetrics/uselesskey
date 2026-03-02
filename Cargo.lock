@@ -3889,6 +3889,7 @@ dependencies = [
  "p256",
  "p384",
  "proptest",
+ "rand_core 0.6.4",
  "rsa",
  "serde",
  "sha2",
