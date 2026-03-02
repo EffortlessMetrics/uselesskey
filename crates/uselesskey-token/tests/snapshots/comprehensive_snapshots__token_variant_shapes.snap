@@ -1,0 +1,17 @@
+---
+source: crates/uselesskey-token/tests/comprehensive_snapshots.rs
+assertion_line: 123
+expression: results
+---
+- spec: api_key
+  default_len: 40
+  alt_len: 40
+  values_differ: true
+- spec: bearer
+  default_len: 43
+  alt_len: 43
+  values_differ: true
+- spec: oauth_access_token
+  default_len: 249
+  alt_len: 249
+  values_differ: true
