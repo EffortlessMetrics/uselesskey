@@ -107,3 +107,68 @@ fn kid_has_no_padding() {
     let kid = kid_from_bytes(b"test");
     assert!(!kid.contains('='), "KID should not contain padding");
 }
+
+// ── Unicode inputs ──────────────────────────────────────────────────
+
+#[test]
+fn kid_from_unicode_bytes() {
+    let kid = kid_from_bytes("héllo wörld".as_bytes());
+    assert!(!kid.is_empty());
+    assert!(
+        kid.chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_'),
+        "KID from unicode should still be base64url"
+    );
+}
+
+#[test]
+fn kid_from_unicode_is_deterministic() {
+    let input = "日本語テスト🔑".as_bytes();
+    let k1 = kid_from_bytes(input);
+    let k2 = kid_from_bytes(input);
+    assert_eq!(k1, k2);
+}
+
+#[test]
+fn kid_from_emoji_bytes() {
+    let kid = kid_from_bytes("🔐🔑🗝️".as_bytes());
+    assert!(!kid.is_empty());
+}
+
+#[test]
+fn kid_different_unicode_inputs_differ() {
+    let k1 = kid_from_bytes("café".as_bytes());
+    let k2 = kid_from_bytes("cafe".as_bytes());
+    assert_ne!(k1, k2, "unicode vs ascii should differ");
+}
+
+#[test]
+fn kid_from_nul_bytes() {
+    let kid = kid_from_bytes(&[0x00, 0x00, 0x00]);
+    assert!(!kid.is_empty());
+}
+
+// ── All-same-byte patterns ──────────────────────────────────────────
+
+#[test]
+fn kid_from_all_zeros_vs_all_ones() {
+    let k1 = kid_from_bytes(&[0x00; 32]);
+    let k2 = kid_from_bytes(&[0xFF; 32]);
+    assert_ne!(k1, k2);
+}
+
+// ── Prefix length affects output ────────────────────────────────────
+
+#[test]
+fn different_prefix_lengths_produce_different_kid_lengths() {
+    let short = kid_from_bytes_with_prefix(b"key", 4);
+    let long = kid_from_bytes_with_prefix(b"key", 16);
+    assert!(short.len() < long.len());
+}
+
+#[test]
+fn kid_from_bytes_equals_default_prefix() {
+    let k1 = kid_from_bytes(b"test-key-material");
+    let k2 = kid_from_bytes_with_prefix(b"test-key-material", DEFAULT_KID_PREFIX_BYTES);
+    assert_eq!(k1, k2);
+}
