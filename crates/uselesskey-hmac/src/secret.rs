@@ -97,6 +97,19 @@ impl HmacSecret {
     }
 
     /// Access raw secret bytes.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_hmac::{HmacFactoryExt, HmacSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let secret = fx.hmac("jwt-signing", HmacSpec::hs256());
+    /// assert_eq!(secret.secret_bytes().len(), 32);
+    ///
+    /// let secret512 = fx.hmac("jwt-signing", HmacSpec::hs512());
+    /// assert_eq!(secret512.secret_bytes().len(), 64);
+    /// ```
     pub fn secret_bytes(&self) -> &[u8] {
         &self.inner.secret
     }
