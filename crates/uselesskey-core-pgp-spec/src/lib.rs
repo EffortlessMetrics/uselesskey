@@ -1,3 +1,11 @@
+#![forbid(unsafe_code)]
+
+//! OpenPGP fixture specification model.
+//!
+//! `PgpSpec` is intentionally small and stable so it can be shared between
+//! fixture generators and adapter crates without pulling in OpenPGP generation
+//! dependencies.
+
 /// Specification for OpenPGP fixture generation.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum PgpSpec {

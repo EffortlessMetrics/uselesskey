@@ -3497,6 +3497,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "uselesskey-core-pgp-spec"
+version = "0.3.0"
+dependencies = [
+ "proptest",
+]
+
+[[package]]
 name = "uselesskey-core-seed"
 version = "0.3.0"
 dependencies = [
@@ -3716,6 +3723,7 @@ dependencies = [
  "pgp",
  "proptest",
  "uselesskey-core",
+ "uselesskey-core-pgp-spec",
 ]
 
 [[package]]
@@ -3820,12 +3828,14 @@ name = "uselesskey-x509"
 version = "0.3.0"
 dependencies = [
  "base64",
+ "insta",
  "proptest",
  "rand_chacha 0.3.1",
  "rcgen",
  "rsa",
  "rstest",
  "rustls-pki-types",
+ "serde",
  "time",
  "uselesskey-core",
  "uselesskey-core-x509",
