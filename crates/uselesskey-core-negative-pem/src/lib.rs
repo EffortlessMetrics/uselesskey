@@ -258,4 +258,68 @@ mod tests {
         let out = corrupt_pem_deterministic(pem, &find_variant(4));
         assert!(out.len() < pem.len());
     }
+
+    #[test]
+    fn bad_base64_inserts_after_header_in_normal_pem() {
+        // Catches `< 3` → `== 3` and `<= 3`: those would take the early-return
+        // path for a 3-line PEM, appending at end instead of inserting after line 1.
+        let pem = "-----BEGIN TEST-----\nAAA=\n-----END TEST-----\n";
+        let out = corrupt_pem(pem, CorruptPem::BadBase64);
+        let lines: Vec<&str> = out.lines().collect();
+        assert_eq!(lines.len(), 4);
+        assert_eq!(lines[0], "-----BEGIN TEST-----");
+        assert_eq!(lines[1], "THIS_IS_NOT_BASE64!!!");
+        assert_eq!(lines[2], "AAA=");
+    }
+
+    #[test]
+    fn bad_base64_two_line_pem_appends() {
+        // Catches `< 3` → `> 3`: with `> 3`, a 2-line input would insert
+        // instead of taking the early-return append path.
+        let pem = "line1\nline2";
+        let out = corrupt_pem(pem, CorruptPem::BadBase64);
+        assert_eq!(out, "line1\nline2\nTHIS_IS_NOT_BASE64!!!\n");
+    }
+
+    #[test]
+    fn blank_line_inserts_after_header_in_normal_pem() {
+        // Same boundary check as inject_bad_base64_line.
+        let pem = "-----BEGIN TEST-----\nAAA=\n-----END TEST-----\n";
+        let out = corrupt_pem(pem, CorruptPem::ExtraBlankLine);
+        let lines: Vec<&str> = out.lines().collect();
+        assert_eq!(lines.len(), 4);
+        assert_eq!(lines[0], "-----BEGIN TEST-----");
+        assert_eq!(lines[1], "");
+        assert_eq!(lines[2], "AAA=");
+    }
+
+    #[test]
+    fn blank_line_two_line_pem_appends() {
+        let pem = "line1\nline2";
+        let out = corrupt_pem(pem, CorruptPem::ExtraBlankLine);
+        assert_eq!(out, "line1\nline2\n\n");
+    }
+
+    #[test]
+    fn derived_truncate_len_exact_arithmetic() {
+        // Catches `return 0`, `return 1`, `+ → *`, and arithmetic mutations
+        // on the span / modulo computation.
+        let mut digest = [0u8; 32];
+        digest[1] = 0x0A;
+        digest[2] = 0x0B;
+        // chars=10, span=9, u16=0x0A0B=2571, 2571%9=6, result=1+6=7
+        assert_eq!(derived_truncate_len("0123456789", &digest), 7);
+    }
+
+    #[test]
+    fn derived_truncate_len_empty_returns_zero() {
+        let digest = [0u8; 32];
+        assert_eq!(derived_truncate_len("", &digest), 0);
+    }
+
+    #[test]
+    fn derived_truncate_len_single_char_returns_zero() {
+        let digest = [0xFF; 32];
+        assert_eq!(derived_truncate_len("x", &digest), 0);
+    }
 }
