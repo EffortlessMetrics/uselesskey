@@ -3500,6 +3500,7 @@ dependencies = [
 name = "uselesskey-core-jwk"
 version = "0.3.0"
 dependencies = [
+ "serde_json",
  "uselesskey-core-jwk-builder",
  "uselesskey-core-jwk-shape",
 ]
@@ -3535,6 +3536,7 @@ name = "uselesskey-core-keypair"
 version = "0.3.0"
 dependencies = [
  "uselesskey-core-keypair-material",
+ "uselesskey-core-negative",
 ]
 
 [[package]]
