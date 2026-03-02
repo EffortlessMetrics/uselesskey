@@ -1,0 +1,9 @@
+---
+source: crates/uselesskey-tonic/tests/snapshots_tonic.rs
+assertion_line: 180
+expression: result
+---
+domain: grpc.example.com
+identity_built: true
+server_tls_built: true
+client_tls_built: true

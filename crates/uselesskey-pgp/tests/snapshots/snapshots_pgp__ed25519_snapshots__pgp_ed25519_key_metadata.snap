@@ -1,0 +1,17 @@
+---
+source: crates/uselesskey-pgp/tests/snapshots_pgp.rs
+assertion_line: 64
+expression: result
+---
+spec: ed25519
+user_id: snapshot-ed25519 <snapshot-ed25519@uselesskey.test>
+fingerprint_len: 40
+private_armor_has_begin: true
+private_armor_has_end: true
+public_armor_has_begin: true
+public_armor_has_end: true
+private_binary_len: 260
+public_binary_len: 225
+private_armor: "[REDACTED]"
+public_armor: "[REDACTED]"
+fingerprint: "[REDACTED]"

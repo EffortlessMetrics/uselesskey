@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-pgp/tests/snapshots_pgp.rs
+assertion_line: 249
+expression: result
+---
+original_len: 264
+truncated_len: 32

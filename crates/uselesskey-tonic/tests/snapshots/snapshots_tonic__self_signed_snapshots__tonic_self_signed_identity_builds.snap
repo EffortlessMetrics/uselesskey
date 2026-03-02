@@ -1,0 +1,9 @@
+---
+source: crates/uselesskey-tonic/tests/snapshots_tonic.rs
+assertion_line: 88
+expression: result
+---
+domain: localhost
+identity_built: true
+server_tls_built: true
+client_tls_built: true

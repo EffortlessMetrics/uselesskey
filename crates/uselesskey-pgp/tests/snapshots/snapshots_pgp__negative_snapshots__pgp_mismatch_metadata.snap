@@ -1,0 +1,9 @@
+---
+source: crates/uselesskey-pgp/tests/snapshots_pgp.rs
+assertion_line: 230
+expression: result
+---
+original_public_binary_len: 227
+mismatched_public_binary_len: 227
+keys_differ: true
+mismatched_armor_has_begin: true

@@ -3763,8 +3763,10 @@ dependencies = [
 name = "uselesskey-pgp"
 version = "0.3.0"
 dependencies = [
+ "insta",
  "pgp",
  "proptest",
+ "serde",
  "uselesskey-core",
 ]
 
@@ -3865,7 +3867,9 @@ version = "0.3.0"
 name = "uselesskey-tonic"
 version = "0.3.0"
 dependencies = [
+ "insta",
  "proptest",
+ "serde",
  "tonic",
  "uselesskey-core",
  "uselesskey-x509",

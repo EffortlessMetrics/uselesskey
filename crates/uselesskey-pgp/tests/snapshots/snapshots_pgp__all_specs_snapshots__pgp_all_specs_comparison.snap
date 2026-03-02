@@ -1,0 +1,17 @@
+---
+source: crates/uselesskey-pgp/tests/snapshots_pgp.rs
+assertion_line: 313
+expression: cases
+---
+- spec_name: ed25519
+  private_binary_len: 268
+  public_binary_len: 233
+  fingerprint_len: 40
+- spec_name: rsa2048
+  private_binary_len: 1311
+  public_binary_len: 660
+  fingerprint_len: 40
+- spec_name: rsa3072
+  private_binary_len: 1887
+  public_binary_len: 916
+  fingerprint_len: 40
