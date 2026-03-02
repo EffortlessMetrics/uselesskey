@@ -34,6 +34,7 @@ members = [
   "crates/uselesskey-ed25519",
   "crates/uselesskey-hmac",
   "crates/uselesskey-token",
+  "crates/uselesskey-token-spec",
   "crates/uselesskey-pgp",
   "crates/uselesskey-x509",
   "crates/uselesskey-jsonwebtoken",
@@ -79,6 +80,7 @@ uselesskey-core-keypair-material = { path = "crates/uselesskey-core-keypair-mate
 uselesskey-core-negative = { path = "crates/uselesskey-core-negative", version = "0.3.0", default-features = false }
 uselesskey-core-negative-pem = { path = "crates/uselesskey-core-negative-pem", version = "0.3.0", default-features = false }
 uselesskey-core-token = { path = "crates/uselesskey-core-token", version = "0.3.0" }
+uselesskey-token-spec = { path = "crates/uselesskey-token-spec", version = "0.3.0" }
 uselesskey-core-jwk-builder = { path = "crates/uselesskey-core-jwk-builder", version = "0.3.0" }
 uselesskey-core-jwk = { path = "crates/uselesskey-core-jwk", version = "0.3.0" }
 uselesskey-core-hmac-spec = { path = "crates/uselesskey-core-hmac-spec", version = "0.3.0" }

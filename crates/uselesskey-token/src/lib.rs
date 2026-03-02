@@ -46,8 +46,7 @@
 //! assert_ne!(t1.value(), t3.value());
 //! ```
 
-mod spec;
 mod token;
 
-pub use spec::TokenSpec;
 pub use token::{DOMAIN_TOKEN_FIXTURE, TokenFactoryExt, TokenFixture};
+pub use uselesskey_token_spec::TokenSpec;

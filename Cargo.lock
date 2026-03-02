@@ -3818,7 +3818,12 @@ dependencies = [
  "serde_json",
  "uselesskey-core",
  "uselesskey-core-token",
+ "uselesskey-token-spec",
 ]
+
+[[package]]
+name = "uselesskey-token-spec"
+version = "0.3.0"
 
 [[package]]
 name = "uselesskey-tonic"
