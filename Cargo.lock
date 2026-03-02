@@ -3635,6 +3635,7 @@ dependencies = [
 name = "uselesskey-core-jwk"
 version = "0.3.0"
 dependencies = [
+ "proptest",
  "serde_json",
  "uselesskey-core-jwk-builder",
  "uselesskey-core-jwk-shape",
@@ -3670,6 +3671,7 @@ dependencies = [
 name = "uselesskey-core-keypair"
 version = "0.3.0"
 dependencies = [
+ "proptest",
  "uselesskey-core-keypair-material",
  "uselesskey-core-negative",
 ]
