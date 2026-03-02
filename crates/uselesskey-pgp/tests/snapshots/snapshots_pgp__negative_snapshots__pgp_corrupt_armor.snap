@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-pgp/tests/snapshots_pgp.rs
+assertion_line: 273
+expression: result
+---
+original_starts_with_dash: true
+corrupt_differs_from_original: true
+corrupt_deterministic_is_stable: true

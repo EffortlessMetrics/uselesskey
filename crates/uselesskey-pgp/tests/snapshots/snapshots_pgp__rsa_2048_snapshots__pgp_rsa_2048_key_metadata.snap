@@ -1,0 +1,15 @@
+---
+source: crates/uselesskey-pgp/tests/snapshots_pgp.rs
+assertion_line: 115
+expression: result
+---
+spec: rsa2048
+user_id: snapshot-rsa-2048 <snapshot-rsa-2048@uselesskey.test>
+fingerprint_len: 40
+private_armor_has_begin: true
+public_armor_has_begin: true
+private_binary_len: 1305
+public_binary_len: 654
+private_armor: "[REDACTED]"
+public_armor: "[REDACTED]"
+fingerprint: "[REDACTED]"

@@ -20,6 +20,8 @@ pgp = { version = "0.19.0", default-features = false }
 
 [dev-dependencies]
 proptest.workspace = true
+serde.workspace = true
+insta.workspace = true
 
 [package.metadata.docs.rs]
 all-features = true

@@ -1,0 +1,13 @@
+---
+source: crates/uselesskey-pgp/tests/snapshots_pgp.rs
+assertion_line: 196
+expression: cases
+---
+- label: simple-label
+  user_id: simple-label <simple-label@uselesskey.test>
+- label: "Test User!@#"
+  user_id: "Test User!@# <test-user@uselesskey.test>"
+- label: ALL CAPS
+  user_id: ALL CAPS <all-caps@uselesskey.test>
+- label: with spaces
+  user_id: with spaces <with-spaces@uselesskey.test>
