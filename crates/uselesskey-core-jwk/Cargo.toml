@@ -18,5 +18,8 @@ authors.workspace = true
 uselesskey-core-jwk-shape = { path = "../uselesskey-core-jwk-shape", version = "0.3.0" }
 uselesskey-core-jwk-builder = { path = "../uselesskey-core-jwk-builder", version = "0.3.0" }
 
+[dev-dependencies]
+serde_json.workspace = true
+
 [package.metadata.docs.rs]
 all-features = true
