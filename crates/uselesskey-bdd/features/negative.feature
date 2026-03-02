@@ -109,3 +109,93 @@ Feature: Negative fixtures
     And I deterministically corrupt the Ed25519 PKCS8 PEM with variant "corrupt-v1" again
     Then the deterministic text artifacts should be identical
     And the deterministic Ed25519 PEM artifact should fail to parse
+
+  # --- ECDSA corruption type coverage ---
+
+  Scenario: ECDSA BadFooter corruption replaces the END line
+    Given a deterministic factory seeded with "ecdsa-badfooter-neg"
+    When I generate an ECDSA ES256 key for label "footer-test"
+    And I corrupt the ECDSA PKCS8 PEM with BadFooter
+    Then the corrupted ECDSA PEM should contain "END CORRUPTED KEY"
+    And the corrupted ECDSA PEM should fail to parse
+
+  Scenario: ECDSA BadBase64 corruption injects invalid characters
+    Given a deterministic factory seeded with "ecdsa-badbase64-neg"
+    When I generate an ECDSA ES256 key for label "base64-test"
+    And I corrupt the ECDSA PKCS8 PEM with BadBase64
+    Then the corrupted ECDSA PEM should contain "THIS_IS_NOT_BASE64"
+    And the corrupted ECDSA PEM should fail to parse
+
+  Scenario: ECDSA Truncate corruption cuts the PEM short
+    Given a deterministic factory seeded with "ecdsa-truncate-pem-neg"
+    When I generate an ECDSA ES256 key for label "truncate-pem"
+    And I corrupt the ECDSA PKCS8 PEM with Truncate to 30 bytes
+    Then the corrupted ECDSA PEM should have length 30
+    And the corrupted ECDSA PEM should fail to parse
+
+  Scenario: ECDSA ExtraBlankLine corruption fails parsing
+    Given a deterministic factory seeded with "ecdsa-blankline-neg"
+    When I generate an ECDSA ES256 key for label "blankline-test"
+    And I corrupt the ECDSA PKCS8 PEM with ExtraBlankLine
+    Then the corrupted ECDSA PEM should fail to parse
+
+  # --- Ed25519 corruption type coverage ---
+
+  Scenario: Ed25519 BadFooter corruption replaces the END line
+    Given a deterministic factory seeded with "ed25519-badfooter-neg"
+    When I generate an Ed25519 key for label "footer-test"
+    And I corrupt the Ed25519 PKCS8 PEM with BadFooter
+    Then the corrupted Ed25519 PEM should contain "END CORRUPTED KEY"
+    And the corrupted Ed25519 PEM should fail to parse
+
+  Scenario: Ed25519 BadBase64 corruption injects invalid characters
+    Given a deterministic factory seeded with "ed25519-badbase64-neg"
+    When I generate an Ed25519 key for label "base64-test"
+    And I corrupt the Ed25519 PKCS8 PEM with BadBase64
+    Then the corrupted Ed25519 PEM should contain "THIS_IS_NOT_BASE64"
+    And the corrupted Ed25519 PEM should fail to parse
+
+  Scenario: Ed25519 Truncate corruption cuts the PEM short
+    Given a deterministic factory seeded with "ed25519-truncate-pem-neg"
+    When I generate an Ed25519 key for label "truncate-pem"
+    And I corrupt the Ed25519 PKCS8 PEM with Truncate to 20 bytes
+    Then the corrupted Ed25519 PEM should have length 20
+    And the corrupted Ed25519 PEM should fail to parse
+
+  Scenario: Ed25519 ExtraBlankLine corruption fails parsing
+    Given a deterministic factory seeded with "ed25519-blankline-neg"
+    When I generate an Ed25519 key for label "blankline-test"
+    And I corrupt the Ed25519 PKCS8 PEM with ExtraBlankLine
+    Then the corrupted Ed25519 PEM should fail to parse
+
+  # --- DER corruption variants across key types ---
+
+  Scenario: ECDSA different DER corruption variants produce different outputs
+    Given a deterministic factory seeded with "ecdsa-der-variants-neg"
+    When I generate an ECDSA ES256 key for label "der-variant-test"
+    And I deterministically corrupt the ECDSA PKCS8 DER with variant "alpha"
+    And I deterministically corrupt the ECDSA PKCS8 DER with variant "beta" again
+    Then the deterministic binary artifacts should differ
+
+  Scenario: Ed25519 different DER corruption variants produce different outputs
+    Given a deterministic factory seeded with "ed25519-der-variants-neg"
+    When I generate an Ed25519 key for label "der-variant-test"
+    And I deterministically corrupt the Ed25519 PKCS8 DER with variant "alpha"
+    And I deterministically corrupt the Ed25519 PKCS8 DER with variant "beta" again
+    Then the deterministic binary artifacts should differ
+
+  # --- Mismatched key determinism across types ---
+
+  Scenario: ECDSA mismatched key variant is deterministic
+    Given a deterministic factory seeded with "ecdsa-mismatch-det-neg"
+    When I generate an ECDSA ES256 key for label "mismatch-victim"
+    And I get the mismatched ECDSA public key
+    And I get the mismatched ECDSA public key again
+    Then the mismatched ECDSA keys should be identical
+
+  Scenario: Ed25519 mismatched key variant is deterministic
+    Given a deterministic factory seeded with "ed25519-mismatch-det-neg"
+    When I generate an Ed25519 key for label "mismatch-victim"
+    And I get the mismatched Ed25519 public key
+    And I get the mismatched Ed25519 public key again
+    Then the mismatched Ed25519 keys should be identical

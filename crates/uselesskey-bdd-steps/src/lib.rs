@@ -1069,6 +1069,34 @@ fn corrupt_ed25519_bad_header(world: &mut UselessWorld) {
         Some(ed25519.private_key_pkcs8_pem_corrupt(CorruptPem::BadHeader));
 }
 
+#[when("I corrupt the Ed25519 PKCS8 PEM with BadFooter")]
+fn corrupt_ed25519_bad_footer(world: &mut UselessWorld) {
+    let ed25519 = world.ed25519.as_ref().expect("ed25519 not set");
+    world.ed25519_corrupted_pem =
+        Some(ed25519.private_key_pkcs8_pem_corrupt(CorruptPem::BadFooter));
+}
+
+#[when("I corrupt the Ed25519 PKCS8 PEM with BadBase64")]
+fn corrupt_ed25519_bad_base64(world: &mut UselessWorld) {
+    let ed25519 = world.ed25519.as_ref().expect("ed25519 not set");
+    world.ed25519_corrupted_pem =
+        Some(ed25519.private_key_pkcs8_pem_corrupt(CorruptPem::BadBase64));
+}
+
+#[when(regex = r"^I corrupt the Ed25519 PKCS8 PEM with Truncate to (\d+) bytes$")]
+fn corrupt_ed25519_truncate(world: &mut UselessWorld, bytes: usize) {
+    let ed25519 = world.ed25519.as_ref().expect("ed25519 not set");
+    world.ed25519_corrupted_pem =
+        Some(ed25519.private_key_pkcs8_pem_corrupt(CorruptPem::Truncate { bytes }));
+}
+
+#[when("I corrupt the Ed25519 PKCS8 PEM with ExtraBlankLine")]
+fn corrupt_ed25519_extra_blank(world: &mut UselessWorld) {
+    let ed25519 = world.ed25519.as_ref().expect("ed25519 not set");
+    world.ed25519_corrupted_pem =
+        Some(ed25519.private_key_pkcs8_pem_corrupt(CorruptPem::ExtraBlankLine));
+}
+
 #[when(regex = r"^I truncate the Ed25519 PKCS8 DER to (\d+) bytes$")]
 fn truncate_ed25519_der(world: &mut UselessWorld, len: usize) {
     let ed25519 = world.ed25519.as_ref().expect("ed25519 not set");
@@ -1220,6 +1248,31 @@ fn ed25519_truncated_der_length(world: &mut UselessWorld, expected: usize) {
         .as_ref()
         .expect("ed25519_truncated_der not set");
     assert_eq!(der.len(), expected);
+}
+
+#[then("the corrupted Ed25519 PEM should fail to parse")]
+fn ed25519_corrupted_pem_fails(world: &mut UselessWorld) {
+    use ed25519_dalek::SigningKey;
+    use ed25519_dalek::pkcs8::DecodePrivateKey;
+
+    let pem = world
+        .ed25519_corrupted_pem
+        .as_ref()
+        .expect("ed25519_corrupted_pem not set");
+    let result = SigningKey::from_pkcs8_pem(pem);
+    assert!(
+        result.is_err(),
+        "corrupted Ed25519 PEM should fail to parse"
+    );
+}
+
+#[then(regex = r"^the corrupted Ed25519 PEM should have length (\d+)$")]
+fn ed25519_corrupted_pem_length(world: &mut UselessWorld, expected: usize) {
+    let pem = world
+        .ed25519_corrupted_pem
+        .as_ref()
+        .expect("ed25519_corrupted_pem not set");
+    assert_eq!(pem.len(), expected);
 }
 
 #[then("the truncated Ed25519 DER should fail to parse")]
@@ -1437,6 +1490,32 @@ fn corrupt_ecdsa_bad_header(world: &mut UselessWorld) {
     world.ecdsa_corrupted_pem = Some(ecdsa.private_key_pkcs8_pem_corrupt(CorruptPem::BadHeader));
 }
 
+#[when("I corrupt the ECDSA PKCS8 PEM with BadFooter")]
+fn corrupt_ecdsa_bad_footer(world: &mut UselessWorld) {
+    let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
+    world.ecdsa_corrupted_pem = Some(ecdsa.private_key_pkcs8_pem_corrupt(CorruptPem::BadFooter));
+}
+
+#[when("I corrupt the ECDSA PKCS8 PEM with BadBase64")]
+fn corrupt_ecdsa_bad_base64(world: &mut UselessWorld) {
+    let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
+    world.ecdsa_corrupted_pem = Some(ecdsa.private_key_pkcs8_pem_corrupt(CorruptPem::BadBase64));
+}
+
+#[when(regex = r"^I corrupt the ECDSA PKCS8 PEM with Truncate to (\d+) bytes$")]
+fn corrupt_ecdsa_truncate(world: &mut UselessWorld, bytes: usize) {
+    let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
+    world.ecdsa_corrupted_pem =
+        Some(ecdsa.private_key_pkcs8_pem_corrupt(CorruptPem::Truncate { bytes }));
+}
+
+#[when("I corrupt the ECDSA PKCS8 PEM with ExtraBlankLine")]
+fn corrupt_ecdsa_extra_blank(world: &mut UselessWorld) {
+    let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
+    world.ecdsa_corrupted_pem =
+        Some(ecdsa.private_key_pkcs8_pem_corrupt(CorruptPem::ExtraBlankLine));
+}
+
 #[when(regex = r"^I truncate the ECDSA PKCS8 DER to (\d+) bytes$")]
 fn truncate_ecdsa_der(world: &mut UselessWorld, len: usize) {
     let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
@@ -1602,6 +1681,31 @@ fn ecdsa_corrupted_pem_contains(world: &mut UselessWorld, needle: String) {
         pem.contains(&needle),
         "expected ECDSA PEM to contain '{needle}'"
     );
+}
+
+#[then("the corrupted ECDSA PEM should fail to parse")]
+fn ecdsa_corrupted_pem_fails(world: &mut UselessWorld) {
+    use p256::pkcs8::DecodePrivateKey as _;
+
+    let pem = world
+        .ecdsa_corrupted_pem
+        .as_ref()
+        .expect("ecdsa_corrupted_pem not set");
+    let p256_result = p256::SecretKey::from_pkcs8_pem(pem);
+    let p384_result = p384::SecretKey::from_pkcs8_pem(pem);
+    assert!(
+        p256_result.is_err() && p384_result.is_err(),
+        "corrupted ECDSA PEM should fail to parse"
+    );
+}
+
+#[then(regex = r"^the corrupted ECDSA PEM should have length (\d+)$")]
+fn ecdsa_corrupted_pem_length(world: &mut UselessWorld, expected: usize) {
+    let pem = world
+        .ecdsa_corrupted_pem
+        .as_ref()
+        .expect("ecdsa_corrupted_pem not set");
+    assert_eq!(pem.len(), expected);
 }
 
 #[then(regex = r"^the truncated ECDSA DER should have length (\d+)$")]

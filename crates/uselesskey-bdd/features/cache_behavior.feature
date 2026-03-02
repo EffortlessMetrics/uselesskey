@@ -85,3 +85,57 @@ Feature: Cache behavior
     And I clear the factory cache
     And I generate an RSA key for label "random-clear" again
     Then the PKCS8 PEM should differ
+
+  # --- Ed25519 cache behavior ---
+
+  Scenario: Ed25519 cache hit returns identical key material
+    Given a deterministic factory seeded with "cache-hit-ed25519"
+    When I generate an Ed25519 key for label "cached-ed25519"
+    And I generate an Ed25519 key for label "cached-ed25519" again
+    Then the Ed25519 PKCS8 PEM should be identical
+
+  Scenario: different labels are cache-isolated for Ed25519
+    Given a deterministic factory seeded with "cache-miss-label-ed25519"
+    When I generate an Ed25519 key for label "label-alpha"
+    And I generate another Ed25519 key for label "label-beta"
+    Then the Ed25519 keys should have different public keys
+
+  Scenario: cache clear followed by re-derive gives identical ECDSA key
+    Given a deterministic factory seeded with "cache-clear-ecdsa"
+    When I generate an ECDSA ES256 key for label "clear-ecdsa"
+    And I clear the factory cache
+    And I generate an ECDSA ES256 key for label "clear-ecdsa" again
+    Then the ECDSA PKCS8 PEM should be identical
+
+  Scenario: cache clear followed by re-derive gives identical Ed25519 key
+    Given a deterministic factory seeded with "cache-clear-ed25519"
+    When I generate an Ed25519 key for label "clear-ed25519"
+    And I clear the factory cache
+    And I generate an Ed25519 key for label "clear-ed25519" again
+    Then the Ed25519 PKCS8 PEM should be identical
+
+  # --- Cross-type cache isolation ---
+
+  Scenario: generating one key type does not invalidate another in cache
+    Given a deterministic factory seeded with "cache-cross-type-isolation"
+    When I generate an RSA key for label "rsa-stable"
+    And I generate an ECDSA ES256 key for label "ecdsa-stable"
+    And I generate an Ed25519 key for label "ed25519-stable"
+    And I generate an RSA key for label "rsa-stable" again
+    Then the PKCS8 PEM should be identical
+
+  # --- Bearer and OAuth token cache behavior ---
+
+  Scenario: cache clear followed by re-derive gives identical bearer token
+    Given a deterministic factory seeded with "cache-clear-bearer"
+    When I generate a bearer token for label "clear-bearer"
+    And I clear the factory cache
+    And I generate a bearer token for label "clear-bearer" again
+    Then the token values should be identical
+
+  Scenario: cache clear followed by re-derive gives identical OAuth token
+    Given a deterministic factory seeded with "cache-clear-oauth"
+    When I generate an OAuth access token for label "clear-oauth"
+    And I clear the factory cache
+    And I generate an OAuth access token for label "clear-oauth" again
+    Then the token values should be identical

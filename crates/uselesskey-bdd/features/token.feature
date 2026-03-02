@@ -144,3 +144,45 @@ Feature: Token fixtures
     When I generate an API key token for label "service" with variant "v1"
     And I generate an API key token for label "service" with variant "v1" again
     Then the token values should be identical
+
+  # --- Different labels produce different tokens for all types ---
+
+  Scenario: different labels produce different bearer tokens
+    Given a deterministic factory seeded with "bearer-label-diff"
+    When I generate a bearer token for label "alice"
+    And I generate another bearer token for label "bob"
+    Then the token values should be different
+
+  Scenario: different labels produce different OAuth tokens
+    Given a deterministic factory seeded with "oauth-label-diff"
+    When I generate an OAuth access token for label "alice"
+    And I generate another OAuth access token for label "bob"
+    Then the token values should be different
+
+  # --- Random mode for bearer and OAuth ---
+
+  Scenario: random factory produces different bearer tokens after cache clear
+    Given a random factory
+    When I generate a bearer token for label "ephemeral-bearer"
+    And I clear the factory cache
+    And I generate a bearer token for label "ephemeral-bearer" again
+    Then the token values should be different
+
+  Scenario: random factory caches bearer tokens within same session
+    Given a random factory
+    When I generate a bearer token for label "cached-bearer"
+    And I generate a bearer token for label "cached-bearer" again
+    Then the token values should be identical
+
+  Scenario: random factory produces different OAuth tokens after cache clear
+    Given a random factory
+    When I generate an OAuth access token for label "ephemeral-oauth"
+    And I clear the factory cache
+    And I generate an OAuth access token for label "ephemeral-oauth" again
+    Then the token values should be different
+
+  Scenario: random factory caches OAuth tokens within same session
+    Given a random factory
+    When I generate an OAuth access token for label "cached-oauth"
+    And I generate an OAuth access token for label "cached-oauth" again
+    Then the token values should be identical
