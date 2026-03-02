@@ -5749,8 +5749,7 @@ fn ring_ed25519_wrong_key(world: &mut UselessWorld) {
         .ring_signature_bytes
         .as_ref()
         .expect("signature not set");
-    let public_key =
-        ring::signature::UnparsedPublicKey::new(&ring::signature::ED25519, other_pub);
+    let public_key = ring::signature::UnparsedPublicKey::new(&ring::signature::ED25519, other_pub);
     assert!(
         public_key.verify(RING_TEST_MSG, sig).is_err(),
         "Ed25519 signature should NOT verify with wrong key"
