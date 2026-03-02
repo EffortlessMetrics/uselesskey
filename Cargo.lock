@@ -3419,6 +3419,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "uselesskey-core-hmac-spec"
+version = "0.3.0"
+
+[[package]]
 name = "uselesskey-core-id"
 version = "0.3.0"
 dependencies = [
@@ -3640,6 +3644,7 @@ dependencies = [
  "rand_core 0.6.4",
  "serde",
  "uselesskey-core",
+ "uselesskey-core-hmac-spec",
  "uselesskey-core-kid",
  "uselesskey-jwk",
 ]
