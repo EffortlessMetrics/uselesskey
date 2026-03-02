@@ -31,6 +31,11 @@ uselesskey-ecdsa = { path = "../crates/uselesskey-ecdsa" }
 uselesskey-ed25519 = { path = "../crates/uselesskey-ed25519" }
 uselesskey-hmac = { path = "../crates/uselesskey-hmac" }
 uselesskey-x509 = { path = "../crates/uselesskey-x509" }
+uselesskey-jsonwebtoken = { path = "../crates/uselesskey-jsonwebtoken", features = ["ecdsa", "ed25519", "hmac"] }
+uselesskey-ring = { path = "../crates/uselesskey-ring", features = ["ecdsa", "ed25519"] }
+uselesskey-rustls = { path = "../crates/uselesskey-rustls", features = ["x509", "ecdsa", "ed25519"] }
+rustls-pki-types = "1"
+ring = "0.17"
 rsa = { version = "0.9", features = ["pem"] }
 p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "pem"] }
 ed25519-dalek = { version = "2", features = ["pkcs8"] }
@@ -207,5 +212,41 @@ doc = false
 [[bin]]
 name = "fuzz_token_generation"
 path = "fuzz_targets/fuzz_token_generation.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "adapter_jsonwebtoken_roundtrip"
+path = "fuzz_targets/adapter_jsonwebtoken_roundtrip.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "adapter_ring_roundtrip"
+path = "fuzz_targets/adapter_ring_roundtrip.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "adapter_rustls_roundtrip"
+path = "fuzz_targets/adapter_rustls_roundtrip.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "x509_chain_build"
+path = "fuzz_targets/x509_chain_build.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "factory_concurrent_access"
+path = "fuzz_targets/factory_concurrent_access.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "jwks_builder_ordering"
+path = "fuzz_targets/jwks_builder_ordering.rs"
 test = false
 doc = false

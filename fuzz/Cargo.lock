@@ -122,6 +122,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "bumpalo"
+version = "3.20.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5d20789868f4b01b2f2caec9f5c4e0213b41e3e5702a50157d699ae31ced2fcb"
+
+[[package]]
 name = "cc"
 version = "1.2.56"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -548,6 +554,32 @@ checksum = "9afb3de4395d6b3e67a780b6de64b51c978ecf11cb9a462c66be7d4ca9039d33"
 dependencies = [
  "getrandom 0.3.4",
  "libc",
+]
+
+[[package]]
+name = "js-sys"
+version = "0.3.91"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b49715b7073f385ba4bc528e5747d02e66cb39c6146efb66b781f131f0fb399c"
+dependencies = [
+ "once_cell",
+ "wasm-bindgen",
+]
+
+[[package]]
+name = "jsonwebtoken"
+version = "10.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0529410abe238729a60b108898784df8984c87f6054c9c4fcacc47e4803c1ce1"
+dependencies = [
+ "base64",
+ "getrandom 0.2.17",
+ "js-sys",
+ "pem",
+ "serde",
+ "serde_json",
+ "signature",
+ "simple_asn1",
 ]
 
 [[package]]
@@ -978,6 +1010,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustversion"
+version = "1.0.22"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b39cdef0fa800fc44525c84ccb54a029961a8215f9619753635a9c0d2538d46d"
+
+[[package]]
 name = "scopeguard"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1071,6 +1109,18 @@ checksum = "77549399552de45a898a580c1b41d445bf730df867cc44e6c0233bbc4b8329de"
 dependencies = [
  "digest",
  "rand_core",
+]
+
+[[package]]
+name = "simple_asn1"
+version = "0.6.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0d585997b0ac10be3c5ee635f1bab02d512760d14b7c468801ac8a01d9ae5f1d"
+dependencies = [
+ "num-bigint",
+ "num-traits",
+ "thiserror",
+ "time",
 ]
 
 [[package]]
@@ -1238,6 +1288,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "uselesskey-core-base62"
+version = "0.3.0"
+dependencies = [
+ "rand_core",
+]
+
+[[package]]
 name = "uselesskey-core-cache"
 version = "0.3.0"
 dependencies = [
@@ -1262,6 +1319,10 @@ version = "0.3.0"
 dependencies = [
  "blake3",
 ]
+
+[[package]]
+name = "uselesskey-core-hmac-spec"
+version = "0.3.0"
 
 [[package]]
 name = "uselesskey-core-id"
@@ -1320,8 +1381,15 @@ dependencies = [
 name = "uselesskey-core-negative"
 version = "0.3.0"
 dependencies = [
- "uselesskey-core-hash",
+ "uselesskey-core-negative-der",
  "uselesskey-core-negative-pem",
+]
+
+[[package]]
+name = "uselesskey-core-negative-der"
+version = "0.3.0"
+dependencies = [
+ "uselesskey-core-hash",
 ]
 
 [[package]]
@@ -1329,6 +1397,16 @@ name = "uselesskey-core-negative-pem"
 version = "0.3.0"
 dependencies = [
  "uselesskey-core-hash",
+]
+
+[[package]]
+name = "uselesskey-core-rustls-pki"
+version = "0.3.0"
+dependencies = [
+ "rustls-pki-types",
+ "uselesskey-ecdsa",
+ "uselesskey-ed25519",
+ "uselesskey-x509",
 ]
 
 [[package]]
@@ -1359,6 +1437,7 @@ dependencies = [
  "base64",
  "rand_core",
  "serde_json",
+ "uselesskey-core-base62",
 ]
 
 [[package]]
@@ -1367,6 +1446,13 @@ version = "0.3.0"
 dependencies = [
  "uselesskey-core-x509-derive",
  "uselesskey-core-x509-negative",
+ "uselesskey-core-x509-spec",
+]
+
+[[package]]
+name = "uselesskey-core-x509-chain-negative"
+version = "0.3.0"
+dependencies = [
  "uselesskey-core-x509-spec",
 ]
 
@@ -1384,6 +1470,7 @@ dependencies = [
 name = "uselesskey-core-x509-negative"
 version = "0.3.0"
 dependencies = [
+ "uselesskey-core-x509-chain-negative",
  "uselesskey-core-x509-spec",
 ]
 
@@ -1425,7 +1512,9 @@ dependencies = [
  "p256",
  "rand_chacha",
  "rand_core",
+ "ring",
  "rsa",
+ "rustls-pki-types",
  "serde_json",
  "uselesskey",
  "uselesskey-core-factory",
@@ -1441,7 +1530,10 @@ dependencies = [
  "uselesskey-ecdsa",
  "uselesskey-ed25519",
  "uselesskey-hmac",
+ "uselesskey-jsonwebtoken",
  "uselesskey-jwk",
+ "uselesskey-ring",
+ "uselesskey-rustls",
  "uselesskey-x509",
 ]
 
@@ -1451,7 +1543,18 @@ version = "0.3.0"
 dependencies = [
  "rand_core",
  "uselesskey-core",
+ "uselesskey-core-hmac-spec",
  "uselesskey-core-kid",
+]
+
+[[package]]
+name = "uselesskey-jsonwebtoken"
+version = "0.3.0"
+dependencies = [
+ "jsonwebtoken",
+ "uselesskey-ecdsa",
+ "uselesskey-ed25519",
+ "uselesskey-hmac",
 ]
 
 [[package]]
@@ -1460,6 +1563,15 @@ version = "0.3.0"
 dependencies = [
  "uselesskey-core-jwk",
  "uselesskey-core-jwk-builder",
+]
+
+[[package]]
+name = "uselesskey-ring"
+version = "0.3.0"
+dependencies = [
+ "ring",
+ "uselesskey-ecdsa",
+ "uselesskey-ed25519",
 ]
 
 [[package]]
@@ -1475,12 +1587,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "uselesskey-rustls"
+version = "0.3.0"
+dependencies = [
+ "uselesskey-core-rustls-pki",
+ "uselesskey-ecdsa",
+ "uselesskey-ed25519",
+ "uselesskey-x509",
+]
+
+[[package]]
 name = "uselesskey-token"
 version = "0.3.0"
 dependencies = [
  "uselesskey-core",
  "uselesskey-core-token",
+ "uselesskey-token-spec",
 ]
+
+[[package]]
+name = "uselesskey-token-spec"
+version = "0.3.0"
 
 [[package]]
 name = "uselesskey-x509"
@@ -1526,6 +1653,51 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5428f8bf88ea5ddc08faddef2ac4a67e390b88186c703ce6dbd955e1c145aca5"
 dependencies = [
  "wit-bindgen",
+]
+
+[[package]]
+name = "wasm-bindgen"
+version = "0.2.114"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6532f9a5c1ece3798cb1c2cfdba640b9b3ba884f5db45973a6f442510a87d38e"
+dependencies = [
+ "cfg-if",
+ "once_cell",
+ "rustversion",
+ "wasm-bindgen-macro",
+ "wasm-bindgen-shared",
+]
+
+[[package]]
+name = "wasm-bindgen-macro"
+version = "0.2.114"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "18a2d50fcf105fb33bb15f00e7a77b772945a2ee45dcf454961fd843e74c18e6"
+dependencies = [
+ "quote",
+ "wasm-bindgen-macro-support",
+]
+
+[[package]]
+name = "wasm-bindgen-macro-support"
+version = "0.2.114"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "03ce4caeaac547cdf713d280eda22a730824dd11e6b8c3ca9e42247b25c631e3"
+dependencies = [
+ "bumpalo",
+ "proc-macro2",
+ "quote",
+ "syn",
+ "wasm-bindgen-shared",
+]
+
+[[package]]
+name = "wasm-bindgen-shared"
+version = "0.2.114"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "75a326b8c223ee17883a4251907455a2431acc2791c98c26279376490c378c16"
+dependencies = [
+ "unicode-ident",
 ]
 
 [[package]]
