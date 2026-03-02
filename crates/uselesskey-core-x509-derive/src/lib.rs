@@ -1,5 +1,3 @@
-#![forbid(unsafe_code)]
-
 //! Deterministic X.509 derivation helpers.
 //!
 //! This crate centralizes deterministic logic shared by X.509 fixture producers:
@@ -37,6 +35,9 @@
 //! assert_eq!(bytes.len(), SERIAL_NUMBER_BYTES);
 //! assert_eq!(bytes[0] & 0x80, 0, "high bit must be cleared");
 //! ```
+
+#![forbid(unsafe_code)]
+#![warn(missing_docs)]
 
 use rand_core::RngCore;
 use rcgen::SerialNumber;
