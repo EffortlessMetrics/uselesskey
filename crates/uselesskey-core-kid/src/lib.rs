@@ -107,4 +107,50 @@ mod tests {
     fn prefix_length_must_be_non_zero() {
         let _ = kid_from_bytes_with_prefix(b"fixture-public-key", 0);
     }
+
+    #[test]
+    #[should_panic(expected = "prefix_bytes must be in 1..=32")]
+    fn prefix_length_above_32_panics() {
+        let _ = kid_from_bytes_with_prefix(b"fixture-public-key", 33);
+    }
+
+    #[test]
+    fn prefix_length_max_32_is_valid() {
+        let kid = kid_from_bytes_with_prefix(b"fixture-public-key", 32);
+        let decoded = URL_SAFE_NO_PAD
+            .decode(kid.as_bytes())
+            .expect("should be valid base64url");
+        assert_eq!(decoded.len(), 32);
+    }
+
+    #[test]
+    fn prefix_length_min_1_is_valid() {
+        let kid = kid_from_bytes_with_prefix(b"fixture-public-key", 1);
+        let decoded = URL_SAFE_NO_PAD
+            .decode(kid.as_bytes())
+            .expect("should be valid base64url");
+        assert_eq!(decoded.len(), 1);
+    }
+
+    #[test]
+    fn kid_from_empty_input() {
+        let kid = kid_from_bytes(b"");
+        assert!(!kid.is_empty(), "even empty input should produce a kid");
+    }
+
+    #[test]
+    fn default_kid_prefix_bytes_is_12() {
+        assert_eq!(DEFAULT_KID_PREFIX_BYTES, 12);
+    }
+
+    #[test]
+    fn kid_is_url_safe() {
+        let kid = kid_from_bytes(b"any-public-key-material");
+        // base64url uses only alphanumerics, '-', and '_'. No padding ('=') with NO_PAD.
+        assert!(
+            kid.chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_'),
+            "kid should be URL-safe: {kid}"
+        );
+    }
 }

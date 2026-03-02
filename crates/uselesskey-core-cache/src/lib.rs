@@ -287,4 +287,75 @@ mod tests {
         let arc = downcast_or_panic::<u32>(arc_any, &id);
         assert_eq!(*arc, 123u32);
     }
+
+    #[test]
+    fn default_creates_empty_cache() {
+        let cache = ArtifactCache::default();
+        assert!(cache.is_empty());
+        assert_eq!(cache.len(), 0);
+    }
+
+    #[test]
+    fn get_typed_missing_key_returns_none() {
+        let cache = ArtifactCache::new();
+        let id = sample_id();
+        assert!(cache.get_typed::<u32>(&id).is_none());
+    }
+
+    #[test]
+    fn distinct_ids_are_stored_independently() {
+        let cache = ArtifactCache::new();
+        let id_a = ArtifactId::new("domain:a", "label", b"spec", "good", DerivationVersion::V1);
+        let id_b = ArtifactId::new("domain:b", "label", b"spec", "good", DerivationVersion::V1);
+
+        cache.insert_if_absent_typed(id_a.clone(), Arc::new(1u32));
+        cache.insert_if_absent_typed(id_b.clone(), Arc::new(2u32));
+
+        assert_eq!(cache.len(), 2);
+        assert_eq!(*cache.get_typed::<u32>(&id_a).unwrap(), 1);
+        assert_eq!(*cache.get_typed::<u32>(&id_b).unwrap(), 2);
+    }
+
+    #[test]
+    fn concurrent_inserts_converge() {
+        use std::thread;
+
+        let cache = Arc::new(ArtifactCache::new());
+        let id = sample_id();
+
+        let handles: Vec<_> = (0..8)
+            .map(|i| {
+                let cache = Arc::clone(&cache);
+                let id = id.clone();
+                thread::spawn(move || cache.insert_if_absent_typed(id, Arc::new(i as u32)))
+            })
+            .collect();
+
+        let results: Vec<u32> = handles.into_iter().map(|h| *h.join().unwrap()).collect();
+
+        // All threads must see the same winning value.
+        let first = results[0];
+        assert!(results.iter().all(|v| *v == first));
+        assert_eq!(cache.len(), 1);
+    }
+
+    #[test]
+    fn downcast_or_panic_message_contains_id_fields() {
+        let id = ArtifactId::new(
+            "domain:msg",
+            "my-label",
+            b"spec",
+            "my-variant",
+            DerivationVersion::V1,
+        );
+        let arc_any: Arc<dyn Any + Send + Sync> = Arc::new(42u32);
+        let result = catch_unwind(AssertUnwindSafe(|| {
+            let _ = downcast_or_panic::<String>(arc_any.clone(), &id);
+        }));
+        let err = result.unwrap_err();
+        let msg = err.downcast_ref::<String>().unwrap();
+        assert!(msg.contains("domain:msg"), "panic should mention domain");
+        assert!(msg.contains("my-label"), "panic should mention label");
+        assert!(msg.contains("my-variant"), "panic should mention variant");
+    }
 }

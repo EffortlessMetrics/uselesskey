@@ -224,4 +224,101 @@ mod tests {
             Mode::Random => panic!("wrong mode"),
         }
     }
+
+    #[test]
+    fn mode_pattern_matches_random() {
+        let fx = Factory::random();
+        assert!(matches!(fx.mode(), Mode::Random));
+    }
+
+    #[test]
+    fn deterministic_same_inputs_yield_same_output() {
+        let fx = Factory::deterministic(Seed::new([7u8; 32]));
+        let a: Arc<u64> = fx.get_or_init("domain:det", "lbl", b"sp", "good", |rng| {
+            use rand_core::RngCore;
+            rng.next_u64()
+        });
+        // Clear cache so init runs again from the same derived seed.
+        fx.clear_cache();
+        let b: Arc<u64> = fx.get_or_init("domain:det", "lbl", b"sp", "good", |rng| {
+            use rand_core::RngCore;
+            rng.next_u64()
+        });
+        assert_eq!(*a, *b, "deterministic mode must reproduce the same value");
+    }
+
+    #[test]
+    fn clone_shares_cache() {
+        let fx = Factory::random();
+        let _ = fx.get_or_init("domain:clone", "lbl", b"sp", "good", |_| 99u32);
+        let fx2 = fx.clone();
+        let val = fx2.get_or_init("domain:clone", "lbl", b"sp", "good", |_| 0u32);
+        assert_eq!(*val, 99, "clone must share the same cache");
+    }
+
+    #[test]
+    fn different_domains_produce_distinct_entries() {
+        let fx = Factory::deterministic(Seed::new([1u8; 32]));
+        let a: Arc<u64> = fx.get_or_init("domain:a", "lbl", b"sp", "good", |rng| {
+            use rand_core::RngCore;
+            rng.next_u64()
+        });
+        let b: Arc<u64> = fx.get_or_init("domain:b", "lbl", b"sp", "good", |rng| {
+            use rand_core::RngCore;
+            rng.next_u64()
+        });
+        assert_ne!(*a, *b);
+    }
+
+    #[test]
+    fn different_variants_produce_distinct_entries() {
+        let fx = Factory::deterministic(Seed::new([2u8; 32]));
+        let a: Arc<u64> = fx.get_or_init("domain:v", "lbl", b"sp", "good", |rng| {
+            use rand_core::RngCore;
+            rng.next_u64()
+        });
+        let b: Arc<u64> = fx.get_or_init("domain:v", "lbl", b"sp", "bad", |rng| {
+            use rand_core::RngCore;
+            rng.next_u64()
+        });
+        assert_ne!(*a, *b);
+    }
+
+    #[test]
+    fn different_specs_produce_distinct_entries() {
+        let fx = Factory::deterministic(Seed::new([3u8; 32]));
+        let a: Arc<u64> = fx.get_or_init("domain:s", "lbl", b"RS256", "good", |rng| {
+            use rand_core::RngCore;
+            rng.next_u64()
+        });
+        let b: Arc<u64> = fx.get_or_init("domain:s", "lbl", b"RS384", "good", |rng| {
+            use rand_core::RngCore;
+            rng.next_u64()
+        });
+        assert_ne!(*a, *b);
+    }
+
+    #[test]
+    fn debug_mode_random() {
+        let fx = Factory::random();
+        let dbg = format!("{:?}", fx);
+        assert!(
+            dbg.contains("Random"),
+            "debug should show Random mode: {dbg}"
+        );
+    }
+
+    #[test]
+    fn debug_mode_deterministic() {
+        let fx = Factory::deterministic(Seed::new([0u8; 32]));
+        let dbg = format!("{:?}", fx);
+        assert!(
+            dbg.contains("Deterministic"),
+            "debug should show Deterministic mode: {dbg}"
+        );
+        assert!(
+            dbg.contains("redacted"),
+            "seed must be redacted in debug output: {dbg}"
+        );
+    }
 }
