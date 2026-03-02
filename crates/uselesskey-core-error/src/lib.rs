@@ -1,11 +1,16 @@
-use alloc::string::String;
+#![forbid(unsafe_code)]
+#![cfg_attr(not(feature = "std"), no_std)]
 
+extern crate alloc;
+
+use alloc::string::String;
 use thiserror::Error;
 
-/// Errors for `uselesskey-core`.
+/// Errors for `uselesskey` core crates.
 ///
-/// This crate is deliberately “test-first”: many operations are infallible by design.
-/// We still surface IO and environment errors because those are common in test harnesses.
+/// These crates are deliberately test-first: many operations are infallible by
+/// design. We still surface IO and environment errors because those are common
+/// in test harnesses.
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("environment variable `{var}` is not set")]
@@ -42,10 +47,7 @@ mod tests {
             "failed to parse seed from environment variable `MY_VAR`: bad seed"
         );
 
-        #[cfg(feature = "std")]
-        {
-            let io_err: Error = std::io::Error::other("io-fail").into();
-            assert_eq!(io_err.to_string(), "io-fail");
-        }
+        let io_err: Error = std::io::Error::other("io-fail").into();
+        assert_eq!(io_err.to_string(), "io-fail");
     }
 }

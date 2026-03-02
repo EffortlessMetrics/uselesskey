@@ -32,15 +32,14 @@
 //! // Extension crates add methods like: fx.rsa("label", spec)
 //! ```
 
-mod error;
 mod factory;
 mod id;
 pub mod negative;
 #[cfg(feature = "std")]
 pub mod sink;
 
-pub use crate::error::Error;
 pub use crate::factory::{Factory, Mode};
 pub use crate::id::{ArtifactDomain, ArtifactId, DerivationVersion, Seed};
 
 extern crate alloc;
+pub use uselesskey_core_error::Error;
