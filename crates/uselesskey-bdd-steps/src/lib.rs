@@ -337,12 +337,38 @@ struct UselessWorld {
     // RustCrypto adapter storage
     #[cfg(feature = "uk-rustcrypto")]
     rustcrypto_signature_bytes: Option<Vec<u8>>,
+    #[cfg(feature = "uk-rustcrypto")]
+    rustcrypto_recorded_signature: Option<Vec<u8>>,
 
     // aws-lc-rs adapter storage
     #[cfg(all(feature = "uk-aws-lc-rs", any(not(windows), has_nasm)))]
     aws_lc_rs_signature_bytes: Option<Vec<u8>>,
     #[cfg(all(feature = "uk-aws-lc-rs", any(not(windows), has_nasm)))]
     aws_lc_rs_public_key_bytes: Option<Vec<u8>>,
+
+    // ring adapter storage
+    #[cfg(feature = "uk-ring")]
+    ring_signature_bytes: Option<Vec<u8>>,
+    #[cfg(feature = "uk-ring")]
+    ring_public_key_bytes: Option<Vec<u8>>,
+
+    // rustls adapter storage
+    #[cfg(feature = "uk-rustls")]
+    rustls_cert_der_bytes: Option<Vec<u8>>,
+    #[cfg(feature = "uk-rustls")]
+    rustls_key_der_bytes: Option<Vec<u8>>,
+    #[cfg(feature = "uk-rustls")]
+    rustls_server_config_ok: Option<bool>,
+    #[cfg(feature = "uk-rustls")]
+    rustls_client_config_ok: Option<bool>,
+    #[cfg(feature = "uk-rustls")]
+    rustls_chain_count: Option<usize>,
+    #[cfg(feature = "uk-rustls")]
+    rustls_root_der_bytes: Option<Vec<u8>>,
+
+    // JWT recorded token for stability tests
+    #[cfg(feature = "uk-jwt")]
+    jwt_recorded_token: Option<String>,
 }
 
 #[cfg(feature = "uk-jwt")]
@@ -5479,6 +5505,439 @@ fn aws_lc_rs_ed25519_wrong_key(world: &mut UselessWorld) {
         public_key.verify(AWS_LC_RS_TEST_MSG, sig).is_err(),
         "Ed25519 signature should NOT verify with wrong key"
     );
+}
+
+// --- ECDSA P-256 wrong-key ---
+
+#[cfg(all(feature = "uk-aws-lc-rs", any(not(windows), has_nasm)))]
+#[then("the aws-lc-rs ECDSA P-256 signature should not verify with the other key")]
+fn aws_lc_rs_ecdsa_p256_wrong_key(world: &mut UselessWorld) {
+    use aws_lc_rs::signature::KeyPair;
+    use uselesskey_aws_lc_rs::AwsLcRsEcdsaKeyPairExt;
+
+    let kp = world.ecdsa.as_ref().expect("ECDSA key not set");
+    let other_kp = kp.ecdsa_key_pair_aws_lc_rs();
+    let other_pub = other_kp.public_key().as_ref();
+    let sig = world
+        .aws_lc_rs_signature_bytes
+        .as_ref()
+        .expect("signature not set");
+    let public_key = aws_lc_rs::signature::UnparsedPublicKey::new(
+        &aws_lc_rs::signature::ECDSA_P256_SHA256_ASN1,
+        other_pub,
+    );
+    assert!(
+        public_key.verify(AWS_LC_RS_TEST_MSG, sig).is_err(),
+        "ECDSA P-256 signature should NOT verify with wrong key"
+    );
+}
+
+// --- ECDSA P-384 wrong-key ---
+
+#[cfg(all(feature = "uk-aws-lc-rs", any(not(windows), has_nasm)))]
+#[then("the aws-lc-rs ECDSA P-384 signature should not verify with the other key")]
+fn aws_lc_rs_ecdsa_p384_wrong_key(world: &mut UselessWorld) {
+    use aws_lc_rs::signature::KeyPair;
+    use uselesskey_aws_lc_rs::AwsLcRsEcdsaKeyPairExt;
+
+    let kp = world.ecdsa.as_ref().expect("ECDSA key not set");
+    let other_kp = kp.ecdsa_key_pair_aws_lc_rs();
+    let other_pub = other_kp.public_key().as_ref();
+    let sig = world
+        .aws_lc_rs_signature_bytes
+        .as_ref()
+        .expect("signature not set");
+    let public_key = aws_lc_rs::signature::UnparsedPublicKey::new(
+        &aws_lc_rs::signature::ECDSA_P384_SHA384_ASN1,
+        other_pub,
+    );
+    assert!(
+        public_key.verify(AWS_LC_RS_TEST_MSG, sig).is_err(),
+        "ECDSA P-384 signature should NOT verify with wrong key"
+    );
+}
+
+// =====================================================================
+// ring adapter steps
+// =====================================================================
+
+#[cfg(feature = "uk-ring")]
+const RING_TEST_MSG: &[u8] = b"ring-bdd-test-message";
+
+// --- RSA ---
+
+#[cfg(feature = "uk-ring")]
+#[when("I sign a message with the ring RSA key")]
+fn ring_rsa_sign(world: &mut UselessWorld) {
+    use ring::signature::KeyPair;
+    use uselesskey_ring::RingRsaKeyPairExt;
+
+    let kp = world.rsa.as_ref().expect("RSA key not set");
+    let ring_kp = kp.rsa_key_pair_ring();
+    let rng = ring::rand::SystemRandom::new();
+    let mut sig = vec![0u8; ring_kp.public().modulus_len()];
+    ring_kp
+        .sign(
+            &ring::signature::RSA_PKCS1_SHA256,
+            &rng,
+            RING_TEST_MSG,
+            &mut sig,
+        )
+        .expect("sign");
+    world.ring_public_key_bytes = Some(ring_kp.public_key().as_ref().to_vec());
+    world.ring_signature_bytes = Some(sig);
+}
+
+#[cfg(feature = "uk-ring")]
+#[then("the ring RSA signature should verify")]
+fn ring_rsa_verify(world: &mut UselessWorld) {
+    let public_key_bytes = world
+        .ring_public_key_bytes
+        .as_ref()
+        .expect("public key not set");
+    let sig = world
+        .ring_signature_bytes
+        .as_ref()
+        .expect("signature not set");
+    let public_key = ring::signature::UnparsedPublicKey::new(
+        &ring::signature::RSA_PKCS1_2048_8192_SHA256,
+        public_key_bytes,
+    );
+    public_key
+        .verify(RING_TEST_MSG, sig)
+        .expect("RSA signature should verify");
+}
+
+#[cfg(feature = "uk-ring")]
+#[then("the ring RSA signature should not verify with the other key")]
+fn ring_rsa_wrong_key(world: &mut UselessWorld) {
+    use ring::signature::KeyPair;
+    use uselesskey_ring::RingRsaKeyPairExt;
+
+    let kp = world.rsa.as_ref().expect("RSA key not set");
+    let other_kp = kp.rsa_key_pair_ring();
+    let other_pub = other_kp.public_key().as_ref();
+    let sig = world
+        .ring_signature_bytes
+        .as_ref()
+        .expect("signature not set");
+    let public_key = ring::signature::UnparsedPublicKey::new(
+        &ring::signature::RSA_PKCS1_2048_8192_SHA256,
+        other_pub,
+    );
+    assert!(
+        public_key.verify(RING_TEST_MSG, sig).is_err(),
+        "RSA signature should NOT verify with wrong key"
+    );
+}
+
+// --- ECDSA P-256 ---
+
+#[cfg(feature = "uk-ring")]
+#[when("I sign a message with the ring ECDSA P-256 key")]
+fn ring_ecdsa_p256_sign(world: &mut UselessWorld) {
+    use ring::signature::KeyPair;
+    use uselesskey_ring::RingEcdsaKeyPairExt;
+
+    let kp = world.ecdsa.as_ref().expect("ECDSA key not set");
+    let ring_kp = kp.ecdsa_key_pair_ring();
+    let rng = ring::rand::SystemRandom::new();
+    let sig = ring_kp.sign(&rng, RING_TEST_MSG).expect("sign");
+    world.ring_public_key_bytes = Some(ring_kp.public_key().as_ref().to_vec());
+    world.ring_signature_bytes = Some(sig.as_ref().to_vec());
+}
+
+#[cfg(feature = "uk-ring")]
+#[then("the ring ECDSA P-256 signature should verify")]
+fn ring_ecdsa_p256_verify(world: &mut UselessWorld) {
+    let public_key_bytes = world
+        .ring_public_key_bytes
+        .as_ref()
+        .expect("public key not set");
+    let sig = world
+        .ring_signature_bytes
+        .as_ref()
+        .expect("signature not set");
+    let public_key = ring::signature::UnparsedPublicKey::new(
+        &ring::signature::ECDSA_P256_SHA256_ASN1,
+        public_key_bytes,
+    );
+    public_key
+        .verify(RING_TEST_MSG, sig)
+        .expect("ECDSA P-256 signature should verify");
+}
+
+// --- ECDSA P-384 ---
+
+#[cfg(feature = "uk-ring")]
+#[when("I sign a message with the ring ECDSA P-384 key")]
+fn ring_ecdsa_p384_sign(world: &mut UselessWorld) {
+    use ring::signature::KeyPair;
+    use uselesskey_ring::RingEcdsaKeyPairExt;
+
+    let kp = world.ecdsa.as_ref().expect("ECDSA key not set");
+    let ring_kp = kp.ecdsa_key_pair_ring();
+    let rng = ring::rand::SystemRandom::new();
+    let sig = ring_kp.sign(&rng, RING_TEST_MSG).expect("sign");
+    world.ring_public_key_bytes = Some(ring_kp.public_key().as_ref().to_vec());
+    world.ring_signature_bytes = Some(sig.as_ref().to_vec());
+}
+
+#[cfg(feature = "uk-ring")]
+#[then("the ring ECDSA P-384 signature should verify")]
+fn ring_ecdsa_p384_verify(world: &mut UselessWorld) {
+    let public_key_bytes = world
+        .ring_public_key_bytes
+        .as_ref()
+        .expect("public key not set");
+    let sig = world
+        .ring_signature_bytes
+        .as_ref()
+        .expect("signature not set");
+    let public_key = ring::signature::UnparsedPublicKey::new(
+        &ring::signature::ECDSA_P384_SHA384_ASN1,
+        public_key_bytes,
+    );
+    public_key
+        .verify(RING_TEST_MSG, sig)
+        .expect("ECDSA P-384 signature should verify");
+}
+
+// --- Ed25519 ---
+
+#[cfg(feature = "uk-ring")]
+#[when("I sign a message with the ring Ed25519 key")]
+fn ring_ed25519_sign(world: &mut UselessWorld) {
+    use ring::signature::KeyPair;
+    use uselesskey_ring::RingEd25519KeyPairExt;
+
+    let kp = world.ed25519.as_ref().expect("Ed25519 key not set");
+    let ring_kp = kp.ed25519_key_pair_ring();
+    let sig = ring_kp.sign(RING_TEST_MSG);
+    world.ring_public_key_bytes = Some(ring_kp.public_key().as_ref().to_vec());
+    world.ring_signature_bytes = Some(sig.as_ref().to_vec());
+}
+
+#[cfg(feature = "uk-ring")]
+#[then("the ring Ed25519 signature should verify")]
+fn ring_ed25519_verify(world: &mut UselessWorld) {
+    let public_key_bytes = world
+        .ring_public_key_bytes
+        .as_ref()
+        .expect("public key not set");
+    let sig = world
+        .ring_signature_bytes
+        .as_ref()
+        .expect("signature not set");
+    let public_key =
+        ring::signature::UnparsedPublicKey::new(&ring::signature::ED25519, public_key_bytes);
+    public_key
+        .verify(RING_TEST_MSG, sig)
+        .expect("Ed25519 signature should verify");
+}
+
+#[cfg(feature = "uk-ring")]
+#[then("the ring Ed25519 signature should not verify with the other key")]
+fn ring_ed25519_wrong_key(world: &mut UselessWorld) {
+    use ring::signature::KeyPair;
+    use uselesskey_ring::RingEd25519KeyPairExt;
+
+    let kp = world.ed25519.as_ref().expect("Ed25519 key not set");
+    let other_kp = kp.ed25519_key_pair_ring();
+    let other_pub = other_kp.public_key().as_ref();
+    let sig = world
+        .ring_signature_bytes
+        .as_ref()
+        .expect("signature not set");
+    let public_key =
+        ring::signature::UnparsedPublicKey::new(&ring::signature::ED25519, other_pub);
+    assert!(
+        public_key.verify(RING_TEST_MSG, sig).is_err(),
+        "Ed25519 signature should NOT verify with wrong key"
+    );
+}
+
+// =====================================================================
+// rustls adapter steps
+// =====================================================================
+
+#[cfg(feature = "uk-rustls")]
+#[when("I convert the X.509 certificate to rustls CertificateDer")]
+fn rustls_cert_der(world: &mut UselessWorld) {
+    use uselesskey_rustls::RustlsCertExt;
+
+    let cert = world.x509.as_ref().expect("X.509 cert not set");
+    let der = cert.certificate_der_rustls();
+    world.rustls_cert_der_bytes = Some(der.as_ref().to_vec());
+}
+
+#[cfg(feature = "uk-rustls")]
+#[then("the rustls CertificateDer should not be empty")]
+fn rustls_cert_der_not_empty(world: &mut UselessWorld) {
+    let bytes = world
+        .rustls_cert_der_bytes
+        .as_ref()
+        .expect("rustls cert DER not set");
+    assert!(!bytes.is_empty(), "CertificateDer should not be empty");
+}
+
+#[cfg(feature = "uk-rustls")]
+#[when("I convert the X.509 private key to rustls PrivateKeyDer")]
+fn rustls_key_der(world: &mut UselessWorld) {
+    use uselesskey_rustls::RustlsPrivateKeyExt;
+
+    let cert = world.x509.as_ref().expect("X.509 cert not set");
+    let der = cert.private_key_der_rustls();
+    world.rustls_key_der_bytes = Some(match &der {
+        rustls_pki_types::PrivateKeyDer::Pkcs8(d) => d.secret_pkcs8_der().to_vec(),
+        _ => panic!("expected PKCS8 key"),
+    });
+}
+
+#[cfg(feature = "uk-rustls")]
+#[then("the rustls PrivateKeyDer should not be empty")]
+fn rustls_key_der_not_empty(world: &mut UselessWorld) {
+    let bytes = world
+        .rustls_key_der_bytes
+        .as_ref()
+        .expect("rustls key DER not set");
+    assert!(!bytes.is_empty(), "PrivateKeyDer should not be empty");
+}
+
+#[cfg(feature = "uk-rustls")]
+#[when("I build a rustls ServerConfig from the chain")]
+fn rustls_server_config(world: &mut UselessWorld) {
+    use uselesskey_rustls::RustlsServerConfigExt;
+
+    let chain = world.x509_chain.as_ref().expect("X.509 chain not set");
+    let _config = chain.server_config_rustls();
+    world.rustls_server_config_ok = Some(true);
+}
+
+#[cfg(feature = "uk-rustls")]
+#[then("the rustls ServerConfig should be valid")]
+fn rustls_server_config_valid(world: &mut UselessWorld) {
+    assert_eq!(world.rustls_server_config_ok, Some(true));
+}
+
+#[cfg(feature = "uk-rustls")]
+#[when("I build a rustls ClientConfig from the chain")]
+fn rustls_client_config(world: &mut UselessWorld) {
+    use uselesskey_rustls::RustlsClientConfigExt;
+
+    let chain = world.x509_chain.as_ref().expect("X.509 chain not set");
+    let _config = chain.client_config_rustls();
+    world.rustls_client_config_ok = Some(true);
+}
+
+#[cfg(feature = "uk-rustls")]
+#[then("the rustls ClientConfig should be valid")]
+fn rustls_client_config_valid(world: &mut UselessWorld) {
+    assert_eq!(world.rustls_client_config_ok, Some(true));
+}
+
+#[cfg(feature = "uk-rustls")]
+#[when("I convert the chain to rustls CertificateDer list")]
+fn rustls_chain_der_list(world: &mut UselessWorld) {
+    use uselesskey_rustls::RustlsChainExt;
+
+    let chain = world.x509_chain.as_ref().expect("X.509 chain not set");
+    let certs = chain.chain_der_rustls();
+    world.rustls_chain_count = Some(certs.len());
+}
+
+#[cfg(feature = "uk-rustls")]
+#[then(regex = r"^the rustls chain should have at least (\d+) certificates$")]
+fn rustls_chain_count(world: &mut UselessWorld, expected: usize) {
+    let count = world.rustls_chain_count.expect("chain count not set");
+    assert!(
+        count >= expected,
+        "expected at least {expected} certs, got {count}"
+    );
+}
+
+#[cfg(feature = "uk-rustls")]
+#[when("I convert the chain root to rustls CertificateDer")]
+fn rustls_root_der(world: &mut UselessWorld) {
+    use uselesskey_rustls::RustlsChainExt;
+
+    let chain = world.x509_chain.as_ref().expect("X.509 chain not set");
+    let root = chain.root_certificate_der_rustls();
+    world.rustls_root_der_bytes = Some(root.as_ref().to_vec());
+}
+
+#[cfg(feature = "uk-rustls")]
+#[then("the rustls root CertificateDer should not be empty")]
+fn rustls_root_der_not_empty(world: &mut UselessWorld) {
+    let bytes = world
+        .rustls_root_der_bytes
+        .as_ref()
+        .expect("rustls root DER not set");
+    assert!(!bytes.is_empty(), "root CertificateDer should not be empty");
+}
+
+// =====================================================================
+// JWT additional steps (token recording for deterministic stability)
+// =====================================================================
+
+#[cfg(feature = "uk-jwt")]
+#[when("I record the JWT token")]
+fn record_jwt_token(world: &mut UselessWorld) {
+    world.jwt_recorded_token = world.jwt_token.clone();
+}
+
+#[cfg(feature = "uk-jwt")]
+#[then("the JWT token should be identical to the recorded one")]
+fn jwt_token_identical_to_recorded(world: &mut UselessWorld) {
+    let current = world.jwt_token.as_ref().expect("JWT token not set");
+    let recorded = world
+        .jwt_recorded_token
+        .as_ref()
+        .expect("recorded JWT token not set");
+    assert_eq!(current, recorded, "JWT tokens should be identical");
+}
+
+// =====================================================================
+// RustCrypto additional steps
+// =====================================================================
+
+#[cfg(feature = "uk-rustcrypto")]
+#[then("the RustCrypto HMAC-SHA256 tag should not verify with the other key")]
+fn rustcrypto_hmac_sha256_wrong_key(world: &mut UselessWorld) {
+    use hmac::Mac;
+    use uselesskey_rustcrypto::RustCryptoHmacExt;
+
+    let secret = world.hmac.as_ref().expect("HMAC secret not set");
+    let mut mac = secret.hmac_sha256();
+    mac.update(RUSTCRYPTO_TEST_MSG);
+    let tag_bytes = world
+        .rustcrypto_signature_bytes
+        .as_ref()
+        .expect("tag not set");
+    assert!(
+        mac.verify_slice(tag_bytes).is_err(),
+        "HMAC-SHA256 tag should NOT verify with wrong key"
+    );
+}
+
+#[cfg(feature = "uk-rustcrypto")]
+#[when("I record the RustCrypto signature")]
+fn record_rustcrypto_signature(world: &mut UselessWorld) {
+    world.rustcrypto_recorded_signature = world.rustcrypto_signature_bytes.clone();
+}
+
+#[cfg(feature = "uk-rustcrypto")]
+#[then("the RustCrypto signature should be identical to the recorded one")]
+fn rustcrypto_signature_identical_to_recorded(world: &mut UselessWorld) {
+    let current = world
+        .rustcrypto_signature_bytes
+        .as_ref()
+        .expect("signature not set");
+    let recorded = world
+        .rustcrypto_recorded_signature
+        .as_ref()
+        .expect("recorded signature not set");
+    assert_eq!(current, recorded, "signatures should be identical");
 }
 
 /// Execute the BDD suite from the selected test harness.
