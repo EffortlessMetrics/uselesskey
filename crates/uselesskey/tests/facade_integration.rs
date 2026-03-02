@@ -133,7 +133,13 @@ fn token_full_workflow_all_kinds() {
 // ===========================================================================
 
 #[test]
-#[cfg(all(feature = "rsa", feature = "ecdsa", feature = "ed25519", feature = "hmac", feature = "token"))]
+#[cfg(all(
+    feature = "rsa",
+    feature = "ecdsa",
+    feature = "ed25519",
+    feature = "hmac",
+    feature = "token"
+))]
 fn all_key_types_coexist_independently() {
     let fx = deterministic_fx("cross-type-v1");
 
@@ -157,7 +163,13 @@ fn all_key_types_coexist_independently() {
 }
 
 #[test]
-#[cfg(all(feature = "rsa", feature = "ecdsa", feature = "ed25519", feature = "hmac", feature = "token"))]
+#[cfg(all(
+    feature = "rsa",
+    feature = "ecdsa",
+    feature = "ed25519",
+    feature = "hmac",
+    feature = "token"
+))]
 fn same_label_different_types_are_independent_across_factories() {
     let fx1 = deterministic_fx("independence-v1");
     let fx2 = deterministic_fx("independence-v1");
@@ -176,7 +188,10 @@ fn same_label_different_types_are_independent_across_factories() {
     let rsa2 = fx2.rsa("svc", RsaSpec::rs256());
 
     assert_eq!(rsa1.private_key_pkcs8_der(), rsa2.private_key_pkcs8_der());
-    assert_eq!(ecdsa1.private_key_pkcs8_der(), ecdsa2.private_key_pkcs8_der());
+    assert_eq!(
+        ecdsa1.private_key_pkcs8_der(),
+        ecdsa2.private_key_pkcs8_der()
+    );
     assert_eq!(ed1.private_key_pkcs8_der(), ed2.private_key_pkcs8_der());
     assert_eq!(hmac1.secret_bytes(), hmac2.secret_bytes());
     assert_eq!(tok1.value(), tok2.value());
@@ -205,9 +220,15 @@ fn rsa_determinism_across_fresh_factories() {
 #[cfg(feature = "rsa")]
 fn rsa_determinism_survives_cache_clear() {
     let fx = deterministic_fx("det-clear-v1");
-    let k1_pem = fx.rsa("det-clear-rsa", RsaSpec::rs256()).private_key_pkcs8_pem().to_owned();
+    let k1_pem = fx
+        .rsa("det-clear-rsa", RsaSpec::rs256())
+        .private_key_pkcs8_pem()
+        .to_owned();
     fx.clear_cache();
-    let k2_pem = fx.rsa("det-clear-rsa", RsaSpec::rs256()).private_key_pkcs8_pem().to_owned();
+    let k2_pem = fx
+        .rsa("det-clear-rsa", RsaSpec::rs256())
+        .private_key_pkcs8_pem()
+        .to_owned();
     assert_eq!(k1_pem, k2_pem);
 }
 
@@ -255,7 +276,11 @@ fn token_determinism_across_fresh_factories() {
     let fx1 = deterministic_fx("det-tok-v1");
     let fx2 = deterministic_fx("det-tok-v1");
 
-    for spec in [TokenSpec::api_key(), TokenSpec::bearer(), TokenSpec::oauth_access_token()] {
+    for spec in [
+        TokenSpec::api_key(),
+        TokenSpec::bearer(),
+        TokenSpec::oauth_access_token(),
+    ] {
         let t1 = fx1.token("det-tok", spec);
         let t2 = fx2.token("det-tok", spec);
         assert_eq!(t1.value(), t2.value());
@@ -491,7 +516,12 @@ fn hmac_jwk_has_expected_fields() {
 }
 
 #[test]
-#[cfg(all(feature = "jwk", feature = "rsa", feature = "ecdsa", feature = "ed25519"))]
+#[cfg(all(
+    feature = "jwk",
+    feature = "rsa",
+    feature = "ecdsa",
+    feature = "ed25519"
+))]
 fn multi_key_jwks_via_builder() {
     use uselesskey::jwk::JwksBuilder;
 
@@ -553,7 +583,10 @@ fn x509_self_signed_basic() {
     let cert = fx.x509_self_signed("x509-basic", spec);
 
     assert!(cert.cert_pem().contains("-----BEGIN CERTIFICATE-----"));
-    assert!(cert.private_key_pkcs8_pem().contains("-----BEGIN PRIVATE KEY-----"));
+    assert!(
+        cert.private_key_pkcs8_pem()
+            .contains("-----BEGIN PRIVATE KEY-----")
+    );
     assert!(!cert.cert_der().is_empty());
     assert!(!cert.private_key_pkcs8_der().is_empty());
 }
@@ -621,13 +654,20 @@ fn x509_chain_three_level() {
     assert_eq!(chain.chain_pem().matches("BEGIN CERTIFICATE").count(), 2);
 
     // Full chain has 3 certs
-    assert_eq!(chain.full_chain_pem().matches("BEGIN CERTIFICATE").count(), 3);
+    assert_eq!(
+        chain.full_chain_pem().matches("BEGIN CERTIFICATE").count(),
+        3
+    );
 
     // All components are non-empty
     assert!(!chain.root_cert_der().is_empty());
     assert!(!chain.intermediate_cert_der().is_empty());
     assert!(!chain.leaf_cert_der().is_empty());
-    assert!(chain.leaf_private_key_pkcs8_pem().contains("BEGIN PRIVATE KEY"));
+    assert!(
+        chain
+            .leaf_private_key_pkcs8_pem()
+            .contains("BEGIN PRIVATE KEY")
+    );
 }
 
 #[test]
@@ -651,7 +691,10 @@ fn x509_chain_expired_intermediate() {
     let chain = fx.x509_chain("x509-chain-ei", ChainSpec::new("ei.example.com"));
     let expired = chain.expired_intermediate();
 
-    assert_ne!(chain.intermediate_cert_der(), expired.intermediate_cert_der());
+    assert_ne!(
+        chain.intermediate_cert_der(),
+        expired.intermediate_cert_der()
+    );
 }
 
 #[test]
@@ -753,7 +796,10 @@ fn x509_chain_determinism() {
 
     assert_eq!(ch1.root_cert_pem(), ch2.root_cert_pem());
     assert_eq!(ch1.leaf_cert_pem(), ch2.leaf_cert_pem());
-    assert_eq!(ch1.leaf_private_key_pkcs8_pem(), ch2.leaf_private_key_pkcs8_pem());
+    assert_eq!(
+        ch1.leaf_private_key_pkcs8_pem(),
+        ch2.leaf_private_key_pkcs8_pem()
+    );
 }
 
 // ===========================================================================

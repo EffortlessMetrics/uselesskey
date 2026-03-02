@@ -72,7 +72,10 @@ mod rsa_corrupt_pem {
             kp.private_key_pkcs8_pem_corrupt(CorruptPem::ExtraBlankLine),
         ];
         for (i, v) in variants.iter().enumerate() {
-            assert_ne!(v, original, "RSA CorruptPem variant {i} should differ from original");
+            assert_ne!(
+                v, original,
+                "RSA CorruptPem variant {i} should differ from original"
+            );
         }
     }
 
@@ -87,7 +90,10 @@ mod rsa_corrupt_pem {
         ];
         for i in 0..variants.len() {
             for j in (i + 1)..variants.len() {
-                assert_ne!(variants[i], variants[j], "RSA variants {i} and {j} should differ");
+                assert_ne!(
+                    variants[i], variants[j],
+                    "RSA variants {i} and {j} should differ"
+                );
             }
         }
     }
@@ -559,7 +565,11 @@ mod x509_negative {
         let c = cert();
         let variants = [c.expired(), c.not_yet_valid(), c.wrong_key_usage()];
         for (i, v) in variants.iter().enumerate() {
-            assert_ne!(c.cert_der(), v.cert_der(), "X509 negative variant {i} should differ");
+            assert_ne!(
+                c.cert_der(),
+                v.cert_der(),
+                "X509 negative variant {i} should differ"
+            );
         }
     }
 
