@@ -1,9 +1,6 @@
 # uselesskey-core-jwk-shape
 
-Core typed JWK and JWKS model definitions for `uselesskey` fixture crates.
+Compatibility facade for typed JWK and JWKS models.
 
-## Purpose
-
-- Provide stable JWK shape structures (`PublicJwk`, `PrivateJwk`, `AnyJwk`, and `Jwks`).
-- Keep shape modeling separate from ordering/building behavior.
-- Re-exported through `uselesskey-core-jwk` for compatibility.
+This crate preserves the long-standing `uselesskey_core_jwk_shape` import path and
+re-exports all model types from `uselesskey-core-jwk-types`.
