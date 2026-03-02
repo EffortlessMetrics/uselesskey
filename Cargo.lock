@@ -3497,6 +3497,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "uselesskey-core-random-text"
+version = "0.3.0"
+dependencies = [
+ "proptest",
+ "rand_chacha 0.3.1",
+ "rand_core 0.6.4",
+]
+
+[[package]]
 name = "uselesskey-core-seed"
 version = "0.3.0"
 dependencies = [
@@ -3534,6 +3543,7 @@ dependencies = [
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
  "serde_json",
+ "uselesskey-core-random-text",
 ]
 
 [[package]]
@@ -3820,12 +3830,14 @@ name = "uselesskey-x509"
 version = "0.3.0"
 dependencies = [
  "base64",
+ "insta",
  "proptest",
  "rand_chacha 0.3.1",
  "rcgen",
  "rsa",
  "rstest",
  "rustls-pki-types",
+ "serde",
  "time",
  "uselesskey-core",
  "uselesskey-core-x509",
