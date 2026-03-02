@@ -19,6 +19,7 @@ blake3.workspace = true
 base64.workspace = true
 
 [dev-dependencies]
+proptest.workspace = true
 rstest.workspace = true
 
 [package.metadata.docs.rs]
