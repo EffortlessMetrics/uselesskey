@@ -1,0 +1,9 @@
+---
+source: crates/uselesskey-core-negative-pem/tests/snapshots_negative_pem.rs
+expression: result
+---
+variant: ExtraBlankLine
+original_line_count: 3
+corrupted_line_count: 4
+has_empty_line: true
+differs_from_original: true

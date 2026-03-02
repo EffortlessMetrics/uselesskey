@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-core-base62/tests/snapshots_base62.rs
+expression: result
+---
+seed_byte: 7
+length: 48
+outputs_match: true

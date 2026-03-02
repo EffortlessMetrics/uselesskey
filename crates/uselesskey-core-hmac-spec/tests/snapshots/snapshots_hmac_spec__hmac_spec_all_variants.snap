@@ -1,0 +1,31 @@
+---
+source: crates/uselesskey-core-hmac-spec/tests/snapshots_hmac_spec.rs
+expression: results
+---
+- variant: Hs256
+  alg_name: HS256
+  byte_len: 32
+  debug_repr: Hs256
+  stable_bytes:
+    - 0
+    - 0
+    - 0
+    - 1
+- variant: Hs384
+  alg_name: HS384
+  byte_len: 48
+  debug_repr: Hs384
+  stable_bytes:
+    - 0
+    - 0
+    - 0
+    - 2
+- variant: Hs512
+  alg_name: HS512
+  byte_len: 64
+  debug_repr: Hs512
+  stable_bytes:
+    - 0
+    - 0
+    - 0
+    - 3

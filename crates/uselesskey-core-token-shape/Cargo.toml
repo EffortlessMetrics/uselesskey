@@ -21,8 +21,10 @@ uselesskey-core-base62.workspace = true
 serde_json.workspace = true
 
 [dev-dependencies]
+insta.workspace = true
 proptest.workspace = true
 rand_chacha.workspace = true
+serde.workspace = true
 
 [package.metadata.docs.rs]
 all-features = true

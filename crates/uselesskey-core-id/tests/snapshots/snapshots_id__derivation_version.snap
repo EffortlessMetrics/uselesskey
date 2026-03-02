@@ -1,0 +1,6 @@
+---
+source: crates/uselesskey-core-id/tests/snapshots_id.rs
+expression: result
+---
+v1_value: 1
+debug_repr: DerivationVersion(1)

@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-core-seed/tests/snapshots_seed.rs
+expression: result
+---
+same_string_matches: true
+different_string_differs: true
+byte_count: 32

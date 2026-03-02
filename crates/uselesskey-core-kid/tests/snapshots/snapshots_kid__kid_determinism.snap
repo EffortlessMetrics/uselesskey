@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-core-kid/tests/snapshots_kid.rs
+expression: result
+---
+same_input_matches: true
+different_input_differs: true
+default_prefix_bytes: 12

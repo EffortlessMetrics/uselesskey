@@ -20,8 +20,10 @@ spin = { version = "0.9.8", default-features = false, features = ["mutex", "spin
 uselesskey-core-id = { path = "../uselesskey-core-id", version = "0.3.0", default-features = false }
 
 [dev-dependencies]
+insta.workspace = true
 proptest.workspace = true
 rstest.workspace = true
+serde.workspace = true
 
 [features]
 default = ["std"]

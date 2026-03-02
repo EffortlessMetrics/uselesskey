@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-core-negative-pem/tests/snapshots_negative_pem.rs
+expression: result
+---
+variant: BadHeader
+original_len: 58
+corrupted_len: 63
+first_line: "-----BEGIN CORRUPTED KEY-----"
+last_line: "-----END TEST KEY-----"
+differs_from_original: true

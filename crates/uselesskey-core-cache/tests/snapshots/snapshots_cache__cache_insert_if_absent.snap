@@ -1,0 +1,9 @@
+---
+source: crates/uselesskey-core-cache/tests/snapshots_cache.rs
+expression: result
+---
+first_insert_value: 11
+second_insert_attempted: 22
+cached_value: 11
+kept_first: true
+cache_len: 1

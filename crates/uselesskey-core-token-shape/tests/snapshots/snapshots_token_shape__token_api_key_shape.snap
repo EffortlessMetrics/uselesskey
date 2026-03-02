@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-core-token-shape/tests/snapshots_token_shape.rs
+expression: result
+---
+prefix: uk_test_
+prefix_len: 8
+random_suffix_len: 32
+total_len: 40
+starts_with_prefix: true
+suffix_all_alphanumeric: true

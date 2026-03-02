@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-core-id/tests/snapshots_id.rs
+expression: result
+---
+same_inputs_match: true
+different_labels_differ: true
+different_variants_differ: true
+derived_seed_byte_count: 32

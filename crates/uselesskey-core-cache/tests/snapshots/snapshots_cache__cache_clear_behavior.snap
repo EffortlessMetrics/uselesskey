@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-core-cache/tests/snapshots_cache.rs
+expression: result
+---
+len_before_clear: 2
+len_after_clear: 0
+is_empty_after_clear: true

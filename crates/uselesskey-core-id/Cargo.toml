@@ -19,8 +19,10 @@ uselesskey-core-hash = { workspace = true }
 uselesskey-core-seed = { path = "../uselesskey-core-seed", version = "0.3.0", default-features = false }
 
 [dev-dependencies]
+insta.workspace = true
 proptest.workspace = true
 rstest.workspace = true
+serde.workspace = true
 
 [features]
 default = ["std"]

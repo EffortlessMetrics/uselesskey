@@ -1,0 +1,28 @@
+---
+source: crates/uselesskey-core-kid/tests/snapshots_kid.rs
+expression: results
+---
+- input_description: test-key
+  kid_len: 2
+  prefix_bytes: 1
+  is_base64url: true
+- input_description: test-key
+  kid_len: 6
+  prefix_bytes: 4
+  is_base64url: true
+- input_description: test-key
+  kid_len: 11
+  prefix_bytes: 8
+  is_base64url: true
+- input_description: test-key
+  kid_len: 16
+  prefix_bytes: 12
+  is_base64url: true
+- input_description: test-key
+  kid_len: 22
+  prefix_bytes: 16
+  is_base64url: true
+- input_description: test-key
+  kid_len: 43
+  prefix_bytes: 32
+  is_base64url: true

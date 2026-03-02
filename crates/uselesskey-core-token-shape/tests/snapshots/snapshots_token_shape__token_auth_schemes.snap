@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-core-token-shape/tests/snapshots_token_shape.rs
+expression: result
+---
+api_key: ApiKey
+bearer: Bearer
+oauth: Bearer

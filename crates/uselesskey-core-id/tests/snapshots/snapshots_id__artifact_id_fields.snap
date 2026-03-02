@@ -1,0 +1,9 @@
+---
+source: crates/uselesskey-core-id/tests/snapshots_id.rs
+expression: result
+---
+domain: "domain:ecdsa"
+label: test-label
+variant: mismatch
+version: 1
+fingerprint_len: 32
