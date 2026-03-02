@@ -237,3 +237,8 @@ required-features = ["builder-patterns"]
 name = "pem_der_format"
 path = "pem_der_format.rs"
 required-features = ["pem-der-format"]
+
+[[test]]
+name = "cross_crate_determinism"
+path = "cross_crate_determinism.rs"
+required-features = ["determinism"]
