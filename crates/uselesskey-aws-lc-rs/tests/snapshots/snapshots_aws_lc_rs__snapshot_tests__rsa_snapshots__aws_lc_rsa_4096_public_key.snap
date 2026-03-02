@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-aws-lc-rs/tests/snapshots_aws_lc_rs.rs
+expression: result
+---
+algorithm: RSA-4096
+public_key_hex: "[REDACTED]"
+public_key_len: 526

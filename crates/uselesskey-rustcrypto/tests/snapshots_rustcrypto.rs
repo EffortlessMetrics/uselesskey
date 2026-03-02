@@ -72,6 +72,30 @@ mod rsa_snapshots {
 
         insta::assert_yaml_snapshot!("rustcrypto_rsa_key_sizes", cases);
     }
+
+    #[test]
+    fn snapshot_rustcrypto_rsa_4096_public_key() {
+        let fx = fx();
+        let keypair = fx.rsa("snapshot-rsa-4096", RsaSpec::new(4096));
+
+        let public_key = keypair.rsa_public_key();
+        let modulus_bits = public_key.n().bits();
+
+        #[derive(Serialize)]
+        struct RsaInfo {
+            algorithm: &'static str,
+            modulus_bits: u32,
+            e_hex: String,
+        }
+
+        let result = RsaInfo {
+            algorithm: "RSA-4096",
+            modulus_bits: modulus_bits as u32,
+            e_hex: format!("{:x}", public_key.e()),
+        };
+
+        insta::assert_yaml_snapshot!("rustcrypto_rsa_4096_public_key", result);
+    }
 }
 
 #[cfg(feature = "ecdsa")]
@@ -119,6 +143,40 @@ mod ecdsa_snapshots {
             ".public_key_hex" => "[REDACTED]",
         });
     }
+
+    #[test]
+    fn snapshot_rustcrypto_ecdsa_key_sizes() {
+        let fx = fx();
+
+        #[derive(Serialize)]
+        struct EcdsaSizeInfo {
+            curve: &'static str,
+            verifying_key_len: usize,
+        }
+
+        let cases: Vec<EcdsaSizeInfo> = vec![
+            {
+                let kp = fx.ecdsa("sizes-p256", EcdsaSpec::es256());
+                let vk = kp.p256_verifying_key();
+                let point = vk.to_encoded_point(false);
+                EcdsaSizeInfo {
+                    curve: "P-256",
+                    verifying_key_len: point.as_bytes().len(),
+                }
+            },
+            {
+                let kp = fx.ecdsa("sizes-p384", EcdsaSpec::es384());
+                let vk = kp.p384_verifying_key();
+                let point = vk.to_encoded_point(false);
+                EcdsaSizeInfo {
+                    curve: "P-384",
+                    verifying_key_len: point.as_bytes().len(),
+                }
+            },
+        ];
+
+        insta::assert_yaml_snapshot!("rustcrypto_ecdsa_key_sizes", cases);
+    }
 }
 
 #[cfg(feature = "ed25519")]
@@ -144,6 +202,31 @@ mod ed25519_snapshots {
         insta::assert_yaml_snapshot!("rustcrypto_ed25519_verifying_key", result, {
             ".public_key_hex" => "[REDACTED]",
         });
+    }
+
+    #[test]
+    fn snapshot_rustcrypto_ed25519_key_len_invariant() {
+        let fx = fx();
+
+        #[derive(Serialize)]
+        struct Ed25519LenInfo {
+            label: &'static str,
+            verifying_key_len: usize,
+        }
+
+        let cases: Vec<Ed25519LenInfo> = ["ed-len-a", "ed-len-b", "ed-len-c"]
+            .into_iter()
+            .map(|label| {
+                let kp = fx.ed25519(label, Ed25519Spec::new());
+                let vk = kp.ed25519_verifying_key();
+                Ed25519LenInfo {
+                    label,
+                    verifying_key_len: vk.as_bytes().len(),
+                }
+            })
+            .collect();
+
+        insta::assert_yaml_snapshot!("rustcrypto_ed25519_key_len_invariant", cases);
     }
 }
 
@@ -179,5 +262,102 @@ mod hmac_snapshots {
         insta::assert_yaml_snapshot!("rustcrypto_hmac_sha256_tag", result, {
             ".tag_hex" => "[REDACTED]",
         });
+    }
+
+    #[test]
+    fn snapshot_rustcrypto_hmac_sha384_tag() {
+        let fx = fx();
+        let secret = fx.hmac("snapshot-hmac-384", HmacSpec::hs384());
+
+        let mut mac = secret.hmac_sha384();
+        mac.update(b"snapshot-test-message");
+        let tag = mac.finalize().into_bytes();
+
+        #[derive(Serialize)]
+        struct HmacInfo {
+            algorithm: &'static str,
+            tag_hex: String,
+            tag_len: usize,
+        }
+
+        let result = HmacInfo {
+            algorithm: "HMAC-SHA384",
+            tag_hex: hex::encode(tag),
+            tag_len: tag.len(),
+        };
+
+        insta::assert_yaml_snapshot!("rustcrypto_hmac_sha384_tag", result, {
+            ".tag_hex" => "[REDACTED]",
+        });
+    }
+
+    #[test]
+    fn snapshot_rustcrypto_hmac_sha512_tag() {
+        let fx = fx();
+        let secret = fx.hmac("snapshot-hmac-512", HmacSpec::hs512());
+
+        let mut mac = secret.hmac_sha512();
+        mac.update(b"snapshot-test-message");
+        let tag = mac.finalize().into_bytes();
+
+        #[derive(Serialize)]
+        struct HmacInfo {
+            algorithm: &'static str,
+            tag_hex: String,
+            tag_len: usize,
+        }
+
+        let result = HmacInfo {
+            algorithm: "HMAC-SHA512",
+            tag_hex: hex::encode(tag),
+            tag_len: tag.len(),
+        };
+
+        insta::assert_yaml_snapshot!("rustcrypto_hmac_sha512_tag", result, {
+            ".tag_hex" => "[REDACTED]",
+        });
+    }
+
+    #[test]
+    fn snapshot_rustcrypto_hmac_all_tag_sizes() {
+        let fx = fx();
+
+        #[derive(Serialize)]
+        struct HmacTagSize {
+            algorithm: &'static str,
+            tag_len: usize,
+        }
+
+        let cases: Vec<HmacTagSize> = vec![
+            {
+                let secret = fx.hmac("tag-sizes-256", HmacSpec::hs256());
+                let mut mac = secret.hmac_sha256();
+                mac.update(b"test");
+                HmacTagSize {
+                    algorithm: "HMAC-SHA256",
+                    tag_len: mac.finalize().into_bytes().len(),
+                }
+            },
+            {
+                let secret = fx.hmac("tag-sizes-384", HmacSpec::hs384());
+                let mut mac = secret.hmac_sha384();
+                mac.update(b"test");
+                HmacTagSize {
+                    algorithm: "HMAC-SHA384",
+                    tag_len: mac.finalize().into_bytes().len(),
+                }
+            },
+            {
+                let secret = fx.hmac("tag-sizes-512", HmacSpec::hs512());
+                let mut mac = secret.hmac_sha512();
+                mac.update(b"test");
+                HmacTagSize {
+                    algorithm: "HMAC-SHA512",
+                    tag_len: mac.finalize().into_bytes().len(),
+                }
+            },
+        ];
+
+        insta::assert_yaml_snapshot!("rustcrypto_hmac_all_tag_sizes", cases);
     }
 }

@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-aws-lc-rs/tests/snapshots_aws_lc_rs.rs
+expression: result
+---
+label: determinism-check
+first_modulus_len: 256
+second_modulus_len: 256
+lengths_match: true

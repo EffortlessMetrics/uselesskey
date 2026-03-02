@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-rustcrypto/tests/snapshots_rustcrypto.rs
+expression: cases
+---
+- curve: P-256
+  verifying_key_len: 65
+- curve: P-384
+  verifying_key_len: 97

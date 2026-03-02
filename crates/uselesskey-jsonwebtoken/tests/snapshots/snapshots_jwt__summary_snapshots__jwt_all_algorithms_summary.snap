@@ -1,0 +1,25 @@
+---
+source: crates/uselesskey-jsonwebtoken/tests/snapshots_jwt.rs
+expression: results
+---
+- algorithm: RS256
+  token_parts: 3
+  roundtrip_ok: true
+- algorithm: ES256
+  token_parts: 3
+  roundtrip_ok: true
+- algorithm: ES384
+  token_parts: 3
+  roundtrip_ok: true
+- algorithm: EdDSA
+  token_parts: 3
+  roundtrip_ok: true
+- algorithm: HS256
+  token_parts: 3
+  roundtrip_ok: true
+- algorithm: HS384
+  token_parts: 3
+  roundtrip_ok: true
+- algorithm: HS512
+  token_parts: 3
+  roundtrip_ok: true

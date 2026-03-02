@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-ring/tests/snapshots_ring.rs
+expression: result
+---
+label: determinism-check
+first_modulus_len: 256
+second_modulus_len: 256
+first_pub_len: 270
+second_pub_len: 270
+lengths_match: true

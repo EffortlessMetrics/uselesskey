@@ -71,6 +71,52 @@ mod snapshot_tests {
 
             insta::assert_yaml_snapshot!("aws_lc_rsa_modulus_lengths", cases);
         }
+
+        #[test]
+        fn snapshot_aws_lc_rsa_4096_public_key() {
+            let fx = fx();
+            let keypair = fx.rsa("snapshot-rsa-4096", RsaSpec::new(4096));
+            let aws_kp = keypair.rsa_key_pair_aws_lc_rs();
+
+            let pub_bytes = aws_kp.public_key().as_ref();
+
+            let result = AwsLcKeySnapshot {
+                algorithm: "RSA-4096",
+                public_key_hex: hex::encode(pub_bytes),
+                public_key_len: pub_bytes.len(),
+            };
+
+            insta::assert_yaml_snapshot!("aws_lc_rsa_4096_public_key", result, {
+                ".public_key_hex" => "[REDACTED]",
+            });
+        }
+
+        #[test]
+        fn snapshot_aws_lc_rsa_deterministic_same_label() {
+            let fx = fx();
+
+            #[derive(Serialize)]
+            struct DeterminismCheck {
+                label: &'static str,
+                first_modulus_len: usize,
+                second_modulus_len: usize,
+                lengths_match: bool,
+            }
+
+            let kp1 = fx.rsa("determinism-check", RsaSpec::rs256());
+            let kp2 = fx.rsa("determinism-check", RsaSpec::rs256());
+            let r1 = kp1.rsa_key_pair_aws_lc_rs();
+            let r2 = kp2.rsa_key_pair_aws_lc_rs();
+
+            let result = DeterminismCheck {
+                label: "determinism-check",
+                first_modulus_len: r1.public_modulus_len(),
+                second_modulus_len: r2.public_modulus_len(),
+                lengths_match: r1.public_modulus_len() == r2.public_modulus_len(),
+            };
+
+            insta::assert_yaml_snapshot!("aws_lc_rsa_deterministic_same_label", result);
+        }
     }
 
     #[cfg(feature = "ecdsa")]
@@ -117,6 +163,38 @@ mod snapshot_tests {
                 ".public_key_hex" => "[REDACTED]",
             });
         }
+
+        #[test]
+        fn snapshot_aws_lc_ecdsa_key_sizes() {
+            let fx = fx();
+
+            #[derive(Serialize)]
+            struct EcdsaSizeInfo {
+                curve: &'static str,
+                public_key_len: usize,
+            }
+
+            let cases: Vec<EcdsaSizeInfo> = vec![
+                {
+                    let kp = fx.ecdsa("sizes-p256", EcdsaSpec::es256());
+                    let aws_kp = kp.ecdsa_key_pair_aws_lc_rs();
+                    EcdsaSizeInfo {
+                        curve: "P-256",
+                        public_key_len: aws_kp.public_key().as_ref().len(),
+                    }
+                },
+                {
+                    let kp = fx.ecdsa("sizes-p384", EcdsaSpec::es384());
+                    let aws_kp = kp.ecdsa_key_pair_aws_lc_rs();
+                    EcdsaSizeInfo {
+                        curve: "P-384",
+                        public_key_len: aws_kp.public_key().as_ref().len(),
+                    }
+                },
+            ];
+
+            insta::assert_yaml_snapshot!("aws_lc_ecdsa_key_sizes", cases);
+        }
     }
 
     #[cfg(feature = "ed25519")]
@@ -143,6 +221,31 @@ mod snapshot_tests {
             insta::assert_yaml_snapshot!("aws_lc_ed25519_public_key", result, {
                 ".public_key_hex" => "[REDACTED]",
             });
+        }
+
+        #[test]
+        fn snapshot_aws_lc_ed25519_key_len_invariant() {
+            let fx = fx();
+
+            #[derive(Serialize)]
+            struct Ed25519LenInfo {
+                label: &'static str,
+                public_key_len: usize,
+            }
+
+            let cases: Vec<Ed25519LenInfo> = ["ed-len-a", "ed-len-b", "ed-len-c"]
+                .into_iter()
+                .map(|label| {
+                    let kp = fx.ed25519(label, Ed25519Spec::new());
+                    let aws_kp = kp.ed25519_key_pair_aws_lc_rs();
+                    Ed25519LenInfo {
+                        label,
+                        public_key_len: aws_kp.public_key().as_ref().len(),
+                    }
+                })
+                .collect();
+
+            insta::assert_yaml_snapshot!("aws_lc_ed25519_key_len_invariant", cases);
         }
     }
 }

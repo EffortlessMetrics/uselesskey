@@ -71,6 +71,24 @@ mod rsa_snapshots {
 
         insta::assert_yaml_snapshot!("rustls_rsa_key_sizes", cases);
     }
+
+    #[test]
+    fn snapshot_rustls_rsa_4096_private_key() {
+        let fx = fx();
+        let keypair = fx.rsa("snapshot-rsa-4096", RsaSpec::new(4096));
+        let key = keypair.private_key_der_rustls();
+
+        let result = RustlsKeySnapshot {
+            key_type: "RSA-4096",
+            der_variant: "Pkcs8",
+            der_len: key.secret_der().len(),
+            der_hex: hex::encode(key.secret_der()),
+        };
+
+        insta::assert_yaml_snapshot!("rustls_rsa_4096_private_key", result, {
+            ".der_hex" => "[REDACTED]",
+        });
+    }
 }
 
 // =========================================================================
@@ -146,6 +164,70 @@ mod ed25519_snapshots {
         insta::assert_yaml_snapshot!("rustls_ed25519_private_key", result, {
             ".der_hex" => "[REDACTED]",
         });
+    }
+}
+
+// =========================================================================
+// All key types DER size comparison
+// =========================================================================
+
+#[cfg(all(feature = "rsa", feature = "ecdsa", feature = "ed25519"))]
+mod all_key_types_snapshots {
+    use super::*;
+    use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
+    use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
+    use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+    use uselesskey_rustls::RustlsPrivateKeyExt;
+
+    #[test]
+    fn snapshot_rustls_all_key_der_sizes() {
+        let fx = fx();
+
+        #[derive(Serialize)]
+        struct KeyDerSize {
+            key_type: &'static str,
+            der_len: usize,
+        }
+
+        let cases: Vec<KeyDerSize> = vec![
+            {
+                let kp = fx.rsa("der-sizes-rsa-2048", RsaSpec::rs256());
+                KeyDerSize {
+                    key_type: "RSA-2048",
+                    der_len: kp.private_key_der_rustls().secret_der().len(),
+                }
+            },
+            {
+                let kp = fx.rsa("der-sizes-rsa-4096", RsaSpec::new(4096));
+                KeyDerSize {
+                    key_type: "RSA-4096",
+                    der_len: kp.private_key_der_rustls().secret_der().len(),
+                }
+            },
+            {
+                let kp = fx.ecdsa("der-sizes-p256", EcdsaSpec::es256());
+                KeyDerSize {
+                    key_type: "ECDSA-P256",
+                    der_len: kp.private_key_der_rustls().secret_der().len(),
+                }
+            },
+            {
+                let kp = fx.ecdsa("der-sizes-p384", EcdsaSpec::es384());
+                KeyDerSize {
+                    key_type: "ECDSA-P384",
+                    der_len: kp.private_key_der_rustls().secret_der().len(),
+                }
+            },
+            {
+                let kp = fx.ed25519("der-sizes-ed25519", Ed25519Spec::new());
+                KeyDerSize {
+                    key_type: "Ed25519",
+                    der_len: kp.private_key_der_rustls().secret_der().len(),
+                }
+            },
+        ];
+
+        insta::assert_yaml_snapshot!("rustls_all_key_der_sizes", cases);
     }
 }
 
@@ -230,5 +312,70 @@ mod x509_snapshots {
             ".root_cert_der_hex" => "[REDACTED]",
             ".private_key_der_hex" => "[REDACTED]",
         });
+    }
+
+    #[test]
+    fn snapshot_rustls_x509_chain_key_sizes() {
+        let fx = fx();
+
+        #[derive(Serialize)]
+        struct ChainKeySizeInfo {
+            rsa_bits: usize,
+            chain_len: usize,
+            leaf_cert_der_len: usize,
+            root_cert_der_len: usize,
+            private_key_der_len: usize,
+        }
+
+        let cases: Vec<ChainKeySizeInfo> = [2048, 4096]
+            .into_iter()
+            .map(|bits| {
+                let chain = fx.x509_chain(
+                    format!("rustls-chain-bits-{bits}"),
+                    ChainSpec::new(format!("bits{bits}.example.com")).with_rsa_bits(bits),
+                );
+                let chain_certs = chain.chain_der_rustls();
+                let root = chain.root_certificate_der_rustls();
+                let key = chain.private_key_der_rustls();
+                ChainKeySizeInfo {
+                    rsa_bits: bits,
+                    chain_len: chain_certs.len(),
+                    leaf_cert_der_len: chain_certs[0].as_ref().len(),
+                    root_cert_der_len: root.as_ref().len(),
+                    private_key_der_len: key.secret_der().len(),
+                }
+            })
+            .collect();
+
+        insta::assert_yaml_snapshot!("rustls_x509_chain_key_sizes", cases);
+    }
+
+    #[test]
+    fn snapshot_rustls_self_signed_custom_domain() {
+        let fx = fx();
+        let cert = fx.x509_self_signed(
+            "snapshot-custom",
+            X509Spec::self_signed("custom.example.com"),
+        );
+
+        #[derive(Serialize)]
+        struct CustomDomainInfo {
+            domain: &'static str,
+            cert_der_len: usize,
+            private_key_der_len: usize,
+            der_variant: &'static str,
+        }
+
+        let cert_der = cert.certificate_der_rustls();
+        let key = cert.private_key_der_rustls();
+
+        let result = CustomDomainInfo {
+            domain: "custom.example.com",
+            cert_der_len: cert_der.as_ref().len(),
+            private_key_der_len: key.secret_der().len(),
+            der_variant: "Pkcs8",
+        };
+
+        insta::assert_yaml_snapshot!("rustls_self_signed_custom_domain", result);
     }
 }

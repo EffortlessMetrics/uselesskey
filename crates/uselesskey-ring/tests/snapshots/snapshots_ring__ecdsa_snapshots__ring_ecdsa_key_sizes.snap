@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-ring/tests/snapshots_ring.rs
+expression: cases
+---
+- curve: P-256
+  public_key_len: 65
+- curve: P-384
+  public_key_len: 97

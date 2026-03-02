@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-rustcrypto/tests/snapshots_rustcrypto.rs
+expression: cases
+---
+- algorithm: HMAC-SHA256
+  tag_len: 32
+- algorithm: HMAC-SHA384
+  tag_len: 48
+- algorithm: HMAC-SHA512
+  tag_len: 64

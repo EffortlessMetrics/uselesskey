@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-jsonwebtoken/tests/snapshots_jwt.rs
+expression: result
+---
+algorithm: HS512
+token_parts: 3
+token_header_len: 36
+claims_sub: user-hmac512
+claims_iss: snapshot-hmac-512
+roundtrip_ok: true

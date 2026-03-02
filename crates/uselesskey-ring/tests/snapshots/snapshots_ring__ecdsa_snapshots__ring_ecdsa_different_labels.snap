@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-ring/tests/snapshots_ring.rs
+expression: result
+---
+curve: P-256
+label_a_pub_len: 65
+label_b_pub_len: 65
+same_curve_same_size: true

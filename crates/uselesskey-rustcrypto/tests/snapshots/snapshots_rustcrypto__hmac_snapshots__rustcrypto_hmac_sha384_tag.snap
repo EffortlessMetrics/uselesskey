@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-rustcrypto/tests/snapshots_rustcrypto.rs
+expression: result
+---
+algorithm: HMAC-SHA384
+tag_hex: "[REDACTED]"
+tag_len: 48
