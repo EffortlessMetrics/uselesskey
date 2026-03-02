@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Release-candidate polish. The full feature set — RSA, ECDSA, Ed25519, HMAC,
+Token, OpenPGP, and X.509 fixtures plus six adapter crates (jsonwebtoken,
+rustls, ring, rustcrypto, aws-lc-rs, tonic) — is stable.  This cycle focused
+on crate-splitting for publish granularity, comprehensive test coverage, and
+documentation readiness.
+
 ### Added
 
 #### New microcrates
@@ -44,7 +50,7 @@ publish granularity and cross-crate reuse:
 #### Documentation
 
 - Improved sub-crate READMEs and `lib.rs` docs for crates.io readiness
-- Doc examples added to public API crates
+- Doc examples added to all public API crates, including `uselesskey-pgp` and `uselesskey-rustls`
 - Module-level documentation for previously undocumented crates
 
 ### Changed

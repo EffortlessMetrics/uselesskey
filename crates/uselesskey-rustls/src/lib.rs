@@ -9,6 +9,33 @@
 //! With the `server-config` and `client-config` features, it also provides
 //! convenience builders for `rustls::ServerConfig` and `rustls::ClientConfig`,
 //! including mutual TLS (mTLS) support.
+//!
+//! # Convert a private key to rustls format
+//!
+//! ```
+//! use uselesskey_core::Factory;
+//! use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+//! use uselesskey_rustls::RustlsPrivateKeyExt;
+//!
+//! let fx = Factory::random();
+//! let rsa = fx.rsa("server", RsaSpec::rs256());
+//! let key = rsa.private_key_der_rustls();
+//! assert_eq!(key.secret_der(), rsa.private_key_pkcs8_der());
+//! ```
+//!
+//! # Build TLS configs (requires `tls-config` + a crypto provider feature)
+//!
+//! ```no_run
+//! use uselesskey_core::Factory;
+//! use uselesskey_x509::{X509FactoryExt, ChainSpec};
+//! use uselesskey_rustls::{RustlsServerConfigExt, RustlsClientConfigExt};
+//!
+//! let fx = Factory::random();
+//! let chain = fx.x509_chain("svc", ChainSpec::new("test.example.com"));
+//!
+//! let server_cfg = chain.server_config_rustls();
+//! let client_cfg = chain.client_config_rustls();
+//! ```
 
 #[cfg(any(feature = "server-config", feature = "client-config"))]
 mod config;

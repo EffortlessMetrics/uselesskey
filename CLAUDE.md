@@ -137,6 +137,6 @@ Adapter crates (e.g. `uselesskey-jsonwebtoken`) are separate crates, not feature
 ## Configuration Files
 
 - `rustfmt.toml` - Formatting: Unix newlines, crate-level imports
-- `clippy.toml` - MSRV 1.88
+- `clippy.toml` - MSRV 1.92
 - `deny.toml` - Allowed licenses: MIT, Apache-2.0, BSD-3-Clause, ISC, CC0-1.0
 - `mutants.toml` - Mutation testing exclusions
