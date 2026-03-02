@@ -117,8 +117,16 @@ cross-adapter = [
 # Cross-crate determinism tests
 determinism = ["dep:uselesskey"]
 
+# Concurrency and thread-safety tests
+concurrency = [
+    "dep:uselesskey-rsa",
+    "dep:uselesskey-ecdsa",
+    "dep:uselesskey-ed25519",
+    "dep:uselesskey-hmac",
+]
+
 # All integration tests
-all = ["jwt", "tls", "crypto-backend", "e2e", "key-rotation", "cross-adapter", "determinism"]
+all = ["jwt", "tls", "crypto-backend", "e2e", "key-rotation", "cross-adapter", "determinism", "concurrency"]
 
 [[test]]
 name = "jwt_integration"
@@ -158,3 +166,8 @@ required-features = ["determinism"]
 [[test]]
 name = "governance"
 path = "governance.rs"
+
+[[test]]
+name = "concurrency"
+path = "concurrency.rs"
+required-features = ["concurrency"]
