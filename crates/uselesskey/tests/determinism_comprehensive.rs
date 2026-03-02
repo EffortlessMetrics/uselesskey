@@ -235,7 +235,12 @@ fn order_independence_hmac() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 #[test]
-#[cfg(all(feature = "rsa", feature = "ecdsa", feature = "ed25519", feature = "hmac"))]
+#[cfg(all(
+    feature = "rsa",
+    feature = "ecdsa",
+    feature = "ed25519",
+    feature = "hmac"
+))]
 fn cross_type_non_perturbation() {
     // Generate RSA alone
     let rsa_alone = fx42().rsa("stable", RsaSpec::rs256());
@@ -677,10 +682,7 @@ fn pinned_kid_ecdsa_es384() {
 #[cfg(all(feature = "ed25519", feature = "jwk"))]
 fn pinned_kid_ed25519() {
     let kid = fx42().ed25519("regression", Ed25519Spec::new()).kid();
-    assert_eq!(
-        kid,
-        fx42().ed25519("regression", Ed25519Spec::new()).kid()
-    );
+    assert_eq!(kid, fx42().ed25519("regression", Ed25519Spec::new()).kid());
 }
 
 #[test]
