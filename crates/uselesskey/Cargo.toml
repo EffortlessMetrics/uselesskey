@@ -64,5 +64,11 @@ full = ["all-keys", "token", "x509", "jwk"]
 [dev-dependencies]
 tempfile.workspace = true
 proptest.workspace = true
+criterion.workspace = true
 pem = "3"
 x509-parser = "0.18"
+
+[[bench]]
+name = "keygen"
+harness = false
+required-features = ["full"]

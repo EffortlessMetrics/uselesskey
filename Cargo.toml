@@ -113,6 +113,7 @@ uselesskey-core-sink = { path = "crates/uselesskey-core-sink", version = "0.3.0"
 proptest = "1.10.0"
 rstest = "0.26.1"
 insta = { version = "1", features = ["yaml", "redactions"] }
+criterion = { version = "0.5", default-features = false, features = ["html_reports", "cargo_bench_support"] }
 
 # CLI helpers (xtask)
 anyhow = "1.0.102"
