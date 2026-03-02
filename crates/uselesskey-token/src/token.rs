@@ -4,7 +4,7 @@ use std::sync::Arc;
 use uselesskey_core::Factory;
 use uselesskey_core_token::{TokenKind, authorization_scheme, generate_token};
 
-use crate::TokenSpec;
+use uselesskey_core_token_spec::TokenSpec;
 
 /// Cache domain for token fixtures.
 ///

@@ -6,3 +6,5 @@
 //! all token-generation behavior to [`uselesskey_core_token_shape`].
 
 pub use uselesskey_core_token_shape::*;
+
+pub use uselesskey_core_token_spec::TokenSpec;

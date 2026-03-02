@@ -16,6 +16,7 @@ authors.workspace = true
 
 [dependencies]
 uselesskey-core-token-shape.workspace = true
+uselesskey-core-token-spec.workspace = true
 
 [dev-dependencies]
 rand_chacha.workspace = true

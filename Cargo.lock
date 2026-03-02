@@ -3523,6 +3523,7 @@ dependencies = [
  "rand_chacha 0.3.1",
  "serde_json",
  "uselesskey-core-token-shape",
+ "uselesskey-core-token-spec",
 ]
 
 [[package]]
@@ -3535,6 +3536,10 @@ dependencies = [
  "rand_core 0.6.4",
  "serde_json",
 ]
+
+[[package]]
+name = "uselesskey-core-token-spec"
+version = "0.3.0"
 
 [[package]]
 name = "uselesskey-core-x509"
@@ -3803,6 +3808,7 @@ dependencies = [
  "serde_json",
  "uselesskey-core",
  "uselesskey-core-token",
+ "uselesskey-core-token-spec",
 ]
 
 [[package]]
@@ -3820,12 +3826,14 @@ name = "uselesskey-x509"
 version = "0.3.0"
 dependencies = [
  "base64",
+ "insta",
  "proptest",
  "rand_chacha 0.3.1",
  "rcgen",
  "rsa",
  "rstest",
  "rustls-pki-types",
+ "serde",
  "time",
  "uselesskey-core",
  "uselesskey-core-x509",
