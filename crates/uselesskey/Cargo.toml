@@ -67,6 +67,11 @@ proptest.workspace = true
 criterion.workspace = true
 pem = "3"
 x509-parser = "0.18"
+serde = { workspace = true, features = ["derive"] }
+jsonwebtoken = { workspace = true, features = ["rust_crypto"] }
+uselesskey-jsonwebtoken = { path = "../uselesskey-jsonwebtoken", version = "0.3.0", features = ["all"] }
+uselesskey-rustls = { path = "../uselesskey-rustls", version = "0.3.0", features = ["all", "tls-config", "rustls-ring"] }
+rustls-pki-types.workspace = true
 
 [[bench]]
 name = "keygen"
