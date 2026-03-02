@@ -37,6 +37,9 @@ rsa = { workspace = true, optional = true }
 p256 = { version = "0.13", features = ["ecdsa", "pkcs8"], optional = true }
 ed25519-dalek = { workspace = true, optional = true }
 sha2 = { version = "0.10", features = ["oid"], optional = true }
+base64 = { workspace = true, optional = true }
+der-parser = { version = "9", optional = true }
+x509-parser = { version = "0.18", optional = true }
 serde.workspace = true
 serde_json.workspace = true
 toml = "0.8"
@@ -154,7 +157,18 @@ kid-stability = [
 ]
 
 # All integration tests
-all = ["jwt", "tls", "crypto-backend", "e2e", "key-rotation", "cross-adapter", "determinism", "concurrency", "kid-stability", "compile-fail", "builder-patterns"]
+all = ["jwt", "tls", "crypto-backend", "e2e", "key-rotation", "cross-adapter", "determinism", "concurrency", "kid-stability", "compile-fail", "builder-patterns", "pem-der-format"]
+
+# PEM/DER format validation tests
+pem-der-format = [
+    "dep:uselesskey-rsa",
+    "dep:uselesskey-ecdsa",
+    "dep:uselesskey-ed25519",
+    "dep:uselesskey-x509",
+    "dep:base64",
+    "dep:der-parser",
+    "dep:x509-parser",
+]
 
 [[test]]
 name = "jwt_integration"
@@ -218,3 +232,8 @@ required-features = ["compile-fail"]
 name = "builder_patterns"
 path = "builder_patterns.rs"
 required-features = ["builder-patterns"]
+
+[[test]]
+name = "pem_der_format"
+path = "pem_der_format.rs"
+required-features = ["pem-der-format"]
