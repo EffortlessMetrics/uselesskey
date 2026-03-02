@@ -243,14 +243,20 @@ fn feature_matrix_cmd() -> Result<()> {
 }
 
 const PUBLISH_CRATES: &[&str] = &[
+    // Leaf crates (no workspace deps)
+    "uselesskey-core-base62",
     "uselesskey-core-seed",
     "uselesskey-core-hash",
+    "uselesskey-core-hmac-spec",
     "uselesskey-core-id",
     "uselesskey-core-cache",
     "uselesskey-core-factory",
     "uselesskey-core-kid",
+    // Negative fixture crates
+    "uselesskey-core-negative-der",
     "uselesskey-core-negative-pem",
     "uselesskey-core-negative",
+    // Sinks and shapes
     "uselesskey-core-sink",
     "uselesskey-core-token",
     "uselesskey-core-token-shape",
@@ -258,22 +264,30 @@ const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-core-jwks-order",
     "uselesskey-core-jwk-builder",
     "uselesskey-core-jwk",
+    // X.509 crates (in dep order)
     "uselesskey-core-x509-spec",
     "uselesskey-core-x509-derive",
+    "uselesskey-core-x509-chain-negative",
     "uselesskey-core-x509-negative",
     "uselesskey-core-x509",
+    // Core aggregate
     "uselesskey-core",
     "uselesskey-core-keypair-material",
     "uselesskey-core-keypair",
+    // Mid-level crates
     "uselesskey-jwk",
     "uselesskey-rsa",
     "uselesskey-ecdsa",
     "uselesskey-ed25519",
     "uselesskey-hmac",
     "uselesskey-token",
+    "uselesskey-token-spec",
     "uselesskey-pgp",
     "uselesskey-x509",
+    // Facade
     "uselesskey",
+    // Adapters (depend on facade / key crates)
+    "uselesskey-core-rustls-pki",
     "uselesskey-jsonwebtoken",
     "uselesskey-rustls",
     "uselesskey-tonic",
