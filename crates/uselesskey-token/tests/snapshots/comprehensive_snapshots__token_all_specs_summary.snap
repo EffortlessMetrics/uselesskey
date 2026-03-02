@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-token/tests/comprehensive_snapshots.rs
+assertion_line: 39
+expression: result
+---
+api_key_len: 40
+api_key_prefix: uk_test_
+bearer_len: 43
+oauth_segment_count: 3
+oauth_has_header_payload_sig: true

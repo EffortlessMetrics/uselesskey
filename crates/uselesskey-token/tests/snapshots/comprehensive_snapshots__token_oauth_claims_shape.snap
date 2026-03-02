@@ -1,0 +1,15 @@
+---
+source: crates/uselesskey-token/tests/comprehensive_snapshots.rs
+assertion_line: 84
+expression: result
+---
+has_iss: true
+has_sub: true
+has_aud: true
+has_scope: true
+has_exp: true
+has_jti: true
+iss_value: uselesskey
+sub_value: snap-oauth-claims
+aud_value: tests
+scope_value: fixture.read
