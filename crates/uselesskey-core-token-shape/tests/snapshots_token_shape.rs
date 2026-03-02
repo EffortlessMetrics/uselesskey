@@ -12,6 +12,7 @@ use uselesskey_core_token_shape::{
 };
 
 #[derive(Serialize)]
+#[allow(dead_code)]
 struct TokenShapeSnapshot {
     kind: &'static str,
     total_len: usize,
