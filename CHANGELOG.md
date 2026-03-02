@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### New microcrates
+
+Six internal modules were extracted into dedicated core microcrates to improve
+publish granularity and cross-crate reuse:
+
+- **`uselesskey-core-base62`** — base62 generation logic
+- **`uselesskey-core-hmac-spec`** — `HmacSpec` model for cross-crate reuse
+- **`uselesskey-core-negative-der`** — DER negative-fixture helpers
+- **`uselesskey-core-rustls-pki`** — rustls PKI type adapters
+- **`uselesskey-core-x509-chain-negative`** — X.509 chain negative policy types
+- **`uselesskey-token-spec`** — token spec models
+
+#### Testing
+
+- Comprehensive error handling and edge case tests across all crates
+- Security tests validating the no-key-leakage invariant (`Debug` impls never expose key material)
+- Determinism regression tests with hardcoded expected values for snapshot stability
+- Cross-adapter interop tests for signing and TLS workflows (rustls, ring, rustcrypto)
+- 8 new BDD scenarios targeting coverage gaps
+- BDD scenarios for `uselesskey-rustcrypto` and `uselesskey-aws-lc-rs` adapters
+- Insta snapshot tests for `uselesskey-rustls` adapter and all key-type crates
+- Property-based tests for core derivation and caching
+- Integration tests for newly split core microcrates
+- Trait implementation tests for core type crates
+- Tests for previously untested core crates (cache, kid, negative, sink)
+- Comprehensive cross-crate determinism tests
+- X.509 and negative fixture test coverage expansion
+- Algorithm crate coverage gap tests
+- Comprehensive adapter and facade integration tests
+- 12 new fuzz targets covering under-fuzzed and untested code paths
+
+### Fixed
+
+- `publish-preflight` now runs all `cargo package` steps before reporting failures
+
+### Documentation
+
+- Improved sub-crate READMEs and `lib.rs` docs for crates.io readiness
+- Doc examples added to public API crates
+- Module-level documentation for previously undocumented crates
+
+### Internal
+
+- Handle unpublished workspace deps in `publish-check` xtask
+- Complete `Cargo.toml` metadata (description, license, repository, keywords) for crates.io readiness
+- Packaging excludes added to publishable crates
+
 ## [0.3.0] - 2026-02-17
 
 ### Added
