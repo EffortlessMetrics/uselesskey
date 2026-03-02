@@ -3564,6 +3564,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "uselesskey-core-x509-chain-negative"
+version = "0.3.0"
+dependencies = [
+ "proptest",
+ "rstest",
+ "uselesskey-core-x509-spec",
+]
+
+[[package]]
 name = "uselesskey-core-x509-derive"
 version = "0.3.0"
 dependencies = [
@@ -3580,6 +3589,7 @@ version = "0.3.0"
 dependencies = [
  "proptest",
  "rstest",
+ "uselesskey-core-x509-chain-negative",
  "uselesskey-core-x509-spec",
 ]
 
