@@ -97,3 +97,21 @@ Feature: Cross-key validation failures
     And I generate an Ed25519 key for label "identical-label"
     And I generate an HMAC HS256 secret for label "identical-label"
     Then each key should have a unique kid
+
+  # --- Mismatch variants produce parseable but different keys across types ---
+
+  Scenario: RSA and ECDSA mismatch variants both produce distinct public keys
+    Given a deterministic factory seeded with "cross-mismatch-test"
+    When I generate an RSA key for label "cross-mismatch" with spec RS256
+    And I generate an ECDSA ES256 key for label "cross-mismatch"
+    Then a mismatched SPKI DER should parse and differ
+    And an ECDSA mismatched SPKI DER should parse and differ
+
+  # --- Mismatch variants produce parseable but different keys across types ---
+
+  Scenario: RSA and ECDSA mismatch variants both produce distinct public keys
+    Given a deterministic factory seeded with "cross-mismatch-test"
+    When I generate an RSA key for label "cross-mismatch" with spec RS256
+    And I generate an ECDSA ES256 key for label "cross-mismatch"
+    Then a mismatched SPKI DER should parse and differ
+    And an ECDSA mismatched SPKI DER should parse and differ

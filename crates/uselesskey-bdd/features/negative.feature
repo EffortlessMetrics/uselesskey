@@ -91,3 +91,21 @@ Feature: Negative fixtures
     When I corrupt the PKCS8 PEM with Truncate to 1 bytes
     Then the corrupted PEM should have length 1
     And the corrupted PEM should fail to parse
+
+  # --- Cross-key-type corruption: all corrupt variants fail parsing ---
+
+  Scenario: ECDSA deterministic corrupt variant fails standard parsing
+    Given a deterministic factory seeded with "ecdsa-corrupt-neg"
+    When I generate an ECDSA ES256 key for label "corrupt-check"
+    And I deterministically corrupt the ECDSA PKCS8 PEM with variant "corrupt-v1"
+    And I deterministically corrupt the ECDSA PKCS8 PEM with variant "corrupt-v1" again
+    Then the deterministic text artifacts should be identical
+    And the deterministic ECDSA PEM artifact should fail to parse
+
+  Scenario: Ed25519 deterministic corrupt variant fails standard parsing
+    Given a deterministic factory seeded with "ed25519-corrupt-neg"
+    When I generate an Ed25519 key for label "corrupt-check"
+    And I deterministically corrupt the Ed25519 PKCS8 PEM with variant "corrupt-v1"
+    And I deterministically corrupt the Ed25519 PKCS8 PEM with variant "corrupt-v1" again
+    Then the deterministic text artifacts should be identical
+    And the deterministic Ed25519 PEM artifact should fail to parse

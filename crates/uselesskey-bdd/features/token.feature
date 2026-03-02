@@ -107,6 +107,18 @@ Feature: Token fixtures
 
   # --- Token spec variants ---
 
+  Scenario: each token type has its distinctive format shape
+    Given a deterministic factory seeded with "prefix-shape-audit"
+    When I generate an API key token for label "shape-check"
+    Then the token value should start with "uk_test_"
+    And the token value should have length 40
+    When I generate a bearer token for label "shape-check"
+    Then the token value should be valid base64url
+    And the token value should have length 43
+    When I generate an OAuth access token for label "shape-check"
+    Then the token value should have three dot-separated segments
+    And the token value header should decode to valid JSON
+
   Scenario: different token specs produce different values for same label
     Given a deterministic factory seeded with "token-variant-test"
     When I generate an API key token for label "shared-label"
