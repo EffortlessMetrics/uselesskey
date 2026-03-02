@@ -111,3 +111,44 @@ fn field_order_matters() {
 
     assert_ne!(h1.finalize(), h2.finalize());
 }
+
+// ── Additional boundary tests ───────────────────────────────────────
+
+#[test]
+fn hash32_single_zero_byte_is_valid() {
+    let h = hash32(&[0x00]);
+    assert_eq!(h.as_bytes().len(), 32);
+    assert_ne!(h, hash32(b""), "\\0 differs from empty");
+}
+
+#[test]
+fn write_len_prefixed_single_byte_values_differ() {
+    let mut h1 = Hasher::new();
+    write_len_prefixed(&mut h1, &[0x00]);
+
+    let mut h2 = Hasher::new();
+    write_len_prefixed(&mut h2, &[0x01]);
+
+    assert_ne!(h1.finalize(), h2.finalize());
+}
+
+#[test]
+fn hash32_large_input() {
+    let data = vec![0xAB; 100_000];
+    let h = hash32(&data);
+    assert_eq!(h.as_bytes().len(), 32);
+}
+
+#[test]
+fn write_len_prefixed_three_empty_fields_differs_from_two() {
+    let mut h2 = Hasher::new();
+    write_len_prefixed(&mut h2, b"");
+    write_len_prefixed(&mut h2, b"");
+
+    let mut h3 = Hasher::new();
+    write_len_prefixed(&mut h3, b"");
+    write_len_prefixed(&mut h3, b"");
+    write_len_prefixed(&mut h3, b"");
+
+    assert_ne!(h2.finalize(), h3.finalize());
+}
