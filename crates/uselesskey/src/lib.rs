@@ -105,18 +105,19 @@
 //!
 //! # Temporary Files
 //!
-//! Some libraries require file paths. Use `write_*` methods:
+//! Some libraries require file paths. Use `write_*` methods which return
+//! [`TempArtifact`]:
 //!
 //! ```
 //! # #[cfg(feature = "rsa")]
 //! # fn main() {
-//! use uselesskey::{Factory, RsaFactoryExt, RsaSpec};
+//! use uselesskey::{Factory, RsaFactoryExt, RsaSpec, TempArtifact};
 //!
 //! let fx = Factory::random();
 //! let keypair = fx.rsa("server", RsaSpec::rs256());
 //!
 //! // Write to a tempfile (auto-cleaned on drop)
-//! let temp = keypair.write_private_key_pkcs8_pem().unwrap();
+//! let temp: TempArtifact = keypair.write_private_key_pkcs8_pem().unwrap();
 //! let path = temp.path();
 //!
 //! assert!(path.exists());
@@ -155,17 +156,69 @@
 //! # #[cfg(not(all(feature = "jwk", feature = "rsa")))]
 //! # fn main() {}
 //! ```
+//!
+//! # X.509 Certificates
+//!
+//! With the `x509` feature, generate self-signed certificates and certificate chains:
+//!
+//! ```
+//! # #[cfg(feature = "x509")]
+//! # fn main() {
+//! use uselesskey::{Factory, X509FactoryExt, X509Spec};
+//!
+//! let fx = Factory::random();
+//! let cert = fx.x509_self_signed("my-service", X509Spec::self_signed("localhost"));
+//!
+//! assert!(cert.cert_pem().contains("BEGIN CERTIFICATE"));
+//! assert!(!cert.cert_der().is_empty());
+//! assert!(!cert.private_key_pkcs8_der().is_empty());
+//! # }
+//! # #[cfg(not(feature = "x509"))]
+//! # fn main() {}
+//! ```
+//!
+//! # Features
+//!
+//! | Feature | Description |
+//! |---------|-------------|
+//! | `rsa` | RSA key fixtures (default) |
+//! | `ecdsa` | ECDSA P-256/P-384 key fixtures |
+//! | `ed25519` | Ed25519 key fixtures |
+//! | `hmac` | HMAC secret fixtures |
+//! | `token` | API key/bearer token fixtures |
+//! | `pgp` | OpenPGP key fixtures |
+//! | `x509` | X.509 certificate and chain fixtures |
+//! | `jwk` | JWK/JWKS output for all key types |
+//! | `all-keys` | All key types (rsa + ecdsa + ed25519 + hmac + pgp) |
+//! | `full` | Everything: all-keys + token + x509 + jwk |
 
-pub use uselesskey_core::{Error, Factory, Mode, Seed};
+// ---------------------------------------------------------------------------
+// Core re-exports
+// ---------------------------------------------------------------------------
 
+pub use uselesskey_core::sink::TempArtifact;
+pub use uselesskey_core::{
+    ArtifactDomain, ArtifactId, DerivationVersion, Error, Factory, Mode, Seed,
+};
+
+/// Generic negative-fixture helpers (corrupt PEM, truncate DER, etc.).
 pub mod negative {
     pub use uselesskey_core::negative::*;
 }
 
+// ---------------------------------------------------------------------------
+// JWK support
+// ---------------------------------------------------------------------------
+
 #[cfg(feature = "jwk")]
 pub mod jwk {
+    //! JWK/JWKS types and builder.
     pub use uselesskey_jwk::*;
 }
+
+// ---------------------------------------------------------------------------
+// Key type re-exports (feature-gated)
+// ---------------------------------------------------------------------------
 
 #[cfg(feature = "rsa")]
 pub use uselesskey_rsa::{DOMAIN_RSA_KEYPAIR, RsaFactoryExt, RsaKeyPair, RsaSpec};
@@ -189,8 +242,8 @@ pub use uselesskey_pgp::{DOMAIN_PGP_KEYPAIR, PgpFactoryExt, PgpKeyPair, PgpSpec}
 
 #[cfg(feature = "x509")]
 pub use uselesskey_x509::{
-    ChainNegative, ChainSpec, DOMAIN_X509_CERT, DOMAIN_X509_CHAIN, X509Cert, X509Chain,
-    X509FactoryExt, X509Spec,
+    ChainNegative, ChainSpec, DOMAIN_X509_CERT, DOMAIN_X509_CHAIN, KeyUsage, NotBeforeOffset,
+    X509Cert, X509Chain, X509FactoryExt, X509Negative, X509Spec,
 };
 
 /// Common imports for tests.
@@ -198,11 +251,11 @@ pub use uselesskey_x509::{
 /// Re-exports vary based on enabled features. With default features (rsa only):
 /// ```
 /// use uselesskey::prelude::*;
-/// // Gives you: Factory, Mode, Seed, RsaFactoryExt, RsaSpec, RsaKeyPair, negative::*
+/// // Gives you: Factory, Mode, Seed, TempArtifact, RsaFactoryExt, RsaSpec, RsaKeyPair, negative::*
 /// ```
 pub mod prelude {
     pub use crate::negative::*;
-    pub use crate::{Factory, Mode, Seed};
+    pub use crate::{Factory, Mode, Seed, TempArtifact};
 
     #[cfg(feature = "rsa")]
     pub use crate::{RsaFactoryExt, RsaKeyPair, RsaSpec};
@@ -223,5 +276,7 @@ pub mod prelude {
     pub use crate::{PgpFactoryExt, PgpKeyPair, PgpSpec};
 
     #[cfg(feature = "x509")]
-    pub use crate::{ChainSpec, X509Cert, X509Chain, X509FactoryExt, X509Spec};
+    pub use crate::{
+        ChainNegative, ChainSpec, X509Cert, X509Chain, X509FactoryExt, X509Negative, X509Spec,
+    };
 }
