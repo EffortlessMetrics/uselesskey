@@ -29,6 +29,7 @@ members = [
   "crates/uselesskey-core-x509-negative",
   "crates/uselesskey-core-x509-spec",
   "crates/uselesskey-core-x509",
+  "crates/uselesskey-core-rustls-pki",
   "crates/uselesskey-jwk",
   "crates/uselesskey-rsa",
   "crates/uselesskey-ecdsa",

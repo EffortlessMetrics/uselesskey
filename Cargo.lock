@@ -3510,6 +3510,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "uselesskey-core-rustls-pki"
+version = "0.3.0"
+dependencies = [
+ "rustls-pki-types",
+ "uselesskey-core",
+ "uselesskey-ecdsa",
+ "uselesskey-ed25519",
+ "uselesskey-rsa",
+ "uselesskey-x509",
+]
+
+[[package]]
 name = "uselesskey-core-seed"
 version = "0.3.0"
 dependencies = [
@@ -3804,6 +3816,7 @@ dependencies = [
  "rustls-pki-types",
  "serde",
  "uselesskey-core",
+ "uselesskey-core-rustls-pki",
  "uselesskey-ecdsa",
  "uselesskey-ed25519",
  "uselesskey-rsa",
