@@ -88,3 +88,12 @@ fn deterministic_for_same_seed() {
     let b = random_base62(&mut ChaCha20Rng::from_seed(seed), 50);
     assert_eq!(a, b);
 }
+
+/// Pin the exact output for a known seed so mutations to the acceptance
+/// threshold (`<` vs `==` vs `<=`) produce a different string and get caught.
+#[test]
+fn pinned_output_for_known_seed() {
+    let seed = [99u8; 32];
+    let result = random_base62(&mut ChaCha20Rng::from_seed(seed), 16);
+    assert_eq!(result, "niBiKKJ5NhJuezpd");
+}
