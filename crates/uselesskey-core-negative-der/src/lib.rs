@@ -2,6 +2,11 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 //! DER corruption helpers for negative test fixtures.
+//!
+//! Provides deterministic truncation, byte-flipping, and combined corruption
+//! strategies for DER-encoded blobs. Used by higher-level negative fixture
+//! crates (`uselesskey-core-negative`) to generate invalid DER artifacts
+//! that exercise parser error paths in tests.
 
 extern crate alloc;
 
