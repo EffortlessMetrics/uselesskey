@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 /// Specification for token fixture generation.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum TokenSpec {

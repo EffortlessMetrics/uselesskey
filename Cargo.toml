@@ -17,6 +17,7 @@ members = [
   "crates/uselesskey-core-negative-pem",
   "crates/uselesskey-core-sink",
   "crates/uselesskey-core-token",
+  "crates/uselesskey-core-token-spec",
   "crates/uselesskey-core-token-shape",
   "crates/uselesskey-core-jwk-builder",
   "crates/uselesskey-core-jwks-order",
@@ -76,6 +77,7 @@ uselesskey-core-keypair-material = { path = "crates/uselesskey-core-keypair-mate
 uselesskey-core-negative = { path = "crates/uselesskey-core-negative", version = "0.3.0", default-features = false }
 uselesskey-core-negative-pem = { path = "crates/uselesskey-core-negative-pem", version = "0.3.0", default-features = false }
 uselesskey-core-token = { path = "crates/uselesskey-core-token", version = "0.3.0" }
+uselesskey-core-token-spec = { path = "crates/uselesskey-core-token-spec", version = "0.3.0", default-features = false }
 uselesskey-core-jwk-builder = { path = "crates/uselesskey-core-jwk-builder", version = "0.3.0" }
 uselesskey-core-jwk = { path = "crates/uselesskey-core-jwk", version = "0.3.0" }
 uselesskey-core-jwk-shape = { path = "crates/uselesskey-core-jwk-shape", version = "0.3.0" }
