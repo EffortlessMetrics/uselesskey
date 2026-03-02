@@ -79,7 +79,7 @@ fn snapshot_chain_negative_all_variant_names() {
         variants: Vec<String>,
     }
 
-    let variants = vec![
+    let variants = [
         ChainNegative::HostnameMismatch {
             wrong_hostname: "wrong.example.com".into(),
         },
