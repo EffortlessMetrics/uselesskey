@@ -33,6 +33,7 @@ use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use rand_core::RngCore;
 
 use serde_json::json;
+pub use uselesskey_core_base62::random_base62;
 
 /// Prefix used for API-key token fixtures.
 pub const API_KEY_PREFIX: &str = "uk_test_";
@@ -113,41 +114,6 @@ pub fn generate_oauth_access_token(label: &str, rng: &mut impl RngCore) -> Strin
     format!("{header}.{payload_segment}.{signature_segment}")
 }
 
-/// Generate a random base62 string of the requested length.
-pub fn random_base62(rng: &mut impl RngCore, len: usize) -> String {
-    const BASE62: &[u8; 62] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    const ACCEPT_MAX: u8 = 248; // 62 * 4; accept 0..=247 for unbiased mod 62
-
-    let mut out = String::with_capacity(len);
-    let mut buf = [0u8; 64];
-
-    while out.len() < len {
-        rng.fill_bytes(&mut buf);
-        let before = out.len();
-        for &b in &buf {
-            if b < ACCEPT_MAX {
-                out.push(BASE62[(b % 62) as usize] as char);
-                if out.len() == len {
-                    break;
-                }
-            }
-        }
-
-        // Progress guarantee for pathological RNGs (e.g. constant values that are always rejected).
-        // Keep fallback bounded and deterministic to avoid hangs while preserving unbiased path for normal RNGs.
-        if out.len() == before {
-            for &b in &buf {
-                out.push(BASE62[(b as usize) % 62] as char);
-                if out.len() == len {
-                    break;
-                }
-            }
-        }
-    }
-
-    out
-}
-
 #[cfg(test)]
 mod tests {
     use base64::Engine as _;
@@ -159,8 +125,8 @@ mod tests {
     use super::{
         API_KEY_PREFIX, API_KEY_RANDOM_LEN, BEARER_RANDOM_BYTES, TokenKind, authorization_scheme,
         generate_api_key, generate_bearer_token, generate_oauth_access_token, generate_token,
-        random_base62,
     };
+    use uselesskey_core_base62::random_base62;
 
     #[test]
     fn api_key_shape_is_stable() {
