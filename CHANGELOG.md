@@ -7,213 +7,175 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Release-candidate polish. The full feature set — RSA, ECDSA, Ed25519, HMAC,
-Token, OpenPGP, and X.509 fixtures plus six adapter crates (jsonwebtoken,
-rustls, ring, rustcrypto, aws-lc-rs, tonic) — is stable.  This cycle focused
-on crate-splitting for publish granularity, comprehensive test coverage, and
-documentation readiness.
+## [0.1.0] - 2026-02-17
+
+Initial public release. **uselesskey** generates deterministic and random
+cryptographic key fixtures for testing — preventing secret-shaped blobs from
+entering version control while giving tests realistic key formats.
 
 ### Added
 
-#### New microcrates
+#### Core engine
 
-Seven internal modules were extracted into dedicated core microcrates to improve
-publish granularity and cross-crate reuse:
-
-- **`uselesskey-core-base62`** — base62 generation logic
-- **`uselesskey-core-hmac-spec`** — `HmacSpec` model for cross-crate reuse
-- **`uselesskey-core-jwks-order`** — stable kid-based ordering helper for JWKS collections
-- **`uselesskey-core-negative-der`** — DER negative-fixture helpers
-- **`uselesskey-core-rustls-pki`** — rustls PKI type adapters
-- **`uselesskey-core-x509-chain-negative`** — X.509 chain negative policy types
-- **`uselesskey-token-spec`** — token spec models
-
-#### Testing
-
-- Comprehensive error handling and edge case tests across all crates
-- Security tests validating the no-key-leakage invariant (`Debug` impls never expose key material)
-- Determinism regression tests with hardcoded expected values for snapshot stability
-- Cross-adapter interop tests for signing and TLS workflows (rustls, ring, rustcrypto)
-- 8 new BDD scenarios targeting coverage gaps
-- BDD scenarios for `uselesskey-rustcrypto` and `uselesskey-aws-lc-rs` adapters
-- Insta snapshot tests for `uselesskey-rustls` adapter and all key-type crates
-- Property-based tests for core derivation and caching
-- Integration tests for newly split core microcrates
-- Trait implementation tests for core type crates
-- Tests for previously untested core crates (cache, kid, negative, sink)
-- Comprehensive cross-crate determinism tests
-- X.509 and negative fixture test coverage expansion
-- Algorithm crate coverage gap tests
-- Comprehensive adapter and facade integration tests
-- 12 new fuzz targets covering under-fuzzed and untested code paths
-
-#### Documentation
-
-- Improved sub-crate READMEs and `lib.rs` docs for crates.io readiness
-- Doc examples added to all public API crates, including `uselesskey-pgp` and `uselesskey-rustls`
-- Module-level documentation for previously undocumented crates
-
-### Changed
-
-- Handle unpublished workspace deps in `publish-check` xtask
-- Complete `Cargo.toml` metadata (description, license, repository, keywords) for crates.io readiness
-- Packaging excludes added to publishable crates
-
-### Fixed
-
-- `publish-preflight` now runs all `cargo package` steps before reporting failures
-
-## [0.3.0] - 2026-02-17
-
-### Added
-
-#### New crates
-
-- **`uselesskey-token`** — token-shaped fixture generation:
-  - `TokenFactoryExt` (`fx.token(label, spec)`)
-  - `TokenSpec::{api_key, bearer, oauth_access_token}`
-  - Authorization header helpers and deterministic token generation
-  - New facade `token` feature in `uselesskey`, included in `full`
-- **`uselesskey-pgp`** — OpenPGP keyblock fixtures:
-  - `PgpFactoryExt` (`fx.pgp(label, spec)`)
-  - `PgpSpec::{rsa_2048, rsa_3072, ed25519}`
-  - Armored and binary keyblock outputs with mismatch/corruption helpers
-  - New facade `pgp` feature in `uselesskey`, included in `all-keys` and `full`
-- **`uselesskey-tonic`** — gRPC TLS adapter:
-  - `TonicIdentityExt`, `TonicServerTlsExt`, `TonicClientTlsExt`, `TonicMtlsExt`
-  - Converts `uselesskey-x509` fixtures into `tonic::transport` TLS types
-  - One-liner server/client/mTLS config builders for gRPC tests
-
-#### Deterministic negative fixtures
-
-- `negative::corrupt_pem_deterministic(pem, variant)` and
-  `negative::corrupt_der_deterministic(der, variant)` in `uselesskey-core`
-- Deterministic corruption convenience methods on key/cert fixtures:
-  - RSA/ECDSA/Ed25519: `*_corrupt_deterministic(variant)`
-  - X.509: `corrupt_cert_pem_deterministic(variant)` and `corrupt_cert_der_deterministic(variant)`
-
-#### `no_std` support
-
-- `uselesskey-core` now compiles with `--no-default-features` (`no_std`):
-  deterministic derivation, caching, and negative helpers work without `std`
-
-#### Documentation and examples
-
-- Module-level `//!` documentation for all public crates
-- Doc-tests on public API items
-- New examples: `basic_rsa`, `all_key_types`, `jwk_jwks`
-
-#### Testing
-
-- Expanded BDD feature files:
-  - `chain.feature` — X.509 certificate chain scenarios (determinism, structure, SANs, negative fixtures)
-  - `jwks.feature` — JWKS builder scenarios (multi-key, deterministic ordering, field validation)
-  - `cross_key.feature` — cross-key validation (algorithm mismatch, key type differences)
-  - `edge_cases.feature` — label edge cases, cache behavior, determinism edge cases
-  - Additional scenarios in `rsa.feature`, `hmac.feature`, `x509.feature`
-- Comprehensive adapter test suites for `uselesskey-jsonwebtoken`, `uselesskey-ring`,
-  `uselesskey-aws-lc-rs`, `uselesskey-rustcrypto`, and `uselesskey-tonic`
-- Snapshot tests (insta) for all key-type and adapter crates
-- Property-based tests (proptest) for core microcrates
-- Facade integration and end-to-end tests
-
-### Fixed
-
-- Killed 9 missed mutants in `uselesskey-core-negative-pem`
-- Removed unused `testutil` imports from facade tests
-- Corrected clippy warnings (`clone_on_copy`, `needless_borrow`, `collapsible_if`)
-
-### Changed
-
-- Bumped dependencies: `x509-parser` 0.16 → 0.18, `aws-lc-rs` 1.15 → 1.16, `tonic` 0.14.4 → 0.14.5
-
-## [0.2.1] - 2026-02-16
-
-### Changed
-
-- Aligned release metadata and manifest versions across all workspace crates.
-
-## [0.2.0] - 2026-02-14
-
-### Added
-
-#### New adapter crates
-
-- **`uselesskey-rustcrypto`** — RustCrypto native types (`rsa::RsaPrivateKey`, `p256::ecdsa::SigningKey`, `p384`, `ed25519-dalek`, `hmac`)
-- **`uselesskey-aws-lc-rs`** — `aws-lc-rs` native types with `native` feature for wasm-safe builds
-- **`uselesskey-ring`** — `ring` 0.17 native signing key types
-
-#### X.509 and TLS
-
-- `ChainNegative::RevokedLeaf` variant with CRL signed by intermediate CA (`uselesskey-x509`)
-- `RustlsServerConfigExt` / `RustlsClientConfigExt` / `RustlsMtlsExt` config builders (`uselesskey-rustls`)
-- mTLS config builders with explicit crypto provider selection (`uselesskey-rustls`)
-
-#### Documentation and examples
-
-- Per-crate README files for all adapter crates
-- Crate-level `//!` docs for `uselesskey-hmac` and `uselesskey-jwk`
-- "Why not just…" comparison section in root README
-- README sections for X.509, adapter crates, TLS config builders, and ecosystem positioning
-- New examples: `jwt_signing`, `tls_server`, `negative_fixtures`
-
-#### Testing
-
-- Expanded BDD test coverage with new feature files (`chain`, `jwks`, `cross_key`, `edge_cases`)
-  and additional scenarios in existing files (`rsa`, `hmac`, `x509`, `jwks`)
-- Comprehensive test suites for all adapter crates
-- Cross-key failure test in `uselesskey-jsonwebtoken`
-- Deterministic-mode test in `uselesskey-ring`
-
-## [0.1.0] - 2026-02-03
-
-### Added
-
-#### Core
-
-- Core factory with random and deterministic modes (order-independent BLAKE3 derivation)
-- DashMap-based concurrent caching keyed by `(domain, label, spec, variant)`
-- Tempfile output for libraries requiring file paths
+- **Deterministic mode** — order-independent BLAKE3 derivation:
+  `master_seed + artifact_id → derived_seed → RNG → artifact`.
+  Adding new fixtures never perturbs existing ones.
+- **Random mode** — non-deterministic generation for one-off tests.
+- **Concurrent cache** — DashMap-based, keyed by `(domain, label, spec, variant)`.
+  Makes RSA keygen cheap enough to avoid committed fixtures.
+- **`no_std` support** — core derivation, caching, and negative helpers work
+  without `std` (`uselesskey-core` with `--no-default-features`).
 
 #### Key types
 
-- **RSA** — PKCS#8/SPKI in PEM/DER (2048, 3072, 4096 bits) via `uselesskey-rsa`
-- **ECDSA** — P-256/ES256, P-384/ES384 via `uselesskey-ecdsa`
-- **Ed25519** via `uselesskey-ed25519`
-- **HMAC** — HS256/HS384/HS512 via `uselesskey-hmac`
+- **RSA** — PKCS#8 / SPKI in PEM / DER (2048, 3072, 4096 bits) via `RsaFactoryExt`
+- **ECDSA** — P-256 / ES256, P-384 / ES384 via `EcdsaFactoryExt`
+- **Ed25519** via `Ed25519FactoryExt`
+- **HMAC** — HS256 / HS384 / HS512 via `HmacFactoryExt`
+- **Token** — API-key, bearer, OAuth access-token shapes via `TokenFactoryExt`
+- **OpenPGP** — RSA-2048/3072 and Ed25519 armored keyblocks via `PgpFactoryExt`
 
-#### X.509
+#### X.509 certificates
 
-- Self-signed certificate generation via `uselesskey-x509`
+- Self-signed certificate generation via `X509FactoryExt`
 - Certificate chain generation (root CA → intermediate CA → leaf)
-- Chain-level negative fixtures (expired CA, wrong issuer, self-signed leaf, unknown CA, reversed chain)
-- 10-year default certificate validity
-- Key reuse optimization across negative fixture variants
+- Chain-level negative fixtures (expired CA, wrong issuer, self-signed leaf,
+  unknown CA, reversed chain, revoked leaf with CRL)
+- 10-year default certificate validity; key reuse across negative variants
+- TLS config builders: `RustlsServerConfigExt`, `RustlsClientConfigExt`,
+  `RustlsMtlsExt` with explicit crypto-provider selection
 
 #### JWK / JWKS
 
-- JWK/JWKS output support with `JwksBuilder` (via `jwk` feature)
+- Typed JWK / JWKS output with `JwksBuilder` and stable kid-based ordering
 
 #### Negative fixtures
 
-- Corrupt PEM (bad base64, wrong headers, truncated)
-- Truncated DER
-- Mismatched keypairs (valid public key that doesn't match the private key)
+- **Corrupt PEM** — bad base64, wrong headers, truncated, deterministic
+  corruption variants (`corrupt_pem_deterministic`)
+- **Truncated DER** — deterministic corruption via `corrupt_der_deterministic`
+- **Mismatched keypairs** — valid public key that doesn't match the private key
+- Deterministic corruption convenience methods on all key-type and X.509 fixtures
 
-#### Adapters
+#### Adapter crates
 
-- `uselesskey-jsonwebtoken` — `jsonwebtoken` `EncodingKey`/`DecodingKey` integration
-- `uselesskey-rustls` — `rustls-pki-types` integration
+- **`uselesskey-jsonwebtoken`** — `jsonwebtoken` `EncodingKey` / `DecodingKey`
+- **`uselesskey-rustls`** — `rustls-pki-types` certificates and private keys
+- **`uselesskey-ring`** — `ring` 0.17 native signing key types
+- **`uselesskey-rustcrypto`** — RustCrypto native types (`rsa`, `p256`, `p384`,
+  `ed25519-dalek`, `hmac`)
+- **`uselesskey-aws-lc-rs`** — `aws-lc-rs` native types with `native` feature
+- **`uselesskey-tonic`** — gRPC TLS adapter: one-liner server / client / mTLS
+  config builders for `tonic::transport`
+
+#### Documentation
+
+- Module-level `//!` docs and doc-tests on all public API items
+- Per-crate README files for crates.io readiness
+- Examples: `basic_rsa`, `all_key_types`, `jwk_jwks`, `jwt_signing`,
+  `tls_server`, `negative_fixtures`
 
 #### Tooling
 
-- Feature matrix checks via `cargo xtask feature-matrix`
-- Publish dry-run command via `cargo xtask publish-check`
-- Secret-shaped blob detection via `cargo xtask no-blob`
-- PR-scoped `cargo xtask pr` runner with JSON receipt and summary reporting
+- `cargo xtask ci` — full CI pipeline (fmt, clippy, tests, feature matrix,
+  dep-guard, BDD, no-blob, mutants, fuzz)
+- `cargo xtask pr` — PR-scoped tests with JSON receipt and summary reporting
+- `cargo xtask feature-matrix` — default, no-default, each-feature, all-features
+- `cargo xtask publish-check` / `cargo xtask publish-preflight` — publish dry-runs
+- `cargo xtask no-blob` — secret-shaped blob detection
+- `cargo xtask dep-guard` — guard against multiple versions of pinned deps
 
-[Unreleased]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.3.0...HEAD
-[0.3.0]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.2.1...v0.3.0
-[0.2.1]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.2.0...v0.2.1
-[0.2.0]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.1.0...v0.2.0
+### Architecture
+
+51-crate workspace organised into four layers:
+
+**Facade**
+
+| Crate | Purpose |
+|-------|---------|
+| `uselesskey` | Public API facade — re-exports stable surface |
+
+**Core microcrates**
+
+| Crate | Purpose |
+|-------|---------|
+| `uselesskey-core` | Factory, derivation, caching, negative helpers |
+| `uselesskey-core-base62` | Base-62 generation |
+| `uselesskey-core-cache` | DashMap-based concurrent cache |
+| `uselesskey-core-factory` | Factory construction helpers |
+| `uselesskey-core-hash` | BLAKE3 hashing primitives |
+| `uselesskey-core-hmac-spec` | `HmacSpec` model |
+| `uselesskey-core-id` | `ArtifactId` type |
+| `uselesskey-core-jwk` | Typed JWK / JWKS models |
+| `uselesskey-core-jwk-builder` | JWK builder logic |
+| `uselesskey-core-jwk-shape` | JWK shape types |
+| `uselesskey-core-jwks-order` | Stable kid-based JWKS ordering |
+| `uselesskey-core-keypair` | Keypair abstraction |
+| `uselesskey-core-keypair-material` | Raw key-material types |
+| `uselesskey-core-kid` | Key-ID generation |
+| `uselesskey-core-negative` | Negative-fixture orchestration |
+| `uselesskey-core-negative-der` | DER corruption helpers |
+| `uselesskey-core-negative-pem` | PEM corruption helpers |
+| `uselesskey-core-rustls-pki` | rustls PKI type adapters |
+| `uselesskey-core-seed` | Seed derivation |
+| `uselesskey-core-sink` | Output-sink abstraction |
+| `uselesskey-core-token` | Token generation core |
+| `uselesskey-core-token-shape` | Token shape types |
+| `uselesskey-core-x509` | X.509 core (negative + spec re-exports) |
+| `uselesskey-core-x509-chain-negative` | Chain negative-policy types |
+| `uselesskey-core-x509-derive` | X.509 derivation helpers |
+| `uselesskey-core-x509-negative` | X.509 negative-fixture types |
+| `uselesskey-core-x509-spec` | X.509 spec models and encoding |
+
+**Key-type & adapter crates**
+
+| Crate | Purpose |
+|-------|---------|
+| `uselesskey-rsa` | RSA fixtures (`RsaFactoryExt`) |
+| `uselesskey-ecdsa` | ECDSA fixtures (`EcdsaFactoryExt`) |
+| `uselesskey-ed25519` | Ed25519 fixtures (`Ed25519FactoryExt`) |
+| `uselesskey-hmac` | HMAC fixtures (`HmacFactoryExt`) |
+| `uselesskey-token` | Token fixtures (`TokenFactoryExt`) |
+| `uselesskey-token-spec` | Token spec models |
+| `uselesskey-pgp` | OpenPGP keyblock fixtures (`PgpFactoryExt`) |
+| `uselesskey-x509` | X.509 certificate fixtures (`X509FactoryExt`) |
+| `uselesskey-jwk` | JWK facade (re-exports `uselesskey-core-jwk`) |
+| `uselesskey-jsonwebtoken` | `jsonwebtoken` adapter |
+| `uselesskey-rustls` | `rustls` / `rustls-pki-types` adapter |
+| `uselesskey-ring` | `ring` adapter |
+| `uselesskey-rustcrypto` | RustCrypto adapter |
+| `uselesskey-aws-lc-rs` | `aws-lc-rs` adapter |
+| `uselesskey-tonic` | `tonic` gRPC TLS adapter |
+
+**Testing & tooling**
+
+| Crate | Purpose |
+|-------|---------|
+| `uselesskey-bdd` | Cucumber BDD test runner |
+| `uselesskey-bdd-steps` | BDD step definitions |
+| `uselesskey-interop-tests` | Cross-adapter interop tests |
+| `uselesskey-test-grid` | Test-grid generation |
+| `uselesskey-feature-grid` | Feature-matrix checks |
+| `tests` | Workspace-level integration tests |
+| `xtask` | Build automation (`cargo xtask`) |
+| `fuzz` | Fuzz targets (excluded from default workspace) |
+
+### Testing
+
+- **BDD** — Cucumber feature files covering RSA, ECDSA, Ed25519, HMAC, Token,
+  PGP, X.509, certificate chains, JWKS, cross-key validation, negative
+  fixtures, and edge cases
+- **Property-based tests** — `proptest` for core derivation, caching, and
+  microcrate invariants
+- **Snapshot tests** — `insta` snapshots for all key-type and adapter crates
+- **Fuzz targets** — 12+ targets covering derivation, negative fixtures, and
+  under-fuzzed code paths
+- **Cross-adapter interop** — signing and TLS round-trip tests across rustls,
+  ring, rustcrypto, and aws-lc-rs
+- **Security invariant** — `Debug` impls never expose key material (validated
+  by dedicated tests)
+- **Determinism regression** — hardcoded expected-value snapshots ensure
+  derivation stability across releases
+
+[Unreleased]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/EffortlessMetrics/uselesskey/releases/tag/v0.1.0
