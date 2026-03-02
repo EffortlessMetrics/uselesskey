@@ -1,0 +1,13 @@
+error[E0308]: mismatched types
+ --> compile_fail/wrong_spec_type.rs:9:30
+  |
+9 |     let _kp = fx.rsa("test", EcdsaSpec::es256());
+  |                  ---         ^^^^^^^^^^^^^^^^^^ expected `RsaSpec`, found `EcdsaSpec`
+  |                  |
+  |                  arguments to this method are incorrect
+  |
+note: method defined here
+ --> $WORKSPACE/crates/uselesskey-rsa/src/keypair.rs
+  |
+  |     fn rsa(&self, label: impl AsRef<str>, spec: RsaSpec) -> RsaKeyPair;
+  |        ^^^

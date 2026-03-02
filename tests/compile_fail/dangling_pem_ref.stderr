@@ -1,0 +1,11 @@
+error[E0597]: `kp` does not live long enough
+  --> compile_fail/dangling_pem_ref.rs:11:15
+   |
+10 |         let kp = fx.ecdsa("test", EcdsaSpec::es256());
+   |             -- binding `kp` declared here
+11 |         pem = kp.private_key_pkcs8_pem();
+   |               ^^ borrowed value does not live long enough
+12 |     }
+   |     - `kp` dropped here while still borrowed
+13 |     println!("{}", pem);
+   |                    --- borrow later used here

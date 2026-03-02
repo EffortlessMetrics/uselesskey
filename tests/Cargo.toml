@@ -41,6 +41,9 @@ serde.workspace = true
 serde_json.workspace = true
 toml = "0.8"
 
+[dev-dependencies]
+trybuild.workspace = true
+
 [features]
 # JWT integration tests
 jwt = [
@@ -125,8 +128,11 @@ concurrency = [
     "dep:uselesskey-hmac",
 ]
 
-# All integration tests
-all = ["jwt", "tls", "crypto-backend", "e2e", "key-rotation", "cross-adapter", "determinism", "concurrency", "kid-stability"]
+# Compile-fail (trybuild) tests
+compile-fail = [
+    "dep:uselesskey-rsa",
+    "dep:uselesskey-ecdsa",
+]
 
 # KID stability and uniqueness tests
 kid-stability = [
@@ -136,6 +142,9 @@ kid-stability = [
     "dep:uselesskey-hmac",
     "dep:uselesskey-jwk",
 ]
+
+# All integration tests
+all = ["jwt", "tls", "crypto-backend", "e2e", "key-rotation", "cross-adapter", "determinism", "concurrency", "kid-stability", "compile-fail"]
 
 [[test]]
 name = "jwt_integration"
@@ -189,3 +198,8 @@ required-features = ["concurrency"]
 name = "kid_stability"
 path = "kid_stability.rs"
 required-features = ["kid-stability"]
+
+[[test]]
+name = "compile_tests"
+path = "compile_tests.rs"
+required-features = ["compile-fail"]
