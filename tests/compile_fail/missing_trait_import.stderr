@@ -1,0 +1,16 @@
+error[E0599]: no method named `rsa` found for struct `Factory` in the current scope
+  --> compile_fail/missing_trait_import.rs:10:18
+   |
+10 |     let _kp = fx.rsa("test", RsaSpec::rs256());
+   |                  ^^^ method not found in `Factory`
+   |
+  ::: $WORKSPACE/crates/uselesskey-rsa/src/keypair.rs
+   |
+   |     fn rsa(&self, label: impl AsRef<str>, spec: RsaSpec) -> RsaKeyPair;
+   |        --- the method is available for `Factory` here
+   |
+   = help: items from traits can only be used if the trait is in scope
+help: trait `RsaFactoryExt` which provides `rsa` is implemented but not in scope; perhaps you want to import it
+   |
+ 1 + use uselesskey_rsa::RsaFactoryExt;
+   |
