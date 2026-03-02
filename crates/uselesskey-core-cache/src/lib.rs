@@ -7,12 +7,8 @@
 //! The primary type is [`ArtifactCache`].
 
 #![forbid(unsafe_code)]
+#![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
-//! Identity-keyed typed cache primitives for uselesskey fixture factories.
-//!
-//! Provides a concurrent, identity-based cache that stores generated cryptographic
-//! artifacts keyed by [`ArtifactId`](uselesskey_core_id::ArtifactId). This avoids
-//! expensive re-generation (especially RSA) across test runs.
 
 extern crate alloc;
 

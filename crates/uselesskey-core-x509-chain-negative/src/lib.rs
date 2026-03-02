@@ -1,6 +1,3 @@
-#![forbid(unsafe_code)]
-#![cfg_attr(not(feature = "std"), no_std)]
-
 //! X.509 chain-level negative-fixture policy helpers.
 //!
 //! Defines [`ChainNegative`] variants (hostname mismatch, unknown CA,
@@ -8,6 +5,10 @@
 //! [`ChainNegative::apply_to_spec`] to derive a modified [`ChainSpec`]
 //! for each scenario. Used by `uselesskey-x509` to produce invalid
 //! certificate chains for TLS error-handling tests.
+
+#![forbid(unsafe_code)]
+#![warn(missing_docs)]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
 

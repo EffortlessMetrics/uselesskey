@@ -1,9 +1,10 @@
-#![forbid(unsafe_code)]
-
 //! rustls-pki-types adapter traits for uselesskey fixtures.
 //!
 //! This crate is intentionally focused on PKI conversion only:
 //! converting fixture outputs into `rustls_pki_types` key and certificate types.
+
+#![forbid(unsafe_code)]
+#![warn(missing_docs)]
 
 use rustls_pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
 

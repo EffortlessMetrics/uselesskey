@@ -2,13 +2,10 @@
 //!
 //! Exports [`FeatureSet`] entries and the [`CORE_FEATURE_MATRIX`] /
 //! [`BDD_FEATURE_MATRIX`] slices consumed by `xtask` and CI receipts.
+//! Each entry specifies a stable label and the corresponding Cargo CLI arguments.
 
 #![forbid(unsafe_code)]
-//! Canonical feature and matrix definitions for uselesskey automation.
-//!
-//! Defines `FeatureSet` entries consumed by `cargo xtask feature-matrix` to
-//! drive the CI feature-combination matrix. Each entry specifies a stable
-//! label and the corresponding Cargo CLI arguments.
+#![warn(missing_docs)]
 
 /// Canonical matrix entry used by automation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -26,29 +23,51 @@ impl FeatureSet {
     }
 }
 
-/// Canonical BDD feature names.
+/// BDD tag for the full feature set.
 pub const UK_FEATURE_ALL: &str = "uk-all";
+/// BDD tag for RSA fixtures.
 pub const UK_FEATURE_RSA: &str = "uk-rsa";
+/// BDD tag for ECDSA fixtures.
 pub const UK_FEATURE_ECDSA: &str = "uk-ecdsa";
+/// BDD tag for Ed25519 fixtures.
 pub const UK_FEATURE_ED25519: &str = "uk-ed25519";
+/// BDD tag for HMAC fixtures.
 pub const UK_FEATURE_HMAC: &str = "uk-hmac";
+/// BDD tag for PGP fixtures.
 pub const UK_FEATURE_PGP: &str = "uk-pgp";
+/// BDD tag for X.509 fixtures.
 pub const UK_FEATURE_X509: &str = "uk-x509";
+/// BDD tag for JWK fixtures.
 pub const UK_FEATURE_JWK: &str = "uk-jwk";
+/// BDD tag for token fixtures.
 pub const UK_FEATURE_TOKEN: &str = "uk-token";
+/// BDD tag for JWT adapter fixtures.
 pub const UK_FEATURE_JWT: &str = "uk-jwt";
+/// BDD tag for core identity module.
 pub const UK_FEATURE_CORE_ID: &str = "uk-core-id";
+/// BDD tag for core seed module.
 pub const UK_FEATURE_CORE_SEED: &str = "uk-core-seed";
+/// BDD tag for core factory module.
 pub const UK_FEATURE_CORE_FACTORY: &str = "uk-core-factory";
+/// BDD tag for core key-ID module.
 pub const UK_FEATURE_CORE_KID: &str = "uk-core-kid";
+/// BDD tag for core keypair module.
 pub const UK_FEATURE_CORE_KEYPAIR: &str = "uk-core-keypair";
+/// BDD tag for core negative-fixture module.
 pub const UK_FEATURE_CORE_NEGATIVE: &str = "uk-core-negative";
+/// BDD tag for core token-shape module.
 pub const UK_FEATURE_CORE_TOKEN_SHAPE: &str = "uk-core-token-shape";
+/// BDD tag for core sink module.
 pub const UK_FEATURE_CORE_SINK: &str = "uk-core-sink";
+/// BDD tag for aws-lc-rs adapter.
 pub const UK_FEATURE_AWS_LC_RS: &str = "uk-aws-lc-rs";
+/// BDD tag for ring adapter.
 pub const UK_FEATURE_RING: &str = "uk-ring";
+/// BDD tag for RustCrypto adapter.
 pub const UK_FEATURE_RUSTCRYPTO: &str = "uk-rustcrypto";
+/// BDD tag for rustls adapter.
 pub const UK_FEATURE_RUSTLS: &str = "uk-rustls";
+/// BDD tag for tonic adapter.
 pub const UK_FEATURE_TONIC: &str = "uk-tonic";
 
 /// All BDD feature names in one canonical slice.

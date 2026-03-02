@@ -6,6 +6,7 @@
 //! in-memory byte slices.
 
 #![forbid(unsafe_code)]
+#![warn(missing_docs)]
 
 use std::fmt;
 use std::fs;
