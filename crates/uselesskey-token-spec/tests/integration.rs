@@ -32,12 +32,19 @@ fn oauth_access_token_constructor() {
 fn kind_name_returns_expected_strings() {
     assert_eq!(TokenSpec::ApiKey.kind_name(), "api_key");
     assert_eq!(TokenSpec::Bearer.kind_name(), "bearer");
-    assert_eq!(TokenSpec::OAuthAccessToken.kind_name(), "oauth_access_token");
+    assert_eq!(
+        TokenSpec::OAuthAccessToken.kind_name(),
+        "oauth_access_token"
+    );
 }
 
 #[test]
 fn kind_name_is_snake_case() {
-    for spec in [TokenSpec::ApiKey, TokenSpec::Bearer, TokenSpec::OAuthAccessToken] {
+    for spec in [
+        TokenSpec::ApiKey,
+        TokenSpec::Bearer,
+        TokenSpec::OAuthAccessToken,
+    ] {
         let name = spec.kind_name();
         assert!(
             name.chars().all(|c| c.is_ascii_lowercase() || c == '_'),
@@ -91,7 +98,10 @@ fn clone_and_copy() {
 fn debug_impl_does_not_leak_key_material() {
     let dbg = format!("{:?}", TokenSpec::ApiKey);
     assert!(dbg.contains("ApiKey"), "Debug output: {dbg}");
-    assert!(!dbg.contains("BEGIN"), "Debug must not contain key material");
+    assert!(
+        !dbg.contains("BEGIN"),
+        "Debug must not contain key material"
+    );
 
     let dbg = format!("{:?}", TokenSpec::Bearer);
     assert!(dbg.contains("Bearer"), "Debug output: {dbg}");

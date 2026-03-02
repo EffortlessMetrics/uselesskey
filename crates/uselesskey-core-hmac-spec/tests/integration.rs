@@ -92,7 +92,10 @@ fn debug_impl_does_not_leak_key_material() {
     let dbg = format!("{:?}", HmacSpec::Hs256);
     assert!(dbg.contains("Hs256"), "Debug output: {dbg}");
     // Ensure no PEM/DER-shaped content
-    assert!(!dbg.contains("BEGIN"), "Debug must not contain key material");
+    assert!(
+        !dbg.contains("BEGIN"),
+        "Debug must not contain key material"
+    );
 }
 
 #[test]
