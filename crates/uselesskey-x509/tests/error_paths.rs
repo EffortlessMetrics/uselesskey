@@ -73,15 +73,14 @@ fn wrong_key_usage_cert_is_ca_without_cert_sign() {
         .iter()
         .find(|ext| ext.oid == x509_parser::oid_registry::OID_X509_EXT_KEY_USAGE);
 
-    if let Some(ext) = ku_ext {
-        if let x509_parser::extensions::ParsedExtension::KeyUsage(ku) = ext.parsed_extension() {
-            assert!(
-                !ku.key_cert_sign(),
-                "wrong_key_usage cert must NOT have keyCertSign"
-            );
-        }
+    if let Some(ext) = ku_ext
+        && let x509_parser::extensions::ParsedExtension::KeyUsage(ku) = ext.parsed_extension()
+    {
+        assert!(
+            !ku.key_cert_sign(),
+            "wrong_key_usage cert must NOT have keyCertSign"
+        );
     }
-}
 
 // =========================================================================
 // Corrupt cert PEM variants

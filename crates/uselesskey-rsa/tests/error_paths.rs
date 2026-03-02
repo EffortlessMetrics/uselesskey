@@ -5,10 +5,7 @@
 
 mod testutil;
 
-use std::panic::{AssertUnwindSafe, catch_unwind};
-
 use testutil::fx;
-use uselesskey_core::Factory;
 use uselesskey_core::negative::CorruptPem;
 use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 
