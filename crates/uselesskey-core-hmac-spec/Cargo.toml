@@ -1,0 +1,18 @@
+[package]
+name = "uselesskey-core-hmac-spec"
+version = "0.3.0"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "HMAC algorithm spec model shared across uselesskey hmac-related crates."
+categories.workspace = true
+keywords = ["hmac", "jwt", "fixtures", "testing", "deterministic"]
+readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
+homepage.workspace = true
+documentation = "https://docs.rs/uselesskey-core-hmac-spec"
+authors.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true

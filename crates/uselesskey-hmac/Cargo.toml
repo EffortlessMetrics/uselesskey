@@ -17,6 +17,7 @@ authors.workspace = true
 [dependencies]
 uselesskey-core = { path = "../uselesskey-core", version = "0.3.0" }
 uselesskey-core-kid.workspace = true
+uselesskey-core-hmac-spec.workspace = true
 rand_core.workspace = true
 
 # Optional JWK/JWKS support
