@@ -218,7 +218,13 @@ fn spec_sensitivity_hmac_lengths() {
 // ── 6. Multi-algorithm stability ─────────────────────────────────────────
 
 #[test]
-#[cfg(all(feature = "rsa", feature = "ecdsa", feature = "ed25519", feature = "hmac", feature = "jwk"))]
+#[cfg(all(
+    feature = "rsa",
+    feature = "ecdsa",
+    feature = "ed25519",
+    feature = "hmac",
+    feature = "jwk"
+))]
 fn multi_algorithm_kid_regression() {
     let fx = fx42();
     let rsa = fx.rsa("multi", RsaSpec::rs256());
@@ -306,8 +312,14 @@ fn factory_equality_all_algorithms() {
 fn determinism_pem_header_rsa() {
     let fx = fx42();
     let kp = fx.rsa("test", RsaSpec::rs256());
-    assert!(kp.private_key_pkcs8_pem().starts_with("-----BEGIN PRIVATE KEY-----"));
-    assert!(kp.public_key_spki_pem().starts_with("-----BEGIN PUBLIC KEY-----"));
+    assert!(
+        kp.private_key_pkcs8_pem()
+            .starts_with("-----BEGIN PRIVATE KEY-----")
+    );
+    assert!(
+        kp.public_key_spki_pem()
+            .starts_with("-----BEGIN PUBLIC KEY-----")
+    );
 }
 
 #[test]
@@ -315,8 +327,14 @@ fn determinism_pem_header_rsa() {
 fn determinism_pem_header_ecdsa() {
     let fx = fx42();
     let kp = fx.ecdsa("test", EcdsaSpec::es256());
-    assert!(kp.private_key_pkcs8_pem().starts_with("-----BEGIN PRIVATE KEY-----"));
-    assert!(kp.public_key_spki_pem().starts_with("-----BEGIN PUBLIC KEY-----"));
+    assert!(
+        kp.private_key_pkcs8_pem()
+            .starts_with("-----BEGIN PRIVATE KEY-----")
+    );
+    assert!(
+        kp.public_key_spki_pem()
+            .starts_with("-----BEGIN PUBLIC KEY-----")
+    );
 }
 
 #[test]
@@ -324,8 +342,14 @@ fn determinism_pem_header_ecdsa() {
 fn determinism_pem_header_ed25519() {
     let fx = fx42();
     let kp = fx.ed25519("test", Ed25519Spec::new());
-    assert!(kp.private_key_pkcs8_pem().starts_with("-----BEGIN PRIVATE KEY-----"));
-    assert!(kp.public_key_spki_pem().starts_with("-----BEGIN PUBLIC KEY-----"));
+    assert!(
+        kp.private_key_pkcs8_pem()
+            .starts_with("-----BEGIN PRIVATE KEY-----")
+    );
+    assert!(
+        kp.public_key_spki_pem()
+            .starts_with("-----BEGIN PUBLIC KEY-----")
+    );
 }
 
 // ── 10. DER length pinning ────────────────────────────────────────────────
@@ -446,8 +470,14 @@ fn determinism_variant_independence_token() {
 fn determinism_seed_sensitivity_token() {
     let fx_42 = fx42();
     let fx_43 = Factory::deterministic(Seed::from_env_value("43").unwrap());
-    let t42 = fx_42.token("test", TokenSpec::api_key()).value().to_string();
-    let t43 = fx_43.token("test", TokenSpec::api_key()).value().to_string();
+    let t42 = fx_42
+        .token("test", TokenSpec::api_key())
+        .value()
+        .to_string();
+    let t43 = fx_43
+        .token("test", TokenSpec::api_key())
+        .value()
+        .to_string();
     assert_ne!(t42, t43);
 }
 
@@ -470,8 +500,14 @@ fn determinism_seed_sensitivity_rsa() {
 fn determinism_seed_sensitivity_ecdsa() {
     let fx_42 = fx42();
     let fx_43 = Factory::deterministic(Seed::from_env_value("43").unwrap());
-    let pem42 = fx_42.ecdsa("test", EcdsaSpec::es256()).private_key_pkcs8_pem().to_string();
-    let pem43 = fx_43.ecdsa("test", EcdsaSpec::es256()).private_key_pkcs8_pem().to_string();
+    let pem42 = fx_42
+        .ecdsa("test", EcdsaSpec::es256())
+        .private_key_pkcs8_pem()
+        .to_string();
+    let pem43 = fx_43
+        .ecdsa("test", EcdsaSpec::es256())
+        .private_key_pkcs8_pem()
+        .to_string();
     assert_ne!(pem42, pem43);
 }
 
@@ -480,8 +516,14 @@ fn determinism_seed_sensitivity_ecdsa() {
 fn determinism_seed_sensitivity_ed25519() {
     let fx_42 = fx42();
     let fx_43 = Factory::deterministic(Seed::from_env_value("43").unwrap());
-    let der42 = fx_42.ed25519("test", Ed25519Spec::new()).private_key_pkcs8_der().to_vec();
-    let der43 = fx_43.ed25519("test", Ed25519Spec::new()).private_key_pkcs8_der().to_vec();
+    let der42 = fx_42
+        .ed25519("test", Ed25519Spec::new())
+        .private_key_pkcs8_der()
+        .to_vec();
+    let der43 = fx_43
+        .ed25519("test", Ed25519Spec::new())
+        .private_key_pkcs8_der()
+        .to_vec();
     assert_ne!(der42, der43);
 }
 
@@ -490,8 +532,14 @@ fn determinism_seed_sensitivity_ed25519() {
 fn determinism_seed_sensitivity_hmac() {
     let fx_42 = fx42();
     let fx_43 = Factory::deterministic(Seed::from_env_value("43").unwrap());
-    let s42 = fx_42.hmac("test", HmacSpec::hs256()).secret_bytes().to_vec();
-    let s43 = fx_43.hmac("test", HmacSpec::hs256()).secret_bytes().to_vec();
+    let s42 = fx_42
+        .hmac("test", HmacSpec::hs256())
+        .secret_bytes()
+        .to_vec();
+    let s43 = fx_43
+        .hmac("test", HmacSpec::hs256())
+        .secret_bytes()
+        .to_vec();
     assert_ne!(s42, s43);
 }
 
@@ -525,9 +573,18 @@ fn determinism_order_independence_all_key_types() {
     let ecdsa_second = fx2.ecdsa("beta", EcdsaSpec::es256());
     let rsa_second = fx2.rsa("alpha", RsaSpec::rs256());
 
-    assert_eq!(rsa_first.private_key_pkcs8_pem(), rsa_second.private_key_pkcs8_pem());
-    assert_eq!(ecdsa_first.private_key_pkcs8_pem(), ecdsa_second.private_key_pkcs8_pem());
-    assert_eq!(ed_first.private_key_pkcs8_pem(), ed_second.private_key_pkcs8_pem());
+    assert_eq!(
+        rsa_first.private_key_pkcs8_pem(),
+        rsa_second.private_key_pkcs8_pem()
+    );
+    assert_eq!(
+        ecdsa_first.private_key_pkcs8_pem(),
+        ecdsa_second.private_key_pkcs8_pem()
+    );
+    assert_eq!(
+        ed_first.private_key_pkcs8_pem(),
+        ed_second.private_key_pkcs8_pem()
+    );
 }
 
 #[test]

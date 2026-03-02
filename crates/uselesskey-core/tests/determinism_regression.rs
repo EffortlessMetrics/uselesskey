@@ -24,33 +24,25 @@ fn determinism_blake3_derivation_produces_stable_rng() {
     use rand_core::RngCore;
 
     let fx = fx42();
-    let bytes: Arc<Vec<u8>> = fx.get_or_init(
-        "test:derive-pin",
-        "label",
-        b"spec",
-        "good",
-        |rng| {
-            let mut buf = vec![0u8; 16];
-            rng.fill_bytes(&mut buf);
-            buf
-        },
-    );
+    let bytes: Arc<Vec<u8>> = fx.get_or_init("test:derive-pin", "label", b"spec", "good", |rng| {
+        let mut buf = vec![0u8; 16];
+        rng.fill_bytes(&mut buf);
+        buf
+    });
 
     // A second factory with the same seed must produce identical bytes.
     let fx2 = fx42();
-    let bytes2: Arc<Vec<u8>> = fx2.get_or_init(
-        "test:derive-pin",
-        "label",
-        b"spec",
-        "good",
-        |rng| {
+    let bytes2: Arc<Vec<u8>> =
+        fx2.get_or_init("test:derive-pin", "label", b"spec", "good", |rng| {
             let mut buf = vec![0u8; 16];
             rng.fill_bytes(&mut buf);
             buf
-        },
-    );
+        });
 
-    assert_eq!(*bytes, *bytes2, "derived RNG output must be stable across factory instances");
+    assert_eq!(
+        *bytes, *bytes2,
+        "derived RNG output must be stable across factory instances"
+    );
 
     // Pin the first 4 bytes so any derivation algorithm change is caught.
     let pinned_prefix = [bytes[0], bytes[1], bytes[2], bytes[3]];
@@ -78,7 +70,10 @@ fn determinism_blake3_different_domains_produce_different_output() {
 
     let a = make_bytes("test:domain-a");
     let b = make_bytes("test:domain-b");
-    assert_ne!(a, b, "different domains must produce different derived output");
+    assert_ne!(
+        a, b,
+        "different domains must produce different derived output"
+    );
 }
 
 #[test]
@@ -99,7 +94,10 @@ fn determinism_blake3_different_labels_produce_different_output() {
 
     let a = make_bytes("label-a");
     let b = make_bytes("label-b");
-    assert_ne!(a, b, "different labels must produce different derived output");
+    assert_ne!(
+        a, b,
+        "different labels must produce different derived output"
+    );
 }
 
 #[test]
@@ -119,7 +117,10 @@ fn determinism_blake3_different_specs_produce_different_output() {
 
     let a = make_bytes(b"spec-a");
     let b = make_bytes(b"spec-b");
-    assert_ne!(a, b, "different spec bytes must produce different derived output");
+    assert_ne!(
+        a, b,
+        "different spec bytes must produce different derived output"
+    );
 }
 
 #[test]
@@ -129,31 +130,41 @@ fn determinism_blake3_different_variants_produce_different_output() {
     let fx = fx42();
 
     let make_bytes = |variant: &str| -> Vec<u8> {
-        let arc: Arc<Vec<u8>> = fx.get_or_init(
-            "test:variant-test",
-            "label",
-            b"spec",
-            variant,
-            |rng| {
+        let arc: Arc<Vec<u8>> =
+            fx.get_or_init("test:variant-test", "label", b"spec", variant, |rng| {
                 let mut buf = vec![0u8; 16];
                 rng.fill_bytes(&mut buf);
                 buf
-            },
-        );
+            });
         (*arc).clone()
     };
 
     let a = make_bytes("good");
     let b = make_bytes("mismatch");
-    assert_ne!(a, b, "different variants must produce different derived output");
+    assert_ne!(
+        a, b,
+        "different variants must produce different derived output"
+    );
 }
 
 // ── 2. ArtifactId fingerprint pinning ─────────────────────────────────────
 
 #[test]
 fn determinism_artifact_id_fingerprint_is_stable() {
-    let id1 = ArtifactId::new("domain", "label", b"spec-bytes", "good", DerivationVersion::V1);
-    let id2 = ArtifactId::new("domain", "label", b"spec-bytes", "good", DerivationVersion::V1);
+    let id1 = ArtifactId::new(
+        "domain",
+        "label",
+        b"spec-bytes",
+        "good",
+        DerivationVersion::V1,
+    );
+    let id2 = ArtifactId::new(
+        "domain",
+        "label",
+        b"spec-bytes",
+        "good",
+        DerivationVersion::V1,
+    );
 
     // Fingerprints must be identical for identical inputs.
     assert_eq!(id1.spec_fingerprint, id2.spec_fingerprint);
@@ -178,7 +189,13 @@ fn determinism_artifact_id_fingerprint_changes_with_spec() {
 
 #[test]
 fn determinism_artifact_id_fields_preserved() {
-    let id = ArtifactId::new("my:domain", "my-label", b"s", "my-variant", DerivationVersion::V1);
+    let id = ArtifactId::new(
+        "my:domain",
+        "my-label",
+        b"s",
+        "my-variant",
+        DerivationVersion::V1,
+    );
     assert_eq!(id.domain, "my:domain");
     assert_eq!(id.label, "my-label");
     assert_eq!(id.variant, "my-variant");
@@ -192,8 +209,7 @@ fn determinism_cache_returns_same_arc_pointer() {
     let fx = fx42();
 
     let first: Arc<u64> = fx.get_or_init("test:cache-id", "label", b"spec", "good", |_rng| 42u64);
-    let second: Arc<u64> =
-        fx.get_or_init("test:cache-id", "label", b"spec", "good", |_rng| 99u64);
+    let second: Arc<u64> = fx.get_or_init("test:cache-id", "label", b"spec", "good", |_rng| 99u64);
 
     // Must return the same Arc — the init closure should not run a second time.
     assert!(
