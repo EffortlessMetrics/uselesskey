@@ -171,4 +171,90 @@ mod tests {
             derive_seed(&master, &id_b).bytes()
         );
     }
+
+    #[test]
+    fn derive_seed_domain_affects_output() {
+        let master = Seed::new([6u8; 32]);
+        let id_a = ArtifactId::new("domain:a", "lbl", b"spec", "v", DerivationVersion::V1);
+        let id_b = ArtifactId::new("domain:b", "lbl", b"spec", "v", DerivationVersion::V1);
+        assert_ne!(
+            derive_seed(&master, &id_a).bytes(),
+            derive_seed(&master, &id_b).bytes()
+        );
+    }
+
+    #[test]
+    fn derive_seed_variant_affects_output() {
+        let master = Seed::new([7u8; 32]);
+        let id_a = ArtifactId::new("d", "lbl", b"spec", "good", DerivationVersion::V1);
+        let id_b = ArtifactId::new("d", "lbl", b"spec", "bad", DerivationVersion::V1);
+        assert_ne!(
+            derive_seed(&master, &id_a).bytes(),
+            derive_seed(&master, &id_b).bytes()
+        );
+    }
+
+    #[test]
+    fn derive_seed_spec_affects_output() {
+        let master = Seed::new([8u8; 32]);
+        let id_a = ArtifactId::new("d", "lbl", b"RS256", "v", DerivationVersion::V1);
+        let id_b = ArtifactId::new("d", "lbl", b"RS384", "v", DerivationVersion::V1);
+        assert_ne!(
+            derive_seed(&master, &id_a).bytes(),
+            derive_seed(&master, &id_b).bytes()
+        );
+    }
+
+    #[test]
+    fn derive_seed_master_affects_output() {
+        let id = ArtifactId::new("d", "lbl", b"spec", "v", DerivationVersion::V1);
+        let a = derive_seed(&Seed::new([1u8; 32]), &id);
+        let b = derive_seed(&Seed::new([2u8; 32]), &id);
+        assert_ne!(a.bytes(), b.bytes());
+    }
+
+    #[test]
+    fn artifact_id_empty_fields() {
+        let id = ArtifactId::new("d", "", b"", "", DerivationVersion::V1);
+        assert_eq!(id.label, "");
+        assert_eq!(id.variant, "");
+        assert_eq!(id.spec_fingerprint, *hash32(b"").as_bytes());
+    }
+
+    #[test]
+    fn artifact_id_ordering() {
+        let a = ArtifactId::new("a", "lbl", b"spec", "v", DerivationVersion::V1);
+        let b = ArtifactId::new("b", "lbl", b"spec", "v", DerivationVersion::V1);
+        assert!(a < b, "ArtifactId ordering should be by domain first");
+    }
+
+    #[test]
+    fn artifact_id_clone_equals_original() {
+        let id = ArtifactId::new("d", "lbl", b"spec", "v", DerivationVersion::V1);
+        let cloned = id.clone();
+        assert_eq!(id, cloned);
+    }
+
+    #[test]
+    fn derivation_version_copy_and_hash() {
+        use core::hash::{Hash, Hasher};
+        let v = DerivationVersion::V1;
+        let copy = v;
+        assert_eq!(v, copy);
+
+        // Verify Hash is implemented.
+        let mut h = std::collections::hash_map::DefaultHasher::new();
+        v.hash(&mut h);
+        let hash1 = h.finish();
+
+        let mut h2 = std::collections::hash_map::DefaultHasher::new();
+        copy.hash(&mut h2);
+        assert_eq!(hash1, h2.finish());
+    }
+
+    #[test]
+    fn derivation_version_debug() {
+        let dbg = format!("{:?}", DerivationVersion::V1);
+        assert!(dbg.contains("1"), "Debug should contain the version number");
+    }
 }

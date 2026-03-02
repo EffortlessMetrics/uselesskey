@@ -63,6 +63,28 @@ mod tests {
         assert_ne!(a_left.finalize(), b_left.finalize());
     }
 
+    #[test]
+    fn hash32_empty_input() {
+        let h = hash32(b"");
+        assert_eq!(h, blake3::hash(b""));
+    }
+
+    #[test]
+    fn write_len_prefixed_empty_data() {
+        let mut hasher = Hasher::new();
+        write_len_prefixed(&mut hasher, b"");
+        let actual = hasher.finalize();
+
+        let mut expected_hasher = Hasher::new();
+        expected_hasher.update(&0u32.to_be_bytes());
+        assert_eq!(actual, expected_hasher.finalize());
+    }
+
+    #[test]
+    fn hash32_different_inputs_differ() {
+        assert_ne!(hash32(b"alpha"), hash32(b"beta"));
+    }
+
     proptest! {
         #![proptest_config(ProptestConfig { cases: 64, ..ProptestConfig::default() })]
 

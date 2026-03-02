@@ -122,4 +122,90 @@ mod tests {
         let expected = blake3::hash("deterministic-seed-value".as_bytes());
         assert_eq!(seed.bytes(), expected.as_bytes());
     }
+
+    #[test]
+    fn parse_hex_32_lowercase_valid() {
+        let hex = "aa".repeat(32);
+        let result = parse_hex_32(&hex).unwrap();
+        assert!(result.iter().all(|b| *b == 0xAA));
+    }
+
+    #[test]
+    fn parse_hex_32_mixed_case_valid() {
+        let hex = "aAbBcCdDeEfF".repeat(5);
+        // 60 chars — pad to 64
+        let hex = format!("{hex}0000");
+        assert_eq!(hex.len(), 64);
+        assert!(parse_hex_32(&hex).is_ok());
+    }
+
+    #[test]
+    fn parse_hex_32_invalid_lo_nibble() {
+        // Valid hi nibble, invalid lo nibble at position 1
+        let mut hex = "0".repeat(64);
+        hex.replace_range(1..2, "z");
+        let err = parse_hex_32(&hex).unwrap_err();
+        assert!(err.contains("invalid hex char: z"));
+    }
+
+    #[test]
+    fn seed_equality_and_clone() {
+        let a = Seed::new([42u8; 32]);
+        let b = a;
+        assert_eq!(a, b);
+        assert_eq!(a.bytes(), b.bytes());
+    }
+
+    #[test]
+    fn seed_inequality() {
+        let a = Seed::new([1u8; 32]);
+        let b = Seed::new([2u8; 32]);
+        assert_ne!(a, b);
+    }
+
+    #[test]
+    fn seed_hash_consistent() {
+        use core::hash::{Hash, Hasher};
+        let seed = Seed::new([99u8; 32]);
+
+        let mut h1 = std::collections::hash_map::DefaultHasher::new();
+        seed.hash(&mut h1);
+        let hash1 = h1.finish();
+
+        let mut h2 = std::collections::hash_map::DefaultHasher::new();
+        seed.hash(&mut h2);
+        assert_eq!(hash1, h2.finish());
+    }
+
+    #[test]
+    fn from_env_value_short_string_uses_blake3() {
+        let seed = Seed::from_env_value("abc").unwrap();
+        let expected = blake3::hash(b"abc");
+        assert_eq!(seed.bytes(), expected.as_bytes());
+    }
+
+    #[test]
+    fn from_env_value_63_char_non_hex_uses_blake3() {
+        // 63 chars — not 64, so falls through to blake3 hashing.
+        let input = "a".repeat(63);
+        let seed = Seed::from_env_value(&input).unwrap();
+        let expected = blake3::hash(input.as_bytes());
+        assert_eq!(seed.bytes(), expected.as_bytes());
+    }
+
+    #[test]
+    fn from_env_value_65_char_non_hex_uses_blake3() {
+        // 65 chars — not 64, so falls through to blake3 hashing.
+        let input = "a".repeat(65);
+        let seed = Seed::from_env_value(&input).unwrap();
+        let expected = blake3::hash(input.as_bytes());
+        assert_eq!(seed.bytes(), expected.as_bytes());
+    }
+
+    #[test]
+    fn from_env_value_64_char_invalid_hex_returns_error() {
+        // 64 chars but not valid hex — parse_hex_32 error path.
+        let input = "g".repeat(64);
+        assert!(Seed::from_env_value(&input).is_err());
+    }
 }
