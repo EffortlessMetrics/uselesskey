@@ -943,3 +943,618 @@ mod full_feature_set {
         );
     }
 }
+
+// ===========================================================================
+// 22. Feature gating: core works when individual features are absent
+// ===========================================================================
+
+/// When `rsa` is NOT enabled, core types (Factory, Seed, Mode, negative)
+/// must still compile and work. RSA-specific types would be absent.
+#[cfg(not(feature = "rsa"))]
+mod rsa_gated_out {
+    #[test]
+    fn core_factory_works_without_rsa() {
+        let fx = uselesskey::Factory::random();
+        assert!(matches!(fx.mode(), uselesskey::Mode::Random));
+    }
+
+    #[test]
+    fn seed_works_without_rsa() {
+        let seed = uselesskey::Seed::from_env_value("no-rsa-seed").unwrap();
+        let fx = uselesskey::Factory::deterministic(seed);
+        assert!(matches!(fx.mode(), uselesskey::Mode::Deterministic { .. }));
+    }
+
+    #[test]
+    fn negative_helpers_work_without_rsa() {
+        use uselesskey::negative::CorruptPem;
+        let pem = "-----BEGIN TEST-----\nAAA=\n-----END TEST-----\n";
+        let corrupted = uselesskey::negative::corrupt_pem(pem, CorruptPem::BadHeader);
+        assert!(corrupted.contains("CORRUPTED"));
+    }
+}
+
+/// When `ecdsa` is NOT enabled, core types must still work.
+#[cfg(not(feature = "ecdsa"))]
+mod ecdsa_gated_out {
+    #[test]
+    fn core_factory_works_without_ecdsa() {
+        let fx = uselesskey::Factory::random();
+        assert!(matches!(fx.mode(), uselesskey::Mode::Random));
+    }
+
+    #[test]
+    fn negative_helpers_work_without_ecdsa() {
+        use uselesskey::negative::CorruptPem;
+        let pem = "-----BEGIN TEST-----\nAAA=\n-----END TEST-----\n";
+        let corrupted = uselesskey::negative::corrupt_pem(pem, CorruptPem::BadFooter);
+        assert!(corrupted.contains("CORRUPTED"));
+    }
+}
+
+/// When `ed25519` is NOT enabled, core types must still work.
+#[cfg(not(feature = "ed25519"))]
+mod ed25519_gated_out {
+    #[test]
+    fn core_factory_works_without_ed25519() {
+        let fx = uselesskey::Factory::random();
+        assert!(matches!(fx.mode(), uselesskey::Mode::Random));
+    }
+}
+
+/// When `hmac` is NOT enabled, core types must still work.
+#[cfg(not(feature = "hmac"))]
+mod hmac_gated_out {
+    #[test]
+    fn core_factory_works_without_hmac() {
+        let fx = uselesskey::Factory::random();
+        assert!(matches!(fx.mode(), uselesskey::Mode::Random));
+    }
+}
+
+/// When `token` is NOT enabled, core types must still work.
+#[cfg(not(feature = "token"))]
+mod token_gated_out {
+    #[test]
+    fn core_factory_works_without_token() {
+        let fx = uselesskey::Factory::random();
+        assert!(matches!(fx.mode(), uselesskey::Mode::Random));
+    }
+}
+
+/// When `jwk` is NOT enabled, core types must still work.
+#[cfg(not(feature = "jwk"))]
+mod jwk_gated_out {
+    #[test]
+    fn core_factory_works_without_jwk() {
+        let fx = uselesskey::Factory::random();
+        assert!(matches!(fx.mode(), uselesskey::Mode::Random));
+    }
+}
+
+// ===========================================================================
+// 23. Feature interdependencies
+// ===========================================================================
+
+/// The `x509` feature implies `rsa`, so when `x509` is enabled, RSA types
+/// and the extension trait must be available.
+#[cfg(feature = "x509")]
+mod x509_implies_rsa {
+    use super::*;
+    use uselesskey::{RsaFactoryExt, RsaKeyPair, RsaSpec, X509FactoryExt, X509Spec};
+
+    #[test]
+    fn rsa_available_when_x509_enabled() {
+        let fx = testutil::fx();
+        let _kp: RsaKeyPair = fx.rsa("x509-implies-rsa", RsaSpec::rs256());
+    }
+
+    #[test]
+    fn x509_and_rsa_share_factory() {
+        let fx = testutil::fx();
+        let rsa = fx.rsa("x509-rsa-share-r", RsaSpec::rs256());
+        let cert = fx.x509_self_signed(
+            "x509-rsa-share-x",
+            X509Spec::self_signed("share.example.com"),
+        );
+        assert!(!rsa.private_key_pkcs8_der().is_empty());
+        assert!(!cert.cert_der().is_empty());
+    }
+
+    #[test]
+    fn x509_implies_rsa_deterministic_independence() {
+        let seed = Seed::from_env_value("x509-rsa-dep-seed").unwrap();
+        let fx1 = Factory::deterministic(seed);
+        let rsa1 = fx1.rsa("x509dep-rsa", RsaSpec::rs256());
+        let cert1 = fx1.x509_self_signed("x509dep-cert", X509Spec::self_signed("dep.example.com"));
+
+        let fx2 = Factory::deterministic(seed);
+        // Reverse order
+        let cert2 = fx2.x509_self_signed("x509dep-cert", X509Spec::self_signed("dep.example.com"));
+        let rsa2 = fx2.rsa("x509dep-rsa", RsaSpec::rs256());
+
+        assert_eq!(rsa1.private_key_pkcs8_pem(), rsa2.private_key_pkcs8_pem());
+        assert_eq!(cert1.cert_der(), cert2.cert_der());
+    }
+}
+
+/// The `x509` feature also implies `jwk` (via `uselesskey-x509/jwk`),
+/// so JWK module should be available when x509 is enabled.
+#[cfg(feature = "x509")]
+mod x509_implies_jwk {
+    use super::*;
+    use uselesskey::{RsaFactoryExt, RsaSpec};
+
+    #[test]
+    fn jwk_output_available_via_x509_feature() {
+        let fx = testutil::fx();
+        let kp = fx.rsa("x509-jwk-test", RsaSpec::rs256());
+        // x509 enables jwk passthrough for rsa, so kid() should work
+        let kid = kp.kid();
+        assert!(!kid.is_empty());
+    }
+}
+
+/// The `full` feature implies `all-keys` + `token` + `x509` + `jwk`.
+/// `all-keys` is `rsa` + `ecdsa` + `ed25519` + `hmac` + `pgp`.
+/// Verify all sub-features are transitively enabled.
+#[cfg(feature = "full")]
+mod full_implies_all {
+    use super::*;
+
+    #[test]
+    fn full_enables_rsa() {
+        use uselesskey::{RsaFactoryExt, RsaSpec};
+        let fx = testutil::fx();
+        let kp = fx.rsa("full-rsa-check", RsaSpec::rs256());
+        assert!(!kp.private_key_pkcs8_der().is_empty());
+    }
+
+    #[test]
+    fn full_enables_ecdsa() {
+        use uselesskey::{EcdsaFactoryExt, EcdsaSpec};
+        let fx = testutil::fx();
+        let kp = fx.ecdsa("full-ecdsa-check", EcdsaSpec::es256());
+        assert!(!kp.private_key_pkcs8_der().is_empty());
+    }
+
+    #[test]
+    fn full_enables_ed25519() {
+        use uselesskey::{Ed25519FactoryExt, Ed25519Spec};
+        let fx = testutil::fx();
+        let kp = fx.ed25519("full-ed25519-check", Ed25519Spec::new());
+        assert!(!kp.private_key_pkcs8_der().is_empty());
+    }
+
+    #[test]
+    fn full_enables_hmac() {
+        use uselesskey::{HmacFactoryExt, HmacSpec};
+        let fx = testutil::fx();
+        let s = fx.hmac("full-hmac-check", HmacSpec::hs256());
+        assert!(!s.secret_bytes().is_empty());
+    }
+
+    #[test]
+    fn full_enables_pgp() {
+        use uselesskey::{PgpFactoryExt, PgpSpec};
+        let fx = testutil::fx();
+        let kp = fx.pgp("full-pgp-check", PgpSpec::ed25519());
+        assert!(
+            kp.public_key_armored()
+                .contains("BEGIN PGP PUBLIC KEY BLOCK")
+        );
+    }
+
+    #[test]
+    fn full_enables_token() {
+        use uselesskey::{TokenFactoryExt, TokenSpec};
+        let fx = testutil::fx();
+        let t = fx.token("full-token-check", TokenSpec::api_key());
+        assert!(!t.value().is_empty());
+    }
+
+    #[test]
+    fn full_enables_x509() {
+        use uselesskey::{X509FactoryExt, X509Spec};
+        let fx = testutil::fx();
+        let cert =
+            fx.x509_self_signed("full-x509-check", X509Spec::self_signed("full.example.com"));
+        assert!(!cert.cert_der().is_empty());
+    }
+
+    #[test]
+    fn full_enables_jwk_on_all_key_types() {
+        use uselesskey::{
+            EcdsaFactoryExt, EcdsaSpec, Ed25519FactoryExt, Ed25519Spec, HmacFactoryExt, HmacSpec,
+            RsaFactoryExt, RsaSpec,
+        };
+        let fx = testutil::fx();
+        let rsa_kid = fx.rsa("full-jwk-r", RsaSpec::rs256()).kid();
+        let ec_kid = fx.ecdsa("full-jwk-ec", EcdsaSpec::es256()).kid();
+        let ed_kid = fx.ed25519("full-jwk-ed", Ed25519Spec::new()).kid();
+        let hmac_kid = fx.hmac("full-jwk-h", HmacSpec::hs256()).kid();
+        assert!(!rsa_kid.is_empty());
+        assert!(!ec_kid.is_empty());
+        assert!(!ed_kid.is_empty());
+        assert!(!hmac_kid.is_empty());
+    }
+}
+
+// ===========================================================================
+// 24. Individual feature: PGP
+// ===========================================================================
+
+#[cfg(feature = "pgp")]
+mod pgp_independent {
+    use super::*;
+    use uselesskey::{PgpFactoryExt, PgpKeyPair, PgpSpec};
+
+    #[test]
+    fn reexport_types_available() {
+        let fx = testutil::fx();
+        let _kp: PgpKeyPair = fx.pgp("pgp-reexport", PgpSpec::ed25519());
+    }
+
+    #[test]
+    fn keygen_ed25519() {
+        let fx = testutil::fx();
+        let kp = fx.pgp("pgp-gen-ed", PgpSpec::ed25519());
+        assert!(
+            kp.public_key_armored()
+                .contains("BEGIN PGP PUBLIC KEY BLOCK")
+        );
+        assert!(
+            kp.private_key_armored()
+                .contains("BEGIN PGP PRIVATE KEY BLOCK")
+        );
+        assert!(!kp.public_key_binary().is_empty());
+        assert!(!kp.private_key_binary().is_empty());
+    }
+
+    #[test]
+    fn keygen_rsa2048() {
+        let fx = testutil::fx();
+        let kp = fx.pgp("pgp-gen-rsa2048", PgpSpec::rsa_2048());
+        assert!(
+            kp.public_key_armored()
+                .contains("BEGIN PGP PUBLIC KEY BLOCK")
+        );
+        assert!(!kp.fingerprint().is_empty());
+    }
+
+    #[test]
+    fn keygen_rsa3072() {
+        let fx = testutil::fx();
+        let kp = fx.pgp("pgp-gen-rsa3072", PgpSpec::rsa_3072());
+        assert!(
+            kp.private_key_armored()
+                .contains("BEGIN PGP PRIVATE KEY BLOCK")
+        );
+        assert!(!kp.fingerprint().is_empty());
+    }
+
+    #[test]
+    fn deterministic_pgp_is_stable() {
+        let seed = Seed::from_env_value("pgp-det-seed").unwrap();
+        let fx1 = Factory::deterministic(seed);
+        let fx2 = Factory::deterministic(seed);
+        let k1 = fx1.pgp("det-pgp", PgpSpec::ed25519());
+        let k2 = fx2.pgp("det-pgp", PgpSpec::ed25519());
+        assert_eq!(k1.public_key_binary(), k2.public_key_binary());
+        assert_eq!(k1.fingerprint(), k2.fingerprint());
+    }
+
+    #[test]
+    fn negative_corrupt_armored() {
+        use uselesskey::negative::CorruptPem;
+        let fx = testutil::fx();
+        let kp = fx.pgp("pgp-neg", PgpSpec::ed25519());
+        let bad = kp.private_key_armored_corrupt(CorruptPem::BadHeader);
+        assert!(bad.contains("CORRUPTED"));
+    }
+
+    #[test]
+    fn negative_truncated_binary() {
+        let fx = testutil::fx();
+        let kp = fx.pgp("pgp-trunc", PgpSpec::ed25519());
+        let trunc = kp.private_key_binary_truncated(16);
+        assert_eq!(trunc.len(), 16);
+    }
+
+    #[test]
+    fn negative_mismatched_public_key() {
+        let fx = testutil::fx();
+        let kp = fx.pgp("pgp-mm", PgpSpec::ed25519());
+        let mm = kp.mismatched_public_key_binary();
+        assert_ne!(mm, kp.public_key_binary());
+    }
+
+    #[test]
+    fn user_id_set() {
+        let fx = testutil::fx();
+        let kp = fx.pgp("pgp-uid", PgpSpec::ed25519());
+        assert!(!kp.user_id().is_empty());
+    }
+}
+
+// ===========================================================================
+// 25. Feature pairs: PGP + other key types
+// ===========================================================================
+
+#[cfg(all(feature = "pgp", feature = "rsa"))]
+mod pair_pgp_rsa {
+    use super::*;
+    use uselesskey::{PgpFactoryExt, PgpSpec, RsaFactoryExt, RsaSpec};
+
+    #[test]
+    fn pgp_and_rsa_from_same_factory() {
+        let fx = testutil::fx();
+        let pgp = fx.pgp("pair-pgp-rsa-p", PgpSpec::ed25519());
+        let rsa = fx.rsa("pair-pgp-rsa-r", RsaSpec::rs256());
+        assert!(!pgp.public_key_binary().is_empty());
+        assert!(!rsa.public_key_spki_der().is_empty());
+    }
+}
+
+#[cfg(all(feature = "pgp", feature = "ecdsa"))]
+mod pair_pgp_ecdsa {
+    use super::*;
+    use uselesskey::{EcdsaFactoryExt, EcdsaSpec, PgpFactoryExt, PgpSpec};
+
+    #[test]
+    fn pgp_and_ecdsa_from_same_factory() {
+        let fx = testutil::fx();
+        let pgp = fx.pgp("pair-pgp-ec-p", PgpSpec::rsa_2048());
+        let ec = fx.ecdsa("pair-pgp-ec-e", EcdsaSpec::es256());
+        assert!(!pgp.fingerprint().is_empty());
+        assert!(!ec.private_key_pkcs8_der().is_empty());
+    }
+}
+
+// ===========================================================================
+// 26. Default feature: `rsa` is the default
+// ===========================================================================
+
+/// The `default` feature set includes only `rsa`. Verify RSA is always
+/// available under default compilation (this test compiles because
+/// the test suite enables all features, but the cfg documents the intent).
+#[cfg(feature = "rsa")]
+mod default_feature_rsa {
+    use super::*;
+    use uselesskey::{RsaFactoryExt, RsaSpec};
+
+    #[test]
+    fn default_feature_provides_rsa() {
+        let fx = testutil::fx();
+        let kp = fx.rsa("default-rsa", RsaSpec::rs256());
+        assert!(kp.private_key_pkcs8_pem().contains("BEGIN PRIVATE KEY"));
+    }
+}
+
+// ===========================================================================
+// 27. Adapter crate integration (dev-dependencies)
+// ===========================================================================
+
+/// Test that the `uselesskey-jsonwebtoken` adapter works with facade types.
+/// The adapter is a dev-dependency, not a feature of the facade crate.
+#[cfg(feature = "rsa")]
+mod adapter_jsonwebtoken {
+    use super::*;
+    use uselesskey::{RsaFactoryExt, RsaSpec};
+    use uselesskey_jsonwebtoken::JwtKeyExt;
+
+    #[test]
+    fn rsa_encoding_key() {
+        let fx = testutil::fx();
+        let kp = fx.rsa("jwt-rsa-enc", RsaSpec::rs256());
+        let _enc = kp.encoding_key();
+    }
+
+    #[test]
+    fn rsa_decoding_key() {
+        let fx = testutil::fx();
+        let kp = fx.rsa("jwt-rsa-dec", RsaSpec::rs256());
+        let _dec = kp.decoding_key();
+    }
+
+    #[test]
+    fn rsa_roundtrip_sign_verify() {
+        use serde::{Deserialize, Serialize};
+
+        #[derive(Debug, Serialize, Deserialize)]
+        struct Claims {
+            sub: String,
+            exp: u64,
+        }
+
+        let fx = testutil::fx();
+        let kp = fx.rsa("jwt-rsa-rt", RsaSpec::rs256());
+        let enc = kp.encoding_key();
+        let dec = kp.decoding_key();
+
+        let claims = Claims {
+            sub: "test".to_string(),
+            exp: 9_999_999_999,
+        };
+        let header = jsonwebtoken::Header::new(jsonwebtoken::Algorithm::RS256);
+        let token = jsonwebtoken::encode(&header, &claims, &enc).unwrap();
+
+        let mut validation = jsonwebtoken::Validation::new(jsonwebtoken::Algorithm::RS256);
+        validation.validate_exp = false;
+        validation.required_spec_claims.clear();
+        let decoded = jsonwebtoken::decode::<Claims>(&token, &dec, &validation)
+            .expect("JWT should verify with matching keys");
+        assert_eq!(decoded.claims.sub, "test");
+    }
+}
+
+/// Test that the `uselesskey-jsonwebtoken` adapter works with ECDSA.
+#[cfg(feature = "ecdsa")]
+mod adapter_jsonwebtoken_ecdsa {
+    use super::*;
+    use uselesskey::{EcdsaFactoryExt, EcdsaSpec};
+    use uselesskey_jsonwebtoken::JwtKeyExt;
+
+    #[test]
+    fn ecdsa_encoding_key() {
+        let fx = testutil::fx();
+        let kp = fx.ecdsa("jwt-ec-enc", EcdsaSpec::es256());
+        let _enc = kp.encoding_key();
+    }
+
+    #[test]
+    fn ecdsa_decoding_key() {
+        let fx = testutil::fx();
+        let kp = fx.ecdsa("jwt-ec-dec", EcdsaSpec::es256());
+        let _dec = kp.decoding_key();
+    }
+}
+
+/// Test that the `uselesskey-jsonwebtoken` adapter works with Ed25519.
+#[cfg(feature = "ed25519")]
+mod adapter_jsonwebtoken_ed25519 {
+    use super::*;
+    use uselesskey::{Ed25519FactoryExt, Ed25519Spec};
+    use uselesskey_jsonwebtoken::JwtKeyExt;
+
+    #[test]
+    fn ed25519_encoding_key() {
+        let fx = testutil::fx();
+        let kp = fx.ed25519("jwt-ed-enc", Ed25519Spec::new());
+        let _enc = kp.encoding_key();
+    }
+
+    #[test]
+    fn ed25519_decoding_key() {
+        let fx = testutil::fx();
+        let kp = fx.ed25519("jwt-ed-dec", Ed25519Spec::new());
+        let _dec = kp.decoding_key();
+    }
+}
+
+/// Test that the `uselesskey-jsonwebtoken` adapter works with HMAC.
+#[cfg(feature = "hmac")]
+mod adapter_jsonwebtoken_hmac {
+    use super::*;
+    use uselesskey::{HmacFactoryExt, HmacSpec};
+    use uselesskey_jsonwebtoken::JwtKeyExt;
+
+    #[test]
+    fn hmac_encoding_key() {
+        let fx = testutil::fx();
+        let s = fx.hmac("jwt-hmac-enc", HmacSpec::hs256());
+        let _enc = s.encoding_key();
+    }
+
+    #[test]
+    fn hmac_decoding_key() {
+        let fx = testutil::fx();
+        let s = fx.hmac("jwt-hmac-dec", HmacSpec::hs256());
+        let _dec = s.decoding_key();
+    }
+}
+
+/// Test that the `uselesskey-rustls` adapter works with facade types.
+#[cfg(feature = "rsa")]
+mod adapter_rustls_rsa {
+    use super::*;
+    use uselesskey::{RsaFactoryExt, RsaSpec};
+    use uselesskey_rustls::RustlsPrivateKeyExt;
+
+    #[test]
+    fn rsa_to_rustls_private_key() {
+        let fx = testutil::fx();
+        let kp = fx.rsa("rustls-rsa-pk", RsaSpec::rs256());
+        let _pk: rustls_pki_types::PrivateKeyDer<'_> = kp.private_key_der_rustls();
+    }
+}
+
+#[cfg(feature = "ecdsa")]
+mod adapter_rustls_ecdsa {
+    use super::*;
+    use uselesskey::{EcdsaFactoryExt, EcdsaSpec};
+    use uselesskey_rustls::RustlsPrivateKeyExt;
+
+    #[test]
+    fn ecdsa_to_rustls_private_key() {
+        let fx = testutil::fx();
+        let kp = fx.ecdsa("rustls-ec-pk", EcdsaSpec::es256());
+        let _pk: rustls_pki_types::PrivateKeyDer<'_> = kp.private_key_der_rustls();
+    }
+}
+
+#[cfg(feature = "ed25519")]
+mod adapter_rustls_ed25519 {
+    use super::*;
+    use uselesskey::{Ed25519FactoryExt, Ed25519Spec};
+    use uselesskey_rustls::RustlsPrivateKeyExt;
+
+    #[test]
+    fn ed25519_to_rustls_private_key() {
+        let fx = testutil::fx();
+        let kp = fx.ed25519("rustls-ed-pk", Ed25519Spec::new());
+        let _pk: rustls_pki_types::PrivateKeyDer<'_> = kp.private_key_der_rustls();
+    }
+}
+
+/// Test that the rustls adapter works with X.509 certs.
+#[cfg(feature = "x509")]
+mod adapter_rustls_x509 {
+    use super::*;
+    use uselesskey::{X509FactoryExt, X509Spec};
+    use uselesskey_rustls::{RustlsCertExt, RustlsPrivateKeyExt};
+
+    #[test]
+    fn x509_to_rustls_cert_and_key() {
+        let fx = testutil::fx();
+        let cert = fx.x509_self_signed("rustls-x509", X509Spec::self_signed("rustls.example.com"));
+        let _cert_der: rustls_pki_types::CertificateDer<'_> = cert.certificate_der_rustls();
+        let _pk: rustls_pki_types::PrivateKeyDer<'_> = cert.private_key_der_rustls();
+    }
+}
+
+// ===========================================================================
+// 28. JWK module gating
+// ===========================================================================
+
+/// The `jwk` feature gates the `uselesskey::jwk` module.
+#[cfg(feature = "jwk")]
+mod jwk_module_gating {
+    #[test]
+    fn jwk_module_accessible() {
+        // The jwk module itself is available
+        use uselesskey::jwk::JwksBuilder;
+        let builder = JwksBuilder::new();
+        let jwks = builder.build();
+        let val = jwks.to_value();
+        assert!(val["keys"].is_array());
+        assert_eq!(val["keys"].as_array().unwrap().len(), 0);
+    }
+}
+
+/// When jwk is enabled with multiple key types, JwksBuilder can combine them.
+#[cfg(all(feature = "jwk", feature = "rsa", feature = "ecdsa"))]
+mod jwk_multi_key_builder {
+    use super::*;
+    use uselesskey::jwk::JwksBuilder;
+    use uselesskey::{EcdsaFactoryExt, EcdsaSpec, RsaFactoryExt, RsaSpec};
+
+    #[test]
+    fn jwks_builder_combines_algorithms() {
+        let fx = testutil::fx();
+        let rsa = fx.rsa("jwks-build-r", RsaSpec::rs256());
+        let ec = fx.ecdsa("jwks-build-ec", EcdsaSpec::es256());
+
+        let jwks = JwksBuilder::new()
+            .add_public(rsa.public_jwk())
+            .add_public(ec.public_jwk())
+            .build();
+        let val = jwks.to_value();
+        let keys = val["keys"].as_array().unwrap();
+        assert_eq!(keys.len(), 2);
+
+        let ktys: Vec<&str> = keys.iter().map(|k| k["kty"].as_str().unwrap()).collect();
+        assert!(ktys.contains(&"RSA"));
+        assert!(ktys.contains(&"EC"));
+    }
+}
