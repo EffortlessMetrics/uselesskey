@@ -3927,13 +3927,16 @@ name = "uselesskey-interop-tests"
 version = "0.0.0"
 dependencies = [
  "aws-lc-rs",
+ "base64",
  "ed25519-dalek",
  "hmac",
  "jsonwebtoken",
  "p256",
+ "p384",
  "ring",
  "rsa",
  "rustls",
+ "rustls-pki-types",
  "serde",
  "serde_json",
  "sha2",
