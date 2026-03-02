@@ -19,7 +19,7 @@ uselesskey-rustcrypto = { path = "../uselesskey-rustcrypto", features = ["all"],
 uselesskey-aws-lc-rs = { path = "../uselesskey-aws-lc-rs", features = ["all"], optional = true }
 uselesskey-rustls = { path = "../uselesskey-rustls", features = ["tls-config", "all", "rustls-ring"], optional = true }
 uselesskey-x509 = { path = "../uselesskey-x509", optional = true }
-uselesskey-hmac = { path = "../uselesskey-hmac", optional = true }
+uselesskey-hmac = { path = "../uselesskey-hmac", features = ["jwk"], optional = true }
 uselesskey-jsonwebtoken = { path = "../uselesskey-jsonwebtoken", features = ["all"], optional = true }
 aws-lc-rs = { workspace = true, optional = true }
 
