@@ -3497,8 +3497,17 @@ version = "0.3.0"
 dependencies = [
  "proptest",
  "rstest",
- "uselesskey-core-hash",
+ "uselesskey-core-negative-der",
  "uselesskey-core-negative-pem",
+]
+
+[[package]]
+name = "uselesskey-core-negative-der"
+version = "0.3.0"
+dependencies = [
+ "proptest",
+ "rstest",
+ "uselesskey-core-hash",
 ]
 
 [[package]]
