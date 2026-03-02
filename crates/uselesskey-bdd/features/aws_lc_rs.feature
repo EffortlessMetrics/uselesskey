@@ -52,3 +52,21 @@ Feature: aws-lc-rs adapter
     And I sign a message with the aws-lc-rs Ed25519 key
     And I generate another Ed25519 key for label "aws-lc-ed25519-wrong"
     Then the aws-lc-rs Ed25519 signature should not verify with the other key
+
+  # --- ECDSA wrong-key rejection ---
+
+  @aws_lc_rs
+  Scenario: aws-lc-rs ECDSA P-256 wrong-key rejection
+    Given a deterministic factory seeded with "aws-lc-p256-wrong"
+    When I generate an ECDSA ES256 key for label "aws-lc-p256-signer"
+    And I sign a message with the aws-lc-rs ECDSA P-256 key
+    And I generate another ECDSA ES256 key for label "aws-lc-p256-wrong"
+    Then the aws-lc-rs ECDSA P-256 signature should not verify with the other key
+
+  @aws_lc_rs
+  Scenario: aws-lc-rs ECDSA P-384 wrong-key rejection
+    Given a deterministic factory seeded with "aws-lc-p384-wrong"
+    When I generate an ECDSA ES384 key for label "aws-lc-p384-signer"
+    And I sign a message with the aws-lc-rs ECDSA P-384 key
+    And I generate another ECDSA ES384 key for label "aws-lc-p384-wrong"
+    Then the aws-lc-rs ECDSA P-384 signature should not verify with the other key

@@ -68,3 +68,50 @@ Feature: JWT signing and verification
     And I generate another RSA key for label "jwt-wrong-2"
     And I attempt to verify the JWT with the second RSA key
     Then the JWT verification should fail
+
+  # --- Additional verification round-trips ---
+
+  @jsonwebtoken
+  Scenario: verify JWT with ECDSA public key
+    Given a deterministic factory seeded with "jwt-verify-ecdsa"
+    When I generate an ECDSA ES256 key for label "jwt-verify-ecdsa"
+    And I sign a JWT with the ECDSA key
+    And I verify the JWT with the ECDSA public key
+    Then the JWT should be valid
+
+  @jsonwebtoken
+  Scenario: verify JWT with Ed25519 public key
+    Given a deterministic factory seeded with "jwt-verify-ed25519"
+    When I generate an Ed25519 key for label "jwt-verify-ed25519"
+    And I sign a JWT with the Ed25519 key
+    And I verify the JWT with the Ed25519 public key
+    Then the JWT should be valid
+
+  @jsonwebtoken
+  Scenario: verify JWT with HMAC secret
+    Given a deterministic factory seeded with "jwt-verify-hmac"
+    When I generate an HMAC HS256 secret for label "jwt-verify-hmac"
+    And I sign a JWT with the HMAC key
+    And I verify the JWT with the HMAC secret
+    Then the JWT should be valid
+
+  # --- Deterministic JWT stability ---
+
+  @jsonwebtoken
+  Scenario: deterministic RSA JWT is stable across generations
+    Given a deterministic factory seeded with "jwt-det-rsa"
+    When I generate an RSA key for label "jwt-det-rsa"
+    And I sign a JWT with the RSA key
+    And I record the JWT token
+    And I sign a JWT with the RSA key
+    Then the JWT token should be identical to the recorded one
+
+  # --- Cross-algorithm error paths ---
+
+  @jsonwebtoken
+  Scenario: verify JWT fails with HMAC key against RSA-signed token
+    Given a deterministic factory seeded with "jwt-cross-alg"
+    When I generate an RSA key for label "jwt-cross-rsa"
+    And I sign a JWT with the RSA key
+    And I attempt to verify the JWT with HS256 algorithm
+    Then the JWT verification should fail

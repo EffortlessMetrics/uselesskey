@@ -93,3 +93,24 @@ Feature: RustCrypto adapter
     When I generate an HMAC HS512 secret for label "rustcrypto-hmac512"
     And I compute a RustCrypto HMAC-SHA512 tag
     Then the RustCrypto HMAC-SHA512 tag should verify
+
+  # --- HMAC wrong-key rejection ---
+
+  @rustcrypto
+  Scenario: RustCrypto HMAC SHA-256 wrong-key rejection
+    Given a deterministic factory seeded with "rustcrypto-hmac256-wrong"
+    When I generate an HMAC HS256 secret for label "rustcrypto-hmac-signer"
+    And I compute a RustCrypto HMAC-SHA256 tag
+    And I generate an HMAC HS256 secret for label "rustcrypto-hmac-wrong" again
+    Then the RustCrypto HMAC-SHA256 tag should not verify with the other key
+
+  # --- Deterministic signature stability ---
+
+  @rustcrypto
+  Scenario: RustCrypto Ed25519 signature is deterministic
+    Given a deterministic factory seeded with "rustcrypto-ed25519-det"
+    When I generate an Ed25519 key for label "rustcrypto-ed25519-det"
+    And I sign a message with the RustCrypto Ed25519 key
+    And I record the RustCrypto signature
+    And I sign a message with the RustCrypto Ed25519 key
+    Then the RustCrypto signature should be identical to the recorded one
