@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-rustcrypto/tests/snapshots_rustcrypto.rs
+expression: cases
+---
+- label: ed-len-a
+  verifying_key_len: 32
+- label: ed-len-b
+  verifying_key_len: 32
+- label: ed-len-c
+  verifying_key_len: 32

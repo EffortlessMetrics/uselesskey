@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-ring/tests/snapshots_ring.rs
+expression: cases
+---
+- label: ed-label-a
+  public_key_len: 32
+- label: ed-label-b
+  public_key_len: 32
+- label: ed-label-c
+  public_key_len: 32

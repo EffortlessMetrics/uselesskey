@@ -66,6 +66,56 @@ mod rsa_snapshots {
 
         insta::assert_yaml_snapshot!("ring_rsa_modulus_lengths", cases);
     }
+
+    #[test]
+    fn snapshot_ring_rsa_4096_public_key() {
+        let fx = fx();
+        let keypair = fx.rsa("snapshot-rsa-4096", RsaSpec::new(4096));
+        let ring_kp = keypair.rsa_key_pair_ring();
+
+        let pub_bytes = ring_kp.public().as_ref();
+
+        let result = RingKeySnapshot {
+            algorithm: "RSA-4096",
+            public_key_hex: hex::encode(pub_bytes),
+            public_key_len: pub_bytes.len(),
+        };
+
+        insta::assert_yaml_snapshot!("ring_rsa_4096_public_key", result, {
+            ".public_key_hex" => "[REDACTED]",
+        });
+    }
+
+    #[test]
+    fn snapshot_ring_rsa_deterministic_same_label() {
+        let fx = fx();
+
+        #[derive(Serialize)]
+        struct DeterminismCheck {
+            label: &'static str,
+            first_modulus_len: usize,
+            second_modulus_len: usize,
+            first_pub_len: usize,
+            second_pub_len: usize,
+            lengths_match: bool,
+        }
+
+        let kp1 = fx.rsa("determinism-check", RsaSpec::rs256());
+        let kp2 = fx.rsa("determinism-check", RsaSpec::rs256());
+        let r1 = kp1.rsa_key_pair_ring();
+        let r2 = kp2.rsa_key_pair_ring();
+
+        let result = DeterminismCheck {
+            label: "determinism-check",
+            first_modulus_len: r1.public().modulus_len(),
+            second_modulus_len: r2.public().modulus_len(),
+            first_pub_len: r1.public().as_ref().len(),
+            second_pub_len: r2.public().as_ref().len(),
+            lengths_match: r1.public().as_ref().len() == r2.public().as_ref().len(),
+        };
+
+        insta::assert_yaml_snapshot!("ring_rsa_deterministic_same_label", result);
+    }
 }
 
 #[cfg(feature = "ecdsa")]
@@ -112,6 +162,66 @@ mod ecdsa_snapshots {
             ".public_key_hex" => "[REDACTED]",
         });
     }
+
+    #[test]
+    fn snapshot_ring_ecdsa_key_sizes() {
+        let fx = fx();
+
+        #[derive(Serialize)]
+        struct EcdsaSizeInfo {
+            curve: &'static str,
+            public_key_len: usize,
+        }
+
+        let cases: Vec<EcdsaSizeInfo> = vec![
+            {
+                let kp = fx.ecdsa("sizes-p256", EcdsaSpec::es256());
+                let ring_kp = kp.ecdsa_key_pair_ring();
+                EcdsaSizeInfo {
+                    curve: "P-256",
+                    public_key_len: ring_kp.public_key().as_ref().len(),
+                }
+            },
+            {
+                let kp = fx.ecdsa("sizes-p384", EcdsaSpec::es384());
+                let ring_kp = kp.ecdsa_key_pair_ring();
+                EcdsaSizeInfo {
+                    curve: "P-384",
+                    public_key_len: ring_kp.public_key().as_ref().len(),
+                }
+            },
+        ];
+
+        insta::assert_yaml_snapshot!("ring_ecdsa_key_sizes", cases);
+    }
+
+    #[test]
+    fn snapshot_ring_ecdsa_different_labels() {
+        let fx = fx();
+
+        #[derive(Serialize)]
+        struct EcdsaLabelCheck {
+            curve: &'static str,
+            label_a_pub_len: usize,
+            label_b_pub_len: usize,
+            same_curve_same_size: bool,
+        }
+
+        let kp_a = fx.ecdsa("label-a-p256", EcdsaSpec::es256());
+        let kp_b = fx.ecdsa("label-b-p256", EcdsaSpec::es256());
+        let ring_a = kp_a.ecdsa_key_pair_ring();
+        let ring_b = kp_b.ecdsa_key_pair_ring();
+
+        let result = EcdsaLabelCheck {
+            curve: "P-256",
+            label_a_pub_len: ring_a.public_key().as_ref().len(),
+            label_b_pub_len: ring_b.public_key().as_ref().len(),
+            same_curve_same_size: ring_a.public_key().as_ref().len()
+                == ring_b.public_key().as_ref().len(),
+        };
+
+        insta::assert_yaml_snapshot!("ring_ecdsa_different_labels", result);
+    }
 }
 
 #[cfg(feature = "ed25519")]
@@ -138,5 +248,30 @@ mod ed25519_snapshots {
         insta::assert_yaml_snapshot!("ring_ed25519_public_key", result, {
             ".public_key_hex" => "[REDACTED]",
         });
+    }
+
+    #[test]
+    fn snapshot_ring_ed25519_key_len_invariant() {
+        let fx = fx();
+
+        #[derive(Serialize)]
+        struct Ed25519LenInfo {
+            label: &'static str,
+            public_key_len: usize,
+        }
+
+        let cases: Vec<Ed25519LenInfo> = ["ed-label-a", "ed-label-b", "ed-label-c"]
+            .into_iter()
+            .map(|label| {
+                let kp = fx.ed25519(label, Ed25519Spec::new());
+                let ring_kp = kp.ed25519_key_pair_ring();
+                Ed25519LenInfo {
+                    label,
+                    public_key_len: ring_kp.public_key().as_ref().len(),
+                }
+            })
+            .collect();
+
+        insta::assert_yaml_snapshot!("ring_ed25519_key_len_invariant", cases);
     }
 }

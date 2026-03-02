@@ -87,6 +87,39 @@ mod self_signed_snapshots {
 
         insta::assert_yaml_snapshot!("tonic_self_signed_identity_builds", result);
     }
+
+    #[test]
+    fn snapshot_self_signed_custom_domain() {
+        let fx = fx();
+        let cert = fx.x509_self_signed(
+            "snapshot-ss-custom",
+            X509Spec::self_signed("api.example.com"),
+        );
+
+        #[derive(Serialize)]
+        struct CustomDomainSnapshot {
+            domain: &'static str,
+            cert_pem_has_begin: bool,
+            cert_pem_has_end: bool,
+            cert_der_len: usize,
+            private_key_der_len: usize,
+            identity_built: bool,
+        }
+
+        let cert_pem = cert.cert_pem().to_string();
+        let _identity = cert.identity_tonic();
+
+        let result = CustomDomainSnapshot {
+            domain: "api.example.com",
+            cert_pem_has_begin: cert_pem.contains("-----BEGIN CERTIFICATE-----"),
+            cert_pem_has_end: cert_pem.contains("-----END CERTIFICATE-----"),
+            cert_der_len: cert.cert_der().len(),
+            private_key_der_len: cert.private_key_pkcs8_der().len(),
+            identity_built: true,
+        };
+
+        insta::assert_yaml_snapshot!("tonic_self_signed_custom_domain", result);
+    }
 }
 
 // =========================================================================
@@ -173,6 +206,35 @@ mod chain_snapshots {
 
         insta::assert_yaml_snapshot!("tonic_chain_all_configs_build", result);
     }
+
+    #[test]
+    fn snapshot_chain_custom_domain_metadata() {
+        let fx = fx();
+        let chain = fx.x509_chain("snapshot-chain-custom", ChainSpec::new("rpc.custom.io"));
+
+        let chain_pem = chain.chain_pem().to_string();
+
+        #[derive(Serialize)]
+        struct CustomChainInfo {
+            domain: &'static str,
+            chain_pem_cert_count: usize,
+            root_cert_der_len: usize,
+            intermediate_cert_der_len: usize,
+            leaf_cert_der_len: usize,
+            leaf_private_key_der_len: usize,
+        }
+
+        let result = CustomChainInfo {
+            domain: "rpc.custom.io",
+            chain_pem_cert_count: chain_pem.matches("-----BEGIN CERTIFICATE-----").count(),
+            root_cert_der_len: chain.root_cert_der().len(),
+            intermediate_cert_der_len: chain.intermediate_cert_der().len(),
+            leaf_cert_der_len: chain.leaf_cert_der().len(),
+            leaf_private_key_der_len: chain.leaf_private_key_pkcs8_der().len(),
+        };
+
+        insta::assert_yaml_snapshot!("tonic_chain_custom_domain_metadata", result);
+    }
 }
 
 // =========================================================================
@@ -211,6 +273,47 @@ mod mtls_snapshots {
         };
 
         insta::assert_yaml_snapshot!("tonic_mtls_configs_build", result);
+    }
+
+    #[test]
+    fn snapshot_mtls_chain_cert_details() {
+        let fx = fx();
+        let chain = fx.x509_chain(
+            "snapshot-mtls-details",
+            ChainSpec::new("secure.example.com"),
+        );
+
+        let _server = chain.server_tls_config_mtls_tonic();
+        let _client = chain.client_tls_config_mtls_tonic("secure.example.com");
+
+        #[derive(Serialize)]
+        struct MtlsCertDetails {
+            domain: &'static str,
+            root_cert_der_len: usize,
+            intermediate_cert_der_len: usize,
+            leaf_cert_der_len: usize,
+            leaf_private_key_der_len: usize,
+            full_chain_pem_cert_count: usize,
+            server_mtls_built: bool,
+            client_mtls_built: bool,
+        }
+
+        let full_chain_pem = chain.full_chain_pem();
+
+        let result = MtlsCertDetails {
+            domain: "secure.example.com",
+            root_cert_der_len: chain.root_cert_der().len(),
+            intermediate_cert_der_len: chain.intermediate_cert_der().len(),
+            leaf_cert_der_len: chain.leaf_cert_der().len(),
+            leaf_private_key_der_len: chain.leaf_private_key_pkcs8_der().len(),
+            full_chain_pem_cert_count: full_chain_pem
+                .matches("-----BEGIN CERTIFICATE-----")
+                .count(),
+            server_mtls_built: true,
+            client_mtls_built: true,
+        };
+
+        insta::assert_yaml_snapshot!("tonic_mtls_chain_cert_details", result);
     }
 }
 

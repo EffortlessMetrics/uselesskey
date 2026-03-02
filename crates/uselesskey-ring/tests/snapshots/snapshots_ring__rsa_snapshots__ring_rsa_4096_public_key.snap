@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-ring/tests/snapshots_ring.rs
+expression: result
+---
+algorithm: RSA-4096
+public_key_hex: "[REDACTED]"
+public_key_len: 526

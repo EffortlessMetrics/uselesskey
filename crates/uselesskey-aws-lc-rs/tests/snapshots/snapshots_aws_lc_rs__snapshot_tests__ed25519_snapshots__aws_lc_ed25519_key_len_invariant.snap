@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-aws-lc-rs/tests/snapshots_aws_lc_rs.rs
+expression: cases
+---
+- label: ed-len-a
+  public_key_len: 32
+- label: ed-len-b
+  public_key_len: 32
+- label: ed-len-c
+  public_key_len: 32
