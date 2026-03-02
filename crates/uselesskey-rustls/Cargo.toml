@@ -51,3 +51,4 @@ rustls = { version = "0.23", features = ["ring"] }
 hex = "0.4"
 serde.workspace = true
 insta.workspace = true
+proptest.workspace = true
