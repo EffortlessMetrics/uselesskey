@@ -107,11 +107,36 @@ Feature: Cross-key validation failures
     Then a mismatched SPKI DER should parse and differ
     And an ECDSA mismatched SPKI DER should parse and differ
 
-  # --- Mismatch variants produce parseable but different keys across types ---
+  # --- JWKS with all four key types ---
 
-  Scenario: RSA and ECDSA mismatch variants both produce distinct public keys
-    Given a deterministic factory seeded with "cross-mismatch-test"
-    When I generate an RSA key for label "cross-mismatch" with spec RS256
-    And I generate an ECDSA ES256 key for label "cross-mismatch"
+  Scenario: JWKS can contain all four key types including HMAC
+    Given a deterministic factory seeded with "cross-jwks-all-four"
+    When I generate an RSA key for label "all-rsa" with spec RS256
+    And I generate an ECDSA ES256 key for label "all-ecdsa"
+    And I generate an Ed25519 key for label "all-ed25519"
+    And I generate an HMAC HS256 secret for label "all-hmac"
+    And I build a JWKS containing all keys
+    Then the JWKS should contain 4 keys
+    And the JWKS should contain a key with kty "RSA"
+    And the JWKS should contain a key with kty "EC"
+    And the JWKS should contain a key with kty "OKP"
+
+  # --- Ed25519 mismatch also works across types ---
+
+  Scenario: Ed25519 mismatch variant produces distinct public key
+    Given a deterministic factory seeded with "cross-ed25519-mismatch"
+    When I generate an RSA key for label "rsa-for-mismatch" with spec RS256
+    And I generate an Ed25519 key for label "ed25519-for-mismatch"
     Then a mismatched SPKI DER should parse and differ
-    And an ECDSA mismatched SPKI DER should parse and differ
+    And an Ed25519 mismatched SPKI DER should parse and differ
+
+  # --- Key format validity across all types in same factory ---
+
+  Scenario: all key types produce valid DER formats from same factory
+    Given a deterministic factory seeded with "cross-format-validity"
+    When I generate an RSA key for label "format-rsa" with spec RS256
+    And I generate an ECDSA ES256 key for label "format-ecdsa"
+    And I generate an Ed25519 key for label "format-ed25519"
+    Then the PKCS8 DER should be parseable
+    And the ECDSA PKCS8 DER should be parseable
+    And the Ed25519 PKCS8 DER should be parseable

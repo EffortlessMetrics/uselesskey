@@ -87,3 +87,46 @@ Feature: Determinism edge cases
     And I switch to a deterministic factory seeded with "det-edge-x509-recreate"
     And I generate an X.509 certificate for domain "test.example.com" with label "stable-cert" again
     Then the X.509 certificate PEM should be identical
+
+  # --- HMAC determinism with interleaved generation ---
+
+  Scenario: HMAC determinism survives interleaved key generation
+    Given a deterministic factory seeded with "det-edge-hmac-interleave"
+    When I generate an HMAC HS256 secret for label "hmac-first"
+    And I generate an RSA key for label "interleave-rsa"
+    And I generate an Ed25519 key for label "interleave-ed25519"
+    And I clear the factory cache
+    And I generate an HMAC HS256 secret for label "hmac-first" again
+    Then the HMAC secrets should be identical
+
+  # --- ECDSA determinism with interleaved generation ---
+
+  Scenario: ECDSA determinism survives interleaved generation with other types
+    Given a deterministic factory seeded with "det-edge-ecdsa-interleave"
+    When I generate an ECDSA ES256 key for label "ecdsa-first"
+    And I generate an RSA key for label "interleave-rsa"
+    And I generate an HMAC HS256 secret for label "interleave-hmac"
+    And I generate an Ed25519 key for label "interleave-ed25519"
+    And I clear the factory cache
+    And I generate an ECDSA ES256 key for label "ecdsa-first" again
+    Then the ECDSA PKCS8 PEM should be identical
+
+  # --- Different seeds produce completely different material for all types ---
+
+  Scenario: different seeds produce different HMAC secrets
+    Given a deterministic factory seeded with "det-edge-hmac-seed-a"
+    When I generate an HMAC HS256 secret for label "service"
+    And I switch to a deterministic factory seeded with "det-edge-hmac-seed-b"
+    And I generate another HMAC HS256 secret for label "service"
+    Then the HMAC secrets should be different
+
+  # --- Token type does not perturb key generation ---
+
+  Scenario: generating tokens does not perturb RSA determinism
+    Given a deterministic factory seeded with "det-edge-token-no-perturb"
+    When I generate an RSA key for label "rsa-anchor"
+    And I generate an API key token for label "token-noise"
+    And I generate a bearer token for label "bearer-noise"
+    And I clear the factory cache
+    And I generate an RSA key for label "rsa-anchor" again
+    Then the PKCS8 PEM should be identical

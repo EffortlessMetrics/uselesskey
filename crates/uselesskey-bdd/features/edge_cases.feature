@@ -116,3 +116,53 @@ Feature: Edge cases and error handling
     And I switch to a deterministic factory seeded with "recreation-hmac-test"
     And I generate an HMAC HS256 secret for label "stable" again
     Then the HMAC secrets should be identical
+
+  # --- Unicode labels for more key types ---
+
+  Scenario: label with unicode characters generates valid Ed25519 key
+    Given a deterministic factory seeded with "unicode-ed25519-test"
+    When I generate an Ed25519 key for label "名前テスト"
+    Then the Ed25519 PKCS8 DER should be parseable
+
+  Scenario: label with unicode characters generates valid HMAC secret
+    Given a deterministic factory seeded with "unicode-hmac-test"
+    When I generate an HMAC HS256 secret for label "clé-secrète-🔐"
+    Then the HMAC secret bytes should have length 32
+
+  # --- Very long labels for more key types ---
+
+  Scenario: very long label generates valid ECDSA key
+    Given a deterministic factory seeded with "long-label-ecdsa-test"
+    When I generate an ECDSA ES256 key for label "this-is-a-very-long-label-that-exceeds-normal-lengths-for-ecdsa"
+    Then the ECDSA PKCS8 DER should be parseable
+
+  Scenario: very long label generates valid Ed25519 key
+    Given a deterministic factory seeded with "long-label-ed25519-test"
+    When I generate an Ed25519 key for label "this-is-a-very-long-label-that-exceeds-normal-lengths-for-ed25519"
+    Then the Ed25519 PKCS8 DER should be parseable
+
+  Scenario: very long label generates valid HMAC secret
+    Given a deterministic factory seeded with "long-label-hmac-test"
+    When I generate an HMAC HS256 secret for label "this-is-a-very-long-label-that-exceeds-normal-lengths-for-hmac"
+    Then the HMAC secret bytes should have length 32
+
+  # --- DER truncation edge cases for ECDSA and Ed25519 ---
+
+  Scenario: truncating ECDSA DER to 0 bytes returns empty
+    Given a deterministic factory seeded with "truncate-zero-ecdsa"
+    When I generate an ECDSA ES256 key for label "truncate-zero"
+    And I truncate the ECDSA PKCS8 DER to 0 bytes
+    Then the truncated ECDSA DER should have length 0
+
+  Scenario: truncating Ed25519 DER to 0 bytes returns empty
+    Given a deterministic factory seeded with "truncate-zero-ed25519"
+    When I generate an Ed25519 key for label "truncate-zero"
+    And I truncate the Ed25519 PKCS8 DER to 0 bytes
+    Then the truncated Ed25519 DER should have length 0
+
+  # --- Special character labels for ECDSA ---
+
+  Scenario: label with special characters generates valid ECDSA key
+    Given a deterministic factory seeded with "special-chars-ecdsa"
+    When I generate an ECDSA ES256 key for label "test-label_123!@#$%"
+    Then the ECDSA PKCS8 DER should be parseable
