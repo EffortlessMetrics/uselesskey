@@ -1,6 +1,6 @@
 [package]
 name = "uselesskey-core-factory"
-version = "0.3.0"
+version = "0.1.0"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
@@ -17,8 +17,8 @@ authors.workspace = true
 [dependencies]
 rand_core.workspace = true
 rand_chacha.workspace = true
-uselesskey-core-cache = { path = "../uselesskey-core-cache", version = "0.3.0", default-features = false }
-uselesskey-core-id = { path = "../uselesskey-core-id", version = "0.3.0", default-features = false }
+uselesskey-core-cache = { path = "../uselesskey-core-cache", version = "0.1.0", default-features = false }
+uselesskey-core-id = { path = "../uselesskey-core-id", version = "0.1.0", default-features = false }
 
 [dev-dependencies]
 proptest.workspace = true

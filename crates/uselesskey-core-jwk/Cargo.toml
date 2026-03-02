@@ -1,6 +1,6 @@
 [package]
 name = "uselesskey-core-jwk"
-version = "0.3.0"
+version = "0.1.0"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
@@ -15,8 +15,8 @@ documentation = "https://docs.rs/uselesskey-core-jwk"
 authors.workspace = true
 
 [dependencies]
-uselesskey-core-jwk-shape = { path = "../uselesskey-core-jwk-shape", version = "0.3.0" }
-uselesskey-core-jwk-builder = { path = "../uselesskey-core-jwk-builder", version = "0.3.0" }
+uselesskey-core-jwk-shape = { path = "../uselesskey-core-jwk-shape", version = "0.1.0" }
+uselesskey-core-jwk-builder = { path = "../uselesskey-core-jwk-builder", version = "0.1.0" }
 
 [dev-dependencies]
 proptest.workspace = true
