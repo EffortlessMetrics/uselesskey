@@ -1,0 +1,49 @@
+---
+source: crates/uselesskey-core-x509-negative/tests/snapshots_negative.rs
+expression: specs
+---
+- variant: "hostname_mismatch:evil.example.com"
+  leaf_cn: evil.example.com
+  leaf_sans:
+    - evil.example.com
+  root_cn: chain.example.com Root CA
+  leaf_validity_days: 3650
+  intermediate_validity_days: 1825
+  leaf_not_before_offset_days: ~
+  intermediate_not_before_offset_days: ~
+- variant: unknown_ca
+  leaf_cn: chain.example.com
+  leaf_sans:
+    - chain.example.com
+  root_cn: chain.example.com Unknown Root CA
+  leaf_validity_days: 3650
+  intermediate_validity_days: 1825
+  leaf_not_before_offset_days: ~
+  intermediate_not_before_offset_days: ~
+- variant: expired_leaf
+  leaf_cn: chain.example.com
+  leaf_sans:
+    - chain.example.com
+  root_cn: chain.example.com Root CA
+  leaf_validity_days: 1
+  intermediate_validity_days: 1825
+  leaf_not_before_offset_days: 730
+  intermediate_not_before_offset_days: ~
+- variant: expired_intermediate
+  leaf_cn: chain.example.com
+  leaf_sans:
+    - chain.example.com
+  root_cn: chain.example.com Root CA
+  leaf_validity_days: 3650
+  intermediate_validity_days: 1
+  leaf_not_before_offset_days: ~
+  intermediate_not_before_offset_days: 730
+- variant: revoked_leaf
+  leaf_cn: chain.example.com
+  leaf_sans:
+    - chain.example.com
+  root_cn: chain.example.com Root CA
+  leaf_validity_days: 3650
+  intermediate_validity_days: 1825
+  leaf_not_before_offset_days: ~
+  intermediate_not_before_offset_days: ~

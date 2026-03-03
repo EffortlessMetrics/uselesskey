@@ -20,10 +20,12 @@ uselesskey-core-x509-derive = { path = "../uselesskey-core-x509-derive", version
 uselesskey-core-x509-spec = { path = "../uselesskey-core-x509-spec", version = "0.1.0" }
 
 [dev-dependencies]
+insta.workspace = true
 proptest.workspace = true
 rand_chacha.workspace = true
 rand_core.workspace = true
 rstest.workspace = true
+serde = { workspace = true, features = ["derive"] }
 
 [package.metadata.docs.rs]
 all-features = true

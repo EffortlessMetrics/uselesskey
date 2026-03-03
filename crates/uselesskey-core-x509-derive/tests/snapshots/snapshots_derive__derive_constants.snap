@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-core-x509-derive/tests/snapshots_derive.rs
+expression: c
+---
+base_time_epoch_unix: 1735689600
+base_time_window_days: 365
+serial_number_bytes: 16

@@ -1,0 +1,6 @@
+---
+source: crates/uselesskey-core-rustls-pki/tests/snapshots_rustls_pki.rs
+expression: snap
+---
+private_key_der_len: 1219
+matches_source: true
