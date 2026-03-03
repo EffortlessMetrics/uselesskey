@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: result
+---
+kind: oauth_access_token
+value_len: 249
+has_three_segments: true
+auth_header_scheme: Bearer

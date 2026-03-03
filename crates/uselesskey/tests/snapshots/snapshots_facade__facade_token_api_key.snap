@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: result
+---
+kind: api_key
+value_len: 40
+prefix: uk_test_
+auth_header_scheme: ApiKey

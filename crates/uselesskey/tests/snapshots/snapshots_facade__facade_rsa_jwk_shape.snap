@@ -1,0 +1,9 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: result
+---
+kty: RSA
+alg: RS256
+use_field: sig
+has_kid: true
+kid_not_empty: true

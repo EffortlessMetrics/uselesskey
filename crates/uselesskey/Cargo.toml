@@ -65,6 +65,7 @@ full = ["all-keys", "token", "x509", "jwk"]
 tempfile.workspace = true
 proptest.workspace = true
 criterion.workspace = true
+insta = { workspace = true }
 pem = "3"
 x509-parser = "0.18"
 serde = { workspace = true, features = ["derive"] }

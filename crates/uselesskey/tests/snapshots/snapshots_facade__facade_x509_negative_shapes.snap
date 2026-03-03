@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: result
+---
+expired_cert_pem_first_line: "-----BEGIN CERTIFICATE-----"
+not_yet_valid_cert_pem_first_line: "-----BEGIN CERTIFICATE-----"
+corrupt_cert_pem_first_line: "-----BEGIN CORRUPTED KEY-----"
+truncated_cert_der_len: 10

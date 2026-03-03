@@ -1,0 +1,9 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: result
+---
+key_count: 2
+kids_sorted: true
+key_types:
+  - RSA
+  - EC

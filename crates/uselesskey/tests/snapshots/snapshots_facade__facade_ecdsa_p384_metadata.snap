@@ -1,0 +1,16 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: result
+---
+label: facade-ecdsa-p384
+algorithm: ES384
+private_pem:
+  first_line: "-----BEGIN PRIVATE KEY-----"
+  last_line: "-----END PRIVATE KEY-----"
+  line_count: 6
+public_pem:
+  first_line: "-----BEGIN PUBLIC KEY-----"
+  last_line: "-----END PUBLIC KEY-----"
+  line_count: 5
+private_der_len: 185
+public_der_len: 120

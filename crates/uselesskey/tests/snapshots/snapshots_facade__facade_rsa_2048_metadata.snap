@@ -1,0 +1,16 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: result
+---
+label: facade-rsa-2048
+algorithm: RS256
+private_pem:
+  first_line: "-----BEGIN PRIVATE KEY-----"
+  last_line: "-----END PRIVATE KEY-----"
+  line_count: 28
+public_pem:
+  first_line: "-----BEGIN PUBLIC KEY-----"
+  last_line: "-----END PUBLIC KEY-----"
+  line_count: 9
+private_der_len: 1216
+public_der_len: 294

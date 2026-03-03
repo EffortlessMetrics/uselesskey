@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: result
+---
+original_der_len: 1219
+truncated_len: 10
+is_shorter: true
