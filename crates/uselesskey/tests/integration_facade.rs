@@ -337,12 +337,14 @@ mod pgp_tests {
     fn ed25519_armored() {
         let fx = testutil::fx();
         let kp = fx.pgp("int-pgp-ed", PgpSpec::ed25519());
-        assert!(kp
-            .private_key_armored()
-            .contains("BEGIN PGP PRIVATE KEY BLOCK"));
-        assert!(kp
-            .public_key_armored()
-            .contains("BEGIN PGP PUBLIC KEY BLOCK"));
+        assert!(
+            kp.private_key_armored()
+                .contains("BEGIN PGP PRIVATE KEY BLOCK")
+        );
+        assert!(
+            kp.public_key_armored()
+                .contains("BEGIN PGP PUBLIC KEY BLOCK")
+        );
     }
 
     #[test]
@@ -420,9 +422,10 @@ mod pgp_tests {
     fn rsa_spec_works() {
         let fx = testutil::fx();
         let kp = fx.pgp("int-pgp-rsa", PgpSpec::Rsa2048);
-        assert!(kp
-            .private_key_armored()
-            .contains("BEGIN PGP PRIVATE KEY BLOCK"));
+        assert!(
+            kp.private_key_armored()
+                .contains("BEGIN PGP PRIVATE KEY BLOCK")
+        );
     }
 
     #[test]
@@ -835,10 +838,11 @@ mod x509_tests {
         let cert = fx.x509_self_signed("int-x509-conv", X509Spec::self_signed("conv.example.com"));
         // Convenience methods should produce valid outputs.
         assert!(cert.expired().cert_pem().contains("BEGIN CERTIFICATE"));
-        assert!(cert
-            .not_yet_valid()
-            .cert_pem()
-            .contains("BEGIN CERTIFICATE"));
+        assert!(
+            cert.not_yet_valid()
+                .cert_pem()
+                .contains("BEGIN CERTIFICATE")
+        );
         assert!(cert.wrong_key_usage().spec().is_ca);
     }
 
@@ -879,9 +883,11 @@ mod x509_tests {
         assert!(!chain.root_cert_der().is_empty());
         assert!(!chain.intermediate_cert_der().is_empty());
         assert!(!chain.leaf_cert_der().is_empty());
-        assert!(chain
-            .root_private_key_pkcs8_pem()
-            .contains("BEGIN PRIVATE KEY"));
+        assert!(
+            chain
+                .root_private_key_pkcs8_pem()
+                .contains("BEGIN PRIVATE KEY")
+        );
     }
 
     #[test]
