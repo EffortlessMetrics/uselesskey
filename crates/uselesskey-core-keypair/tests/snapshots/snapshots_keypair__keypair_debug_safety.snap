@@ -1,0 +1,11 @@
+---
+source: crates/uselesskey-core-keypair/tests/snapshots_keypair.rs
+expression: result
+---
+contains_struct_name: true
+contains_pkcs8_der_len: true
+contains_spki_der_len: true
+leaks_private_pem_header: false
+leaks_public_pem_header: false
+leaks_pem_body: false
+uses_non_exhaustive: true

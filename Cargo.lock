@@ -3857,7 +3857,9 @@ dependencies = [
 name = "uselesskey-core-keypair"
 version = "0.1.0"
 dependencies = [
+ "insta",
  "proptest",
+ "serde",
  "uselesskey-core-keypair-material",
  "uselesskey-core-negative",
 ]
@@ -4280,6 +4282,10 @@ dependencies = [
 [[package]]
 name = "uselesskey-token-spec"
 version = "0.1.0"
+dependencies = [
+ "insta",
+ "serde",
+]
 
 [[package]]
 name = "uselesskey-tonic"

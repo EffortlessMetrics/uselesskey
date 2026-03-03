@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-token-spec/tests/snapshots_token_spec.rs
+expression: result
+---
+api_key: api_key
+bearer: bearer
+oauth_access_token: oauth_access_token
+all_snake_case: true

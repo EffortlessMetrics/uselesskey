@@ -1,0 +1,11 @@
+---
+source: crates/uselesskey-core-keypair/tests/snapshots_keypair.rs
+expression: result
+---
+bad_header_contains_corrupted: true
+bad_header_lacks_original: true
+bad_footer_contains_corrupted: true
+truncate_respects_length: true
+deterministic_pem_is_stable: true
+deterministic_der_is_stable: true
+different_variants_diverge: true

@@ -14,5 +14,9 @@ homepage.workspace = true
 documentation = "https://docs.rs/uselesskey-token-spec"
 authors.workspace = true
 
+[dev-dependencies]
+insta.workspace = true
+serde.workspace = true
+
 [package.metadata.docs.rs]
 all-features = true

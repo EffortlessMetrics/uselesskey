@@ -1,0 +1,28 @@
+---
+source: crates/uselesskey-token-spec/tests/snapshots_token_spec.rs
+expression: results
+---
+- variant: ApiKey
+  kind_name: api_key
+  debug_repr: ApiKey
+  stable_bytes:
+    - 0
+    - 0
+    - 0
+    - 1
+- variant: Bearer
+  kind_name: bearer
+  debug_repr: Bearer
+  stable_bytes:
+    - 0
+    - 0
+    - 0
+    - 2
+- variant: OAuthAccessToken
+  kind_name: oauth_access_token
+  debug_repr: OAuthAccessToken
+  stable_bytes:
+    - 0
+    - 0
+    - 0
+    - 3
