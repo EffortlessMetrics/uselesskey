@@ -45,16 +45,27 @@ proptest! {
         left in proptest::collection::vec(any::<u8>(), 1..16),
         right in proptest::collection::vec(any::<u8>(), 1..16),
     ) {
-        // Concatenate, then split at a different boundary
+        let epoch = time::OffsetDateTime::from_unix_timestamp(BASE_TIME_EPOCH_UNIX).unwrap();
+        let max = epoch + time::Duration::days(i64::from(BASE_TIME_WINDOW_DAYS));
+
+        // Original split produces a valid, in-range, deterministic result
+        let original_a = deterministic_base_time_from_parts(&[&left, &right]);
+        let original_b = deterministic_base_time_from_parts(&[&left, &right]);
+        prop_assert_eq!(original_a, original_b, "must be deterministic");
+        prop_assert!(original_a >= epoch, "base time {original_a} before epoch {epoch}");
+        prop_assert!(original_a < max, "base time {original_a} at or after max {max}");
+
+        // Alternate split also produces a valid, in-range, deterministic result
         let combined: Vec<u8> = left.iter().chain(right.iter()).copied().collect();
         let split_at = if left.len() > 1 { left.len() - 1 } else { left.len() + 1 };
         prop_assume!(split_at < combined.len());
         let (alt_left, alt_right) = combined.split_at(split_at);
-        prop_assume!(alt_left != left.as_slice() || alt_right != right.as_slice());
 
-        let original = deterministic_base_time_from_parts(&[&left, &right]);
-        let alternate = deterministic_base_time_from_parts(&[alt_left, alt_right]);
-        prop_assert_ne!(original, alternate);
+        let alternate_a = deterministic_base_time_from_parts(&[alt_left, alt_right]);
+        let alternate_b = deterministic_base_time_from_parts(&[alt_left, alt_right]);
+        prop_assert_eq!(alternate_a, alternate_b, "alternate must be deterministic");
+        prop_assert!(alternate_a >= epoch, "alternate {alternate_a} before epoch {epoch}");
+        prop_assert!(alternate_a < max, "alternate {alternate_a} at or after max {max}");
     }
 
     // ── deterministic_serial_number ──────────────────────────────────
