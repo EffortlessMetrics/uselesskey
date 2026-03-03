@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### Testing infrastructure
+
+- **Snapshot tests** — `insta`-based snapshot coverage across all key-type crates
+  (RSA, ECDSA, Ed25519, HMAC, Token, PGP) and adapter crates (jsonwebtoken,
+  rustls, ring, rustcrypto, aws-lc-rs, tonic), pinning PEM/DER/JWK output
+  formats and negative-fixture shapes
+- **Property-based tests** — `proptest` strategies for core derivation,
+  caching invariants, seed stability, and microcrate contracts
+- **BDD scenarios** — Cucumber feature files covering all key types, X.509
+  self-signed and chain certificates, JWKS ordering, cross-key validation,
+  negative fixtures (corrupt PEM, truncated DER, mismatch, expired/revoked
+  certs), and adapter round-trips
+- **Cross-adapter interop tests** — signing round-trip and TLS handshake tests
+  across rustls, ring, rustcrypto, and aws-lc-rs backends
+  (`uselesskey-interop-tests`)
+- **Determinism regression snapshots** — hardcoded expected-value tests ensuring
+  derivation stability across releases
+- **Security invariant tests** — dedicated tests verifying `Debug` impls never
+  expose key material
+
+#### Documentation
+
+- Polished README with quick-start examples, feature matrix, adapter guide,
+  and negative-fixture documentation
+- Per-crate README files for crates.io readiness
+
 ## [0.1.0] - 2026-02-17
 
 Initial public release. **uselesskey** generates deterministic and random
