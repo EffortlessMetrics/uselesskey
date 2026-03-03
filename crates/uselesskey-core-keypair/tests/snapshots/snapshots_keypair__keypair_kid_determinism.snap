@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-core-keypair/tests/snapshots_keypair.rs
+expression: result
+---
+same_material_matches: true
+different_spki_differs: true
+same_spki_different_pkcs8_matches: true

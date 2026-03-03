@@ -18,7 +18,9 @@ authors.workspace = true
 uselesskey-core-keypair-material.workspace = true
 
 [dev-dependencies]
+insta.workspace = true
 proptest.workspace = true
+serde.workspace = true
 uselesskey-core-negative.workspace = true
 
 [package.metadata.docs.rs]
