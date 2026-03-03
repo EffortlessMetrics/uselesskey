@@ -1,0 +1,15 @@
+---
+source: tests/api_surface.rs
+assertion_line: 505
+expression: shape
+---
+Ed25519FactoryExt::ed25519(&self, label, Ed25519Spec) -> Ed25519KeyPair
+Ed25519Spec::new() -> Ed25519Spec
+Ed25519Spec::default() -> Ed25519Spec
+Ed25519KeyPair::private_key_pkcs8_pem() -> &str
+Ed25519KeyPair::private_key_pkcs8_der() -> &[u8]
+Ed25519KeyPair::public_key_spki_pem() -> &str
+Ed25519KeyPair::public_key_spki_der() -> &[u8]
+Ed25519KeyPair::private_key_pkcs8_pem_corrupt(CorruptPem) -> String
+Ed25519KeyPair::private_key_pkcs8_der_truncated(usize) -> Vec<u8>
+Ed25519KeyPair::mismatched_public_key_spki_der() -> Vec<u8>

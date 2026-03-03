@@ -1,0 +1,24 @@
+---
+source: tests/api_surface.rs
+assertion_line: 563
+expression: shape
+---
+X509FactoryExt::x509_self_signed(&self, label, X509Spec) -> X509Cert
+X509FactoryExt::x509_chain(&self, label, ChainSpec) -> X509Chain
+X509Spec::self_signed(cn) -> X509Spec
+ChainSpec::new(cn) -> ChainSpec
+X509Cert::cert_pem() -> &str
+X509Cert::cert_der() -> &[u8]
+X509Cert::private_key_pkcs8_pem() -> &str
+X509Cert::private_key_pkcs8_der() -> &[u8]
+X509Cert::identity_pem() -> String
+X509Cert::write_cert_pem() -> Result<TempArtifact, Error>
+X509Cert::write_cert_der() -> Result<TempArtifact, Error>
+X509Cert::write_private_key_pem() -> Result<TempArtifact, Error>
+X509Cert::write_identity_pem() -> Result<TempArtifact, Error>
+X509Cert::corrupt_cert_pem(CorruptPem) -> String
+X509Cert::expired() -> X509Cert
+X509Cert::not_yet_valid() -> X509Cert
+X509Chain::leaf_cert_pem() -> &str
+X509Chain::root_cert_pem() -> &str
+X509Chain::chain_pem() -> String

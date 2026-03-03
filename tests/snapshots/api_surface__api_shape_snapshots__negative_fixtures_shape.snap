@@ -1,0 +1,10 @@
+---
+source: tests/api_surface.rs
+assertion_line: 576
+expression: shape
+---
+CorruptPem::BadHeader
+CorruptPem::BadFooter
+CorruptPem::BadBase64
+CorruptPem::Truncate { bytes: usize }
+CorruptPem::ExtraBlankLine

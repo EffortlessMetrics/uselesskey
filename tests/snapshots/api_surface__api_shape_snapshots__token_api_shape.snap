@@ -1,0 +1,12 @@
+---
+source: tests/api_surface.rs
+assertion_line: 536
+expression: shape
+---
+TokenFactoryExt::token(&self, label, TokenSpec) -> TokenFixture
+TokenFactoryExt::token_with_variant(&self, label, TokenSpec, variant) -> TokenFixture
+TokenSpec::api_key() -> TokenSpec
+TokenSpec::bearer() -> TokenSpec
+TokenSpec::oauth_access_token() -> TokenSpec
+TokenFixture::value() -> &str
+TokenFixture::authorization_header() -> String
