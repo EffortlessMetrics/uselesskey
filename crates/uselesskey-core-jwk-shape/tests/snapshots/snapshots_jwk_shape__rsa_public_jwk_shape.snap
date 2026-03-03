@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-core-jwk-shape/tests/snapshots_jwk_shape.rs
+expression: value
+---
+alg: RS256
+e: "[REDACTED]"
+kid: rsa-pub-1
+kty: RSA
+n: "[REDACTED]"
+use: sig

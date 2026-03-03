@@ -1,0 +1,16 @@
+---
+source: crates/uselesskey-core-jwk-shape/tests/snapshots_jwk_shape.rs
+expression: infos
+---
+- variant: RsaPrivateJwk
+  debug_output: "RsaPrivateJwk { kid: \"k\", alg: \"RS256\", .. }"
+  contains_secret: false
+- variant: EcPrivateJwk
+  debug_output: "EcPrivateJwk { kid: \"k\", alg: \"ES256\", crv: \"P-256\", .. }"
+  contains_secret: false
+- variant: OkpPrivateJwk
+  debug_output: "OkpPrivateJwk { kid: \"k\", alg: \"EdDSA\", crv: \"Ed25519\", .. }"
+  contains_secret: false
+- variant: OctJwk
+  debug_output: "OctJwk { kid: \"k\", alg: \"HS256\", .. }"
+  contains_secret: false

@@ -1,0 +1,13 @@
+---
+source: crates/uselesskey-core-jwk-builder/tests/snapshots_jwk_builder.rs
+expression: snapshot_from_builder(builder)
+---
+key_count: 3
+kids:
+  - any-key
+  - priv-key
+  - pub-key
+ktys:
+  - OKP
+  - oct
+  - EC

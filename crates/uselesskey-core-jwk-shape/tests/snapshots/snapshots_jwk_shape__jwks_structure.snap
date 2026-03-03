@@ -1,0 +1,23 @@
+---
+source: crates/uselesskey-core-jwk-shape/tests/snapshots_jwk_shape.rs
+expression: value
+---
+keys:
+  - alg: RS256
+    e: "[REDACTED]"
+    kid: key-a
+    kty: RSA
+    n: "[REDACTED]"
+    use: sig
+  - alg: ES256
+    crv: P-256
+    kid: key-b
+    kty: EC
+    use: sig
+    x: "[REDACTED]"
+    y: "[REDACTED]"
+  - alg: HS256
+    k: "[REDACTED]"
+    kid: key-c
+    kty: oct
+    use: sig

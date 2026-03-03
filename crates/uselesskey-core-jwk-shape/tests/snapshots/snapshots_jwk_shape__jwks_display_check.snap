@@ -1,0 +1,6 @@
+---
+source: crates/uselesskey-core-jwk-shape/tests/snapshots_jwk_shape.rs
+expression: check
+---
+has_keys_array: true
+key_count: 1

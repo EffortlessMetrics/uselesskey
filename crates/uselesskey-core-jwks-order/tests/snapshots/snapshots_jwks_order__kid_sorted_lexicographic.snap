@@ -1,0 +1,12 @@
+---
+source: crates/uselesskey-core-jwks-order/tests/snapshots_jwks_order.rs
+expression: result
+---
+kids:
+  - alpha
+  - bravo
+  - charlie
+tags:
+  - a
+  - b
+  - c

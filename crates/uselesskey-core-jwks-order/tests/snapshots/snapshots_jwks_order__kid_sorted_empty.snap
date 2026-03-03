@@ -1,0 +1,6 @@
+---
+source: crates/uselesskey-core-jwks-order/tests/snapshots_jwks_order.rs
+expression: result
+---
+kids: []
+tags: []
