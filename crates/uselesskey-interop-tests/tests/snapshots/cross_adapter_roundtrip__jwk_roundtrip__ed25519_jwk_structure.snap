@@ -1,0 +1,11 @@
+---
+source: crates/uselesskey-interop-tests/tests/cross_adapter_roundtrip.rs
+assertion_line: 586
+expression: redacted
+---
+alg: EdDSA
+crv: Ed25519
+kid: "[REDACTED]"
+kty: OKP
+use: sig
+x: "[REDACTED]"
