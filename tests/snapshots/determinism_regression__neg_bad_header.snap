@@ -1,0 +1,7 @@
+---
+source: tests/determinism_regression.rs
+assertion_line: 359
+expression: "insta::internals::Content::Map(vec![(insta::internals::Content::from(\"header_line\"),\ninsta::internals::Content::from(pem_header(&corrupt1))),\n(insta::internals::Content::from(\"len\"),\ninsta::internals::Content::from(corrupt1.len() as u64)),])"
+---
+header_line: "-----BEGIN CORRUPTED KEY-----"
+len: 1706

@@ -1,0 +1,9 @@
+---
+source: tests/determinism_regression.rs
+assertion_line: 534
+expression: "insta::internals::Content::Map(vec![(insta::internals::Content::from(\"key_count\"),\ninsta::internals::Content::from(keys.len() as u64)),\n(insta::internals::Content::from(\"kid_0\"),\ninsta::internals::Content::from(kids[0])),\n(insta::internals::Content::from(\"kid_1\"),\ninsta::internals::Content::from(kids[1])),\n(insta::internals::Content::from(\"kid_2\"),\ninsta::internals::Content::from(kids[2])),])"
+---
+key_count: 3
+kid_0: gHSnety_Na6LcIju
+kid_1: io7sXjI1xclWkp2t
+kid_2: urEA9woMd4yqFKa9
