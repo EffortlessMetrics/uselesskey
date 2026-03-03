@@ -466,7 +466,7 @@ fn snapshot_facade_corrupt_pem_variants() {
     let results: Vec<CorruptSnapshot> = variants
         .iter()
         .map(|(name, variant)| {
-            let corrupted = kp.private_key_pkcs8_pem_corrupt(variant.clone());
+            let corrupted = kp.private_key_pkcs8_pem_corrupt(*variant);
             CorruptSnapshot {
                 variant: name,
                 differs_from_original: corrupted != original,
