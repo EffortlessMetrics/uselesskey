@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-core-factory/tests/snapshots_factory.rs
+assertion_line: 41
+expression: result
+---
+is_random: false
+is_deterministic: true
+cache_size: 0

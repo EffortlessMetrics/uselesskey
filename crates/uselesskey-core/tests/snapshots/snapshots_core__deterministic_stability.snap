@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-core/tests/snapshots_core.rs
+assertion_line: 126
+expression: result
+---
+values_match_across_factories: true
+values_stable_after_clear: true

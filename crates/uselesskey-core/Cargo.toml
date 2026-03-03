@@ -37,9 +37,11 @@ uselesskey-core-id = { path = "../uselesskey-core-id", version = "0.1.0", defaul
 uselesskey-core-negative = { path = "../uselesskey-core-negative", version = "0.1.0", default-features = false }
 
 [dev-dependencies]
+insta.workspace = true
 rand_core.workspace = true
 proptest.workspace = true
 rstest.workspace = true
+serde = { workspace = true }
 
 [package.metadata.docs.rs]
 features = ["std"]

@@ -21,7 +21,9 @@ uselesskey-core-cache = { path = "../uselesskey-core-cache", version = "0.1.0", 
 uselesskey-core-id = { path = "../uselesskey-core-id", version = "0.1.0", default-features = false }
 
 [dev-dependencies]
+insta.workspace = true
 proptest.workspace = true
+serde = { workspace = true }
 
 [features]
 default = ["std"]

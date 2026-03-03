@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-core-factory/tests/snapshots_factory.rs
+assertion_line: 117
+expression: result
+---
+deterministic: true
+same_seed_same_value: true
+different_seed_different_value: true

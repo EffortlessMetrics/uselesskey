@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-core/tests/snapshots_core.rs
+assertion_line: 33
+expression: result
+---
+has_factory: true
+has_mode_random: true
+has_mode_deterministic: true
+has_seed: true
+has_error_type: true
