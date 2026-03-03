@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-core-token/tests/snapshots_token_core.rs
+expression: result
+---
+segment_count: 3
+is_jwt_shaped: true
+total_len: 247

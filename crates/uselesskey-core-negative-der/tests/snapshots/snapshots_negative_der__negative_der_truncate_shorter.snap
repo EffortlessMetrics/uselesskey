@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-core-negative-der/tests/snapshots_negative_der.rs
+expression: result
+---
+original_len: 8
+requested_len: 3
+result_len: 3
+was_shortened: true

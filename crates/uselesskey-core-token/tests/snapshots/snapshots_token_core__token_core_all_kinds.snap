@@ -1,0 +1,13 @@
+---
+source: crates/uselesskey-core-token/tests/snapshots_token_core.rs
+expression: results
+---
+- kind: ApiKey
+  total_len: 40
+  auth_scheme: ApiKey
+- kind: Bearer
+  total_len: 43
+  auth_scheme: Bearer
+- kind: OAuthAccessToken
+  total_len: 247
+  auth_scheme: Bearer

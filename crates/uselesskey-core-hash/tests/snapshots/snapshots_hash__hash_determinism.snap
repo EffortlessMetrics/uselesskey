@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-core-hash/tests/snapshots_hash.rs
+expression: result
+---
+input_description: test-key-material
+same_input_matches: true
+different_inputs_differ: true

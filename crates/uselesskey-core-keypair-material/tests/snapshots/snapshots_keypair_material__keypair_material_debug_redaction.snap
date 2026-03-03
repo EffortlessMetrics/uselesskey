@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-core-keypair-material/tests/snapshots_keypair_material.rs
+expression: result
+---
+contains_struct_name: true
+leaks_private_key: false
+leaks_public_key: false
+contains_len_fields: true

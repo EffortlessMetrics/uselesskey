@@ -18,9 +18,12 @@ authors.workspace = true
 uselesskey-core-token-shape.workspace = true
 
 [dev-dependencies]
+insta.workspace = true
 rand_chacha.workspace = true
+rand_core.workspace = true
 proptest.workspace = true
 base64.workspace = true
+serde.workspace = true
 serde_json.workspace = true
 
 [package.metadata.docs.rs]

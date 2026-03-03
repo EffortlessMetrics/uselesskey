@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-core-hash/tests/snapshots_hash.rs
+expression: result
+---
+split_a: "[a] + [bc]"
+split_b: "[ab] + [c]"
+digests_differ: true

@@ -3832,7 +3832,9 @@ name = "uselesskey-core-hash"
 version = "0.1.0"
 dependencies = [
  "blake3",
+ "insta",
  "proptest",
+ "serde",
 ]
 
 [[package]]
@@ -3906,7 +3908,9 @@ dependencies = [
 name = "uselesskey-core-keypair-material"
 version = "0.1.0"
 dependencies = [
+ "insta",
  "proptest",
+ "serde",
  "uselesskey-core",
  "uselesskey-core-kid",
 ]
@@ -3939,8 +3943,10 @@ dependencies = [
 name = "uselesskey-core-negative-der"
 version = "0.1.0"
 dependencies = [
+ "insta",
  "proptest",
  "rstest",
+ "serde",
  "uselesskey-core-hash",
 ]
 
@@ -3993,8 +3999,11 @@ name = "uselesskey-core-token"
 version = "0.1.0"
 dependencies = [
  "base64",
+ "insta",
  "proptest",
  "rand_chacha 0.3.1",
+ "rand_core 0.6.4",
+ "serde",
  "serde_json",
  "uselesskey-core-token-shape",
 ]

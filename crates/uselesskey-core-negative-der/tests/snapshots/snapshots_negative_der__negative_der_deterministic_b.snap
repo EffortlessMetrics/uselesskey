@@ -1,0 +1,9 @@
+---
+source: crates/uselesskey-core-negative-der/tests/snapshots_negative_der.rs
+expression: result
+---
+variant: "corrupt:variant-b"
+original_len: 8
+result_len: 8
+differs_from_original: true
+is_deterministic: true

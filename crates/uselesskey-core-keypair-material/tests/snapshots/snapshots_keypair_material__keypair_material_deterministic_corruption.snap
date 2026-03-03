@@ -1,0 +1,9 @@
+---
+source: crates/uselesskey-core-keypair-material/tests/snapshots_keypair_material.rs
+expression: result
+---
+variant: "snapshot:v1"
+pem_is_deterministic: true
+pem_differs_from_original: true
+der_is_deterministic: true
+der_differs_from_original: true
