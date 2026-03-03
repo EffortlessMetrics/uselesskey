@@ -11,9 +11,8 @@ exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
 categories.workspace = true
 keywords = ["fixtures", "negative", "pem", "der", "testing"]
 homepage.workspace = true
-authors.workspace = true
-
 documentation = "https://docs.rs/uselesskey-core-negative"
+authors.workspace = true
 
 [dependencies]
 uselesskey-core-negative-der = { workspace = true }
