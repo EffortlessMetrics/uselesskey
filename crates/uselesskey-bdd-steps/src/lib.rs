@@ -8,6 +8,7 @@ use cucumber::{World, given, then, when};
 #[cfg(feature = "uk-jwt")]
 use jsonwebtoken::{Algorithm, Header, Validation, decode, decode_header, encode};
 use serde_json::Value;
+use uselesskey::Factory;
 
 #[cfg(feature = "uk-core-factory")]
 #[path = "steps/core_factory_steps.rs"]
@@ -31,11 +32,14 @@ mod core_seed_steps;
 #[path = "steps/core_token_shape_steps.rs"]
 mod core_token_shape_steps;
 
+#[cfg(feature = "uk-bdd-keys")]
 use uselesskey::jwk::JwksBuilder;
+#[cfg(feature = "uk-bdd-keys")]
 use uselesskey::negative::CorruptPem;
+#[cfg(feature = "uk-bdd-keys")]
 use uselesskey::{
     ChainSpec, EcdsaFactoryExt, EcdsaKeyPair, EcdsaSpec, Ed25519FactoryExt, Ed25519KeyPair,
-    Ed25519Spec, Factory, HmacFactoryExt, HmacSecret, HmacSpec, RsaFactoryExt, RsaKeyPair, RsaSpec,
+    Ed25519Spec, HmacFactoryExt, HmacSecret, HmacSpec, RsaFactoryExt, RsaKeyPair, RsaSpec,
     X509Cert, X509Chain, X509FactoryExt, X509Spec,
 };
 #[cfg(feature = "uk-jwt")]
@@ -47,6 +51,7 @@ use uselesskey::{TokenFactoryExt, TokenFixture, TokenSpec};
 #[cfg(feature = "uk-pgp")]
 use uselesskey::{PgpFactoryExt, PgpKeyPair, PgpSpec};
 
+#[cfg(feature = "uk-bdd-keys")]
 fn set_public_kid(jwk: &mut uselesskey::jwk::PublicJwk, kid: &str) {
     use uselesskey::jwk::PublicJwk;
     match jwk {
@@ -114,6 +119,7 @@ fn decode_jwt<T: JwtKeyExt>(
         .map_err(|err| format!("JWT decode failed: {err}"))
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 fn set_private_kid(jwk: &mut uselesskey::jwk::PrivateJwk, kid: &str) {
     use uselesskey::jwk::PrivateJwk;
     match jwk {
@@ -127,7 +133,9 @@ fn set_private_kid(jwk: &mut uselesskey::jwk::PrivateJwk, kid: &str) {
 #[derive(Default, Debug, World)]
 struct UselessWorld {
     factory: Option<Factory>,
+    #[cfg(feature = "uk-bdd-keys")]
     rsa: Option<RsaKeyPair>,
+    #[cfg(feature = "uk-bdd-keys")]
     ed25519: Option<Ed25519KeyPair>,
     label: Option<String>,
 
@@ -190,6 +198,7 @@ struct UselessWorld {
     kid_2: Option<String>,
 
     // HMAC-specific storage
+    #[cfg(feature = "uk-bdd-keys")]
     hmac: Option<HmacSecret>,
     hmac_secret_1: Option<Vec<u8>>,
     hmac_secret_2: Option<Vec<u8>>,
@@ -208,6 +217,7 @@ struct UselessWorld {
     ed25519_kid_2: Option<String>,
 
     // ECDSA-specific storage
+    #[cfg(feature = "uk-bdd-keys")]
     ecdsa: Option<EcdsaKeyPair>,
     ecdsa_pkcs8_pem_1: Option<String>,
     ecdsa_pkcs8_pem_2: Option<String>,
@@ -222,6 +232,7 @@ struct UselessWorld {
     ecdsa_kid_2: Option<String>,
 
     // X.509-specific storage
+    #[cfg(feature = "uk-bdd-keys")]
     x509: Option<X509Cert>,
     x509_cert_pem_1: Option<String>,
     x509_cert_pem_2: Option<String>,
@@ -229,8 +240,11 @@ struct UselessWorld {
     x509_cert_der_2: Option<Vec<u8>>,
     x509_private_key_pem_1: Option<String>,
     x509_private_key_pem_2: Option<String>,
+    #[cfg(feature = "uk-bdd-keys")]
     x509_expired: Option<X509Cert>,
+    #[cfg(feature = "uk-bdd-keys")]
     x509_not_yet_valid: Option<X509Cert>,
+    #[cfg(feature = "uk-bdd-keys")]
     x509_wrong_key_usage: Option<X509Cert>,
     x509_corrupted_pem: Option<String>,
     x509_truncated_der: Option<Vec<u8>>,
@@ -245,6 +259,7 @@ struct UselessWorld {
     x509_crl_der_tempfile: Option<uselesskey_core::sink::TempArtifact>,
 
     // X.509 chain storage
+    #[cfg(feature = "uk-bdd-keys")]
     x509_chain: Option<X509Chain>,
     x509_chain_leaf_der_1: Option<Vec<u8>>,
     x509_chain_leaf_der_2: Option<Vec<u8>>,
@@ -256,12 +271,18 @@ struct UselessWorld {
     x509_chain_intermediate_pem_2: Option<String>,
     x509_chain_root_pem_1: Option<String>,
     x509_chain_root_pem_2: Option<String>,
+    #[cfg(feature = "uk-bdd-keys")]
     x509_chain_revoked_leaf: Option<X509Chain>,
+    #[cfg(feature = "uk-bdd-keys")]
     x509_chain_hostname_mismatch: Option<X509Chain>,
+    #[cfg(feature = "uk-bdd-keys")]
     x509_chain_unknown_ca: Option<X509Chain>,
+    #[cfg(feature = "uk-bdd-keys")]
     x509_chain_expired_leaf: Option<X509Chain>,
+    #[cfg(feature = "uk-bdd-keys")]
     x509_chain_expired_intermediate: Option<X509Chain>,
     x509_chain_sans: Vec<String>,
+    #[cfg(feature = "uk-bdd-keys")]
     x509_chain_spec: Option<ChainSpec>,
 
     // JWKS storage
@@ -270,9 +291,13 @@ struct UselessWorld {
     jwks_filtered: Option<Value>,
 
     // Multiple keys for JWKS scenarios
+    #[cfg(feature = "uk-bdd-keys")]
     rsa_keys: Vec<RsaKeyPair>,
+    #[cfg(feature = "uk-bdd-keys")]
     ecdsa_keys: Vec<EcdsaKeyPair>,
+    #[cfg(feature = "uk-bdd-keys")]
     ed25519_keys: Vec<Ed25519KeyPair>,
+    #[cfg(feature = "uk-bdd-keys")]
     hmac_keys: Vec<HmacSecret>,
     rsa_pems_before: Vec<String>,
     ecdsa_pems_before: Vec<String>,
@@ -453,17 +478,20 @@ fn jwt_signer_from_jwks(world: &UselessWorld) -> JwtSigner {
 // Given steps
 // =============================================================================
 
+#[cfg(feature = "uk-bdd-keys")]
 #[given(regex = r#"^a deterministic factory seeded with "([^"]+)"$"#)]
 fn deterministic_factory(world: &mut UselessWorld, seed: String) {
     let seed = uselesskey::Seed::from_env_value(&seed).expect("seed parse");
     world.factory = Some(Factory::deterministic(seed));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[given("a random factory")]
 fn random_factory(world: &mut UselessWorld) {
     world.factory = Some(Factory::random());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[given(regex = r#"^I generate an RSA key for label "([^"]+)"$"#)]
 fn given_gen_rsa(world: &mut UselessWorld, label: String) {
     gen_rsa(world, label);
@@ -473,6 +501,7 @@ fn given_gen_rsa(world: &mut UselessWorld, label: String) {
 // When steps
 // =============================================================================
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate an RSA key for label "([^"]+)"$"#)]
 fn gen_rsa(world: &mut UselessWorld, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -485,6 +514,7 @@ fn gen_rsa(world: &mut UselessWorld, label: String) {
     world.rsa = Some(rsa);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate an RSA key for label "([^"]+)" again$"#)]
 fn gen_rsa_again(world: &mut UselessWorld, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -494,6 +524,7 @@ fn gen_rsa_again(world: &mut UselessWorld, label: String) {
     world.rsa = Some(rsa);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate another RSA key for label "([^"]+)"$"#)]
 fn gen_rsa_second(world: &mut UselessWorld, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -503,6 +534,7 @@ fn gen_rsa_second(world: &mut UselessWorld, label: String) {
     world.rsa = Some(rsa);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate an HMAC HS256 secret for label "([^"]+)"$"#)]
 fn gen_hmac(world: &mut UselessWorld, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -512,6 +544,7 @@ fn gen_hmac(world: &mut UselessWorld, label: String) {
     world.hmac = Some(secret);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate an HMAC HS256 secret for label "([^"]+)" again$"#)]
 fn gen_hmac_again(world: &mut UselessWorld, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -520,6 +553,7 @@ fn gen_hmac_again(world: &mut UselessWorld, label: String) {
     world.hmac = Some(secret);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I clear the factory cache")]
 fn clear_cache(world: &mut UselessWorld) {
     world
@@ -529,18 +563,21 @@ fn clear_cache(world: &mut UselessWorld) {
         .clear_cache();
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I switch to a deterministic factory seeded with "([^"]+)"$"#)]
 fn switch_factory(world: &mut UselessWorld, seed: String) {
     let seed = uselesskey::Seed::from_env_value(&seed).expect("seed parse");
     world.factory = Some(Factory::deterministic(seed));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I get the mismatched public key")]
 fn get_mismatch(world: &mut UselessWorld) {
     let rsa = world.rsa.as_ref().expect("rsa not set");
     world.mismatch_1 = Some(rsa.mismatched_public_key_spki_der());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I get the mismatched public key again")]
 fn get_mismatch_again(world: &mut UselessWorld) {
     let rsa = world.rsa.as_ref().expect("rsa not set");
@@ -549,60 +586,70 @@ fn get_mismatch_again(world: &mut UselessWorld) {
 
 // --- Corruption steps ---
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I corrupt the PKCS8 PEM with BadHeader")]
 fn corrupt_bad_header(world: &mut UselessWorld) {
     let rsa = world.rsa.as_ref().expect("rsa not set");
     world.corrupted_pem = Some(rsa.private_key_pkcs8_pem_corrupt(CorruptPem::BadHeader));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I corrupt the PKCS8 PEM with BadFooter")]
 fn corrupt_bad_footer(world: &mut UselessWorld) {
     let rsa = world.rsa.as_ref().expect("rsa not set");
     world.corrupted_pem = Some(rsa.private_key_pkcs8_pem_corrupt(CorruptPem::BadFooter));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I corrupt the PKCS8 PEM with BadBase64")]
 fn corrupt_bad_base64(world: &mut UselessWorld) {
     let rsa = world.rsa.as_ref().expect("rsa not set");
     world.corrupted_pem = Some(rsa.private_key_pkcs8_pem_corrupt(CorruptPem::BadBase64));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r"^I corrupt the PKCS8 PEM with Truncate to (\d+) bytes$")]
 fn corrupt_truncate(world: &mut UselessWorld, bytes: usize) {
     let rsa = world.rsa.as_ref().expect("rsa not set");
     world.corrupted_pem = Some(rsa.private_key_pkcs8_pem_corrupt(CorruptPem::Truncate { bytes }));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I corrupt the PKCS8 PEM with ExtraBlankLine")]
 fn corrupt_extra_blank(world: &mut UselessWorld) {
     let rsa = world.rsa.as_ref().expect("rsa not set");
     world.corrupted_pem = Some(rsa.private_key_pkcs8_pem_corrupt(CorruptPem::ExtraBlankLine));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r"^I truncate the PKCS8 DER to (\d+) bytes$")]
 fn truncate_der(world: &mut UselessWorld, len: usize) {
     let rsa = world.rsa.as_ref().expect("rsa not set");
     world.truncated_der = Some(rsa.private_key_pkcs8_der_truncated(len));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I deterministically corrupt the RSA PKCS8 PEM with variant "([^"]+)"$"#)]
 fn det_corrupt_rsa_pem(world: &mut UselessWorld, variant: String) {
     let rsa = world.rsa.as_ref().expect("rsa not set");
     world.deterministic_text_1 = Some(rsa.private_key_pkcs8_pem_corrupt_deterministic(&variant));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I deterministically corrupt the RSA PKCS8 PEM with variant "([^"]+)" again$"#)]
 fn det_corrupt_rsa_pem_again(world: &mut UselessWorld, variant: String) {
     let rsa = world.rsa.as_ref().expect("rsa not set");
     world.deterministic_text_2 = Some(rsa.private_key_pkcs8_pem_corrupt_deterministic(&variant));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I deterministically corrupt the RSA PKCS8 DER with variant "([^"]+)"$"#)]
 fn det_corrupt_rsa_der(world: &mut UselessWorld, variant: String) {
     let rsa = world.rsa.as_ref().expect("rsa not set");
     world.deterministic_bytes_1 = Some(rsa.private_key_pkcs8_der_corrupt_deterministic(&variant));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I deterministically corrupt the RSA PKCS8 DER with variant "([^"]+)" again$"#)]
 fn det_corrupt_rsa_der_again(world: &mut UselessWorld, variant: String) {
     let rsa = world.rsa.as_ref().expect("rsa not set");
@@ -611,12 +658,14 @@ fn det_corrupt_rsa_der_again(world: &mut UselessWorld, variant: String) {
 
 // --- Tempfile steps ---
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I write the private key to a tempfile")]
 fn write_private_tempfile(world: &mut UselessWorld) {
     let rsa = world.rsa.as_ref().expect("rsa not set");
     world.private_tempfile = Some(rsa.write_private_key_pkcs8_pem().expect("write failed"));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I write the public key to a tempfile")]
 fn write_public_tempfile(world: &mut UselessWorld) {
     let rsa = world.rsa.as_ref().expect("rsa not set");
@@ -625,12 +674,14 @@ fn write_public_tempfile(world: &mut UselessWorld) {
 
 // --- JWK steps ---
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I capture the kid")]
 fn capture_kid(world: &mut UselessWorld) {
     let rsa = world.rsa.as_ref().expect("rsa not set");
     world.kid_1 = Some(rsa.kid());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I capture the kid again")]
 fn capture_kid_again(world: &mut UselessWorld) {
     let rsa = world.rsa.as_ref().expect("rsa not set");
@@ -641,11 +692,13 @@ fn capture_kid_again(world: &mut UselessWorld) {
 // Then steps
 // =============================================================================
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the PKCS8 PEM should be identical")]
 fn pem_should_match(world: &mut UselessWorld) {
     assert_eq!(world.pkcs8_pem_1.as_deref(), world.pkcs8_pem_2.as_deref());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the keys should have different moduli")]
 fn keys_differ(world: &mut UselessWorld) {
     use rsa::pkcs8::DecodePublicKey;
@@ -660,6 +713,7 @@ fn keys_differ(world: &mut UselessWorld) {
     assert_ne!(pub1.n(), pub2.n(), "moduli should differ");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("a mismatched SPKI DER should parse and differ")]
 fn mismatched_spki_should_parse_and_differ(world: &mut UselessWorld) {
     let rsa = world.rsa.as_ref().expect("rsa not set");
@@ -675,11 +729,13 @@ fn mismatched_spki_should_parse_and_differ(world: &mut UselessWorld) {
     assert_ne!(good_pub.n(), mismatch_pub.n());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the mismatched keys should be identical")]
 fn mismatch_identical(world: &mut UselessWorld) {
     assert_eq!(world.mismatch_1, world.mismatch_2);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the PKCS8 DER should be parseable")]
 fn pkcs8_der_parseable(world: &mut UselessWorld) {
     use rsa::pkcs8::DecodePrivateKey;
@@ -691,6 +747,7 @@ fn pkcs8_der_parseable(world: &mut UselessWorld) {
     rsa::RsaPrivateKey::from_pkcs8_der(der).expect("PKCS8 DER should parse");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the SPKI PEM should be parseable")]
 fn spki_pem_parseable(world: &mut UselessWorld) {
     use rsa::pkcs8::DecodePublicKey;
@@ -700,6 +757,7 @@ fn spki_pem_parseable(world: &mut UselessWorld) {
     rsa::RsaPublicKey::from_public_key_pem(pem).expect("SPKI PEM should parse");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the SPKI DER should be parseable")]
 fn spki_der_parseable(world: &mut UselessWorld) {
     use rsa::pkcs8::DecodePublicKey;
@@ -710,18 +768,21 @@ fn spki_der_parseable(world: &mut UselessWorld) {
 
 // --- Corruption assertions ---
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the corrupted PEM should contain "([^"]+)"$"#)]
 fn corrupted_pem_contains(world: &mut UselessWorld, needle: String) {
     let pem = world.corrupted_pem.as_ref().expect("corrupted_pem not set");
     assert!(pem.contains(&needle), "expected PEM to contain '{needle}'");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r"^the corrupted PEM should have length (\d+)$")]
 fn corrupted_pem_length(world: &mut UselessWorld, expected: usize) {
     let pem = world.corrupted_pem.as_ref().expect("corrupted_pem not set");
     assert_eq!(pem.len(), expected);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the corrupted PEM should fail to parse")]
 fn corrupted_pem_fails(world: &mut UselessWorld) {
     use rsa::pkcs8::DecodePrivateKey;
@@ -731,12 +792,14 @@ fn corrupted_pem_fails(world: &mut UselessWorld) {
     assert!(result.is_err(), "corrupted PEM should fail to parse");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r"^the truncated DER should have length (\d+)$")]
 fn truncated_der_length(world: &mut UselessWorld, expected: usize) {
     let der = world.truncated_der.as_ref().expect("truncated_der not set");
     assert_eq!(der.len(), expected);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the truncated DER should fail to parse")]
 fn truncated_der_fails(world: &mut UselessWorld) {
     use rsa::pkcs8::DecodePrivateKey;
@@ -746,6 +809,7 @@ fn truncated_der_fails(world: &mut UselessWorld) {
     assert!(result.is_err(), "truncated DER should fail to parse");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the truncated DER should equal the original")]
 fn truncated_der_equals_original(world: &mut UselessWorld) {
     let truncated = world.truncated_der.as_ref().expect("truncated_der not set");
@@ -756,11 +820,13 @@ fn truncated_der_equals_original(world: &mut UselessWorld) {
     assert_eq!(truncated, original);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the deterministic text artifacts should be identical")]
 fn deterministic_text_artifacts_identical(world: &mut UselessWorld) {
     assert_eq!(world.deterministic_text_1, world.deterministic_text_2);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the deterministic text artifacts should differ")]
 fn deterministic_text_artifacts_differ(world: &mut UselessWorld) {
     assert_ne!(
@@ -769,11 +835,13 @@ fn deterministic_text_artifacts_differ(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the deterministic binary artifacts should be identical")]
 fn deterministic_binary_artifacts_identical(world: &mut UselessWorld) {
     assert_eq!(world.deterministic_bytes_1, world.deterministic_bytes_2);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the deterministic binary artifacts should differ")]
 fn deterministic_binary_artifacts_differ(world: &mut UselessWorld) {
     assert_ne!(
@@ -782,6 +850,7 @@ fn deterministic_binary_artifacts_differ(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the deterministic text artifact should contain "([^"]+)"$"#)]
 fn deterministic_text_artifact_contains(world: &mut UselessWorld, needle: String) {
     let text = world
@@ -794,6 +863,7 @@ fn deterministic_text_artifact_contains(world: &mut UselessWorld, needle: String
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the deterministic RSA PEM artifact should fail to parse")]
 fn deterministic_rsa_pem_fails(world: &mut UselessWorld) {
     use rsa::pkcs8::DecodePrivateKey;
@@ -809,6 +879,7 @@ fn deterministic_rsa_pem_fails(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the deterministic RSA DER artifact should fail to parse")]
 fn deterministic_rsa_der_fails(world: &mut UselessWorld) {
     use rsa::pkcs8::DecodePrivateKey;
@@ -826,6 +897,7 @@ fn deterministic_rsa_der_fails(world: &mut UselessWorld) {
 
 // --- Tempfile assertions ---
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the tempfile path should end with "([^"]+)"$"#)]
 fn tempfile_path_ends_with(world: &mut UselessWorld, suffix: String) {
     let path = if let Some(tf) = &world.private_tempfile {
@@ -841,6 +913,7 @@ fn tempfile_path_ends_with(world: &mut UselessWorld, suffix: String) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("reading the tempfile should match the private key PEM")]
 fn tempfile_matches_private(world: &mut UselessWorld) {
     let tf = world
@@ -852,6 +925,7 @@ fn tempfile_matches_private(world: &mut UselessWorld) {
     assert_eq!(contents, rsa_key.private_key_pkcs8_pem());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("reading the tempfile should match the public key PEM")]
 fn tempfile_matches_public(world: &mut UselessWorld) {
     let tf = world
@@ -865,6 +939,7 @@ fn tempfile_matches_public(world: &mut UselessWorld) {
 
 // --- JWK assertions ---
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the public JWK should have kty "([^"]+)"$"#)]
 fn jwk_has_kty(world: &mut UselessWorld, expected: String) {
     let rsa_key = world.rsa.as_ref().expect("rsa not set");
@@ -872,6 +947,7 @@ fn jwk_has_kty(world: &mut UselessWorld, expected: String) {
     assert_eq!(jwk["kty"].as_str(), Some(expected.as_str()));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the public JWK should have alg "([^"]+)"$"#)]
 fn jwk_has_alg(world: &mut UselessWorld, expected: String) {
     let rsa_key = world.rsa.as_ref().expect("rsa not set");
@@ -879,6 +955,7 @@ fn jwk_has_alg(world: &mut UselessWorld, expected: String) {
     assert_eq!(jwk["alg"].as_str(), Some(expected.as_str()));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the public JWK should have use "([^"]+)"$"#)]
 fn jwk_has_use(world: &mut UselessWorld, expected: String) {
     let rsa_key = world.rsa.as_ref().expect("rsa not set");
@@ -886,6 +963,7 @@ fn jwk_has_use(world: &mut UselessWorld, expected: String) {
     assert_eq!(jwk["use"].as_str(), Some(expected.as_str()));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the public JWK should have a kid")]
 fn jwk_has_kid(world: &mut UselessWorld) {
     let rsa_key = world.rsa.as_ref().expect("rsa not set");
@@ -897,6 +975,7 @@ fn jwk_has_kid(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the public JWK should have n and e parameters")]
 fn jwk_has_n_and_e(world: &mut UselessWorld) {
     let rsa_key = world.rsa.as_ref().expect("rsa not set");
@@ -913,6 +992,7 @@ fn jwk_has_n_and_e(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the RSA private JWK should have d p q dp dq qi parameters")]
 fn rsa_private_jwk_has_params(world: &mut UselessWorld) {
     let rsa_key = world.rsa.as_ref().expect("rsa not set");
@@ -927,6 +1007,7 @@ fn rsa_private_jwk_has_params(world: &mut UselessWorld) {
     }
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the JWKS should have a keys array")]
 fn jwks_has_keys(world: &mut UselessWorld) {
     let rsa_key = world.rsa.as_ref().expect("rsa not set");
@@ -934,6 +1015,7 @@ fn jwks_has_keys(world: &mut UselessWorld) {
     assert!(jwks["keys"].is_array(), "keys should be an array");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the JWKS keys array should contain one key")]
 fn jwks_has_one_key(world: &mut UselessWorld) {
     let rsa_key = world.rsa.as_ref().expect("rsa not set");
@@ -942,21 +1024,25 @@ fn jwks_has_one_key(world: &mut UselessWorld) {
     assert_eq!(keys.len(), 1);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the kids should be identical")]
 fn kids_identical(world: &mut UselessWorld) {
     assert_eq!(world.kid_1, world.kid_2);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the kids should differ")]
 fn kids_differ(world: &mut UselessWorld) {
     assert_ne!(world.kid_1, world.kid_2);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the HMAC secrets should be identical")]
 fn hmac_secrets_identical(world: &mut UselessWorld) {
     assert_eq!(world.hmac_secret_1, world.hmac_secret_2);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the HMAC JWK should have kty "([^"]+)"$"#)]
 fn hmac_jwk_has_kty(world: &mut UselessWorld, expected: String) {
     let secret = world.hmac.as_ref().expect("hmac not set");
@@ -964,6 +1050,7 @@ fn hmac_jwk_has_kty(world: &mut UselessWorld, expected: String) {
     assert_eq!(jwk["kty"].as_str(), Some(expected.as_str()));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the HMAC JWK should have alg "([^"]+)"$"#)]
 fn hmac_jwk_has_alg(world: &mut UselessWorld, expected: String) {
     let secret = world.hmac.as_ref().expect("hmac not set");
@@ -971,6 +1058,7 @@ fn hmac_jwk_has_alg(world: &mut UselessWorld, expected: String) {
     assert_eq!(jwk["alg"].as_str(), Some(expected.as_str()));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the HMAC JWK should have use "([^"]+)"$"#)]
 fn hmac_jwk_has_use(world: &mut UselessWorld, expected: String) {
     let secret = world.hmac.as_ref().expect("hmac not set");
@@ -978,6 +1066,7 @@ fn hmac_jwk_has_use(world: &mut UselessWorld, expected: String) {
     assert_eq!(jwk["use"].as_str(), Some(expected.as_str()));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the HMAC JWK should have a kid")]
 fn hmac_jwk_has_kid(world: &mut UselessWorld) {
     let secret = world.hmac.as_ref().expect("hmac not set");
@@ -989,6 +1078,7 @@ fn hmac_jwk_has_kid(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the HMAC JWK should have k parameter")]
 fn hmac_jwk_has_k(world: &mut UselessWorld) {
     let secret = world.hmac.as_ref().expect("hmac not set");
@@ -1000,6 +1090,7 @@ fn hmac_jwk_has_k(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the HMAC JWKS should have a keys array")]
 fn hmac_jwks_has_keys(world: &mut UselessWorld) {
     let secret = world.hmac.as_ref().expect("hmac not set");
@@ -1007,6 +1098,7 @@ fn hmac_jwks_has_keys(world: &mut UselessWorld) {
     assert!(jwks["keys"].is_array(), "keys should be an array");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the HMAC JWKS keys array should contain one key")]
 fn hmac_jwks_has_one_key(world: &mut UselessWorld) {
     let secret = world.hmac.as_ref().expect("hmac not set");
@@ -1019,6 +1111,7 @@ fn hmac_jwks_has_one_key(world: &mut UselessWorld) {
 // Ed25519 When steps
 // =============================================================================
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate an Ed25519 key for label "([^"]+)"$"#)]
 fn gen_ed25519(world: &mut UselessWorld, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -1032,6 +1125,7 @@ fn gen_ed25519(world: &mut UselessWorld, label: String) {
     world.ed25519 = Some(ed25519);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate an Ed25519 key for label "([^"]+)" again$"#)]
 fn gen_ed25519_again(world: &mut UselessWorld, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -1041,6 +1135,7 @@ fn gen_ed25519_again(world: &mut UselessWorld, label: String) {
     world.ed25519 = Some(ed25519);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate another Ed25519 key for label "([^"]+)"$"#)]
 fn gen_ed25519_second(world: &mut UselessWorld, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -1050,18 +1145,21 @@ fn gen_ed25519_second(world: &mut UselessWorld, label: String) {
     world.ed25519 = Some(ed25519);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I get the mismatched Ed25519 public key")]
 fn get_ed25519_mismatch(world: &mut UselessWorld) {
     let ed25519 = world.ed25519.as_ref().expect("ed25519 not set");
     world.ed25519_mismatch_1 = Some(ed25519.mismatched_public_key_spki_der());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I get the mismatched Ed25519 public key again")]
 fn get_ed25519_mismatch_again(world: &mut UselessWorld) {
     let ed25519 = world.ed25519.as_ref().expect("ed25519 not set");
     world.ed25519_mismatch_2 = Some(ed25519.mismatched_public_key_spki_der());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I corrupt the Ed25519 PKCS8 PEM with BadHeader")]
 fn corrupt_ed25519_bad_header(world: &mut UselessWorld) {
     let ed25519 = world.ed25519.as_ref().expect("ed25519 not set");
@@ -1069,6 +1167,7 @@ fn corrupt_ed25519_bad_header(world: &mut UselessWorld) {
         Some(ed25519.private_key_pkcs8_pem_corrupt(CorruptPem::BadHeader));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I corrupt the Ed25519 PKCS8 PEM with BadFooter")]
 fn corrupt_ed25519_bad_footer(world: &mut UselessWorld) {
     let ed25519 = world.ed25519.as_ref().expect("ed25519 not set");
@@ -1076,6 +1175,7 @@ fn corrupt_ed25519_bad_footer(world: &mut UselessWorld) {
         Some(ed25519.private_key_pkcs8_pem_corrupt(CorruptPem::BadFooter));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I corrupt the Ed25519 PKCS8 PEM with BadBase64")]
 fn corrupt_ed25519_bad_base64(world: &mut UselessWorld) {
     let ed25519 = world.ed25519.as_ref().expect("ed25519 not set");
@@ -1083,6 +1183,7 @@ fn corrupt_ed25519_bad_base64(world: &mut UselessWorld) {
         Some(ed25519.private_key_pkcs8_pem_corrupt(CorruptPem::BadBase64));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r"^I corrupt the Ed25519 PKCS8 PEM with Truncate to (\d+) bytes$")]
 fn corrupt_ed25519_truncate(world: &mut UselessWorld, bytes: usize) {
     let ed25519 = world.ed25519.as_ref().expect("ed25519 not set");
@@ -1090,6 +1191,7 @@ fn corrupt_ed25519_truncate(world: &mut UselessWorld, bytes: usize) {
         Some(ed25519.private_key_pkcs8_pem_corrupt(CorruptPem::Truncate { bytes }));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I corrupt the Ed25519 PKCS8 PEM with ExtraBlankLine")]
 fn corrupt_ed25519_extra_blank(world: &mut UselessWorld) {
     let ed25519 = world.ed25519.as_ref().expect("ed25519 not set");
@@ -1097,12 +1199,14 @@ fn corrupt_ed25519_extra_blank(world: &mut UselessWorld) {
         Some(ed25519.private_key_pkcs8_pem_corrupt(CorruptPem::ExtraBlankLine));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r"^I truncate the Ed25519 PKCS8 DER to (\d+) bytes$")]
 fn truncate_ed25519_der(world: &mut UselessWorld, len: usize) {
     let ed25519 = world.ed25519.as_ref().expect("ed25519 not set");
     world.ed25519_truncated_der = Some(ed25519.private_key_pkcs8_der_truncated(len));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I deterministically corrupt the Ed25519 PKCS8 PEM with variant "([^"]+)"$"#)]
 fn det_corrupt_ed25519_pem(world: &mut UselessWorld, variant: String) {
     let ed25519 = world.ed25519.as_ref().expect("ed25519 not set");
@@ -1110,6 +1214,7 @@ fn det_corrupt_ed25519_pem(world: &mut UselessWorld, variant: String) {
         Some(ed25519.private_key_pkcs8_pem_corrupt_deterministic(&variant));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(
     regex = r#"^I deterministically corrupt the Ed25519 PKCS8 PEM with variant "([^"]+)" again$"#
 )]
@@ -1119,6 +1224,7 @@ fn det_corrupt_ed25519_pem_again(world: &mut UselessWorld, variant: String) {
         Some(ed25519.private_key_pkcs8_pem_corrupt_deterministic(&variant));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I deterministically corrupt the Ed25519 PKCS8 DER with variant "([^"]+)"$"#)]
 fn det_corrupt_ed25519_der(world: &mut UselessWorld, variant: String) {
     let ed25519 = world.ed25519.as_ref().expect("ed25519 not set");
@@ -1126,6 +1232,7 @@ fn det_corrupt_ed25519_der(world: &mut UselessWorld, variant: String) {
         Some(ed25519.private_key_pkcs8_der_corrupt_deterministic(&variant));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(
     regex = r#"^I deterministically corrupt the Ed25519 PKCS8 DER with variant "([^"]+)" again$"#
 )]
@@ -1135,12 +1242,14 @@ fn det_corrupt_ed25519_der_again(world: &mut UselessWorld, variant: String) {
         Some(ed25519.private_key_pkcs8_der_corrupt_deterministic(&variant));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I capture the Ed25519 kid")]
 fn capture_ed25519_kid(world: &mut UselessWorld) {
     let ed25519 = world.ed25519.as_ref().expect("ed25519 not set");
     world.ed25519_kid_1 = Some(ed25519.kid());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I capture the Ed25519 kid again")]
 fn capture_ed25519_kid_again(world: &mut UselessWorld) {
     let ed25519 = world.ed25519.as_ref().expect("ed25519 not set");
@@ -1151,6 +1260,7 @@ fn capture_ed25519_kid_again(world: &mut UselessWorld) {
 // Ed25519 Then steps
 // =============================================================================
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the Ed25519 PKCS8 PEM should be identical")]
 fn ed25519_pem_should_match(world: &mut UselessWorld) {
     assert_eq!(
@@ -1159,6 +1269,7 @@ fn ed25519_pem_should_match(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the Ed25519 keys should have different public keys")]
 fn ed25519_keys_differ(world: &mut UselessWorld) {
     let der1 = world
@@ -1172,6 +1283,7 @@ fn ed25519_keys_differ(world: &mut UselessWorld) {
     assert_ne!(der1, der2, "Ed25519 public keys should differ");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("an Ed25519 mismatched SPKI DER should parse and differ")]
 fn ed25519_mismatched_spki_should_parse_and_differ(world: &mut UselessWorld) {
     use ed25519_dalek::VerifyingKey;
@@ -1190,11 +1302,13 @@ fn ed25519_mismatched_spki_should_parse_and_differ(world: &mut UselessWorld) {
     assert_ne!(good_pub.as_bytes(), mismatch_pub.as_bytes());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the mismatched Ed25519 keys should be identical")]
 fn ed25519_mismatch_identical(world: &mut UselessWorld) {
     assert_eq!(world.ed25519_mismatch_1, world.ed25519_mismatch_2);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the Ed25519 PKCS8 DER should be parseable")]
 fn ed25519_pkcs8_der_parseable(world: &mut UselessWorld) {
     use ed25519_dalek::SigningKey;
@@ -1207,6 +1321,7 @@ fn ed25519_pkcs8_der_parseable(world: &mut UselessWorld) {
     SigningKey::from_pkcs8_der(der).expect("Ed25519 PKCS8 DER should parse");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the Ed25519 SPKI PEM should be parseable")]
 fn ed25519_spki_pem_parseable(world: &mut UselessWorld) {
     use ed25519_dalek::VerifyingKey;
@@ -1217,6 +1332,7 @@ fn ed25519_spki_pem_parseable(world: &mut UselessWorld) {
     VerifyingKey::from_public_key_pem(pem).expect("Ed25519 SPKI PEM should parse");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the Ed25519 SPKI DER should be parseable")]
 fn ed25519_spki_der_parseable(world: &mut UselessWorld) {
     use ed25519_dalek::VerifyingKey;
@@ -1229,6 +1345,7 @@ fn ed25519_spki_der_parseable(world: &mut UselessWorld) {
     VerifyingKey::from_public_key_der(der).expect("Ed25519 SPKI DER should parse");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the corrupted Ed25519 PEM should contain "([^"]+)"$"#)]
 fn ed25519_corrupted_pem_contains(world: &mut UselessWorld, needle: String) {
     let pem = world
@@ -1241,6 +1358,7 @@ fn ed25519_corrupted_pem_contains(world: &mut UselessWorld, needle: String) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r"^the truncated Ed25519 DER should have length (\d+)$")]
 fn ed25519_truncated_der_length(world: &mut UselessWorld, expected: usize) {
     let der = world
@@ -1250,6 +1368,7 @@ fn ed25519_truncated_der_length(world: &mut UselessWorld, expected: usize) {
     assert_eq!(der.len(), expected);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the corrupted Ed25519 PEM should fail to parse")]
 fn ed25519_corrupted_pem_fails(world: &mut UselessWorld) {
     use ed25519_dalek::SigningKey;
@@ -1266,6 +1385,7 @@ fn ed25519_corrupted_pem_fails(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r"^the corrupted Ed25519 PEM should have length (\d+)$")]
 fn ed25519_corrupted_pem_length(world: &mut UselessWorld, expected: usize) {
     let pem = world
@@ -1275,6 +1395,7 @@ fn ed25519_corrupted_pem_length(world: &mut UselessWorld, expected: usize) {
     assert_eq!(pem.len(), expected);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the truncated Ed25519 DER should fail to parse")]
 fn ed25519_truncated_der_fails(world: &mut UselessWorld) {
     use ed25519_dalek::SigningKey;
@@ -1291,6 +1412,7 @@ fn ed25519_truncated_der_fails(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the deterministic Ed25519 PEM artifact should fail to parse")]
 fn deterministic_ed25519_pem_fails(world: &mut UselessWorld) {
     use ed25519_dalek::SigningKey;
@@ -1307,6 +1429,7 @@ fn deterministic_ed25519_pem_fails(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the deterministic Ed25519 DER artifact should fail to parse")]
 fn deterministic_ed25519_der_fails(world: &mut UselessWorld) {
     use ed25519_dalek::SigningKey;
@@ -1323,6 +1446,7 @@ fn deterministic_ed25519_der_fails(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the Ed25519 public JWK should have kty "([^"]+)"$"#)]
 fn ed25519_jwk_has_kty(world: &mut UselessWorld, expected: String) {
     let ed25519_key = world.ed25519.as_ref().expect("ed25519 not set");
@@ -1330,6 +1454,7 @@ fn ed25519_jwk_has_kty(world: &mut UselessWorld, expected: String) {
     assert_eq!(jwk["kty"].as_str(), Some(expected.as_str()));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the Ed25519 public JWK should have crv "([^"]+)"$"#)]
 fn ed25519_jwk_has_crv(world: &mut UselessWorld, expected: String) {
     let ed25519_key = world.ed25519.as_ref().expect("ed25519 not set");
@@ -1337,6 +1462,7 @@ fn ed25519_jwk_has_crv(world: &mut UselessWorld, expected: String) {
     assert_eq!(jwk["crv"].as_str(), Some(expected.as_str()));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the Ed25519 public JWK should have alg "([^"]+)"$"#)]
 fn ed25519_jwk_has_alg(world: &mut UselessWorld, expected: String) {
     let ed25519_key = world.ed25519.as_ref().expect("ed25519 not set");
@@ -1344,6 +1470,7 @@ fn ed25519_jwk_has_alg(world: &mut UselessWorld, expected: String) {
     assert_eq!(jwk["alg"].as_str(), Some(expected.as_str()));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the Ed25519 public JWK should have use "([^"]+)"$"#)]
 fn ed25519_jwk_has_use(world: &mut UselessWorld, expected: String) {
     let ed25519_key = world.ed25519.as_ref().expect("ed25519 not set");
@@ -1351,6 +1478,7 @@ fn ed25519_jwk_has_use(world: &mut UselessWorld, expected: String) {
     assert_eq!(jwk["use"].as_str(), Some(expected.as_str()));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the Ed25519 public JWK should have a kid")]
 fn ed25519_jwk_has_kid(world: &mut UselessWorld) {
     let ed25519_key = world.ed25519.as_ref().expect("ed25519 not set");
@@ -1362,6 +1490,7 @@ fn ed25519_jwk_has_kid(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the Ed25519 public JWK should have x parameter")]
 fn ed25519_jwk_has_x(world: &mut UselessWorld) {
     let ed25519_key = world.ed25519.as_ref().expect("ed25519 not set");
@@ -1373,6 +1502,7 @@ fn ed25519_jwk_has_x(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the Ed25519 private JWK should have d parameter")]
 fn ed25519_private_jwk_has_d(world: &mut UselessWorld) {
     let ed25519_key = world.ed25519.as_ref().expect("ed25519 not set");
@@ -1384,6 +1514,7 @@ fn ed25519_private_jwk_has_d(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the Ed25519 JWKS should have a keys array")]
 fn ed25519_jwks_has_keys(world: &mut UselessWorld) {
     let ed25519_key = world.ed25519.as_ref().expect("ed25519 not set");
@@ -1391,6 +1522,7 @@ fn ed25519_jwks_has_keys(world: &mut UselessWorld) {
     assert!(jwks["keys"].is_array(), "Ed25519 keys should be an array");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the Ed25519 JWKS keys array should contain one key")]
 fn ed25519_jwks_has_one_key(world: &mut UselessWorld) {
     let ed25519_key = world.ed25519.as_ref().expect("ed25519 not set");
@@ -1401,6 +1533,7 @@ fn ed25519_jwks_has_one_key(world: &mut UselessWorld) {
     assert_eq!(keys.len(), 1);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the Ed25519 kids should be identical")]
 fn ed25519_kids_identical(world: &mut UselessWorld) {
     assert_eq!(world.ed25519_kid_1, world.ed25519_kid_2);
@@ -1410,6 +1543,7 @@ fn ed25519_kids_identical(world: &mut UselessWorld) {
 // ECDSA When steps
 // =============================================================================
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate an ECDSA ES256 key for label "([^"]+)"$"#)]
 fn gen_ecdsa_es256(world: &mut UselessWorld, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -1423,6 +1557,7 @@ fn gen_ecdsa_es256(world: &mut UselessWorld, label: String) {
     world.ecdsa = Some(ecdsa);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate an ECDSA ES256 key for label "([^"]+)" again$"#)]
 fn gen_ecdsa_es256_again(world: &mut UselessWorld, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -1432,6 +1567,7 @@ fn gen_ecdsa_es256_again(world: &mut UselessWorld, label: String) {
     world.ecdsa = Some(ecdsa);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate another ECDSA ES256 key for label "([^"]+)"$"#)]
 fn gen_ecdsa_es256_second(world: &mut UselessWorld, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -1441,6 +1577,7 @@ fn gen_ecdsa_es256_second(world: &mut UselessWorld, label: String) {
     world.ecdsa = Some(ecdsa);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate an ECDSA ES384 key for label "([^"]+)"$"#)]
 fn gen_ecdsa_es384(world: &mut UselessWorld, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -1454,6 +1591,7 @@ fn gen_ecdsa_es384(world: &mut UselessWorld, label: String) {
     world.ecdsa = Some(ecdsa);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate an ECDSA ES384 key for label "([^"]+)" again$"#)]
 fn gen_ecdsa_es384_again(world: &mut UselessWorld, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -1463,6 +1601,7 @@ fn gen_ecdsa_es384_again(world: &mut UselessWorld, label: String) {
     world.ecdsa = Some(ecdsa);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate another ECDSA ES384 key for label "([^"]+)"$"#)]
 fn gen_ecdsa_es384_second(world: &mut UselessWorld, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -1472,36 +1611,42 @@ fn gen_ecdsa_es384_second(world: &mut UselessWorld, label: String) {
     world.ecdsa = Some(ecdsa);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I get the mismatched ECDSA public key")]
 fn get_ecdsa_mismatch(world: &mut UselessWorld) {
     let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
     world.ecdsa_mismatch_1 = Some(ecdsa.mismatched_public_key_spki_der());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I get the mismatched ECDSA public key again")]
 fn get_ecdsa_mismatch_again(world: &mut UselessWorld) {
     let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
     world.ecdsa_mismatch_2 = Some(ecdsa.mismatched_public_key_spki_der());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I corrupt the ECDSA PKCS8 PEM with BadHeader")]
 fn corrupt_ecdsa_bad_header(world: &mut UselessWorld) {
     let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
     world.ecdsa_corrupted_pem = Some(ecdsa.private_key_pkcs8_pem_corrupt(CorruptPem::BadHeader));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I corrupt the ECDSA PKCS8 PEM with BadFooter")]
 fn corrupt_ecdsa_bad_footer(world: &mut UselessWorld) {
     let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
     world.ecdsa_corrupted_pem = Some(ecdsa.private_key_pkcs8_pem_corrupt(CorruptPem::BadFooter));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I corrupt the ECDSA PKCS8 PEM with BadBase64")]
 fn corrupt_ecdsa_bad_base64(world: &mut UselessWorld) {
     let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
     world.ecdsa_corrupted_pem = Some(ecdsa.private_key_pkcs8_pem_corrupt(CorruptPem::BadBase64));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r"^I corrupt the ECDSA PKCS8 PEM with Truncate to (\d+) bytes$")]
 fn corrupt_ecdsa_truncate(world: &mut UselessWorld, bytes: usize) {
     let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
@@ -1509,6 +1654,7 @@ fn corrupt_ecdsa_truncate(world: &mut UselessWorld, bytes: usize) {
         Some(ecdsa.private_key_pkcs8_pem_corrupt(CorruptPem::Truncate { bytes }));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I corrupt the ECDSA PKCS8 PEM with ExtraBlankLine")]
 fn corrupt_ecdsa_extra_blank(world: &mut UselessWorld) {
     let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
@@ -1516,42 +1662,49 @@ fn corrupt_ecdsa_extra_blank(world: &mut UselessWorld) {
         Some(ecdsa.private_key_pkcs8_pem_corrupt(CorruptPem::ExtraBlankLine));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r"^I truncate the ECDSA PKCS8 DER to (\d+) bytes$")]
 fn truncate_ecdsa_der(world: &mut UselessWorld, len: usize) {
     let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
     world.ecdsa_truncated_der = Some(ecdsa.private_key_pkcs8_der_truncated(len));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I deterministically corrupt the ECDSA PKCS8 PEM with variant "([^"]+)"$"#)]
 fn det_corrupt_ecdsa_pem(world: &mut UselessWorld, variant: String) {
     let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
     world.deterministic_text_1 = Some(ecdsa.private_key_pkcs8_pem_corrupt_deterministic(&variant));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I deterministically corrupt the ECDSA PKCS8 PEM with variant "([^"]+)" again$"#)]
 fn det_corrupt_ecdsa_pem_again(world: &mut UselessWorld, variant: String) {
     let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
     world.deterministic_text_2 = Some(ecdsa.private_key_pkcs8_pem_corrupt_deterministic(&variant));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I deterministically corrupt the ECDSA PKCS8 DER with variant "([^"]+)"$"#)]
 fn det_corrupt_ecdsa_der(world: &mut UselessWorld, variant: String) {
     let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
     world.deterministic_bytes_1 = Some(ecdsa.private_key_pkcs8_der_corrupt_deterministic(&variant));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I deterministically corrupt the ECDSA PKCS8 DER with variant "([^"]+)" again$"#)]
 fn det_corrupt_ecdsa_der_again(world: &mut UselessWorld, variant: String) {
     let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
     world.deterministic_bytes_2 = Some(ecdsa.private_key_pkcs8_der_corrupt_deterministic(&variant));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I capture the ECDSA kid")]
 fn capture_ecdsa_kid(world: &mut UselessWorld) {
     let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
     world.ecdsa_kid_1 = Some(ecdsa.kid());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I capture the ECDSA kid again")]
 fn capture_ecdsa_kid_again(world: &mut UselessWorld) {
     let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
@@ -1562,6 +1715,7 @@ fn capture_ecdsa_kid_again(world: &mut UselessWorld) {
 // ECDSA Then steps
 // =============================================================================
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the ECDSA PKCS8 PEM should be identical")]
 fn ecdsa_pem_should_match(world: &mut UselessWorld) {
     assert_eq!(
@@ -1570,6 +1724,7 @@ fn ecdsa_pem_should_match(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the ECDSA keys should have different public keys")]
 fn ecdsa_keys_differ(world: &mut UselessWorld) {
     let der1 = world
@@ -1583,6 +1738,7 @@ fn ecdsa_keys_differ(world: &mut UselessWorld) {
     assert_ne!(der1, der2, "ECDSA public keys should differ");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("an ECDSA mismatched SPKI DER should parse and differ")]
 fn ecdsa_mismatched_spki_should_parse_and_differ(world: &mut UselessWorld) {
     use p256::pkcs8::DecodePublicKey as _;
@@ -1617,11 +1773,13 @@ fn ecdsa_mismatched_spki_should_parse_and_differ(world: &mut UselessWorld) {
     assert_ne!(good_bytes, mismatch_bytes);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the mismatched ECDSA keys should be identical")]
 fn ecdsa_mismatch_identical(world: &mut UselessWorld) {
     assert_eq!(world.ecdsa_mismatch_1, world.ecdsa_mismatch_2);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the ECDSA PKCS8 DER should be parseable")]
 fn ecdsa_pkcs8_der_parseable(world: &mut UselessWorld) {
     use p256::pkcs8::DecodePrivateKey as _;
@@ -1639,6 +1797,7 @@ fn ecdsa_pkcs8_der_parseable(world: &mut UselessWorld) {
     parsed.expect("ECDSA PKCS8 DER should parse");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the ECDSA SPKI PEM should be parseable")]
 fn ecdsa_spki_pem_parseable(world: &mut UselessWorld) {
     use p256::pkcs8::DecodePublicKey as _;
@@ -1654,6 +1813,7 @@ fn ecdsa_spki_pem_parseable(world: &mut UselessWorld) {
     parsed.expect("ECDSA SPKI PEM should parse");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the ECDSA SPKI DER should be parseable")]
 fn ecdsa_spki_der_parseable(world: &mut UselessWorld) {
     use p256::pkcs8::DecodePublicKey as _;
@@ -1671,6 +1831,7 @@ fn ecdsa_spki_der_parseable(world: &mut UselessWorld) {
     parsed.expect("ECDSA SPKI DER should parse");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the corrupted ECDSA PEM should contain "([^"]+)"$"#)]
 fn ecdsa_corrupted_pem_contains(world: &mut UselessWorld, needle: String) {
     let pem = world
@@ -1683,6 +1844,7 @@ fn ecdsa_corrupted_pem_contains(world: &mut UselessWorld, needle: String) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the corrupted ECDSA PEM should fail to parse")]
 fn ecdsa_corrupted_pem_fails(world: &mut UselessWorld) {
     use p256::pkcs8::DecodePrivateKey as _;
@@ -1699,6 +1861,7 @@ fn ecdsa_corrupted_pem_fails(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r"^the corrupted ECDSA PEM should have length (\d+)$")]
 fn ecdsa_corrupted_pem_length(world: &mut UselessWorld, expected: usize) {
     let pem = world
@@ -1708,6 +1871,7 @@ fn ecdsa_corrupted_pem_length(world: &mut UselessWorld, expected: usize) {
     assert_eq!(pem.len(), expected);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r"^the truncated ECDSA DER should have length (\d+)$")]
 fn ecdsa_truncated_der_length(world: &mut UselessWorld, expected: usize) {
     let der = world
@@ -1717,6 +1881,7 @@ fn ecdsa_truncated_der_length(world: &mut UselessWorld, expected: usize) {
     assert_eq!(der.len(), expected);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the truncated ECDSA DER should fail to parse")]
 fn ecdsa_truncated_der_fails(world: &mut UselessWorld) {
     use p256::pkcs8::DecodePrivateKey as _;
@@ -1735,6 +1900,7 @@ fn ecdsa_truncated_der_fails(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the deterministic ECDSA PEM artifact should fail to parse")]
 fn deterministic_ecdsa_pem_fails(world: &mut UselessWorld) {
     use p256::pkcs8::DecodePrivateKey as _;
@@ -1751,6 +1917,7 @@ fn deterministic_ecdsa_pem_fails(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the deterministic ECDSA DER artifact should fail to parse")]
 fn deterministic_ecdsa_der_fails(world: &mut UselessWorld) {
     use p256::pkcs8::DecodePrivateKey as _;
@@ -1767,6 +1934,7 @@ fn deterministic_ecdsa_der_fails(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the ECDSA public JWK should have kty "([^"]+)"$"#)]
 fn ecdsa_jwk_has_kty(world: &mut UselessWorld, expected: String) {
     let ecdsa_key = world.ecdsa.as_ref().expect("ecdsa not set");
@@ -1774,6 +1942,7 @@ fn ecdsa_jwk_has_kty(world: &mut UselessWorld, expected: String) {
     assert_eq!(jwk["kty"].as_str(), Some(expected.as_str()));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the ECDSA public JWK should have crv "([^"]+)"$"#)]
 fn ecdsa_jwk_has_crv(world: &mut UselessWorld, expected: String) {
     let ecdsa_key = world.ecdsa.as_ref().expect("ecdsa not set");
@@ -1781,6 +1950,7 @@ fn ecdsa_jwk_has_crv(world: &mut UselessWorld, expected: String) {
     assert_eq!(jwk["crv"].as_str(), Some(expected.as_str()));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the ECDSA public JWK should have alg "([^"]+)"$"#)]
 fn ecdsa_jwk_has_alg(world: &mut UselessWorld, expected: String) {
     let ecdsa_key = world.ecdsa.as_ref().expect("ecdsa not set");
@@ -1788,6 +1958,7 @@ fn ecdsa_jwk_has_alg(world: &mut UselessWorld, expected: String) {
     assert_eq!(jwk["alg"].as_str(), Some(expected.as_str()));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the ECDSA public JWK should have use "([^"]+)"$"#)]
 fn ecdsa_jwk_has_use(world: &mut UselessWorld, expected: String) {
     let ecdsa_key = world.ecdsa.as_ref().expect("ecdsa not set");
@@ -1795,6 +1966,7 @@ fn ecdsa_jwk_has_use(world: &mut UselessWorld, expected: String) {
     assert_eq!(jwk["use"].as_str(), Some(expected.as_str()));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the ECDSA public JWK should have a kid")]
 fn ecdsa_jwk_has_kid(world: &mut UselessWorld) {
     let ecdsa_key = world.ecdsa.as_ref().expect("ecdsa not set");
@@ -1806,6 +1978,7 @@ fn ecdsa_jwk_has_kid(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the ECDSA public JWK should have x and y parameters")]
 fn ecdsa_jwk_has_x_y(world: &mut UselessWorld) {
     let ecdsa_key = world.ecdsa.as_ref().expect("ecdsa not set");
@@ -1822,6 +1995,7 @@ fn ecdsa_jwk_has_x_y(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the ECDSA private JWK should have d parameter")]
 fn ecdsa_private_jwk_has_d(world: &mut UselessWorld) {
     let ecdsa_key = world.ecdsa.as_ref().expect("ecdsa not set");
@@ -1833,6 +2007,7 @@ fn ecdsa_private_jwk_has_d(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the ECDSA JWKS should have a keys array")]
 fn ecdsa_jwks_has_keys(world: &mut UselessWorld) {
     let ecdsa_key = world.ecdsa.as_ref().expect("ecdsa not set");
@@ -1840,6 +2015,7 @@ fn ecdsa_jwks_has_keys(world: &mut UselessWorld) {
     assert!(jwks["keys"].is_array(), "ECDSA keys should be an array");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the ECDSA JWKS keys array should contain one key")]
 fn ecdsa_jwks_has_one_key(world: &mut UselessWorld) {
     let ecdsa_key = world.ecdsa.as_ref().expect("ecdsa not set");
@@ -1848,6 +2024,7 @@ fn ecdsa_jwks_has_one_key(world: &mut UselessWorld) {
     assert_eq!(keys.len(), 1);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the ECDSA kids should be identical")]
 fn ecdsa_kids_identical(world: &mut UselessWorld) {
     assert_eq!(world.ecdsa_kid_1, world.ecdsa_kid_2);
@@ -1857,6 +2034,7 @@ fn ecdsa_kids_identical(world: &mut UselessWorld) {
 // X.509 When steps
 // =============================================================================
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate an X\.509 certificate for domain "([^"]+)" with label "([^"]+)"$"#)]
 fn gen_x509(world: &mut UselessWorld, domain: String, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -1870,6 +2048,7 @@ fn gen_x509(world: &mut UselessWorld, domain: String, label: String) {
     world.x509 = Some(x509);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(
     regex = r#"^I generate an X\.509 certificate for domain "([^"]+)" with label "([^"]+)" again$"#
 )]
@@ -1884,6 +2063,7 @@ fn gen_x509_again(world: &mut UselessWorld, domain: String, label: String) {
     world.x509 = Some(x509);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(
     regex = r#"^I generate another X\.509 certificate for domain "([^"]+)" with label "([^"]+)"$"#
 )]
@@ -1897,6 +2077,7 @@ fn gen_x509_second(world: &mut UselessWorld, domain: String, label: String) {
     world.x509 = Some(x509);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I get the expired variant of the X.509 certificate")]
 fn get_x509_expired(world: &mut UselessWorld) {
     let x509 = world.x509.as_ref().expect("x509 not set");
@@ -1905,6 +2086,7 @@ fn get_x509_expired(world: &mut UselessWorld) {
     world.x509_expired = Some(expired);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I get the not-yet-valid variant of the X.509 certificate")]
 fn get_x509_not_yet_valid(world: &mut UselessWorld) {
     let x509 = world.x509.as_ref().expect("x509 not set");
@@ -1913,6 +2095,7 @@ fn get_x509_not_yet_valid(world: &mut UselessWorld) {
     world.x509_not_yet_valid = Some(not_yet_valid);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I get the wrong-key-usage variant of the X.509 certificate")]
 fn get_x509_wrong_key_usage(world: &mut UselessWorld) {
     let x509 = world.x509.as_ref().expect("x509 not set");
@@ -1921,18 +2104,21 @@ fn get_x509_wrong_key_usage(world: &mut UselessWorld) {
     world.x509_wrong_key_usage = Some(wrong_key_usage);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I corrupt the X.509 certificate PEM with BadHeader")]
 fn corrupt_x509_bad_header(world: &mut UselessWorld) {
     let x509 = world.x509.as_ref().expect("x509 not set");
     world.x509_corrupted_pem = Some(x509.corrupt_cert_pem(CorruptPem::BadHeader));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r"^I truncate the X\.509 certificate DER to (\d+) bytes$")]
 fn truncate_x509_der(world: &mut UselessWorld, len: usize) {
     let x509 = world.x509.as_ref().expect("x509 not set");
     world.x509_truncated_der = Some(x509.truncate_cert_der(len));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(
     regex = r#"^I deterministically corrupt the X\.509 certificate PEM with variant "([^"]+)"$"#
 )]
@@ -1941,6 +2127,7 @@ fn det_corrupt_x509_pem(world: &mut UselessWorld, variant: String) {
     world.deterministic_text_1 = Some(x509.corrupt_cert_pem_deterministic(&variant));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(
     regex = r#"^I deterministically corrupt the X\.509 certificate PEM with variant "([^"]+)" again$"#
 )]
@@ -1949,6 +2136,7 @@ fn det_corrupt_x509_pem_again(world: &mut UselessWorld, variant: String) {
     world.deterministic_text_2 = Some(x509.corrupt_cert_pem_deterministic(&variant));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(
     regex = r#"^I deterministically corrupt the X\.509 certificate DER with variant "([^"]+)"$"#
 )]
@@ -1957,6 +2145,7 @@ fn det_corrupt_x509_der(world: &mut UselessWorld, variant: String) {
     world.deterministic_bytes_1 = Some(x509.corrupt_cert_der_deterministic(&variant));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(
     regex = r#"^I deterministically corrupt the X\.509 certificate DER with variant "([^"]+)" again$"#
 )]
@@ -1965,24 +2154,28 @@ fn det_corrupt_x509_der_again(world: &mut UselessWorld, variant: String) {
     world.deterministic_bytes_2 = Some(x509.corrupt_cert_der_deterministic(&variant));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I write the X.509 certificate PEM to a tempfile")]
 fn write_x509_cert_tempfile(world: &mut UselessWorld) {
     let x509 = world.x509.as_ref().expect("x509 not set");
     world.x509_cert_tempfile = Some(x509.write_cert_pem().expect("write failed"));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I write the X.509 certificate DER to a tempfile")]
 fn write_x509_cert_der_tempfile(world: &mut UselessWorld) {
     let x509 = world.x509.as_ref().expect("x509 not set");
     world.x509_cert_der_tempfile = Some(x509.write_cert_der().expect("write failed"));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I write the X.509 private key PEM to a tempfile")]
 fn write_x509_key_tempfile(world: &mut UselessWorld) {
     let x509 = world.x509.as_ref().expect("x509 not set");
     world.x509_key_tempfile = Some(x509.write_private_key_pem().expect("write failed"));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I write the X.509 identity PEM to a tempfile")]
 fn write_x509_identity_tempfile(world: &mut UselessWorld) {
     let x509 = world.x509.as_ref().expect("x509 not set");
@@ -1993,6 +2186,7 @@ fn write_x509_identity_tempfile(world: &mut UselessWorld) {
 // X.509 Then steps
 // =============================================================================
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the X.509 certificate PEM should be identical")]
 fn x509_pem_should_match(world: &mut UselessWorld) {
     assert_eq!(
@@ -2001,6 +2195,7 @@ fn x509_pem_should_match(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the X.509 private key should be identical")]
 fn x509_private_key_should_match(world: &mut UselessWorld) {
     assert_eq!(
@@ -2009,6 +2204,7 @@ fn x509_private_key_should_match(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the X.509 certificates should have different DER")]
 fn x509_certs_differ(world: &mut UselessWorld) {
     let der1 = world
@@ -2022,6 +2218,7 @@ fn x509_certs_differ(world: &mut UselessWorld) {
     assert_ne!(der1, der2, "X.509 certificates should differ");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the X\.509 certificate PEM should contain "([^"]+)"$"#)]
 fn x509_cert_pem_contains(world: &mut UselessWorld, needle: String) {
     let x509 = world.x509.as_ref().expect("x509 not set");
@@ -2032,6 +2229,7 @@ fn x509_cert_pem_contains(world: &mut UselessWorld, needle: String) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the X.509 certificate PEM should be parseable")]
 fn x509_cert_pem_parseable(world: &mut UselessWorld) {
     let x509 = world.x509.as_ref().expect("x509 not set");
@@ -2039,6 +2237,7 @@ fn x509_cert_pem_parseable(world: &mut UselessWorld) {
     x509_parser::parse_x509_certificate(der).expect("X.509 cert should parse");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the X.509 certificate DER should be parseable")]
 fn x509_cert_der_parseable(world: &mut UselessWorld) {
     let x509 = world.x509.as_ref().expect("x509 not set");
@@ -2046,6 +2245,7 @@ fn x509_cert_der_parseable(world: &mut UselessWorld) {
     x509_parser::parse_x509_certificate(der).expect("X.509 cert DER should parse");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the X\.509 private key PEM should contain "([^"]+)"$"#)]
 fn x509_key_pem_contains(world: &mut UselessWorld, needle: String) {
     let x509 = world.x509.as_ref().expect("x509 not set");
@@ -2056,6 +2256,7 @@ fn x509_key_pem_contains(world: &mut UselessWorld, needle: String) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the X\.509 identity PEM should contain "([^"]+)"$"#)]
 fn x509_identity_pem_contains(world: &mut UselessWorld, needle: String) {
     let x509 = world.x509.as_ref().expect("x509 not set");
@@ -2066,6 +2267,7 @@ fn x509_identity_pem_contains(world: &mut UselessWorld, needle: String) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the X\.509 certificate should have common name "([^"]+)"$"#)]
 fn x509_has_common_name(world: &mut UselessWorld, expected_cn: String) {
     let x509 = world.x509.as_ref().expect("x509 not set");
@@ -2083,6 +2285,7 @@ fn x509_has_common_name(world: &mut UselessWorld, expected_cn: String) {
     assert_eq!(cn, expected_cn);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the X\.509 certificate should have issuer common name "([^"]+)"$"#)]
 fn x509_has_issuer_cn(world: &mut UselessWorld, expected_cn: String) {
     let x509 = world.x509.as_ref().expect("x509 not set");
@@ -2100,6 +2303,7 @@ fn x509_has_issuer_cn(world: &mut UselessWorld, expected_cn: String) {
     assert_eq!(cn, expected_cn);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the X.509 certificate serial number should be positive")]
 fn x509_serial_positive(world: &mut UselessWorld) {
     let x509 = world.x509.as_ref().expect("x509 not set");
@@ -2115,6 +2319,7 @@ fn x509_serial_positive(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the expired X.509 certificate should be parseable")]
 fn x509_expired_parseable(world: &mut UselessWorld) {
     let expired = world.x509_expired.as_ref().expect("expired cert not set");
@@ -2122,6 +2327,7 @@ fn x509_expired_parseable(world: &mut UselessWorld) {
     x509_parser::parse_x509_certificate(der).expect("expired cert should parse");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the expired X.509 certificate should have not_after in the past")]
 fn x509_expired_not_after_past(world: &mut UselessWorld) {
     let expired = world.x509_expired.as_ref().expect("expired cert not set");
@@ -2140,6 +2346,7 @@ fn x509_expired_not_after_past(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the not-yet-valid X.509 certificate should be parseable")]
 fn x509_not_yet_valid_parseable(world: &mut UselessWorld) {
     let nyv = world
@@ -2150,6 +2357,7 @@ fn x509_not_yet_valid_parseable(world: &mut UselessWorld) {
     x509_parser::parse_x509_certificate(der).expect("not_yet_valid cert should parse");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the not-yet-valid X.509 certificate should have not_before in the future")]
 fn x509_not_yet_valid_not_before_future(world: &mut UselessWorld) {
     let nyv = world
@@ -2171,6 +2379,7 @@ fn x509_not_yet_valid_not_before_future(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the wrong-key-usage X.509 certificate should be parseable")]
 fn x509_wrong_key_usage_parseable(world: &mut UselessWorld) {
     let wrong = world
@@ -2181,6 +2390,7 @@ fn x509_wrong_key_usage_parseable(world: &mut UselessWorld) {
         .expect("wrong-key-usage cert should parse");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the wrong-key-usage X.509 certificate should be marked as CA")]
 fn x509_wrong_key_usage_is_ca(world: &mut UselessWorld) {
     let wrong = world
@@ -2192,6 +2402,7 @@ fn x509_wrong_key_usage_is_ca(world: &mut UselessWorld) {
     assert!(cert.is_ca(), "wrong-key-usage cert should be CA");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the wrong-key-usage X.509 certificate spec should disable keyCertSign")]
 fn x509_wrong_key_usage_spec(world: &mut UselessWorld) {
     let wrong = world
@@ -2204,6 +2415,7 @@ fn x509_wrong_key_usage_spec(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the wrong-key-usage X\.509 certificate label should remain "([^"]+)"$"#)]
 fn x509_wrong_key_usage_label(world: &mut UselessWorld, expected: String) {
     let wrong = world
@@ -2213,6 +2425,7 @@ fn x509_wrong_key_usage_label(world: &mut UselessWorld, expected: String) {
     assert_eq!(wrong.label(), expected);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the corrupted X\.509 PEM should contain "([^"]+)"$"#)]
 fn x509_corrupted_pem_contains(world: &mut UselessWorld, needle: String) {
     let pem = world
@@ -2225,6 +2438,7 @@ fn x509_corrupted_pem_contains(world: &mut UselessWorld, needle: String) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r"^the truncated X\.509 DER should have length (\d+)$")]
 fn x509_truncated_der_length(world: &mut UselessWorld, expected: usize) {
     let der = world
@@ -2234,6 +2448,7 @@ fn x509_truncated_der_length(world: &mut UselessWorld, expected: usize) {
     assert_eq!(der.len(), expected);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the truncated X.509 DER should fail to parse")]
 fn x509_truncated_der_fails(world: &mut UselessWorld) {
     let der = world
@@ -2244,6 +2459,7 @@ fn x509_truncated_der_fails(world: &mut UselessWorld) {
     assert!(result.is_err(), "truncated X.509 DER should fail to parse");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the deterministic X.509 PEM artifact should fail to parse")]
 fn deterministic_x509_pem_fails(world: &mut UselessWorld) {
     let pem = world
@@ -2265,6 +2481,7 @@ fn deterministic_x509_pem_fails(world: &mut UselessWorld) {
     }
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the deterministic X.509 DER artifact should fail to parse")]
 fn deterministic_x509_der_fails(world: &mut UselessWorld) {
     let der = world
@@ -2278,6 +2495,7 @@ fn deterministic_x509_der_fails(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the X\.509 tempfile path should end with "([^"]+)"$"#)]
 fn x509_cert_tempfile_path_ends_with(world: &mut UselessWorld, suffix: String) {
     let tf = world
@@ -2291,6 +2509,7 @@ fn x509_cert_tempfile_path_ends_with(world: &mut UselessWorld, suffix: String) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the X\.509 DER tempfile path should end with "([^"]+)"$"#)]
 fn x509_cert_der_tempfile_path_ends_with(world: &mut UselessWorld, suffix: String) {
     let tf = world
@@ -2304,6 +2523,7 @@ fn x509_cert_der_tempfile_path_ends_with(world: &mut UselessWorld, suffix: Strin
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the X\.509 key tempfile path should end with "([^"]+)"$"#)]
 fn x509_key_tempfile_path_ends_with(world: &mut UselessWorld, suffix: String) {
     let tf = world
@@ -2317,6 +2537,7 @@ fn x509_key_tempfile_path_ends_with(world: &mut UselessWorld, suffix: String) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the X\.509 chain tempfile path should end with "([^"]+)"$"#)]
 fn x509_chain_tempfile_path_ends_with(world: &mut UselessWorld, suffix: String) {
     let tf = world
@@ -2330,6 +2551,7 @@ fn x509_chain_tempfile_path_ends_with(world: &mut UselessWorld, suffix: String) 
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("reading the X.509 tempfile should match the certificate PEM")]
 fn x509_tempfile_matches_cert(world: &mut UselessWorld) {
     let tf = world
@@ -2341,6 +2563,7 @@ fn x509_tempfile_matches_cert(world: &mut UselessWorld) {
     assert_eq!(contents, x509.cert_pem());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("reading the X.509 DER tempfile should match the certificate DER")]
 fn x509_tempfile_matches_cert_der(world: &mut UselessWorld) {
     let tf = world
@@ -2352,6 +2575,7 @@ fn x509_tempfile_matches_cert_der(world: &mut UselessWorld) {
     assert_eq!(contents, x509.cert_der());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("reading the X.509 key tempfile should match the private key PEM")]
 fn x509_tempfile_matches_key(world: &mut UselessWorld) {
     let tf = world
@@ -2367,6 +2591,7 @@ fn x509_tempfile_matches_key(world: &mut UselessWorld) {
 // X.509 Chain When steps
 // =============================================================================
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate a certificate chain for domain "([^"]+)" with label "([^"]+)"$"#)]
 fn gen_x509_chain(world: &mut UselessWorld, domain: String, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -2383,6 +2608,7 @@ fn gen_x509_chain(world: &mut UselessWorld, domain: String, label: String) {
     world.x509_chain_spec = Some(spec);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(
     regex = r#"^I generate another certificate chain for domain "([^"]+)" with label "([^"]+)"$"#
 )]
@@ -2401,6 +2627,7 @@ fn gen_x509_chain_second(world: &mut UselessWorld, domain: String, label: String
     world.x509_chain_spec = Some(spec);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I get the revoked leaf variant of the certificate chain")]
 fn get_revoked_leaf(world: &mut UselessWorld) {
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
@@ -2408,6 +2635,7 @@ fn get_revoked_leaf(world: &mut UselessWorld) {
     world.x509_chain_revoked_leaf = Some(revoked);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I get the hostname mismatch variant with "([^"]+)"$"#)]
 fn get_hostname_mismatch(world: &mut UselessWorld, hostname: String) {
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
@@ -2415,6 +2643,7 @@ fn get_hostname_mismatch(world: &mut UselessWorld, hostname: String) {
     world.x509_chain_hostname_mismatch = Some(mismatched);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I get the expired leaf variant of the certificate chain")]
 fn get_expired_leaf_chain(world: &mut UselessWorld) {
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
@@ -2422,6 +2651,7 @@ fn get_expired_leaf_chain(world: &mut UselessWorld) {
     world.x509_chain_expired_leaf = Some(expired);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I get the expired intermediate variant of the certificate chain")]
 fn get_expired_intermediate_chain(world: &mut UselessWorld) {
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
@@ -2429,6 +2659,7 @@ fn get_expired_intermediate_chain(world: &mut UselessWorld) {
     world.x509_chain_expired_intermediate = Some(expired);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I get the unknown CA variant of the certificate chain")]
 fn get_unknown_ca_chain(world: &mut UselessWorld) {
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
@@ -2436,6 +2667,7 @@ fn get_unknown_ca_chain(world: &mut UselessWorld) {
     world.x509_chain_unknown_ca = Some(unknown);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I add SAN "([^"]+)" to the X\.509 certificate$"#)]
 fn add_san_to_cert(world: &mut UselessWorld, san: String) {
     // For self-signed certs, we regenerate with SANs
@@ -2468,6 +2700,7 @@ fn add_san_to_cert(world: &mut UselessWorld, san: String) {
     world.x509 = Some(new_x509);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I add SAN "([^"]+)" to the certificate chain$"#)]
 fn add_san_to_chain(world: &mut UselessWorld, san: String) {
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
@@ -2485,36 +2718,42 @@ fn add_san_to_chain(world: &mut UselessWorld, san: String) {
     world.x509_chain_spec = Some(spec);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I write the leaf certificate PEM to a tempfile")]
 fn write_leaf_cert_tempfile(world: &mut UselessWorld) {
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
     world.x509_cert_tempfile = Some(chain.write_leaf_cert_pem().expect("write failed"));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I write the leaf private key PEM to a tempfile")]
 fn write_leaf_key_tempfile(world: &mut UselessWorld) {
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
     world.x509_key_tempfile = Some(chain.write_leaf_private_key_pem().expect("write failed"));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I write the chain PEM to a tempfile")]
 fn write_chain_pem_tempfile(world: &mut UselessWorld) {
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
     world.x509_chain_pem_tempfile = Some(chain.write_chain_pem().expect("write failed"));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I write the full chain PEM to a tempfile")]
 fn write_full_chain_pem_tempfile(world: &mut UselessWorld) {
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
     world.x509_full_chain_tempfile = Some(chain.write_full_chain_pem().expect("write failed"));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I write the root certificate PEM to a tempfile")]
 fn write_root_cert_tempfile(world: &mut UselessWorld) {
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
     world.x509_root_cert_tempfile = Some(chain.write_root_cert_pem().expect("write failed"));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I write the revoked chain CRL PEM to a tempfile")]
 fn write_revoked_chain_crl_pem(world: &mut UselessWorld) {
     let revoked = world
@@ -2528,6 +2767,7 @@ fn write_revoked_chain_crl_pem(world: &mut UselessWorld) {
     world.x509_crl_pem_tempfile = Some(tf);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I write the revoked chain CRL DER to a tempfile")]
 fn write_revoked_chain_crl_der(world: &mut UselessWorld) {
     let revoked = world
@@ -2545,6 +2785,7 @@ fn write_revoked_chain_crl_der(world: &mut UselessWorld) {
 // X.509 Chain Then steps
 // =============================================================================
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the certificate chain should contain a leaf certificate")]
 fn chain_has_leaf(world: &mut UselessWorld) {
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
@@ -2552,6 +2793,7 @@ fn chain_has_leaf(world: &mut UselessWorld) {
     x509_parser::parse_x509_certificate(leaf_der).expect("leaf should parse");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the certificate chain should contain an intermediate certificate")]
 fn chain_has_intermediate(world: &mut UselessWorld) {
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
@@ -2559,6 +2801,7 @@ fn chain_has_intermediate(world: &mut UselessWorld) {
     x509_parser::parse_x509_certificate(int_der).expect("intermediate should parse");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the certificate chain should contain a root certificate")]
 fn chain_has_root(world: &mut UselessWorld) {
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
@@ -2566,6 +2809,7 @@ fn chain_has_root(world: &mut UselessWorld) {
     x509_parser::parse_x509_certificate(root_der).expect("root should parse");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the certificate chains should have identical DER")]
 fn chain_identical(world: &mut UselessWorld) {
     let der1 = world
@@ -2579,6 +2823,7 @@ fn chain_identical(world: &mut UselessWorld) {
     assert_eq!(der1, der2, "certificate chains should be identical");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the leaf certificate PEM should be identical")]
 fn chain_leaf_pem_identical(world: &mut UselessWorld) {
     let first = world
@@ -2592,6 +2837,7 @@ fn chain_leaf_pem_identical(world: &mut UselessWorld) {
     assert_eq!(first, second, "leaf certificate PEM should be identical");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the intermediate certificate PEM should be identical")]
 fn chain_intermediate_pem_identical(world: &mut UselessWorld) {
     let first = world
@@ -2608,6 +2854,7 @@ fn chain_intermediate_pem_identical(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the root certificate PEM should be identical")]
 fn chain_root_pem_identical(world: &mut UselessWorld) {
     let first = world
@@ -2621,21 +2868,25 @@ fn chain_root_pem_identical(world: &mut UselessWorld) {
     assert_eq!(first, second, "root certificate PEM should be identical");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the certificate chain should have a leaf certificate")]
 fn chain_has_leaf_alias(world: &mut UselessWorld) {
     chain_has_leaf(world);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the certificate chain should have an intermediate certificate")]
 fn chain_has_intermediate_alias(world: &mut UselessWorld) {
     chain_has_intermediate(world);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the certificate chain should have a root certificate")]
 fn chain_has_root_alias(world: &mut UselessWorld) {
     chain_has_root(world);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the chain PEM should contain (\d+) "([^"]+)" markers$"#)]
 fn chain_pem_contains_markers(world: &mut UselessWorld, expected: usize, marker: String) {
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
@@ -2646,6 +2897,7 @@ fn chain_pem_contains_markers(world: &mut UselessWorld, expected: usize, marker:
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the leaf certificate DER should differ from the intermediate certificate DER")]
 fn leaf_der_differs_from_intermediate(world: &mut UselessWorld) {
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
@@ -2656,6 +2908,7 @@ fn leaf_der_differs_from_intermediate(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the intermediate certificate DER should differ from the root certificate DER")]
 fn intermediate_der_differs_from_root(world: &mut UselessWorld) {
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
@@ -2666,6 +2919,7 @@ fn intermediate_der_differs_from_root(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the intermediate certificate should have a common name")]
 fn intermediate_has_common_name(world: &mut UselessWorld) {
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
@@ -2681,6 +2935,7 @@ fn intermediate_has_common_name(world: &mut UselessWorld) {
     assert!(!cn.is_empty(), "intermediate CN should not be empty");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the root certificate should have a common name")]
 fn root_has_common_name(world: &mut UselessWorld) {
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
@@ -2695,6 +2950,7 @@ fn root_has_common_name(world: &mut UselessWorld) {
     assert!(!cn.is_empty(), "root CN should not be empty");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the leaf certificates should have different DER")]
 fn leaf_certs_different_der(world: &mut UselessWorld) {
     let first = world
@@ -2708,6 +2964,7 @@ fn leaf_certs_different_der(world: &mut UselessWorld) {
     assert_ne!(first, second, "leaf certificates should differ");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the root certificates should have different DER")]
 fn root_certs_different_der(world: &mut UselessWorld) {
     let first = world
@@ -2721,6 +2978,7 @@ fn root_certs_different_der(world: &mut UselessWorld) {
     assert_ne!(first, second, "root certificates should differ");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the leaf private key should be a valid PKCS#8 key")]
 fn leaf_private_key_is_valid_pkcs8(world: &mut UselessWorld) {
     use rsa::pkcs8::DecodePrivateKey;
@@ -2730,6 +2988,7 @@ fn leaf_private_key_is_valid_pkcs8(world: &mut UselessWorld) {
         .expect("leaf private key should parse as PKCS#8");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the leaf private key should match the leaf certificate")]
 fn leaf_private_key_matches_leaf_cert(world: &mut UselessWorld) {
     use rsa::pkcs8::DecodePrivateKey;
@@ -2748,6 +3007,7 @@ fn leaf_private_key_matches_leaf_cert(world: &mut UselessWorld) {
     assert_eq!(private_public.e(), cert_public.e(), "exponent should match");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the leaf certificate tempfile should exist")]
 fn leaf_cert_tempfile_exists(world: &mut UselessWorld) {
     let tf = world
@@ -2757,6 +3017,7 @@ fn leaf_cert_tempfile_exists(world: &mut UselessWorld) {
     assert!(tf.path().exists(), "leaf certificate tempfile should exist");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the leaf private key tempfile should exist")]
 fn leaf_key_tempfile_exists(world: &mut UselessWorld) {
     let tf = world
@@ -2766,6 +3027,7 @@ fn leaf_key_tempfile_exists(world: &mut UselessWorld) {
     assert!(tf.path().exists(), "leaf key tempfile should exist");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the chain tempfile path should end with "([^"]+)"$"#)]
 fn chain_tempfile_path_ends_with(world: &mut UselessWorld, suffix: String) {
     let tf = world
@@ -2779,6 +3041,7 @@ fn chain_tempfile_path_ends_with(world: &mut UselessWorld, suffix: String) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the full chain tempfile path should end with "([^"]+)"$"#)]
 fn full_chain_tempfile_path_ends_with(world: &mut UselessWorld, suffix: String) {
     let tf = world
@@ -2792,6 +3055,7 @@ fn full_chain_tempfile_path_ends_with(world: &mut UselessWorld, suffix: String) 
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the root certificate tempfile path should end with "([^"]+)"$"#)]
 fn root_cert_tempfile_path_ends_with(world: &mut UselessWorld, suffix: String) {
     let tf = world
@@ -2805,6 +3069,7 @@ fn root_cert_tempfile_path_ends_with(world: &mut UselessWorld, suffix: String) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("reading the chain tempfile should match the chain PEM")]
 fn chain_tempfile_matches_chain_pem(world: &mut UselessWorld) {
     let tf = world
@@ -2816,6 +3081,7 @@ fn chain_tempfile_matches_chain_pem(world: &mut UselessWorld) {
     assert_eq!(contents, chain.chain_pem());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("reading the full chain tempfile should match the full chain PEM")]
 fn full_chain_tempfile_matches_full_chain_pem(world: &mut UselessWorld) {
     let tf = world
@@ -2827,6 +3093,7 @@ fn full_chain_tempfile_matches_full_chain_pem(world: &mut UselessWorld) {
     assert_eq!(contents, chain.full_chain_pem());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("reading the root certificate tempfile should match the root certificate PEM")]
 fn root_cert_tempfile_matches_root_pem(world: &mut UselessWorld) {
     let tf = world
@@ -2838,6 +3105,7 @@ fn root_cert_tempfile_matches_root_pem(world: &mut UselessWorld) {
     assert_eq!(contents, chain.root_cert_pem());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the CRL PEM tempfile path should end with "([^"]+)"$"#)]
 fn crl_pem_tempfile_path_ends_with(world: &mut UselessWorld, suffix: String) {
     let tf = world
@@ -2851,6 +3119,7 @@ fn crl_pem_tempfile_path_ends_with(world: &mut UselessWorld, suffix: String) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the CRL DER tempfile path should end with "([^"]+)"$"#)]
 fn crl_der_tempfile_path_ends_with(world: &mut UselessWorld, suffix: String) {
     let tf = world
@@ -2864,6 +3133,7 @@ fn crl_der_tempfile_path_ends_with(world: &mut UselessWorld, suffix: String) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the CRL PEM tempfile should contain "([^"]+)"$"#)]
 fn crl_pem_tempfile_contains(world: &mut UselessWorld, needle: String) {
     let tf = world
@@ -2877,6 +3147,7 @@ fn crl_pem_tempfile_contains(world: &mut UselessWorld, needle: String) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the CRL DER tempfile should be parseable as a CRL")]
 fn crl_der_tempfile_parseable(world: &mut UselessWorld) {
     use x509_parser::prelude::FromDer;
@@ -2890,6 +3161,7 @@ fn crl_der_tempfile_parseable(world: &mut UselessWorld) {
     assert!(parse_result.is_ok(), "CRL DER tempfile should parse");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the chain root should differ from the original root")]
 fn chain_root_differs_from_original(world: &mut UselessWorld) {
     let original = world.x509_chain.as_ref().expect("x509_chain not set");
@@ -2904,6 +3176,7 @@ fn chain_root_differs_from_original(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the revoked leaf certificate should be parseable")]
 fn revoked_leaf_parseable(world: &mut UselessWorld) {
     let revoked = world
@@ -2914,6 +3187,7 @@ fn revoked_leaf_parseable(world: &mut UselessWorld) {
     x509_parser::parse_x509_certificate(der).expect("revoked leaf should parse");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the revoked leaf certificate should include a CRL with revoked entries")]
 fn revoked_leaf_has_crl(world: &mut UselessWorld) {
     use x509_parser::prelude::FromDer;
@@ -2935,6 +3209,7 @@ fn revoked_leaf_has_crl(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the revoked leaf certificate should differ from the valid leaf certificate")]
 fn revoked_differs_from_valid(world: &mut UselessWorld) {
     let revoked = world
@@ -2950,6 +3225,7 @@ fn revoked_differs_from_valid(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the leaf certificate should have common name "([^"]+)"$"#)]
 fn leaf_has_cn(world: &mut UselessWorld, expected_cn: String) {
     let chain = world
@@ -2971,6 +3247,7 @@ fn leaf_has_cn(world: &mut UselessWorld, expected_cn: String) {
     assert_eq!(cn, expected_cn);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the leaf certificate should not contain SAN "([^"]+)"$"#)]
 fn leaf_not_contain_san(world: &mut UselessWorld, san: String) {
     let chain = world
@@ -2990,6 +3267,7 @@ fn leaf_not_contain_san(world: &mut UselessWorld, san: String) {
     assert!(!has_san, "leaf should not contain SAN '{}'", san);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the hostname mismatch leaf certificate should differ from the valid leaf certificate")]
 fn hostname_mismatch_differs(world: &mut UselessWorld) {
     let mismatched = world
@@ -3005,6 +3283,7 @@ fn hostname_mismatch_differs(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the expired leaf certificate should have not_after in the past")]
 fn expired_leaf_not_after_past(world: &mut UselessWorld) {
     let expired = world
@@ -3027,6 +3306,7 @@ fn expired_leaf_not_after_past(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the intermediate certificate should be valid")]
 fn intermediate_is_valid(world: &mut UselessWorld) {
     let expired = world
@@ -3046,6 +3326,7 @@ fn intermediate_is_valid(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the expired intermediate certificate should have not_after in the past")]
 fn expired_intermediate_not_after_past(world: &mut UselessWorld) {
     let expired = world
@@ -3068,6 +3349,7 @@ fn expired_intermediate_not_after_past(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the leaf certificate should be valid")]
 fn leaf_is_valid(world: &mut UselessWorld) {
     let expired = world
@@ -3084,6 +3366,7 @@ fn leaf_is_valid(world: &mut UselessWorld) {
     assert!(not_after > 0, "leaf should have a valid not_after time");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the X\.509 certificate should contain SAN "([^"]+)"$"#)]
 fn x509_has_san(world: &mut UselessWorld, san: String) {
     let x509 = world.x509.as_ref().expect("x509 not set");
@@ -3100,6 +3383,7 @@ fn x509_has_san(world: &mut UselessWorld, san: String) {
     assert!(has_san, "cert should contain SAN '{}'", san);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the leaf certificate should contain SAN "([^"]+)"$"#)]
 fn leaf_has_san(world: &mut UselessWorld, san: String) {
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
@@ -3116,6 +3400,7 @@ fn leaf_has_san(world: &mut UselessWorld, san: String) {
     assert!(has_san, "leaf should contain SAN '{}'", san);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the intermediate certificate should not contain SAN "([^"]+)"$"#)]
 fn intermediate_not_contain_san(world: &mut UselessWorld, san: String) {
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
@@ -3132,6 +3417,7 @@ fn intermediate_not_contain_san(world: &mut UselessWorld, san: String) {
     assert!(!has_san, "intermediate should not contain SAN '{}'", san);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the root certificate should not contain SAN "([^"]+)"$"#)]
 fn root_not_contain_san(world: &mut UselessWorld, san: String) {
     let chain = world.x509_chain.as_ref().expect("x509_chain not set");
@@ -3152,6 +3438,7 @@ fn root_not_contain_san(world: &mut UselessWorld, san: String) {
 // JWKS When steps
 // =============================================================================
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I build a JWKS containing the RSA key with kid "([^"]+)"$"#)]
 fn build_jwks_rsa(world: &mut UselessWorld, kid: String) {
     let rsa = world.rsa.as_ref().expect("rsa not set");
@@ -3170,6 +3457,7 @@ fn build_jwks_rsa(world: &mut UselessWorld, kid: String) {
     world.jwks_output_1 = Some(value);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I build a JWKS containing the ECDSA key with kid "([^"]+)"$"#)]
 fn build_jwks_ecdsa(world: &mut UselessWorld, kid: String) {
     let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
@@ -3179,6 +3467,7 @@ fn build_jwks_ecdsa(world: &mut UselessWorld, kid: String) {
     world.jwks_output_1 = Some(builder.build().to_value());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I build a JWKS containing the Ed25519 key with kid "([^"]+)"$"#)]
 fn build_jwks_ed25519(world: &mut UselessWorld, kid: String) {
     let ed25519 = world.ed25519.as_ref().expect("ed25519 not set");
@@ -3188,6 +3477,7 @@ fn build_jwks_ed25519(world: &mut UselessWorld, kid: String) {
     world.jwks_output_1 = Some(builder.build().to_value());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I build a JWKS containing the HMAC secret with kid "([^"]+)"$"#)]
 fn build_jwks_hmac(world: &mut UselessWorld, kid: String) {
     let hmac = world.hmac.as_ref().expect("hmac not set");
@@ -3197,6 +3487,7 @@ fn build_jwks_hmac(world: &mut UselessWorld, kid: String) {
     world.jwks_output_1 = Some(builder.build().to_value());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I build a JWKS containing all keys")]
 fn build_jwks_all(world: &mut UselessWorld) {
     let mut builder = JwksBuilder::new();
@@ -3217,11 +3508,13 @@ fn build_jwks_all(world: &mut UselessWorld) {
     world.jwks_output_1 = Some(builder.build().to_value());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I build a JWKS containing all three keys")]
 fn build_jwks_all_three(world: &mut UselessWorld) {
     build_jwks_all(world);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I build a JWKS with the RSA keys with kids "([^"]+)" and "([^"]+)"$"#)]
 fn build_jwks_multi_rsa(world: &mut UselessWorld, kid1: String, kid2: String) {
     assert_eq!(world.rsa_keys.len(), 2, "need 2 RSA keys");
@@ -3235,6 +3528,7 @@ fn build_jwks_multi_rsa(world: &mut UselessWorld, kid1: String, kid2: String) {
     world.jwks_output_1 = Some(builder.build().to_value());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I build a JWKS with the ECDSA keys with kids "([^"]+)" and "([^"]+)"$"#)]
 fn build_jwks_multi_ecdsa(world: &mut UselessWorld, kid1: String, kid2: String) {
     assert_eq!(world.ecdsa_keys.len(), 2, "need 2 ECDSA keys");
@@ -3248,6 +3542,7 @@ fn build_jwks_multi_ecdsa(world: &mut UselessWorld, kid1: String, kid2: String) 
     world.jwks_output_1 = Some(builder.build().to_value());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I build a JWKS with the Ed25519 keys with kids "([^"]+)" and "([^"]+)"$"#)]
 fn build_jwks_multi_ed25519(world: &mut UselessWorld, kid1: String, kid2: String) {
     assert_eq!(world.ed25519_keys.len(), 2, "need 2 Ed25519 keys");
@@ -3261,6 +3556,7 @@ fn build_jwks_multi_ed25519(world: &mut UselessWorld, kid1: String, kid2: String
     world.jwks_output_1 = Some(builder.build().to_value());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I build a JWKS with the HMAC secrets with kids "([^"]+)" and "([^"]+)"$"#)]
 fn build_jwks_multi_hmac(world: &mut UselessWorld, kid1: String, kid2: String) {
     assert_eq!(world.hmac_keys.len(), 2, "need 2 HMAC secrets");
@@ -3274,6 +3570,7 @@ fn build_jwks_multi_hmac(world: &mut UselessWorld, kid1: String, kid2: String) {
     world.jwks_output_1 = Some(builder.build().to_value());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I build a JWKS with both keys with kids "([^"]+)" and "([^"]+)"$"#)]
 fn build_jwks_both(world: &mut UselessWorld, kid1: String, kid2: String) {
     assert_eq!(world.rsa_keys.len(), 2, "need 2 RSA keys");
@@ -3287,6 +3584,7 @@ fn build_jwks_both(world: &mut UselessWorld, kid1: String, kid2: String) {
     world.jwks_output_1 = Some(builder.build().to_value());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I build a JWKS containing both keys with kids "([^"]+)" and "([^"]+)"$"#)]
 fn build_jwks_containing_both(world: &mut UselessWorld, kid1: String, kid2: String) {
     assert_eq!(world.rsa_keys.len(), 2, "need 2 RSA keys");
@@ -3300,6 +3598,7 @@ fn build_jwks_containing_both(world: &mut UselessWorld, kid1: String, kid2: Stri
     world.jwks_output_1 = Some(builder.build().to_value());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(
     regex = r#"^I build a JWKS containing all keys with kids "([^"]+)",\s*"([^"]+)",\s*"([^"]+)"$"#
 )]
@@ -3339,6 +3638,7 @@ fn build_jwks_all_kids(world: &mut UselessWorld, kid1: String, kid2: String, kid
     world.jwks_output_1 = Some(builder.build().to_value());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I build a JWKS with only the second key with kid "([^"]+)"$"#)]
 fn build_jwks_only_second(world: &mut UselessWorld, kid: String) {
     assert_eq!(world.rsa_keys.len(), 2, "need 2 RSA keys");
@@ -3348,6 +3648,7 @@ fn build_jwks_only_second(world: &mut UselessWorld, kid: String) {
     world.jwks_output_1 = Some(builder.build().to_value());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(
     regex = r#"^I build another JWKS containing all keys with kids "([^"]+)",\s*"([^"]+)",\s*"([^"]+)"$"#
 )]
@@ -3378,12 +3679,14 @@ fn build_another_jwks(world: &mut UselessWorld, kid1: String, kid2: String, kid3
     world.jwks_output_2 = Some(builder.build().to_value());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I build an empty JWKS")]
 fn build_empty_jwks(world: &mut UselessWorld) {
     let builder = JwksBuilder::new();
     world.jwks_output_1 = Some(builder.build().to_value());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(
     regex = r#"^I build a JWKS containing all keys with kids "([^"]+)",\s*"([^"]+)",\s*"([^"]+)",\s*"([^"]+)"$"#
 )]
@@ -3426,6 +3729,7 @@ fn build_jwks_four_keys(
     world.jwks_output_1 = Some(builder.build().to_value());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I filter the JWKS by kid "([^"]+)"$"#)]
 fn filter_jwks_by_kid(world: &mut UselessWorld, kid: String) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
@@ -3441,6 +3745,7 @@ fn filter_jwks_by_kid(world: &mut UselessWorld, kid: String) {
     world.jwks_filtered = Some(serde_json::json!({ "keys": filtered_keys }));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate an RSA key for label "([^"]*)" with spec RS256$"#)]
 fn gen_rsa_rs256(world: &mut UselessWorld, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -3460,6 +3765,7 @@ fn gen_rsa_rs256(world: &mut UselessWorld, label: String) {
 // JWKS Then steps
 // =============================================================================
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the JWKS should contain 1 key")]
 fn jwks_has_one_key_count(world: &mut UselessWorld) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
@@ -3467,6 +3773,7 @@ fn jwks_has_one_key_count(world: &mut UselessWorld) {
     assert_eq!(keys.len(), 1);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the JWKS should contain 2 keys")]
 fn jwks_has_two_keys(world: &mut UselessWorld) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
@@ -3474,6 +3781,7 @@ fn jwks_has_two_keys(world: &mut UselessWorld) {
     assert_eq!(keys.len(), 2);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the JWKS should contain 3 keys")]
 fn jwks_has_three_keys(world: &mut UselessWorld) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
@@ -3481,6 +3789,7 @@ fn jwks_has_three_keys(world: &mut UselessWorld) {
     assert_eq!(keys.len(), 3);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the JWKS should contain 4 keys")]
 fn jwks_has_four_keys(world: &mut UselessWorld) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
@@ -3488,6 +3797,7 @@ fn jwks_has_four_keys(world: &mut UselessWorld) {
     assert_eq!(keys.len(), 4);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the JWKS should contain 0 keys")]
 fn jwks_has_zero_keys(world: &mut UselessWorld) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
@@ -3495,6 +3805,7 @@ fn jwks_has_zero_keys(world: &mut UselessWorld) {
     assert_eq!(keys.len(), 0);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the JWKS should contain a key with kid "([^"]+)"$"#)]
 fn jwks_has_kid(world: &mut UselessWorld, kid: String) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
@@ -3506,6 +3817,7 @@ fn jwks_has_kid(world: &mut UselessWorld, kid: String) {
     assert!(found, "JWKS should contain key with kid '{}'", kid);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the JWKS should not contain a key with kid "([^"]+)"$"#)]
 fn jwks_not_has_kid(world: &mut UselessWorld, kid: String) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
@@ -3517,6 +3829,7 @@ fn jwks_not_has_kid(world: &mut UselessWorld, kid: String) {
     assert!(!found, "JWKS should not contain key with kid '{}'", kid);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^each key in the JWKS should have kty "([^"]+)"$"#)]
 fn jwks_all_have_kty(world: &mut UselessWorld, kty: String) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
@@ -3527,6 +3840,7 @@ fn jwks_all_have_kty(world: &mut UselessWorld, kty: String) {
     }
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("each key in the JWKS should have a unique kid")]
 fn jwks_unique_kids(world: &mut UselessWorld) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
@@ -3539,6 +3853,7 @@ fn jwks_unique_kids(world: &mut UselessWorld) {
     }
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("both JWKS outputs should be identical")]
 fn jwks_outputs_identical(world: &mut UselessWorld) {
     let jwks1 = world.jwks_output_1.as_ref().expect("jwks_output_1 not set");
@@ -3546,6 +3861,7 @@ fn jwks_outputs_identical(world: &mut UselessWorld) {
     assert_eq!(jwks1, jwks2);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the JWKS key at index (\d+) should have kid "([^"]+)"$"#)]
 fn jwks_key_at_index_has_kid(world: &mut UselessWorld, index: usize, kid: String) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
@@ -3565,12 +3881,14 @@ fn jwks_key_at_index_has_kid(world: &mut UselessWorld, index: usize, kid: String
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the JWKS JSON should have a \"keys\" array")]
 fn jwks_has_keys_array(world: &mut UselessWorld) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
     assert!(jwks["keys"].is_array(), "keys should be an array");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the JWKS JSON should have an empty \"keys\" array")]
 fn jwks_has_empty_keys_array(world: &mut UselessWorld) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
@@ -3578,6 +3896,7 @@ fn jwks_has_empty_keys_array(world: &mut UselessWorld) {
     assert!(keys.is_empty(), "keys array should be empty");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the JWKS should contain a key with alg "([^"]+)"$"#)]
 fn jwks_has_alg(world: &mut UselessWorld, alg: String) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
@@ -3589,6 +3908,7 @@ fn jwks_has_alg(world: &mut UselessWorld, alg: String) {
     assert!(found, "JWKS should contain key with alg '{}'", alg);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the JWKS RSA key should contain field "([^"]+)"$"#)]
 fn jwks_rsa_has_field(world: &mut UselessWorld, field: String) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
@@ -3604,6 +3924,7 @@ fn jwks_rsa_has_field(world: &mut UselessWorld, field: String) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the JWKS EC key should contain field "([^"]+)"$"#)]
 fn jwks_ec_has_field(world: &mut UselessWorld, field: String) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
@@ -3619,6 +3940,7 @@ fn jwks_ec_has_field(world: &mut UselessWorld, field: String) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the JWKS RSA key should not contain field "([^"]+)"$"#)]
 fn jwks_rsa_not_has_field(world: &mut UselessWorld, field: String) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
@@ -3634,6 +3956,7 @@ fn jwks_rsa_not_has_field(world: &mut UselessWorld, field: String) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the filtered JWKS should contain 1 key")]
 fn filtered_jwks_has_one_key(world: &mut UselessWorld) {
     let jwks = world.jwks_filtered.as_ref().expect("filtered jwks not set");
@@ -3641,6 +3964,7 @@ fn filtered_jwks_has_one_key(world: &mut UselessWorld) {
     assert_eq!(keys.len(), 1);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the filtered JWKS should contain a key with kid "([^"]+)"$"#)]
 fn filtered_jwks_has_kid(world: &mut UselessWorld, kid: String) {
     let jwks = world.jwks_filtered.as_ref().expect("filtered jwks not set");
@@ -3677,6 +4001,7 @@ fn filtered_jwks_has_kid(world: &mut UselessWorld, kid: String) {
 //     assert!(!jwk["kid"].as_str().unwrap().is_empty(), "kid should not be empty");
 // }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the JWKS should contain a key with kty "([^"]+)"$"#)]
 fn jwks_has_kty(world: &mut UselessWorld, kty: String) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
@@ -3688,6 +4013,7 @@ fn jwks_has_kty(world: &mut UselessWorld, kty: String) {
     assert!(found, "JWKS should contain key with kty '{}'", kty);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the JWKS JSON should be parseable")]
 fn jwks_parseable(world: &mut UselessWorld) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks not set");
@@ -3695,6 +4021,7 @@ fn jwks_parseable(world: &mut UselessWorld) {
     let _keys = jwks["keys"].as_array().expect("keys should be array");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the JWKS key with kid "([^"]+)" should have the same modulus as the original$"#)]
 fn jwks_key_same_modulus(world: &mut UselessWorld, kid: String) {
     let jwks = world.jwks_output_1.as_ref().expect("jwks_output_1 not set");
@@ -3715,6 +4042,7 @@ fn jwks_key_same_modulus(world: &mut UselessWorld, kid: String) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the RSA JWK should have kty "([^"]+)"$"#)]
 fn cross_rsa_jwk_has_kty(world: &mut UselessWorld, expected: String) {
     let rsa = world.rsa.as_ref().expect("rsa not set");
@@ -3722,6 +4050,7 @@ fn cross_rsa_jwk_has_kty(world: &mut UselessWorld, expected: String) {
     assert_eq!(jwk["kty"].as_str(), Some(expected.as_str()));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the ECDSA JWK should have kty "([^"]+)"$"#)]
 fn cross_ecdsa_jwk_has_kty(world: &mut UselessWorld, expected: String) {
     let ecdsa = world.ecdsa.as_ref().expect("ecdsa not set");
@@ -3729,6 +4058,7 @@ fn cross_ecdsa_jwk_has_kty(world: &mut UselessWorld, expected: String) {
     assert_eq!(jwk["kty"].as_str(), Some(expected.as_str()));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the RSA JWK kty should differ from the ECDSA JWK kty")]
 fn cross_rsa_and_ecdsa_kty_differ(world: &mut UselessWorld) {
     let rsa = world.rsa.as_ref().expect("rsa not set");
@@ -3740,6 +4070,7 @@ fn cross_rsa_and_ecdsa_kty_differ(world: &mut UselessWorld) {
     assert_ne!(rsa_kty, ecdsa_kty, "RSA and ECDSA kty should differ");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the ES256 JWK should have crv "([^"]+)"$"#)]
 fn cross_es256_jwk_has_crv(world: &mut UselessWorld, expected: String) {
     let ecdsa = world.ecdsa_keys.first().expect("ES256 key not set");
@@ -3747,6 +4078,7 @@ fn cross_es256_jwk_has_crv(world: &mut UselessWorld, expected: String) {
     assert_eq!(jwk["crv"].as_str(), Some(expected.as_str()));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the ES384 JWK should have crv "([^"]+)"$"#)]
 fn cross_es384_jwk_has_crv(world: &mut UselessWorld, expected: String) {
     let ecdsa = world.ecdsa_keys.get(1).expect("ES384 key not set");
@@ -3754,6 +4086,7 @@ fn cross_es384_jwk_has_crv(world: &mut UselessWorld, expected: String) {
     assert_eq!(jwk["crv"].as_str(), Some(expected.as_str()));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the ES256 crv should differ from the ES384 crv")]
 fn cross_es256_es384_crv_differ(world: &mut UselessWorld) {
     let es256 = world.ecdsa_keys.first().expect("ES256 key not set");
@@ -3765,6 +4098,7 @@ fn cross_es256_es384_crv_differ(world: &mut UselessWorld) {
     assert_ne!(es256_crv, es384_crv, "ES256 and ES384 curves should differ");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the RS256 JWK should have alg "([^"]+)"$"#)]
 fn cross_rs256_jwk_has_alg(world: &mut UselessWorld, expected: String) {
     let rsa = world.rsa_keys.first().expect("RS256 key not set");
@@ -3772,6 +4106,7 @@ fn cross_rs256_jwk_has_alg(world: &mut UselessWorld, expected: String) {
     assert_eq!(jwk["alg"].as_str(), Some(expected.as_str()));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the RS384 JWK should have alg "([^"]+)"$"#)]
 fn cross_rs384_jwk_has_alg(world: &mut UselessWorld, expected: String) {
     let rsa = world.rsa_keys.get(1).expect("RS384 key not set");
@@ -3779,6 +4114,7 @@ fn cross_rs384_jwk_has_alg(world: &mut UselessWorld, expected: String) {
     assert_eq!(jwk["alg"].as_str(), Some(expected.as_str()));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the RS256 alg should differ from the RS384 alg")]
 fn cross_rs256_rs384_alg_differ(world: &mut UselessWorld) {
     let rs256 = world.rsa_keys.first().expect("RS256 key not set");
@@ -3790,6 +4126,7 @@ fn cross_rs256_rs384_alg_differ(world: &mut UselessWorld) {
     assert_ne!(rs256_alg, rs384_alg, "RS256 and RS384 alg should differ");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the HS256 JWK should have alg "([^"]+)"$"#)]
 fn cross_hs256_jwk_has_alg(world: &mut UselessWorld, expected: String) {
     let hs256 = world.hmac_keys.first().expect("HS256 key not set");
@@ -3797,6 +4134,7 @@ fn cross_hs256_jwk_has_alg(world: &mut UselessWorld, expected: String) {
     assert_eq!(jwk["alg"].as_str(), Some(expected.as_str()));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the HS384 JWK should have alg "([^"]+)"$"#)]
 fn cross_hs384_jwk_has_alg(world: &mut UselessWorld, expected: String) {
     let hs384 = world.hmac_keys.get(1).expect("HS384 key not set");
@@ -3804,6 +4142,7 @@ fn cross_hs384_jwk_has_alg(world: &mut UselessWorld, expected: String) {
     assert_eq!(jwk["alg"].as_str(), Some(expected.as_str()));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the HS512 JWK should have alg "([^"]+)"$"#)]
 fn cross_hs512_jwk_has_alg(world: &mut UselessWorld, expected: String) {
     let hs512 = world.hmac_keys.get(2).expect("HS512 key not set");
@@ -3811,6 +4150,7 @@ fn cross_hs512_jwk_has_alg(world: &mut UselessWorld, expected: String) {
     assert_eq!(jwk["alg"].as_str(), Some(expected.as_str()));
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the RSA 2048 n value should have different length than RSA 4096 n value")]
 fn cross_rsa_modulus_length_diff(world: &mut UselessWorld) {
     let rsa_2048 = world.rsa_keys.first().expect("RSA 2048 key not set");
@@ -3830,6 +4170,7 @@ fn cross_rsa_modulus_length_diff(world: &mut UselessWorld) {
 // RSA variant When steps (RS384, RS512, key sizes)
 // =============================================================================
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate an RSA key for label "([^"]+)" with spec RS384$"#)]
 fn gen_rsa_rs384(world: &mut UselessWorld, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -3842,6 +4183,7 @@ fn gen_rsa_rs384(world: &mut UselessWorld, label: String) {
     world.rsa = Some(rsa);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate an RSA key for label "([^"]+)" with spec RS384 again$"#)]
 fn gen_rsa_rs384_again(world: &mut UselessWorld, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -3851,6 +4193,7 @@ fn gen_rsa_rs384_again(world: &mut UselessWorld, label: String) {
     world.rsa = Some(rsa);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate another RSA key for label "([^"]+)" with spec RS384$"#)]
 fn gen_rsa_rs384_second(world: &mut UselessWorld, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -3860,6 +4203,7 @@ fn gen_rsa_rs384_second(world: &mut UselessWorld, label: String) {
     world.rsa = Some(rsa);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate an RSA key for label "([^"]+)" with spec RS512$"#)]
 fn gen_rsa_rs512(world: &mut UselessWorld, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -3872,6 +4216,7 @@ fn gen_rsa_rs512(world: &mut UselessWorld, label: String) {
     world.rsa = Some(rsa);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate an RSA key for label "([^"]+)" with spec RS512 again$"#)]
 fn gen_rsa_rs512_again(world: &mut UselessWorld, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -3881,6 +4226,7 @@ fn gen_rsa_rs512_again(world: &mut UselessWorld, label: String) {
     world.rsa = Some(rsa);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate another RSA key for label "([^"]+)" with spec RS512$"#)]
 fn gen_rsa_rs512_second(world: &mut UselessWorld, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -3890,6 +4236,7 @@ fn gen_rsa_rs512_second(world: &mut UselessWorld, label: String) {
     world.rsa = Some(rsa);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate an RSA key for label "([^"]+)" with spec (\d+)$"#)]
 fn gen_rsa_by_bits(world: &mut UselessWorld, label: String, bits: usize) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -3902,6 +4249,7 @@ fn gen_rsa_by_bits(world: &mut UselessWorld, label: String, bits: usize) {
     world.rsa = Some(rsa);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r"^the RSA modulus should have (\d+) bytes$")]
 fn rsa_modulus_size(world: &mut UselessWorld, expected: usize) {
     use rsa::pkcs8::DecodePublicKey;
@@ -3917,6 +4265,7 @@ fn rsa_modulus_size(world: &mut UselessWorld, expected: usize) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r#"^the RSA private JWK should have (\w+) parameter$"#)]
 fn rsa_private_jwk_has_single_param(world: &mut UselessWorld, param: String) {
     let rsa_key = world.rsa.as_ref().expect("rsa not set");
@@ -3932,6 +4281,7 @@ fn rsa_private_jwk_has_single_param(world: &mut UselessWorld, param: String) {
 // HMAC variant When steps (HS384, HS512)
 // =============================================================================
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate an HMAC HS384 secret for label "([^"]+)"$"#)]
 fn gen_hmac_hs384(world: &mut UselessWorld, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -3941,6 +4291,7 @@ fn gen_hmac_hs384(world: &mut UselessWorld, label: String) {
     world.hmac = Some(secret);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate an HMAC HS384 secret for label "([^"]+)" again$"#)]
 fn gen_hmac_hs384_again(world: &mut UselessWorld, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -3949,6 +4300,7 @@ fn gen_hmac_hs384_again(world: &mut UselessWorld, label: String) {
     world.hmac = Some(secret);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate another HMAC HS384 secret for label "([^"]+)"$"#)]
 fn gen_hmac_hs384_second(world: &mut UselessWorld, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -3957,6 +4309,7 @@ fn gen_hmac_hs384_second(world: &mut UselessWorld, label: String) {
     world.hmac = Some(secret);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate an HMAC HS512 secret for label "([^"]+)"$"#)]
 fn gen_hmac_hs512(world: &mut UselessWorld, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -3966,6 +4319,7 @@ fn gen_hmac_hs512(world: &mut UselessWorld, label: String) {
     world.hmac = Some(secret);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate an HMAC HS512 secret for label "([^"]+)" again$"#)]
 fn gen_hmac_hs512_again(world: &mut UselessWorld, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -3974,6 +4328,7 @@ fn gen_hmac_hs512_again(world: &mut UselessWorld, label: String) {
     world.hmac = Some(secret);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate another HMAC HS512 secret for label "([^"]+)"$"#)]
 fn gen_hmac_hs512_second(world: &mut UselessWorld, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -3982,11 +4337,13 @@ fn gen_hmac_hs512_second(world: &mut UselessWorld, label: String) {
     world.hmac = Some(secret);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the HMAC secrets should be different")]
 fn hmac_secrets_different(world: &mut UselessWorld) {
     assert_ne!(world.hmac_secret_1, world.hmac_secret_2);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then(regex = r"^the HMAC secret bytes should have length (\d+)$")]
 fn hmac_secret_bytes_length(world: &mut UselessWorld, expected: usize) {
     let secret = world.hmac.as_ref().expect("hmac not set");
@@ -3997,6 +4354,7 @@ fn hmac_secret_bytes_length(world: &mut UselessWorld, expected: usize) {
 // Edge-case steps
 // =============================================================================
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the PKCS8 PEM should be parseable")]
 fn pkcs8_pem_parseable(world: &mut UselessWorld) {
     use rsa::pkcs8::DecodePrivateKey;
@@ -4006,6 +4364,7 @@ fn pkcs8_pem_parseable(world: &mut UselessWorld) {
     rsa::RsaPrivateKey::from_pkcs8_pem(pem).expect("PKCS8 PEM should parse");
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I generate the same keys again")]
 fn gen_same_keys_again(world: &mut UselessWorld) {
     // Snapshot PEMs before regenerating so we can compare after.
@@ -4022,6 +4381,7 @@ fn gen_same_keys_again(world: &mut UselessWorld) {
     world.rsa_keys.push(rsa_b);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("each regenerated key should be identical to the original")]
 fn regenerated_keys_identical(world: &mut UselessWorld) {
     // Real PEM equality: compare before-snapshots with current keys.
@@ -4062,6 +4422,7 @@ fn regenerated_keys_identical(world: &mut UselessWorld) {
     }
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I generate the same keys in reverse order")]
 fn gen_same_keys_reverse(world: &mut UselessWorld) {
     // Snapshot PEMs before regenerating.
@@ -4088,6 +4449,7 @@ fn gen_same_keys_reverse(world: &mut UselessWorld) {
     world.ed25519 = Some(ed25519);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I generate the same keys again in reverse order")]
 fn gen_same_keys_reverse_again(world: &mut UselessWorld) {
     // Snapshot PEMs before regenerating.
@@ -4116,6 +4478,7 @@ fn gen_same_keys_reverse_again(world: &mut UselessWorld) {
     world.ed25519 = Some(ed25519);
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("each key should have a unique kid")]
 fn all_keys_unique_kid(world: &mut UselessWorld) {
     let mut kids = std::collections::HashSet::new();
@@ -4142,6 +4505,7 @@ fn all_keys_unique_kid(world: &mut UselessWorld) {
 // JWKS public-only and X.509 chain "again" steps
 // =============================================================================
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I build a JWKS containing the RSA public key with kid "([^"]+)"$"#)]
 fn build_jwks_rsa_public(world: &mut UselessWorld, kid: String) {
     let rsa = world.rsa.as_ref().expect("rsa not set");
@@ -4151,6 +4515,7 @@ fn build_jwks_rsa_public(world: &mut UselessWorld, kid: String) {
     world.jwks_output_1 = Some(builder.build().to_value());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(
     regex = r#"^I generate a certificate chain for domain "([^"]+)" with label "([^"]+)" again$"#
 )]
@@ -6050,6 +6415,7 @@ fn rustcrypto_signature_identical_to_recorded(world: &mut UselessWorld) {
 // Additional HMAC steps
 // =============================================================================
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when(regex = r#"^I generate another HMAC HS256 secret for label "([^"]+)"$"#)]
 fn gen_hmac_hs256_second(world: &mut UselessWorld, label: String) {
     let fx = world.factory.as_ref().expect("factory not set");
@@ -6106,6 +6472,7 @@ fn oauth_payload_has_scope(world: &mut UselessWorld) {
 // Additional RSA assertion steps
 // =============================================================================
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the PKCS8 PEM should differ")]
 fn pem_should_differ(world: &mut UselessWorld) {
     assert_ne!(
@@ -6119,12 +6486,14 @@ fn pem_should_differ(world: &mut UselessWorld) {
 // X.509 negative variant recording steps
 // =============================================================================
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I record the expired X.509 certificate DER")]
 fn record_expired_x509_der(world: &mut UselessWorld) {
     let expired = world.x509_expired.as_ref().expect("x509_expired not set");
     world.recorded_der = Some(expired.cert_der().to_vec());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the expired X.509 certificate DER should match the recorded one")]
 fn expired_x509_der_matches_recorded(world: &mut UselessWorld) {
     let expired = world.x509_expired.as_ref().expect("x509_expired not set");
@@ -6136,6 +6505,7 @@ fn expired_x509_der_matches_recorded(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I record the not-yet-valid X.509 certificate DER")]
 fn record_not_yet_valid_x509_der(world: &mut UselessWorld) {
     let nyv = world
@@ -6145,6 +6515,7 @@ fn record_not_yet_valid_x509_der(world: &mut UselessWorld) {
     world.recorded_der = Some(nyv.cert_der().to_vec());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the not-yet-valid X.509 certificate DER should match the recorded one")]
 fn not_yet_valid_x509_der_matches_recorded(world: &mut UselessWorld) {
     let nyv = world
@@ -6159,6 +6530,7 @@ fn not_yet_valid_x509_der_matches_recorded(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I record the wrong-key-usage X.509 certificate DER")]
 fn record_wrong_key_usage_x509_der(world: &mut UselessWorld) {
     let wku = world
@@ -6168,6 +6540,7 @@ fn record_wrong_key_usage_x509_der(world: &mut UselessWorld) {
     world.recorded_der = Some(wku.cert_der().to_vec());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the wrong-key-usage X.509 certificate DER should match the recorded one")]
 fn wrong_key_usage_x509_der_matches_recorded(world: &mut UselessWorld) {
     let wku = world
@@ -6182,6 +6555,7 @@ fn wrong_key_usage_x509_der_matches_recorded(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the not-yet-valid X.509 certificate DER should differ from the expired one")]
 fn not_yet_valid_differs_from_expired(world: &mut UselessWorld) {
     let nyv = world
@@ -6196,6 +6570,7 @@ fn not_yet_valid_differs_from_expired(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the wrong-key-usage X.509 certificate DER should differ from the expired one")]
 fn wrong_key_usage_differs_from_expired(world: &mut UselessWorld) {
     let wku = world
@@ -6212,6 +6587,7 @@ fn wrong_key_usage_differs_from_expired(world: &mut UselessWorld) {
 
 // --- Chain negative variant recording steps ---
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I record the unknown CA root DER")]
 fn record_unknown_ca_root_der(world: &mut UselessWorld) {
     let chain = world
@@ -6221,6 +6597,7 @@ fn record_unknown_ca_root_der(world: &mut UselessWorld) {
     world.recorded_der = Some(chain.root_cert_der().to_vec());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the unknown CA root DER should match the recorded one")]
 fn unknown_ca_root_der_matches_recorded(world: &mut UselessWorld) {
     let chain = world
@@ -6235,6 +6612,7 @@ fn unknown_ca_root_der_matches_recorded(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I record the revoked leaf DER")]
 fn record_revoked_leaf_der(world: &mut UselessWorld) {
     let chain = world
@@ -6244,6 +6622,7 @@ fn record_revoked_leaf_der(world: &mut UselessWorld) {
     world.recorded_der = Some(chain.leaf_cert_der().to_vec());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the revoked leaf DER should match the recorded one")]
 fn revoked_leaf_der_matches_recorded(world: &mut UselessWorld) {
     let chain = world
@@ -6258,6 +6637,7 @@ fn revoked_leaf_der_matches_recorded(world: &mut UselessWorld) {
     );
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[when("I record the hostname mismatch leaf DER")]
 fn record_hostname_mismatch_leaf_der(world: &mut UselessWorld) {
     let chain = world
@@ -6267,6 +6647,7 @@ fn record_hostname_mismatch_leaf_der(world: &mut UselessWorld) {
     world.recorded_der = Some(chain.leaf_cert_der().to_vec());
 }
 
+#[cfg(feature = "uk-bdd-keys")]
 #[then("the hostname mismatch leaf DER should match the recorded one")]
 fn hostname_mismatch_leaf_der_matches_recorded(world: &mut UselessWorld) {
     let chain = world
