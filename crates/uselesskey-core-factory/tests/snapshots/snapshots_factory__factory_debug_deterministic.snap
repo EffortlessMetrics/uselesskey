@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-core-factory/tests/snapshots_factory.rs
+assertion_line: 82
+expression: result
+---
+contains_factory: true
+contains_mode: true
+contains_cache_size: true
+seed_is_redacted: true
+no_raw_seed_bytes: true

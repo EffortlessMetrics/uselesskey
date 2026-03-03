@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-core/tests/snapshots_core.rs
+assertion_line: 90
+expression: result
+---
+empty_cache_size: 0
+after_one_insert: 1
+after_duplicate_insert: 1
+cached_value_matches: true
+after_clear: 0
