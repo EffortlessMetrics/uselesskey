@@ -28,12 +28,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   derivation stability across releases
 - **Security invariant tests** — dedicated tests verifying `Debug` impls never
   expose key material
+- **Fuzz targets** — cargo-fuzz targets for negative fixture functions, parser
+  stress, and seed edge cases
+- **Mutant kills** — targeted tests closing surviving mutants in core microcrates
+- **Error boundary tests** — edge-case and error-path coverage for factory,
+  cache, and adapter crates
+- **Feature-flag isolation tests** — verify each feature gate enables exactly
+  the expected API surface
+- **API surface stability tests** — smoke tests ensuring public API shape
+  does not regress
+- **Dependency guard tests** — license policy and RNG-pinning validation
+- **Concurrency stress tests** — thread-safety and cache coherence under
+  parallel access
+- **Comprehensive microcrate tests** — coverage gap fills for core-cache,
+  core-kid, core-negative, core-x509-spec, core-x509-derive, core-sink,
+  jwk-builder, jwk-shape, and more
+
+#### Refactored
+
+- Extracted `uselesskey-token-spec` microcrate for stable token specification
+  enum, shared across token generators
 
 #### Documentation
 
 - Polished README with quick-start examples, feature matrix, adapter guide,
   and negative-fixture documentation
 - Per-crate README files for crates.io readiness
+- Comprehensive architecture docs covering all 48 workspace crates
+- Publish-ready `Cargo.toml` metadata across all crates (homepage, categories,
+  keywords)
 
 ## [0.1.0] - 2026-02-17
 
