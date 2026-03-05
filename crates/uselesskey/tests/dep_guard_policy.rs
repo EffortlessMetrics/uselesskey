@@ -168,7 +168,7 @@ fn parse_deny_allowed_licenses(root: &Path) -> Vec<String> {
 /// - Parentheses are stripped before evaluation.
 fn license_expression_allowed(expr: &str, allowed: &[String]) -> bool {
     // Strip all parentheses for a simple flat evaluation.
-    let flat = expr.replace('(', "").replace(')', "");
+    let flat = expr.replace(['(', ')'], "");
 
     // Split on " AND " first — every conjunct must be satisfied.
     flat.split(" AND ").all(|conjunct| {
@@ -280,14 +280,14 @@ fn all_direct_deps_use_approved_licenses() {
     // Collect all direct dependency names from workspace crates
     let mut direct_dep_names: Vec<String> = Vec::new();
     for member_id in &workspace_members {
-        if let Some(pkg) = pkg_by_id.get(member_id) {
-            if let Some(deps) = pkg["dependencies"].as_array() {
-                for dep in deps {
-                    if let Some(name) = dep["name"].as_str() {
-                        if !direct_dep_names.contains(&name.to_string()) {
-                            direct_dep_names.push(name.to_string());
-                        }
-                    }
+        if let Some(pkg) = pkg_by_id.get(member_id)
+            && let Some(deps) = pkg["dependencies"].as_array()
+        {
+            for dep in deps {
+                if let Some(name) = dep["name"].as_str()
+                    && !direct_dep_names.contains(&name.to_string())
+                {
+                    direct_dep_names.push(name.to_string());
                 }
             }
         }
@@ -307,10 +307,10 @@ fn all_direct_deps_use_approved_licenses() {
         {
             continue;
         }
-        if let Some(license) = pkg["license"].as_str() {
-            if !license_expression_allowed(license, &allowed) {
-                violations.push(format!("{name}: {license}"));
-            }
+        if let Some(license) = pkg["license"].as_str()
+            && !license_expression_allowed(license, &allowed)
+        {
+            violations.push(format!("{name}: {license}"));
         }
         // Packages with `license = null` are typically path deps; skip them.
     }
