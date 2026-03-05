@@ -1,0 +1,9 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: result
+---
+kty: OKP
+alg: EdDSA
+crv: Ed25519
+use_field: sig
+has_kid: true

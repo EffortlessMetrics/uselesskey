@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: result
+---
+subject_cn: parsed.example.com
+issuer_cn: parsed.example.com
+is_self_signed: true
+version: 2

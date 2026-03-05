@@ -1,0 +1,9 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: result
+---
+kty: EC
+alg: ES256
+crv: P-256
+use_field: sig
+has_kid: true

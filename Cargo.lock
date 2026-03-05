@@ -3685,6 +3685,7 @@ name = "uselesskey"
 version = "0.1.0"
 dependencies = [
  "criterion",
+ "insta",
  "jsonwebtoken",
  "pem",
  "proptest",

@@ -1,0 +1,13 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: sizes
+---
+- algorithm: HS256
+  expected_bytes: 32
+  actual_bytes: 32
+- algorithm: HS384
+  expected_bytes: 48
+  actual_bytes: 48
+- algorithm: HS512
+  expected_bytes: 64
+  actual_bytes: 64

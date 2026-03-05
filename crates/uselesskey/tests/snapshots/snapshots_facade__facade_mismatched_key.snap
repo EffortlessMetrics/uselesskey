@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: result
+---
+original_public_der_len: 294
+mismatched_public_der_len: 294
+differs: true

@@ -1,0 +1,16 @@
+---
+source: crates/uselesskey/tests/snapshots_facade.rs
+expression: result
+---
+label: facade-ed25519
+algorithm: EdDSA
+private_pem:
+  first_line: "-----BEGIN PRIVATE KEY-----"
+  last_line: "-----END PRIVATE KEY-----"
+  line_count: 4
+public_pem:
+  first_line: "-----BEGIN PUBLIC KEY-----"
+  last_line: "-----END PUBLIC KEY-----"
+  line_count: 3
+private_der_len: 83
+public_der_len: 44
