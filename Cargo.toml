@@ -9,6 +9,7 @@ members = [
   "crates/uselesskey-core-factory",
   "crates/uselesskey-core-cache",
   "crates/uselesskey-core-hash",
+  "crates/uselesskey-core-artifact-id",
   "crates/uselesskey-core-id",
   "crates/uselesskey-core-seed",
   "crates/uselesskey-core-kid",
@@ -74,6 +75,7 @@ uselesskey-core-cache = { path = "crates/uselesskey-core-cache", version = "0.1.
 uselesskey-core-factory = { path = "crates/uselesskey-core-factory", version = "0.1.0" }
 uselesskey-core-jwks-order = { path = "crates/uselesskey-core-jwks-order", version = "0.1.0" }
 uselesskey-core-hash = { path = "crates/uselesskey-core-hash", version = "0.1.0", default-features = false }
+uselesskey-core-artifact-id = { path = "crates/uselesskey-core-artifact-id", version = "0.1.0", default-features = false }
 uselesskey-core-token-shape = { path = "crates/uselesskey-core-token-shape", version = "0.1.0" }
 uselesskey-core-id = { path = "crates/uselesskey-core-id", version = "0.1.0", default-features = false }
 uselesskey-core-seed = { path = "crates/uselesskey-core-seed", version = "0.1.0", default-features = false }

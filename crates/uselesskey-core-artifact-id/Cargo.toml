@@ -1,0 +1,26 @@
+[package]
+name = "uselesskey-core-artifact-id"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "Artifact identity primitives for deterministic fixture derivation in uselesskey."
+readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
+categories.workspace = true
+keywords = ["fixtures", "artifact", "determinism", "identity", "testing"]
+homepage.workspace = true
+documentation = "https://docs.rs/uselesskey-core-artifact-id"
+authors.workspace = true
+
+[dependencies]
+uselesskey-core-hash = { workspace = true }
+
+
+[features]
+default = ["std"]
+std = ["uselesskey-core-hash/std"]
+
+[package.metadata.docs.rs]
+features = ["std"]

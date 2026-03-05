@@ -3756,6 +3756,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "uselesskey-core-artifact-id"
+version = "0.1.0"
+dependencies = [
+ "uselesskey-core-hash",
+]
+
+[[package]]
 name = "uselesskey-core-base62"
 version = "0.1.0"
 dependencies = [
@@ -3817,6 +3824,7 @@ dependencies = [
  "proptest",
  "rstest",
  "serde",
+ "uselesskey-core-artifact-id",
  "uselesskey-core-hash",
  "uselesskey-core-seed",
 ]

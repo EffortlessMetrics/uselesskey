@@ -2,56 +2,16 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 //! Core identity and derivation primitives for uselesskey.
 //!
-//! Defines `ArtifactId` — the `(domain, label, spec_fingerprint, variant,
-//! derivation_version)` tuple that uniquely identifies each generated artifact.
-//! Provides deterministic seed derivation from a master seed and artifact id.
+//! Re-exports identity primitives from `uselesskey-core-artifact-id` and provides
+//! deterministic seed derivation from a master seed and artifact id.
 
 extern crate alloc;
 
-use alloc::string::String;
-use uselesskey_core_hash::Hasher;
-pub use uselesskey_core_hash::{hash32, write_len_prefixed};
-
+pub use uselesskey_core_hash::hash32;
+use uselesskey_core_hash::{Hasher, write_len_prefixed};
 pub use uselesskey_core_seed::Seed;
 
-/// Domain strings are used to separate unrelated fixture types.
-pub type ArtifactDomain = &'static str;
-
-/// Version tag for the derivation scheme.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, PartialOrd, Ord)]
-pub struct DerivationVersion(pub u16);
-
-impl DerivationVersion {
-    pub const V1: Self = Self(1);
-}
-
-/// Identifier used for deterministic artifact cache entries.
-#[derive(Clone, Debug, Eq, PartialEq, Hash, PartialOrd, Ord)]
-pub struct ArtifactId {
-    pub domain: ArtifactDomain,
-    pub label: String,
-    pub spec_fingerprint: [u8; 32],
-    pub variant: String,
-    pub derivation_version: DerivationVersion,
-}
-
-impl ArtifactId {
-    pub fn new(
-        domain: ArtifactDomain,
-        label: impl Into<String>,
-        spec_bytes: &[u8],
-        variant: impl Into<String>,
-        derivation_version: DerivationVersion,
-    ) -> Self {
-        Self {
-            domain,
-            label: label.into(),
-            spec_fingerprint: *hash32(spec_bytes).as_bytes(),
-            variant: variant.into(),
-            derivation_version,
-        }
-    }
-}
+pub use uselesskey_core_artifact_id::{ArtifactDomain, ArtifactId, DerivationVersion};
 
 /// Derive a per-artifact seed from the master seed and the artifact identifier.
 pub fn derive_seed(master: &Seed, id: &ArtifactId) -> Seed {
@@ -83,37 +43,6 @@ fn derive_seed_v1(master: &Seed, id: &ArtifactId) -> Seed {
 #[cfg(test)]
 mod tests {
     use super::{ArtifactId, DerivationVersion, Seed, derive_seed, hash32};
-
-    #[test]
-    fn artifact_id_fingerprints_spec_bytes() {
-        let spec = [1u8, 2, 3, 4, 5];
-        let id = ArtifactId::new(
-            "domain:test",
-            "label",
-            &spec,
-            "variant",
-            DerivationVersion::V1,
-        );
-
-        let expected = *hash32(&spec).as_bytes();
-        assert_eq!(id.spec_fingerprint, expected);
-    }
-
-    #[test]
-    fn artifact_id_preserves_fields() {
-        let id = ArtifactId::new(
-            "domain:test",
-            "my-label",
-            b"spec",
-            "my-variant",
-            DerivationVersion::V1,
-        );
-
-        assert_eq!(id.domain, "domain:test");
-        assert_eq!(id.label, "my-label");
-        assert_eq!(id.variant, "my-variant");
-        assert_eq!(id.derivation_version, DerivationVersion::V1);
-    }
 
     #[test]
     fn derive_seed_unknown_version_is_deterministic() {
@@ -242,7 +171,6 @@ mod tests {
         let copy = v;
         assert_eq!(v, copy);
 
-        // Verify Hash is implemented.
         let mut h = std::collections::hash_map::DefaultHasher::new();
         v.hash(&mut h);
         let hash1 = h.finish();
