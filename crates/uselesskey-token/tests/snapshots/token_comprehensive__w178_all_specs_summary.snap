@@ -1,0 +1,11 @@
+---
+source: crates/uselesskey-token/tests/token_comprehensive.rs
+expression: result
+---
+api_key_len: 40
+api_key_prefix: uk_test_
+bearer_len: 43
+bearer_is_base64url: true
+oauth_segment_count: 3
+oauth_header_alg: RS256
+specs_all_distinct: true

@@ -1,0 +1,11 @@
+---
+source: crates/uselesskey-token/tests/token_comprehensive.rs
+expression: meta
+---
+label: snap-bearer-w178
+kind: bearer
+value_len: 43
+prefix: GmuB-3A7
+has_dots: false
+dot_count: 0
+auth_scheme: Bearer

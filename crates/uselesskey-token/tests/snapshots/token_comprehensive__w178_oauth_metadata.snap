@@ -1,0 +1,11 @@
+---
+source: crates/uselesskey-token/tests/token_comprehensive.rs
+expression: meta
+---
+label: snap-oauth-w178
+kind: oauth_access_token
+value_len: 253
+prefix: eyJhbGci
+has_dots: true
+dot_count: 2
+auth_scheme: Bearer
