@@ -102,6 +102,7 @@ blake3 = "1.8.3"
 dashmap = "6.1.0"
 
 # RNG — pinned to 0.6/0.3: rsa 0.9 and ed25519-dalek 2 require rand_core 0.6
+rand = "0.8.5"
 rand_core = "0.6.4"
 rand_chacha = "0.3.1"
 
@@ -112,9 +113,9 @@ uselesskey-core-sink = { path = "crates/uselesskey-core-sink", version = "0.1.0"
 # testing
 proptest = "1.10.0"
 rstest = "0.26.1"
-insta = { version = "1", features = ["yaml", "redactions"] }
-criterion = { version = "0.5", default-features = false, features = ["html_reports", "cargo_bench_support"] }
-trybuild = "1"
+insta = { version = "1.46.3", features = ["yaml", "redactions"] }
+criterion = { version = "0.8.2", default-features = false, features = ["html_reports", "cargo_bench_support"] }
+trybuild = "1.0.116"
 
 # CLI helpers (xtask)
 anyhow = "1.0.102"
@@ -122,7 +123,7 @@ clap = { version = "4.5.60", features = ["derive"] }
 
 # BDD
 cucumber = { version = "0.22.1", features = ["macros"] }
-tokio = { version = "1.49.0", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.50.0", features = ["macros", "rt-multi-thread"] }
 
 # RSA
 rsa = { version = "0.9.10", features = ["pem"] }
@@ -137,15 +138,15 @@ serde_json = "1.0.149"
 base64 = "0.22.1"
 
 # JWT
-jsonwebtoken = { version = "10", features = ["use_pem", "rust_crypto"] }
+jsonwebtoken = { version = "10.3.0", features = ["use_pem", "rust_crypto"] }
 
 # TLS
-rustls = { version = "0.23", default-features = false, features = ["std", "tls12", "ring"] }
-rustls-pki-types = "1"
+rustls = { version = "0.23.37", default-features = false, features = ["std", "tls12", "ring"] }
+rustls-pki-types = "1.14.0"
 
 # Crypto backends
-aws-lc-rs = { version = "1", default-features = false, features = ["alloc", "non-fips"] }
-ring = { version = "0.17", default-features = false, features = ["std"] }
+aws-lc-rs = { version = "1.16.1", default-features = false, features = ["alloc", "non-fips"] }
+ring = { version = "0.17.14", default-features = false, features = ["std"] }
 
 [profile.dev]
 # RSA keygen can be slow in debug; opt-level 2 keeps BDD/RSA tests from looking hung.

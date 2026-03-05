@@ -6,6 +6,8 @@ use std::process::{Command, Stdio};
 
 use anyhow::{Context, Result, bail};
 use clap::{Parser, Subcommand};
+use indicatif::{ProgressBar, ProgressStyle};
+use owo_colors::OwoColorize;
 use uselesskey_feature_grid::{BDD_FEATURE_MATRIX, CORE_FEATURE_MATRIX};
 
 mod plan;
@@ -38,7 +40,13 @@ enum Cmd {
     Nextest,
     /// Run cargo-deny checks (requires `cargo-deny` installed).
     Deny,
-    /// Run the common CI pipeline: fmt + clippy + tests.
+    /// Run spell check (requires `typos` installed).
+    Typos {
+        /// Fix typos automatically.
+        #[arg(long)]
+        fix: bool,
+    },
+    /// Run the common CI pipeline: fmt + clippy + tests + typos + deny.
     Ci,
     /// Run the feature matrix checks.
     FeatureMatrix,
@@ -71,6 +79,28 @@ enum Cmd {
         #[arg(last = true)]
         args: Vec<String>,
     },
+    /// Auto-fix formatting and clippy warnings.
+    LintFix {
+        /// Check only (no mutations). Equivalent to fmt --check + clippy.
+        #[arg(long)]
+        check: bool,
+        /// Skip clippy (fmt only).
+        #[arg(long)]
+        no_clippy: bool,
+    },
+    /// Pre-push quality gate: fmt check + cargo check + clippy + test compile.
+    Gate {
+        /// Exists for symmetry; behavior is always non-mutating.
+        #[arg(long)]
+        check: bool,
+    },
+    /// Configure git hooks (sets core.hooksPath to .githooks).
+    Setup,
+    /// Lint commit message (used by git hooks).
+    CommitLint {
+        /// Path to the commit message file.
+        message_file: PathBuf,
+    },
 }
 
 fn main() -> Result<()> {
@@ -82,6 +112,7 @@ fn main() -> Result<()> {
         Cmd::Test => test(),
         Cmd::Nextest => nextest(),
         Cmd::Deny => deny(),
+        Cmd::Typos { fix } => typos(fix),
         Cmd::Ci => ci(),
         Cmd::FeatureMatrix => feature_matrix_cmd(),
         Cmd::NoBlob => no_blob_gate(),
@@ -95,11 +126,19 @@ fn main() -> Result<()> {
         Cmd::Publish => publish(),
         Cmd::Mutants => run_mutants(PUBLISH_CRATES),
         Cmd::Fuzz { target, args } => fuzz(target.as_deref(), &args),
+        Cmd::LintFix { check, no_clippy } => lint_fix(check, no_clippy),
+        Cmd::Gate { check: _ } => gate(),
+        Cmd::Setup => setup(),
+        Cmd::CommitLint { message_file } => commit_lint(&message_file),
     }
 }
 
 fn run(cmd: &mut Command) -> Result<()> {
-    eprintln!("+ {:?}", cmd);
+    eprintln!(
+        "{} {:?}",
+        " RUN ".on_bright_blue().black().bold(),
+        cmd.bold()
+    );
     let status = cmd
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
@@ -107,7 +146,10 @@ fn run(cmd: &mut Command) -> Result<()> {
         .context("failed to spawn command")?;
 
     if !status.success() {
-        bail!("command failed with status: {status}");
+        bail!(
+            "{} command failed with status: {status}",
+            " ERR ".on_bright_red().black().bold()
+        );
     }
     Ok(())
 }
@@ -158,9 +200,17 @@ fn bdd() -> Result<()> {
 fn bdd_matrix() -> Result<()> {
     let mut runner = receipt::Runner::new("target/xtask/receipt.json");
 
+    let pb = ProgressBar::new(BDD_FEATURE_MATRIX.len() as u64);
+    pb.set_style(
+        ProgressStyle::with_template("[{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} {msg}")
+            .unwrap()
+            .progress_chars("#>-"),
+    );
+
     // Define the feature sets to run
     for feature_set in BDD_FEATURE_MATRIX {
         let name = feature_set.name;
+        pb.set_message(format!("running matrix: {name}"));
         let args = feature_set.cargo_args;
         let step_name = format!("bdd-matrix:{name}");
         let result = runner.step(&step_name, None, || {
@@ -169,18 +219,21 @@ fn bdd_matrix() -> Result<()> {
             for arg in args {
                 cmd.arg(arg);
             }
-            run(&mut cmd)
+            run_quietly(&mut cmd)
         });
 
         match result {
             Ok(()) => runner.add_bdd_matrix(name, "ok"),
             Err(err) => {
                 runner.add_bdd_matrix(name, "failed");
+                pb.finish_with_message(format!("failed matrix: {name}"));
                 return Err(err);
             }
         }
+        pb.inc(1);
     }
 
+    pb.finish_with_message("BDD matrix complete");
     runner.summary();
     runner.write()
 }
@@ -190,7 +243,10 @@ fn ci() -> Result<()> {
     let result = run_ci_plan(&mut runner);
     runner.summary();
     if let Err(err) = runner.write() {
-        eprintln!("failed to write receipt: {err}");
+        eprintln!(
+            "{} failed to write receipt: {err}",
+            " WARN ".on_yellow().black().bold()
+        );
         if result.is_ok() {
             return Err(err);
         }
@@ -201,6 +257,8 @@ fn ci() -> Result<()> {
 fn run_ci_plan(runner: &mut receipt::Runner) -> Result<()> {
     runner.step("fmt", None, || fmt(false))?;
     runner.step("clippy", None, clippy)?;
+    runner.step("typos", None, || typos(false))?;
+    runner.step("deny", None, deny)?;
     runner.step("tests", None, test)?;
 
     run_feature_matrix(runner)?;
@@ -318,21 +376,44 @@ fn publish_check() -> Result<()> {
     Ok(())
 }
 
+fn run_quietly(cmd: &mut Command) -> Result<()> {
+    let output = cmd.output().context("failed to spawn command")?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        bail!("command failed with status {}: {stderr}", output.status);
+    }
+    Ok(())
+}
+
+fn typos(fix: bool) -> Result<()> {
+    let mut cmd = Command::new("typos");
+    if fix {
+        cmd.arg("--write-changes");
+    }
+    run(&mut cmd)
+}
+
 fn publish() -> Result<()> {
+    let pb = ProgressBar::new(PUBLISH_CRATES.len() as u64);
+    pb.set_style(
+        ProgressStyle::with_template("[{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} {msg}")
+            .unwrap()
+            .progress_chars("#>-"),
+    );
+
     for name in PUBLISH_CRATES {
-        eprintln!("==> Publishing {name}");
+        pb.set_message(format!("publishing {name}"));
         let mut success = false;
         for attempt in 1..=3 {
-            eprintln!("    Attempt {attempt} for {name}...");
             let output = Command::new("cargo")
                 .args(["publish", "-p", name])
-                .stdout(Stdio::inherit())
+                .stdout(Stdio::null())
                 .stderr(Stdio::piped())
                 .output()
                 .with_context(|| format!("failed to run cargo publish for {name}"))?;
 
             if output.status.success() {
-                eprintln!("    {name} published successfully.");
                 success = true;
                 break;
             }
@@ -343,19 +424,25 @@ fn publish() -> Result<()> {
                 || stderr.to_lowercase().contains("not found");
 
             if retriable {
-                eprintln!("    Dependency indexing race detected. Waiting 60s before retry...");
+                pb.set_message(format!(
+                    "indexing race for {name} (attempt {attempt})... waiting"
+                ));
                 std::thread::sleep(std::time::Duration::from_secs(60));
             } else {
                 eprint!("{stderr}");
+                pb.finish_with_message(format!("failed {name}"));
                 bail!("{name} publish failed with a non-retriable error");
             }
         }
         if !success {
+            pb.finish_with_message(format!("failed {name} after 3 attempts"));
             bail!("{name} failed after 3 attempts");
         }
-        eprintln!("    Sleeping 30s for crates.io indexing...");
+        pb.set_message(format!("published {name}, waiting for indexing"));
         std::thread::sleep(std::time::Duration::from_secs(30));
+        pb.inc(1);
     }
+    pb.finish_with_message("all crates published successfully");
     Ok(())
 }
 
@@ -1153,6 +1240,133 @@ fn dep_guard() -> Result<()> {
             .collect::<Vec<_>>()
             .join(", ")
     );
+}
+
+fn lint_fix(check: bool, no_clippy: bool) -> Result<()> {
+    if check {
+        fmt(false)?;
+        if !no_clippy {
+            clippy()?;
+        }
+        return Ok(());
+    }
+
+    fmt(true)?;
+
+    if !no_clippy {
+        // Best-effort clippy auto-fix, then strict verify.
+        let fix_status = Command::new("cargo")
+            .args([
+                "clippy",
+                "--workspace",
+                "--all-targets",
+                "--all-features",
+                "--fix",
+                "--allow-dirty",
+                "--allow-staged",
+            ])
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .status();
+        if let Ok(s) = fix_status
+            && !s.success()
+        {
+            eprintln!("clippy --fix exited non-zero (best-effort); running strict verify...");
+        }
+        clippy()?;
+    }
+
+    Ok(())
+}
+
+fn gate() -> Result<()> {
+    let mut runner = receipt::Runner::new("target/xtask/receipt.json");
+    let result = run_gate(&mut runner);
+    runner.summary();
+    if let Err(err) = runner.write() {
+        eprintln!("failed to write receipt: {err}");
+        if result.is_ok() {
+            return Err(err);
+        }
+    }
+    result
+}
+
+fn run_gate(runner: &mut receipt::Runner) -> Result<()> {
+    runner.step("fmt", None, || fmt(false))?;
+    runner.step("check", None, || {
+        run(Command::new("cargo").args(["check", "--workspace", "--all-targets", "--all-features"]))
+    })?;
+    runner.step("clippy", None, clippy)?;
+    runner.step("test-compile", None, || {
+        run(Command::new("cargo").args([
+            "test",
+            "--workspace",
+            "--all-features",
+            "--exclude",
+            "uselesskey-bdd",
+            "--no-run",
+        ]))
+    })?;
+    Ok(())
+}
+
+fn setup() -> Result<()> {
+    eprintln!(
+        "{} setting up git hooks...",
+        " STEP ".on_bright_blue().black().bold()
+    );
+
+    // Try installing lefthook if available
+    let has_lefthook = Command::new("lefthook")
+        .arg("version")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .is_ok_and(|s| s.success());
+
+    if has_lefthook {
+        eprintln!(
+            "{} lefthook detected, installing...",
+            " INFO ".on_blue().black().bold()
+        );
+        run(Command::new("lefthook").arg("install"))?;
+    } else {
+        eprintln!(
+            "{} lefthook not found, falling back to .githooks",
+            " WARN ".on_yellow().black().bold()
+        );
+        run(Command::new("git").args(["config", "core.hooksPath", ".githooks"]))?;
+    }
+
+    eprintln!(
+        "{} setup complete!",
+        " DONE ".on_bright_green().black().bold()
+    );
+    Ok(())
+}
+
+fn commit_lint(message_file: &Path) -> Result<()> {
+    let content = fs::read_to_string(message_file).context("failed to read commit message")?;
+    let first_line = content.lines().next().unwrap_or("");
+
+    // Simple conventional commit regex
+    let re = regex::Regex::new(
+        r"^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?!?: .+$",
+    )
+    .unwrap();
+
+    if !re.is_match(first_line) {
+        eprintln!(
+            "{} invalid commit message format.",
+            " ERR ".on_bright_red().black().bold()
+        );
+        eprintln!("expected: <type>(<scope>)?: <description>");
+        eprintln!("types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert");
+        bail!("invalid commit message");
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]

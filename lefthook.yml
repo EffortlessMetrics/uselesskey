@@ -1,0 +1,22 @@
+# Lefthook configuration
+# https://github.com/evilmartians/lefthook
+
+pre-commit:
+  parallel: true
+  commands:
+    fmt:
+      run: cargo xtask fmt --fix
+    clippy:
+      run: cargo xtask clippy
+    typos:
+      run: cargo xtask typos
+
+commit-msg:
+  commands:
+    lint:
+      run: cargo xtask commit-lint {1}
+
+pre-push:
+  commands:
+    gate:
+      run: cargo xtask gate

@@ -62,6 +62,11 @@ cargo xtask feature-matrix  # Run feature matrix checks (default, no-default, ea
 cargo xtask publish-check   # Run publish dry-runs in dependency order
 cargo xtask no-blob         # Enforce no secret-shaped blobs in test/fixture paths
 cargo xtask nextest         # Run tests via cargo-nextest (requires cargo-nextest)
+cargo xtask lint-fix        # Auto-fix fmt + clippy, then verify
+cargo xtask lint-fix --check # Check-only (no mutations)
+cargo xtask lint-fix --no-clippy # fmt only
+cargo xtask gate            # Pre-push quality gate: fmt check + cargo check + clippy + test compile
+cargo xtask setup           # Configure git hooks (sets core.hooksPath to .githooks)
 ```
 
 Run a single test:
@@ -129,3 +134,20 @@ Adapter crates (e.g. `uselesskey-jsonwebtoken`) are separate crates, not feature
 - `clippy.toml` - MSRV 1.92
 - `deny.toml` - Allowed licenses: MIT, Apache-2.0, BSD-3-Clause, ISC, CC0-1.0
 - `mutants.toml` - Mutation testing exclusions
+
+## Git Hooks
+
+The repo ships pre-commit and pre-push hooks in `.githooks/`. Activate them once:
+
+```bash
+cargo xtask setup   # sets core.hooksPath to .githooks
+```
+
+- **pre-commit**: runs `cargo xtask lint-fix` when staged `.rs`/`Cargo.toml`/`Cargo.lock` files are present, then re-stages the touched files.
+- **pre-push**: runs `cargo xtask gate --check` (fmt check + cargo check + clippy + test compile).
+
+### Agent workflow rules
+
+- Never use `--no-verify` to bypass hooks.
+- Rely on the pre-commit hook to auto-fix formatting; do not manually run `cargo fmt` before committing.
+- If a hook fails, fix the underlying issue and retry.
