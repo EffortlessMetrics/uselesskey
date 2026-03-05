@@ -164,6 +164,42 @@ mod tests {
         assert_ne!(out1, out2);
     }
 
+    #[test]
+    fn truncate_der_noop_when_len_exceeds_input() {
+        let der = vec![0x30, 0x82];
+        let out = truncate_der(&der, 100);
+        assert_eq!(
+            out, der,
+            "truncate with len >= der.len() must return original"
+        );
+    }
+
+    #[test]
+    fn flip_byte_noop_when_offset_exceeds_input() {
+        let der = vec![0x30, 0x82];
+        let out = flip_byte(&der, 100);
+        assert_eq!(
+            out, der,
+            "flip with offset >= der.len() must return original"
+        );
+    }
+
+    #[test]
+    fn derived_truncate_len_bytes_nonzero_for_large_input() {
+        // Catches `return 0` and `return 1` mutations when tested
+        // through corrupt_der_deterministic arm 0.
+        let mut digest = [0u8; 32];
+        digest[2] = 50;
+        // len=10, span=9, 50%9=5
+        assert_eq!(derived_truncate_len_bytes(10, &digest), 5);
+    }
+
+    #[test]
+    fn derived_truncate_len_bytes_zero_len_returns_zero() {
+        let digest = [0xFF; 32];
+        assert_eq!(derived_truncate_len_bytes(0, &digest), 0);
+    }
+
     fn find_der_variant(target: u8) -> String {
         use uselesskey_core_hash::hash32;
 

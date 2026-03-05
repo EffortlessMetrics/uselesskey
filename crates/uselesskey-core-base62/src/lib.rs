@@ -104,4 +104,53 @@ mod tests {
         assert_eq!(value.len(), 32);
         assert!(value.chars().all(|c| c.is_ascii_alphanumeric()));
     }
+
+    #[test]
+    fn output_uses_diverse_alphabet() {
+        // Catches `% 62` → `/ 62` mutation: division would yield only
+        // indices 0–3, producing at most 4 distinct characters.
+        let mut rng = ChaCha20Rng::from_seed([42u8; 32]);
+        let out = random_base62(&mut rng, 256);
+        let unique: std::collections::HashSet<char> = out.chars().collect();
+        assert!(
+            unique.len() > 10,
+            "expected diverse output, got {} unique chars",
+            unique.len()
+        );
+    }
+
+    #[test]
+    fn fallback_path_uses_modulo_not_division() {
+        // All bytes = 255 → rejected by accept path → fallback runs.
+        // Correct: (255 % 62) = 7 → alphabet[7] = 'H'.
+        // Mutation / 62: (255 / 62) = 4 → alphabet[4] = 'E'.
+        struct AllMaxRng;
+
+        impl RngCore for AllMaxRng {
+            fn next_u32(&mut self) -> u32 {
+                u32::MAX
+            }
+
+            fn next_u64(&mut self) -> u64 {
+                u64::MAX
+            }
+
+            fn fill_bytes(&mut self, dest: &mut [u8]) {
+                dest.fill(255);
+            }
+
+            fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_core::Error> {
+                self.fill_bytes(dest);
+                Ok(())
+            }
+        }
+
+        let mut rng = AllMaxRng;
+        let out = random_base62(&mut rng, 4);
+        // 255 % 62 = 7, BASE62_ALPHABET[7] = 'H'
+        assert!(
+            out.chars().all(|c| c == 'H'),
+            "expected all 'H' from fallback, got {out}"
+        );
+    }
 }
