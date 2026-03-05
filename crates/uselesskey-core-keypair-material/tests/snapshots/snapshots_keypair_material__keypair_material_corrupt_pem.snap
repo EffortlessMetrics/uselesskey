@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-core-keypair-material/tests/snapshots_keypair_material.rs
+expression: result
+---
+variant: BadHeader
+original_pem_len: 59
+corrupted_pem_len: 61
+differs_from_original: true

@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-core-keypair-material/tests/snapshots_keypair_material.rs
+expression: result
+---
+kid_len: 16
+is_base64url: true
+is_deterministic: true

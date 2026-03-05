@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-core-keypair-material/tests/snapshots_keypair_material.rs
+expression: result
+---
+pkcs8_der_len: 4
+pkcs8_pem_len: 59
+spki_der_len: 4
+spki_pem_len: 57

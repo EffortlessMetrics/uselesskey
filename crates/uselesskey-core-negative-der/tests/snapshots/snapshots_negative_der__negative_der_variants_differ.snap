@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-core-negative-der/tests/snapshots_negative_der.rs
+expression: result
+---
+variant_a: "corrupt:variant-a"
+variant_b: "corrupt:variant-b"
+results_differ: true

@@ -1,0 +1,19 @@
+---
+source: crates/uselesskey-core-keypair-material/tests/snapshots_keypair_material.rs
+expression: results
+---
+- original_der_len: 4
+  requested_len: 0
+  result_len: 0
+- original_der_len: 4
+  requested_len: 1
+  result_len: 1
+- original_der_len: 4
+  requested_len: 2
+  result_len: 2
+- original_der_len: 4
+  requested_len: 4
+  result_len: 4
+- original_der_len: 4
+  requested_len: 10
+  result_len: 4

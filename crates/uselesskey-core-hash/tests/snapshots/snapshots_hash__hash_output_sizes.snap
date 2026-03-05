@@ -1,0 +1,16 @@
+---
+source: crates/uselesskey-core-hash/tests/snapshots_hash.rs
+expression: results
+---
+- input_description: empty
+  digest_byte_len: 32
+  hex_len: 64
+- input_description: single_byte
+  digest_byte_len: 32
+  hex_len: 64
+- input_description: short_string
+  digest_byte_len: 32
+  hex_len: 64
+- input_description: fixture_label
+  digest_byte_len: 32
+  hex_len: 64

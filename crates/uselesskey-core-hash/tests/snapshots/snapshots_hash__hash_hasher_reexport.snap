@@ -1,0 +1,6 @@
+---
+source: crates/uselesskey-core-hash/tests/snapshots_hash.rs
+expression: result
+---
+new_hasher_digest_len: 32
+update_then_finalize_len: 32

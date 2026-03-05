@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-core-token/tests/snapshots_token_core.rs
+expression: results
+---
+- kind: ApiKey
+  same_seed_matches: true
+- kind: Bearer
+  same_seed_matches: true
+- kind: OAuthAccessToken
+  same_seed_matches: true

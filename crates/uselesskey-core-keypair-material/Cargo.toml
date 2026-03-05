@@ -19,7 +19,9 @@ uselesskey-core = { path = "../uselesskey-core", version = "0.1.0" }
 uselesskey-core-kid.workspace = true
 
 [dev-dependencies]
+insta.workspace = true
 proptest.workspace = true
+serde.workspace = true
 
 [package.metadata.docs.rs]
 all-features = true

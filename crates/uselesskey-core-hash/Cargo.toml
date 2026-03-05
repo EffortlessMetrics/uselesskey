@@ -18,7 +18,9 @@ authors.workspace = true
 blake3.workspace = true
 
 [dev-dependencies]
+insta.workspace = true
 proptest.workspace = true
+serde.workspace = true
 
 [features]
 default = ["std"]

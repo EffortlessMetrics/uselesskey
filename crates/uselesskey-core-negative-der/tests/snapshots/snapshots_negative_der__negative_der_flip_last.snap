@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-core-negative-der/tests/snapshots_negative_der.rs
+expression: result
+---
+original_len: 8
+flip_offset: 7
+result_len: 8
+bytes_changed: 1
