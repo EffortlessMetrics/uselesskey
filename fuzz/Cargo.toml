@@ -288,3 +288,33 @@ name = "fuzz_factory_concurrent"
 path = "fuzz_targets/fuzz_factory_concurrent.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "fuzz_seed_edge_cases"
+path = "fuzz_targets/fuzz_seed_edge_cases.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_label_edge_cases"
+path = "fuzz_targets/fuzz_label_edge_cases.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_factory_stress"
+path = "fuzz_targets/fuzz_factory_stress.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_negative_fixture_edge"
+path = "fuzz_targets/fuzz_negative_fixture_edge.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_jwk_serialization"
+path = "fuzz_targets/fuzz_jwk_serialization.rs"
+test = false
+doc = false
