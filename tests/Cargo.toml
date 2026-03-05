@@ -166,8 +166,15 @@ kid-stability = [
     "dep:uselesskey-jwk",
 ]
 
+# Error boundary and edge-case tests
+error-boundaries = [
+    "dep:uselesskey-rsa",
+    "dep:uselesskey-ecdsa",
+    "dep:uselesskey-ed25519",
+]
+
 # All integration tests
-all = ["jwt", "tls", "crypto-backend", "e2e", "key-rotation", "cross-adapter", "determinism", "determinism-regression", "concurrency", "kid-stability", "compile-fail", "builder-patterns", "pem-der-format"]
+all = ["jwt", "tls", "crypto-backend", "e2e", "key-rotation", "cross-adapter", "determinism", "determinism-regression", "concurrency", "kid-stability", "compile-fail", "builder-patterns", "pem-der-format", "error-boundaries"]
 
 # PEM/DER format validation tests
 pem-der-format = [
@@ -261,3 +268,10 @@ path = "msrv_check.rs"
 name = "determinism_regression"
 path = "determinism_regression.rs"
 required-features = ["determinism-regression"]
+
+[[test]]
+name = "error_boundaries"
+path = "error_boundaries.rs"
+required-features = ["error-boundaries"]
+
+
