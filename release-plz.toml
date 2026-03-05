@@ -1,0 +1,48 @@
+# release-plz configuration
+# https://release-plz.com/docs/config
+
+[workspace]
+# Update the changelog of the workspace root.
+update_changelog = true
+# Use conventional commits to update the changelog.
+conventional_commits = true
+
+[changelog]
+# Header for the changelog.
+header = """
+# Changelog
+All notable changes to this project will be documented in this file.
+"""
+
+# Categorize commits by type.
+[[changelog.commit_parsers]]
+message = "^feat"
+group = "Added"
+
+[[changelog.commit_parsers]]
+message = "^fix"
+group = "Fixed"
+
+[[changelog.commit_parsers]]
+message = "^doc"
+group = "Documentation"
+
+[[changelog.commit_parsers]]
+message = "^perf"
+group = "Performance"
+
+[[changelog.commit_parsers]]
+message = "^refactor"
+group = "Refactor"
+
+[[changelog.commit_parsers]]
+message = "^style"
+group = "Style"
+
+[[changelog.commit_parsers]]
+message = "^test"
+group = "Testing"
+
+[[changelog.commit_parsers]]
+message = "^chore"
+group = "Other"

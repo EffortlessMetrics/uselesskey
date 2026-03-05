@@ -1,0 +1,29 @@
+[files]
+extend-exclude = [
+    ".git/",
+    "target/",
+    "Cargo.lock",
+    "mutants.out/",
+    "node_modules/",
+]
+
+[default.extend-words]
+# Add project-specific words to ignore
+uselesskey = "uselesskey"
+pkcs8 = "pkcs8"
+jwk = "jwk"
+jwks = "jwks"
+kid = "kid"
+hmac = "hmac"
+ecdsa = "ecdsa"
+ed25519 = "ed25519"
+rustcrypto = "rustcrypto"
+rustls = "rustls"
+proptest = "proptest"
+rstest = "rstest"
+anyhow = "anyhow"
+xtask = "xtask"
+indicatif = "indicatif"
+nextest = "nextest"
+release-plz = "release-plz"
+lefthook = "lefthook"

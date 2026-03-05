@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACMR -- '*.rs' 'Cargo.toml' 'Cargo.lock')
+[ -z "$STAGED" ] && exit 0
+
+cargo xtask lint-fix
+
+echo "$STAGED" | while IFS= read -r f; do [ -f "$f" ] && git add "$f"; done

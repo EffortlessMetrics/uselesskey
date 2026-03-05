@@ -9,6 +9,17 @@
   - `cargo install cargo-nextest`
   - `cargo install cargo-deny`
 
+## Git Hooks (one-time)
+
+```bash
+cargo xtask setup
+```
+
+This sets `core.hooksPath` to `.githooks`, enabling:
+
+- **pre-commit**: auto-formats and runs clippy fix on staged Rust/Cargo files.
+- **pre-push**: runs the quality gate (fmt check + cargo check + clippy + test compile).
+
 ## Common commands
 
 This repository uses `xtask` for automation. You can run these commands via `cargo xtask <cmd>`.
@@ -30,6 +41,10 @@ cargo xtask no-blob         # Enforce no secret-shaped blobs in test/fixture pat
 cargo xtask dep-guard       # Guard against multiple versions of pinned deps
 cargo xtask coverage        # Run code coverage (requires cargo-llvm-cov)
 cargo xtask nextest         # Run tests via cargo-nextest (requires cargo-nextest)
+cargo xtask lint-fix        # Auto-fix fmt + clippy, then verify
+cargo xtask lint-fix --check # Check-only (no mutations)
+cargo xtask gate            # Pre-push quality gate: fmt check + cargo check + clippy + test compile
+cargo xtask setup           # Configure git hooks (sets core.hooksPath to .githooks)
 ```
 
 ## Architecture

@@ -23,3 +23,6 @@ nul
 
 # Build logs
 output.txt
+
+.gemini/
+gha-creds-*.json
