@@ -7,11 +7,11 @@ use uselesskey_core::negative::CorruptPem;
 use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
 
 // =========================================================================
-// Corrupted PEM is unparseable for both curves
+// Corrupted PEM is unparsable for both curves
 // =========================================================================
 
 #[test]
-fn es256_corrupt_pem_bad_header_is_unparseable() {
+fn es256_corrupt_pem_bad_header_is_unparsable() {
     let fx = fx();
     let kp = fx.ecdsa("corrupt-hdr-256", EcdsaSpec::es256());
     let bad = kp.private_key_pkcs8_pem_corrupt(CorruptPem::BadHeader);
@@ -25,7 +25,7 @@ fn es256_corrupt_pem_bad_header_is_unparseable() {
 }
 
 #[test]
-fn es384_corrupt_pem_bad_header_is_unparseable() {
+fn es384_corrupt_pem_bad_header_is_unparsable() {
     let fx = fx();
     let kp = fx.ecdsa("corrupt-hdr-384", EcdsaSpec::es384());
     let bad = kp.private_key_pkcs8_pem_corrupt(CorruptPem::BadHeader);

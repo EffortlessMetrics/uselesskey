@@ -1,6 +1,6 @@
 //! Negative fixture validation tests for Ed25519 keys.
 //!
-//! Ensures ALL CorruptPem variants produce unparseable output,
+//! Ensures ALL CorruptPem variants produce unparsable output,
 //! corrupt DER fails parsing, mismatched keys fail signature
 //! verification, and negative fixtures are deterministic.
 
