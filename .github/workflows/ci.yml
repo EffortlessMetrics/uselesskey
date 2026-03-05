@@ -46,6 +46,12 @@ jobs:
       - name: Install cargo-mutants
         run: cargo install cargo-mutants --locked
 
+      - name: Install typos-cli
+        run: cargo install typos-cli --locked
+
+      - name: Install cargo-deny
+        run: cargo install cargo-deny --locked
+
       - name: Fetch base branch
         if: github.base_ref != ''
         run: git fetch origin ${{ github.base_ref }}
@@ -88,6 +94,12 @@ jobs:
 
       - name: Install cargo-mutants
         run: cargo install cargo-mutants --locked
+
+      - name: Install typos-cli
+        run: cargo install typos-cli --locked
+
+      - name: Install cargo-deny
+        run: cargo install cargo-deny --locked
 
       - name: xtask ci
         run: cargo xtask ci
