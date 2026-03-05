@@ -2,7 +2,7 @@ use std::fmt;
 use std::sync::Arc;
 
 use uselesskey_core::Factory;
-use uselesskey_core_token::{TokenKind, authorization_scheme, generate_token};
+use uselesskey_core_token::generate_token;
 
 use crate::TokenSpec;
 
@@ -161,7 +161,7 @@ impl TokenFixture {
     /// assert!(api.authorization_header().starts_with("ApiKey "));
     /// ```
     pub fn authorization_header(&self) -> String {
-        let scheme = authorization_scheme(token_kind(self.spec));
+        let scheme = self.spec.authorization_scheme();
         format!("{scheme} {}", self.value())
     }
 }
@@ -170,17 +170,9 @@ fn load_inner(factory: &Factory, label: &str, spec: TokenSpec, variant: &str) ->
     let spec_bytes = spec.stable_bytes();
 
     factory.get_or_init(DOMAIN_TOKEN_FIXTURE, label, &spec_bytes, variant, |rng| {
-        let value = generate_token(label, token_kind(spec), rng);
+        let value = generate_token(label, spec, rng);
         Inner { value }
     })
-}
-
-fn token_kind(spec: TokenSpec) -> TokenKind {
-    match spec {
-        TokenSpec::ApiKey => TokenKind::ApiKey,
-        TokenSpec::Bearer => TokenKind::Bearer,
-        TokenSpec::OAuthAccessToken => TokenKind::OAuthAccessToken,
-    }
 }
 
 #[cfg(test)]

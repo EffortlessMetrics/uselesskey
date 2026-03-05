@@ -49,6 +49,14 @@ impl TokenSpec {
             Self::OAuthAccessToken => [0, 0, 0, 3],
         }
     }
+
+    /// HTTP authorization scheme associated with this token shape.
+    pub const fn authorization_scheme(&self) -> &'static str {
+        match self {
+            Self::ApiKey => "ApiKey",
+            Self::Bearer | Self::OAuthAccessToken => "Bearer",
+        }
+    }
 }
 
 #[cfg(test)]
@@ -73,6 +81,16 @@ mod tests {
         assert_eq!(
             TokenSpec::oauth_access_token().kind_name(),
             "oauth_access_token"
+        );
+    }
+
+    #[test]
+    fn authorization_schemes_are_stable() {
+        assert_eq!(TokenSpec::api_key().authorization_scheme(), "ApiKey");
+        assert_eq!(TokenSpec::bearer().authorization_scheme(), "Bearer");
+        assert_eq!(
+            TokenSpec::oauth_access_token().authorization_scheme(),
+            "Bearer"
         );
     }
 }
