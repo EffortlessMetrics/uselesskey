@@ -137,7 +137,7 @@ fn error_invalid_seed_message_does_not_contain_raw_input() {
     assert!(result.is_ok());
 
     // Try with invalid input that could be a secret
-    let invalid_input = "not_hex_but_looks_secrety_zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz";
+    let invalid_input = "not_hex_but_looks_secretly_zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz";
     let result = Seed::from_env_value(invalid_input);
     if let Err(msg) = result {
         let err_str = msg.to_string();
