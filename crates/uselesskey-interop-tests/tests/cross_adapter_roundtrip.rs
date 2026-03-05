@@ -47,7 +47,11 @@ fn skip_tag_and_length(data: &[u8]) -> (usize, &[u8]) {
 // 1. RSA: single key → jsonwebtoken → ring → rustls
 // =========================================================================
 
-#[cfg(all(feature = "jwt-interop", feature = "cross-signing", feature = "cross-tls"))]
+#[cfg(all(
+    feature = "jwt-interop",
+    feature = "cross-signing",
+    feature = "cross-tls"
+))]
 mod rsa_roundtrip {
     use super::*;
     use ring::signature as ring_sig;
@@ -67,8 +71,7 @@ mod rsa_roundtrip {
             "exp": 9_999_999_999u64,
         });
         let header = jsonwebtoken::Header::new(jsonwebtoken::Algorithm::RS256);
-        let token =
-            jsonwebtoken::encode(&header, &claims, &kp.encoding_key()).expect("JWT encode");
+        let token = jsonwebtoken::encode(&header, &claims, &kp.encoding_key()).expect("JWT encode");
         let mut validation = jsonwebtoken::Validation::new(jsonwebtoken::Algorithm::RS256);
         validation.set_issuer(&["uselesskey"]);
         let decoded =
@@ -109,7 +112,11 @@ mod rsa_roundtrip {
 // 2. ECDSA P-256: single key → jsonwebtoken → ring → rustls
 // =========================================================================
 
-#[cfg(all(feature = "jwt-interop", feature = "cross-signing", feature = "cross-tls"))]
+#[cfg(all(
+    feature = "jwt-interop",
+    feature = "cross-signing",
+    feature = "cross-tls"
+))]
 mod ecdsa_p256_roundtrip {
     use super::*;
     use ring::signature as ring_sig;
@@ -129,8 +136,7 @@ mod ecdsa_p256_roundtrip {
             "exp": 9_999_999_999u64,
         });
         let header = jsonwebtoken::Header::new(jsonwebtoken::Algorithm::ES256);
-        let token =
-            jsonwebtoken::encode(&header, &claims, &kp.encoding_key()).expect("JWT encode");
+        let token = jsonwebtoken::encode(&header, &claims, &kp.encoding_key()).expect("JWT encode");
         let mut validation = jsonwebtoken::Validation::new(jsonwebtoken::Algorithm::ES256);
         validation.set_issuer(&["uselesskey"]);
         let decoded =
@@ -170,8 +176,7 @@ mod ecdsa_p256_roundtrip {
             "exp": 9_999_999_999u64,
         });
         let header = jsonwebtoken::Header::new(jsonwebtoken::Algorithm::ES384);
-        let token =
-            jsonwebtoken::encode(&header, &claims, &kp.encoding_key()).expect("JWT encode");
+        let token = jsonwebtoken::encode(&header, &claims, &kp.encoding_key()).expect("JWT encode");
         let mut validation = jsonwebtoken::Validation::new(jsonwebtoken::Algorithm::ES384);
         validation.set_issuer(&["uselesskey"]);
         let decoded =
@@ -202,7 +207,11 @@ mod ecdsa_p256_roundtrip {
 // 3. Ed25519: single key → jsonwebtoken → ring → rustls
 // =========================================================================
 
-#[cfg(all(feature = "jwt-interop", feature = "cross-signing", feature = "cross-tls"))]
+#[cfg(all(
+    feature = "jwt-interop",
+    feature = "cross-signing",
+    feature = "cross-tls"
+))]
 mod ed25519_roundtrip {
     use super::*;
     use ring::signature as ring_sig;
@@ -222,8 +231,7 @@ mod ed25519_roundtrip {
             "exp": 9_999_999_999u64,
         });
         let header = jsonwebtoken::Header::new(jsonwebtoken::Algorithm::EdDSA);
-        let token =
-            jsonwebtoken::encode(&header, &claims, &kp.encoding_key()).expect("JWT encode");
+        let token = jsonwebtoken::encode(&header, &claims, &kp.encoding_key()).expect("JWT encode");
         let mut validation = jsonwebtoken::Validation::new(jsonwebtoken::Algorithm::EdDSA);
         validation.set_issuer(&["uselesskey"]);
         let decoded =
@@ -263,10 +271,7 @@ mod x509_chain_validation {
     /// anchor and a server with the chain, then completing a handshake.
     #[test]
     fn x509_chain_validates_with_ring_provider() {
-        let chain = fx().x509_chain(
-            "rt-x509-ring",
-            ChainSpec::new("roundtrip-ring.example.com"),
-        );
+        let chain = fx().x509_chain("rt-x509-ring", ChainSpec::new("roundtrip-ring.example.com"));
 
         let provider = Arc::new(rustls::crypto::ring::default_provider());
         let server_config = Arc::new(chain.server_config_rustls_with_provider(provider.clone()));
@@ -419,10 +424,7 @@ mod jwk_roundtrip {
         assert_eq!(jwk["kty"], "RSA", "RSA JWK must have kty=RSA");
         assert!(jwk["n"].is_string(), "RSA JWK must have modulus 'n'");
         assert!(jwk["e"].is_string(), "RSA JWK must have exponent 'e'");
-        assert!(
-            jwk["kid"].is_string(),
-            "RSA JWK should have a key ID 'kid'"
-        );
+        assert!(jwk["kid"].is_string(), "RSA JWK should have a key ID 'kid'");
 
         // Verify 'n' is valid base64url
         let n = jwk["n"].as_str().unwrap();
@@ -593,12 +595,15 @@ mod jwk_roundtrip {
 
         let seed = Seed::from_env_value("uselesskey-jwk-determinism-v1")
             .expect("test seed should always parse");
-        let fx1 = Factory::deterministic(seed.clone());
+        let fx1 = Factory::deterministic(seed);
         let fx2 = Factory::deterministic(seed);
 
         let jwk1 = fx1.rsa("det-jwk-rsa", RsaSpec::rs256()).public_jwk_json();
         let jwk2 = fx2.rsa("det-jwk-rsa", RsaSpec::rs256()).public_jwk_json();
 
-        assert_eq!(jwk1, jwk2, "deterministic factories must produce identical JWKs");
+        assert_eq!(
+            jwk1, jwk2,
+            "deterministic factories must produce identical JWKs"
+        );
     }
 }
