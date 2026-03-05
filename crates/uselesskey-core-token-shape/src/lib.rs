@@ -51,12 +51,7 @@ pub const OAUTH_JTI_BYTES: usize = 16;
 pub const OAUTH_SIGNATURE_BYTES: usize = 32;
 
 /// Token shape kind.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
-pub enum TokenKind {
-    ApiKey,
-    Bearer,
-    OAuthAccessToken,
-}
+pub use uselesskey_token_spec::TokenSpec as TokenKind;
 
 /// Generate a token value for the provided shape kind.
 pub fn generate_token(label: &str, kind: TokenKind, rng: &mut impl RngCore) -> String {
@@ -69,10 +64,7 @@ pub fn generate_token(label: &str, kind: TokenKind, rng: &mut impl RngCore) -> S
 
 /// Return HTTP authorization scheme for the token kind.
 pub fn authorization_scheme(kind: TokenKind) -> &'static str {
-    match kind {
-        TokenKind::ApiKey => "ApiKey",
-        TokenKind::Bearer | TokenKind::OAuthAccessToken => "Bearer",
-    }
+    kind.authorization_scheme()
 }
 
 /// Generate an API-key style token fixture (`uk_test_<base62>`).

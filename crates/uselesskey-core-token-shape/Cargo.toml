@@ -19,6 +19,7 @@ base64.workspace = true
 rand_core.workspace = true
 uselesskey-core-base62.workspace = true
 serde_json.workspace = true
+uselesskey-token-spec.workspace = true
 
 [dev-dependencies]
 insta.workspace = true

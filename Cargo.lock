@@ -4011,6 +4011,7 @@ dependencies = [
  "serde",
  "serde_json",
  "uselesskey-core-base62",
+ "uselesskey-token-spec",
 ]
 
 [[package]]
