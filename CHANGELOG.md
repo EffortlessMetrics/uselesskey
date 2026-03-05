@@ -65,7 +65,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Scoped CI mutation testing to fast core microcrates; algorithm and adapter
   crates are mutant-tested only when directly impacted in PR runs
 - Added `workflow_dispatch` trigger for manual CI invocations
-- Increased CI timeouts (PR: 45 min, main: 60 min) for workspace growth
+- Increased CI timeouts (PR: 45 min, main: 75 min) for workspace growth
+- Switched CI tool installation to `taiki-e/install-action` for pre-built
+  binaries (faster cold starts)
 
 #### Fixed
 
