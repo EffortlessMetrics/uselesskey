@@ -1,0 +1,14 @@
+---
+source: crates/uselesskey-core-x509-negative/tests/snapshots_negative.rs
+expression: metas
+---
+- variant: HostnameMismatch
+  variant_name: "hostname_mismatch:evil.example.com"
+- variant: UnknownCa
+  variant_name: unknown_ca
+- variant: ExpiredLeaf
+  variant_name: expired_leaf
+- variant: ExpiredIntermediate
+  variant_name: expired_intermediate
+- variant: RevokedLeaf
+  variant_name: revoked_leaf

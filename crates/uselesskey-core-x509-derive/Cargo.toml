@@ -21,7 +21,9 @@ rcgen = "0.13"
 time = "0.3"
 
 [dev-dependencies]
+insta.workspace = true
 rand_chacha.workspace = true
+serde = { workspace = true, features = ["derive"] }
 uselesskey-core-hash = { workspace = true }
 
 [package.metadata.docs.rs]

@@ -1,0 +1,16 @@
+---
+source: crates/uselesskey-core-x509-negative/tests/snapshots_negative.rs
+expression: metas
+---
+- variant: Expired
+  variant_name: expired
+  description: Certificate with not_after in the past (expired)
+- variant: NotYetValid
+  variant_name: not_yet_valid
+  description: Certificate with not_before in the future (not yet valid)
+- variant: WrongKeyUsage
+  variant_name: wrong_key_usage
+  description: Certificate marked as CA but without keyCertSign key usage
+- variant: SelfSignedButClaimsCA
+  variant_name: self_signed_ca
+  description: Self-signed certificate that claims to be a CA

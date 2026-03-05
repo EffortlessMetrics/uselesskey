@@ -1,0 +1,15 @@
+---
+source: crates/uselesskey-core-x509/tests/snapshots_core_x509.rs
+expression: spec_snapshot(&spec)
+---
+subject_cn: snap.example.com
+issuer_cn: snap.example.com
+not_before_offset: DaysAgo(1)
+validity_days: 3650
+is_ca: false
+rsa_bits: 2048
+key_cert_sign: false
+crl_sign: false
+digital_signature: true
+key_encipherment: true
+sans: []

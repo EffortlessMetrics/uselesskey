@@ -1,0 +1,40 @@
+---
+source: crates/uselesskey-core-x509/tests/snapshots_core_x509.rs
+expression: variants
+---
+- variant: Expired
+  subject_cn: neg.example.com
+  not_before_offset: DaysAgo(395)
+  validity_days: 365
+  is_ca: false
+  key_cert_sign: false
+  crl_sign: false
+  digital_signature: true
+  key_encipherment: true
+- variant: NotYetValid
+  subject_cn: neg.example.com
+  not_before_offset: DaysFromNow(30)
+  validity_days: 365
+  is_ca: false
+  key_cert_sign: false
+  crl_sign: false
+  digital_signature: true
+  key_encipherment: true
+- variant: WrongKeyUsage
+  subject_cn: neg.example.com
+  not_before_offset: DaysAgo(1)
+  validity_days: 3650
+  is_ca: true
+  key_cert_sign: false
+  crl_sign: false
+  digital_signature: true
+  key_encipherment: true
+- variant: SelfSignedButClaimsCA
+  subject_cn: neg.example.com
+  not_before_offset: DaysAgo(1)
+  validity_days: 3650
+  is_ca: true
+  key_cert_sign: true
+  crl_sign: true
+  digital_signature: true
+  key_encipherment: false

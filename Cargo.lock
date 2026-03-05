@@ -3958,7 +3958,9 @@ dependencies = [
 name = "uselesskey-core-rustls-pki"
 version = "0.1.0"
 dependencies = [
+ "insta",
  "rustls-pki-types",
+ "serde",
  "uselesskey-core",
  "uselesskey-ecdsa",
  "uselesskey-ed25519",
@@ -4018,10 +4020,12 @@ dependencies = [
 name = "uselesskey-core-x509"
 version = "0.1.0"
 dependencies = [
+ "insta",
  "proptest",
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
  "rstest",
+ "serde",
  "uselesskey-core-x509-derive",
  "uselesskey-core-x509-negative",
  "uselesskey-core-x509-spec",
@@ -4042,9 +4046,11 @@ dependencies = [
 name = "uselesskey-core-x509-derive"
 version = "0.1.0"
 dependencies = [
+ "insta",
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
  "rcgen",
+ "serde",
  "time",
  "uselesskey-core-hash",
 ]
@@ -4053,8 +4059,10 @@ dependencies = [
 name = "uselesskey-core-x509-negative"
 version = "0.1.0"
 dependencies = [
+ "insta",
  "proptest",
  "rstest",
+ "serde",
  "uselesskey-core-x509-chain-negative",
  "uselesskey-core-x509-spec",
 ]

@@ -1,0 +1,6 @@
+---
+source: crates/uselesskey-core-x509-derive/tests/snapshots_derive.rs
+expression: snap
+---
+same_seed_same_serial: true
+byte_count: 16

@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-core-x509-derive/tests/snapshots_derive.rs
+expression: snap
+---
+ab_c_ordinal: 284
+a_bc_ordinal: 52
+differ: true

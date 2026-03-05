@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-core-rustls-pki/tests/snapshots_rustls_pki.rs
+expression: results
+---
+- curve: P-256
+  private_key_der_len: 138
+  matches_source: true
+- curve: P-384
+  private_key_der_len: 185
+  matches_source: true

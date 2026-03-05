@@ -1,0 +1,14 @@
+---
+source: crates/uselesskey-core-x509/tests/snapshots_core_x509.rs
+expression: cmp
+---
+leaf:
+  - 0
+  - 0
+  - 1
+  - 1
+ca:
+  - 1
+  - 1
+  - 1
+  - 0

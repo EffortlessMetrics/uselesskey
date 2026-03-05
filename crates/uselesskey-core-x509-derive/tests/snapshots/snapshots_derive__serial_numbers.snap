@@ -1,0 +1,16 @@
+---
+source: crates/uselesskey-core-x509-derive/tests/snapshots_derive.rs
+expression: results
+---
+- seed_byte: 0
+  byte_count: 16
+  high_bit_cleared: true
+  serial_hex: "[REDACTED]"
+- seed_byte: 42
+  byte_count: 16
+  high_bit_cleared: true
+  serial_hex: "[REDACTED]"
+- seed_byte: 255
+  byte_count: 16
+  high_bit_cleared: true
+  serial_hex: "[REDACTED]"

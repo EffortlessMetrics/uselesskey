@@ -1,0 +1,16 @@
+---
+source: crates/uselesskey-core-x509-derive/tests/snapshots_derive.rs
+expression: results
+---
+- label: leaf-label
+  year: 2025
+  ordinal_day: 219
+- label: root-ca
+  year: 2025
+  ordinal_day: 16
+- label: empty-parts
+  year: 2025
+  ordinal_day: 313
+- label: single-part
+  year: 2025
+  ordinal_day: 289
