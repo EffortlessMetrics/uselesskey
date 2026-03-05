@@ -1,0 +1,22 @@
+---
+source: tests/api_surface.rs
+assertion_line: 467
+expression: shape
+---
+RsaFactoryExt::rsa(&self, label, RsaSpec) -> RsaKeyPair
+RsaSpec::rs256() -> RsaSpec
+RsaSpec::new(bits) -> RsaSpec
+RsaSpec { bits: usize, exponent: u32 }
+RsaKeyPair::private_key_pkcs8_pem() -> &str
+RsaKeyPair::private_key_pkcs8_der() -> &[u8]
+RsaKeyPair::public_key_spki_pem() -> &str
+RsaKeyPair::public_key_spki_der() -> &[u8]
+RsaKeyPair::write_private_key_pkcs8_pem() -> Result<TempArtifact, Error>
+RsaKeyPair::write_public_key_spki_pem() -> Result<TempArtifact, Error>
+RsaKeyPair::private_key_pkcs8_pem_corrupt(CorruptPem) -> String
+RsaKeyPair::private_key_pkcs8_der_truncated(usize) -> Vec<u8>
+RsaKeyPair::mismatched_public_key_spki_der() -> Vec<u8>
+RsaKeyPair::kid() -> String [jwk]
+RsaKeyPair::public_jwk() -> PublicJwk [jwk]
+RsaKeyPair::private_key_jwk() -> PrivateJwk [jwk]
+RsaKeyPair::public_jwks() -> Jwks [jwk]

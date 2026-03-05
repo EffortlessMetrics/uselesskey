@@ -1,0 +1,13 @@
+---
+source: tests/api_surface.rs
+assertion_line: 521
+expression: shape
+---
+HmacFactoryExt::hmac(&self, label, HmacSpec) -> HmacSecret
+HmacSpec::hs256() -> HmacSpec
+HmacSpec::hs384() -> HmacSpec
+HmacSpec::hs512() -> HmacSpec
+HmacSecret::secret_bytes() -> &[u8]
+HmacSecret::kid() -> String [jwk]
+HmacSecret::jwk() -> PrivateJwk [jwk]
+HmacSecret::jwks() -> Jwks [jwk]

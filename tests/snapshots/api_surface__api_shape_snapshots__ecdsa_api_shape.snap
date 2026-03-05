@@ -1,0 +1,17 @@
+---
+source: tests/api_surface.rs
+assertion_line: 487
+expression: shape
+---
+EcdsaFactoryExt::ecdsa(&self, label, EcdsaSpec) -> EcdsaKeyPair
+EcdsaSpec::es256() -> EcdsaSpec
+EcdsaSpec::es384() -> EcdsaSpec
+EcdsaSpec::alg_name() -> &str
+EcdsaSpec::curve_name() -> &str
+EcdsaKeyPair::private_key_pkcs8_pem() -> &str
+EcdsaKeyPair::private_key_pkcs8_der() -> &[u8]
+EcdsaKeyPair::public_key_spki_pem() -> &str
+EcdsaKeyPair::public_key_spki_der() -> &[u8]
+EcdsaKeyPair::private_key_pkcs8_pem_corrupt(CorruptPem) -> String
+EcdsaKeyPair::private_key_pkcs8_der_truncated(usize) -> Vec<u8>
+EcdsaKeyPair::mismatched_public_key_spki_der() -> Vec<u8>
