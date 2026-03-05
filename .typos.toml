@@ -9,6 +9,11 @@ extend-exclude = [
 
 [default.extend-words]
 # Add project-specific words to ignore
+abd = "abd"
+ba = "ba"
+Ba = "Ba"
+ND = "ND"
+Ue = "Ue"
 uselesskey = "uselesskey"
 pkcs8 = "pkcs8"
 jwk = "jwk"

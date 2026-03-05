@@ -286,12 +286,12 @@ fn e2e_jwks_aggregation() {
 }
 
 // =========================================================================
-// 5. Negative fixture pipeline — verify corruption is unparseable
+// 5. Negative fixture pipeline — verify corruption is unparsable
 // =========================================================================
 
 #[test]
 #[cfg(feature = "rsa")]
-fn e2e_negative_corrupt_pem_unparseable() {
+fn e2e_negative_corrupt_pem_unparsable() {
     let kp = fx().rsa("e2e-neg-pem", RsaSpec::rs256());
 
     // BadHeader: standard PEM parser should reject
@@ -351,7 +351,7 @@ fn e2e_negative_mismatched_key_differs() {
 fn e2e_negative_ecdsa_corrupt_pipeline() {
     let kp = fx().ecdsa("e2e-neg-ecdsa", EcdsaSpec::es256());
 
-    // Corrupt PEM unparseable
+    // Corrupt PEM unparsable
     let bad = kp.private_key_pkcs8_pem_corrupt(CorruptPem::BadHeader);
     assert!(pem::parse(&bad).is_err());
 

@@ -72,7 +72,7 @@ fn rsa_exponent_0_panics() {
 // =========================================================================
 
 #[test]
-fn corrupt_pem_bad_header_is_unparseable() {
+fn corrupt_pem_bad_header_is_unparsable() {
     let fx = fx();
     let kp = fx.rsa("corrupt-hdr", RsaSpec::rs256());
     let bad = kp.private_key_pkcs8_pem_corrupt(CorruptPem::BadHeader);
@@ -82,41 +82,41 @@ fn corrupt_pem_bad_header_is_unparseable() {
         "bad header should contain CORRUPTED marker"
     );
     let parse = rsa::RsaPrivateKey::from_pkcs8_pem(&bad);
-    assert!(parse.is_err(), "corrupted PEM header must be unparseable");
+    assert!(parse.is_err(), "corrupted PEM header must be unparsable");
 }
 
 #[test]
-fn corrupt_pem_bad_footer_is_unparseable() {
+fn corrupt_pem_bad_footer_is_unparsable() {
     let fx = fx();
     let kp = fx.rsa("corrupt-ftr", RsaSpec::rs256());
     let bad = kp.private_key_pkcs8_pem_corrupt(CorruptPem::BadFooter);
 
     let parse = rsa::RsaPrivateKey::from_pkcs8_pem(&bad);
-    assert!(parse.is_err(), "corrupted PEM footer must be unparseable");
+    assert!(parse.is_err(), "corrupted PEM footer must be unparsable");
 }
 
 #[test]
-fn corrupt_pem_bad_base64_is_unparseable() {
+fn corrupt_pem_bad_base64_is_unparsable() {
     let fx = fx();
     let kp = fx.rsa("corrupt-b64", RsaSpec::rs256());
     let bad = kp.private_key_pkcs8_pem_corrupt(CorruptPem::BadBase64);
 
     assert!(bad.contains("THIS_IS_NOT_BASE64!!!"));
     let parse = rsa::RsaPrivateKey::from_pkcs8_pem(&bad);
-    assert!(parse.is_err(), "bad base64 PEM must be unparseable");
+    assert!(parse.is_err(), "bad base64 PEM must be unparsable");
 }
 
 use rsa::pkcs8::DecodePrivateKey;
 
 #[test]
-fn truncated_der_is_unparseable() {
+fn truncated_der_is_unparsable() {
     let fx = fx();
     let kp = fx.rsa("trunc-der", RsaSpec::rs256());
     let truncated = kp.private_key_pkcs8_der_truncated(10);
 
     assert_eq!(truncated.len(), 10);
     let parse = rsa::RsaPrivateKey::from_pkcs8_der(&truncated);
-    assert!(parse.is_err(), "truncated DER must be unparseable");
+    assert!(parse.is_err(), "truncated DER must be unparsable");
 }
 
 #[test]

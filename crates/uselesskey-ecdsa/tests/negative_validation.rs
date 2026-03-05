@@ -1,6 +1,6 @@
 //! Negative fixture validation tests for ECDSA keys.
 //!
-//! Ensures ALL CorruptPem variants produce unparseable output for both
+//! Ensures ALL CorruptPem variants produce unparsable output for both
 //! P-256 and P-384, corrupt DER fails parsing, mismatched keys fail
 //! signature verification, and negative fixtures are deterministic.
 
