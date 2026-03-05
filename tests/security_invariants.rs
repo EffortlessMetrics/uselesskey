@@ -349,10 +349,9 @@ fn scan_dir_for_fragment(dir: &std::path::Path, fragment: &str, found: &mut Vec<
             .map(|e| e == "rs")
             .unwrap_or(false)
             && let Ok(content) = std::fs::read_to_string(&path)
+            && content.contains(fragment)
         {
-            if content.contains(fragment) {
-                found.push(path.display().to_string());
-            }
+            found.push(path.display().to_string());
         }
     }
 }
