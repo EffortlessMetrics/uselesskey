@@ -19,18 +19,22 @@ pub enum TokenSpec {
 }
 
 impl TokenSpec {
+    /// Create an API-key spec (`uk_test_<base62>`).
     pub const fn api_key() -> Self {
         Self::ApiKey
     }
 
+    /// Create an opaque bearer-token spec (base64url body).
     pub const fn bearer() -> Self {
         Self::Bearer
     }
 
+    /// Create an OAuth access-token spec in JWT shape (`header.payload.signature`).
     pub const fn oauth_access_token() -> Self {
         Self::OAuthAccessToken
     }
 
+    /// Return a short, stable name for this token kind (e.g. `"api_key"`).
     pub const fn kind_name(&self) -> &'static str {
         match self {
             Self::ApiKey => "api_key",

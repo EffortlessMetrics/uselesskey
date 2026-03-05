@@ -37,12 +37,15 @@ use serde::Serialize;
 use serde_json::Value;
 use std::fmt;
 
+/// A JSON Web Key Set containing zero or more JWK entries.
 #[derive(Clone, Serialize)]
 pub struct Jwks {
+    /// The `"keys"` array of the JWKS.
     pub keys: Vec<AnyJwk>,
 }
 
 impl Jwks {
+    /// Serialize to a [`serde_json::Value`].
     pub fn to_value(&self) -> Value {
         serde_json::to_value(self).expect("serialize JWKS")
     }
@@ -55,6 +58,7 @@ impl fmt::Display for Jwks {
     }
 }
 
+/// RSA public key in JWK format (contains `n` and `e`).
 #[derive(Clone, Serialize)]
 pub struct RsaPublicJwk {
     pub kty: &'static str,
@@ -67,11 +71,13 @@ pub struct RsaPublicJwk {
 }
 
 impl RsaPublicJwk {
+    /// Return the key identifier.
     pub fn kid(&self) -> &str {
         &self.kid
     }
 }
 
+/// RSA private key in JWK format (includes CRT parameters `p`, `q`, `dp`, `dq`, `qi`).
 #[derive(Clone, Serialize)]
 pub struct RsaPrivateJwk {
     pub kty: &'static str,
@@ -91,6 +97,7 @@ pub struct RsaPrivateJwk {
 }
 
 impl RsaPrivateJwk {
+    /// Return the key identifier.
     pub fn kid(&self) -> &str {
         &self.kid
     }
@@ -105,6 +112,7 @@ impl fmt::Debug for RsaPrivateJwk {
     }
 }
 
+/// Elliptic-curve public key in JWK format (P-256 / P-384).
 #[derive(Clone, Serialize)]
 pub struct EcPublicJwk {
     pub kty: &'static str,
@@ -118,11 +126,13 @@ pub struct EcPublicJwk {
 }
 
 impl EcPublicJwk {
+    /// Return the key identifier.
     pub fn kid(&self) -> &str {
         &self.kid
     }
 }
 
+/// Elliptic-curve private key in JWK format (P-256 / P-384, includes `d`).
 #[derive(Clone, Serialize)]
 pub struct EcPrivateJwk {
     pub kty: &'static str,
@@ -137,6 +147,7 @@ pub struct EcPrivateJwk {
 }
 
 impl EcPrivateJwk {
+    /// Return the key identifier.
     pub fn kid(&self) -> &str {
         &self.kid
     }
@@ -152,6 +163,7 @@ impl fmt::Debug for EcPrivateJwk {
     }
 }
 
+/// OKP (Octet Key Pair) public key in JWK format (Ed25519).
 #[derive(Clone, Serialize)]
 pub struct OkpPublicJwk {
     pub kty: &'static str,
@@ -164,11 +176,13 @@ pub struct OkpPublicJwk {
 }
 
 impl OkpPublicJwk {
+    /// Return the key identifier.
     pub fn kid(&self) -> &str {
         &self.kid
     }
 }
 
+/// OKP (Octet Key Pair) private key in JWK format (Ed25519, includes `d`).
 #[derive(Clone, Serialize)]
 pub struct OkpPrivateJwk {
     pub kty: &'static str,
@@ -182,6 +196,7 @@ pub struct OkpPrivateJwk {
 }
 
 impl OkpPrivateJwk {
+    /// Return the key identifier.
     pub fn kid(&self) -> &str {
         &self.kid
     }
@@ -197,6 +212,7 @@ impl fmt::Debug for OkpPrivateJwk {
     }
 }
 
+/// Symmetric (octet) key in JWK format (HMAC `HS256`/`HS384`/`HS512`).
 #[derive(Clone, Serialize)]
 pub struct OctJwk {
     pub kty: &'static str,
@@ -208,6 +224,7 @@ pub struct OctJwk {
 }
 
 impl OctJwk {
+    /// Return the key identifier.
     pub fn kid(&self) -> &str {
         &self.kid
     }
@@ -222,15 +239,20 @@ impl fmt::Debug for OctJwk {
     }
 }
 
+/// A public JWK of any supported key type.
 #[derive(Clone, Serialize)]
 #[serde(untagged)]
 pub enum PublicJwk {
+    /// RSA public key.
     Rsa(RsaPublicJwk),
+    /// Elliptic-curve public key.
     Ec(EcPublicJwk),
+    /// OKP (Ed25519) public key.
     Okp(OkpPublicJwk),
 }
 
 impl PublicJwk {
+    /// Return the key identifier.
     pub fn kid(&self) -> &str {
         match self {
             PublicJwk::Rsa(jwk) => jwk.kid(),
@@ -239,6 +261,7 @@ impl PublicJwk {
         }
     }
 
+    /// Serialize to a [`serde_json::Value`].
     pub fn to_value(&self) -> Value {
         serde_json::to_value(self).expect("serialize JWK")
     }
@@ -251,16 +274,22 @@ impl fmt::Display for PublicJwk {
     }
 }
 
+/// A private (or symmetric) JWK of any supported key type.
 #[derive(Clone, Serialize)]
 #[serde(untagged)]
 pub enum PrivateJwk {
+    /// RSA private key.
     Rsa(RsaPrivateJwk),
+    /// Elliptic-curve private key.
     Ec(EcPrivateJwk),
+    /// OKP (Ed25519) private key.
     Okp(OkpPrivateJwk),
+    /// Symmetric (HMAC) key.
     Oct(OctJwk),
 }
 
 impl PrivateJwk {
+    /// Return the key identifier.
     pub fn kid(&self) -> &str {
         match self {
             PrivateJwk::Rsa(jwk) => jwk.kid(),
@@ -270,6 +299,7 @@ impl PrivateJwk {
         }
     }
 
+    /// Serialize to a [`serde_json::Value`].
     pub fn to_value(&self) -> Value {
         serde_json::to_value(self).expect("serialize JWK")
     }
@@ -293,14 +323,18 @@ impl fmt::Debug for PrivateJwk {
     }
 }
 
+/// Either a public or private JWK.
 #[derive(Clone, Serialize)]
 #[serde(untagged)]
 pub enum AnyJwk {
+    /// A public-only JWK.
     Public(PublicJwk),
+    /// A private (or symmetric) JWK.
     Private(PrivateJwk),
 }
 
 impl AnyJwk {
+    /// Return the key identifier.
     pub fn kid(&self) -> &str {
         match self {
             AnyJwk::Public(jwk) => jwk.kid(),
@@ -308,6 +342,7 @@ impl AnyJwk {
         }
     }
 
+    /// Serialize to a [`serde_json::Value`].
     pub fn to_value(&self) -> Value {
         serde_json::to_value(self).expect("serialize JWK")
     }
