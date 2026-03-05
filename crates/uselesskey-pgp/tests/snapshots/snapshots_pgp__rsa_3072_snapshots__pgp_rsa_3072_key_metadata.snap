@@ -1,12 +1,12 @@
 ---
 source: crates/uselesskey-pgp/tests/snapshots_pgp.rs
-assertion_line: 156
+assertion_line: 157
 expression: result
 ---
 spec: rsa3072
 user_id: snapshot-rsa-3072 <snapshot-rsa-3072@uselesskey.test>
 fingerprint_len: 40
-private_binary_len: 1881
-public_binary_len: 910
+private_binary_len: "[PLATFORM_DEPENDENT]"
+public_binary_len: "[PLATFORM_DEPENDENT]"
 private_armor: "[REDACTED]"
 fingerprint: "[REDACTED]"

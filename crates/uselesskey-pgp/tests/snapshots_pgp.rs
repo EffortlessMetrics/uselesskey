@@ -153,7 +153,10 @@ mod rsa_3072_snapshots {
             fingerprint: key.fingerprint().to_string(),
         };
 
+        // Binary lengths vary by ±1 across platforms (RSA MPI leading-zero encoding).
         insta::assert_yaml_snapshot!("pgp_rsa_3072_key_metadata", result, {
+            ".private_binary_len" => "[PLATFORM_DEPENDENT]",
+            ".public_binary_len" => "[PLATFORM_DEPENDENT]",
             ".private_armor" => "[REDACTED]",
             ".fingerprint" => "[REDACTED]",
         });
