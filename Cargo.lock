@@ -3966,6 +3966,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "uselesskey-core-token-jwt-shape"
+version = "0.1.0"
+dependencies = [
+ "base64",
+ "rand_chacha 0.3.1",
+ "rand_core 0.6.4",
+ "serde_json",
+]
+
+[[package]]
 name = "uselesskey-core-token-shape"
 version = "0.1.0"
 dependencies = [
@@ -3977,6 +3987,7 @@ dependencies = [
  "serde",
  "serde_json",
  "uselesskey-core-base62",
+ "uselesskey-core-token-jwt-shape",
 ]
 
 [[package]]
