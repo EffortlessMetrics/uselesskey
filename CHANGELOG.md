@@ -58,6 +58,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Publish-ready `Cargo.toml` metadata across all crates (homepage, categories,
   keywords)
 
+#### CI & tooling
+
+- Installed `typos-cli` and `cargo-deny` in CI workflow
+- Added `.typos.toml` for false-positive exclusions on crypto test data
+- Scoped CI mutation testing to fast core microcrates; algorithm and adapter
+  crates are mutant-tested only when directly impacted in PR runs
+- Added `workflow_dispatch` trigger for manual CI invocations
+- Increased CI timeouts (PR: 45 min, main: 60 min) for workspace growth
+
+#### Fixed
+
+- Platform-dependent PGP RSA-3072 binary lengths redacted in snapshot tests
+- RUSTSEC-2025-0119 advisory added to `deny.toml` ignore list
+
 ## [0.1.0] - 2026-02-17
 
 Initial public release. **uselesskey** generates deterministic and random
