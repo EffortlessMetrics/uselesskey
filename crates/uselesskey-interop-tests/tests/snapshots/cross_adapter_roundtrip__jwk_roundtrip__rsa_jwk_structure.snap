@@ -1,0 +1,11 @@
+---
+source: crates/uselesskey-interop-tests/tests/cross_adapter_roundtrip.rs
+assertion_line: 544
+expression: redacted
+---
+alg: RS256
+e: "[REDACTED]"
+kid: "[REDACTED]"
+kty: RSA
+n: "[REDACTED]"
+use: sig

@@ -1,0 +1,12 @@
+---
+source: crates/uselesskey-interop-tests/tests/cross_adapter_roundtrip.rs
+assertion_line: 565
+expression: redacted
+---
+alg: ES256
+crv: P-256
+kid: "[REDACTED]"
+kty: EC
+use: sig
+x: "[REDACTED]"
+y: "[REDACTED]"

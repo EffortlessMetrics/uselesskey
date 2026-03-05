@@ -4168,6 +4168,7 @@ dependencies = [
  "base64",
  "ed25519-dalek",
  "hmac",
+ "insta",
  "jsonwebtoken",
  "p256",
  "p384",
