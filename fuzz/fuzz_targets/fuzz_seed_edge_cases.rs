@@ -54,7 +54,11 @@ fuzz_target!(|input: SeedEdgeInput| {
         let d8 = derive_seed(&parsed, &id);
         assert_eq!(d7.bytes(), d8.bytes());
         // Debug must never leak seed material.
-        let dbg = format!("{parsed:?}");
-        assert!(!dbg.contains(&long_input), "Debug must redact seed");
+        // Only check with sufficiently long inputs to avoid false positives
+        // where short hex strings (e.g. "ed") match substrings of "Seed(**redacted**)".
+        if long_input.len() >= 8 {
+            let dbg = format!("{parsed:?}");
+            assert!(!dbg.contains(&long_input), "Debug must redact seed");
+        }
     }
 });
