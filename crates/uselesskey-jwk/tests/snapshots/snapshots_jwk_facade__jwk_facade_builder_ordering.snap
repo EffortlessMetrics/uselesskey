@@ -1,0 +1,9 @@
+---
+source: crates/uselesskey-jwk/tests/snapshots_jwk_facade.rs
+expression: info
+---
+key_count: 3
+kids:
+  - alpha
+  - beta
+  - gamma

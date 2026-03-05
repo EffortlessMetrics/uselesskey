@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-core-jwk/tests/snapshots_jwk.rs
+expression: check
+---
+rsa_kty: RSA
+ec_kty: EC
+okp_kty: OKP

@@ -1,0 +1,18 @@
+---
+source: crates/uselesskey-core-jwk-builder/tests/snapshots_jwk_builder.rs
+expression: value
+---
+keys:
+  - alg: ES256
+    crv: P-256
+    kid: ec-1
+    kty: EC
+    use: sig
+    x: "[REDACTED]"
+    y: "[REDACTED]"
+  - alg: RS256
+    e: "[REDACTED]"
+    kid: rsa-1
+    kty: RSA
+    n: "[REDACTED]"
+    use: sig

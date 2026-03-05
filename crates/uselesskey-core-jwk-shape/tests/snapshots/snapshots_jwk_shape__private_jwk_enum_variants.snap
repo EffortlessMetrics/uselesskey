@@ -1,0 +1,16 @@
+---
+source: crates/uselesskey-core-jwk-shape/tests/snapshots_jwk_shape.rs
+expression: infos
+---
+- variant: Rsa
+  kid: rsa-p-1
+  kty: RSA
+- variant: Ec
+  kid: ec-p-1
+  kty: EC
+- variant: Okp
+  kid: okp-p-1
+  kty: OKP
+- variant: Oct
+  kid: oct-p-1
+  kty: oct

@@ -17,7 +17,9 @@ authors.workspace = true
 [dependencies]
 
 [dev-dependencies]
+insta.workspace = true
 proptest.workspace = true
+serde.workspace = true
 
 [package.metadata.docs.rs]
 all-features = true

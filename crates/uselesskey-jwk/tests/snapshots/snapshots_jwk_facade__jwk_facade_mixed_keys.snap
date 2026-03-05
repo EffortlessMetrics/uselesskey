@@ -1,0 +1,16 @@
+---
+source: crates/uselesskey-jwk/tests/snapshots_jwk_facade.rs
+expression: value
+---
+keys:
+  - alg: HS256
+    k: "[REDACTED]"
+    kid: priv-key
+    kty: oct
+    use: sig
+  - alg: RS256
+    e: "[REDACTED]"
+    kid: pub-key
+    kty: RSA
+    n: "[REDACTED]"
+    use: sig

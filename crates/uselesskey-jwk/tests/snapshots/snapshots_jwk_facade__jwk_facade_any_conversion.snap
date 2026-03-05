@@ -1,0 +1,6 @@
+---
+source: crates/uselesskey-jwk/tests/snapshots_jwk_facade.rs
+expression: check
+---
+public_kid: from-pub
+private_kid: from-priv

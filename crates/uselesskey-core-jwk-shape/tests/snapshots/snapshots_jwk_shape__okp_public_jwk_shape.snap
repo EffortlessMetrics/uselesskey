@@ -1,0 +1,10 @@
+---
+source: crates/uselesskey-core-jwk-shape/tests/snapshots_jwk_shape.rs
+expression: value
+---
+alg: EdDSA
+crv: Ed25519
+kid: okp-pub-1
+kty: OKP
+use: sig
+x: "[REDACTED]"

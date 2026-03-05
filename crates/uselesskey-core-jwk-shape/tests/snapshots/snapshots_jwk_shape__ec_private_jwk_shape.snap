@@ -1,0 +1,12 @@
+---
+source: crates/uselesskey-core-jwk-shape/tests/snapshots_jwk_shape.rs
+expression: value
+---
+alg: ES256
+crv: P-256
+d: "[REDACTED]"
+kid: ec-priv-1
+kty: EC
+use: sig
+x: "[REDACTED]"
+y: "[REDACTED]"

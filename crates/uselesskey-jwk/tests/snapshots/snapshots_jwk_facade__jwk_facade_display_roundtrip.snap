@@ -1,0 +1,7 @@
+---
+source: crates/uselesskey-jwk/tests/snapshots_jwk_facade.rs
+expression: check
+---
+is_valid_json: true
+has_keys_array: true
+key_count: 1

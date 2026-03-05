@@ -3859,7 +3859,9 @@ dependencies = [
 name = "uselesskey-core-jwk"
 version = "0.1.0"
 dependencies = [
+ "insta",
  "proptest",
+ "serde",
  "serde_json",
  "uselesskey-core-jwk-builder",
  "uselesskey-core-jwk-shape",
@@ -3869,7 +3871,9 @@ dependencies = [
 name = "uselesskey-core-jwk-builder"
 version = "0.1.0"
 dependencies = [
+ "insta",
  "proptest",
+ "serde",
  "serde_json",
  "uselesskey-core-jwk-shape",
  "uselesskey-core-jwks-order",
@@ -3879,6 +3883,7 @@ dependencies = [
 name = "uselesskey-core-jwk-shape"
 version = "0.1.0"
 dependencies = [
+ "insta",
  "proptest",
  "serde",
  "serde_json",
@@ -3888,7 +3893,9 @@ dependencies = [
 name = "uselesskey-core-jwks-order"
 version = "0.1.0"
 dependencies = [
+ "insta",
  "proptest",
+ "serde",
 ]
 
 [[package]]
@@ -4221,6 +4228,8 @@ dependencies = [
 name = "uselesskey-jwk"
 version = "0.1.0"
 dependencies = [
+ "insta",
+ "serde",
  "serde_json",
  "uselesskey-core-jwk",
  "uselesskey-core-jwk-builder",

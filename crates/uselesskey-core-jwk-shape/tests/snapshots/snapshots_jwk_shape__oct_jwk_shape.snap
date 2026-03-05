@@ -1,0 +1,9 @@
+---
+source: crates/uselesskey-core-jwk-shape/tests/snapshots_jwk_shape.rs
+expression: value
+---
+alg: HS256
+k: "[REDACTED]"
+kid: oct-1
+kty: oct
+use: sig

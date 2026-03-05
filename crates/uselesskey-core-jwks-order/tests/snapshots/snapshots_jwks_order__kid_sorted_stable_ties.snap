@@ -1,0 +1,12 @@
+---
+source: crates/uselesskey-core-jwks-order/tests/snapshots_jwks_order.rs
+expression: result
+---
+kids:
+  - dup
+  - dup
+  - dup
+tags:
+  - first
+  - second
+  - third

@@ -1,0 +1,9 @@
+---
+source: crates/uselesskey-core-jwk/tests/snapshots_jwk.rs
+expression: info
+---
+key_count: 3
+kids:
+  - alpha
+  - mike
+  - zulu
