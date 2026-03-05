@@ -59,4 +59,53 @@ proptest! {
             );
         }
     }
+
+    /// Flipping any single bit in the input should change the KID.
+    #[test]
+    fn single_bit_flip_changes_kid(
+        input in proptest::collection::vec(any::<u8>(), 1..64),
+        bit_index in 0usize..512,
+    ) {
+        let byte_idx = bit_index / 8;
+        let bit_pos = bit_index % 8;
+        prop_assume!(byte_idx < input.len());
+
+        let mut flipped = input.clone();
+        flipped[byte_idx] ^= 1 << bit_pos;
+
+        let kid_orig = kid_from_bytes(&input);
+        let kid_flip = kid_from_bytes(&flipped);
+        prop_assert_ne!(kid_orig, kid_flip, "bit flip at byte {} bit {} should change KID", byte_idx, bit_pos);
+    }
+
+    /// Appending a byte to the input should change the KID.
+    #[test]
+    fn appending_byte_changes_kid(
+        input in proptest::collection::vec(any::<u8>(), 0..64),
+        extra in any::<u8>(),
+    ) {
+        let mut extended = input.clone();
+        extended.push(extra);
+
+        let kid_orig = kid_from_bytes(&input);
+        let kid_ext = kid_from_bytes(&extended);
+        prop_assert_ne!(kid_orig, kid_ext, "appending a byte should change KID");
+    }
+
+    /// KID string length is always exactly 16 chars for default prefix (12 bytes).
+    #[test]
+    fn kid_string_length_is_always_16(input in any::<Vec<u8>>()) {
+        let kid = kid_from_bytes(&input);
+        prop_assert_eq!(kid.len(), 16, "default KID should always be 16 chars");
+    }
+
+    /// KID never contains base64 padding characters.
+    #[test]
+    fn kid_never_contains_padding(
+        input in any::<Vec<u8>>(),
+        prefix_bytes in 1usize..=32,
+    ) {
+        let kid = kid_from_bytes_with_prefix(&input, prefix_bytes);
+        prop_assert!(!kid.contains('='), "KID should never have padding");
+    }
 }
