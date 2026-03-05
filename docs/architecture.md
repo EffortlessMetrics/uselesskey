@@ -2,82 +2,149 @@
 
 ## Workspace layout
 
-- `crates/uselesskey-core`
-  - derivation (BLAKE3 keyed hash)
-  - cache (DashMap keyed by ArtifactId)
-  - sinks (tempfile outputs)
-  - generic negative-fixture helpers (PEM/DER mangling)
+The workspace contains **48 crates** organized in four layers:
+facade → algorithm crates → core microcrates → adapter crates, plus
+testing/tooling crates that live outside the publish graph.
 
-- `crates/uselesskey-jwk`
-  - typed JWK/JWKS helpers
-  - stable key ordering via `JwksBuilder`
+### Facade
 
-- `crates/uselesskey-rsa`
-  - RSA keypair generator (RustCrypto `rsa`)
-  - encodings: PKCS#8 private, SPKI public
-  - mismatch fixtures (variant-derived keypairs)
-  - optional `jwk` feature
+- `crates/uselesskey` — public facade re-exporting the stable API
 
-- `crates/uselesskey-ecdsa`
-  - ECDSA keypair generator (P-256/P-384)
-  - encodings: PKCS#8 private, SPKI public
-  - optional `jwk` feature
+### Algorithm crates (extension-trait pattern)
 
-- `crates/uselesskey-ed25519`
-  - Ed25519 keypair generator
-  - encodings: PKCS#8 private, SPKI public
-  - optional `jwk` feature
+Each adds a `*FactoryExt` trait to `Factory`:
 
-- `crates/uselesskey-hmac`
-  - HMAC secret generator (HS256/384/512)
-  - raw bytes + optional `jwk` feature
+- `crates/uselesskey-rsa` — RSA keypair generator (RustCrypto `rsa`);
+  PKCS#8/SPKI encodings, mismatch fixtures; optional `jwk` feature
+- `crates/uselesskey-ecdsa` — ECDSA P-256/P-384 keypair generator;
+  PKCS#8/SPKI encodings; optional `jwk` feature
+- `crates/uselesskey-ed25519` — Ed25519 keypair generator;
+  PKCS#8/SPKI encodings; optional `jwk` feature
+- `crates/uselesskey-hmac` — HMAC secret generator (HS256/384/512);
+  raw bytes + optional `jwk` feature
+- `crates/uselesskey-token` — token fixture generator (API key, bearer,
+  OAuth access token); deterministic JWT-shape outputs
+- `crates/uselesskey-pgp` — OpenPGP key fixtures (armored and binary)
+- `crates/uselesskey-x509` — X.509 certificate fixtures (self-signed +
+  cert chains); negative fixtures: expired, hostname mismatch, unknown CA,
+  revoked leaf (with CRL); deterministic validity/serial
 
-- `crates/uselesskey-token`
-  - token fixture generator (API key, bearer, OAuth access token)
-  - deterministic JWT-shape OAuth access token outputs
+### Shared spec/model crates
 
-- `crates/uselesskey-x509`
-  - X.509 certificate fixtures (self-signed + cert chains)
-  - Root CA → Intermediate → Leaf chain generation
-  - Negative fixtures: expired, hostname mismatch, unknown CA, revoked leaf (with CRL)
-  - deterministic validity/serial in deterministic mode
+- `crates/uselesskey-jwk` — compatibility facade re-exporting
+  `uselesskey-core-jwk`
+- `crates/uselesskey-token-spec` — stable token specification enum
+  (ApiKey, Bearer, OAuthAccessToken)
 
-- `crates/uselesskey-jsonwebtoken`
-  - adapter: returns `jsonwebtoken::EncodingKey` / `DecodingKey` directly
-  - optional features per key type (`rsa`, `ecdsa`, `ed25519`, `hmac`)
+### Core microcrates
 
-- `crates/uselesskey-rustls`
-  - adapter: returns `rustls::pki_types::PrivateKeyDer`, `CertificateDer`
-  - `tls-config` feature: `ServerConfig` / `ClientConfig` / mTLS builders
-  - pluggable crypto provider (`rustls-ring` / `rustls-aws-lc-rs`)
+`uselesskey-core` is the public entry point; internally it re-exports a
+set of focused microcrates that each own a single concern:
 
-- `crates/uselesskey-ring`
-  - adapter: returns `ring` 0.17 native signing key types
-  - `RsaKeyPair`, `EcdsaKeyPair`, `Ed25519KeyPair`
+**Identity & derivation**
 
-- `crates/uselesskey-rustcrypto`
-  - adapter: returns RustCrypto native types
-  - `rsa::RsaPrivateKey`, `p256::ecdsa::SigningKey`, `ed25519_dalek::SigningKey`, etc.
+- `uselesskey-core-id` — artifact ID tuple (domain, label, spec, variant,
+  derivation version)
+- `uselesskey-core-seed` — seed parsing, redaction, and BLAKE3-backed
+  entropy
+- `uselesskey-core-hash` — length-prefixed BLAKE3 hashing for
+  deterministic derivation
+- `uselesskey-core-kid` — deterministic key-ID (kid) generation via
+  base64url BLAKE3
+- `uselesskey-core-base62` — bias-free base62 generation primitives
 
-- `crates/uselesskey-aws-lc-rs`
-  - adapter: returns `aws-lc-rs` native key types
-  - `native` feature for wasm-safe builds
+**Factory & caching**
 
-- `crates/uselesskey-tonic`
-  - adapter: returns `tonic::transport` TLS types (`Identity`, `Certificate`)
-  - one-liner `ServerTlsConfig` / `ClientTlsConfig` / mTLS builders from X.509 fixtures
+- `uselesskey-core-factory` — factory orchestration: mode
+  (Random/Deterministic), derivation dispatch, artifact generation
+- `uselesskey-core-cache` — per-process artifact cache keyed by identity
+  (DashMap + `Arc<dyn Any>`)
+- `uselesskey-core-sink` — tempfile-backed artifact sinks for disk output
 
-- `crates/uselesskey`
-  - facade re-exporting the stable public API
+**Key material**
 
-- `crates/uselesskey-bdd`
-  - cucumber feature tests; kept out of the main crate’s dependency graph
+- `uselesskey-core-keypair` — shared PKCS#8/SPKI compatibility facade
+- `uselesskey-core-keypair-material` — PKCS#8/SPKI key-material helpers
+  with PEM/DER encoding
+- `uselesskey-core-hmac-spec` — stable HMAC algorithm spec enum
+  (HS256/HS384/HS512)
 
-- `fuzz/`
-  - cargo-fuzz targets (negative fixture functions + parser stress)
+**JWK**
 
-- `xtask/`
-  - build automation: fmt, clippy, test, nextest, deny, feature-matrix, no-blob, publish-check, pr, bdd, mutants, fuzz
+- `uselesskey-core-jwk` — typed JWK/JWKS models
+- `uselesskey-core-jwk-builder` — JWKS builder with deterministic
+  kid-based ordering
+- `uselesskey-core-jwk-shape` — structured JWK types and JWKS collection
+  serialization
+- `uselesskey-core-jwks-order` — stable kid-sorted ordering helper
+
+**Token**
+
+- `uselesskey-core-token` — compatibility facade for token shape
+  primitives
+- `uselesskey-core-token-shape` — token generation primitives (API keys,
+  bearer tokens, OAuth)
+
+**Negative fixtures**
+
+- `uselesskey-core-negative` — compatibility facade for DER/PEM
+  corruption builders
+- `uselesskey-core-negative-der` — DER corruption (truncation,
+  byte-flipping)
+- `uselesskey-core-negative-pem` — PEM corruption (deterministic
+  `CorruptPem` strategies)
+
+**X.509**
+
+- `uselesskey-core-x509-spec` — X.509 spec models and stable encoders
+  for certificates and chains
+- `uselesskey-core-x509-derive` — deterministic X.509 helpers for time,
+  serial numbers, and identity
+- `uselesskey-core-x509` — X.509 policy helpers and negative-policy types
+- `uselesskey-core-x509-negative` — X.509 negative-fixture policy
+  helpers (expired, wrong-usage)
+- `uselesskey-core-x509-chain-negative` — chain-level negative policies
+  (hostname mismatch, revoked leaf)
+
+**Adapter bridge**
+
+- `uselesskey-core-rustls-pki` — rustls-pki-types adapter traits for
+  converting fixtures to PKI types
+
+### Adapter crates
+
+Separate crates (not features) to decouple versioning from downstream
+libraries:
+
+- `crates/uselesskey-jsonwebtoken` — `jsonwebtoken::EncodingKey` /
+  `DecodingKey`; optional per-key-type features
+- `crates/uselesskey-rustls` — `rustls::pki_types` + `ServerConfig` /
+  `ClientConfig` / mTLS builders; pluggable crypto provider
+- `crates/uselesskey-ring` — `ring` 0.17 native signing key types
+- `crates/uselesskey-rustcrypto` — RustCrypto native types (`rsa`,
+  `p256`, `ed25519-dalek`, `hmac`)
+- `crates/uselesskey-aws-lc-rs` — `aws-lc-rs` native key types; `native`
+  feature for wasm-safe builds
+- `crates/uselesskey-tonic` — `tonic::transport` TLS types; one-liner
+  `ServerTlsConfig` / `ClientTlsConfig` / mTLS builders
+
+### Testing & tooling
+
+- `crates/uselesskey-bdd` — Cucumber BDD test runner; excluded from
+  publish graph
+- `crates/uselesskey-bdd-steps` — shared Cucumber step definitions
+  across all key types and adapters
+- `crates/uselesskey-interop-tests` — cross-backend interop tests
+  (sign/verify/TLS round-trips)
+- `crates/uselesskey-feature-grid` — canonical feature-matrix definitions
+  for CI and BDD automation
+- `crates/uselesskey-test-grid` — compatibility facade for feature-grid
+  data exports
+- `fuzz/` — cargo-fuzz targets (negative fixture functions + parser
+  stress + seed edge cases)
+- `xtask/` — build automation: fmt, clippy, test, nextest, deny,
+  feature-matrix, dep-guard, no-blob, publish-check, publish-preflight,
+  pr, ci, bdd, mutants, fuzz, coverage
 
 ## Deterministic derivation
 
