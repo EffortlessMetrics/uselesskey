@@ -1,0 +1,6 @@
+---
+source: tests/determinism_regression.rs
+assertion_line: 302
+expression: kid1
+---
+nRnN9Y9UQ-mJS1vS

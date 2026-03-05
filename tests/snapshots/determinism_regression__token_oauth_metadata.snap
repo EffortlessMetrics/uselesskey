@@ -1,0 +1,7 @@
+---
+source: tests/determinism_regression.rs
+assertion_line: 136
+expression: "insta::internals::Content::Map(vec![(insta::internals::Content::from(\"segment_count\"),\ninsta::internals::Content::from(segments as u64)),\n(insta::internals::Content::from(\"value_len\"),\ninsta::internals::Content::from(tok.value().len() as u64)),])"
+---
+segment_count: 3
+value_len: 255

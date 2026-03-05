@@ -1,0 +1,9 @@
+---
+source: tests/determinism_regression.rs
+assertion_line: 82
+expression: "insta::internals::Content::Map(vec![(insta::internals::Content::from(\"private_der_len\"),\ninsta::internals::Content::from(kp.private_key_pkcs8_der().len() as u64)),\n(insta::internals::Content::from(\"public_der_len\"),\ninsta::internals::Content::from(kp.public_key_spki_der().len() as u64)),\n(insta::internals::Content::from(\"pem_header\"),\ninsta::internals::Content::from(pem_header(kp.private_key_pkcs8_pem()))),\n(insta::internals::Content::from(\"pub_pem_header\"),\ninsta::internals::Content::from(pem_header(kp.public_key_spki_pem()))),])"
+---
+private_der_len: 83
+public_der_len: 44
+pem_header: "-----BEGIN PRIVATE KEY-----"
+pub_pem_header: "-----BEGIN PUBLIC KEY-----"

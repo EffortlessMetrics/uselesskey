@@ -1,0 +1,6 @@
+---
+source: tests/determinism_regression.rs
+assertion_line: 109
+expression: "insta::internals::Content::Map(vec![(insta::internals::Content::from(\"secret_len\"),\ninsta::internals::Content::from(secret.secret_bytes().len() as u64)),])"
+---
+secret_len: 64

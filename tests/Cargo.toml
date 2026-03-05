@@ -52,6 +52,7 @@ toml = "0.8"
 
 [dev-dependencies]
 trybuild.workspace = true
+insta.workspace = true
 
 [features]
 # JWT integration tests
@@ -129,6 +130,9 @@ cross-adapter = [
 # Cross-crate determinism tests
 determinism = ["dep:uselesskey"]
 
+# Comprehensive determinism regression tests (snapshot-based)
+determinism-regression = ["dep:uselesskey"]
+
 # Concurrency and thread-safety tests
 concurrency = [
     "dep:uselesskey-rsa",
@@ -163,7 +167,7 @@ kid-stability = [
 ]
 
 # All integration tests
-all = ["jwt", "tls", "crypto-backend", "e2e", "key-rotation", "cross-adapter", "determinism", "concurrency", "kid-stability", "compile-fail", "builder-patterns", "pem-der-format"]
+all = ["jwt", "tls", "crypto-backend", "e2e", "key-rotation", "cross-adapter", "determinism", "determinism-regression", "concurrency", "kid-stability", "compile-fail", "builder-patterns", "pem-der-format"]
 
 # PEM/DER format validation tests
 pem-der-format = [
@@ -252,3 +256,8 @@ required-features = ["determinism"]
 [[test]]
 name = "msrv_check"
 path = "msrv_check.rs"
+
+[[test]]
+name = "determinism_regression"
+path = "determinism_regression.rs"
+required-features = ["determinism-regression"]

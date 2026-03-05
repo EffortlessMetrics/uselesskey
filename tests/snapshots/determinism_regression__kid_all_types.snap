@@ -1,0 +1,9 @@
+---
+source: tests/determinism_regression.rs
+assertion_line: 643
+expression: "insta::internals::Content::Map(vec![(insta::internals::Content::from(\"rsa\"),\ninsta::internals::Content::from(rsa_kid.as_str())),\n(insta::internals::Content::from(\"ecdsa\"),\ninsta::internals::Content::from(ec_kid.as_str())),\n(insta::internals::Content::from(\"ed25519\"),\ninsta::internals::Content::from(ed_kid.as_str())),\n(insta::internals::Content::from(\"hmac\"),\ninsta::internals::Content::from(hmac_kid.as_str())),])"
+---
+rsa: 8imnI8JVpJG41dpE
+ecdsa: Wzhevht3RbGZMsub
+ed25519: "-7E08wA8bgBKoGuA"
+hmac: BFxmgmGAMxp6IYtE

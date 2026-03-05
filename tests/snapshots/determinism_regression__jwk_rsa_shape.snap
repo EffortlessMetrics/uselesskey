@@ -1,0 +1,9 @@
+---
+source: tests/determinism_regression.rs
+assertion_line: 457
+expression: "insta::internals::Content::Map(vec![(insta::internals::Content::from(\"kty\"),\ninsta::internals::Content::from(v1[\"kty\"].as_str().unwrap())),\n(insta::internals::Content::from(\"alg\"),\ninsta::internals::Content::from(v1[\"alg\"].as_str().unwrap())),\n(insta::internals::Content::from(\"use\"),\ninsta::internals::Content::from(v1[\"use\"].as_str().unwrap())),\n(insta::internals::Content::from(\"kid\"),\ninsta::internals::Content::from(v1[\"kid\"].as_str().unwrap())),])"
+---
+kty: RSA
+alg: RS256
+use: sig
+kid: OBaBrRgy5WKLLWRX

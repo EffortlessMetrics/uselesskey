@@ -1,0 +1,7 @@
+---
+source: tests/determinism_regression.rs
+assertion_line: 126
+expression: "insta::internals::Content::Map(vec![(insta::internals::Content::from(\"value_len\"),\ninsta::internals::Content::from(tok.value().len() as u64)),\n(insta::internals::Content::from(\"is_nonempty\"),\ninsta::internals::Content::from(!tok.value().is_empty())),])"
+---
+value_len: 43
+is_nonempty: true

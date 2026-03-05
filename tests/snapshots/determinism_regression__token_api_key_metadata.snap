@@ -1,0 +1,7 @@
+---
+source: tests/determinism_regression.rs
+assertion_line: 117
+expression: "insta::internals::Content::Map(vec![(insta::internals::Content::from(\"value_len\"),\ninsta::internals::Content::from(tok.value().len() as u64)),\n(insta::internals::Content::from(\"starts_with\"),\ninsta::internals::Content::from(tok.value().starts_with(\"uk_test_\"))),])"
+---
+value_len: 40
+starts_with: true

@@ -4133,6 +4133,7 @@ dependencies = [
  "base64",
  "der-parser 9.0.0",
  "ed25519-dalek",
+ "insta",
  "jsonwebtoken",
  "p256",
  "ring",
