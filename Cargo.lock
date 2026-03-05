@@ -3842,6 +3842,7 @@ name = "uselesskey-core-hmac-spec"
 version = "0.1.0"
 dependencies = [
  "insta",
+ "proptest",
  "serde",
 ]
 
@@ -4063,6 +4064,7 @@ name = "uselesskey-core-x509-derive"
 version = "0.1.0"
 dependencies = [
  "insta",
+ "proptest",
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
  "rcgen",
