@@ -248,3 +248,7 @@ required-features = ["pem-der-format"]
 name = "cross_crate_determinism"
 path = "cross_crate_determinism.rs"
 required-features = ["determinism"]
+
+[[test]]
+name = "msrv_check"
+path = "msrv_check.rs"
