@@ -269,7 +269,7 @@ fn run_ci_plan(runner: &mut receipt::Runner) -> Result<()> {
     runner.set_bdd_counts(counts);
 
     runner.step("no-blob", None, no_blob_gate)?;
-    runner.step("mutants", None, || run_mutants(PUBLISH_CRATES))?;
+    runner.step("mutants", None, || run_mutants(MUTANT_CRATES))?;
     runner.step("fuzz", None, fuzz_pr)?;
 
     if is_llvm_cov_installed() {
@@ -352,6 +352,44 @@ const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-ring",
     "uselesskey-rustcrypto",
     "uselesskey-aws-lc-rs",
+];
+
+/// Subset of `PUBLISH_CRATES` for CI-wide mutation testing.
+///
+/// Excludes algorithm and adapter crates whose tests involve key generation
+/// (RSA, ECDSA, Ed25519, PGP, X.509, adapters). These are still
+/// mutant-tested when directly impacted in PR-scoped runs.
+const MUTANT_CRATES: &[&str] = &[
+    "uselesskey-core-base62",
+    "uselesskey-core-seed",
+    "uselesskey-core-hash",
+    "uselesskey-core-hmac-spec",
+    "uselesskey-core-id",
+    "uselesskey-core-cache",
+    "uselesskey-core-factory",
+    "uselesskey-core-kid",
+    "uselesskey-core-negative-der",
+    "uselesskey-core-negative-pem",
+    "uselesskey-core-negative",
+    "uselesskey-core-sink",
+    "uselesskey-core-token",
+    "uselesskey-core-token-shape",
+    "uselesskey-core-jwk-shape",
+    "uselesskey-core-jwks-order",
+    "uselesskey-core-jwk-builder",
+    "uselesskey-core-jwk",
+    "uselesskey-core-x509-spec",
+    "uselesskey-core-x509-derive",
+    "uselesskey-core-x509-chain-negative",
+    "uselesskey-core-x509-negative",
+    "uselesskey-core-x509",
+    "uselesskey-core",
+    "uselesskey-core-keypair-material",
+    "uselesskey-core-keypair",
+    "uselesskey-jwk",
+    "uselesskey-hmac",
+    "uselesskey-token",
+    "uselesskey-token-spec",
 ];
 
 fn publish_check() -> Result<()> {

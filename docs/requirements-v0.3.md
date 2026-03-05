@@ -71,7 +71,7 @@ Variants are part of the cache key (`good`, `mismatch`, `corrupt:*`, `truncated:
 
 - Feature matrix checks (default, no-default, each feature, all-features)
 - BDD suite runs
-- Fuzz + mutants (PR-scoped; full on main)
+- Fuzz + mutants (PR-scoped for impacted crates; core microcrates on main)
 - Receipts emitted for cockpit ingestion
 
 ### Documentation
