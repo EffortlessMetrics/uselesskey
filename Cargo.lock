@@ -4321,7 +4321,17 @@ dependencies = [
  "uselesskey-core-x509",
  "uselesskey-jwk",
  "uselesskey-rsa",
+ "uselesskey-x509-negative",
  "x509-parser",
+]
+
+[[package]]
+name = "uselesskey-x509-negative"
+version = "0.1.0"
+dependencies = [
+ "rstest",
+ "uselesskey-core",
+ "uselesskey-core-x509",
 ]
 
 [[package]]
