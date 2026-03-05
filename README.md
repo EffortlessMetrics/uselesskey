@@ -293,6 +293,35 @@ let server_tls = chain.server_tls_config_tonic();
 let client_tls = chain.client_tls_config_tonic("test.example.com");
 ```
 
+## Runnable Examples
+
+The [`crates/uselesskey/examples/`](crates/uselesskey/examples/) directory contains standalone programs you can run with `cargo run -p uselesskey --example`:
+
+| Example | Description |
+|---------|-------------|
+| [`adapter_jsonwebtoken`](crates/uselesskey/examples/adapter_jsonwebtoken.rs) | Sign and verify JWTs using `jsonwebtoken` crate integration |
+| [`adapter_rustls`](crates/uselesskey/examples/adapter_rustls.rs) | Convert X.509 fixtures into rustls `ServerConfig` / `ClientConfig` |
+| [`basic_ecdsa`](crates/uselesskey/examples/basic_ecdsa.rs) | Generate ECDSA keypairs for P-256 and P-384 in PEM, DER, JWK |
+| [`basic_ed25519`](crates/uselesskey/examples/basic_ed25519.rs) | Generate Ed25519 keypairs in PEM, DER, and JWK formats |
+| [`basic_hmac`](crates/uselesskey/examples/basic_hmac.rs) | Generate HMAC secrets for HS256, HS384, and HS512 |
+| [`basic_rsa`](crates/uselesskey/examples/basic_rsa.rs) | Generate RSA keypairs in PEM, DER, and JWK formats |
+| [`basic_token`](crates/uselesskey/examples/basic_token.rs) | Generate API key, bearer, and OAuth access-token fixtures |
+| [`basic_usage`](crates/uselesskey/examples/basic_usage.rs) | All-in-one: RSA, ECDSA, and Ed25519 fixture generation |
+| [`deterministic`](crates/uselesskey/examples/deterministic.rs) | Reproducible fixtures from seeds — same seed always yields same key |
+| [`deterministic_mode`](crates/uselesskey/examples/deterministic_mode.rs) | Order-independent deterministic derivation guarantees |
+| [`jwk_generation`](crates/uselesskey/examples/jwk_generation.rs) | Build JWKs and JWKS with `JwksBuilder` across key types |
+| [`jwk_jwks`](crates/uselesskey/examples/jwk_jwks.rs) | JWK Sets from multiple key types with metadata inspection |
+| [`jwks`](crates/uselesskey/examples/jwks.rs) | Build a JWKS from RSA and ECDSA public keys |
+| [`jwks_server_mock`](crates/uselesskey/examples/jwks_server_mock.rs) | Generate a JWKS response body for a mock `/.well-known/jwks.json` endpoint |
+| [`jwt_rs256_jwks`](crates/uselesskey/examples/jwt_rs256_jwks.rs) | RSA keypairs with JWK/JWKS extraction for JWT verification flows |
+| [`jwt_signing`](crates/uselesskey/examples/jwt_signing.rs) | JWT signing with deterministic RSA, ECDSA, and HMAC keys |
+| [`negative_fixtures`](crates/uselesskey/examples/negative_fixtures.rs) | Intentionally invalid certificates and keys for error-path testing |
+| [`tempfile_paths`](crates/uselesskey/examples/tempfile_paths.rs) | Write key fixtures to temporary files for path-based APIs |
+| [`tempfiles`](crates/uselesskey/examples/tempfiles.rs) | Write X.509 cert, key, and identity PEM to temp files |
+| [`tls_server`](crates/uselesskey/examples/tls_server.rs) | Certificate chain generation for TLS server testing |
+| [`token_generation`](crates/uselesskey/examples/token_generation.rs) | Realistic API keys, bearer tokens, and OAuth tokens for tests |
+| [`x509_certificates`](crates/uselesskey/examples/x509_certificates.rs) | Self-signed certs, cert chains, and negative X.509 fixtures |
+
 ## Workspace Crates
 
 `uselesskey` is a **facade crate** that re-exports from focused implementation crates.
@@ -415,6 +444,12 @@ Use uselesskey when you need **test fixtures that don't trip secret scanners**. 
 - [SECURITY](SECURITY.md) — security policy (this is a test-only crate)
 - [CODE_OF_CONDUCT](CODE_OF_CONDUCT.md) — Contributor Covenant
 - [SUPPORT](SUPPORT.md) — how to get help
+
+## Stability & Versioning
+
+**Derivation stability:** Artifacts generated with a given `(seed, domain, label, spec, variant)` tuple are stable within the same `DerivationVersion`. We will never change `V1` output; if derivation logic changes, a new version (e.g., `V2`) will be introduced.
+
+**MSRV:** The minimum supported Rust version is **1.92** (edition 2024).
 
 ## License
 
