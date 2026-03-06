@@ -15,7 +15,7 @@ rand_chacha = "0.3.1"
 blake3 = "1.8.3"
 
 # fuzz targets
-uselesskey = { path = "../crates/uselesskey", features = ["ecdsa", "ed25519", "hmac", "token", "x509"] }
+uselesskey = { path = "../crates/uselesskey", features = ["ecdsa", "ed25519", "hmac", "token", "x509", "rsa", "pgp"] }
 uselesskey-jwk = { path = "../crates/uselesskey-jwk" }
 uselesskey-core-jwks-order = { path = "../crates/uselesskey-core-jwks-order" }
 uselesskey-core-keypair-material = { path = "../crates/uselesskey-core-keypair-material" }
@@ -35,9 +35,14 @@ uselesskey-hmac = { path = "../crates/uselesskey-hmac" }
 uselesskey-x509 = { path = "../crates/uselesskey-x509" }
 uselesskey-jsonwebtoken = { path = "../crates/uselesskey-jsonwebtoken", features = ["ecdsa", "ed25519", "hmac"] }
 uselesskey-ring = { path = "../crates/uselesskey-ring", features = ["ecdsa", "ed25519"] }
+uselesskey-pgp = { path = "../crates/uselesskey-pgp" }
+uselesskey-rsa = { path = "../crates/uselesskey-rsa" }
+uselesskey-rustcrypto = { path = "../crates/uselesskey-rustcrypto", features = ["rsa", "ecdsa", "ed25519", "hmac"] }
 uselesskey-rustls = { path = "../crates/uselesskey-rustls", features = ["x509", "ecdsa", "ed25519"] }
 rustls-pki-types = "1"
 ring = "0.17"
+hmac = "0.12"
+sha2 = "0.10"
 rsa = { version = "0.9", features = ["pem"] }
 p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "pem"] }
 ed25519-dalek = { version = "2", features = ["pkcs8"] }
@@ -316,5 +321,29 @@ doc = false
 [[bin]]
 name = "fuzz_jwk_serialization"
 path = "fuzz_targets/fuzz_jwk_serialization.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_pgp_keygen"
+path = "fuzz_targets/fuzz_pgp_keygen.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_pgp_negative"
+path = "fuzz_targets/fuzz_pgp_negative.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_rsa_keygen"
+path = "fuzz_targets/fuzz_rsa_keygen.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "adapter_rustcrypto_roundtrip"
+path = "fuzz_targets/adapter_rustcrypto_roundtrip.rs"
 test = false
 doc = false
