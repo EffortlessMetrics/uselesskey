@@ -6,6 +6,7 @@
 
 use std::path::{Path, PathBuf};
 
+use toml::Table;
 use toml::Value;
 
 // ---------------------------------------------------------------------------
@@ -19,19 +20,19 @@ fn workspace_root() -> PathBuf {
         .to_path_buf()
 }
 
-fn read_toml(path: &Path) -> Value {
+fn read_toml(path: &Path) -> Table {
     let content =
         std::fs::read_to_string(path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
     content
-        .parse::<Value>()
+        .parse::<Table>()
         .unwrap_or_else(|e| panic!("parse {}: {e}", path.display()))
 }
 
-fn workspace_toml() -> Value {
+fn workspace_toml() -> Table {
     read_toml(&workspace_root().join("Cargo.toml"))
 }
 
-fn workspace_members(ws: &Value) -> Vec<String> {
+fn workspace_members(ws: &Table) -> Vec<String> {
     ws["workspace"]["members"]
         .as_array()
         .expect("workspace.members must be an array")
