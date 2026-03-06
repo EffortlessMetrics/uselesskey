@@ -744,8 +744,9 @@ fn fuzz(target: Option<&str>, extra: &[String]) -> Result<()> {
 
     match status {
         Ok(s) if s.success() => {
+            let host = host_target_triple()?;
             let mut cmd = Command::new("cargo");
-            cmd.args(["+nightly", "fuzz", "run"]);
+            cmd.args(["+nightly", "fuzz", "run", "--target", &host]);
 
             if let Some(t) = target {
                 cmd.arg(t);
@@ -1031,12 +1032,15 @@ fn fuzz_pr() -> Result<()> {
             if targets.is_empty() {
                 return Ok(());
             }
+            let host = host_target_triple()?;
             for target in targets {
                 let mut cmd = Command::new("cargo");
                 cmd.args([
                     "+nightly",
                     "fuzz",
                     "run",
+                    "--target",
+                    &host,
                     &target,
                     "--",
                     "-runs=1000",
@@ -1177,6 +1181,24 @@ fn count_bdd_scenarios() -> Result<BTreeMap<String, usize>> {
         counts.insert(name, count);
     }
     Ok(counts)
+}
+
+/// Detect the host target triple from `rustc -vV`.
+fn host_target_triple() -> Result<String> {
+    let output = Command::new("rustc")
+        .args(["-vV"])
+        .output()
+        .context("failed to run rustc")?;
+    if !output.status.success() {
+        bail!("rustc -vV failed");
+    }
+    let stdout = String::from_utf8(output.stdout).context("rustc output not UTF-8")?;
+    for line in stdout.lines() {
+        if let Some(host) = line.strip_prefix("host: ") {
+            return Ok(host.to_string());
+        }
+    }
+    bail!("could not determine host target triple from rustc -vV")
 }
 
 fn workspace_path(rel: &str) -> PathBuf {

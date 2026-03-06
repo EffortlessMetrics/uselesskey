@@ -46,6 +46,12 @@ jobs:
         with:
           tool: cargo-fuzz,cargo-mutants,typos-cli,cargo-deny
 
+      - name: Toolchain diagnostics
+        run: |
+          rustc -vV
+          cargo +nightly -vV
+          cargo fuzz --version || true
+
       - name: Fetch base branch
         if: github.base_ref != ''
         run: git fetch origin ${{ github.base_ref }}
@@ -87,6 +93,12 @@ jobs:
         uses: taiki-e/install-action@v2
         with:
           tool: cargo-fuzz,cargo-mutants,typos-cli,cargo-deny
+
+      - name: Toolchain diagnostics
+        run: |
+          rustc -vV
+          cargo +nightly -vV
+          cargo fuzz --version || true
 
       - name: xtask ci
         run: cargo xtask ci
