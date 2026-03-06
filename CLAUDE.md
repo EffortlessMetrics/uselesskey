@@ -69,6 +69,8 @@ cargo xtask lint-fix        # Auto-fix fmt + clippy, then verify
 cargo xtask lint-fix --check # Check-only (no mutations)
 cargo xtask lint-fix --no-clippy # fmt only
 cargo xtask gate            # Pre-push quality gate: fmt check + cargo check + clippy + test compile
+cargo xtask typos           # Spell check (requires typos installed)
+cargo xtask typos --fix     # Auto-fix typos
 cargo xtask setup           # Configure git hooks (sets core.hooksPath to .githooks)
 ```
 
@@ -93,14 +95,18 @@ cargo test -p uselesskey-rsa test_name
 - **`crates/uselesskey-ed25519`** - Ed25519 fixtures via `Ed25519FactoryExt` trait
 - **`crates/uselesskey-hmac`** - HMAC (HS256/HS384/HS512) fixtures via `HmacFactoryExt` trait
 - **`crates/uselesskey-token`** - Token fixtures (API key, bearer, OAuth/JWT-shape) via `TokenFactoryExt` trait
+- **`crates/uselesskey-pgp`** - OpenPGP key fixtures (RSA/Ed25519, armored/binary) via `PgpFactoryExt` trait
 - **`crates/uselesskey-x509`** - X.509 certificate fixtures via `X509FactoryExt` trait
 - **`crates/uselesskey-jsonwebtoken`** - Adapter: `jsonwebtoken` integration
 - **`crates/uselesskey-rustls`** - Adapter: `rustls` / `rustls-pki-types` integration
 - **`crates/uselesskey-ring`** - Adapter: `ring` integration
 - **`crates/uselesskey-rustcrypto`** - Adapter: RustCrypto integration
 - **`crates/uselesskey-aws-lc-rs`** - Adapter: `aws-lc-rs` integration
+- **`crates/uselesskey-tonic`** - Adapter: `tonic` gRPC TLS integration
 - **`crates/uselesskey-bdd`** - Cucumber BDD tests
 - **`xtask`** - Build automation commands
+
+> See `docs/architecture.md` for the full 48-crate breakdown including core microcrates.
 
 ### Key Concepts
 
@@ -110,7 +116,7 @@ cargo test -p uselesskey-rsa test_name
 
 **Cache**: DashMap-based concurrent cache stores `Arc<dyn Any + Send + Sync>`.
 
-**Negative Fixtures**: Corrupt PEM variants (`CorruptPem` enum), truncated DER, mismatched keypairs via `"mismatch"` variant.
+**Negative Fixtures**: Corrupt PEM variants (`CorruptPem` enum), truncated DER, mismatched keypairs via `"mismatch"` variant. X.509 negative fixtures include expired certs, hostname mismatch, unknown CA, and revoked leaf with CRL.
 
 ### Extension Pattern
 
@@ -120,6 +126,7 @@ Key type support is added via extension traits on `Factory`:
 - `Ed25519FactoryExt` → `fx.ed25519(label)`
 - `HmacFactoryExt` → `fx.hmac(label, spec)`
 - `TokenFactoryExt` → `fx.token(label, spec)`
+- `PgpFactoryExt` → `fx.pgp(label, spec)`
 - `X509FactoryExt` → `fx.x509(label, spec)`
 
 Adapter crates (e.g. `uselesskey-jsonwebtoken`) are separate crates, not features, to avoid coupling versioning.
