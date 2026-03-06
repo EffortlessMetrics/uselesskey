@@ -15,7 +15,7 @@ keywords = ["xtask", "build", "automation", "ci", "testing"]
 [dependencies]
 anyhow.workspace = true
 clap.workspace = true
-indicatif = "0.17"
+indicatif = "0.18"
 owo-colors = "4.0"
 regex = "1.11"
 serde = { workspace = true, features = ["derive"] }
