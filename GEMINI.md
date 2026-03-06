@@ -1,7 +1,7 @@
 # Gemini Context: uselesskey
 
 ## Project Overview
-**uselesskey** is a Rust workspace designed to generate deterministic and random cryptographic key fixtures (RSA, ECDSA, Ed25519, HMAC) and X.509 certificates for testing purposes. Its primary goal is to prevent the commitment of sensitive material (PEM/DER blobs) to version control systems, thereby avoiding issues with secret scanners like GitGuardian.
+**uselesskey** is a Rust workspace designed to generate deterministic and random cryptographic key fixtures (RSA, ECDSA, Ed25519, HMAC, PGP, Token) and X.509 certificates for testing purposes. Its primary goal is to prevent the commitment of sensitive material (PEM/DER blobs) to version control systems, thereby avoiding issues with secret scanners like GitGuardian.
 
 **Key Features:**
 *   **Order-independent determinism:** `seed + artifact_id -> derived_seed -> artifact`.
@@ -13,8 +13,8 @@
 The project follows a modular workspace structure:
 *   **`crates/uselesskey`**: Public facade crate.
 *   **`crates/uselesskey-core`**: Core logic (factory, derivation, caching).
-*   **`crates/uselesskey-{rsa,ecdsa,ed25519,hmac,x509}`**: Implementation of specific key/cert types.
-*   **`crates/uselesskey-{jsonwebtoken,rustls,ring,...}`**: Adapter crates for third-party libraries.
+*   **`crates/uselesskey-{rsa,ecdsa,ed25519,hmac,token,pgp,x509}`**: Implementation of specific key/cert types.
+*   **`crates/uselesskey-{jsonwebtoken,rustls,tonic,ring,rustcrypto,aws-lc-rs}`**: Adapter crates for third-party libraries.
 *   **`xtask`**: Automation tool for build, test, and maintenance tasks.
 
 ## Building and Running
@@ -29,6 +29,10 @@ The project uses `cargo xtask` for most operations.
 *   **Fuzzing:** `cargo xtask fuzz` (Requires `cargo-fuzz`)
 *   **Mutation Testing:** `cargo xtask mutants` (Requires `cargo-mutants`)
 *   **Check Publish:** `cargo xtask publish-check`
+*   **Publish Preflight:** `cargo xtask publish-preflight` (Validate metadata + cargo package)
+*   **Dep Guard:** `cargo xtask dep-guard` (Guard against multiple versions of pinned deps)
+*   **Coverage:** `cargo xtask coverage` (Requires `cargo-llvm-cov`)
+*   **Spell Check:** `cargo xtask typos` (Requires `typos` installed; `--fix` to auto-fix)
 *   **Secret Check:** `cargo xtask no-blob` (Ensures no secret-shaped blobs are in the repo)
 
 ### Running Specific Tests

@@ -74,10 +74,10 @@ This roadmap reflects the strategic direction for uselesskey as a **test-fixture
   - Native `aws-lc-rs` key types with `native` feature for wasm-safe builds
 - [x] **`uselesskey-rustcrypto`**
   - RustCrypto native types (`rsa::RsaPrivateKey`, `p256::ecdsa::SigningKey`, etc.)
-- [x] **BDD test suite** (15 feature files, ~150+ scenarios)
-  - RSA, ECDSA, Ed25519, HMAC, X.509, JWK, JWKS, chains, cross-key, JWT, TLS, negative fixtures, edge cases
-- [x] **Examples** (7 runnable examples)
-  - JWT signing, TLS server chains, negative fixtures, tempfiles, JWKS builder
+- [x] **BDD test suite** (38 feature files, ~150+ scenarios)
+  - RSA, ECDSA, Ed25519, HMAC, X.509, JWK, JWKS, chains, cross-key, JWT, TLS, PGP, tokens, negative fixtures, edge cases
+- [x] **Examples** (22 runnable examples)
+  - JWT signing, TLS server chains, negative fixtures, tempfiles, JWKS builder, PGP keys, tokens, adapter integration, gRPC TLS
 
 ## Future considerations
 

@@ -195,6 +195,7 @@ Factory (core)
   ├── Ed25519FactoryExt  (uselesskey-ed25519) → fx.ed25519(label, spec)
   ├── HmacFactoryExt     (uselesskey-hmac)    → fx.hmac(label, spec)
   ├── TokenFactoryExt    (uselesskey-token)   → fx.token(label, spec)
+  ├── PgpFactoryExt      (uselesskey-pgp)    → fx.pgp(label, spec)
   └── X509FactoryExt     (uselesskey-x509)    → fx.x509_self_signed(label, spec)
 ```
 

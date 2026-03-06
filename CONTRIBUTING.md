@@ -51,11 +51,13 @@ cargo xtask setup           # Configure git hooks (sets core.hooksPath to .githo
 
 - **`crates/uselesskey`**: Public facade crate, re-exports stable API under feature flags.
 - **`crates/uselesskey-core`**: Core factory, derivation, caching, and negative fixture traits.
-- **`crates/uselesskey-<type>`**: Individual key/certificate type implementations (RSA, ECDSA, Ed25519, HMAC, X.509).
+- **`crates/uselesskey-<type>`**: Individual key/certificate type implementations (RSA, ECDSA, Ed25519, HMAC, PGP, Token, X.509).
 - **`crates/uselesskey-jwk`**: Typed JWK/JWKS helpers and `JwksBuilder`.
 - **`crates/uselesskey-<adapter>`**: Adapt uselesskey fixtures to third-party library types. Adapter crates are separate crates (not features) to avoid coupling versioning.
 
 Current adapter crates: `uselesskey-jsonwebtoken`, `uselesskey-rustls`, `uselesskey-tonic`, `uselesskey-ring`, `uselesskey-rustcrypto`, `uselesskey-aws-lc-rs`.
+
+> BDD contributors: shared step definitions live in `crates/uselesskey-bdd-steps`.
 
 ### Adding a new Key Type
 

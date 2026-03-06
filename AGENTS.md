@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AI coding agents when working with code in this repository.
 
 ## Project Overview
 
@@ -37,7 +37,7 @@ Path ignores exist but require ongoing maintenance. This crate replaces "securit
 
 3. **Shape-first outputs** — Users ask for PKCS#8/SPKI/JWK/tempfiles, not crypto primitives.
 
-4. **Negative fixtures first-class** — Corrupt PEM, truncated DER, mismatched keys. This is the sticky feature. (X.509 negative fixtures like expired certs are on the roadmap.)
+4. **Negative fixtures first-class** — Corrupt PEM, truncated DER, mismatched keys, and deterministic corruption variants (`corrupt:*`).
 
 ### Design principles
 
@@ -49,7 +49,7 @@ Path ignores exist but require ongoing maintenance. This crate replaces "securit
 ## Build Commands
 
 ```bash
-cargo xtask ci              # Main CI pipeline: fmt check + clippy + test (use this before commits)
+cargo xtask ci              # Main CI pipeline: fmt + clippy + tests + matrix + guard + bdd + no-blob + mutants + fuzz
 cargo xtask pr              # PR-scoped tests based on git diff (emits JSON receipt)
 cargo xtask test            # Run all tests with all features
 cargo xtask fmt --fix       # Fix formatting
@@ -60,12 +60,17 @@ cargo xtask mutants         # Mutation testing (requires cargo-mutants)
 cargo xtask deny            # License/advisory checks (requires cargo-deny)
 cargo xtask feature-matrix  # Run feature matrix checks (default, no-default, each feature, all-features)
 cargo xtask publish-check   # Run publish dry-runs in dependency order
+cargo xtask publish-preflight # Validate metadata + cargo package --no-verify
 cargo xtask no-blob         # Enforce no secret-shaped blobs in test/fixture paths
+cargo xtask dep-guard       # Guard against multiple versions of pinned deps
+cargo xtask coverage        # Run code coverage (requires cargo-llvm-cov)
 cargo xtask nextest         # Run tests via cargo-nextest (requires cargo-nextest)
 cargo xtask lint-fix        # Auto-fix fmt + clippy, then verify
 cargo xtask lint-fix --check # Check-only (no mutations)
 cargo xtask lint-fix --no-clippy # fmt only
 cargo xtask gate            # Pre-push quality gate: fmt check + cargo check + clippy + test compile
+cargo xtask typos           # Spell check (requires typos installed)
+cargo xtask typos --fix     # Auto-fix typos
 cargo xtask setup           # Configure git hooks (sets core.hooksPath to .githooks)
 ```
 
@@ -89,10 +94,19 @@ cargo test -p uselesskey-rsa test_name
 - **`crates/uselesskey-ecdsa`** - ECDSA (P-256/P-384) fixtures via `EcdsaFactoryExt` trait
 - **`crates/uselesskey-ed25519`** - Ed25519 fixtures via `Ed25519FactoryExt` trait
 - **`crates/uselesskey-hmac`** - HMAC (HS256/HS384/HS512) fixtures via `HmacFactoryExt` trait
-- **`crates/uselesskey-x509`** - X.509 self-signed certificate fixtures via `X509FactoryExt` trait
-- **`crates/uselesskey-jsonwebtoken`** - Adapter: returns `jsonwebtoken` `EncodingKey`/`DecodingKey` directly
+- **`crates/uselesskey-token`** - Token fixtures (API key, bearer, OAuth/JWT-shape) via `TokenFactoryExt` trait
+- **`crates/uselesskey-pgp`** - OpenPGP key fixtures (RSA/Ed25519, armored/binary) via `PgpFactoryExt` trait
+- **`crates/uselesskey-x509`** - X.509 certificate fixtures via `X509FactoryExt` trait
+- **`crates/uselesskey-jsonwebtoken`** - Adapter: `jsonwebtoken` integration
+- **`crates/uselesskey-rustls`** - Adapter: `rustls` / `rustls-pki-types` integration
+- **`crates/uselesskey-ring`** - Adapter: `ring` integration
+- **`crates/uselesskey-rustcrypto`** - Adapter: RustCrypto integration
+- **`crates/uselesskey-aws-lc-rs`** - Adapter: `aws-lc-rs` integration
+- **`crates/uselesskey-tonic`** - Adapter: `tonic` gRPC TLS integration
 - **`crates/uselesskey-bdd`** - Cucumber BDD tests
 - **`xtask`** - Build automation commands
+
+> See `docs/architecture.md` for the full 48-crate breakdown including core microcrates.
 
 ### Key Concepts
 
@@ -102,7 +116,7 @@ cargo test -p uselesskey-rsa test_name
 
 **Cache**: DashMap-based concurrent cache stores `Arc<dyn Any + Send + Sync>`.
 
-**Negative Fixtures**: Corrupt PEM variants (`CorruptPem` enum), truncated DER, mismatched keypairs via `"mismatch"` variant.
+**Negative Fixtures**: Corrupt PEM variants (`CorruptPem` enum), truncated DER, mismatched keypairs via `"mismatch"` variant. X.509 negative fixtures include expired certs, hostname mismatch, unknown CA, and revoked leaf with CRL.
 
 ### Extension Pattern
 
@@ -111,6 +125,8 @@ Key type support is added via extension traits on `Factory`:
 - `EcdsaFactoryExt` → `fx.ecdsa(label, spec)`
 - `Ed25519FactoryExt` → `fx.ed25519(label)`
 - `HmacFactoryExt` → `fx.hmac(label, spec)`
+- `TokenFactoryExt` → `fx.token(label, spec)`
+- `PgpFactoryExt` → `fx.pgp(label, spec)`
 - `X509FactoryExt` → `fx.x509(label, spec)`
 
 Adapter crates (e.g. `uselesskey-jsonwebtoken`) are separate crates, not features, to avoid coupling versioning.
@@ -125,7 +141,9 @@ Adapter crates (e.g. `uselesskey-jsonwebtoken`) are separate crates, not feature
 ## Testing
 
 - Unit/integration tests use `#[test]`, `proptest` (property-based), and `rstest` (parameterized)
-- BDD tests in `crates/uselesskey-bdd/features/rsa.feature`
+- `cargo xtask test` runs `--workspace --all-features --exclude uselesskey-bdd`
+- `cargo xtask bdd` runs BDD tests separately with `--release` (RSA keygen is too slow in debug)
+- BDD feature files in `crates/uselesskey-bdd/features/` covering all key types, X.509, JWK, negative fixtures, and edge cases
 - Fuzz targets in `fuzz/fuzz_targets/`
 
 ## Configuration Files
