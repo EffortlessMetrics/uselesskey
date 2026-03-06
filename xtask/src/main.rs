@@ -310,6 +310,7 @@ const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-core-cache",
     "uselesskey-core-factory",
     "uselesskey-core-kid",
+    "uselesskey-token-spec",
     // Negative fixture crates
     "uselesskey-core-negative-der",
     "uselesskey-core-negative-pem",
@@ -339,7 +340,6 @@ const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-ed25519",
     "uselesskey-hmac",
     "uselesskey-token",
-    "uselesskey-token-spec",
     "uselesskey-pgp",
     "uselesskey-x509",
     // Facade
