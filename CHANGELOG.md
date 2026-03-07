@@ -156,7 +156,7 @@ entering version control while giving tests realistic key formats.
 
 ### Architecture
 
-50-crate workspace organised into four layers:
+Repository organised into four layers:
 
 **Facade**
 
