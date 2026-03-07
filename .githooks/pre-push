@@ -1,4 +1,2 @@
 #!/usr/bin/env bash
-set -euo pipefail
-
-cargo xtask gate --check
+exec cargo xtask hook pre-push "$@"

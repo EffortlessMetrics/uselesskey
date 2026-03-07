@@ -1,5 +1,14 @@
 # Release
 
+## Status
+
+The crates.io prep phase is complete on `main`.
+
+- `chore: publish-prep for v0.2.0 (#229)` is merged.
+- `fix(xtask): handle 429 rate limits and already-published crates in publish (#230)` is merged.
+
+Use this document for the steady-state release flow, not as a prep checklist.
+
 ## Publish order
 
 The authoritative publish order is the `PUBLISH_CRATES` constant in
@@ -31,5 +40,10 @@ cargo xtask publish-preflight   # metadata validation + cargo package
 cargo xtask publish   # publishes all 43 crates in dependency order with retry
 ```
 
-This command handles crates.io indexing lag automatically (retries up to 3×
-with 60 s backoff per crate, plus a 30 s post-publish wait).
+This command handles crates.io indexing lag automatically. Current behavior:
+
+- retries each crate up to 5 times
+- waits 60 s for indexing-race failures (`failed to select a version`, `not found`)
+- backs off on rate limits (`429` / `too many requests`) with `120 s * attempt`
+- treats "already uploaded" / "already exists" as success for reruns
+- waits 30 s after each successful publish for indexing

@@ -101,6 +101,28 @@ enum Cmd {
         /// Path to the commit message file.
         message_file: PathBuf,
     },
+    /// Run git hook behavior.
+    Hook {
+        /// Name of the git hook (pre-commit, pre-push).
+        #[command(subcommand)]
+        hook: HookCmd,
+    },
+}
+
+#[derive(Subcommand)]
+enum HookCmd {
+    /// Delegate for `pre-commit`.
+    PreCommit {
+        /// Forwarded positional args (currently unused).
+        #[arg(last = true)]
+        _args: Vec<String>,
+    },
+    /// Delegate for `pre-push`.
+    PrePush {
+        /// Forwarded positional args (currently unused).
+        #[arg(last = true)]
+        _args: Vec<String>,
+    },
 }
 
 fn main() -> Result<()> {
@@ -130,6 +152,10 @@ fn main() -> Result<()> {
         Cmd::Gate { check: _ } => gate(),
         Cmd::Setup => setup(),
         Cmd::CommitLint { message_file } => commit_lint(&message_file),
+        Cmd::Hook { hook } => match hook {
+            HookCmd::PreCommit { .. } => hook_pre_commit(),
+            HookCmd::PrePush { .. } => hook_pre_push(),
+        },
     }
 }
 
@@ -317,8 +343,8 @@ const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-core-negative",
     // Sinks and shapes
     "uselesskey-core-sink",
-    "uselesskey-core-token",
     "uselesskey-core-token-shape",
+    "uselesskey-core-token",
     "uselesskey-core-jwk-shape",
     "uselesskey-core-jwks-order",
     "uselesskey-core-jwk-builder",
@@ -372,8 +398,8 @@ const MUTANT_CRATES: &[&str] = &[
     "uselesskey-core-negative-pem",
     "uselesskey-core-negative",
     "uselesskey-core-sink",
-    "uselesskey-core-token",
     "uselesskey-core-token-shape",
+    "uselesskey-core-token",
     "uselesskey-core-jwk-shape",
     "uselesskey-core-jwks-order",
     "uselesskey-core-jwk-builder",
@@ -1474,6 +1500,54 @@ fn commit_lint(message_file: &Path) -> Result<()> {
     }
 
     Ok(())
+}
+
+fn hook_pre_commit() -> Result<()> {
+    let output = Command::new("git")
+        .args([
+            "diff",
+            "--cached",
+            "--name-only",
+            "--diff-filter=ACMR",
+            "--",
+            "*.rs",
+            "Cargo.toml",
+            "Cargo.lock",
+        ])
+        .output()
+        .context("failed to run git diff --cached")?;
+
+    if !output.status.success() {
+        bail!(
+            "git diff --cached failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    let staged = String::from_utf8(output.stdout).context("git diff output was not valid UTF-8")?;
+    let staged_files: Vec<String> = staged
+        .lines()
+        .map(str::trim_end)
+        .filter(|line| !line.is_empty())
+        .map(ToString::to_string)
+        .collect();
+
+    if staged_files.is_empty() {
+        return Ok(());
+    }
+
+    lint_fix(false, false)?;
+
+    for file in staged_files {
+        if Path::new(&file).is_file() {
+            run(Command::new("git").args(["add", &file]))?;
+        }
+    }
+    Ok(())
+}
+
+fn hook_pre_push() -> Result<()> {
+    gate()
 }
 
 #[cfg(test)]

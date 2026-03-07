@@ -20,6 +20,11 @@ This sets `core.hooksPath` to `.githooks`, enabling:
 - **pre-commit**: auto-formats and runs clippy fix on staged Rust/Cargo files.
 - **pre-push**: runs the quality gate (fmt check + cargo check + clippy + test compile).
 
+Both hooks now delegate to `xtask`:
+
+- `pre-commit` -> `cargo xtask hook pre-commit`
+- `pre-push` -> `cargo xtask hook pre-push`
+
 ## Common commands
 
 This repository uses `xtask` for automation. You can run these commands via `cargo xtask <cmd>`.

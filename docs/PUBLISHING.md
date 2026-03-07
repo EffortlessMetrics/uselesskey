@@ -1,6 +1,7 @@
 # Crates.io readiness and publishing playbook
 
-This repo is crates.io-ready when:
+`main` is already in the crates.io-ready state. The publish-prep work landed in
+`#229`; this document records the invariants to keep true for future releases:
 
 - Main stays boring-green (repeatable CI, no flaky hangs, no “works on my machine” gaps)
 - Every publishable crate packages cleanly (as crates.io sees it)
