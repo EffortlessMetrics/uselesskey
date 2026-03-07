@@ -34,6 +34,8 @@ The project uses `cargo xtask` for most operations.
 *   **Coverage:** `cargo xtask coverage` (Requires `cargo-llvm-cov`)
 *   **Spell Check:** `cargo xtask typos` (Requires `typos` installed; `--fix` to auto-fix)
 *   **Secret Check:** `cargo xtask no-blob` (Ensures no secret-shaped blobs are in the repo)
+*   **BDD Matrix:** `cargo xtask bdd-matrix` (BDD matrix with feature sets)
+*   **Publish:** `cargo xtask publish` (Publish all crates in dependency order)
 
 ### Running Specific Tests
 ```bash

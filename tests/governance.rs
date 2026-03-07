@@ -7,7 +7,7 @@
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
-use toml::Value;
+use toml::Table;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -20,20 +20,20 @@ fn workspace_root() -> PathBuf {
         .to_path_buf()
 }
 
-fn read_toml(path: &Path) -> Value {
+fn read_toml(path: &Path) -> Table {
     let content =
         std::fs::read_to_string(path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
     content
-        .parse::<Value>()
+        .parse::<Table>()
         .unwrap_or_else(|e| panic!("parse {}: {e}", path.display()))
 }
 
-fn workspace_toml() -> Value {
+fn workspace_toml() -> Table {
     read_toml(&workspace_root().join("Cargo.toml"))
 }
 
 /// Return workspace member directory names listed in `[workspace] members`.
-fn workspace_members(ws: &Value) -> Vec<String> {
+fn workspace_members(ws: &Table) -> Vec<String> {
     ws["workspace"]["members"]
         .as_array()
         .expect("workspace.members must be an array")
@@ -43,7 +43,7 @@ fn workspace_members(ws: &Value) -> Vec<String> {
 }
 
 /// Canonical workspace version from `[workspace.package] version`.
-fn workspace_version(ws: &Value) -> &str {
+fn workspace_version(ws: &Table) -> &str {
     ws["workspace"]["package"]["version"]
         .as_str()
         .unwrap_or_else(|| {

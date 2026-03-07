@@ -237,10 +237,10 @@ Indexing lag: if dependency publish fails as “not found,” re-run later.
 
 ## Next checklist
 
-- [ ] CI runs `publish-check` on PRs
-- [ ] all non-publish crates have `publish = false`
-- [ ] docs.rs policy is encoded and validated
-- [ ] feature-matrix covers `--no-default-features` where promised
-- [ ] publish plan is complete and topo-ordered
-- [ ] `cargo package --list` is sane
-- [ ] dry-run publish rehearsal for leaf crates succeeds
+- [x] CI runs `publish-check` on PRs
+- [x] all non-publish crates have `publish = false`
+- [x] docs.rs policy is encoded and validated
+- [x] feature-matrix covers `--no-default-features` where promised
+- [x] publish plan is complete and topo-ordered
+- [x] `cargo package --list` is sane
+- [x] dry-run publish rehearsal for leaf crates succeeds

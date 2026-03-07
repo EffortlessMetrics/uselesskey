@@ -71,6 +71,8 @@ cargo xtask lint-fix --no-clippy # fmt only
 cargo xtask gate            # Pre-push quality gate: fmt check + cargo check + clippy + test compile
 cargo xtask typos           # Spell check (requires typos installed)
 cargo xtask typos --fix     # Auto-fix typos
+cargo xtask bdd-matrix      # BDD matrix with feature sets
+cargo xtask publish         # Publish all crates in dependency order
 cargo xtask setup           # Configure git hooks (sets core.hooksPath to .githooks)
 ```
 
@@ -104,6 +106,12 @@ cargo test -p uselesskey-rsa test_name
 - **`crates/uselesskey-aws-lc-rs`** - Adapter: `aws-lc-rs` integration
 - **`crates/uselesskey-tonic`** - Adapter: `tonic` gRPC TLS integration
 - **`crates/uselesskey-bdd`** - Cucumber BDD tests
+- **`crates/uselesskey-bdd-steps`** - BDD step definitions
+- **`crates/uselesskey-interop-tests`** - Cross-adapter interop tests
+- **`crates/uselesskey-feature-grid`** - Feature-matrix definitions
+- **`crates/uselesskey-test-grid`** - Test-grid facade
+- **`crates/uselesskey-token-spec`** - Token spec models
+- **`tests/`** - Workspace-level integration tests
 - **`xtask`** - Build automation commands
 
 > See `docs/architecture.md` for the full 48-crate breakdown including core microcrates.
@@ -123,11 +131,11 @@ cargo test -p uselesskey-rsa test_name
 Key type support is added via extension traits on `Factory`:
 - `RsaFactoryExt` → `fx.rsa(label, spec)`
 - `EcdsaFactoryExt` → `fx.ecdsa(label, spec)`
-- `Ed25519FactoryExt` → `fx.ed25519(label)`
+- `Ed25519FactoryExt` → `fx.ed25519(label, spec)`
 - `HmacFactoryExt` → `fx.hmac(label, spec)`
 - `TokenFactoryExt` → `fx.token(label, spec)`
 - `PgpFactoryExt` → `fx.pgp(label, spec)`
-- `X509FactoryExt` → `fx.x509(label, spec)`
+- `X509FactoryExt` → `fx.x509_self_signed(label, spec)` / `fx.x509_chain(label, spec)`
 
 Adapter crates (e.g. `uselesskey-jsonwebtoken`) are separate crates, not features, to avoid coupling versioning.
 

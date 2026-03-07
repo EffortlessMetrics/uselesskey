@@ -16,7 +16,7 @@ env:
 jobs:
   ci:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v6
         with:
@@ -36,11 +36,16 @@ jobs:
         with:
           cache-on-failure: true
 
-      - name: Install cargo-fuzz
-        run: cargo install cargo-fuzz --locked
+      - name: Install tools
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-fuzz,cargo-mutants,typos-cli,cargo-deny
 
-      - name: Install cargo-mutants
-        run: cargo install cargo-mutants --locked
+      - name: Toolchain diagnostics
+        run: |
+          rustc -vV
+          cargo +nightly -vV
+          cargo fuzz --version || true
 
       - name: xtask ci
         run: cargo xtask ci

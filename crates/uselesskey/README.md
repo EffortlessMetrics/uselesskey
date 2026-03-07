@@ -31,7 +31,7 @@ This crate replaces "security policy + docs + exceptions" with one
 
 ```toml
 [dev-dependencies]
-uselesskey = "0.3"
+uselesskey = "0.2"
 ```
 
 ```rust

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-03-06
+
 ### Added
 
 #### Testing infrastructure
@@ -154,7 +156,7 @@ entering version control while giving tests realistic key formats.
 
 ### Architecture
 
-51-crate workspace organised into four layers:
+Repository organised into four layers:
 
 **Facade**
 
@@ -203,7 +205,6 @@ entering version control while giving tests realistic key formats.
 | `uselesskey-ed25519` | Ed25519 fixtures (`Ed25519FactoryExt`) |
 | `uselesskey-hmac` | HMAC fixtures (`HmacFactoryExt`) |
 | `uselesskey-token` | Token fixtures (`TokenFactoryExt`) |
-| `uselesskey-token-spec` | Token spec models |
 | `uselesskey-pgp` | OpenPGP keyblock fixtures (`PgpFactoryExt`) |
 | `uselesskey-x509` | X.509 certificate fixtures (`X509FactoryExt`) |
 | `uselesskey-jwk` | JWK facade (re-exports `uselesskey-core-jwk`) |
@@ -244,5 +245,6 @@ entering version control while giving tests realistic key formats.
 - **Determinism regression** — hardcoded expected-value snapshots ensure
   derivation stability across releases
 
-[Unreleased]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/EffortlessMetrics/uselesskey/releases/tag/v0.1.0

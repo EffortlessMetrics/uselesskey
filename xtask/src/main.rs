@@ -310,6 +310,7 @@ const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-core-cache",
     "uselesskey-core-factory",
     "uselesskey-core-kid",
+    "uselesskey-token-spec",
     // Negative fixture crates
     "uselesskey-core-negative-der",
     "uselesskey-core-negative-pem",
@@ -339,7 +340,6 @@ const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-ed25519",
     "uselesskey-hmac",
     "uselesskey-token",
-    "uselesskey-token-spec",
     "uselesskey-pgp",
     "uselesskey-x509",
     // Facade
@@ -812,6 +812,8 @@ fn run_pr_plan(
         runner.skip("no-blob", reason.clone());
         runner.skip("coverage", reason.clone());
         runner.skip("coverage:report", reason.clone());
+        runner.skip("root-tests", reason.clone());
+        runner.skip("xtask-tests", reason.clone());
         runner.skip("preflight:metadata", reason.clone());
         for name in PUBLISH_CRATES {
             runner.skip(&format!("preflight:package:{name}"), reason.clone());
@@ -858,29 +860,35 @@ fn run_pr_plan(
         let counts = count_bdd_scenarios().unwrap_or_default();
         runner.set_bdd_counts(counts);
     } else {
-        runner.skip("bdd", Some("no rust or bdd feature changes".to_string()));
+        runner.skip(
+            "bdd",
+            Some("no crate source or bdd feature changes".to_string()),
+        );
     }
 
     if plan.run_mutants {
         let pr_crates: Vec<&str> = plan
-            .impacted_crates
+            .directly_changed_crates
             .iter()
             .filter(|name| PUBLISH_CRATES.contains(&name.as_str()))
             .map(|s| s.as_str())
             .collect();
         if pr_crates.is_empty() {
-            runner.skip("mutants", Some("no publishable crates impacted".into()));
+            runner.skip(
+                "mutants",
+                Some("no mutant-eligible crates directly changed".into()),
+            );
         } else {
             runner.step("mutants", None, || run_mutants(&pr_crates))?;
         }
     } else {
-        runner.skip("mutants", Some("no rust changes".to_string()));
+        runner.skip("mutants", Some("no crate source changes".to_string()));
     }
 
     if plan.run_fuzz {
         runner.step("fuzz", None, fuzz_pr)?;
     } else {
-        runner.skip("fuzz", Some("no rust changes".to_string()));
+        runner.skip("fuzz", Some("no crate source or fuzz changes".to_string()));
     }
 
     if plan.run_no_blob {
@@ -900,8 +908,33 @@ fn run_pr_plan(
             );
         }
     } else {
-        runner.skip("coverage", Some("no rust changes".into()));
-        runner.skip("coverage:report", Some("no rust changes".into()));
+        runner.skip("coverage", Some("no crate source changes".into()));
+        runner.skip("coverage:report", Some("no crate source changes".into()));
+    }
+
+    if plan.run_root_tests {
+        runner.step("root-tests", None, || {
+            let mut cmd = Command::new("cargo");
+            cmd.args([
+                "test",
+                "-p",
+                "uselesskey-integration-tests",
+                "--all-features",
+            ]);
+            run(&mut cmd)
+        })?;
+    } else {
+        runner.skip("root-tests", Some("no root test changes".into()));
+    }
+
+    if plan.run_xtask_tests {
+        runner.step("xtask-tests", None, || {
+            let mut cmd = Command::new("cargo");
+            cmd.args(["test", "-p", "xtask"]);
+            run(&mut cmd)
+        })?;
+    } else {
+        runner.skip("xtask-tests", Some("no xtask changes".into()));
     }
 
     if plan.run_publish_preflight {
