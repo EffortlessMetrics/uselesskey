@@ -101,6 +101,20 @@ enum Cmd {
         /// Path to the commit message file.
         message_file: PathBuf,
     },
+    /// Run git hook behavior.
+    Hook {
+        /// Name of the git hook (pre-commit, pre-push).
+        #[command(subcommand)]
+        hook: HookCmd,
+    },
+}
+
+#[derive(Subcommand)]
+enum HookCmd {
+    /// Delegate for `pre-commit`.
+    PreCommit,
+    /// Delegate for `pre-push`.
+    PrePush,
 }
 
 fn main() -> Result<()> {
@@ -130,6 +144,10 @@ fn main() -> Result<()> {
         Cmd::Gate { check: _ } => gate(),
         Cmd::Setup => setup(),
         Cmd::CommitLint { message_file } => commit_lint(&message_file),
+        Cmd::Hook { hook } => match hook {
+            HookCmd::PreCommit => hook_pre_commit(),
+            HookCmd::PrePush => hook_pre_push(),
+        },
     }
 }
 
@@ -317,8 +335,8 @@ const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-core-negative",
     // Sinks and shapes
     "uselesskey-core-sink",
-    "uselesskey-core-token",
     "uselesskey-core-token-shape",
+    "uselesskey-core-token",
     "uselesskey-core-jwk-shape",
     "uselesskey-core-jwks-order",
     "uselesskey-core-jwk-builder",
@@ -372,8 +390,8 @@ const MUTANT_CRATES: &[&str] = &[
     "uselesskey-core-negative-pem",
     "uselesskey-core-negative",
     "uselesskey-core-sink",
-    "uselesskey-core-token",
     "uselesskey-core-token-shape",
+    "uselesskey-core-token",
     "uselesskey-core-jwk-shape",
     "uselesskey-core-jwks-order",
     "uselesskey-core-jwk-builder",
@@ -1476,6 +1494,68 @@ fn commit_lint(message_file: &Path) -> Result<()> {
     Ok(())
 }
 
+fn hook_pre_commit() -> Result<()> {
+    let output = Command::new("git")
+        .args([
+            "diff",
+            "--cached",
+            "--name-only",
+            "-z",
+            "--diff-filter=ACMR",
+            "--",
+            "*.rs",
+            "Cargo.toml",
+            "Cargo.lock",
+        ])
+        .output()
+        .context("failed to run git diff --cached")?;
+
+    if !output.status.success() {
+        bail!(
+            "git diff --cached failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    let staged_files = parse_null_delimited_paths(&output.stdout);
+
+    if staged_files.is_empty() {
+        return Ok(());
+    }
+
+    lint_fix(false, false)?;
+
+    for file in staged_files {
+        if file.is_file() {
+            run(Command::new("git").args(["add", "--"]).arg(file.as_os_str()))?;
+        }
+    }
+    Ok(())
+}
+
+fn parse_null_delimited_paths(raw: &[u8]) -> Vec<PathBuf> {
+    raw.split(|b| *b == b'\0')
+        .filter(|entry| !entry.is_empty())
+        .map(|entry| {
+            #[cfg(unix)]
+            {
+                use std::os::unix::ffi::OsStringExt;
+                PathBuf::from(std::ffi::OsString::from_vec(entry.to_vec()))
+            }
+
+            #[cfg(not(unix))]
+            {
+                let file = String::from_utf8_lossy(entry).into_owned();
+                PathBuf::from(file)
+            }
+        })
+        .collect()
+}
+
+fn hook_pre_push() -> Result<()> {
+    gate()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1690,5 +1770,22 @@ end_of_record
         let _cwd = CwdGuard::new(root);
         let counts = count_bdd_scenarios().expect("count scenarios");
         assert_eq!(counts.get("sample.feature"), Some(&2));
+    }
+
+    #[test]
+    fn parse_null_delimited_paths_preserves_path_components() {
+        let staged = b"Cargo.toml\0crates/dir/src/lib.rs\0";
+        let paths = parse_null_delimited_paths(staged);
+        assert_eq!(paths.len(), 2);
+        assert_eq!(paths[0], PathBuf::from("Cargo.toml"));
+        assert_eq!(paths[1], PathBuf::from("crates/dir/src/lib.rs"));
+    }
+
+    #[test]
+    fn parse_null_delimited_paths_ignores_trailing_null() {
+        let staged = b"one.rs\0";
+        let paths = parse_null_delimited_paths(staged);
+        assert_eq!(paths.len(), 1);
+        assert_eq!(paths[0], PathBuf::from("one.rs"));
     }
 }
