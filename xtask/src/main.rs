@@ -443,7 +443,7 @@ fn publish() -> Result<()> {
     for name in PUBLISH_CRATES {
         pb.set_message(format!("publishing {name}"));
         let mut success = false;
-        for attempt in 1..=3 {
+        for attempt in 1..=5 {
             let output = Command::new("cargo")
                 .args(["publish", "-p", name])
                 .stdout(Stdio::null())
@@ -457,15 +457,29 @@ fn publish() -> Result<()> {
             }
 
             let stderr = String::from_utf8_lossy(&output.stderr);
-            let retriable = stderr.contains("failed to select a version")
+
+            // Already published — treat as success
+            if stderr.contains("already uploaded") || stderr.contains("already exists") {
+                success = true;
+                break;
+            }
+
+            let index_race = stderr.contains("failed to select a version")
                 || stderr.contains("no matching package")
                 || stderr.to_lowercase().contains("not found");
+            let rate_limited = stderr.contains("429") || stderr.to_lowercase().contains("too many");
 
-            if retriable {
+            if index_race {
                 pb.set_message(format!(
                     "indexing race for {name} (attempt {attempt})... waiting"
                 ));
                 std::thread::sleep(std::time::Duration::from_secs(60));
+            } else if rate_limited {
+                let wait = 120 * attempt as u64;
+                pb.set_message(format!(
+                    "rate-limited on {name} (attempt {attempt})... waiting {wait}s"
+                ));
+                std::thread::sleep(std::time::Duration::from_secs(wait));
             } else {
                 eprint!("{stderr}");
                 pb.finish_with_message(format!("failed {name}"));
@@ -473,8 +487,8 @@ fn publish() -> Result<()> {
             }
         }
         if !success {
-            pb.finish_with_message(format!("failed {name} after 3 attempts"));
-            bail!("{name} failed after 3 attempts");
+            pb.finish_with_message(format!("failed {name} after 5 attempts"));
+            bail!("{name} failed after 5 attempts");
         }
         pb.set_message(format!("published {name}, waiting for indexing"));
         std::thread::sleep(std::time::Duration::from_secs(30));
