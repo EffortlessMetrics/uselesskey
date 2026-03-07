@@ -112,17 +112,9 @@ enum Cmd {
 #[derive(Subcommand)]
 enum HookCmd {
     /// Delegate for `pre-commit`.
-    PreCommit {
-        /// Forwarded positional args (currently unused).
-        #[arg(last = true)]
-        _args: Vec<String>,
-    },
+    PreCommit,
     /// Delegate for `pre-push`.
-    PrePush {
-        /// Forwarded positional args (currently unused).
-        #[arg(last = true)]
-        _args: Vec<String>,
-    },
+    PrePush,
 }
 
 fn main() -> Result<()> {
@@ -153,8 +145,8 @@ fn main() -> Result<()> {
         Cmd::Setup => setup(),
         Cmd::CommitLint { message_file } => commit_lint(&message_file),
         Cmd::Hook { hook } => match hook {
-            HookCmd::PreCommit { .. } => hook_pre_commit(),
-            HookCmd::PrePush { .. } => hook_pre_push(),
+            HookCmd::PreCommit => hook_pre_commit(),
+            HookCmd::PrePush => hook_pre_push(),
         },
     }
 }
@@ -1508,6 +1500,7 @@ fn hook_pre_commit() -> Result<()> {
             "diff",
             "--cached",
             "--name-only",
+            "-z",
             "--diff-filter=ACMR",
             "--",
             "*.rs",
@@ -1524,13 +1517,7 @@ fn hook_pre_commit() -> Result<()> {
         );
     }
 
-    let staged = String::from_utf8(output.stdout).context("git diff output was not valid UTF-8")?;
-    let staged_files: Vec<String> = staged
-        .lines()
-        .map(str::trim_end)
-        .filter(|line| !line.is_empty())
-        .map(ToString::to_string)
-        .collect();
+    let staged_files = parse_null_delimited_paths(&output.stdout);
 
     if staged_files.is_empty() {
         return Ok(());
@@ -1539,11 +1526,30 @@ fn hook_pre_commit() -> Result<()> {
     lint_fix(false, false)?;
 
     for file in staged_files {
-        if Path::new(&file).is_file() {
-            run(Command::new("git").args(["add", &file]))?;
+        if file.is_file() {
+            run(Command::new("git").args(["add", "--"]).arg(file.as_os_str()))?;
         }
     }
     Ok(())
+}
+
+fn parse_null_delimited_paths(raw: &[u8]) -> Vec<PathBuf> {
+    raw.split(|b| *b == b'\0')
+        .filter(|entry| !entry.is_empty())
+        .map(|entry| {
+            #[cfg(unix)]
+            {
+                use std::os::unix::ffi::OsStringExt;
+                PathBuf::from(std::ffi::OsString::from_vec(entry.to_vec()))
+            }
+
+            #[cfg(not(unix))]
+            {
+                let file = String::from_utf8_lossy(entry).into_owned();
+                PathBuf::from(file)
+            }
+        })
+        .collect()
 }
 
 fn hook_pre_push() -> Result<()> {
@@ -1764,5 +1770,22 @@ end_of_record
         let _cwd = CwdGuard::new(root);
         let counts = count_bdd_scenarios().expect("count scenarios");
         assert_eq!(counts.get("sample.feature"), Some(&2));
+    }
+
+    #[test]
+    fn parse_null_delimited_paths_preserves_path_components() {
+        let staged = b"Cargo.toml\0crates/dir/src/lib.rs\0";
+        let paths = parse_null_delimited_paths(staged);
+        assert_eq!(paths.len(), 2);
+        assert_eq!(paths[0], PathBuf::from("Cargo.toml"));
+        assert_eq!(paths[1], PathBuf::from("crates/dir/src/lib.rs"));
+    }
+
+    #[test]
+    fn parse_null_delimited_paths_ignores_trailing_null() {
+        let staged = b"one.rs\0";
+        let paths = parse_null_delimited_paths(staged);
+        assert_eq!(paths.len(), 1);
+        assert_eq!(paths[0], PathBuf::from("one.rs"));
     }
 }

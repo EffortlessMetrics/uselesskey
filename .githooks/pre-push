@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-exec cargo xtask hook pre-push "$@"
+exec cargo xtask hook pre-push
