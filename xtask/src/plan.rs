@@ -3,6 +3,7 @@ use std::collections::{BTreeSet, HashSet};
 #[derive(Debug, Clone)]
 pub struct Plan {
     pub impacted_crates: BTreeSet<String>,
+    pub directly_changed_crates: BTreeSet<String>,
     pub run_fmt: bool,
     pub run_clippy: bool,
     pub run_tests: bool,
@@ -14,25 +15,55 @@ pub struct Plan {
     pub run_no_blob: bool,
     pub run_coverage: bool,
     pub run_publish_preflight: bool,
+    pub run_root_tests: bool,
+    pub run_xtask_tests: bool,
     pub docs_only: bool,
 }
 
 pub fn build_plan(paths: &[String]) -> Plan {
-    let mut rust_code_changed = false;
+    let mut crate_rust_changed = false;
+    let mut xtask_changed = false;
+    let mut xtask_cargo_changed = false;
+    let mut fuzz_changed = false;
+    let mut root_tests_changed = false;
+    let mut examples_changed = false;
     let mut cargo_changed = false;
     let mut bdd_feature_changed = false;
     let mut no_blob_trigger = false;
+    let mut tests_cargo_changed = false;
     let mut changed_crates: HashSet<String> = HashSet::new();
+    let mut source_changed_crates: HashSet<String> = HashSet::new();
 
     for path in paths {
         let path = normalize_path(path);
 
-        if is_rust_code_change(&path) {
-            rust_code_changed = true;
+        if is_crate_rust_change(&path) {
+            crate_rust_changed = true;
+            if let Some(crate_name) = crate_from_path(&path) {
+                source_changed_crates.insert(crate_name);
+            }
+        }
+        if is_xtask_change(&path) {
+            xtask_changed = true;
+        }
+        if path == "xtask/Cargo.toml" {
+            xtask_cargo_changed = true;
+        }
+        if is_fuzz_change(&path) {
+            fuzz_changed = true;
+        }
+        if is_root_tests_change(&path) {
+            root_tests_changed = true;
+        }
+        if is_examples_change(&path) {
+            examples_changed = true;
         }
 
         if path.ends_with("Cargo.toml") || path.ends_with("Cargo.lock") {
             cargo_changed = true;
+        }
+        if path == "tests/Cargo.toml" {
+            tests_cargo_changed = true;
         }
 
         if path.starts_with("crates/uselesskey-bdd/")
@@ -52,10 +83,18 @@ pub fn build_plan(paths: &[String]) -> Plan {
     }
 
     let impacted_crates = expand_impacted_crates(&changed_crates);
+    let directly_changed_crates = source_changed_crates.into_iter().collect::<BTreeSet<_>>();
 
-    let run_fmt = rust_code_changed || cargo_changed;
+    // any_rust_changed is the OR of all five classifiers (used for fmt/clippy)
+    let any_rust_changed = crate_rust_changed
+        || xtask_changed
+        || fuzz_changed
+        || root_tests_changed
+        || examples_changed;
+
+    let run_fmt = any_rust_changed || cargo_changed;
     let run_clippy = run_fmt;
-    let run_tests = rust_code_changed || !impacted_crates.is_empty();
+    let run_tests = crate_rust_changed || root_tests_changed || !impacted_crates.is_empty();
     let run_feature_matrix = cargo_changed
         || paths.iter().any(|p| {
             let p = normalize_path(p);
@@ -63,12 +102,14 @@ pub fn build_plan(paths: &[String]) -> Plan {
                 || (p.starts_with("crates/uselesskey-bdd/") && p.ends_with(".feature"))
         });
     let run_dep_guard = cargo_changed;
-    let run_bdd = rust_code_changed || bdd_feature_changed;
-    let run_mutants = rust_code_changed;
-    let run_fuzz = rust_code_changed;
+    let run_bdd = crate_rust_changed || bdd_feature_changed;
+    let run_mutants = crate_rust_changed;
+    let run_fuzz = crate_rust_changed || fuzz_changed;
     let run_no_blob = no_blob_trigger;
-    let run_coverage = rust_code_changed;
+    let run_coverage = crate_rust_changed;
     let run_publish_preflight = cargo_changed;
+    let run_root_tests = root_tests_changed || tests_cargo_changed;
+    let run_xtask_tests = xtask_changed || xtask_cargo_changed;
 
     let run_any = run_fmt
         || run_clippy
@@ -80,10 +121,13 @@ pub fn build_plan(paths: &[String]) -> Plan {
         || run_fuzz
         || run_no_blob
         || run_coverage
-        || run_publish_preflight;
+        || run_publish_preflight
+        || run_root_tests
+        || run_xtask_tests;
 
     Plan {
         impacted_crates,
+        directly_changed_crates,
         run_fmt,
         run_clippy,
         run_tests,
@@ -95,6 +139,8 @@ pub fn build_plan(paths: &[String]) -> Plan {
         run_no_blob,
         run_coverage,
         run_publish_preflight,
+        run_root_tests,
+        run_xtask_tests,
         docs_only: !run_any,
     }
 }
@@ -103,15 +149,26 @@ fn normalize_path(path: &str) -> String {
     path.replace('\\', "/")
 }
 
-fn is_rust_code_change(path: &str) -> bool {
-    if !path.ends_with(".rs") {
-        return false;
-    }
+fn is_crate_rust_change(path: &str) -> bool {
+    path.ends_with(".rs")
+        && path.starts_with("crates/")
+        && (path.contains("/src/") || path.contains("/tests/"))
+}
 
-    path.starts_with("crates/") && (path.contains("/src/") || path.contains("/tests/"))
-        || path.starts_with("xtask/")
-        || path.starts_with("fuzz/")
-        || path.starts_with("examples/")
+fn is_xtask_change(path: &str) -> bool {
+    path.ends_with(".rs") && path.starts_with("xtask/")
+}
+
+fn is_fuzz_change(path: &str) -> bool {
+    path.ends_with(".rs") && path.starts_with("fuzz/")
+}
+
+fn is_root_tests_change(path: &str) -> bool {
+    path.ends_with(".rs") && path.starts_with("tests/")
+}
+
+fn is_examples_change(path: &str) -> bool {
+    path.ends_with(".rs") && path.starts_with("examples/")
 }
 
 fn is_no_blob_trigger(path: &str) -> bool {
@@ -488,7 +545,111 @@ mod tests {
         let plan = build_plan(&paths);
         assert!(plan.run_fmt);
         assert!(plan.run_clippy);
+        // examples-only changes don't trigger tests (no crate source or root test changes)
+        assert!(!plan.run_tests);
+    }
+
+    #[test]
+    fn xtask_only_change_skips_expensive_steps() {
+        let paths = vec!["xtask/src/main.rs".to_string()];
+        let plan = build_plan(&paths);
+        assert!(plan.run_fmt);
+        assert!(plan.run_clippy);
+        assert!(!plan.run_tests);
+        assert!(!plan.run_bdd);
+        assert!(!plan.run_mutants);
+        assert!(!plan.run_fuzz);
+        assert!(!plan.run_coverage);
+        assert!(!plan.run_root_tests);
+        assert!(plan.run_xtask_tests);
+        assert!(plan.directly_changed_crates.is_empty());
+    }
+
+    #[test]
+    fn xtask_rs_change_triggers_xtask_tests() {
+        let paths = vec!["xtask/src/main.rs".to_string()];
+        let plan = build_plan(&paths);
+        assert!(plan.run_xtask_tests);
+    }
+
+    #[test]
+    fn xtask_cargo_change_triggers_xtask_tests() {
+        let paths = vec!["xtask/Cargo.toml".to_string()];
+        let plan = build_plan(&paths);
+        assert!(plan.run_xtask_tests);
+    }
+
+    #[test]
+    fn fuzz_only_change_runs_fuzz_but_not_mutants() {
+        let paths = vec!["fuzz/fuzz_targets/pem_corrupt.rs".to_string()];
+        let plan = build_plan(&paths);
+        assert!(plan.run_fmt);
+        assert!(plan.run_clippy);
+        assert!(plan.run_fuzz);
+        assert!(!plan.run_mutants);
+        assert!(!plan.run_bdd);
+        assert!(!plan.run_coverage);
+    }
+
+    #[test]
+    fn root_tests_change_triggers_root_tests() {
+        let paths = vec!["tests/governance.rs".to_string()];
+        let plan = build_plan(&paths);
+        assert!(plan.run_fmt);
+        assert!(plan.run_clippy);
         assert!(plan.run_tests);
+        assert!(plan.run_root_tests);
+        assert!(!plan.run_bdd);
+        assert!(!plan.run_mutants);
+        assert!(!plan.run_fuzz);
+        assert!(!plan.run_coverage);
+    }
+
+    #[test]
+    fn tests_cargo_toml_triggers_root_tests() {
+        let paths = vec!["tests/Cargo.toml".to_string()];
+        let plan = build_plan(&paths);
+        assert!(plan.run_root_tests);
+        assert!(!plan.run_bdd);
+        assert!(!plan.run_mutants);
+        assert!(!plan.run_fuzz);
+        assert!(!plan.run_coverage);
+    }
+
+    #[test]
+    fn release_prep_cargo_only_skips_expensive_steps() {
+        let paths = vec![
+            "Cargo.toml".to_string(),
+            "crates/uselesskey-core/Cargo.toml".to_string(),
+            "crates/uselesskey-rsa/Cargo.toml".to_string(),
+        ];
+        let plan = build_plan(&paths);
+        assert!(plan.run_fmt);
+        assert!(plan.run_clippy);
+        assert!(plan.run_tests); // impacted_crates is non-empty
+        assert!(plan.run_dep_guard);
+        assert!(plan.run_publish_preflight);
+        assert!(!plan.run_bdd);
+        assert!(!plan.run_mutants);
+        assert!(!plan.run_fuzz);
+        assert!(!plan.run_coverage);
+        assert!(!plan.run_root_tests);
+        assert!(plan.directly_changed_crates.is_empty());
+    }
+
+    #[test]
+    fn directly_changed_crates_tracks_source_changes() {
+        let paths = vec![
+            "crates/uselesskey-core/src/lib.rs".to_string(),
+            "crates/uselesskey-rsa/Cargo.toml".to_string(),
+        ];
+        let plan = build_plan(&paths);
+        // directly_changed_crates only includes crates with actual .rs changes (no expansion)
+        assert!(plan.directly_changed_crates.contains("uselesskey-core"));
+        assert!(!plan.directly_changed_crates.contains("uselesskey-rsa")); // NOT expanded
+        // impacted_crates includes both source and Cargo.toml changes (with expansion)
+        assert!(plan.impacted_crates.contains("uselesskey-rsa"));
+        assert!(plan.impacted_crates.contains("uselesskey-core"));
     }
 
     #[test]
