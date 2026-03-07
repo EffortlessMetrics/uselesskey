@@ -24,5 +24,6 @@ nul
 # Build logs
 output.txt
 
+.claude/
 .gemini/
 gha-creds-*.json

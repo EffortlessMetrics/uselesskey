@@ -114,7 +114,7 @@ cargo test -p uselesskey-rsa test_name
 - **`tests/`** - Workspace-level integration tests
 - **`xtask`** - Build automation commands
 
-> See `docs/architecture.md` for the full 48-crate breakdown including core microcrates.
+> See `docs/explanation/architecture.md` for the full 48-crate breakdown including core microcrates.
 
 ### Key Concepts
 
