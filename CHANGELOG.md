@@ -156,7 +156,7 @@ entering version control while giving tests realistic key formats.
 
 ### Architecture
 
-51-crate workspace organised into four layers:
+50-crate workspace organised into four layers:
 
 **Facade**
 
@@ -205,7 +205,6 @@ entering version control while giving tests realistic key formats.
 | `uselesskey-ed25519` | Ed25519 fixtures (`Ed25519FactoryExt`) |
 | `uselesskey-hmac` | HMAC fixtures (`HmacFactoryExt`) |
 | `uselesskey-token` | Token fixtures (`TokenFactoryExt`) |
-| `uselesskey-token-spec` | Token spec models |
 | `uselesskey-pgp` | OpenPGP keyblock fixtures (`PgpFactoryExt`) |
 | `uselesskey-x509` | X.509 certificate fixtures (`X509FactoryExt`) |
 | `uselesskey-jwk` | JWK facade (re-exports `uselesskey-core-jwk`) |

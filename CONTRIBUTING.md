@@ -44,6 +44,10 @@ cargo xtask nextest         # Run tests via cargo-nextest (requires cargo-nextes
 cargo xtask lint-fix        # Auto-fix fmt + clippy, then verify
 cargo xtask lint-fix --check # Check-only (no mutations)
 cargo xtask gate            # Pre-push quality gate: fmt check + cargo check + clippy + test compile
+cargo xtask bdd-matrix      # BDD matrix with feature sets
+cargo xtask publish         # Publish all crates in dependency order
+cargo xtask typos           # Spell check (requires typos installed)
+cargo xtask typos --fix     # Auto-fix typos
 cargo xtask setup           # Configure git hooks (sets core.hooksPath to .githooks)
 ```
 
