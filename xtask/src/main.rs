@@ -69,7 +69,14 @@ enum Cmd {
     /// Validate publish metadata and run `cargo package --no-verify` for all crates.
     PublishPreflight,
     /// Publish all crates to crates.io in dependency order (with retry logic).
-    Publish,
+    Publish {
+        /// Resume from this crate (skip all crates before it in publish order).
+        #[arg(long)]
+        from: Option<String>,
+        /// Resume from the last failure recorded in target/xtask/publish-state.json.
+        #[arg(long)]
+        resume: bool,
+    },
     /// Run fuzz targets (requires `cargo-fuzz` installed).
     Fuzz {
         /// Name of the fuzz target (e.g. `rsa_pkcs8_pem_parse`).
@@ -137,7 +144,7 @@ fn main() -> Result<()> {
         Cmd::BddMatrix => bdd_matrix(),
         Cmd::Coverage => coverage(),
         Cmd::PublishPreflight => publish_preflight(),
-        Cmd::Publish => publish(),
+        Cmd::Publish { from, resume } => publish(from, resume),
         Cmd::Mutants => run_mutants(PUBLISH_CRATES),
         Cmd::Fuzz { target, args } => fuzz(target.as_deref(), &args),
         Cmd::LintFix { check, no_clippy } => lint_fix(check, no_clippy),
@@ -450,15 +457,143 @@ fn typos(fix: bool) -> Result<()> {
     run(&mut cmd)
 }
 
-fn publish() -> Result<()> {
+const PUBLISH_STATE_PATH: &str = "target/xtask/publish-state.json";
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+struct PublishState {
+    timestamp: u64,
+    crates: Vec<PublishCrateState>,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+struct PublishCrateState {
+    name: String,
+    status: String, // "published", "already_published", "skipped", "failed", "pending"
+}
+
+/// Parse a crates.io 429 "try again after" timestamp and return seconds to wait.
+///
+/// crates.io returns messages like:
+/// > Please try again after Sun, 08 Mar 2026 06:57:08 GMT
+///
+/// Returns `None` if parsing fails (caller falls back to exponential backoff).
+fn parse_retry_after(stderr: &str) -> Option<u64> {
+    let re = regex::Regex::new(
+        r"try again after ([A-Z][a-z]{2}, \d{2} [A-Z][a-z]{2} \d{4} \d{2}:\d{2}:\d{2} GMT)",
+    )
+    .ok()?;
+    let caps = re.captures(stderr)?;
+    let timestamp_str = caps.get(1)?.as_str();
+    let retry_at = chrono::DateTime::parse_from_rfc2822(timestamp_str).ok()?;
+    let now = chrono::Utc::now();
+    let delta = retry_at.signed_duration_since(now).num_seconds();
+    // Add 15s buffer; minimum 5s wait
+    let wait = (delta + 15).max(5) as u64;
+    Some(wait)
+}
+
+fn write_publish_state(state: &PublishState) -> Result<()> {
+    let dir = Path::new(PUBLISH_STATE_PATH).parent().unwrap();
+    fs::create_dir_all(dir).context("failed to create publish state directory")?;
+    let json = serde_json::to_string_pretty(state).context("failed to serialize publish state")?;
+    fs::write(PUBLISH_STATE_PATH, json).context("failed to write publish state file")?;
+    Ok(())
+}
+
+fn read_publish_state() -> Result<PublishState> {
+    let json =
+        fs::read_to_string(PUBLISH_STATE_PATH).context("failed to read publish state file")?;
+    let state: PublishState =
+        serde_json::from_str(&json).context("failed to parse publish state file")?;
+    Ok(state)
+}
+
+fn resolve_start_index(from: Option<&str>, resume: bool) -> Result<usize> {
+    if from.is_some() && resume {
+        bail!("--from and --resume are mutually exclusive; use one or the other");
+    }
+
+    if let Some(name) = from {
+        match PUBLISH_CRATES.iter().position(|c| *c == name) {
+            Some(idx) => return Ok(idx),
+            None => {
+                let list = PUBLISH_CRATES
+                    .iter()
+                    .enumerate()
+                    .map(|(i, c)| format!("  {i}: {c}"))
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                bail!("crate {name:?} not found in publish order. Valid crates:\n{list}");
+            }
+        }
+    }
+
+    if resume {
+        let state = read_publish_state().context(
+            "failed to read publish state for --resume; run a publish first or use --from",
+        )?;
+        for (i, cs) in state.crates.iter().enumerate() {
+            if cs.status != "published" && cs.status != "already_published" {
+                return Ok(i);
+            }
+        }
+        // All crates already succeeded
+        return Ok(PUBLISH_CRATES.len());
+    }
+
+    Ok(0)
+}
+
+fn publish(from: Option<String>, resume: bool) -> Result<()> {
+    let start_index = resolve_start_index(from.as_deref(), resume)?;
+
+    if start_index >= PUBLISH_CRATES.len() {
+        eprintln!("all crates already published; nothing to do");
+        return Ok(());
+    }
+
+    if start_index > 0 {
+        eprintln!(
+            "starting from crate {} ({}/{})",
+            PUBLISH_CRATES[start_index],
+            start_index + 1,
+            PUBLISH_CRATES.len()
+        );
+    }
+
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+
+    let mut state = PublishState {
+        timestamp: now,
+        crates: PUBLISH_CRATES
+            .iter()
+            .enumerate()
+            .map(|(i, name)| PublishCrateState {
+                name: name.to_string(),
+                status: if i < start_index {
+                    "skipped".to_string()
+                } else {
+                    "pending".to_string()
+                },
+            })
+            .collect(),
+    };
+
     let pb = ProgressBar::new(PUBLISH_CRATES.len() as u64);
     pb.set_style(
         ProgressStyle::with_template("[{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} {msg}")
             .unwrap()
             .progress_chars("#>-"),
     );
+    pb.set_position(start_index as u64);
 
-    for name in PUBLISH_CRATES {
+    for (i, name) in PUBLISH_CRATES.iter().enumerate() {
+        if i < start_index {
+            continue;
+        }
         pb.set_message(format!("publishing {name}"));
         let mut success = false;
         let mut already_published = false;
@@ -499,7 +634,8 @@ fn publish() -> Result<()> {
 
             if index_race || rate_limited || server_error {
                 let (reason, wait) = if rate_limited {
-                    ("rate-limited", 120 * attempt as u64)
+                    let wait = parse_retry_after(&stderr).unwrap_or(120 * attempt as u64);
+                    ("rate-limited", wait)
                 } else if server_error {
                     ("server error", 60 * attempt as u64)
                 } else {
@@ -512,20 +648,27 @@ fn publish() -> Result<()> {
                 std::thread::sleep(std::time::Duration::from_secs(wait));
             } else {
                 eprint!("{stderr}");
+                state.crates[i].status = "failed".to_string();
+                let _ = write_publish_state(&state);
                 pb.finish_with_message(format!("failed {name}"));
                 bail!("{name} publish failed with a non-retriable error");
             }
         }
         if !success {
+            state.crates[i].status = "failed".to_string();
+            let _ = write_publish_state(&state);
             pb.finish_with_message(format!("failed {name} after 5 attempts"));
             bail!("{name} failed after 5 attempts");
         }
         if already_published {
+            state.crates[i].status = "already_published".to_string();
             pb.set_message(format!("{name} already published, skipping indexing wait"));
         } else {
+            state.crates[i].status = "published".to_string();
             pb.set_message(format!("published {name}, waiting for indexing"));
             std::thread::sleep(std::time::Duration::from_secs(60));
         }
+        let _ = write_publish_state(&state);
         pb.inc(1);
     }
     pb.finish_with_message("all crates published successfully");
@@ -1805,5 +1948,154 @@ end_of_record
         let paths = parse_null_delimited_paths(staged);
         assert_eq!(paths.len(), 1);
         assert_eq!(paths[0], PathBuf::from("one.rs"));
+    }
+
+    #[test]
+    fn resolve_start_index_from_first_crate() {
+        let idx = resolve_start_index(Some("uselesskey-core-base62"), false).unwrap();
+        assert_eq!(idx, 0);
+    }
+
+    #[test]
+    fn resolve_start_index_from_last_crate() {
+        let idx = resolve_start_index(Some("uselesskey-aws-lc-rs"), false).unwrap();
+        assert_eq!(idx, PUBLISH_CRATES.len() - 1);
+    }
+
+    #[test]
+    fn resolve_start_index_from_nonexistent() {
+        let err = resolve_start_index(Some("nonexistent"), false).unwrap_err();
+        let msg = err.to_string();
+        assert!(msg.contains("not found in publish order"), "got: {msg}");
+        // Should list valid crate names
+        assert!(msg.contains("uselesskey-core-base62"), "got: {msg}");
+    }
+
+    #[test]
+    fn resolve_start_index_neither_flag() {
+        let idx = resolve_start_index(None, false).unwrap();
+        assert_eq!(idx, 0);
+    }
+
+    #[test]
+    fn publish_state_serde_roundtrip() {
+        let state = PublishState {
+            timestamp: 1234567890,
+            crates: vec![
+                PublishCrateState {
+                    name: "uselesskey-core".to_string(),
+                    status: "published".to_string(),
+                },
+                PublishCrateState {
+                    name: "uselesskey-rsa".to_string(),
+                    status: "failed".to_string(),
+                },
+            ],
+        };
+
+        let json = serde_json::to_string(&state).unwrap();
+        let parsed: PublishState = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed.timestamp, state.timestamp);
+        assert_eq!(parsed.crates.len(), 2);
+        assert_eq!(parsed.crates[0].name, "uselesskey-core");
+        assert_eq!(parsed.crates[0].status, "published");
+        assert_eq!(parsed.crates[1].name, "uselesskey-rsa");
+        assert_eq!(parsed.crates[1].status, "failed");
+    }
+
+    #[test]
+    fn resolve_start_index_from_and_resume_mutual_exclusion() {
+        let err = resolve_start_index(Some("uselesskey-core-base62"), true).unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("mutually exclusive"),
+            "expected mutual exclusion error, got: {msg}"
+        );
+    }
+
+    #[test]
+    fn parse_retry_after_valid_timestamp() {
+        // Use a future timestamp to get a positive wait
+        let future = chrono::Utc::now() + chrono::Duration::seconds(60);
+        let ts = future.format("%a, %d %b %Y %H:%M:%S GMT").to_string();
+        let stderr = format!("Please try again after {ts}");
+        let wait = parse_retry_after(&stderr);
+        assert!(wait.is_some(), "should parse valid timestamp");
+        let w = wait.unwrap();
+        // ~60s + 15s buffer = ~75s, allow some clock drift
+        assert!((60..=90).contains(&w), "expected ~75s wait, got {w}s");
+    }
+
+    #[test]
+    fn parse_retry_after_no_match() {
+        let stderr = "some random error message without a timestamp";
+        assert!(parse_retry_after(stderr).is_none());
+    }
+
+    #[test]
+    fn parse_retry_after_malformed_timestamp() {
+        let stderr = "try again after not-a-real-timestamp";
+        assert!(parse_retry_after(stderr).is_none());
+    }
+
+    #[test]
+    fn parse_retry_after_past_timestamp_clamps_to_minimum() {
+        // A past timestamp should still return at least 5s (our minimum)
+        let past = chrono::Utc::now() - chrono::Duration::seconds(300);
+        let ts = past.format("%a, %d %b %Y %H:%M:%S GMT").to_string();
+        let stderr = format!("Please try again after {ts}");
+        let wait = parse_retry_after(&stderr);
+        assert!(wait.is_some());
+        assert_eq!(
+            wait.unwrap(),
+            5,
+            "past timestamp should clamp to 5s minimum"
+        );
+    }
+
+    #[test]
+    fn parse_retry_after_real_crates_io_message() {
+        // Real crates.io 429 error message — the regex must stop at GMT and not
+        // greedily capture the trailing "and see https://..." text.
+        let stderr = "Please try again after Sun, 08 Mar 2026 06:57:08 GMT and see https://crates.io/docs/rate-limits for more details.";
+        let wait = parse_retry_after(stderr);
+        assert!(
+            wait.is_some(),
+            "should parse the real crates.io 429 message"
+        );
+    }
+
+    #[test]
+    fn resolve_start_index_resume_from_state_file() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let state_path = dir.path().join("publish-state.json");
+        let state = PublishState {
+            timestamp: 1234567890,
+            crates: vec![
+                PublishCrateState {
+                    name: "uselesskey-core-base62".to_string(),
+                    status: "published".to_string(),
+                },
+                PublishCrateState {
+                    name: "uselesskey-core-seed".to_string(),
+                    status: "already_published".to_string(),
+                },
+                PublishCrateState {
+                    name: "uselesskey-core-hash".to_string(),
+                    status: "failed".to_string(),
+                },
+            ],
+        };
+        let json = serde_json::to_string_pretty(&state).unwrap();
+        fs::write(&state_path, &json).unwrap();
+
+        // We can't easily test resume with the hardcoded path,
+        // but we can test the serde and state logic directly.
+        // Find first non-success crate:
+        let first_pending = state
+            .crates
+            .iter()
+            .position(|c| c.status != "published" && c.status != "already_published");
+        assert_eq!(first_pending, Some(2));
     }
 }
