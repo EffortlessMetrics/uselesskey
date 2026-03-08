@@ -461,6 +461,7 @@ fn publish() -> Result<()> {
     for name in PUBLISH_CRATES {
         pb.set_message(format!("publishing {name}"));
         let mut success = false;
+        let mut already_published = false;
         for attempt in 1..=5 {
             let output = Command::new("cargo")
                 .args(["publish", "-p", name])
@@ -476,12 +477,13 @@ fn publish() -> Result<()> {
 
             let stderr = String::from_utf8_lossy(&output.stderr);
 
-            // Already published — treat as success
+            // Already published — treat as success, skip indexing delay
             if stderr.contains("already uploaded")
                 || stderr.contains("already exists")
                 || stderr.contains("is already published")
             {
                 success = true;
+                already_published = true;
                 break;
             }
 
@@ -518,8 +520,12 @@ fn publish() -> Result<()> {
             pb.finish_with_message(format!("failed {name} after 5 attempts"));
             bail!("{name} failed after 5 attempts");
         }
-        pb.set_message(format!("published {name}, waiting for indexing"));
-        std::thread::sleep(std::time::Duration::from_secs(30));
+        if already_published {
+            pb.set_message(format!("{name} already published, skipping indexing wait"));
+        } else {
+            pb.set_message(format!("published {name}, waiting for indexing"));
+            std::thread::sleep(std::time::Duration::from_secs(60));
+        }
         pb.inc(1);
     }
     pb.finish_with_message("all crates published successfully");
