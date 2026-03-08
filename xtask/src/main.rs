@@ -477,26 +477,36 @@ fn publish() -> Result<()> {
             let stderr = String::from_utf8_lossy(&output.stderr);
 
             // Already published — treat as success
-            if stderr.contains("already uploaded") || stderr.contains("already exists") {
+            if stderr.contains("already uploaded")
+                || stderr.contains("already exists")
+                || stderr.contains("is already published")
+            {
                 success = true;
                 break;
             }
 
             let index_race = stderr.contains("failed to select a version")
                 || stderr.contains("no matching package")
-                || stderr.to_lowercase().contains("not found");
-            let rate_limited = stderr.contains("429") || stderr.to_lowercase().contains("too many");
+                || stderr.to_lowercase().contains("not found in index");
+            let rate_limited = stderr.contains("429")
+                || stderr.to_lowercase().contains("too many")
+                || stderr.to_lowercase().contains("rate limit");
+            let server_error = stderr.contains("503")
+                || stderr.contains("500")
+                || stderr.to_lowercase().contains("try again");
 
-            if index_race {
+            if index_race || rate_limited || server_error {
+                let (reason, wait) = if rate_limited {
+                    ("rate-limited", 120 * attempt as u64)
+                } else if server_error {
+                    ("server error", 60 * attempt as u64)
+                } else {
+                    ("indexing race", 60)
+                };
                 pb.set_message(format!(
-                    "indexing race for {name} (attempt {attempt})... waiting"
+                    "{reason} on {name} (attempt {attempt}/5)... waiting {wait}s"
                 ));
-                std::thread::sleep(std::time::Duration::from_secs(60));
-            } else if rate_limited {
-                let wait = 120 * attempt as u64;
-                pb.set_message(format!(
-                    "rate-limited on {name} (attempt {attempt})... waiting {wait}s"
-                ));
+                eprintln!("[{name} attempt {attempt}] {reason}: {stderr}");
                 std::thread::sleep(std::time::Duration::from_secs(wait));
             } else {
                 eprint!("{stderr}");
@@ -1527,7 +1537,9 @@ fn hook_pre_commit() -> Result<()> {
 
     for file in staged_files {
         if file.is_file() {
-            run(Command::new("git").args(["add", "--"]).arg(file.as_os_str()))?;
+            run(Command::new("git")
+                .args(["add", "--"])
+                .arg(file.as_os_str()))?;
         }
     }
     Ok(())
