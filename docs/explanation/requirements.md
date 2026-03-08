@@ -1,6 +1,6 @@
 # Requirements
 
-For the executable v0.3 acceptance spec, see `docs/requirements-v0.3.md`.
+For the executable v0.3 acceptance spec, see `../reference/requirements-v0.3.md`.
 
 ## Problem
 

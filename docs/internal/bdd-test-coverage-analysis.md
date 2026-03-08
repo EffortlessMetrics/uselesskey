@@ -1,5 +1,7 @@
 # BDD Test Coverage Analysis & Improvement Plan
 
+> **Note:** Historical planning snapshot; counts and gaps may no longer match the current repository.
+
 ## Executive Summary
 
 This document analyzes the current BDD test structure in the uselesskey project, identifies gaps in test coverage, and provides a comprehensive plan for expanding the BDD matrix and improving overall test coverage.
@@ -8,30 +10,30 @@ This document analyzes the current BDD test structure in the uselesskey project,
 
 ### Feature Files Overview
 
-The project has 12 BDD feature files in [`crates/uselesskey-bdd/features/`](../crates/uselesskey-bdd/features/):
+The project has 12 BDD feature files in [`crates/uselesskey-bdd/features/`](../../crates/uselesskey-bdd/features/):
 
 | Feature File | Scenarios | Key Coverage Areas |
 |-------------|------------|-------------------|
-| [`rsa.feature`](../crates/uselesskey-bdd/features/rsa.feature) | 12 | Determinism, random mode, key formats (PKCS8/SPKI PEM/DER), mismatched keys |
-| [`ecdsa.feature`](../crates/uselesskey-bdd/features/ecdsa.feature) | 23 | ES256/ES384 variants, determinism, formats, mismatched keys, corruption, JWK support |
-| [`ed25519.feature`](../crates/uselesskey-bdd/features/ed25519.feature) | 17 | Determinism, formats, mismatched keys, corruption, JWK support |
-| [`hmac.feature`](../crates/uselesskey-bdd/features/hmac.feature) | 4 | Determinism, JWK/JWKS support |
-| [`jwk.feature`](../crates/uselesskey-bdd/features/jwk.feature) | 6 | Public/private JWK fields, JWKS structure, kid determinism |
-| [`jwks.feature`](../crates/uselesskey-bdd/features/jwks.feature) | 18 | Multi-key JWKS, key type filtering, deterministic ordering, JSON format |
-| [`negative.feature`](../crates/uselesskey-bdd/features/negative.feature) | 8 | Corrupted PEM variants, truncated DER |
-| [`seed.feature`](../crates/uselesskey-bdd/features/seed.feature) | 7 | Hex seeds (with/without 0x), string seeds, various lengths |
-| [`tempfile.feature`](../crates/uselesskey-bdd/features/tempfile.feature) | 2 | Private/public key tempfile writing |
-| [`x509.feature`](../crates/uselesskey-bdd/features/x509.feature) | 27 | Determinism, formats, metadata, expired/not-yet-valid variants, corruption, tempfiles |
-| [`chain.feature`](../crates/uselesskey-bdd/features/chain.feature) | 15 | Certificate chains (Root → Intermediate → Leaf), SANs, private key matching, negative variants |
-| [`cross_key.feature`](../crates/uselesskey-bdd/features/cross_key.feature) | 11 | Key type differences, kid uniqueness, algorithm mismatches, key size differences, JWKS mixing |
+| [`rsa.feature`](../../crates/uselesskey-bdd/features/rsa.feature) | 12 | Determinism, random mode, key formats (PKCS8/SPKI PEM/DER), mismatched keys |
+| [`ecdsa.feature`](../../crates/uselesskey-bdd/features/ecdsa.feature) | 23 | ES256/ES384 variants, determinism, formats, mismatched keys, corruption, JWK support |
+| [`ed25519.feature`](../../crates/uselesskey-bdd/features/ed25519.feature) | 17 | Determinism, formats, mismatched keys, corruption, JWK support |
+| [`hmac.feature`](../../crates/uselesskey-bdd/features/hmac.feature) | 4 | Determinism, JWK/JWKS support |
+| [`jwk.feature`](../../crates/uselesskey-bdd/features/jwk.feature) | 6 | Public/private JWK fields, JWKS structure, kid determinism |
+| [`jwks.feature`](../../crates/uselesskey-bdd/features/jwks.feature) | 18 | Multi-key JWKS, key type filtering, deterministic ordering, JSON format |
+| [`negative.feature`](../../crates/uselesskey-bdd/features/negative.feature) | 8 | Corrupted PEM variants, truncated DER |
+| [`seed.feature`](../../crates/uselesskey-bdd/features/seed.feature) | 7 | Hex seeds (with/without 0x), string seeds, various lengths |
+| [`tempfile.feature`](../../crates/uselesskey-bdd/features/tempfile.feature) | 2 | Private/public key tempfile writing |
+| [`x509.feature`](../../crates/uselesskey-bdd/features/x509.feature) | 27 | Determinism, formats, metadata, expired/not-yet-valid variants, corruption, tempfiles |
+| [`chain.feature`](../../crates/uselesskey-bdd/features/chain.feature) | 15 | Certificate chains (Root → Intermediate → Leaf), SANs, private key matching, negative variants |
+| [`cross_key.feature`](../../crates/uselesskey-bdd/features/cross_key.feature) | 11 | Key type differences, kid uniqueness, algorithm mismatches, key size differences, JWKS mixing |
 
 **Total BDD Scenarios: ~150**
 
 ### BDD Implementation
 
-The BDD tests are implemented in [`crates/uselesskey-bdd/tests/bdd.rs`](../crates/uselesskey-bdd/tests/bdd.rs) using the Cucumber framework:
+The BDD tests are implemented in [`crates/uselesskey-bdd/tests/bdd.rs`](../../crates/uselesskey-bdd/tests/bdd.rs) using the Cucumber framework:
 
-- **World Structure**: [`UselessWorld`](../crates/uselesskey-bdd/tests/bdd.rs:9) struct maintains state across scenario steps
+- **World Structure**: [`UselessWorld`](../../crates/uselesskey-bdd/tests/bdd.rs:9) struct maintains state across scenario steps
 - **Step Definitions**: Given/When/Then steps for each key type and operation
 - **Execution**: Run via `cargo xtask bdd`
 
@@ -39,15 +41,15 @@ The BDD tests are implemented in [`crates/uselesskey-bdd/tests/bdd.rs`](../crate
 
 | Crate | Test Files | Coverage Focus |
 |-------|------------|----------------|
-| [`uselesskey-core`](../crates/uselesskey-core/tests/) | 3 files | Factory behavior, determinism, seed parsing, negative fixtures |
-| [`uselesskey-rsa`](../crates/uselesskey-rsa/tests/) | 1 file | RSA key generation, parsing, determinism, spec validation |
-| [`uselesskey-ecdsa`](../crates/uselesskey-ecdsa/tests/) | 2 files | ECDSA key generation, JWK private keys |
-| [`uselesskey-ed25519`](../crates/uselesskey-ed25519/tests/) | 2 files | Ed25519 key generation, JWK private keys |
-| [`uselesskey-x509`](../crates/uselesskey-x509/tests/) | 0 files | **No unit tests** |
-| [`uselesskey-hmac`](../crates/uselesskey-hmac/tests/) | 0 files | **No unit tests** |
-| [`uselesskey-jwk`](../crates/uselesskey-jwk/tests/) | 0 files | **No unit tests** |
-| [`uselesskey-jsonwebtoken`](../crates/uselesskey-jsonwebtoken/tests/) | 0 files | **No unit tests** |
-| [`uselesskey-rustls`](../crates/uselesskey-rustls/tests/) | 0 files | **No unit tests** |
+| [`uselesskey-core`](../../crates/uselesskey-core/tests/) | 3 files | Factory behavior, determinism, seed parsing, negative fixtures |
+| [`uselesskey-rsa`](../../crates/uselesskey-rsa/tests/) | 1 file | RSA key generation, parsing, determinism, spec validation |
+| [`uselesskey-ecdsa`](../../crates/uselesskey-ecdsa/tests/) | 2 files | ECDSA key generation, JWK private keys |
+| [`uselesskey-ed25519`](../../crates/uselesskey-ed25519/tests/) | 2 files | Ed25519 key generation, JWK private keys |
+| [`uselesskey-x509`](../../crates/uselesskey-x509/tests/) | 0 files | **No unit tests** |
+| [`uselesskey-hmac`](../../crates/uselesskey-hmac/tests/) | 0 files | **No unit tests** |
+| [`uselesskey-jwk`](../../crates/uselesskey-jwk/tests/) | 0 files | **No unit tests** |
+| [`uselesskey-jsonwebtoken`](../../crates/uselesskey-jsonwebtoken/tests/) | 0 files | **No unit tests** |
+| [`uselesskey-rustls`](../../crates/uselesskey-rustls/tests/) | 0 files | **No unit tests** |
 | Adapter crates | 0 files | **No integration tests** |
 
 ## Identified Gaps
@@ -57,8 +59,8 @@ The BDD tests are implemented in [`crates/uselesskey-bdd/tests/bdd.rs`](../crate
 #### RSA Feature Gaps
 - **RSA-384 and RSA-512 variants**: Only RS256 (2048-bit) is tested
 - **RSA key size variations**: No tests for 3072, 4096 bit keys in BDD
-- **RSA JWK private fields**: Tests exist in [`jwk.feature`](../crates/uselesskey-bdd/features/jwk.feature) but not in [`rsa.feature`](../crates/uselesskey-bdd/features/rsa.feature)
-- **RSA negative fixtures**: Missing BadBase64, Truncate, ExtraBlankLine variants (only in [`negative.feature`](../crates/uselesskey-bdd/features/negative.feature))
+- **RSA JWK private fields**: Tests exist in [`jwk.feature`](../../crates/uselesskey-bdd/features/jwk.feature) but not in [`rsa.feature`](../../crates/uselesskey-bdd/features/rsa.feature)
+- **RSA negative fixtures**: Missing BadBase64, Truncate, ExtraBlankLine variants (only in [`negative.feature`](../../crates/uselesskey-bdd/features/negative.feature))
 
 #### HMAC Feature Gaps
 - **HS384 and HS512 variants**: Only HS256 is tested
@@ -67,7 +69,7 @@ The BDD tests are implemented in [`crates/uselesskey-bdd/tests/bdd.rs`](../crate
 - **HMAC formats**: No tests for raw bytes output
 
 #### X.509 Feature Gaps
-- **CRL (Certificate Revocation List) support**: [`chain_negative.rs`](../crates/uselesskey-x509/src/chain_negative.rs:24) defines `RevokedLeaf` variant but no BDD tests
+- **CRL (Certificate Revocation List) support**: [`chain_negative.rs`](../../crates/uselesskey-x509/src/chain_negative.rs:24) defines `RevokedLeaf` variant but no BDD tests
 - **Hostname mismatch chain variant**: Defined in code but no BDD tests
 - **Expired intermediate variant**: Only one BDD scenario, could be expanded
 - **X.509 chain negative variants**: Missing tests for `RevokedLeaf`, `HostnameMismatch`
@@ -95,11 +97,11 @@ The BDD tests are implemented in [`crates/uselesskey-bdd/tests/bdd.rs`](../crate
 
 | Crate | Missing Tests |
 |-------|---------------|
-| [`uselesskey-x509`](../crates/uselesskey-x509/) | Certificate parsing, chain validation, SAN handling, CRL generation |
-| [`uselesskey-hmac`](../crates/uselesskey-hmac/) | Secret generation, JWK conversion, spec validation |
-| [`uselesskey-jwk`](../crates/uselesskey-jwk/) | JWKS builder, key serialization, kid generation |
-| [`uselesskey-jsonwebtoken`](../crates/uselesskey-jsonwebtoken/) | Encoding/decoding key conversion, algorithm matching |
-| [`uselesskey-rustls`](../crates/uselesskey-rustls/) | DER conversion, config building, mTLS scenarios |
+| [`uselesskey-x509`](../../crates/uselesskey-x509/) | Certificate parsing, chain validation, SAN handling, CRL generation |
+| [`uselesskey-hmac`](../../crates/uselesskey-hmac/) | Secret generation, JWK conversion, spec validation |
+| [`uselesskey-jwk`](../../crates/uselesskey-jwk/) | JWKS builder, key serialization, kid generation |
+| [`uselesskey-jsonwebtoken`](../../crates/uselesskey-jsonwebtoken/) | Encoding/decoding key conversion, algorithm matching |
+| [`uselesskey-rustls`](../../crates/uselesskey-rustls/) | DER conversion, config building, mTLS scenarios |
 
 ### 3. Missing Integration Tests
 

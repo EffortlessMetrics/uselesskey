@@ -1,5 +1,7 @@
 # Test Architecture Overview
 
+> **Note:** Historical planning snapshot; counts and gaps may no longer match the current repository.
+
 ```mermaid
 graph TB
     subgraph BDD Tests
