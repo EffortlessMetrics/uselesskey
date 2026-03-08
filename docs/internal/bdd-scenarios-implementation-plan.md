@@ -543,7 +543,7 @@ Feature: Edge cases and error handling
 
 ### Step Implementation Requirements
 
-For each new scenario, the following step implementations may need to be added to [`crates/uselesskey-bdd/tests/bdd.rs`](../crates/uselesskey-bdd/tests/bdd.rs):
+For each new scenario, the following step implementations may need to be added to [`crates/uselesskey-bdd/tests/bdd.rs`](../../crates/uselesskey-bdd/tests/bdd.rs):
 
 1. **RSA RS384/RS512 steps**: New spec variants
 2. **HMAC HS384/HS512 steps**: New spec variants
@@ -553,7 +553,7 @@ For each new scenario, the following step implementations may need to be added t
 
 ### World State Extensions
 
-The [`UselessWorld`](../crates/uselesskey-bdd/tests/bdd.rs:9) struct may need additional fields:
+The [`UselessWorld`](../../crates/uselesskey-bdd/tests/bdd.rs:9) struct may need additional fields:
 
 ```rust
 // JWT-related fields
