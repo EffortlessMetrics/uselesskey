@@ -1,0 +1,68 @@
+name: Publish Retry
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Git tag to check out (e.g. v0.5.0)"
+        required: false
+        type: string
+        default: ""
+      resume_from:
+        description: "Crate name to resume from (skip earlier crates)"
+        required: false
+        type: string
+        default: ""
+      dry_run:
+        description: "Dry-run only (publish-check instead of publish)"
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: publish-retry
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install NASM (for aws-lc-rs)
+        run: sudo apt-get update && sudo apt-get install -y nasm
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Publish crates
+        if: ${{ !inputs.dry_run }}
+        run: |
+          if [ -n "${{ inputs.resume_from }}" ]; then
+            cargo xtask publish --from "${{ inputs.resume_from }}"
+          else
+            cargo xtask publish
+          fi
+
+      - name: Publish dry-run
+        if: ${{ inputs.dry_run }}
+        run: cargo xtask publish-check
+
+      - name: Upload publish state
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: publish-state
+          path: target/xtask/publish-state.json
+          if-no-files-found: ignore
