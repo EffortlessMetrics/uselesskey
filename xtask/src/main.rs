@@ -367,9 +367,7 @@ const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-token",
     "uselesskey-pgp",
     "uselesskey-x509",
-    // Facade
-    "uselesskey",
-    // Adapters (depend on facade / key crates)
+    // Adapters (depend on key crates, NOT on facade)
     "uselesskey-core-rustls-pki",
     "uselesskey-jsonwebtoken",
     "uselesskey-rustls",
@@ -377,6 +375,8 @@ const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-ring",
     "uselesskey-rustcrypto",
     "uselesskey-aws-lc-rs",
+    // Facade (dev-depends on adapters above)
+    "uselesskey",
 ];
 
 /// Subset of `PUBLISH_CRATES` for CI-wide mutation testing.
@@ -1958,7 +1958,7 @@ end_of_record
 
     #[test]
     fn resolve_start_index_from_last_crate() {
-        let idx = resolve_start_index(Some("uselesskey-aws-lc-rs"), false).unwrap();
+        let idx = resolve_start_index(Some("uselesskey"), false).unwrap();
         assert_eq!(idx, PUBLISH_CRATES.len() - 1);
     }
 
