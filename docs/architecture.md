@@ -2,7 +2,7 @@
 
 ## Workspace layout
 
-The workspace contains **48 crates** organized in four layers:
+The workspace contains **49 crates** organized in four layers:
 facade → algorithm crates → core microcrates → adapter crates, plus
 testing/tooling crates that live outside the publish graph.
 
@@ -83,7 +83,9 @@ set of focused microcrates that each own a single concern:
 - `uselesskey-core-token` — compatibility facade for token shape
   primitives
 - `uselesskey-core-token-shape` — token generation primitives (API keys,
-  bearer tokens, OAuth)
+  bearer tokens)
+- `uselesskey-core-jwt-shape` — JWT-shape segment helpers for OAuth-style
+  access-token fixtures
 
 **Negative fixtures**
 
