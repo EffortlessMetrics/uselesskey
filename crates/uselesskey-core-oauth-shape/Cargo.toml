@@ -1,32 +1,27 @@
 [package]
-name = "uselesskey-core-token-shape"
+name = "uselesskey-core-oauth-shape"
 version = "0.1.0"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "Token shape generation primitives shared across uselesskey token crates."
+description = "OAuth access-token shape generation primitives shared by uselesskey token crates."
 categories.workspace = true
-keywords = ["token", "api-key", "oauth", "fixtures", "testing"]
+keywords = ["oauth", "jwt", "token", "fixtures", "testing"]
 readme = "README.md"
 exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
 homepage.workspace = true
-documentation = "https://docs.rs/uselesskey-core-token-shape"
+documentation = "https://docs.rs/uselesskey-core-oauth-shape"
 authors.workspace = true
 
 [dependencies]
 base64.workspace = true
 rand_core.workspace = true
-uselesskey-core-base62.workspace = true
-uselesskey-core-oauth-shape.workspace = true
-uselesskey-token-spec.workspace = true
+serde_json.workspace = true
 
 [dev-dependencies]
-insta.workspace = true
 proptest.workspace = true
 rand_chacha.workspace = true
-serde.workspace = true
-serde_json.workspace = true
 
 [package.metadata.docs.rs]
 all-features = true

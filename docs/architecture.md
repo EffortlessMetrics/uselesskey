@@ -83,7 +83,9 @@ set of focused microcrates that each own a single concern:
 - `uselesskey-core-token` — compatibility facade for token shape
   primitives
 - `uselesskey-core-token-shape` — token generation primitives (API keys,
-  bearer tokens, OAuth)
+  bearer tokens)
+- `uselesskey-core-oauth-shape` — OAuth access-token JWT-shape generation
+  primitives
 
 **Negative fixtures**
 
