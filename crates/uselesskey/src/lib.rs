@@ -22,7 +22,7 @@
 //!
 //! ```toml
 //! [dev-dependencies]
-//! uselesskey = { version = "0.3.0", default-features = false, features = ["token"] }
+//! uselesskey = { default-features = false, features = ["token"] }
 //! ```
 //!
 //! ```

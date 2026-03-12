@@ -97,7 +97,11 @@ fn reachable_package_names(metadata: &Metadata, root_id: &str) -> BTreeSet<Strin
     }
 
     seen.into_iter()
-        .filter_map(|id| package_names.get(id.as_str()).map(|name| (*name).to_string()))
+        .filter_map(|id| {
+            package_names
+                .get(id.as_str())
+                .map(|name| (*name).to_string())
+        })
         .collect()
 }
 
@@ -627,7 +631,13 @@ fn token_only_facade_fixture_compiles() {
 fn token_only_facade_fixture_does_not_resolve_rsa() {
     let manifest = token_only_fixture_manifest();
     let manifest_str = manifest.display().to_string();
-    let output = run_cargo(&["metadata", "--manifest-path", &manifest_str, "--format-version", "1"]);
+    let output = run_cargo(&[
+        "metadata",
+        "--manifest-path",
+        &manifest_str,
+        "--format-version",
+        "1",
+    ]);
 
     assert!(
         output.status.success(),

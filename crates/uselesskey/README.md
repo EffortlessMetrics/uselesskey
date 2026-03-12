@@ -36,7 +36,7 @@ Token-only consumers can stay lightweight:
 
 ```toml
 [dev-dependencies]
-uselesskey = { version = "0.3.0", default-features = false, features = ["token"] }
+uselesskey = { default-features = false, features = ["token"] }
 ```
 
 ```rust
@@ -54,7 +54,7 @@ If you want RSA fixtures, enable `rsa` explicitly:
 
 ```toml
 [dev-dependencies]
-uselesskey = { version = "0.3.0", features = ["rsa"] }
+uselesskey = { features = ["rsa"] }
 ```
 
 ```rust
