@@ -180,11 +180,63 @@ fn run(cmd: &mut Command) -> Result<()> {
 }
 
 fn fmt(fix: bool) -> Result<()> {
-    if fix {
+    if cfg!(windows) {
+        for package in workspace_package_names()? {
+            let mut cmd = Command::new("cargo");
+            cmd.args(["fmt", "-p", &package]);
+            if !fix {
+                cmd.args(["--", "--check"]);
+            }
+            run(&mut cmd).with_context(|| format!("cargo fmt failed for {package}"))?;
+        }
+        Ok(())
+    } else if fix {
         run(Command::new("cargo").args(["fmt", "--all"]))
     } else {
         run(Command::new("cargo").args(["fmt", "--all", "--", "--check"]))
     }
+}
+
+fn workspace_package_names() -> Result<Vec<String>> {
+    let output = Command::new("cargo")
+        .args(["metadata", "--format-version", "1", "--no-deps"])
+        .output()
+        .context("failed to run `cargo metadata` for workspace package list")?;
+
+    if !output.status.success() {
+        bail!(
+            "`cargo metadata` failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    let meta: serde_json::Value =
+        serde_json::from_slice(&output.stdout).context("failed to parse cargo metadata JSON")?;
+
+    let workspace_members = meta["workspace_members"]
+        .as_array()
+        .context("missing 'workspace_members' in cargo metadata")?
+        .iter()
+        .filter_map(|member| member.as_str())
+        .collect::<std::collections::BTreeSet<_>>();
+
+    let packages = meta["packages"]
+        .as_array()
+        .context("missing 'packages' in cargo metadata")?;
+
+    let mut names = packages
+        .iter()
+        .filter(|pkg| {
+            pkg["id"]
+                .as_str()
+                .is_some_and(|id| workspace_members.contains(id))
+        })
+        .filter_map(|pkg| pkg["name"].as_str().map(str::to_owned))
+        .collect::<Vec<_>>();
+
+    names.sort();
+    names.dedup();
+    Ok(names)
 }
 
 fn clippy() -> Result<()> {
@@ -428,7 +480,7 @@ fn publish_check() -> Result<()> {
             continue;
         }
         let stderr = String::from_utf8_lossy(&output.stderr);
-        if stderr.contains("no matching package named") {
+        if is_unpublished_workspace_dep_error(&stderr) {
             eprintln!(
                 "  [warn] {name} publish check: skipped (workspace dep not yet on crates.io)"
             );
@@ -437,6 +489,13 @@ fn publish_check() -> Result<()> {
         bail!("cargo publish --dry-run -p {name} failed:\n{stderr}");
     }
     Ok(())
+}
+
+fn is_unpublished_workspace_dep_error(stderr: &str) -> bool {
+    stderr.contains("no matching package named")
+        || (stderr.contains("failed to select a version for the requirement")
+            && stderr.contains("candidate versions found which didn't match")
+            && stderr.contains("location searched: crates.io index"))
 }
 
 fn run_quietly(cmd: &mut Command) -> Result<()> {
@@ -783,9 +842,9 @@ fn run_publish_preflight(runner: &mut receipt::Runner) -> Result<()> {
                 return Ok(());
             }
             let stderr = String::from_utf8_lossy(&output.stderr);
-            // Tolerate "no matching package" errors for workspace siblings
+            // Tolerate crates.io resolution errors for workspace siblings
             // that haven't been published to crates.io yet.
-            if stderr.contains("no matching package named") {
+            if is_unpublished_workspace_dep_error(&stderr) {
                 eprintln!("  [warn] {name}: skipped (workspace dep not yet on crates.io)");
                 return Ok(());
             }
@@ -2011,6 +2070,24 @@ end_of_record
             msg.contains("mutually exclusive"),
             "expected mutual exclusion error, got: {msg}"
         );
+    }
+
+    #[test]
+    fn unpublished_workspace_dep_error_matches_no_matching_package() {
+        let stderr = "error: no matching package named `uselesskey-core-hash` found\nlocation searched: crates.io index\nrequired by package `uselesskey-core-id v0.3.0`";
+        assert!(is_unpublished_workspace_dep_error(stderr));
+    }
+
+    #[test]
+    fn unpublished_workspace_dep_error_matches_version_mismatch_form() {
+        let stderr = "error: failed to prepare local package for uploading\n\nCaused by:\n  failed to select a version for the requirement `uselesskey-core-hash = \"^0.3.0\"`\n  candidate versions found which didn't match: 0.2.0\n  location searched: crates.io index\n  required by package `uselesskey-core-id v0.3.0`";
+        assert!(is_unpublished_workspace_dep_error(stderr));
+    }
+
+    #[test]
+    fn unpublished_workspace_dep_error_rejects_unrelated_errors() {
+        let stderr = "error: failed to load manifest for workspace member";
+        assert!(!is_unpublished_workspace_dep_error(stderr));
     }
 
     #[test]
