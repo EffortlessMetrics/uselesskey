@@ -72,6 +72,46 @@ fn token_reexport_works() {
 }
 
 #[test]
+#[cfg(all(feature = "rsa", feature = "token"))]
+fn deterministic_facade_usage_is_order_independent() {
+    use uselesskey::{Factory, RsaFactoryExt, RsaSpec, Seed, TokenFactoryExt, TokenSpec};
+
+    let seed = Seed::new([0x5A; 32]);
+
+    let fx_a = Factory::deterministic(seed);
+    let token_a = fx_a.token("dogfood-token", TokenSpec::api_key());
+    let rsa_a = fx_a.rsa("dogfood-rsa", RsaSpec::rs256());
+
+    let fx_b = Factory::deterministic(seed);
+    let rsa_b = fx_b.rsa("dogfood-rsa", RsaSpec::rs256());
+    let token_b = fx_b.token("dogfood-token", TokenSpec::api_key());
+
+    assert_eq!(token_a.value(), token_b.value());
+    assert_eq!(rsa_a.kid(), rsa_b.kid());
+    assert_eq!(rsa_a.private_key_pkcs8_der(), rsa_b.private_key_pkcs8_der());
+}
+
+#[test]
+#[cfg(feature = "x509")]
+fn x509_reexport_works() {
+    use uselesskey::{ChainSpec, X509FactoryExt, X509Spec};
+
+    let fx = testutil::fx();
+    let cert = fx.x509_self_signed("issuer", X509Spec::self_signed("facade.example.com"));
+    assert!(cert.cert_pem().contains("BEGIN CERTIFICATE"));
+    assert!(cert.private_key_pkcs8_pem().contains("BEGIN PRIVATE KEY"));
+
+    let chain = fx.x509_chain("issuer-chain", ChainSpec::new("facade.example.com"));
+    assert!(chain.chain_pem().contains("BEGIN CERTIFICATE"));
+    assert!(chain.root_cert_pem().contains("BEGIN CERTIFICATE"));
+    assert!(
+        chain
+            .leaf_private_key_pkcs8_pem()
+            .contains("BEGIN PRIVATE KEY")
+    );
+}
+
+#[test]
 #[cfg(feature = "pgp")]
 fn pgp_reexport_works() {
     use uselesskey::PgpFactoryExt;
