@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-03-12
+
+### Changed
+
+- `uselesskey` facade default features are now empty instead of enabling RSA by
+  default. Consumers now opt into RSA, token, X.509, or other fixture families
+  explicitly.
+- Token-only facade usage is now documented as:
+  `uselesskey = { version = "0.3.0", default-features = false, features = ["token"] }`
+  so lightweight consumers avoid pulling `uselesskey-rsa` and `rsa`.
+
+### Added
+
+- `Seed::from_text(&str)` for deterministic seed derivation from stable text.
+- `Factory::deterministic_from_str(&str)` as a facade-friendly convenience for
+  test helpers that only need stable string seeds.
+- A token-only consumer fixture and governance checks proving token-only facade
+  usage compiles and that the resolved graph excludes `uselesskey-rsa` and
+  `rsa`.
+- Facade smoke coverage for order-independent determinism, X.509 re-exports,
+  and published-facade-style consumer usage.
+
 ## [0.2.0] - 2026-03-06
 
 ### Added
@@ -245,6 +267,7 @@ Repository organised into four layers:
 - **Determinism regression** — hardcoded expected-value snapshots ensure
   derivation stability across releases
 
-[Unreleased]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/EffortlessMetrics/uselesskey/releases/tag/v0.1.0
