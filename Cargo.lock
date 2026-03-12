@@ -3718,7 +3718,6 @@ version = "0.3.0"
 dependencies = [
  "insta",
  "proptest",
- "rand_chacha 0.3.1",
  "rand_core 0.6.4",
  "rstest",
  "serde",
@@ -3740,6 +3739,7 @@ dependencies = [
  "rand_core 0.6.4",
  "rstest",
  "serde",
+ "uselesskey-core-seed",
 ]
 
 [[package]]
@@ -3761,7 +3761,6 @@ version = "0.3.0"
 dependencies = [
  "insta",
  "proptest",
- "rand_chacha 0.3.1",
  "rand_core 0.6.4",
  "serde",
  "uselesskey-core-cache",
@@ -3930,6 +3929,8 @@ dependencies = [
  "blake3",
  "insta",
  "proptest",
+ "rand_chacha 0.3.1",
+ "rand_core 0.6.4",
  "rstest",
  "serde",
 ]
@@ -3956,6 +3957,7 @@ dependencies = [
  "rand_core 0.6.4",
  "serde",
  "serde_json",
+ "uselesskey-core-seed",
  "uselesskey-core-token-shape",
 ]
 
@@ -3971,6 +3973,7 @@ dependencies = [
  "serde",
  "serde_json",
  "uselesskey-core-base62",
+ "uselesskey-core-seed",
  "uselesskey-token-spec",
 ]
 
@@ -3984,6 +3987,7 @@ dependencies = [
  "rand_core 0.6.4",
  "rstest",
  "serde",
+ "uselesskey-core-seed",
  "uselesskey-core-x509-derive",
  "uselesskey-core-x509-negative",
  "uselesskey-core-x509-spec",
@@ -4012,6 +4016,7 @@ dependencies = [
  "serde",
  "time",
  "uselesskey-core-hash",
+ "uselesskey-core-seed",
 ]
 
 [[package]]
@@ -4046,6 +4051,7 @@ dependencies = [
  "p256",
  "p384",
  "proptest",
+ "rand_chacha 0.3.1",
  "rand_core 0.6.4",
  "rstest",
  "serde",
@@ -4065,7 +4071,6 @@ dependencies = [
  "insta",
  "pkcs8",
  "proptest",
- "rand_core 0.6.4",
  "rstest",
  "serde",
  "serde_json",
@@ -4086,6 +4091,7 @@ dependencies = [
  "base64",
  "insta",
  "proptest",
+ "rand_chacha 0.3.1",
  "rand_core 0.6.4",
  "serde",
  "uselesskey-core",
@@ -4194,6 +4200,8 @@ dependencies = [
  "insta",
  "pgp",
  "proptest",
+ "rand_chacha 0.3.1",
+ "rand_core 0.6.4",
  "serde",
  "uselesskey-core",
 ]
@@ -4220,6 +4228,8 @@ dependencies = [
  "base64",
  "insta",
  "proptest",
+ "rand_chacha 0.3.1",
+ "rand_core 0.6.4",
  "rsa",
  "rstest",
  "serde",
@@ -4318,6 +4328,7 @@ dependencies = [
  "insta",
  "proptest",
  "rand_chacha 0.3.1",
+ "rand_core 0.6.4",
  "rcgen",
  "rsa",
  "rstest",

@@ -2,8 +2,7 @@
 
 use base64::Engine as _;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-use rand_chacha::ChaCha20Rng;
-use rand_core::SeedableRng;
+use uselesskey_core_seed::Seed;
 use uselesskey_core_token_shape::{
     API_KEY_PREFIX, API_KEY_RANDOM_LEN, BEARER_RANDOM_BYTES, OAUTH_JTI_BYTES,
     OAUTH_SIGNATURE_BYTES, TokenKind, authorization_scheme, generate_api_key,
@@ -52,22 +51,22 @@ fn authorization_scheme_oauth_is_bearer() {
 
 #[test]
 fn api_key_exact_length() {
-    let mut rng = ChaCha20Rng::from_seed([1u8; 32]);
-    let key = generate_api_key(&mut rng);
+    let rng = Seed::new([1u8; 32]);
+    let key = generate_api_key(rng);
     assert_eq!(key.len(), API_KEY_PREFIX.len() + API_KEY_RANDOM_LEN);
 }
 
 #[test]
 fn api_key_starts_with_prefix() {
-    let mut rng = ChaCha20Rng::from_seed([2u8; 32]);
-    let key = generate_api_key(&mut rng);
+    let rng = Seed::new([2u8; 32]);
+    let key = generate_api_key(rng);
     assert!(key.starts_with(API_KEY_PREFIX));
 }
 
 #[test]
 fn api_key_suffix_is_alphanumeric() {
-    let mut rng = ChaCha20Rng::from_seed([3u8; 32]);
-    let key = generate_api_key(&mut rng);
+    let rng = Seed::new([3u8; 32]);
+    let key = generate_api_key(rng);
     let suffix = &key[API_KEY_PREFIX.len()..];
     assert!(suffix.chars().all(|c| c.is_ascii_alphanumeric()));
 }
@@ -75,31 +74,31 @@ fn api_key_suffix_is_alphanumeric() {
 #[test]
 fn bearer_token_length_is_43() {
     // 32 bytes base64url = ceil(32 * 4 / 3) = 43 chars (no padding)
-    let mut rng = ChaCha20Rng::from_seed([4u8; 32]);
-    let token = generate_bearer_token(&mut rng);
+    let rng = Seed::new([4u8; 32]);
+    let token = generate_bearer_token(rng);
     assert_eq!(token.len(), 43);
 }
 
 #[test]
 fn bearer_token_decodes_to_32_bytes() {
-    let mut rng = ChaCha20Rng::from_seed([5u8; 32]);
-    let token = generate_bearer_token(&mut rng);
+    let rng = Seed::new([5u8; 32]);
+    let token = generate_bearer_token(rng);
     let decoded = URL_SAFE_NO_PAD.decode(&token).unwrap();
     assert_eq!(decoded.len(), BEARER_RANDOM_BYTES);
 }
 
 #[test]
 fn oauth_token_has_exactly_three_segments() {
-    let mut rng = ChaCha20Rng::from_seed([6u8; 32]);
-    let token = generate_oauth_access_token("test-label", &mut rng);
+    let rng = Seed::new([6u8; 32]);
+    let token = generate_oauth_access_token("test-label", rng);
     let segments: Vec<&str> = token.split('.').collect();
     assert_eq!(segments.len(), 3);
 }
 
 #[test]
 fn oauth_header_decodes_to_rs256_jwt() {
-    let mut rng = ChaCha20Rng::from_seed([7u8; 32]);
-    let token = generate_oauth_access_token("test-label", &mut rng);
+    let rng = Seed::new([7u8; 32]);
+    let token = generate_oauth_access_token("test-label", rng);
     let header_segment = token.split('.').next().unwrap();
     let header_bytes = URL_SAFE_NO_PAD.decode(header_segment).unwrap();
     let header: serde_json::Value = serde_json::from_slice(&header_bytes).unwrap();
@@ -109,8 +108,8 @@ fn oauth_header_decodes_to_rs256_jwt() {
 
 #[test]
 fn oauth_payload_contains_expected_claims() {
-    let mut rng = ChaCha20Rng::from_seed([8u8; 32]);
-    let token = generate_oauth_access_token("my-service", &mut rng);
+    let rng = Seed::new([8u8; 32]);
+    let token = generate_oauth_access_token("my-service", rng);
     let payload_segment = token.split('.').nth(1).unwrap();
     let payload_bytes = URL_SAFE_NO_PAD.decode(payload_segment).unwrap();
     let payload: serde_json::Value = serde_json::from_slice(&payload_bytes).unwrap();
@@ -127,11 +126,11 @@ fn oauth_payload_contains_expected_claims() {
 fn generate_token_dispatches_correctly() {
     let seed = [9u8; 32];
 
-    let mut rng1 = ChaCha20Rng::from_seed(seed);
-    let via_dispatch = generate_token("label", TokenKind::ApiKey, &mut rng1);
+    let rng1 = Seed::new(seed);
+    let via_dispatch = generate_token("label", TokenKind::ApiKey, rng1);
 
-    let mut rng2 = ChaCha20Rng::from_seed(seed);
-    let via_direct = generate_api_key(&mut rng2);
+    let rng2 = Seed::new(seed);
+    let via_direct = generate_api_key(rng2);
 
     assert_eq!(via_dispatch, via_direct);
 }
@@ -140,11 +139,11 @@ fn generate_token_dispatches_correctly() {
 fn generate_token_bearer_dispatch() {
     let seed = [10u8; 32];
 
-    let mut rng1 = ChaCha20Rng::from_seed(seed);
-    let via_dispatch = generate_token("label", TokenKind::Bearer, &mut rng1);
+    let rng1 = Seed::new(seed);
+    let via_dispatch = generate_token("label", TokenKind::Bearer, rng1);
 
-    let mut rng2 = ChaCha20Rng::from_seed(seed);
-    let via_direct = generate_bearer_token(&mut rng2);
+    let rng2 = Seed::new(seed);
+    let via_direct = generate_bearer_token(rng2);
 
     assert_eq!(via_dispatch, via_direct);
 }
@@ -153,11 +152,11 @@ fn generate_token_bearer_dispatch() {
 fn generate_token_oauth_dispatch() {
     let seed = [11u8; 32];
 
-    let mut rng1 = ChaCha20Rng::from_seed(seed);
-    let via_dispatch = generate_token("label", TokenKind::OAuthAccessToken, &mut rng1);
+    let rng1 = Seed::new(seed);
+    let via_dispatch = generate_token("label", TokenKind::OAuthAccessToken, rng1);
 
-    let mut rng2 = ChaCha20Rng::from_seed(seed);
-    let via_direct = generate_oauth_access_token("label", &mut rng2);
+    let rng2 = Seed::new(seed);
+    let via_direct = generate_oauth_access_token("label", rng2);
 
     assert_eq!(via_dispatch, via_direct);
 }

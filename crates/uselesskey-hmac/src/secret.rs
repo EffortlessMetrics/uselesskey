@@ -1,7 +1,9 @@
 use std::fmt;
 use std::sync::Arc;
 
+use rand_chacha::ChaCha20Rng;
 use rand_core::RngCore;
+use rand_core::SeedableRng;
 use uselesskey_core::Factory;
 #[cfg(feature = "jwk")]
 use uselesskey_core_kid::kid_from_bytes;
@@ -192,7 +194,8 @@ impl HmacSecret {
 fn load_inner(factory: &Factory, label: &str, spec: HmacSpec, variant: &str) -> Arc<Inner> {
     let spec_bytes = spec.stable_bytes();
 
-    factory.get_or_init(DOMAIN_HMAC_SECRET, label, &spec_bytes, variant, |rng| {
+    factory.get_or_init(DOMAIN_HMAC_SECRET, label, &spec_bytes, variant, |seed| {
+        let mut rng = ChaCha20Rng::from_seed(*seed.bytes());
         let mut buf = vec![0u8; spec.byte_len()];
         rng.fill_bytes(&mut buf);
         Inner {

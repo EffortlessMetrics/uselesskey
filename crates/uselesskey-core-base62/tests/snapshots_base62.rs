@@ -2,10 +2,9 @@
 //!
 //! Snapshot base62 token shapes and lengths — no actual random content.
 
-use rand_chacha::ChaCha20Rng;
-use rand_core::SeedableRng;
 use serde::Serialize;
 use uselesskey_core_base62::{BASE62_ALPHABET, random_base62};
+use uselesskey_core_seed::Seed;
 
 #[derive(Serialize)]
 struct Base62Shape {
@@ -23,8 +22,7 @@ fn snapshot_base62_various_lengths() {
     let results: Vec<Base62Shape> = lengths
         .iter()
         .map(|&len| {
-            let mut rng = ChaCha20Rng::from_seed(seed);
-            let value = random_base62(&mut rng, len);
+            let value = random_base62(Seed::new(seed), len);
             Base62Shape {
                 requested_len: len,
                 actual_len: value.len(),
@@ -48,10 +46,8 @@ fn snapshot_base62_determinism() {
         outputs_match: bool,
     }
 
-    let mut rng_a = ChaCha20Rng::from_seed(seed);
-    let mut rng_b = ChaCha20Rng::from_seed(seed);
-    let a = random_base62(&mut rng_a, 48);
-    let b = random_base62(&mut rng_b, 48);
+    let a = random_base62(Seed::new(seed), 48);
+    let b = random_base62(Seed::new(seed), 48);
 
     let result = DeterminismCheck {
         seed_byte: 7,

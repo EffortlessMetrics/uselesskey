@@ -561,15 +561,14 @@ fn deterministic_base_time_from_parts_is_stable() {
 
 #[test]
 fn deterministic_serial_number_is_positive_and_stable() {
-    use rand_chacha::ChaCha20Rng;
-    use rand_core::SeedableRng;
+    use uselesskey_core_seed::Seed;
     use uselesskey_core_x509::{SERIAL_NUMBER_BYTES, deterministic_serial_number};
 
-    let mut rng1 = ChaCha20Rng::from_seed([99u8; 32]);
-    let mut rng2 = ChaCha20Rng::from_seed([99u8; 32]);
+    let rng1 = Seed::new([99u8; 32]);
+    let rng2 = Seed::new([99u8; 32]);
 
-    let s1 = deterministic_serial_number(&mut rng1);
-    let s2 = deterministic_serial_number(&mut rng2);
+    let s1 = deterministic_serial_number(rng1);
+    let s2 = deterministic_serial_number(rng2);
 
     assert_eq!(s1.to_bytes(), s2.to_bytes());
     assert_eq!(s1.to_bytes().len(), SERIAL_NUMBER_BYTES);

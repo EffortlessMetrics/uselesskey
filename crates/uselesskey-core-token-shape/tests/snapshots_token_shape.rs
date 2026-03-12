@@ -3,9 +3,8 @@
 //! Snapshot token format shapes — lengths, prefixes, segment counts.
 //! No actual token content is captured.
 
-use rand_chacha::ChaCha20Rng;
-use rand_core::SeedableRng;
 use serde::Serialize;
+use uselesskey_core_seed::Seed;
 use uselesskey_core_token_shape::{
     API_KEY_PREFIX, API_KEY_RANDOM_LEN, BEARER_RANDOM_BYTES, TokenKind, authorization_scheme,
     generate_token,
@@ -21,8 +20,8 @@ struct TokenShapeSnapshot {
 
 #[test]
 fn snapshot_api_key_shape() {
-    let mut rng = ChaCha20Rng::from_seed([42u8; 32]);
-    let token = generate_token("test-svc", TokenKind::ApiKey, &mut rng);
+    let rng = Seed::new([42u8; 32]);
+    let token = generate_token("test-svc", TokenKind::ApiKey, rng);
 
     #[derive(Serialize)]
     struct ApiKeyShape {
@@ -49,8 +48,8 @@ fn snapshot_api_key_shape() {
 
 #[test]
 fn snapshot_bearer_token_shape() {
-    let mut rng = ChaCha20Rng::from_seed([42u8; 32]);
-    let token = generate_token("test-svc", TokenKind::Bearer, &mut rng);
+    let rng = Seed::new([42u8; 32]);
+    let token = generate_token("test-svc", TokenKind::Bearer, rng);
 
     #[derive(Serialize)]
     struct BearerShape {
@@ -72,8 +71,8 @@ fn snapshot_bearer_token_shape() {
 
 #[test]
 fn snapshot_oauth_token_shape() {
-    let mut rng = ChaCha20Rng::from_seed([42u8; 32]);
-    let token = generate_token("test-svc", TokenKind::OAuthAccessToken, &mut rng);
+    let rng = Seed::new([42u8; 32]);
+    let token = generate_token("test-svc", TokenKind::OAuthAccessToken, rng);
 
     #[derive(Serialize)]
     struct OAuthShape {

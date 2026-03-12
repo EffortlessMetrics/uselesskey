@@ -2,14 +2,13 @@
 //!
 //! Covers:
 //! - Different part orderings produce different times
-//! - Consecutive serial numbers from same RNG differ
+//! - Distinct serial seeds produce different values
 //! - Serial number high bit is always cleared across many seeds
 //! - Length-prefixed hashing prevents boundary collisions
 //! - base_time stays within epoch window for diverse inputs
 
-use rand_chacha::ChaCha20Rng;
-use rand_core::SeedableRng;
 use std::collections::HashSet;
+use uselesskey_core_seed::Seed;
 use uselesskey_core_x509_derive::{
     BASE_TIME_EPOCH_UNIX, BASE_TIME_WINDOW_DAYS, SERIAL_NUMBER_BYTES,
     deterministic_base_time_from_parts, deterministic_serial_number,
@@ -83,15 +82,14 @@ fn base_time_distribution_uses_multiple_days() {
 }
 
 // =========================================================================
-// Consecutive serial numbers from same RNG differ
+// Distinct serial seeds produce different values
 // =========================================================================
 
 #[test]
-fn consecutive_serials_from_same_rng_differ() {
-    let mut rng = ChaCha20Rng::from_seed([42u8; 32]);
-    let s1 = deterministic_serial_number(&mut rng);
-    let s2 = deterministic_serial_number(&mut rng);
-    let s3 = deterministic_serial_number(&mut rng);
+fn serials_from_distinct_seeds_differ() {
+    let s1 = deterministic_serial_number(Seed::new([42u8; 32]));
+    let s2 = deterministic_serial_number(Seed::new([43u8; 32]));
+    let s3 = deterministic_serial_number(Seed::new([44u8; 32]));
 
     assert_ne!(s1.to_bytes(), s2.to_bytes());
     assert_ne!(s2.to_bytes(), s3.to_bytes());
@@ -101,8 +99,8 @@ fn consecutive_serials_from_same_rng_differ() {
 #[test]
 fn serial_high_bit_cleared_across_many_seeds() {
     for seed_byte in 0u8..=255 {
-        let mut rng = ChaCha20Rng::from_seed([seed_byte; 32]);
-        let serial = deterministic_serial_number(&mut rng);
+        let rng = Seed::new([seed_byte; 32]);
+        let serial = deterministic_serial_number(rng);
         let bytes = serial.to_bytes();
         assert_eq!(
             bytes[0] & 0x80,

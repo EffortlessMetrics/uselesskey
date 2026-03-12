@@ -3,7 +3,6 @@ use std::sync::Arc;
 
 use ed25519_dalek::{SigningKey, VerifyingKey, pkcs8::EncodePrivateKey, pkcs8::EncodePublicKey};
 use pkcs8::LineEnding;
-use rand_core::RngCore;
 use uselesskey_core::negative::CorruptPem;
 use uselesskey_core::sink::TempArtifact;
 use uselesskey_core::{Error, Factory};
@@ -483,40 +482,44 @@ impl Ed25519KeyPair {
 fn load_inner(factory: &Factory, label: &str, spec: Ed25519Spec, variant: &str) -> Arc<Inner> {
     let spec_bytes = spec.stable_bytes();
 
-    factory.get_or_init(DOMAIN_ED25519_KEYPAIR, label, &spec_bytes, variant, |rng| {
-        // Generate 32 random bytes for Ed25519 secret key
-        let mut secret_bytes = [0u8; 32];
-        rng.fill_bytes(&mut secret_bytes);
+    factory.get_or_init(
+        DOMAIN_ED25519_KEYPAIR,
+        label,
+        &spec_bytes,
+        variant,
+        |seed| {
+            let mut secret_bytes = [0u8; 32];
+            seed.fill_bytes(&mut secret_bytes);
+            let private = SigningKey::from_bytes(&secret_bytes);
+            let public = private.verifying_key();
 
-        let private = SigningKey::from_bytes(&secret_bytes);
-        let public = private.verifying_key();
+            let pkcs8_der_doc = private
+                .to_pkcs8_der()
+                .expect("failed to encode Ed25519 private key as PKCS#8 DER");
+            let pkcs8_der: Arc<[u8]> = Arc::from(pkcs8_der_doc.as_bytes());
 
-        let pkcs8_der_doc = private
-            .to_pkcs8_der()
-            .expect("failed to encode Ed25519 private key as PKCS#8 DER");
-        let pkcs8_der: Arc<[u8]> = Arc::from(pkcs8_der_doc.as_bytes());
+            let pkcs8_pem = private
+                .to_pkcs8_pem(LineEnding::LF)
+                .expect("failed to encode Ed25519 private key as PKCS#8 PEM")
+                .to_string();
 
-        let pkcs8_pem = private
-            .to_pkcs8_pem(LineEnding::LF)
-            .expect("failed to encode Ed25519 private key as PKCS#8 PEM")
-            .to_string();
+            let spki_der_doc = public
+                .to_public_key_der()
+                .expect("failed to encode Ed25519 public key as SPKI DER");
+            let spki_der: Arc<[u8]> = Arc::from(spki_der_doc.as_ref());
 
-        let spki_der_doc = public
-            .to_public_key_der()
-            .expect("failed to encode Ed25519 public key as SPKI DER");
-        let spki_der: Arc<[u8]> = Arc::from(spki_der_doc.as_ref());
+            let spki_pem = public
+                .to_public_key_pem(LineEnding::LF)
+                .expect("failed to encode Ed25519 public key as SPKI PEM");
 
-        let spki_pem = public
-            .to_public_key_pem(LineEnding::LF)
-            .expect("failed to encode Ed25519 public key as SPKI PEM");
+            let material = Pkcs8SpkiKeyMaterial::new(pkcs8_der, pkcs8_pem, spki_der, spki_pem);
 
-        let material = Pkcs8SpkiKeyMaterial::new(pkcs8_der, pkcs8_pem, spki_der, spki_pem);
-
-        Inner {
-            _private: private,
-            public,
-            material,
-            secret_bytes,
-        }
-    })
+            Inner {
+                _private: private,
+                public,
+                material,
+                secret_bytes,
+            }
+        },
+    )
 }

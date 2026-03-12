@@ -1,7 +1,6 @@
 #![cfg(feature = "std")]
 
 use proptest::prelude::*;
-
 use uselesskey_core::negative::{CorruptPem, corrupt_pem, truncate_der};
 use uselesskey_core::{ArtifactId, DerivationVersion, Factory, Seed};
 
@@ -12,17 +11,18 @@ fn spec_bytes(bits: u32, e: u32) -> Vec<u8> {
     v
 }
 
+fn seed_array<const N: usize>(seed: Seed) -> [u8; N] {
+    let mut buf = [0u8; N];
+    seed.fill_bytes(&mut buf);
+    buf
+}
+
 /// Helper to derive a seed directly using the crate's internal derivation.
 fn derive_seed_for_test(master: &Seed, domain: &'static str, label: &str, variant: &str) -> Seed {
     let _id = ArtifactId::new(domain, label, &[0u8; 8], variant, DerivationVersion::V1);
     // Use the factory to observe the derived seed indirectly via determinism.
     let fx = Factory::deterministic(*master);
-    let val = fx.get_or_init(domain, label, &[0u8; 8], variant, |rng| {
-        use rand_core::RngCore;
-        let mut out = [0u8; 32];
-        rng.fill_bytes(&mut out);
-        out
-    });
+    let val = fx.get_or_init(domain, label, &[0u8; 8], variant, seed_array::<32>);
     Seed::new(*val)
 }
 
@@ -248,33 +248,13 @@ proptest! {
 
         // Order 1: a then b.
         let fx1 = Factory::deterministic(Seed::new(seed_bytes));
-        let a1 = fx1.get_or_init("domain:ord", &label_a, &spec, "good", |rng| {
-            use rand_core::RngCore;
-            let mut out = [0u8; 32];
-            rng.fill_bytes(&mut out);
-            out
-        });
-        let b1 = fx1.get_or_init("domain:ord", &label_b, &spec, "good", |rng| {
-            use rand_core::RngCore;
-            let mut out = [0u8; 32];
-            rng.fill_bytes(&mut out);
-            out
-        });
+        let a1 = fx1.get_or_init("domain:ord", &label_a, &spec, "good", seed_array::<32>);
+        let b1 = fx1.get_or_init("domain:ord", &label_b, &spec, "good", seed_array::<32>);
 
         // Order 2: b then a (fresh factory, same seed).
         let fx2 = Factory::deterministic(Seed::new(seed_bytes));
-        let b2 = fx2.get_or_init("domain:ord", &label_b, &spec, "good", |rng| {
-            use rand_core::RngCore;
-            let mut out = [0u8; 32];
-            rng.fill_bytes(&mut out);
-            out
-        });
-        let a2 = fx2.get_or_init("domain:ord", &label_a, &spec, "good", |rng| {
-            use rand_core::RngCore;
-            let mut out = [0u8; 32];
-            rng.fill_bytes(&mut out);
-            out
-        });
+        let b2 = fx2.get_or_init("domain:ord", &label_b, &spec, "good", seed_array::<32>);
+        let a2 = fx2.get_or_init("domain:ord", &label_a, &spec, "good", seed_array::<32>);
 
         prop_assert_eq!(*a1, *a2, "label_a value should be identical regardless of order");
         prop_assert_eq!(*b1, *b2, "label_b value should be identical regardless of order");
@@ -293,18 +273,8 @@ proptest! {
         let fx = Factory::deterministic(Seed::new(seed_bytes));
         let spec = spec_bytes(2048, 65537);
 
-        let first = fx.get_or_init("domain:arc", &label, &spec, "good", |rng| {
-            use rand_core::RngCore;
-            let mut out = [0u8; 32];
-            rng.fill_bytes(&mut out);
-            out
-        });
-        let second = fx.get_or_init("domain:arc", &label, &spec, "good", |rng| {
-            use rand_core::RngCore;
-            let mut out = [0u8; 32];
-            rng.fill_bytes(&mut out);
-            out
-        });
+        let first = fx.get_or_init("domain:arc", &label, &spec, "good", seed_array::<32>);
+        let second = fx.get_or_init("domain:arc", &label, &spec, "good", seed_array::<32>);
 
         prop_assert!(
             std::sync::Arc::ptr_eq(&first, &second),

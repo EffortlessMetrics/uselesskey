@@ -21,22 +21,16 @@ fn fx42() -> Factory {
 
 #[test]
 fn determinism_blake3_derivation_produces_stable_rng() {
-    use rand_core::RngCore;
-
     let fx = fx42();
-    let bytes: Arc<Vec<u8>> = fx.get_or_init("test:derive-pin", "label", b"spec", "good", |rng| {
-        let mut buf = vec![0u8; 16];
-        rng.fill_bytes(&mut buf);
-        buf
+    let bytes: Arc<Vec<u8>> = fx.get_or_init("test:derive-pin", "label", b"spec", "good", |seed| {
+        seed_vec(seed, 16)
     });
 
     // A second factory with the same seed must produce identical bytes.
     let fx2 = fx42();
     let bytes2: Arc<Vec<u8>> =
-        fx2.get_or_init("test:derive-pin", "label", b"spec", "good", |rng| {
-            let mut buf = vec![0u8; 16];
-            rng.fill_bytes(&mut buf);
-            buf
+        fx2.get_or_init("test:derive-pin", "label", b"spec", "good", |seed| {
+            seed_vec(seed, 16)
         });
 
     assert_eq!(
@@ -55,16 +49,11 @@ fn determinism_blake3_derivation_produces_stable_rng() {
 
 #[test]
 fn determinism_blake3_different_domains_produce_different_output() {
-    use rand_core::RngCore;
-
     let fx = fx42();
 
     let make_bytes = |domain: &'static str| -> Vec<u8> {
-        let arc: Arc<Vec<u8>> = fx.get_or_init(domain, "same", b"spec", "good", |rng| {
-            let mut buf = vec![0u8; 16];
-            rng.fill_bytes(&mut buf);
-            buf
-        });
+        let arc: Arc<Vec<u8>> =
+            fx.get_or_init(domain, "same", b"spec", "good", |seed| seed_vec(seed, 16));
         (*arc).clone()
     };
 
@@ -78,16 +67,12 @@ fn determinism_blake3_different_domains_produce_different_output() {
 
 #[test]
 fn determinism_blake3_different_labels_produce_different_output() {
-    use rand_core::RngCore;
-
     let fx = fx42();
 
     let make_bytes = |label: &str| -> Vec<u8> {
         // Each call needs a unique cache key, so we use different labels.
-        let arc: Arc<Vec<u8>> = fx.get_or_init("test:label-test", label, b"spec", "good", |rng| {
-            let mut buf = vec![0u8; 16];
-            rng.fill_bytes(&mut buf);
-            buf
+        let arc: Arc<Vec<u8>> = fx.get_or_init("test:label-test", label, b"spec", "good", |seed| {
+            seed_vec(seed, 16)
         });
         (*arc).clone()
     };
@@ -102,15 +87,11 @@ fn determinism_blake3_different_labels_produce_different_output() {
 
 #[test]
 fn determinism_blake3_different_specs_produce_different_output() {
-    use rand_core::RngCore;
-
     let fx = fx42();
 
     let make_bytes = |spec: &[u8]| -> Vec<u8> {
-        let arc: Arc<Vec<u8>> = fx.get_or_init("test:spec-test", "label", spec, "good", |rng| {
-            let mut buf = vec![0u8; 16];
-            rng.fill_bytes(&mut buf);
-            buf
+        let arc: Arc<Vec<u8>> = fx.get_or_init("test:spec-test", "label", spec, "good", |seed| {
+            seed_vec(seed, 16)
         });
         (*arc).clone()
     };
@@ -125,16 +106,12 @@ fn determinism_blake3_different_specs_produce_different_output() {
 
 #[test]
 fn determinism_blake3_different_variants_produce_different_output() {
-    use rand_core::RngCore;
-
     let fx = fx42();
 
     let make_bytes = |variant: &str| -> Vec<u8> {
         let arc: Arc<Vec<u8>> =
-            fx.get_or_init("test:variant-test", "label", b"spec", variant, |rng| {
-                let mut buf = vec![0u8; 16];
-                rng.fill_bytes(&mut buf);
-                buf
+            fx.get_or_init("test:variant-test", "label", b"spec", variant, |seed| {
+                seed_vec(seed, 16)
             });
         (*arc).clone()
     };
@@ -252,23 +229,17 @@ fn determinism_cache_clear_allows_reinit() {
 
 #[test]
 fn determinism_adjacent_seeds_produce_different_output() {
-    use rand_core::RngCore;
-
     let fx42 = Factory::deterministic(Seed::from_env_value("42").unwrap());
     let fx43 = Factory::deterministic(Seed::from_env_value("43").unwrap());
 
     let bytes42: Arc<Vec<u8>> =
-        fx42.get_or_init("test:seed-sens", "label", b"spec", "good", |rng| {
-            let mut buf = vec![0u8; 32];
-            rng.fill_bytes(&mut buf);
-            buf
+        fx42.get_or_init("test:seed-sens", "label", b"spec", "good", |seed| {
+            seed_vec(seed, 32)
         });
 
     let bytes43: Arc<Vec<u8>> =
-        fx43.get_or_init("test:seed-sens", "label", b"spec", "good", |rng| {
-            let mut buf = vec![0u8; 32];
-            rng.fill_bytes(&mut buf);
-            buf
+        fx43.get_or_init("test:seed-sens", "label", b"spec", "good", |seed| {
+            seed_vec(seed, 32)
         });
 
     assert_ne!(
@@ -281,4 +252,10 @@ fn determinism_adjacent_seeds_produce_different_output() {
 
 fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
+}
+
+fn seed_vec(seed: Seed, len: usize) -> Vec<u8> {
+    let mut buf = vec![0u8; len];
+    seed.fill_bytes(&mut buf);
+    buf
 }

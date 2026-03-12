@@ -16,7 +16,6 @@ authors.workspace = true
 
 [dependencies]
 rand_core.workspace = true
-rand_chacha.workspace = true
 uselesskey-core-cache = { path = "../uselesskey-core-cache", version = "0.3.0", default-features = false }
 uselesskey-core-id = { path = "../uselesskey-core-id", version = "0.3.0", default-features = false }
 
@@ -29,7 +28,6 @@ serde = { workspace = true }
 default = ["std"]
 std = [
     "rand_core/std",
-    "rand_chacha/std",
     "uselesskey-core-cache/std",
     "uselesskey-core-id/std",
 ]

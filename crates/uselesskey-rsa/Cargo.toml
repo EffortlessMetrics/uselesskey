@@ -18,6 +18,8 @@ authors.workspace = true
 uselesskey-core = { path = "../uselesskey-core", version = "0.3.0" }
 uselesskey-core-keypair-material.workspace = true
 rsa.workspace = true
+rand_chacha.workspace = true
+rand_core.workspace = true
 
 # Optional JWK/JWKS support
 serde_json = { workspace = true, optional = true }

@@ -4,6 +4,12 @@ use std::sync::Arc;
 use uselesskey_core_factory::{Factory, Mode};
 use uselesskey_core_id::Seed;
 
+fn seed_u64(seed: Seed) -> u64 {
+    let mut buf = [0u8; 8];
+    seed.fill_bytes(&mut buf);
+    u64::from_le_bytes(buf)
+}
+
 #[test]
 fn factory_random_mode() {
     let fx = Factory::random();
@@ -40,14 +46,8 @@ fn deterministic_different_labels_produce_different_values() {
     let seed = Seed::new([42u8; 32]);
     let fx = Factory::deterministic(seed);
 
-    let a: Arc<u64> = fx.get_or_init("d", "label-a", b"spec", "good", |rng| {
-        use rand_core::RngCore;
-        rng.next_u64()
-    });
-    let b: Arc<u64> = fx.get_or_init("d", "label-b", b"spec", "good", |rng| {
-        use rand_core::RngCore;
-        rng.next_u64()
-    });
+    let a: Arc<u64> = fx.get_or_init("d", "label-a", b"spec", "good", seed_u64);
+    let b: Arc<u64> = fx.get_or_init("d", "label-b", b"spec", "good", seed_u64);
 
     assert_ne!(*a, *b);
 }
@@ -57,14 +57,8 @@ fn deterministic_different_variants_produce_different_values() {
     let seed = Seed::new([42u8; 32]);
     let fx = Factory::deterministic(seed);
 
-    let a: Arc<u64> = fx.get_or_init("d", "label", b"spec", "variant-a", |rng| {
-        use rand_core::RngCore;
-        rng.next_u64()
-    });
-    let b: Arc<u64> = fx.get_or_init("d", "label", b"spec", "variant-b", |rng| {
-        use rand_core::RngCore;
-        rng.next_u64()
-    });
+    let a: Arc<u64> = fx.get_or_init("d", "label", b"spec", "variant-a", seed_u64);
+    let b: Arc<u64> = fx.get_or_init("d", "label", b"spec", "variant-b", seed_u64);
 
     assert_ne!(*a, *b);
 }

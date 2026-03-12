@@ -3,9 +3,8 @@
 //! Snapshot token generation metadata — format shapes, lengths, schemes.
 //! All actual token values are redacted.
 
-use rand_chacha::ChaCha20Rng;
-use rand_core::SeedableRng;
 use serde::Serialize;
+use uselesskey_core_seed::Seed;
 use uselesskey_core_token::{
     API_KEY_PREFIX, API_KEY_RANDOM_LEN, BEARER_RANDOM_BYTES, TokenKind, authorization_scheme,
     generate_token,
@@ -30,8 +29,8 @@ fn snapshot_all_token_kinds_metadata() {
     let results: Vec<TokenMetadata> = kinds
         .iter()
         .map(|(name, kind)| {
-            let mut rng = ChaCha20Rng::from_seed(seed);
-            let token = generate_token("test-label", *kind, &mut rng);
+            let rng = Seed::new(seed);
+            let token = generate_token("test-label", *kind, rng);
             TokenMetadata {
                 kind: name,
                 total_len: token.len(),
@@ -45,8 +44,8 @@ fn snapshot_all_token_kinds_metadata() {
 
 #[test]
 fn snapshot_api_key_structure() {
-    let mut rng = ChaCha20Rng::from_seed([42u8; 32]);
-    let token = generate_token("my-service", TokenKind::ApiKey, &mut rng);
+    let rng = Seed::new([42u8; 32]);
+    let token = generate_token("my-service", TokenKind::ApiKey, rng);
 
     #[derive(Serialize)]
     struct ApiKeyStructure {
@@ -73,8 +72,8 @@ fn snapshot_api_key_structure() {
 
 #[test]
 fn snapshot_bearer_token_structure() {
-    let mut rng = ChaCha20Rng::from_seed([42u8; 32]);
-    let token = generate_token("my-service", TokenKind::Bearer, &mut rng);
+    let rng = Seed::new([42u8; 32]);
+    let token = generate_token("my-service", TokenKind::Bearer, rng);
 
     #[derive(Serialize)]
     struct BearerStructure {
@@ -96,8 +95,8 @@ fn snapshot_bearer_token_structure() {
 
 #[test]
 fn snapshot_oauth_token_structure() {
-    let mut rng = ChaCha20Rng::from_seed([42u8; 32]);
-    let token = generate_token("my-service", TokenKind::OAuthAccessToken, &mut rng);
+    let rng = Seed::new([42u8; 32]);
+    let token = generate_token("my-service", TokenKind::OAuthAccessToken, rng);
 
     #[derive(Serialize)]
     struct OAuthStructure {
@@ -135,10 +134,10 @@ fn snapshot_token_determinism() {
     let results: Vec<TokenDeterminism> = kinds
         .iter()
         .map(|(name, kind)| {
-            let mut rng_a = ChaCha20Rng::from_seed(seed);
-            let mut rng_b = ChaCha20Rng::from_seed(seed);
-            let a = generate_token("label", *kind, &mut rng_a);
-            let b = generate_token("label", *kind, &mut rng_b);
+            let rng_a = Seed::new(seed);
+            let rng_b = Seed::new(seed);
+            let a = generate_token("label", *kind, rng_a);
+            let b = generate_token("label", *kind, rng_b);
             TokenDeterminism {
                 kind: name,
                 same_seed_matches: a == b,

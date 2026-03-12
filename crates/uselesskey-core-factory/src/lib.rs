@@ -12,12 +12,9 @@ use alloc::string::ToString;
 use alloc::sync::Arc;
 use core::fmt;
 
-use rand_chacha::ChaCha20Rng;
 #[cfg(feature = "std")]
 use rand_core::OsRng;
-#[cfg(feature = "std")]
 use rand_core::RngCore;
-use rand_core::SeedableRng;
 use uselesskey_core_cache::ArtifactCache;
 use uselesskey_core_id::{ArtifactDomain, ArtifactId, DerivationVersion, Seed, derive_seed};
 
@@ -85,6 +82,9 @@ impl Factory {
     }
 
     /// Return a cached value by `(domain, label, spec, variant)` or generate one.
+    ///
+    /// The initializer receives the derived seed for this artifact identity.
+    /// Callers that need an RNG should instantiate it privately from that seed.
     pub fn get_or_init<T, F>(
         &self,
         domain: ArtifactDomain,
@@ -95,7 +95,7 @@ impl Factory {
     ) -> Arc<T>
     where
         T: core::any::Any + Send + Sync + 'static,
-        F: FnOnce(&mut ChaCha20Rng) -> T,
+        F: FnOnce(Seed) -> T,
     {
         let id = ArtifactId::new(
             domain,
@@ -110,8 +110,7 @@ impl Factory {
         }
 
         let seed = self.seed_for(&id);
-        let mut rng = ChaCha20Rng::from_seed(*seed.bytes());
-        let value = init(&mut rng);
+        let value = init(seed);
         let arc: Arc<T> = Arc::new(value);
 
         self.inner.cache.insert_if_absent_typed(id, arc)
@@ -144,6 +143,12 @@ mod tests {
     use std::sync::Arc;
     use std::sync::atomic::{AtomicUsize, Ordering};
     use uselesskey_core_id::Seed;
+
+    fn draw_u64(seed: Seed) -> u64 {
+        let mut bytes = [0u8; 8];
+        seed.fill_bytes(&mut bytes);
+        u64::from_le_bytes(bytes)
+    }
 
     #[test]
     fn clear_cache_forces_reinit() {
@@ -234,16 +239,10 @@ mod tests {
     #[test]
     fn deterministic_same_inputs_yield_same_output() {
         let fx = Factory::deterministic(Seed::new([7u8; 32]));
-        let a: Arc<u64> = fx.get_or_init("domain:det", "lbl", b"sp", "good", |rng| {
-            use rand_core::RngCore;
-            rng.next_u64()
-        });
+        let a: Arc<u64> = fx.get_or_init("domain:det", "lbl", b"sp", "good", draw_u64);
         // Clear cache so init runs again from the same derived seed.
         fx.clear_cache();
-        let b: Arc<u64> = fx.get_or_init("domain:det", "lbl", b"sp", "good", |rng| {
-            use rand_core::RngCore;
-            rng.next_u64()
-        });
+        let b: Arc<u64> = fx.get_or_init("domain:det", "lbl", b"sp", "good", draw_u64);
         assert_eq!(*a, *b, "deterministic mode must reproduce the same value");
     }
 
@@ -259,42 +258,24 @@ mod tests {
     #[test]
     fn different_domains_produce_distinct_entries() {
         let fx = Factory::deterministic(Seed::new([1u8; 32]));
-        let a: Arc<u64> = fx.get_or_init("domain:a", "lbl", b"sp", "good", |rng| {
-            use rand_core::RngCore;
-            rng.next_u64()
-        });
-        let b: Arc<u64> = fx.get_or_init("domain:b", "lbl", b"sp", "good", |rng| {
-            use rand_core::RngCore;
-            rng.next_u64()
-        });
+        let a: Arc<u64> = fx.get_or_init("domain:a", "lbl", b"sp", "good", draw_u64);
+        let b: Arc<u64> = fx.get_or_init("domain:b", "lbl", b"sp", "good", draw_u64);
         assert_ne!(*a, *b);
     }
 
     #[test]
     fn different_variants_produce_distinct_entries() {
         let fx = Factory::deterministic(Seed::new([2u8; 32]));
-        let a: Arc<u64> = fx.get_or_init("domain:v", "lbl", b"sp", "good", |rng| {
-            use rand_core::RngCore;
-            rng.next_u64()
-        });
-        let b: Arc<u64> = fx.get_or_init("domain:v", "lbl", b"sp", "bad", |rng| {
-            use rand_core::RngCore;
-            rng.next_u64()
-        });
+        let a: Arc<u64> = fx.get_or_init("domain:v", "lbl", b"sp", "good", draw_u64);
+        let b: Arc<u64> = fx.get_or_init("domain:v", "lbl", b"sp", "bad", draw_u64);
         assert_ne!(*a, *b);
     }
 
     #[test]
     fn different_specs_produce_distinct_entries() {
         let fx = Factory::deterministic(Seed::new([3u8; 32]));
-        let a: Arc<u64> = fx.get_or_init("domain:s", "lbl", b"RS256", "good", |rng| {
-            use rand_core::RngCore;
-            rng.next_u64()
-        });
-        let b: Arc<u64> = fx.get_or_init("domain:s", "lbl", b"RS384", "good", |rng| {
-            use rand_core::RngCore;
-            rng.next_u64()
-        });
+        let a: Arc<u64> = fx.get_or_init("domain:s", "lbl", b"RS256", "good", draw_u64);
+        let b: Arc<u64> = fx.get_or_init("domain:s", "lbl", b"RS384", "good", draw_u64);
         assert_ne!(*a, *b);
     }
 

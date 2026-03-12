@@ -3,37 +3,38 @@
 //! Token shape generation primitives for test fixtures.
 //!
 //! Generates realistic-looking API keys, bearer tokens, and OAuth access
-//! tokens from any [`RngCore`] source — including a seeded RNG for
-//! deterministic tests.
+//! tokens from deterministic seed material.
 //!
 //! # Examples
 //!
 //! ```
-//! use rand_chacha::ChaCha20Rng;
-//! use rand_core::SeedableRng;
 //! use uselesskey_core_token_shape::{generate_token, TokenKind, authorization_scheme};
+//! use uselesskey_core_seed::Seed;
 //!
-//! let mut rng = ChaCha20Rng::from_seed([42u8; 32]);
+//! let seed = Seed::new([42u8; 32]);
 //!
 //! // Generate an API key (prefixed with `uk_test_`)
-//! let api_key = generate_token("my-service", TokenKind::ApiKey, &mut rng);
+//! let api_key = generate_token("my-service", TokenKind::ApiKey, seed);
 //! assert!(api_key.starts_with("uk_test_"));
 //!
 //! // Generate a bearer token (base64url-encoded random bytes)
-//! let bearer = generate_token("my-service", TokenKind::Bearer, &mut rng);
+//! let bearer = generate_token("my-service", TokenKind::Bearer, seed);
 //! assert_eq!(authorization_scheme(TokenKind::Bearer), "Bearer");
 //!
 //! // Generate an OAuth access token (JWT-shaped: header.payload.signature)
-//! let oauth = generate_token("my-service", TokenKind::OAuthAccessToken, &mut rng);
+//! let oauth = generate_token("my-service", TokenKind::OAuthAccessToken, seed);
 //! assert_eq!(oauth.matches('.').count(), 2);
 //! ```
 
 use base64::Engine as _;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+use rand_chacha::ChaCha20Rng;
 use rand_core::RngCore;
+use rand_core::SeedableRng;
 
 use serde_json::json;
 pub use uselesskey_core_base62::random_base62;
+use uselesskey_core_seed::Seed;
 
 /// Prefix used for API-key token fixtures.
 pub const API_KEY_PREFIX: &str = "uk_test_";
@@ -54,11 +55,11 @@ pub const OAUTH_SIGNATURE_BYTES: usize = 32;
 pub use uselesskey_token_spec::TokenSpec as TokenKind;
 
 /// Generate a token value for the provided shape kind.
-pub fn generate_token(label: &str, kind: TokenKind, rng: &mut impl RngCore) -> String {
+pub fn generate_token(label: &str, kind: TokenKind, seed: Seed) -> String {
     match kind {
-        TokenKind::ApiKey => generate_api_key(rng),
-        TokenKind::Bearer => generate_bearer_token(rng),
-        TokenKind::OAuthAccessToken => generate_oauth_access_token(label, rng),
+        TokenKind::ApiKey => generate_api_key(seed),
+        TokenKind::Bearer => generate_bearer_token(seed),
+        TokenKind::OAuthAccessToken => generate_oauth_access_token(label, seed),
     }
 }
 
@@ -68,22 +69,24 @@ pub fn authorization_scheme(kind: TokenKind) -> &'static str {
 }
 
 /// Generate an API-key style token fixture (`uk_test_<base62>`).
-pub fn generate_api_key(rng: &mut impl RngCore) -> String {
+pub fn generate_api_key(seed: Seed) -> String {
     let mut out = String::from(API_KEY_PREFIX);
-    out.push_str(&random_base62(rng, API_KEY_RANDOM_LEN));
+    out.push_str(&random_base62(seed, API_KEY_RANDOM_LEN));
     out
 }
 
 /// Generate an opaque bearer token fixture (base64url of 32 random bytes).
-pub fn generate_bearer_token(rng: &mut impl RngCore) -> String {
+pub fn generate_bearer_token(seed: Seed) -> String {
+    let mut rng = ChaCha20Rng::from_seed(*seed.bytes());
     let mut bytes = [0u8; BEARER_RANDOM_BYTES];
     rng.fill_bytes(&mut bytes);
     URL_SAFE_NO_PAD.encode(bytes)
 }
 
 /// Generate an OAuth access token fixture in JWT shape (`header.payload.signature`).
-pub fn generate_oauth_access_token(label: &str, rng: &mut impl RngCore) -> String {
+pub fn generate_oauth_access_token(label: &str, seed: Seed) -> String {
     let header = URL_SAFE_NO_PAD.encode(r#"{"alg":"RS256","typ":"JWT"}"#);
+    let mut rng = ChaCha20Rng::from_seed(*seed.bytes());
 
     let mut jti = [0u8; OAUTH_JTI_BYTES];
     rng.fill_bytes(&mut jti);
@@ -111,8 +114,7 @@ mod tests {
     use base64::Engine as _;
     use base64::engine::general_purpose::URL_SAFE_NO_PAD;
     use proptest::prelude::*;
-    use rand_chacha::{ChaCha20Rng, rand_core::RngCore};
-    use rand_core::SeedableRng;
+    use uselesskey_core_seed::Seed;
 
     use super::{
         API_KEY_PREFIX, API_KEY_RANDOM_LEN, BEARER_RANDOM_BYTES, TokenKind, authorization_scheme,
@@ -122,8 +124,7 @@ mod tests {
 
     #[test]
     fn api_key_shape_is_stable() {
-        let mut rng = ChaCha20Rng::from_seed([7u8; 32]);
-        let value = generate_api_key(&mut rng);
+        let value = generate_api_key(Seed::new([7u8; 32]));
 
         assert!(value.starts_with(API_KEY_PREFIX));
         let suffix = value
@@ -135,16 +136,14 @@ mod tests {
 
     #[test]
     fn bearer_shape_decodes_to_32_bytes() {
-        let mut rng = ChaCha20Rng::from_seed([9u8; 32]);
-        let value = generate_bearer_token(&mut rng);
+        let value = generate_bearer_token(Seed::new([9u8; 32]));
         let decoded = URL_SAFE_NO_PAD.decode(value).expect("base64url decode");
         assert_eq!(decoded.len(), BEARER_RANDOM_BYTES);
     }
 
     #[test]
     fn oauth_shape_has_three_segments_and_subject() {
-        let mut rng = ChaCha20Rng::from_seed([11u8; 32]);
-        let value = generate_oauth_access_token("issuer", &mut rng);
+        let value = generate_oauth_access_token("issuer", Seed::new([11u8; 32]));
         let parts: Vec<&str> = value.split('.').collect();
         assert_eq!(parts.len(), 3);
 
@@ -167,14 +166,9 @@ mod tests {
     fn generate_token_varies_by_kind() {
         let seed = [13u8; 32];
 
-        let mut rng = ChaCha20Rng::from_seed(seed);
-        let api = generate_token("label", TokenKind::ApiKey, &mut rng);
-
-        let mut rng = ChaCha20Rng::from_seed(seed);
-        let bearer = generate_token("label", TokenKind::Bearer, &mut rng);
-
-        let mut rng = ChaCha20Rng::from_seed(seed);
-        let oauth = generate_token("label", TokenKind::OAuthAccessToken, &mut rng);
+        let api = generate_token("label", TokenKind::ApiKey, Seed::new(seed));
+        let bearer = generate_token("label", TokenKind::Bearer, Seed::new(seed));
+        let oauth = generate_token("label", TokenKind::OAuthAccessToken, Seed::new(seed));
 
         assert_ne!(api, bearer);
         assert_ne!(api, oauth);
@@ -183,129 +177,28 @@ mod tests {
 
     #[test]
     fn random_base62_length_and_charset() {
-        let mut rng = ChaCha20Rng::from_seed([17u8; 32]);
-        let value = random_base62(&mut rng, 64);
+        let value = random_base62(Seed::new([17u8; 32]), 64);
         assert_eq!(value.len(), 64);
         assert!(value.chars().all(|c| c.is_ascii_alphanumeric()));
-    }
-
-    #[test]
-    fn random_base62_rejects_biased_bytes() {
-        struct ByteSeqRng {
-            bytes: [u8; 5],
-            pos: usize,
-        }
-
-        impl ByteSeqRng {
-            fn next_byte(&mut self) -> u8 {
-                let b = self.bytes[self.pos % self.bytes.len()];
-                self.pos += 1;
-                b
-            }
-        }
-
-        impl RngCore for ByteSeqRng {
-            fn next_u32(&mut self) -> u32 {
-                u32::from_le_bytes([
-                    self.next_byte(),
-                    self.next_byte(),
-                    self.next_byte(),
-                    self.next_byte(),
-                ])
-            }
-
-            fn next_u64(&mut self) -> u64 {
-                u64::from_le_bytes([
-                    self.next_byte(),
-                    self.next_byte(),
-                    self.next_byte(),
-                    self.next_byte(),
-                    self.next_byte(),
-                    self.next_byte(),
-                    self.next_byte(),
-                    self.next_byte(),
-                ])
-            }
-
-            fn fill_bytes(&mut self, dst: &mut [u8]) {
-                for b in dst {
-                    *b = self.next_byte();
-                }
-            }
-
-            fn try_fill_bytes(&mut self, dst: &mut [u8]) -> Result<(), rand_core::Error> {
-                self.fill_bytes(dst);
-                Ok(())
-            }
-        }
-
-        let mut rng = ByteSeqRng {
-            bytes: [0, 61, 62, 123, 255],
-            pos: 0,
-        };
-        let value = random_base62(&mut rng, 5);
-
-        // byte 255 >= 248 is rejected; 0 % 62 = 0 => 'A', 61 % 62 = 61 => '9',
-        // 62 % 62 = 0 => 'A', 123 % 62 = 61 => '9', (255 rejected),
-        // next cycle: 0 => 'A'
-        assert_eq!(value.len(), 5);
-        assert_eq!(&value[..4], "A9A9");
-        // Fifth char comes from byte 0 (after 255 rejected) -> 'A'
-        assert_eq!(value, "A9A9A");
-    }
-
-    #[test]
-    fn random_base62_constant_rng_terminates() {
-        struct ConstantRng(u8);
-
-        impl RngCore for ConstantRng {
-            fn next_u32(&mut self) -> u32 {
-                u32::from(self.0) * 0x0101_0101
-            }
-
-            fn next_u64(&mut self) -> u64 {
-                u64::from(self.0) * 0x0101_0101_0101_0101
-            }
-
-            fn fill_bytes(&mut self, dest: &mut [u8]) {
-                dest.fill(self.0);
-            }
-
-            fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_core::Error> {
-                self.fill_bytes(dest);
-                Ok(())
-            }
-        }
-
-        let mut rng = ConstantRng(0xFF);
-        let value = random_base62(&mut rng, 32);
-        assert_eq!(value.len(), 32);
-
-        // 255 % 62 = 7 -> 'H'
-        assert!(value.chars().all(|c| c == 'H'));
     }
 
     proptest! {
         #[test]
         fn api_key_same_seed_stable(seed in any::<[u8; 32]>()) {
-            let mut first = ChaCha20Rng::from_seed(seed);
-            let mut second = ChaCha20Rng::from_seed(seed);
-            let a = generate_api_key(&mut first);
-            let b = generate_api_key(&mut second);
+            let a = generate_api_key(Seed::new(seed));
+            let b = generate_api_key(Seed::new(seed));
             prop_assert_eq!(a, b);
         }
 
         #[test]
         fn bearer_token_always_43_chars(seed in any::<[u8; 32]>()) {
-            let mut rng = ChaCha20Rng::from_seed(seed);
-            let token = generate_bearer_token(&mut rng);
+            let token = generate_bearer_token(Seed::new(seed));
             prop_assert_eq!(token.len(), 43);
         }
 
         #[test]
         fn oauth_has_three_segments(seed in any::<[u8; 32]>(), label in "[a-z0-9_-]{1,16}") {
-            let mut rng = ChaCha20Rng::from_seed(seed);
-            let token = generate_oauth_access_token(&label, &mut rng);
+            let token = generate_oauth_access_token(&label, Seed::new(seed));
             prop_assert_eq!(token.matches('.').count(), 2);
         }
     }

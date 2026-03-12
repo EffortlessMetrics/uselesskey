@@ -19,7 +19,6 @@ uselesskey-core = { path = "../uselesskey-core", version = "0.3.0" }
 uselesskey-core-keypair-material.workspace = true
 ed25519-dalek.workspace = true
 pkcs8.workspace = true
-rand_core.workspace = true
 
 # Optional JWK/JWKS support
 serde_json = { workspace = true, optional = true }

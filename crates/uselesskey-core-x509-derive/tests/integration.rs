@@ -1,7 +1,6 @@
 //! Integration tests for `uselesskey-core-x509-derive`.
 
-use rand_chacha::ChaCha20Rng;
-use rand_core::SeedableRng;
+use uselesskey_core_seed::Seed;
 use uselesskey_core_x509_derive::{
     BASE_TIME_EPOCH_UNIX, BASE_TIME_WINDOW_DAYS, SERIAL_NUMBER_BYTES,
     deterministic_base_time_from_parts, deterministic_serial_number, write_len_prefixed,
@@ -68,8 +67,8 @@ fn base_time_many_parts() {
 
 #[test]
 fn serial_number_is_positive() {
-    let mut rng = ChaCha20Rng::from_seed([7u8; 32]);
-    let serial = deterministic_serial_number(&mut rng);
+    let rng = Seed::new([7u8; 32]);
+    let serial = deterministic_serial_number(rng);
     let bytes = serial.to_bytes();
     assert_eq!(
         bytes[0] & 0x80,
@@ -80,35 +79,35 @@ fn serial_number_is_positive() {
 
 #[test]
 fn serial_number_correct_length() {
-    let mut rng = ChaCha20Rng::from_seed([42u8; 32]);
-    let serial = deterministic_serial_number(&mut rng);
+    let rng = Seed::new([42u8; 32]);
+    let serial = deterministic_serial_number(rng);
     assert_eq!(serial.to_bytes().len(), SERIAL_NUMBER_BYTES);
 }
 
 #[test]
 fn serial_number_deterministic_from_same_seed() {
-    let mut a = ChaCha20Rng::from_seed([99u8; 32]);
-    let mut b = ChaCha20Rng::from_seed([99u8; 32]);
+    let a = Seed::new([99u8; 32]);
+    let b = Seed::new([99u8; 32]);
     assert_eq!(
-        deterministic_serial_number(&mut a).to_bytes(),
-        deterministic_serial_number(&mut b).to_bytes()
+        deterministic_serial_number(a).to_bytes(),
+        deterministic_serial_number(b).to_bytes()
     );
 }
 
 #[test]
 fn serial_number_varies_across_seeds() {
-    let mut a = ChaCha20Rng::from_seed([1u8; 32]);
-    let mut b = ChaCha20Rng::from_seed([2u8; 32]);
+    let a = Seed::new([1u8; 32]);
+    let b = Seed::new([2u8; 32]);
     assert_ne!(
-        deterministic_serial_number(&mut a).to_bytes(),
-        deterministic_serial_number(&mut b).to_bytes()
+        deterministic_serial_number(a).to_bytes(),
+        deterministic_serial_number(b).to_bytes()
     );
 }
 
 #[test]
 fn serial_number_all_zero_seed() {
-    let mut rng = ChaCha20Rng::from_seed([0u8; 32]);
-    let serial = deterministic_serial_number(&mut rng);
+    let rng = Seed::new([0u8; 32]);
+    let serial = deterministic_serial_number(rng);
     let bytes = serial.to_bytes();
     assert_eq!(bytes.len(), SERIAL_NUMBER_BYTES);
     assert_eq!(bytes[0] & 0x80, 0);
@@ -116,8 +115,8 @@ fn serial_number_all_zero_seed() {
 
 #[test]
 fn serial_number_all_ones_seed() {
-    let mut rng = ChaCha20Rng::from_seed([0xFF; 32]);
-    let serial = deterministic_serial_number(&mut rng);
+    let rng = Seed::new([0xFF; 32]);
+    let serial = deterministic_serial_number(rng);
     let bytes = serial.to_bytes();
     assert_eq!(bytes.len(), SERIAL_NUMBER_BYTES);
     assert_eq!(bytes[0] & 0x80, 0);

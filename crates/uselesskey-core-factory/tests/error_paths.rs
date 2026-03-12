@@ -6,6 +6,12 @@ use std::sync::Arc;
 use uselesskey_core_factory::{Factory, Mode};
 use uselesskey_core_id::Seed;
 
+fn seed_array<const N: usize>(seed: Seed) -> [u8; N] {
+    let mut buf = [0u8; N];
+    seed.fill_bytes(&mut buf);
+    buf
+}
+
 // =========================================================================
 // Boundary conditions: empty and unusual labels
 // =========================================================================
@@ -92,18 +98,8 @@ fn different_seeds_produce_different_artifacts() {
     let fx1 = Factory::deterministic(Seed::new([1u8; 32]));
     let fx2 = Factory::deterministic(Seed::new([2u8; 32]));
 
-    let v1: Arc<[u8; 32]> = fx1.get_or_init("domain:test", "label", b"spec", "good", |rng| {
-        use rand_core::RngCore;
-        let mut buf = [0u8; 32];
-        rng.fill_bytes(&mut buf);
-        buf
-    });
-    let v2: Arc<[u8; 32]> = fx2.get_or_init("domain:test", "label", b"spec", "good", |rng| {
-        use rand_core::RngCore;
-        let mut buf = [0u8; 32];
-        rng.fill_bytes(&mut buf);
-        buf
-    });
+    let v1: Arc<[u8; 32]> = fx1.get_or_init("domain:test", "label", b"spec", "good", seed_array);
+    let v2: Arc<[u8; 32]> = fx2.get_or_init("domain:test", "label", b"spec", "good", seed_array);
 
     assert_ne!(*v1, *v2, "different seeds must produce different artifacts");
 }

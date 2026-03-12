@@ -3,8 +3,7 @@ use std::collections::HashMap;
 use base64::Engine as _;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use proptest::prelude::*;
-use rand_chacha::ChaCha20Rng;
-use rand_core::SeedableRng;
+use uselesskey_core_seed::Seed;
 
 use uselesskey_core_token_shape::{
     API_KEY_PREFIX, API_KEY_RANDOM_LEN, BEARER_RANDOM_BYTES, OAUTH_JTI_BYTES,
@@ -18,22 +17,22 @@ use uselesskey_core_token_shape::{
 
 #[test]
 fn api_key_is_non_empty() {
-    let mut rng = ChaCha20Rng::from_seed([1u8; 32]);
-    let token = generate_api_key(&mut rng);
+    let rng = Seed::new([1u8; 32]);
+    let token = generate_api_key(rng);
     assert!(!token.is_empty());
 }
 
 #[test]
 fn bearer_token_is_non_empty() {
-    let mut rng = ChaCha20Rng::from_seed([2u8; 32]);
-    let token = generate_bearer_token(&mut rng);
+    let rng = Seed::new([2u8; 32]);
+    let token = generate_bearer_token(rng);
     assert!(!token.is_empty());
 }
 
 #[test]
 fn oauth_token_is_non_empty() {
-    let mut rng = ChaCha20Rng::from_seed([3u8; 32]);
-    let token = generate_oauth_access_token("svc", &mut rng);
+    let rng = Seed::new([3u8; 32]);
+    let token = generate_oauth_access_token("svc", rng);
     assert!(!token.is_empty());
 }
 
@@ -44,8 +43,8 @@ fn generate_token_non_empty_for_all_kinds() {
         TokenKind::Bearer,
         TokenKind::OAuthAccessToken,
     ] {
-        let mut rng = ChaCha20Rng::from_seed([4u8; 32]);
-        let token = generate_token("lbl", kind, &mut rng);
+        let rng = Seed::new([4u8; 32]);
+        let token = generate_token("lbl", kind, rng);
         assert!(!token.is_empty(), "token for {kind:?} must be non-empty");
     }
 }
@@ -56,8 +55,8 @@ fn generate_token_non_empty_for_all_kinds() {
 
 #[test]
 fn api_key_has_prefix_and_suffix() {
-    let mut rng = ChaCha20Rng::from_seed([10u8; 32]);
-    let token = generate_api_key(&mut rng);
+    let rng = Seed::new([10u8; 32]);
+    let token = generate_api_key(rng);
     assert!(token.starts_with(API_KEY_PREFIX));
     let suffix = &token[API_KEY_PREFIX.len()..];
     assert_eq!(suffix.len(), API_KEY_RANDOM_LEN);
@@ -65,8 +64,8 @@ fn api_key_has_prefix_and_suffix() {
 
 #[test]
 fn bearer_token_is_valid_base64url() {
-    let mut rng = ChaCha20Rng::from_seed([11u8; 32]);
-    let token = generate_bearer_token(&mut rng);
+    let rng = Seed::new([11u8; 32]);
+    let token = generate_bearer_token(rng);
     assert!(
         URL_SAFE_NO_PAD.decode(&token).is_ok(),
         "bearer token must be valid base64url"
@@ -75,8 +74,8 @@ fn bearer_token_is_valid_base64url() {
 
 #[test]
 fn oauth_token_is_dot_separated_three_parts() {
-    let mut rng = ChaCha20Rng::from_seed([12u8; 32]);
-    let token = generate_oauth_access_token("test-subject", &mut rng);
+    let rng = Seed::new([12u8; 32]);
+    let token = generate_oauth_access_token("test-subject", rng);
     let parts: Vec<&str> = token.split('.').collect();
     assert_eq!(
         parts.len(),
@@ -93,8 +92,8 @@ fn oauth_token_is_dot_separated_three_parts() {
 
 #[test]
 fn oauth_header_contains_expected_alg() {
-    let mut rng = ChaCha20Rng::from_seed([13u8; 32]);
-    let token = generate_oauth_access_token("x", &mut rng);
+    let rng = Seed::new([13u8; 32]);
+    let token = generate_oauth_access_token("x", rng);
     let header_segment = token.split('.').next().unwrap();
     let header_bytes = URL_SAFE_NO_PAD.decode(header_segment).unwrap();
     let header: serde_json::Value = serde_json::from_slice(&header_bytes).unwrap();
@@ -104,8 +103,8 @@ fn oauth_header_contains_expected_alg() {
 
 #[test]
 fn oauth_payload_contains_required_claims() {
-    let mut rng = ChaCha20Rng::from_seed([14u8; 32]);
-    let token = generate_oauth_access_token("my-service", &mut rng);
+    let rng = Seed::new([14u8; 32]);
+    let token = generate_oauth_access_token("my-service", rng);
     let payload_segment = token.split('.').nth(1).unwrap();
     let payload_bytes = URL_SAFE_NO_PAD.decode(payload_segment).unwrap();
     let claims: serde_json::Value = serde_json::from_slice(&payload_bytes).unwrap();
@@ -124,22 +123,22 @@ fn oauth_payload_contains_required_claims() {
 
 #[test]
 fn api_key_deterministic() {
-    let a = generate_api_key(&mut ChaCha20Rng::from_seed([20u8; 32]));
-    let b = generate_api_key(&mut ChaCha20Rng::from_seed([20u8; 32]));
+    let a = generate_api_key(Seed::new([20u8; 32]));
+    let b = generate_api_key(Seed::new([20u8; 32]));
     assert_eq!(a, b);
 }
 
 #[test]
 fn bearer_token_deterministic() {
-    let a = generate_bearer_token(&mut ChaCha20Rng::from_seed([21u8; 32]));
-    let b = generate_bearer_token(&mut ChaCha20Rng::from_seed([21u8; 32]));
+    let a = generate_bearer_token(Seed::new([21u8; 32]));
+    let b = generate_bearer_token(Seed::new([21u8; 32]));
     assert_eq!(a, b);
 }
 
 #[test]
 fn oauth_token_deterministic() {
-    let a = generate_oauth_access_token("svc", &mut ChaCha20Rng::from_seed([22u8; 32]));
-    let b = generate_oauth_access_token("svc", &mut ChaCha20Rng::from_seed([22u8; 32]));
+    let a = generate_oauth_access_token("svc", Seed::new([22u8; 32]));
+    let b = generate_oauth_access_token("svc", Seed::new([22u8; 32]));
     assert_eq!(a, b);
 }
 
@@ -151,8 +150,8 @@ fn generate_token_deterministic_all_kinds() {
         TokenKind::Bearer,
         TokenKind::OAuthAccessToken,
     ] {
-        let a = generate_token("lbl", kind, &mut ChaCha20Rng::from_seed(seed));
-        let b = generate_token("lbl", kind, &mut ChaCha20Rng::from_seed(seed));
+        let a = generate_token("lbl", kind, Seed::new(seed));
+        let b = generate_token("lbl", kind, Seed::new(seed));
         assert_eq!(a, b, "determinism broken for {kind:?}");
     }
 }
@@ -164,13 +163,9 @@ fn generate_token_deterministic_all_kinds() {
 #[test]
 fn different_kinds_produce_different_tokens() {
     let seed = [30u8; 32];
-    let api = generate_token("x", TokenKind::ApiKey, &mut ChaCha20Rng::from_seed(seed));
-    let bearer = generate_token("x", TokenKind::Bearer, &mut ChaCha20Rng::from_seed(seed));
-    let oauth = generate_token(
-        "x",
-        TokenKind::OAuthAccessToken,
-        &mut ChaCha20Rng::from_seed(seed),
-    );
+    let api = generate_token("x", TokenKind::ApiKey, Seed::new(seed));
+    let bearer = generate_token("x", TokenKind::Bearer, Seed::new(seed));
+    let oauth = generate_token("x", TokenKind::OAuthAccessToken, Seed::new(seed));
 
     assert_ne!(api, bearer);
     assert_ne!(api, oauth);
@@ -179,23 +174,23 @@ fn different_kinds_produce_different_tokens() {
 
 #[test]
 fn different_seeds_produce_different_api_keys() {
-    let a = generate_api_key(&mut ChaCha20Rng::from_seed([40u8; 32]));
-    let b = generate_api_key(&mut ChaCha20Rng::from_seed([41u8; 32]));
+    let a = generate_api_key(Seed::new([40u8; 32]));
+    let b = generate_api_key(Seed::new([41u8; 32]));
     assert_ne!(a, b);
 }
 
 #[test]
 fn different_seeds_produce_different_bearer_tokens() {
-    let a = generate_bearer_token(&mut ChaCha20Rng::from_seed([50u8; 32]));
-    let b = generate_bearer_token(&mut ChaCha20Rng::from_seed([51u8; 32]));
+    let a = generate_bearer_token(Seed::new([50u8; 32]));
+    let b = generate_bearer_token(Seed::new([51u8; 32]));
     assert_ne!(a, b);
 }
 
 #[test]
 fn different_labels_produce_different_oauth_tokens() {
     let seed = [60u8; 32];
-    let a = generate_oauth_access_token("alpha", &mut ChaCha20Rng::from_seed(seed));
-    let b = generate_oauth_access_token("beta", &mut ChaCha20Rng::from_seed(seed));
+    let a = generate_oauth_access_token("alpha", Seed::new(seed));
+    let b = generate_oauth_access_token("beta", Seed::new(seed));
     // Same seed but different labels → different payload (sub differs)
     assert_ne!(a, b);
 }
@@ -214,31 +209,31 @@ fn authorization_scheme_api_key_differs_from_bearer() {
 
 #[test]
 fn api_key_total_length() {
-    let mut rng = ChaCha20Rng::from_seed([70u8; 32]);
-    let token = generate_api_key(&mut rng);
+    let rng = Seed::new([70u8; 32]);
+    let token = generate_api_key(rng);
     assert_eq!(token.len(), API_KEY_PREFIX.len() + API_KEY_RANDOM_LEN);
 }
 
 #[test]
 fn bearer_token_length_is_43() {
     // base64url of 32 bytes without padding = ceil(32*4/3) = 43 chars
-    let mut rng = ChaCha20Rng::from_seed([71u8; 32]);
-    let token = generate_bearer_token(&mut rng);
+    let rng = Seed::new([71u8; 32]);
+    let token = generate_bearer_token(rng);
     assert_eq!(token.len(), 43);
 }
 
 #[test]
 fn bearer_token_decodes_to_expected_bytes() {
-    let mut rng = ChaCha20Rng::from_seed([72u8; 32]);
-    let token = generate_bearer_token(&mut rng);
+    let rng = Seed::new([72u8; 32]);
+    let token = generate_bearer_token(rng);
     let decoded = URL_SAFE_NO_PAD.decode(&token).unwrap();
     assert_eq!(decoded.len(), BEARER_RANDOM_BYTES);
 }
 
 #[test]
 fn oauth_signature_segment_decodes_to_expected_bytes() {
-    let mut rng = ChaCha20Rng::from_seed([73u8; 32]);
-    let token = generate_oauth_access_token("svc", &mut rng);
+    let rng = Seed::new([73u8; 32]);
+    let token = generate_oauth_access_token("svc", rng);
     let sig_segment = token.split('.').nth(2).unwrap();
     let decoded = URL_SAFE_NO_PAD.decode(sig_segment).unwrap();
     assert_eq!(decoded.len(), OAUTH_SIGNATURE_BYTES);
@@ -246,8 +241,8 @@ fn oauth_signature_segment_decodes_to_expected_bytes() {
 
 #[test]
 fn oauth_jti_has_expected_decoded_length() {
-    let mut rng = ChaCha20Rng::from_seed([74u8; 32]);
-    let token = generate_oauth_access_token("svc", &mut rng);
+    let rng = Seed::new([74u8; 32]);
+    let token = generate_oauth_access_token("svc", rng);
     let payload_segment = token.split('.').nth(1).unwrap();
     let payload_bytes = URL_SAFE_NO_PAD.decode(payload_segment).unwrap();
     let claims: serde_json::Value = serde_json::from_slice(&payload_bytes).unwrap();
@@ -262,8 +257,8 @@ fn oauth_jti_has_expected_decoded_length() {
 
 #[test]
 fn api_key_suffix_is_alphanumeric() {
-    let mut rng = ChaCha20Rng::from_seed([80u8; 32]);
-    let token = generate_api_key(&mut rng);
+    let rng = Seed::new([80u8; 32]);
+    let token = generate_api_key(rng);
     let suffix = &token[API_KEY_PREFIX.len()..];
     assert!(
         suffix.chars().all(|c| c.is_ascii_alphanumeric()),
@@ -273,8 +268,8 @@ fn api_key_suffix_is_alphanumeric() {
 
 #[test]
 fn bearer_token_is_base64url_charset() {
-    let mut rng = ChaCha20Rng::from_seed([81u8; 32]);
-    let token = generate_bearer_token(&mut rng);
+    let rng = Seed::new([81u8; 32]);
+    let token = generate_bearer_token(rng);
     assert!(
         token
             .chars()
@@ -285,9 +280,9 @@ fn bearer_token_is_base64url_charset() {
 
 #[test]
 fn random_base62_only_alphanumeric() {
-    let mut rng = ChaCha20Rng::from_seed([82u8; 32]);
+    let rng = Seed::new([82u8; 32]);
     for len in [0, 1, 10, 100, 256] {
-        let s = random_base62(&mut rng, len);
+        let s = random_base62(rng, len);
         assert_eq!(s.len(), len);
         assert!(
             s.chars().all(|c| c.is_ascii_alphanumeric()),
@@ -298,8 +293,8 @@ fn random_base62_only_alphanumeric() {
 
 #[test]
 fn random_base62_zero_length() {
-    let mut rng = ChaCha20Rng::from_seed([83u8; 32]);
-    let s = random_base62(&mut rng, 0);
+    let rng = Seed::new([83u8; 32]);
+    let s = random_base62(rng, 0);
     assert!(s.is_empty());
 }
 
@@ -311,9 +306,9 @@ fn random_base62_zero_length() {
 fn random_base62_distribution_roughly_uniform() {
     // Generate a large sample and check that all 62 characters appear
     // and no character is grossly over- or under-represented.
-    let mut rng = ChaCha20Rng::from_seed([90u8; 32]);
+    let rng = Seed::new([90u8; 32]);
     let sample_len = 62_000;
-    let s = random_base62(&mut rng, sample_len);
+    let s = random_base62(rng, sample_len);
 
     let mut counts: HashMap<char, usize> = HashMap::new();
     for c in s.chars() {
@@ -335,8 +330,8 @@ fn random_base62_distribution_roughly_uniform() {
 
 #[test]
 fn random_base62_large_length_is_exact() {
-    let mut rng = ChaCha20Rng::from_seed([91u8; 32]);
-    let s = random_base62(&mut rng, 1000);
+    let rng = Seed::new([91u8; 32]);
+    let s = random_base62(rng, 1000);
     assert_eq!(s.len(), 1000);
 }
 
@@ -347,60 +342,60 @@ fn random_base62_large_length_is_exact() {
 proptest! {
     #[test]
     fn prop_api_key_length_matches_spec(seed in any::<[u8; 32]>()) {
-        let mut rng = ChaCha20Rng::from_seed(seed);
-        let token = generate_api_key(&mut rng);
+        let rng = Seed::new(seed);
+        let token = generate_api_key(rng);
         prop_assert_eq!(token.len(), API_KEY_PREFIX.len() + API_KEY_RANDOM_LEN);
     }
 
     #[test]
     fn prop_api_key_suffix_is_alphanumeric(seed in any::<[u8; 32]>()) {
-        let mut rng = ChaCha20Rng::from_seed(seed);
-        let token = generate_api_key(&mut rng);
+        let rng = Seed::new(seed);
+        let token = generate_api_key(rng);
         let suffix = &token[API_KEY_PREFIX.len()..];
         prop_assert!(suffix.chars().all(|c| c.is_ascii_alphanumeric()));
     }
 
     #[test]
     fn prop_api_key_deterministic(seed in any::<[u8; 32]>()) {
-        let a = generate_api_key(&mut ChaCha20Rng::from_seed(seed));
-        let b = generate_api_key(&mut ChaCha20Rng::from_seed(seed));
+        let a = generate_api_key(Seed::new(seed));
+        let b = generate_api_key(Seed::new(seed));
         prop_assert_eq!(a, b);
     }
 
     #[test]
     fn prop_bearer_token_length_is_43(seed in any::<[u8; 32]>()) {
-        let mut rng = ChaCha20Rng::from_seed(seed);
-        let token = generate_bearer_token(&mut rng);
+        let rng = Seed::new(seed);
+        let token = generate_bearer_token(rng);
         prop_assert_eq!(token.len(), 43);
     }
 
     #[test]
     fn prop_bearer_token_is_valid_base64url(seed in any::<[u8; 32]>()) {
-        let mut rng = ChaCha20Rng::from_seed(seed);
-        let token = generate_bearer_token(&mut rng);
+        let rng = Seed::new(seed);
+        let token = generate_bearer_token(rng);
         prop_assert!(URL_SAFE_NO_PAD.decode(&token).is_ok());
     }
 
     #[test]
     fn prop_bearer_decodes_to_32_bytes(seed in any::<[u8; 32]>()) {
-        let mut rng = ChaCha20Rng::from_seed(seed);
-        let token = generate_bearer_token(&mut rng);
+        let rng = Seed::new(seed);
+        let token = generate_bearer_token(rng);
         let decoded = URL_SAFE_NO_PAD.decode(&token).unwrap();
         prop_assert_eq!(decoded.len(), BEARER_RANDOM_BYTES);
     }
 
     #[test]
     fn prop_oauth_has_three_segments(seed in any::<[u8; 32]>(), label in "[a-z0-9_-]{1,32}") {
-        let mut rng = ChaCha20Rng::from_seed(seed);
-        let token = generate_oauth_access_token(&label, &mut rng);
+        let rng = Seed::new(seed);
+        let token = generate_oauth_access_token(&label, rng);
         let count = token.split('.').count();
         prop_assert_eq!(count, 3);
     }
 
     #[test]
     fn prop_oauth_payload_sub_matches_label(seed in any::<[u8; 32]>(), label in "[a-z][a-z0-9_-]{0,15}") {
-        let mut rng = ChaCha20Rng::from_seed(seed);
-        let token = generate_oauth_access_token(&label, &mut rng);
+        let rng = Seed::new(seed);
+        let token = generate_oauth_access_token(&label, rng);
         let payload_segment = token.split('.').nth(1).unwrap();
         let payload_bytes = URL_SAFE_NO_PAD.decode(payload_segment).unwrap();
         let claims: serde_json::Value = serde_json::from_slice(&payload_bytes).unwrap();
@@ -409,15 +404,15 @@ proptest! {
 
     #[test]
     fn prop_random_base62_exact_length(seed in any::<[u8; 32]>(), len in 0usize..512) {
-        let mut rng = ChaCha20Rng::from_seed(seed);
-        let s = random_base62(&mut rng, len);
+        let rng = Seed::new(seed);
+        let s = random_base62(rng, len);
         prop_assert_eq!(s.len(), len);
     }
 
     #[test]
     fn prop_random_base62_valid_charset(seed in any::<[u8; 32]>(), len in 1usize..256) {
-        let mut rng = ChaCha20Rng::from_seed(seed);
-        let s = random_base62(&mut rng, len);
+        let rng = Seed::new(seed);
+        let s = random_base62(rng, len);
         prop_assert!(s.chars().all(|c| c.is_ascii_alphanumeric()));
     }
 
@@ -431,8 +426,8 @@ proptest! {
             1 => TokenKind::Bearer,
             _ => TokenKind::OAuthAccessToken,
         };
-        let a = generate_token("lbl", kind, &mut ChaCha20Rng::from_seed(seed));
-        let b = generate_token("lbl", kind, &mut ChaCha20Rng::from_seed(seed));
+        let a = generate_token("lbl", kind, Seed::new(seed));
+        let b = generate_token("lbl", kind, Seed::new(seed));
         prop_assert_eq!(a, b);
     }
 }

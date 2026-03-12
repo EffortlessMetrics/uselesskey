@@ -1,8 +1,7 @@
 //! Mutant-killing tests for X.509 derive helpers.
 
-use rand_chacha::ChaCha20Rng;
-use rand_core::SeedableRng;
 use time::OffsetDateTime;
+use uselesskey_core_seed::Seed;
 use uselesskey_core_x509_derive::{
     BASE_TIME_EPOCH_UNIX, BASE_TIME_WINDOW_DAYS, SERIAL_NUMBER_BYTES, deterministic_base_time,
     deterministic_base_time_from_parts, deterministic_serial_number,
@@ -59,8 +58,8 @@ fn base_time_from_parts_boundary_safe() {
 
 #[test]
 fn serial_number_is_16_bytes() {
-    let mut rng = ChaCha20Rng::from_seed([7u8; 32]);
-    let serial = deterministic_serial_number(&mut rng);
+    let rng = Seed::new([7u8; 32]);
+    let serial = deterministic_serial_number(rng);
     assert_eq!(serial.to_bytes().len(), SERIAL_NUMBER_BYTES);
 }
 
@@ -68,8 +67,8 @@ fn serial_number_is_16_bytes() {
 fn serial_number_high_bit_cleared() {
     // Test with multiple seeds to increase confidence
     for seed_byte in 0u8..50 {
-        let mut rng = ChaCha20Rng::from_seed([seed_byte; 32]);
-        let serial = deterministic_serial_number(&mut rng);
+        let rng = Seed::new([seed_byte; 32]);
+        let serial = deterministic_serial_number(rng);
         let bytes = serial.to_bytes();
         assert_eq!(
             bytes[0] & 0x80,
@@ -81,15 +80,15 @@ fn serial_number_high_bit_cleared() {
 
 #[test]
 fn serial_number_deterministic() {
-    let a = deterministic_serial_number(&mut ChaCha20Rng::from_seed([42u8; 32]));
-    let b = deterministic_serial_number(&mut ChaCha20Rng::from_seed([42u8; 32]));
+    let a = deterministic_serial_number(Seed::new([42u8; 32]));
+    let b = deterministic_serial_number(Seed::new([42u8; 32]));
     assert_eq!(a.to_bytes(), b.to_bytes());
 }
 
 #[test]
 fn serial_number_different_seeds_differ() {
-    let a = deterministic_serial_number(&mut ChaCha20Rng::from_seed([1u8; 32]));
-    let b = deterministic_serial_number(&mut ChaCha20Rng::from_seed([2u8; 32]));
+    let a = deterministic_serial_number(Seed::new([1u8; 32]));
+    let b = deterministic_serial_number(Seed::new([2u8; 32]));
     assert_ne!(a.to_bytes(), b.to_bytes());
 }
 

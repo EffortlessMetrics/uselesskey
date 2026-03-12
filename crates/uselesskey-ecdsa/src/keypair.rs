@@ -2,6 +2,8 @@ use std::fmt;
 use std::sync::Arc;
 
 use elliptic_curve::pkcs8::{EncodePrivateKey, EncodePublicKey, LineEnding};
+use rand_chacha::ChaCha20Rng;
+use rand_core::SeedableRng;
 use uselesskey_core::negative::CorruptPem;
 use uselesskey_core::sink::TempArtifact;
 use uselesskey_core::{Error, Factory};
@@ -521,16 +523,13 @@ impl EcdsaKeyPair {
 fn load_inner(factory: &Factory, label: &str, spec: EcdsaSpec, variant: &str) -> Arc<Inner> {
     let spec_bytes = spec.stable_bytes();
 
-    factory.get_or_init(
-        DOMAIN_ECDSA_KEYPAIR,
-        label,
-        &spec_bytes,
-        variant,
-        |rng| match spec {
-            EcdsaSpec::Es256 => generate_p256(spec, rng),
-            EcdsaSpec::Es384 => generate_p384(spec, rng),
-        },
-    )
+    factory.get_or_init(DOMAIN_ECDSA_KEYPAIR, label, &spec_bytes, variant, |seed| {
+        let mut rng = ChaCha20Rng::from_seed(*seed.bytes());
+        match spec {
+            EcdsaSpec::Es256 => generate_p256(spec, &mut rng),
+            EcdsaSpec::Es384 => generate_p384(spec, &mut rng),
+        }
+    })
 }
 
 fn generate_p256(spec: EcdsaSpec, rng: &mut impl rand_core::CryptoRngCore) -> Inner {

@@ -9,6 +9,8 @@
 extern crate alloc;
 
 use alloc::string::String;
+use rand_chacha::ChaCha20Rng;
+use rand_core::{RngCore, SeedableRng};
 
 /// Seed bytes derived from user input for deterministic fixtures.
 #[derive(Clone, Copy, Eq, PartialEq, Hash)]
@@ -32,6 +34,15 @@ impl Seed {
     /// 64-character strings as hex.
     pub fn from_text(text: &str) -> Self {
         Self(*blake3::hash(text.as_bytes()).as_bytes())
+    }
+
+    /// Fill the destination buffer with deterministic bytes derived from this seed.
+    ///
+    /// This keeps RNG implementation details private while allowing callers to
+    /// derive stable byte sequences from seed material.
+    pub fn fill_bytes(&self, dest: &mut [u8]) {
+        let mut rng = ChaCha20Rng::from_seed(self.0);
+        rng.fill_bytes(dest);
     }
 
     /// Derive a seed from a user-provided string.
@@ -202,6 +213,18 @@ mod tests {
         let mut h2 = std::collections::hash_map::DefaultHasher::new();
         seed.hash(&mut h2);
         assert_eq!(hash1, h2.finish());
+    }
+
+    #[test]
+    fn fill_bytes_is_seed_stable() {
+        let seed = Seed::new([7u8; 32]);
+        let mut a = [0u8; 16];
+        let mut b = [0u8; 16];
+
+        seed.fill_bytes(&mut a);
+        seed.fill_bytes(&mut b);
+
+        assert_eq!(a, b);
     }
 
     #[test]

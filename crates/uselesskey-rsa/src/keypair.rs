@@ -1,6 +1,8 @@
 use std::fmt;
 use std::sync::Arc;
 
+use rand_chacha::ChaCha20Rng;
+use rand_core::SeedableRng;
 use rsa::pkcs8::LineEnding;
 use rsa::{RsaPrivateKey, RsaPublicKey, pkcs8::EncodePrivateKey, pkcs8::EncodePublicKey};
 use uselesskey_core::negative::CorruptPem;
@@ -518,8 +520,9 @@ fn load_inner(factory: &Factory, label: &str, spec: RsaSpec, variant: &str) -> A
 
     let spec_bytes = spec.stable_bytes();
 
-    factory.get_or_init(DOMAIN_RSA_KEYPAIR, label, &spec_bytes, variant, |rng| {
-        let private = RsaPrivateKey::new(rng, spec.bits).expect("RSA keygen failed");
+    factory.get_or_init(DOMAIN_RSA_KEYPAIR, label, &spec_bytes, variant, |seed| {
+        let mut rng = ChaCha20Rng::from_seed(*seed.bytes());
+        let private = RsaPrivateKey::new(&mut rng, spec.bits).expect("RSA keygen failed");
         let public = RsaPublicKey::from(&private);
 
         let pkcs8_der_doc = private

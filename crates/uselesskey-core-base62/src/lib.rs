@@ -2,10 +2,13 @@
 
 //! Base62 generation primitives for test fixtures.
 //!
-//! Provides deterministic, RNG-driven generation of base62 strings without
+//! Provides deterministic, seed-driven generation of base62 strings without
 //! modulo bias under normal RNG behavior.
 
+use rand_chacha::ChaCha20Rng;
 use rand_core::RngCore;
+use rand_core::SeedableRng;
+use uselesskey_core_seed::Seed;
 
 /// Base62 alphabet used by fixture generators.
 pub const BASE62_ALPHABET: &[u8; 62] =
@@ -13,12 +16,17 @@ pub const BASE62_ALPHABET: &[u8; 62] =
 
 const ACCEPT_MAX: u8 = 248; // 62 * 4; accept 0..=247 for unbiased mod 62
 
-/// Generate a random base62 string of the requested length.
+/// Generate a deterministic base62 string from the provided seed.
 ///
 /// Uses rejection sampling to avoid modulo bias for normal RNG outputs.
 /// Includes a deterministic bounded fallback path to avoid hangs with
 /// pathological RNGs that never emit acceptable bytes.
-pub fn random_base62(rng: &mut impl RngCore, len: usize) -> String {
+pub fn random_base62(seed: Seed, len: usize) -> String {
+    let mut rng = ChaCha20Rng::from_seed(*seed.bytes());
+    random_base62_with_rng(&mut rng, len)
+}
+
+fn random_base62_with_rng(rng: &mut impl RngCore, len: usize) -> String {
     let mut out = String::with_capacity(len);
     let mut buf = [0u8; 64];
 
@@ -50,29 +58,28 @@ pub fn random_base62(rng: &mut impl RngCore, len: usize) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{BASE62_ALPHABET, random_base62};
+    use super::{BASE62_ALPHABET, random_base62, random_base62_with_rng};
     use rand_chacha::ChaCha20Rng;
     use rand_core::{RngCore, SeedableRng};
+    use uselesskey_core_seed::Seed;
 
     #[test]
     fn generates_requested_length() {
-        let mut rng = ChaCha20Rng::from_seed([1u8; 32]);
-        assert_eq!(random_base62(&mut rng, 0).len(), 0);
-        assert_eq!(random_base62(&mut rng, 73).len(), 73);
+        assert_eq!(random_base62(Seed::new([1u8; 32]), 0).len(), 0);
+        assert_eq!(random_base62(Seed::new([1u8; 32]), 73).len(), 73);
     }
 
     #[test]
     fn uses_only_base62_chars() {
-        let mut rng = ChaCha20Rng::from_seed([2u8; 32]);
-        let value = random_base62(&mut rng, 256);
+        let value = random_base62(Seed::new([2u8; 32]), 256);
         assert!(value.bytes().all(|b| BASE62_ALPHABET.contains(&b)));
     }
 
     #[test]
     fn deterministic_for_seeded_rng() {
         let seed = [7u8; 32];
-        let a = random_base62(&mut ChaCha20Rng::from_seed(seed), 96);
-        let b = random_base62(&mut ChaCha20Rng::from_seed(seed), 96);
+        let a = random_base62(Seed::new(seed), 96);
+        let b = random_base62(Seed::new(seed), 96);
         assert_eq!(a, b);
     }
 
@@ -100,7 +107,7 @@ mod tests {
         }
 
         let mut rng = ConstantRng;
-        let value = random_base62(&mut rng, 32);
+        let value = random_base62_with_rng(&mut rng, 32);
         assert_eq!(value.len(), 32);
         assert!(value.chars().all(|c| c.is_ascii_alphanumeric()));
     }
@@ -110,7 +117,7 @@ mod tests {
         // Catches `% 62` → `/ 62` mutation: division would yield only
         // indices 0–3, producing at most 4 distinct characters.
         let mut rng = ChaCha20Rng::from_seed([42u8; 32]);
-        let out = random_base62(&mut rng, 256);
+        let out = random_base62_with_rng(&mut rng, 256);
         let unique: std::collections::HashSet<char> = out.chars().collect();
         assert!(
             unique.len() > 10,
@@ -146,7 +153,7 @@ mod tests {
         }
 
         let mut rng = AllMaxRng;
-        let out = random_base62(&mut rng, 4);
+        let out = random_base62_with_rng(&mut rng, 4);
         // 255 % 62 = 7, BASE62_ALPHABET[7] = 'H'
         assert!(
             out.chars().all(|c| c == 'H'),

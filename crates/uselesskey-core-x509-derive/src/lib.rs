@@ -22,15 +22,13 @@
 //! assert!(t >= epoch && t < max);
 //! ```
 //!
-//! Generate a deterministic serial number from an RNG:
+//! Generate a deterministic serial number from a seed:
 //!
 //! ```
 //! use uselesskey_core_x509_derive::{deterministic_serial_number, SERIAL_NUMBER_BYTES};
-//! use rand_chacha::ChaCha20Rng;
-//! use rand_core::SeedableRng;
+//! use uselesskey_core_seed::Seed;
 //!
-//! let mut rng = ChaCha20Rng::from_seed([42u8; 32]);
-//! let serial = deterministic_serial_number(&mut rng);
+//! let serial = deterministic_serial_number(Seed::new([42u8; 32]));
 //! let bytes = serial.to_bytes();
 //! assert_eq!(bytes.len(), SERIAL_NUMBER_BYTES);
 //! assert_eq!(bytes[0] & 0x80, 0, "high bit must be cleared");
@@ -39,11 +37,14 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
+use rand_chacha::ChaCha20Rng;
 use rand_core::RngCore;
+use rand_core::SeedableRng;
 use rcgen::SerialNumber;
 use time::OffsetDateTime;
 use uselesskey_core_hash::Hasher;
 pub use uselesskey_core_hash::write_len_prefixed;
+use uselesskey_core_seed::Seed;
 
 /// 2025-01-01T00:00:00Z used as the deterministic X.509 epoch.
 pub const BASE_TIME_EPOCH_UNIX: i64 = 1_735_689_600;
@@ -79,10 +80,15 @@ pub fn deterministic_base_time(hasher: Hasher) -> OffsetDateTime {
     epoch + time::Duration::days(i64::from(day_offset))
 }
 
-/// Deterministic serial number drawn from an RNG.
+/// Deterministic serial number derived from seed material.
 ///
 /// Produces a 16-byte positive serial number (high bit cleared).
-pub fn deterministic_serial_number(rng: &mut impl RngCore) -> SerialNumber {
+pub fn deterministic_serial_number(seed: Seed) -> SerialNumber {
+    let mut rng = ChaCha20Rng::from_seed(*seed.bytes());
+    deterministic_serial_number_with_rng(&mut rng)
+}
+
+fn deterministic_serial_number_with_rng(rng: &mut impl RngCore) -> SerialNumber {
     let mut bytes = [0u8; SERIAL_NUMBER_BYTES];
     rng.fill_bytes(&mut bytes);
     bytes[0] &= 0x7F;
@@ -92,8 +98,7 @@ pub fn deterministic_serial_number(rng: &mut impl RngCore) -> SerialNumber {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand_chacha::ChaCha20Rng;
-    use rand_core::SeedableRng;
+    use uselesskey_core_seed::Seed;
 
     #[test]
     fn deterministic_base_time_is_within_one_year() {
@@ -121,8 +126,7 @@ mod tests {
 
     #[test]
     fn deterministic_serial_number_is_positive_and_fixed_size() {
-        let mut rng = ChaCha20Rng::from_seed([7u8; 32]);
-        let serial = deterministic_serial_number(&mut rng);
+        let serial = deterministic_serial_number(Seed::new([7u8; 32]));
         let bytes = serial.to_bytes();
 
         assert_eq!(bytes.len(), SERIAL_NUMBER_BYTES);
@@ -131,23 +135,17 @@ mod tests {
 
     #[test]
     fn deterministic_serial_number_is_seed_stable() {
-        let mut a = ChaCha20Rng::from_seed([42u8; 32]);
-        let mut b = ChaCha20Rng::from_seed([42u8; 32]);
-
         assert_eq!(
-            deterministic_serial_number(&mut a).to_bytes(),
-            deterministic_serial_number(&mut b).to_bytes()
+            deterministic_serial_number(Seed::new([42u8; 32])).to_bytes(),
+            deterministic_serial_number(Seed::new([42u8; 32])).to_bytes()
         );
     }
 
     #[test]
     fn deterministic_serial_number_varies_by_seed() {
-        let mut a = ChaCha20Rng::from_seed([1u8; 32]);
-        let mut b = ChaCha20Rng::from_seed([2u8; 32]);
-
         assert_ne!(
-            deterministic_serial_number(&mut a).to_bytes(),
-            deterministic_serial_number(&mut b).to_bytes()
+            deterministic_serial_number(Seed::new([1u8; 32])).to_bytes(),
+            deterministic_serial_number(Seed::new([2u8; 32])).to_bytes()
         );
     }
 }

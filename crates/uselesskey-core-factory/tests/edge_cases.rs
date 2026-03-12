@@ -6,16 +6,25 @@ use std::thread;
 use uselesskey_core_factory::{Factory, Mode};
 use uselesskey_core_id::Seed;
 
+fn seed_u64(seed: Seed) -> u64 {
+    let mut buf = [0u8; 8];
+    seed.fill_bytes(&mut buf);
+    u64::from_le_bytes(buf)
+}
+
+fn seed_array<const N: usize>(seed: Seed) -> [u8; N] {
+    let mut buf = [0u8; N];
+    seed.fill_bytes(&mut buf);
+    buf
+}
+
 // ── Empty and unusual labels ────────────────────────────────────────
 
 #[test]
 fn empty_label_produces_valid_artifact() {
     let fx = Factory::deterministic(Seed::new([1u8; 32]));
-    let result: Arc<String> = fx.get_or_init("domain:test", "", b"spec", "default", |rng| {
-        use rand_core::RngCore;
-        let mut buf = [0u8; 16];
-        rng.fill_bytes(&mut buf);
-        hex::encode(&buf)
+    let result: Arc<String> = fx.get_or_init("domain:test", "", b"spec", "default", |seed| {
+        hex::encode(&seed_array::<16>(seed))
     });
     assert!(!result.is_empty());
 }
@@ -24,11 +33,8 @@ fn empty_label_produces_valid_artifact() {
 fn unicode_label_produces_valid_artifact() {
     let fx = Factory::deterministic(Seed::new([2u8; 32]));
     let result: Arc<String> =
-        fx.get_or_init("domain:test", "日本語🔑", b"spec", "default", |rng| {
-            use rand_core::RngCore;
-            let mut buf = [0u8; 16];
-            rng.fill_bytes(&mut buf);
-            hex::encode(&buf)
+        fx.get_or_init("domain:test", "日本語🔑", b"spec", "default", |seed| {
+            hex::encode(&seed_array::<16>(seed))
         });
     assert!(!result.is_empty());
 }
@@ -38,11 +44,8 @@ fn very_long_label_produces_valid_artifact() {
     let fx = Factory::deterministic(Seed::new([3u8; 32]));
     let long_label = "x".repeat(10_000);
     let result: Arc<String> =
-        fx.get_or_init("domain:test", &long_label, b"spec", "default", |rng| {
-            use rand_core::RngCore;
-            let mut buf = [0u8; 16];
-            rng.fill_bytes(&mut buf);
-            hex::encode(&buf)
+        fx.get_or_init("domain:test", &long_label, b"spec", "default", |seed| {
+            hex::encode(&seed_array::<16>(seed))
         });
     assert!(!result.is_empty());
 }
@@ -61,10 +64,7 @@ fn special_chars_in_label() {
         "null\0byte",
     ];
     for label in labels {
-        let result: Arc<u64> = fx.get_or_init("domain:test", label, b"spec", "default", |rng| {
-            use rand_core::RngCore;
-            rng.next_u64()
-        });
+        let result: Arc<u64> = fx.get_or_init("domain:test", label, b"spec", "default", seed_u64);
         let _ = *result; // just verify no panic
     }
 }
@@ -75,14 +75,8 @@ fn special_chars_in_label() {
 fn seed_zero_produces_deterministic_output() {
     let fx1 = Factory::deterministic(Seed::new([0u8; 32]));
     let fx2 = Factory::deterministic(Seed::new([0u8; 32]));
-    let a: Arc<u64> = fx1.get_or_init("domain:test", "label", b"spec", "default", |rng| {
-        use rand_core::RngCore;
-        rng.next_u64()
-    });
-    let b: Arc<u64> = fx2.get_or_init("domain:test", "label", b"spec", "default", |rng| {
-        use rand_core::RngCore;
-        rng.next_u64()
-    });
+    let a: Arc<u64> = fx1.get_or_init("domain:test", "label", b"spec", "default", seed_u64);
+    let b: Arc<u64> = fx2.get_or_init("domain:test", "label", b"spec", "default", seed_u64);
     assert_eq!(*a, *b);
 }
 
@@ -90,14 +84,8 @@ fn seed_zero_produces_deterministic_output() {
 fn seed_max_produces_deterministic_output() {
     let fx1 = Factory::deterministic(Seed::new([0xFF; 32]));
     let fx2 = Factory::deterministic(Seed::new([0xFF; 32]));
-    let a: Arc<u64> = fx1.get_or_init("domain:test", "label", b"spec", "default", |rng| {
-        use rand_core::RngCore;
-        rng.next_u64()
-    });
-    let b: Arc<u64> = fx2.get_or_init("domain:test", "label", b"spec", "default", |rng| {
-        use rand_core::RngCore;
-        rng.next_u64()
-    });
+    let a: Arc<u64> = fx1.get_or_init("domain:test", "label", b"spec", "default", seed_u64);
+    let b: Arc<u64> = fx2.get_or_init("domain:test", "label", b"spec", "default", seed_u64);
     assert_eq!(*a, *b);
 }
 
@@ -105,14 +93,8 @@ fn seed_max_produces_deterministic_output() {
 fn seed_zero_differs_from_seed_max() {
     let fx0 = Factory::deterministic(Seed::new([0u8; 32]));
     let fxf = Factory::deterministic(Seed::new([0xFF; 32]));
-    let a: Arc<u64> = fx0.get_or_init("domain:test", "label", b"spec", "default", |rng| {
-        use rand_core::RngCore;
-        rng.next_u64()
-    });
-    let b: Arc<u64> = fxf.get_or_init("domain:test", "label", b"spec", "default", |rng| {
-        use rand_core::RngCore;
-        rng.next_u64()
-    });
+    let a: Arc<u64> = fx0.get_or_init("domain:test", "label", b"spec", "default", seed_u64);
+    let b: Arc<u64> = fxf.get_or_init("domain:test", "label", b"spec", "default", seed_u64);
     assert_ne!(*a, *b);
 }
 
@@ -122,14 +104,8 @@ fn seed_one_produces_deterministic_output() {
     seed_bytes[31] = 1;
     let fx1 = Factory::deterministic(Seed::new(seed_bytes));
     let fx2 = Factory::deterministic(Seed::new(seed_bytes));
-    let a: Arc<u64> = fx1.get_or_init("domain:test", "label", b"spec", "default", |rng| {
-        use rand_core::RngCore;
-        rng.next_u64()
-    });
-    let b: Arc<u64> = fx2.get_or_init("domain:test", "label", b"spec", "default", |rng| {
-        use rand_core::RngCore;
-        rng.next_u64()
-    });
+    let a: Arc<u64> = fx1.get_or_init("domain:test", "label", b"spec", "default", seed_u64);
+    let b: Arc<u64> = fx2.get_or_init("domain:test", "label", b"spec", "default", seed_u64);
     assert_eq!(*a, *b);
 }
 
@@ -138,20 +114,14 @@ fn seed_one_produces_deterministic_output() {
 #[test]
 fn empty_spec_bytes_produces_valid_artifact() {
     let fx = Factory::deterministic(Seed::new([5u8; 32]));
-    let result: Arc<u64> = fx.get_or_init("domain:test", "label", b"", "default", |rng| {
-        use rand_core::RngCore;
-        rng.next_u64()
-    });
+    let result: Arc<u64> = fx.get_or_init("domain:test", "label", b"", "default", seed_u64);
     let _ = *result;
 }
 
 #[test]
 fn empty_variant_produces_valid_artifact() {
     let fx = Factory::deterministic(Seed::new([6u8; 32]));
-    let result: Arc<u64> = fx.get_or_init("domain:test", "label", b"spec", "", |rng| {
-        use rand_core::RngCore;
-        rng.next_u64()
-    });
+    let result: Arc<u64> = fx.get_or_init("domain:test", "label", b"spec", "", seed_u64);
     let _ = *result;
 }
 
@@ -165,10 +135,7 @@ fn concurrent_factory_many_threads_same_key() {
             let fx = fx.clone();
             thread::spawn(move || {
                 let val: Arc<u64> =
-                    fx.get_or_init("domain:test", "shared", b"spec", "default", |rng| {
-                        use rand_core::RngCore;
-                        rng.next_u64()
-                    });
+                    fx.get_or_init("domain:test", "shared", b"spec", "default", seed_u64);
                 *val
             })
         })
@@ -188,10 +155,7 @@ fn concurrent_factory_different_keys() {
             thread::spawn(move || {
                 let label = format!("label-{i}");
                 let val: Arc<u64> =
-                    fx.get_or_init("domain:test", &label, b"spec", "default", |rng| {
-                        use rand_core::RngCore;
-                        rng.next_u64()
-                    });
+                    fx.get_or_init("domain:test", &label, b"spec", "default", seed_u64);
                 (label, *val)
             })
         })
@@ -243,15 +207,9 @@ fn mode_returns_deterministic_for_deterministic_factory() {
 #[test]
 fn clear_cache_then_regenerate_produces_same_value() {
     let fx = Factory::deterministic(Seed::new([9u8; 32]));
-    let a: Arc<u64> = fx.get_or_init("domain:test", "label", b"spec", "default", |rng| {
-        use rand_core::RngCore;
-        rng.next_u64()
-    });
+    let a: Arc<u64> = fx.get_or_init("domain:test", "label", b"spec", "default", seed_u64);
     fx.clear_cache();
-    let b: Arc<u64> = fx.get_or_init("domain:test", "label", b"spec", "default", |rng| {
-        use rand_core::RngCore;
-        rng.next_u64()
-    });
+    let b: Arc<u64> = fx.get_or_init("domain:test", "label", b"spec", "default", seed_u64);
     assert_eq!(
         *a, *b,
         "deterministic regeneration after cache clear must match"
@@ -263,10 +221,7 @@ fn clear_cache_then_regenerate_produces_same_value() {
 #[test]
 fn cloned_factory_shares_cache() {
     let fx1 = Factory::deterministic(Seed::new([10u8; 32]));
-    let _: Arc<u64> = fx1.get_or_init("domain:test", "label", b"spec", "default", |rng| {
-        use rand_core::RngCore;
-        rng.next_u64()
-    });
+    let _: Arc<u64> = fx1.get_or_init("domain:test", "label", b"spec", "default", seed_u64);
     let fx2 = fx1.clone();
     // fx2 should see the cached value without calling init
     let val: Arc<u64> = fx2.get_or_init("domain:test", "label", b"spec", "default", |_rng| {

@@ -7,6 +7,12 @@ use serde::Serialize;
 use uselesskey_core_factory::{Factory, Mode};
 use uselesskey_core_id::Seed;
 
+fn seed_u64(seed: Seed) -> u64 {
+    let mut buf = [0u8; 8];
+    seed.fill_bytes(&mut buf);
+    u64::from_le_bytes(buf)
+}
+
 #[derive(Serialize)]
 struct FactoryModeSnapshot {
     is_random: bool,
@@ -91,7 +97,6 @@ struct CustomSeedSnapshot {
 
 #[test]
 fn snapshot_factory_custom_seed_determinism() {
-    use rand_core::RngCore;
     use std::sync::Arc;
 
     let seed_a = Seed::new([1u8; 32]);
@@ -101,12 +106,9 @@ fn snapshot_factory_custom_seed_determinism() {
     let fx_a2 = Factory::deterministic(seed_a);
     let fx_b = Factory::deterministic(seed_b);
 
-    let val_a1: Arc<u64> =
-        fx_a1.get_or_init("domain:snap", "lbl", b"spec", "good", |rng| rng.next_u64());
-    let val_a2: Arc<u64> =
-        fx_a2.get_or_init("domain:snap", "lbl", b"spec", "good", |rng| rng.next_u64());
-    let val_b: Arc<u64> =
-        fx_b.get_or_init("domain:snap", "lbl", b"spec", "good", |rng| rng.next_u64());
+    let val_a1: Arc<u64> = fx_a1.get_or_init("domain:snap", "lbl", b"spec", "good", seed_u64);
+    let val_a2: Arc<u64> = fx_a2.get_or_init("domain:snap", "lbl", b"spec", "good", seed_u64);
+    let val_b: Arc<u64> = fx_b.get_or_init("domain:snap", "lbl", b"spec", "good", seed_u64);
 
     let result = CustomSeedSnapshot {
         deterministic: true,

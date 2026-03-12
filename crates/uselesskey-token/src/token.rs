@@ -169,8 +169,8 @@ impl TokenFixture {
 fn load_inner(factory: &Factory, label: &str, spec: TokenSpec, variant: &str) -> Arc<Inner> {
     let spec_bytes = spec.stable_bytes();
 
-    factory.get_or_init(DOMAIN_TOKEN_FIXTURE, label, &spec_bytes, variant, |rng| {
-        let value = generate_token(label, spec, rng);
+    factory.get_or_init(DOMAIN_TOKEN_FIXTURE, label, &spec_bytes, variant, |seed| {
+        let value = generate_token(label, spec, seed);
         Inner { value }
     })
 }

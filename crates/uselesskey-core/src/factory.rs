@@ -97,6 +97,9 @@ impl Factory {
     }
 
     /// Get a cached artifact by `(domain, label, spec, variant)` or generate one.
+    ///
+    /// The initializer receives the derived seed for this artifact identity.
+    /// Callers that need an RNG should instantiate it privately from that seed.
     pub fn get_or_init<T, F>(
         &self,
         domain: ArtifactDomain,
@@ -107,7 +110,7 @@ impl Factory {
     ) -> Arc<T>
     where
         T: Any + Send + Sync + 'static,
-        F: FnOnce(&mut rand_chacha::ChaCha20Rng) -> T,
+        F: FnOnce(Seed) -> T,
     {
         self.inner
             .get_or_init(domain, label, spec_bytes, variant, init)
