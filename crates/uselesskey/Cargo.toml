@@ -35,7 +35,7 @@ uselesskey-pgp = { path = "../uselesskey-pgp", version = "0.2.0", optional = tru
 uselesskey-x509 = { path = "../uselesskey-x509", version = "0.2.0", optional = true }
 
 [features]
-default = ["rsa"]
+default = []
 
 # Key types (additive)
 rsa = ["dep:uselesskey-rsa"]

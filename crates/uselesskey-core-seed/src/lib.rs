@@ -25,6 +25,15 @@ impl Seed {
         &self.0
     }
 
+    /// Derive a seed from plain text.
+    ///
+    /// This hashes the provided text verbatim with BLAKE3. Unlike
+    /// [`Seed::from_env_value`], it does not trim whitespace or interpret
+    /// 64-character strings as hex.
+    pub fn from_text(text: &str) -> Self {
+        Self(*blake3::hash(text.as_bytes()).as_bytes())
+    }
+
     /// Derive a seed from a user-provided string.
     ///
     /// Accepted formats:
@@ -38,7 +47,7 @@ impl Seed {
             return parse_hex_32(hex).map(Self);
         }
 
-        Ok(Self(*blake3::hash(v.as_bytes()).as_bytes()))
+        Ok(Self::from_text(v))
     }
 }
 
@@ -121,6 +130,24 @@ mod tests {
         let seed = Seed::from_env_value("  deterministic-seed-value  ").unwrap();
         let expected = blake3::hash("deterministic-seed-value".as_bytes());
         assert_eq!(seed.bytes(), expected.as_bytes());
+    }
+
+    #[test]
+    fn from_text_hashes_verbatim_input() {
+        let text = "  deterministic-seed-value  ";
+        let seed = Seed::from_text(text);
+        let expected = blake3::hash(text.as_bytes());
+        assert_eq!(seed.bytes(), expected.as_bytes());
+        assert_ne!(seed, Seed::from_env_value(text).unwrap());
+    }
+
+    #[test]
+    fn from_text_does_not_parse_hex_shaped_strings() {
+        let text = "ab".repeat(32);
+        let seed = Seed::from_text(&text);
+        let expected = blake3::hash(text.as_bytes());
+        assert_eq!(seed.bytes(), expected.as_bytes());
+        assert_ne!(seed, Seed::from_env_value(&text).unwrap());
     }
 
     #[test]

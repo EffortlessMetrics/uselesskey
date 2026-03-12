@@ -6,7 +6,9 @@
 
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
+use std::process::{Command, Output};
 
+use serde::Deserialize;
 use toml::Table;
 
 // ---------------------------------------------------------------------------
@@ -30,6 +32,77 @@ fn read_toml(path: &Path) -> Table {
 
 fn workspace_toml() -> Table {
     read_toml(&workspace_root().join("Cargo.toml"))
+}
+
+fn run_cargo(args: &[&str]) -> Output {
+    Command::new("cargo")
+        .args(args)
+        .current_dir(workspace_root())
+        .output()
+        .unwrap_or_else(|e| panic!("failed to run cargo {}: {e}", args.join(" ")))
+}
+
+fn token_only_fixture_manifest() -> PathBuf {
+    workspace_root().join("tests/fixtures/token_only_facade/Cargo.toml")
+}
+
+#[derive(Debug, Deserialize)]
+struct Metadata {
+    packages: Vec<MetadataPackage>,
+    resolve: MetadataResolve,
+}
+
+#[derive(Debug, Deserialize)]
+struct MetadataPackage {
+    id: String,
+    name: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct MetadataResolve {
+    root: Option<String>,
+    nodes: Vec<MetadataNode>,
+}
+
+#[derive(Debug, Deserialize)]
+struct MetadataNode {
+    id: String,
+    dependencies: Vec<String>,
+}
+
+fn reachable_package_names(metadata: &Metadata, root_id: &str) -> BTreeSet<String> {
+    let node_map = metadata
+        .resolve
+        .nodes
+        .iter()
+        .map(|node| (node.id.as_str(), node.dependencies.as_slice()))
+        .collect::<std::collections::BTreeMap<_, _>>();
+    let package_names = metadata
+        .packages
+        .iter()
+        .map(|pkg| (pkg.id.as_str(), pkg.name.as_str()))
+        .collect::<std::collections::BTreeMap<_, _>>();
+
+    let mut seen = BTreeSet::new();
+    let mut stack = vec![root_id.to_string()];
+
+    while let Some(id) = stack.pop() {
+        if !seen.insert(id.clone()) {
+            continue;
+        }
+
+        if let Some(deps) = node_map.get(id.as_str()) {
+            stack.extend(deps.iter().map(|dep| dep.to_string()));
+        }
+    }
+
+    seen.into_iter()
+        .filter_map(|id| {
+            package_names
+                .get(id.as_str())
+                .map(|name| (*name).to_string())
+        })
+        .collect()
 }
 
 /// Return workspace member directory names listed in `[workspace] members`.
@@ -514,5 +587,95 @@ fn publishable_crates_have_required_metadata() {
         problems.is_empty(),
         "metadata problems:\n  {}",
         problems.join("\n  ")
+    );
+}
+
+// ---------------------------------------------------------------------------
+// 8. Facade defaults stay lightweight
+// ---------------------------------------------------------------------------
+
+#[test]
+fn facade_default_feature_set_is_empty() {
+    let root = workspace_root();
+    let facade_toml = read_toml(&root.join("crates/uselesskey/Cargo.toml"));
+    let default_features = facade_toml["features"]["default"]
+        .as_array()
+        .expect("facade features.default must be an array");
+
+    assert!(
+        default_features.is_empty(),
+        "facade default features should stay empty, got {:?}",
+        default_features
+    );
+}
+
+// ---------------------------------------------------------------------------
+// 9. Token-only facade fixture compiles and stays RSA-free
+// ---------------------------------------------------------------------------
+
+#[test]
+fn token_only_facade_fixture_compiles() {
+    let manifest = token_only_fixture_manifest();
+    let manifest_str = manifest.display().to_string();
+    let output = run_cargo(&["test", "--manifest-path", &manifest_str, "--quiet"]);
+
+    assert!(
+        output.status.success(),
+        "token-only fixture failed to compile and test\nstdout:\n{}\nstderr:\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
+fn token_only_facade_fixture_does_not_resolve_rsa() {
+    let manifest = token_only_fixture_manifest();
+    let manifest_str = manifest.display().to_string();
+    let output = run_cargo(&[
+        "metadata",
+        "--manifest-path",
+        &manifest_str,
+        "--format-version",
+        "1",
+    ]);
+
+    assert!(
+        output.status.success(),
+        "cargo metadata failed for token-only fixture\nstdout:\n{}\nstderr:\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let metadata: Metadata = serde_json::from_slice(&output.stdout)
+        .unwrap_or_else(|e| panic!("failed to parse cargo metadata output: {e}"));
+    let root_id = metadata
+        .resolve
+        .root
+        .clone()
+        .or_else(|| {
+            metadata
+                .packages
+                .iter()
+                .find(|pkg| pkg.name == "uselesskey-token-only-fixture")
+                .map(|pkg| pkg.id.clone())
+        })
+        .expect("token-only fixture root package must be present in metadata");
+    let reachable = reachable_package_names(&metadata, &root_id);
+
+    assert!(
+        reachable.contains("uselesskey"),
+        "expected uselesskey facade in token-only fixture graph, got {reachable:?}"
+    );
+    assert!(
+        reachable.contains("uselesskey-token"),
+        "expected token crate in token-only fixture graph, got {reachable:?}"
+    );
+    assert!(
+        !reachable.contains("uselesskey-rsa"),
+        "token-only fixture unexpectedly resolved uselesskey-rsa: {reachable:?}"
+    );
+    assert!(
+        !reachable.contains("rsa"),
+        "token-only fixture unexpectedly resolved rsa: {reachable:?}"
     );
 }

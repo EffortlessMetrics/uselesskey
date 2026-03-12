@@ -285,6 +285,11 @@ path = "cross_crate_determinism.rs"
 required-features = ["determinism"]
 
 [[test]]
+name = "published_facade_smoke"
+path = "tests/published_facade_smoke.rs"
+required-features = ["determinism"]
+
+[[test]]
 name = "msrv_check"
 path = "msrv_check.rs"
 
@@ -307,4 +312,3 @@ required-features = ["api-surface"]
 name = "security_invariants"
 path = "security_invariants.rs"
 required-features = ["security-invariants"]
-

@@ -1,0 +1,10 @@
+[package]
+name = "uselesskey-token-only-fixture"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+uselesskey = { path = "../../../crates/uselesskey", default-features = false, features = ["token"] }

@@ -1312,19 +1312,17 @@ mod pair_pgp_ecdsa {
 }
 
 // ===========================================================================
-// 26. Default feature: `rsa` is the default
+// 26. Explicit `rsa` feature
 // ===========================================================================
 
-/// The `default` feature set includes only `rsa`. Verify RSA is always
-/// available under default compilation (this test compiles because
-/// the test suite enables all features, but the cfg documents the intent).
+/// Verify RSA remains available when consumers opt into the `rsa` feature.
 #[cfg(feature = "rsa")]
-mod default_feature_rsa {
+mod explicit_rsa_feature {
     use super::*;
     use uselesskey::{RsaFactoryExt, RsaSpec};
 
     #[test]
-    fn default_feature_provides_rsa() {
+    fn rsa_feature_provides_rsa() {
         let fx = testutil::fx();
         let kp = fx.rsa("default-rsa", RsaSpec::rs256());
         assert!(kp.private_key_pkcs8_pem().contains("BEGIN PRIVATE KEY"));
