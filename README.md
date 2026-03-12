@@ -59,24 +59,23 @@ Even fake keys that look real cause friction. This crate replaces "security poli
 
 ## Quick Start
 
-Add to `Cargo.toml`:
+Choose the fixture families you need explicitly. For RSA fixtures:
 
 ```toml
 [dev-dependencies]
-uselesskey = "0.2"
+uselesskey = { version = "0.3.0", features = ["rsa"] }
 ```
 
 Generate keys:
 
 ```rust
-use uselesskey::{Factory, Seed, RsaSpec, RsaFactoryExt};
+use uselesskey::{Factory, RsaFactoryExt, RsaSpec};
 
 // Random mode (different keys each run)
 let fx = Factory::random();
 
-// Deterministic mode (stable keys from seed)
-let seed = Seed::from_env_value("my-test-seed").unwrap();
-let fx = Factory::deterministic(seed);
+// Deterministic mode (stable keys from text)
+let fx = Factory::deterministic_from_str("my-test-seed");
 
 // Or fall back to random if env var not set
 let fx = Factory::deterministic_from_env("USELESSKEY_SEED")
@@ -87,6 +86,13 @@ let rsa = fx.rsa("issuer", RsaSpec::rs256());
 
 let pkcs8_pem = rsa.private_key_pkcs8_pem();
 let spki_der = rsa.public_key_spki_der();
+```
+
+For token-only fixtures without pulling RSA:
+
+```toml
+[dev-dependencies]
+uselesskey = { version = "0.3.0", default-features = false, features = ["token"] }
 ```
 
 ### JWK / JWKS
@@ -208,7 +214,7 @@ With the `tls-config` feature, build rustls configs in one line:
 
 ```toml
 [dev-dependencies]
-uselesskey-rustls = { version = "0.2", features = ["tls-config", "rustls-ring"] }
+uselesskey-rustls = { version = "0.3.0", features = ["tls-config", "rustls-ring"] }
 ```
 
 ```rust
@@ -227,7 +233,7 @@ let client_config = chain.client_config_rustls();    // ClientConfig (trusts roo
 
 ```toml
 [dev-dependencies]
-uselesskey-ring = { version = "0.2", features = ["all"] }
+uselesskey-ring = { version = "0.3.0", features = ["all"] }
 ```
 
 ```rust
@@ -244,7 +250,7 @@ let ring_kp = rsa.rsa_key_pair_ring();  // ring::rsa::KeyPair
 
 ```toml
 [dev-dependencies]
-uselesskey-rustcrypto = { version = "0.2", features = ["all"] }
+uselesskey-rustcrypto = { version = "0.3.0", features = ["all"] }
 ```
 
 ```rust
@@ -261,7 +267,7 @@ let rsa_pk = rsa.rsa_private_key(); // rsa::RsaPrivateKey
 
 ```toml
 [dev-dependencies]
-uselesskey-aws-lc-rs = { version = "0.2", features = ["native", "all"] }
+uselesskey-aws-lc-rs = { version = "0.3.0", features = ["native", "all"] }
 ```
 
 ```rust
@@ -278,7 +284,7 @@ let lc_kp = rsa.rsa_key_pair_aws_lc_rs();  // aws_lc_rs::rsa::KeyPair
 
 ```toml
 [dev-dependencies]
-uselesskey-tonic = "0.2"
+uselesskey-tonic = "0.3.0"
 ```
 
 ```rust
@@ -357,7 +363,7 @@ Depend on the facade for convenience, or on individual crates to minimize compil
 
 | Feature | Description |
 |---------|-------------|
-| `rsa` | RSA keypairs (default) |
+| `rsa` | RSA keypairs |
 | `ecdsa` | ECDSA P-256/P-384 keypairs |
 | `ed25519` | Ed25519 keypairs |
 | `hmac` | HMAC secrets |
@@ -367,6 +373,8 @@ Depend on the facade for convenience, or on individual crates to minimize compil
 | `jwk` | JWK/JWKS output for enabled key types |
 | `all-keys` | All key algorithms (`rsa` + `ecdsa` + `ed25519` + `hmac` + `pgp`) |
 | `full` | Everything (`all-keys` + `token` + `x509` + `jwk`) |
+
+The `uselesskey` facade default feature set is empty.
 
 Extension traits by feature:
 - `rsa`: `RsaFactoryExt`
@@ -383,7 +391,7 @@ Extension traits by feature:
 
 | Feature | Extension Trait | Algorithms / Outputs | Implies |
 |---------|----------------|---------------------|---------|
-| `rsa` *(default)* | `RsaFactoryExt` | RSA 2048/3072/4096 — PKCS#8, SPKI, PEM, DER | — |
+| `rsa` | `RsaFactoryExt` | RSA 2048/3072/4096 — PKCS#8, SPKI, PEM, DER | — |
 | `ecdsa` | `EcdsaFactoryExt` | P-256 (ES256), P-384 (ES384) — PKCS#8, SPKI | — |
 | `ed25519` | `Ed25519FactoryExt` | Ed25519 — PKCS#8, SPKI | — |
 | `hmac` | `HmacFactoryExt` | HS256, HS384, HS512 | — |
