@@ -605,23 +605,23 @@ mod all_features {
 }
 
 // ===========================================================================
-// 14. Default features (rsa only) — core + rsa should compile
+// 14. Explicit `rsa` feature — core + rsa should compile
 // ===========================================================================
 
 #[cfg(feature = "rsa")]
-mod default_feature_includes_rsa {
+mod explicit_rsa_feature {
     use super::testutil;
     use uselesskey::{Factory, Mode, RsaFactoryExt, RsaSpec, Seed};
 
     #[test]
-    fn default_provides_factory_and_rsa() {
+    fn rsa_feature_provides_factory_and_rsa() {
         let fx = testutil::fx();
         let kp = fx.rsa("default-iso-rsa", RsaSpec::rs256());
         assert!(kp.private_key_pkcs8_pem().contains("BEGIN PRIVATE KEY"));
     }
 
     #[test]
-    fn default_deterministic_works() {
+    fn rsa_feature_deterministic_works() {
         let seed = Seed::from_env_value("default-iso-seed").unwrap();
         let fx = Factory::deterministic(seed);
         assert!(matches!(fx.mode(), Mode::Deterministic { .. }));

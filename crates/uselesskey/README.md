@@ -27,11 +27,34 @@ Secret scanners have changed the game for test fixtures:
 This crate replaces "security policy + docs + exceptions" with one
 `dev-dependency`.
 
-## Quick Start
+## Feature Selection
+
+The facade default feature set is empty. A bare dependency gives you core types
+like `Factory`, `Mode`, and `Seed`; enable only the fixture families you need.
+
+Token-only consumers can stay lightweight:
 
 ```toml
 [dev-dependencies]
-uselesskey = "0.2"
+uselesskey = { version = "0.3.0", default-features = false, features = ["token"] }
+```
+
+```rust
+use uselesskey::{Factory, TokenFactoryExt, TokenSpec};
+
+let fx = Factory::deterministic_from_str("api-key-fixtures");
+let token = fx.token("svc-api", TokenSpec::api_key());
+
+assert!(token.value().starts_with("uk_test_"));
+```
+
+## Quick Start
+
+If you want RSA fixtures, enable `rsa` explicitly:
+
+```toml
+[dev-dependencies]
+uselesskey = { version = "0.3.0", features = ["rsa"] }
 ```
 
 ```rust
@@ -41,7 +64,7 @@ let fx = Factory::random();
 let rsa = fx.rsa("my-service", RsaSpec::rs256());
 
 let private_pem = rsa.private_key_pkcs8_pem();
-let public_der  = rsa.public_key_spki_der();
+let public_der = rsa.public_key_spki_der();
 ```
 
 ### Deterministic Mode
@@ -50,10 +73,9 @@ Same seed + same label + same spec = identical output every time, regardless of
 call order:
 
 ```rust
-use uselesskey::{Factory, Seed, RsaFactoryExt, RsaSpec};
+use uselesskey::{Factory, RsaFactoryExt, RsaSpec};
 
-let seed = Seed::from_env_value("my-test-seed").unwrap();
-let fx = Factory::deterministic(seed);
+let fx = Factory::deterministic_from_str("my-test-seed");
 let rsa = fx.rsa("issuer", RsaSpec::rs256());
 ```
 
@@ -70,7 +92,7 @@ let fx = Factory::deterministic_from_env("USELESSKEY_SEED")
 
 | Algorithm | Feature | Extension Trait | Spec Constructor |
 |-----------|---------|-----------------|------------------|
-| RSA 2048+ | `rsa` *(default)* | `RsaFactoryExt` | `RsaSpec::rs256()` |
+| RSA 2048+ | `rsa` | `RsaFactoryExt` | `RsaSpec::rs256()` |
 | ECDSA P-256 / P-384 | `ecdsa` | `EcdsaFactoryExt` | `EcdsaSpec::es256()` / `es384()` |
 | Ed25519 | `ed25519` | `Ed25519FactoryExt` | `Ed25519Spec::new()` |
 | HMAC | `hmac` | `HmacFactoryExt` | `HmacSpec::hs256()` / `hs384()` / `hs512()` |
@@ -82,7 +104,7 @@ let fx = Factory::deterministic_from_env("USELESSKEY_SEED")
 
 | Feature | Description |
 |---------|-------------|
-| `rsa` | RSA keypairs *(enabled by default)* |
+| `rsa` | RSA keypairs |
 | `ecdsa` | ECDSA P-256 / P-384 keypairs |
 | `ed25519` | Ed25519 keypairs |
 | `hmac` | HMAC secrets |
@@ -92,6 +114,8 @@ let fx = Factory::deterministic_from_env("USELESSKEY_SEED")
 | `jwk` | JWK / JWKS output for enabled key types |
 | `all-keys` | All key algorithms (`rsa` + `ecdsa` + `ed25519` + `hmac` + `pgp`) |
 | `full` | Everything (`all-keys` + `token` + `x509` + `jwk`) |
+
+The default feature set is empty.
 
 ## Output Formats
 

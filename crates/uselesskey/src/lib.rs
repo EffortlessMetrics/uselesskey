@@ -12,9 +12,35 @@
 //! `uselesskey-jsonwebtoken`, `uselesskey-rustls`, `uselesskey-tonic`,
 //! `uselesskey-ring`, `uselesskey-rustcrypto`, and `uselesskey-aws-lc-rs`.
 //!
+//! # Feature Selection
+//!
+//! The facade default feature set is empty. A bare `uselesskey` dependency gives
+//! you core types like [`Factory`], [`Mode`], and [`Seed`]; enable only the
+//! fixture families you need.
+//!
+//! Token-only consumers can keep the facade lightweight:
+//!
+//! ```toml
+//! [dev-dependencies]
+//! uselesskey = { version = "0.3.0", default-features = false, features = ["token"] }
+//! ```
+//!
+//! ```
+//! # #[cfg(feature = "token")]
+//! # fn main() {
+//! use uselesskey::{Factory, TokenFactoryExt, TokenSpec};
+//!
+//! let fx = Factory::deterministic_from_str("api-key-fixtures");
+//! let token = fx.token("svc-api", TokenSpec::api_key());
+//! assert!(token.value().starts_with("uk_test_"));
+//! # }
+//! # #[cfg(not(feature = "token"))]
+//! # fn main() {}
+//! ```
+//!
 //! # Quick Start
 //!
-//! Create a factory and generate RSA key fixtures:
+//! If you enable `rsa`, create a factory and generate RSA key fixtures:
 //!
 //! ```
 //! # #[cfg(feature = "rsa")]
@@ -44,11 +70,10 @@
 //! ```
 //! # #[cfg(feature = "rsa")]
 //! # fn main() {
-//! use uselesskey::{Factory, RsaFactoryExt, RsaSpec, Seed};
+//! use uselesskey::{Factory, RsaFactoryExt, RsaSpec};
 //!
-//! // Create a deterministic factory with a fixed seed
-//! let seed = Seed::from_env_value("test-seed").unwrap();
-//! let fx = Factory::deterministic(seed);
+//! // Create a deterministic factory from stable text
+//! let fx = Factory::deterministic_from_str("test-seed");
 //!
 //! // Same seed + same label + same spec = same key, regardless of call order
 //! let key1 = fx.rsa("issuer", RsaSpec::rs256());
@@ -177,11 +202,35 @@
 //! # fn main() {}
 //! ```
 //!
+//! # X.509 Certificate Chains
+//!
+//! With the `x509` feature, generate a TLS-style certificate chain and negative
+//! variants for error-path tests:
+//!
+//! ```
+//! # #[cfg(feature = "x509")]
+//! # fn main() {
+//! use uselesskey::{ChainSpec, Factory, X509FactoryExt};
+//!
+//! let fx = Factory::random();
+//! let chain = fx.x509_chain("svc", ChainSpec::new("test.example.com"));
+//!
+//! assert!(chain.chain_pem().contains("BEGIN CERTIFICATE"));
+//! assert!(chain.root_cert_pem().contains("BEGIN CERTIFICATE"));
+//! assert!(chain.leaf_private_key_pkcs8_pem().contains("BEGIN PRIVATE KEY"));
+//!
+//! let revoked = chain.revoked_leaf();
+//! assert!(revoked.crl_pem().is_some());
+//! # }
+//! # #[cfg(not(feature = "x509"))]
+//! # fn main() {}
+//! ```
+//!
 //! # Features
 //!
 //! | Feature | Description |
 //! |---------|-------------|
-//! | `rsa` | RSA key fixtures (default) |
+//! | `rsa` | RSA key fixtures |
 //! | `ecdsa` | ECDSA P-256/P-384 key fixtures |
 //! | `ed25519` | Ed25519 key fixtures |
 //! | `hmac` | HMAC secret fixtures |
@@ -191,6 +240,9 @@
 //! | `jwk` | JWK/JWKS output for all key types |
 //! | `all-keys` | All key types (rsa + ecdsa + ed25519 + hmac + pgp) |
 //! | `full` | Everything: all-keys + token + x509 + jwk |
+//!
+//! The default feature set is empty; opt into the algorithms or fixture families
+//! your tests actually need.
 
 // ---------------------------------------------------------------------------
 // Core re-exports
@@ -248,7 +300,8 @@ pub use uselesskey_x509::{
 
 /// Common imports for tests.
 ///
-/// Re-exports vary based on enabled features. With default features (rsa only):
+/// Re-exports vary based on enabled features. For example, with
+/// `features = ["rsa"]`:
 /// ```
 /// use uselesskey::prelude::*;
 /// // Gives you: Factory, Mode, Seed, TempArtifact, RsaFactoryExt, RsaSpec, RsaKeyPair, negative::*

@@ -34,6 +34,15 @@ fn factory_deterministic_from_env_value() {
     ));
 }
 
+#[test]
+fn factory_deterministic_from_str_value() {
+    let fx = uselesskey_core::Factory::deterministic_from_str("api-surface-test");
+    assert!(matches!(
+        fx.mode(),
+        uselesskey_core::Mode::Deterministic { .. }
+    ));
+}
+
 // ---------------------------------------------------------------------------
 // 2. RSA surface
 // ---------------------------------------------------------------------------
@@ -442,12 +451,14 @@ mod api_shape_snapshots {
         let shape = [
             "Factory::random() -> Factory",
             "Factory::deterministic(Seed) -> Factory",
+            "Factory::deterministic_from_str(&str) -> Factory",
             "Factory::deterministic_from_env(&str) -> Result<Factory, Error>",
             "Factory::mode() -> &Mode",
             "Factory::clear_cache()",
             "Mode::Random",
             "Mode::Deterministic { master: Seed }",
             "Seed::new([u8; 32]) -> Seed",
+            "Seed::from_text(&str) -> Seed",
             "Seed::from_env_value(&str) -> Result<Seed, String>",
         ]
         .join("\n");

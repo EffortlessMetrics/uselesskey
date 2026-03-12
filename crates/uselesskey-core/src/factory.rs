@@ -54,6 +54,15 @@ impl Factory {
         Self::new(Mode::Deterministic { master })
     }
 
+    /// Create a deterministic factory from plain text.
+    ///
+    /// This hashes the provided string verbatim with BLAKE3. Unlike
+    /// [`Seed::from_env_value`], it does not trim whitespace or interpret
+    /// hex-shaped strings specially.
+    pub fn deterministic_from_str(text: &str) -> Self {
+        Self::deterministic(Seed::from_text(text))
+    }
+
     /// Create a deterministic factory from an environment variable.
     ///
     /// The environment variable can contain:

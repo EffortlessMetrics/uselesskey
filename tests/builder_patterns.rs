@@ -205,6 +205,12 @@ fn factory_deterministic_from_env_value() {
 }
 
 #[test]
+fn factory_deterministic_from_str_value() {
+    let fx = Factory::deterministic_from_str("my-test-seed");
+    assert!(matches!(fx.mode(), Mode::Deterministic { .. }));
+}
+
+#[test]
 fn factory_deterministic_from_hex_seed() {
     let hex = "0x".to_string() + &"ab".repeat(32);
     let seed = Seed::from_env_value(&hex).expect("valid hex seed");
@@ -215,6 +221,13 @@ fn factory_deterministic_from_hex_seed() {
 fn factory_seed_from_env_value_is_deterministic() {
     let s1 = Seed::from_env_value("same-value").unwrap();
     let s2 = Seed::from_env_value("same-value").unwrap();
+    assert_eq!(s1, s2, "same input must produce same seed");
+}
+
+#[test]
+fn factory_seed_from_text_is_deterministic() {
+    let s1 = Seed::from_text("same-value");
+    let s2 = Seed::from_text("same-value");
     assert_eq!(s1, s2, "same input must produce same seed");
 }
 
