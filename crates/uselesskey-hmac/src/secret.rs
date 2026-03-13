@@ -1,9 +1,8 @@
 use std::fmt;
 use std::sync::Arc;
 
-use rand_chacha::ChaCha20Rng;
-use rand_core::RngCore;
-use rand_core::SeedableRng;
+use rand_chacha10::ChaCha20Rng;
+use rand_core10::{Rng, SeedableRng};
 use uselesskey_core::Factory;
 #[cfg(feature = "jwk")]
 use uselesskey_core_kid::kid_from_bytes;

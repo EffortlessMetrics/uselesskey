@@ -37,9 +37,8 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
-use rand_chacha::ChaCha20Rng;
-use rand_core::RngCore;
-use rand_core::SeedableRng;
+use rand_chacha10::ChaCha20Rng;
+use rand_core10::{Rng, SeedableRng};
 use rcgen::SerialNumber;
 use time::OffsetDateTime;
 use uselesskey_core_hash::Hasher;
@@ -88,7 +87,7 @@ pub fn deterministic_serial_number(seed: Seed) -> SerialNumber {
     deterministic_serial_number_with_rng(&mut rng)
 }
 
-fn deterministic_serial_number_with_rng(rng: &mut impl RngCore) -> SerialNumber {
+fn deterministic_serial_number_with_rng(rng: &mut impl Rng) -> SerialNumber {
     let mut bytes = [0u8; SERIAL_NUMBER_BYTES];
     rng.fill_bytes(&mut bytes);
     bytes[0] &= 0x7F;

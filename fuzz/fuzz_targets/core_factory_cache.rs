@@ -1,8 +1,6 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-
-use rand_core::RngCore;
 use std::sync::Arc;
 use uselesskey::Seed;
 use uselesskey_core_factory::Factory;

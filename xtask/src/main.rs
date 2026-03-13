@@ -1536,11 +1536,13 @@ fn deny() -> Result<()> {
     }
 }
 
-/// Verify that only one semver-major version of `rand_core` is resolved.
+/// Verify that only the approved `rand_core` lines are present on normal edges.
 ///
-/// The RNG pin (`rand_core 0.6`) is a correctness invariant for deterministic
-/// derivation. If a transitive dep pulls in a second major version, builds may
-/// silently produce different key material.
+/// During the RNG transition we intentionally allow:
+/// - `rand_core 0.6.x` for stable crypto-edge crates
+/// - `rand_core 0.10.x` for the seed/core/helper lane
+///
+/// Any other `rand_core` line on normal edges is a topology regression.
 fn dep_guard() -> Result<()> {
     let output = Command::new("cargo")
         .args(["tree", "--depth", "0", "--duplicates", "--edges", "normal"])
@@ -1572,17 +1574,31 @@ fn dep_guard() -> Result<()> {
         return Ok(());
     }
 
-    // Multiple versions found in duplicates output
-    bail!(
-        "dep-guard: multiple versions of rand_core resolved: {}. \
-         Only rand_core 0.6.x is allowed. \
-         A transitive dependency is pulling in a conflicting version.",
+    versions.sort();
+
+    let unexpected = versions
+        .iter()
+        .filter(|v| !v.starts_with("0.6.") && !v.starts_with("0.10."))
+        .map(|v| format!("v{v}"))
+        .collect::<Vec<_>>();
+
+    if !unexpected.is_empty() {
+        bail!(
+            "dep-guard: unexpected rand_core line(s) resolved on normal edges: {}. \
+             Only rand_core 0.6.x and 0.10.x are allowed during the transition.",
+            unexpected.join(", ")
+        );
+    }
+
+    eprintln!(
+        "dep-guard: allowed rand_core transition lines resolved: {}",
         versions
             .iter()
             .map(|v| format!("v{v}"))
             .collect::<Vec<_>>()
             .join(", ")
     );
+    Ok(())
 }
 
 fn lint_fix(check: bool, no_clippy: bool) -> Result<()> {

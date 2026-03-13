@@ -13,8 +13,9 @@ use alloc::sync::Arc;
 use core::fmt;
 
 #[cfg(feature = "std")]
-use rand_core::OsRng;
-use rand_core::RngCore;
+use rand10::TryRng;
+#[cfg(feature = "std")]
+use rand10::rngs::SysRng;
 use uselesskey_core_cache::ArtifactCache;
 use uselesskey_core_id::{ArtifactDomain, ArtifactId, DerivationVersion, Seed, derive_seed};
 
@@ -127,7 +128,9 @@ impl Factory {
 #[cfg(feature = "std")]
 pub(crate) fn random_seed() -> Seed {
     let mut bytes = [0u8; 32];
-    OsRng.fill_bytes(&mut bytes);
+    SysRng
+        .try_fill_bytes(&mut bytes)
+        .expect("failed to read operating-system randomness");
     Seed::new(bytes)
 }
 

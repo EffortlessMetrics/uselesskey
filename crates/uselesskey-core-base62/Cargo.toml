@@ -15,8 +15,8 @@ documentation = "https://docs.rs/uselesskey-core-base62"
 authors.workspace = true
 
 [dependencies]
-rand_chacha.workspace = true
-rand_core.workspace = true
+rand_chacha10.workspace = true
+rand_core10.workspace = true
 uselesskey-core-seed.workspace = true
 
 [dev-dependencies]

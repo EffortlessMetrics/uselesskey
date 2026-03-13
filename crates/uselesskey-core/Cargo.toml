@@ -36,7 +36,6 @@ uselesskey-core-negative = { path = "../uselesskey-core-negative", version = "0.
 
 [dev-dependencies]
 insta.workspace = true
-rand_core.workspace = true
 proptest.workspace = true
 rstest.workspace = true
 serde = { workspace = true }

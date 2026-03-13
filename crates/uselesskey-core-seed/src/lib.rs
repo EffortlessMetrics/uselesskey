@@ -9,8 +9,8 @@
 extern crate alloc;
 
 use alloc::string::String;
-use rand_chacha::ChaCha20Rng;
-use rand_core::{RngCore, SeedableRng};
+use rand_chacha10::ChaCha20Rng;
+use rand_core10::{Rng, SeedableRng};
 
 /// Seed bytes derived from user input for deterministic fixtures.
 #[derive(Clone, Copy, Eq, PartialEq, Hash)]

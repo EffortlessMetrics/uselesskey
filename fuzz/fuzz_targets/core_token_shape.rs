@@ -1,23 +1,20 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use rand_chacha::ChaCha20Rng;
-use rand_core::SeedableRng;
 
-use uselesskey_core_token_shape::{TokenKind, authorization_scheme, generate_token, generate_oauth_access_token};
+use uselesskey::Seed;
+use uselesskey_core_token_shape::{authorization_scheme, generate_oauth_access_token, generate_token, TokenKind};
 
 fuzz_target!(|data: &[u8]| {
     let mut seed = [0u8; 32];
     let len = data.len().min(32);
     seed[..len].copy_from_slice(&data[..len]);
 
-    let mut api_rng = ChaCha20Rng::from_seed(seed);
-    let mut bearer_rng = ChaCha20Rng::from_seed(seed);
-    let mut oauth_rng = ChaCha20Rng::from_seed(seed);
+    let seed = Seed::new(seed);
 
-    let api_key = generate_token("fuzz", TokenKind::ApiKey, &mut api_rng);
-    let bearer = generate_token("fuzz", TokenKind::Bearer, &mut bearer_rng);
-    let oauth = generate_token("fuzz", TokenKind::OAuthAccessToken, &mut oauth_rng);
+    let api_key = generate_token("fuzz", TokenKind::ApiKey, seed);
+    let bearer = generate_token("fuzz", TokenKind::Bearer, seed);
+    let oauth = generate_token("fuzz", TokenKind::OAuthAccessToken, seed);
 
     assert!(api_key.starts_with("uk_test_"));
     assert_eq!(bearer.len(), 43);
@@ -27,5 +24,5 @@ fuzz_target!(|data: &[u8]| {
     assert_eq!(authorization_scheme(TokenKind::Bearer), "Bearer");
     assert_eq!(authorization_scheme(TokenKind::OAuthAccessToken), "Bearer");
 
-    let _ = generate_oauth_access_token("fuzz", &mut oauth_rng);
+    let _ = generate_oauth_access_token("fuzz", seed);
 });

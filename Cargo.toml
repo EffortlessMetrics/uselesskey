@@ -101,10 +101,15 @@ blake3 = "1.8.3"
 # concurrency-friendly cache
 dashmap = "6.1.0"
 
-# RNG — pinned to 0.6/0.3: rsa 0.9 and ed25519-dalek 2 require rand_core 0.6
+# RNG — legacy line kept for stable crypto-edge crates
 rand = "0.8.5"
 rand_core = { version = "0.6.4", default-features = false }
 rand_chacha = { version = "0.3.1", default-features = false }
+
+# RNG — current line for seed/core/helper crates
+rand10 = { package = "rand", version = "0.10.0", default-features = false }
+rand_core10 = { package = "rand_core", version = "0.10.0", default-features = false }
+rand_chacha10 = { package = "rand_chacha", version = "0.10.0", default-features = false }
 
 # sinks
 tempfile = "3.26.0"
