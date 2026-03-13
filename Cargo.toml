@@ -112,7 +112,7 @@ rand_core10 = { package = "rand_core", version = "0.10.0", default-features = fa
 rand_chacha10 = { package = "rand_chacha", version = "0.10.0", default-features = false }
 
 # sinks
-tempfile = "3.26.0"
+tempfile = "3.27.0"
 uselesskey-core-sink = { path = "crates/uselesskey-core-sink", version = "0.4.0" }
 
 # testing
