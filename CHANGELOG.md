@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-03-13
+
+### Changed
+
+- Public RNG-facing APIs are now seed-oriented instead of exposing `rand` or
+  `rand_core` types through the published surface.
+- Seed/core/helper crates now use the newer `rand 0.10` line internally,
+  while the stable crypto-edge crates remain on the intentional legacy island
+  until a later convergence pass.
+- Support crates and fuzz targets were updated to consume the seed-oriented
+  helper APIs instead of the old RNG-shaped entry points.
+
+### Added
+
+- `Seed::fill_bytes(&mut [u8])` as the stable byte-oriented boundary for
+  deterministic helper and fixture code.
+
+### Notes
+
+- This release does not claim full RNG convergence across every crypto-edge
+  crate yet. Stable RSA and Ed25519 generation paths remain intentionally
+  isolated on the legacy RNG line for now.
+
 ## [0.3.0] - 2026-03-12
 
 ### Changed
@@ -267,7 +290,8 @@ Repository organised into four layers:
 - **Determinism regression** — hardcoded expected-value snapshots ensure
   derivation stability across releases
 
-[Unreleased]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/EffortlessMetrics/uselesskey/releases/tag/v0.1.0

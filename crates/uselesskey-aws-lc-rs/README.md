@@ -20,7 +20,7 @@ When `native` is disabled, this crate builds as a no-op and exports no adapter t
 
 ```toml
 [dev-dependencies]
-uselesskey-aws-lc-rs = { version = "0.3.0", features = ["native", "rsa"] }
+uselesskey-aws-lc-rs = { version = "0.4.0", features = ["native", "rsa"] }
 ```
 
 ```rust
