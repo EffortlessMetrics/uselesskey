@@ -1,6 +1,5 @@
 use proptest::prelude::*;
-use rand_chacha::ChaCha20Rng;
-use rand_core::SeedableRng;
+use uselesskey_core_seed::Seed;
 use uselesskey_core_x509_derive::{
     BASE_TIME_EPOCH_UNIX, BASE_TIME_WINDOW_DAYS, SERIAL_NUMBER_BYTES,
     deterministic_base_time_from_parts, deterministic_serial_number,
@@ -72,23 +71,23 @@ proptest! {
 
     #[test]
     fn serial_always_positive(seed in any::<[u8; 32]>()) {
-        let mut rng = ChaCha20Rng::from_seed(seed);
-        let serial = deterministic_serial_number(&mut rng);
+        let rng = Seed::new(seed);
+        let serial = deterministic_serial_number(rng);
         let bytes = serial.to_bytes();
         prop_assert_eq!(bytes[0] & 0x80, 0, "high bit must be cleared");
     }
 
     #[test]
     fn serial_correct_length(seed in any::<[u8; 32]>()) {
-        let mut rng = ChaCha20Rng::from_seed(seed);
-        let serial = deterministic_serial_number(&mut rng);
+        let rng = Seed::new(seed);
+        let serial = deterministic_serial_number(rng);
         prop_assert_eq!(serial.to_bytes().len(), SERIAL_NUMBER_BYTES);
     }
 
     #[test]
     fn serial_deterministic_for_same_seed(seed in any::<[u8; 32]>()) {
-        let a = deterministic_serial_number(&mut ChaCha20Rng::from_seed(seed));
-        let b = deterministic_serial_number(&mut ChaCha20Rng::from_seed(seed));
+        let a = deterministic_serial_number(Seed::new(seed));
+        let b = deterministic_serial_number(Seed::new(seed));
         prop_assert_eq!(a.to_bytes(), b.to_bytes());
     }
 
@@ -98,8 +97,8 @@ proptest! {
         seed_b in any::<[u8; 32]>(),
     ) {
         prop_assume!(seed_a != seed_b);
-        let a = deterministic_serial_number(&mut ChaCha20Rng::from_seed(seed_a));
-        let b = deterministic_serial_number(&mut ChaCha20Rng::from_seed(seed_b));
+        let a = deterministic_serial_number(Seed::new(seed_a));
+        let b = deterministic_serial_number(Seed::new(seed_b));
         prop_assert_ne!(a.to_bytes(), b.to_bytes());
     }
 }

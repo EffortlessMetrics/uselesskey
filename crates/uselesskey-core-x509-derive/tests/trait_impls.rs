@@ -4,8 +4,7 @@
 //! `rcgen::SerialNumber` from its public API. These tests verify the returned
 //! values satisfy expected trait-level contracts (Eq, Ord, Clone, Debug).
 
-use rand_chacha::ChaCha20Rng;
-use rand_core::SeedableRng;
+use uselesskey_core_seed::Seed;
 use uselesskey_core_x509_derive::{
     BASE_TIME_EPOCH_UNIX, BASE_TIME_WINDOW_DAYS, SERIAL_NUMBER_BYTES, deterministic_base_time,
     deterministic_base_time_from_parts, deterministic_serial_number,
@@ -61,35 +60,35 @@ fn base_time_partial_ord_matches_ord() {
 
 #[test]
 fn serial_number_clone_equals_original() {
-    let mut rng = ChaCha20Rng::from_seed([42u8; 32]);
-    let serial = deterministic_serial_number(&mut rng);
+    let rng = Seed::new([42u8; 32]);
+    let serial = deterministic_serial_number(rng);
     let cloned = serial.clone();
     assert_eq!(serial.to_bytes(), cloned.to_bytes());
 }
 
 #[test]
 fn serial_number_debug_is_nonempty() {
-    let mut rng = ChaCha20Rng::from_seed([42u8; 32]);
-    let serial = deterministic_serial_number(&mut rng);
+    let rng = Seed::new([42u8; 32]);
+    let serial = deterministic_serial_number(rng);
     let debug = format!("{serial:?}");
     assert!(!debug.is_empty());
 }
 
 #[test]
 fn serial_number_deterministic_from_same_seed() {
-    let mut rng_a = ChaCha20Rng::from_seed([99u8; 32]);
-    let mut rng_b = ChaCha20Rng::from_seed([99u8; 32]);
-    let a = deterministic_serial_number(&mut rng_a);
-    let b = deterministic_serial_number(&mut rng_b);
+    let rng_a = Seed::new([99u8; 32]);
+    let rng_b = Seed::new([99u8; 32]);
+    let a = deterministic_serial_number(rng_a);
+    let b = deterministic_serial_number(rng_b);
     assert_eq!(a.to_bytes(), b.to_bytes());
 }
 
 #[test]
 fn serial_number_differs_across_seeds() {
-    let mut rng_a = ChaCha20Rng::from_seed([1u8; 32]);
-    let mut rng_b = ChaCha20Rng::from_seed([2u8; 32]);
-    let a = deterministic_serial_number(&mut rng_a);
-    let b = deterministic_serial_number(&mut rng_b);
+    let rng_a = Seed::new([1u8; 32]);
+    let rng_b = Seed::new([2u8; 32]);
+    let a = deterministic_serial_number(rng_a);
+    let b = deterministic_serial_number(rng_b);
     assert_ne!(a.to_bytes(), b.to_bytes());
 }
 

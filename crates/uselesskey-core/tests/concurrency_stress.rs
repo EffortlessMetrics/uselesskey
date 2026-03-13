@@ -19,6 +19,12 @@ fn det_factory(byte: u8) -> Factory {
     Factory::deterministic(Seed::new([byte; 32]))
 }
 
+fn seed_u64(seed: Seed) -> u64 {
+    let mut buf = [0u8; 8];
+    seed.fill_bytes(&mut buf);
+    u64::from_le_bytes(buf)
+}
+
 /// Run a closure with a 30-second timeout, panicking if it exceeds the limit.
 fn with_timeout<F: FnOnce() + Send + 'static>(f: F) {
     let (tx, rx) = std::sync::mpsc::channel();
@@ -49,10 +55,7 @@ fn stress_many_threads_same_key() {
                 let bar = barrier.clone();
                 thread::spawn(move || {
                     bar.wait();
-                    fx.get_or_init("stress:same", "shared-key", b"spec", "good", |rng| {
-                        use rand_core::RngCore;
-                        rng.next_u64()
-                    })
+                    fx.get_or_init("stress:same", "shared-key", b"spec", "good", seed_u64)
                 })
             })
             .collect();
@@ -165,10 +168,7 @@ fn stress_determinism_under_contention() {
             (0..key_count)
                 .map(|i| {
                     let label = format!("det-{i}");
-                    *fx.get_or_init("stress:det", &label, b"spec", "good", |rng| {
-                        use rand_core::RngCore;
-                        rng.next_u64()
-                    })
+                    *fx.get_or_init("stress:det", &label, b"spec", "good", seed_u64)
                 })
                 .collect()
         };
@@ -191,10 +191,7 @@ fn stress_determinism_under_contention() {
                     for offset in 0..key_count {
                         let i = (t + offset) % key_count;
                         let label = format!("det-{i}");
-                        let v = fx.get_or_init("stress:det", &label, b"spec", "good", |rng| {
-                            use rand_core::RngCore;
-                            rng.next_u64()
-                        });
+                        let v = fx.get_or_init("stress:det", &label, b"spec", "good", seed_u64);
                         assert_eq!(
                             *v, reference[i],
                             "thread {t}, key {i}: expected {}, got {}",

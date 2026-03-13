@@ -7,6 +7,12 @@ use serde::Serialize;
 use std::sync::Arc;
 use uselesskey_core::{Factory, Mode, Seed};
 
+fn seed_u64(seed: Seed) -> u64 {
+    let mut buf = [0u8; 8];
+    seed.fill_bytes(&mut buf);
+    u64::from_le_bytes(buf)
+}
+
 #[derive(Serialize)]
 struct CoreReexportSnapshot {
     has_factory: bool,
@@ -44,13 +50,11 @@ struct CacheIntegrationSnapshot {
 
 #[test]
 fn snapshot_factory_cache_integration() {
-    use rand_core::RngCore;
-
     let fx = Factory::deterministic(Seed::new([99u8; 32]));
 
     let empty = 0usize;
 
-    let first: Arc<u64> = fx.get_or_init("domain:cache", "k1", b"sp", "good", |rng| rng.next_u64());
+    let first: Arc<u64> = fx.get_or_init("domain:cache", "k1", b"sp", "good", seed_u64);
 
     // Second call with same key returns cached value (init closure is never called)
     let second: Arc<u64> = fx.get_or_init("domain:cache", "k1", b"sp", "good", |_rng| {
@@ -60,7 +64,7 @@ fn snapshot_factory_cache_integration() {
     let cached_matches = Arc::ptr_eq(&first, &second);
 
     // Insert a second distinct key
-    let _: Arc<u64> = fx.get_or_init("domain:cache", "k2", b"sp", "good", |rng| rng.next_u64());
+    let _: Arc<u64> = fx.get_or_init("domain:cache", "k2", b"sp", "good", seed_u64);
 
     let dbg_after = format!("{:?}", fx);
     let size_after_two = if dbg_after.contains("cache_size: 2") {
@@ -100,22 +104,17 @@ struct DeterministicStabilitySnapshot {
 
 #[test]
 fn snapshot_deterministic_stability() {
-    use rand_core::RngCore;
-
     let seed = Seed::new([7u8; 32]);
 
     let fx1 = Factory::deterministic(seed);
-    let val1: Arc<u64> =
-        fx1.get_or_init("domain:stab", "lbl", b"spec", "good", |rng| rng.next_u64());
+    let val1: Arc<u64> = fx1.get_or_init("domain:stab", "lbl", b"spec", "good", seed_u64);
 
     let fx2 = Factory::deterministic(seed);
-    let val2: Arc<u64> =
-        fx2.get_or_init("domain:stab", "lbl", b"spec", "good", |rng| rng.next_u64());
+    let val2: Arc<u64> = fx2.get_or_init("domain:stab", "lbl", b"spec", "good", seed_u64);
 
     // Same factory, clear and re-derive
     fx1.clear_cache();
-    let val3: Arc<u64> =
-        fx1.get_or_init("domain:stab", "lbl", b"spec", "good", |rng| rng.next_u64());
+    let val3: Arc<u64> = fx1.get_or_init("domain:stab", "lbl", b"spec", "good", seed_u64);
 
     let result = DeterministicStabilitySnapshot {
         values_match_across_factories: *val1 == *val2,

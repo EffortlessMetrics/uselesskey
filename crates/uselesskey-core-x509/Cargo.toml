@@ -26,6 +26,7 @@ rand_chacha.workspace = true
 rand_core.workspace = true
 rstest.workspace = true
 serde = { workspace = true, features = ["derive"] }
+uselesskey-core-seed.workspace = true
 
 [package.metadata.docs.rs]
 all-features = true

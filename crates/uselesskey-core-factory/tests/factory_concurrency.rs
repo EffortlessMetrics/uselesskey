@@ -8,6 +8,12 @@ use std::thread;
 use uselesskey_core_factory::Factory;
 use uselesskey_core_id::Seed;
 
+fn seed_u64(seed: Seed) -> u64 {
+    let mut buf = [0u8; 8];
+    seed.fill_bytes(&mut buf);
+    u64::from_le_bytes(buf)
+}
+
 // ── concurrent get_or_init from multiple threads ─────────────────────
 
 #[test]
@@ -89,14 +95,8 @@ fn same_seed_same_label_same_value() {
     let fx1 = Factory::deterministic(seed);
     let fx2 = Factory::deterministic(seed);
 
-    let a = fx1.get_or_init("domain:det", "label", b"spec", "good", |rng| {
-        use rand_chacha::rand_core::RngCore;
-        rng.next_u64()
-    });
-    let b = fx2.get_or_init("domain:det", "label", b"spec", "good", |rng| {
-        use rand_chacha::rand_core::RngCore;
-        rng.next_u64()
-    });
+    let a = fx1.get_or_init("domain:det", "label", b"spec", "good", seed_u64);
+    let b = fx2.get_or_init("domain:det", "label", b"spec", "good", seed_u64);
 
     assert_eq!(*a, *b);
 }
@@ -106,14 +106,8 @@ fn different_seeds_different_values() {
     let fx1 = Factory::deterministic(Seed::new([1u8; 32]));
     let fx2 = Factory::deterministic(Seed::new([2u8; 32]));
 
-    let a = fx1.get_or_init("domain:det", "label", b"spec", "good", |rng| {
-        use rand_chacha::rand_core::RngCore;
-        rng.next_u64()
-    });
-    let b = fx2.get_or_init("domain:det", "label", b"spec", "good", |rng| {
-        use rand_chacha::rand_core::RngCore;
-        rng.next_u64()
-    });
+    let a = fx1.get_or_init("domain:det", "label", b"spec", "good", seed_u64);
+    let b = fx2.get_or_init("domain:det", "label", b"spec", "good", seed_u64);
 
     assert_ne!(*a, *b);
 }

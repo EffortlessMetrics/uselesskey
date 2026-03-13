@@ -3,9 +3,8 @@
 //! These tests snapshot deterministic base-time derivation and
 //! serial-number generation to detect unintended changes.
 
-use rand_chacha::ChaCha20Rng;
-use rand_core::SeedableRng;
 use serde::Serialize;
+use uselesskey_core_seed::Seed;
 use uselesskey_core_x509_derive::{
     BASE_TIME_EPOCH_UNIX, BASE_TIME_WINDOW_DAYS, SERIAL_NUMBER_BYTES,
     deterministic_base_time_from_parts, deterministic_serial_number,
@@ -100,8 +99,8 @@ fn snapshot_serial_numbers() {
     let results: Vec<SerialSnapshot> = [0u8, 42, 255]
         .into_iter()
         .map(|seed_byte| {
-            let mut rng = ChaCha20Rng::from_seed([seed_byte; 32]);
-            let serial = deterministic_serial_number(&mut rng);
+            let rng = Seed::new([seed_byte; 32]);
+            let serial = deterministic_serial_number(rng);
             let bytes = serial.to_bytes();
             SerialSnapshot {
                 seed_byte,
@@ -116,11 +115,11 @@ fn snapshot_serial_numbers() {
 
 #[test]
 fn snapshot_serial_determinism() {
-    let mut rng_a = ChaCha20Rng::from_seed([42u8; 32]);
-    let mut rng_b = ChaCha20Rng::from_seed([42u8; 32]);
+    let rng_a = Seed::new([42u8; 32]);
+    let rng_b = Seed::new([42u8; 32]);
 
-    let serial_a = deterministic_serial_number(&mut rng_a);
-    let serial_b = deterministic_serial_number(&mut rng_b);
+    let serial_a = deterministic_serial_number(rng_a);
+    let serial_b = deterministic_serial_number(rng_b);
 
     #[derive(Serialize)]
     struct Determinism {

@@ -4,6 +4,8 @@ use std::sync::Arc;
 use pgp::composed::{EncryptionCaps, KeyType, SecretKeyParamsBuilder, SignedPublicKey};
 use pgp::ser::Serialize;
 use pgp::types::KeyDetails;
+use rand_chacha::ChaCha20Rng;
+use rand_core::SeedableRng;
 use uselesskey_core::negative::{
     CorruptPem, corrupt_der_deterministic, corrupt_pem, corrupt_pem_deterministic, truncate_der,
 };
@@ -151,7 +153,8 @@ impl PgpKeyPair {
 fn load_inner(factory: &Factory, label: &str, spec: PgpSpec, variant: &str) -> Arc<Inner> {
     let spec_bytes = spec.stable_bytes();
 
-    factory.get_or_init(DOMAIN_PGP_KEYPAIR, label, &spec_bytes, variant, |rng| {
+    factory.get_or_init(DOMAIN_PGP_KEYPAIR, label, &spec_bytes, variant, |seed| {
+        let mut rng = ChaCha20Rng::from_seed(*seed.bytes());
         let user_id = build_user_id(label);
 
         let mut key_params = SecretKeyParamsBuilder::default();
@@ -167,7 +170,7 @@ fn load_inner(factory: &Factory, label: &str, spec: PgpSpec, variant: &str) -> A
             .expect("failed to build OpenPGP secret key params");
 
         let secret_key = secret_key_params
-            .generate(rng)
+            .generate(&mut rng)
             .expect("OpenPGP key generation failed");
         let public_key = SignedPublicKey::from(secret_key.clone());
 

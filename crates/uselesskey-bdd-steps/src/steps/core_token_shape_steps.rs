@@ -3,9 +3,7 @@ use base64::Engine as _;
 #[cfg(feature = "uk-core-token-shape")]
 use cucumber::{then, when};
 #[cfg(feature = "uk-core-token-shape")]
-use rand_chacha::ChaCha20Rng;
-#[cfg(feature = "uk-core-token-shape")]
-use rand_core::SeedableRng;
+use uselesskey_core_seed::Seed;
 #[cfg(feature = "uk-core-token-shape")]
 use uselesskey_core_token_shape::{
     TokenKind, authorization_scheme, generate_api_key, generate_bearer_token,
@@ -33,16 +31,14 @@ fn set_next_core_token_shape_value(world: &mut crate::UselessWorld, value: Strin
 #[cfg(feature = "uk-core-token-shape")]
 #[when(regex = r#"^I generate a core token-shape API key with seed "([^"]+)"$"#)]
 fn core_token_shape_api_key(world: &mut crate::UselessWorld, seed: String) {
-    let mut rng = ChaCha20Rng::from_seed(seed_from_text(&seed));
-    let value = generate_api_key(&mut rng);
+    let value = generate_api_key(Seed::new(seed_from_text(&seed)));
     set_next_core_token_shape_value(world, value);
 }
 
 #[cfg(feature = "uk-core-token-shape")]
 #[when(regex = r#"^I generate a core token-shape bearer token with seed "([^"]+)"$"#)]
 fn core_token_shape_bearer(world: &mut crate::UselessWorld, seed: String) {
-    let mut rng = ChaCha20Rng::from_seed(seed_from_text(&seed));
-    let value = generate_bearer_token(&mut rng);
+    let value = generate_bearer_token(Seed::new(seed_from_text(&seed)));
     set_next_core_token_shape_value(world, value);
 }
 
@@ -51,22 +47,20 @@ fn core_token_shape_bearer(world: &mut crate::UselessWorld, seed: String) {
     regex = r#"^I generate a core token-shape OAuth access token with seed "([^"]+)" and subject "([^"]+)"$"#
 )]
 fn core_token_shape_oauth(world: &mut crate::UselessWorld, seed: String, subject: String) {
-    let mut rng = ChaCha20Rng::from_seed(seed_from_text(&seed));
-    let value = generate_oauth_access_token(&subject, &mut rng);
+    let value = generate_oauth_access_token(&subject, Seed::new(seed_from_text(&seed)));
     set_next_core_token_shape_value(world, value);
 }
 
 #[cfg(feature = "uk-core-token-shape")]
 #[when(regex = r#"^I generate a core token-shape token with seed "([^"]+)" and kind "([^"]+)"$"#)]
 fn core_token_shape_kind(world: &mut crate::UselessWorld, seed: String, kind: String) {
-    let mut rng = ChaCha20Rng::from_seed(seed_from_text(&seed));
     let kind = match kind.as_str() {
         "api_key" => TokenKind::ApiKey,
         "bearer" => TokenKind::Bearer,
         "oauth_access_token" => TokenKind::OAuthAccessToken,
         other => panic!("unsupported token kind: {other}"),
     };
-    let value = generate_token("bdd-subject", kind, &mut rng);
+    let value = generate_token("bdd-subject", kind, Seed::new(seed_from_text(&seed)));
     set_next_core_token_shape_value(world, value);
 }
 

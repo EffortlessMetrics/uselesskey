@@ -25,6 +25,8 @@ x509-parser = "0.18"
 time = "0.3"
 rsa.workspace = true
 base64.workspace = true
+rand_chacha.workspace = true
+rand_core.workspace = true
 
 [package.metadata.docs.rs]
 features = ["jwk"]
@@ -35,6 +37,5 @@ jwk = ["dep:uselesskey-jwk", "uselesskey-rsa/jwk"]
 [dev-dependencies]
 proptest.workspace = true
 rstest.workspace = true
-rand_chacha.workspace = true
 insta.workspace = true
 serde = { workspace = true, features = ["derive"] }

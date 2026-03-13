@@ -16,15 +16,16 @@ authors.workspace = true
 
 [dependencies]
 base64.workspace = true
+rand_chacha.workspace = true
 rand_core.workspace = true
 uselesskey-core-base62.workspace = true
+uselesskey-core-seed.workspace = true
 serde_json.workspace = true
 uselesskey-token-spec.workspace = true
 
 [dev-dependencies]
 insta.workspace = true
 proptest.workspace = true
-rand_chacha.workspace = true
 serde.workspace = true
 
 [package.metadata.docs.rs]

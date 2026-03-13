@@ -2,8 +2,7 @@
 
 #![forbid(unsafe_code)]
 
-use rand_chacha::ChaCha20Rng;
-use rand_core::SeedableRng;
+use uselesskey_core_seed::Seed;
 use uselesskey_core_x509_derive::{
     BASE_TIME_EPOCH_UNIX, BASE_TIME_WINDOW_DAYS, SERIAL_NUMBER_BYTES,
     deterministic_base_time_from_parts, deterministic_serial_number,
@@ -61,8 +60,8 @@ fn serial_number_high_bit_always_cleared() {
     for seed_byte in 0u8..=255 {
         let mut seed = [0u8; 32];
         seed[0] = seed_byte;
-        let mut rng = ChaCha20Rng::from_seed(seed);
-        let serial = deterministic_serial_number(&mut rng);
+        let rng = Seed::new(seed);
+        let serial = deterministic_serial_number(rng);
         let bytes = serial.to_bytes();
         assert_eq!(
             bytes[0] & 0x80,
@@ -77,21 +76,21 @@ fn serial_number_length_is_always_fixed() {
     for seed_byte in [0u8, 1, 42, 127, 128, 255] {
         let mut seed = [0u8; 32];
         seed[0] = seed_byte;
-        let mut rng = ChaCha20Rng::from_seed(seed);
-        let serial = deterministic_serial_number(&mut rng);
+        let rng = Seed::new(seed);
+        let serial = deterministic_serial_number(rng);
         assert_eq!(serial.to_bytes().len(), SERIAL_NUMBER_BYTES);
     }
 }
 
 #[test]
-fn serial_number_consecutive_calls_differ() {
-    let mut rng = ChaCha20Rng::from_seed([99u8; 32]);
-    let s1 = deterministic_serial_number(&mut rng);
-    let s2 = deterministic_serial_number(&mut rng);
-    assert_ne!(
+fn serial_number_repeated_calls_with_same_seed_are_stable() {
+    let seed = Seed::new([99u8; 32]);
+    let s1 = deterministic_serial_number(seed);
+    let s2 = deterministic_serial_number(seed);
+    assert_eq!(
         s1.to_bytes(),
         s2.to_bytes(),
-        "consecutive serial numbers from same RNG should differ"
+        "same seed should always derive the same serial number"
     );
 }
 

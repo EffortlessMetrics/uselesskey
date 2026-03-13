@@ -19,6 +19,16 @@ fn det_factory(byte: u8) -> Factory {
     Factory::deterministic(Seed::new([byte; 32]))
 }
 
+fn seed_array<const N: usize>(seed: Seed) -> [u8; N] {
+    let mut buf = [0u8; N];
+    seed.fill_bytes(&mut buf);
+    buf
+}
+
+fn seed_u64_from_bytes(seed: Seed) -> u64 {
+    u64::from_le_bytes(seed_array::<8>(seed))
+}
+
 // ===========================================================================
 // 1. Concurrent cache access — many threads reading/writing same key
 // ===========================================================================
@@ -246,18 +256,8 @@ fn different_domains_produce_different_values() {
     let fx = det_factory(0x0A);
     let spec = b"same-spec";
 
-    let a = fx.get_or_init("domain:a", "label", spec, "good", |rng| {
-        use rand_core::RngCore;
-        let mut buf = [0u8; 8];
-        rng.fill_bytes(&mut buf);
-        u64::from_le_bytes(buf)
-    });
-    let b = fx.get_or_init("domain:b", "label", spec, "good", |rng| {
-        use rand_core::RngCore;
-        let mut buf = [0u8; 8];
-        rng.fill_bytes(&mut buf);
-        u64::from_le_bytes(buf)
-    });
+    let a = fx.get_or_init("domain:a", "label", spec, "good", seed_u64_from_bytes);
+    let b = fx.get_or_init("domain:b", "label", spec, "good", seed_u64_from_bytes);
     assert_ne!(*a, *b);
 }
 
@@ -265,12 +265,7 @@ fn different_domains_produce_different_values() {
 fn different_labels_produce_different_values() {
     let fx = det_factory(0x0B);
     let make = |label: &str| -> Arc<u64> {
-        fx.get_or_init("domain:lbl", label, b"spec", "good", |rng| {
-            use rand_core::RngCore;
-            let mut buf = [0u8; 8];
-            rng.fill_bytes(&mut buf);
-            u64::from_le_bytes(buf)
-        })
+        fx.get_or_init("domain:lbl", label, b"spec", "good", seed_u64_from_bytes)
     };
     assert_ne!(*make("alpha"), *make("beta"));
 }
@@ -281,18 +276,8 @@ fn different_variants_produce_different_values() {
     let fx1 = det_factory(0x0C);
     let fx2 = det_factory(0x0C);
 
-    let a = fx1.get_or_init("domain:var", "label", b"spec", "good", |rng| {
-        use rand_core::RngCore;
-        let mut buf = [0u8; 8];
-        rng.fill_bytes(&mut buf);
-        u64::from_le_bytes(buf)
-    });
-    let b = fx2.get_or_init("domain:var", "label", b"spec", "other", |rng| {
-        use rand_core::RngCore;
-        let mut buf = [0u8; 8];
-        rng.fill_bytes(&mut buf);
-        u64::from_le_bytes(buf)
-    });
+    let a = fx1.get_or_init("domain:var", "label", b"spec", "good", seed_u64_from_bytes);
+    let b = fx2.get_or_init("domain:var", "label", b"spec", "other", seed_u64_from_bytes);
     assert_ne!(*a, *b);
 }
 

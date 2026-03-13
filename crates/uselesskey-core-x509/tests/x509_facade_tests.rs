@@ -3,8 +3,7 @@
 //! This crate re-exports X.509 negative policy types and spec models.
 //! These tests verify the re-exports are accessible and functional.
 
-use rand_chacha::ChaCha20Rng;
-use rand_core::SeedableRng;
+use uselesskey_core_seed::Seed;
 use uselesskey_core_x509::{
     BASE_TIME_EPOCH_UNIX, BASE_TIME_WINDOW_DAYS, ChainNegative, ChainSpec, KeyUsage,
     NotBeforeOffset, SERIAL_NUMBER_BYTES, X509Negative, X509Spec,
@@ -89,8 +88,8 @@ fn derive_helpers_accessible() {
 
     let _time = deterministic_base_time_from_parts(&[b"test-label"]);
 
-    let mut rng = ChaCha20Rng::from_seed([42u8; 32]);
-    let serial = deterministic_serial_number(&mut rng);
+    let rng = Seed::new([42u8; 32]);
+    let serial = deterministic_serial_number(rng);
     let bytes = serial.to_bytes();
     assert_eq!(bytes.len(), SERIAL_NUMBER_BYTES);
 }

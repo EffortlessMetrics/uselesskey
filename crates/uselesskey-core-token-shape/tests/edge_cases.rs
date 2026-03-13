@@ -1,16 +1,15 @@
 //! Integration tests for token shape generation primitives — edge cases,
 //! constants, and cross-kind behavior.
 
-use rand_chacha::ChaCha20Rng;
-use rand_chacha::rand_core::SeedableRng;
+use uselesskey_core_seed::Seed;
 
 use uselesskey_core_token_shape::{
     API_KEY_PREFIX, API_KEY_RANDOM_LEN, BEARER_RANDOM_BYTES, OAUTH_JTI_BYTES,
     OAUTH_SIGNATURE_BYTES, TokenKind, authorization_scheme, generate_token, random_base62,
 };
 
-fn rng(seed: u8) -> ChaCha20Rng {
-    ChaCha20Rng::from_seed([seed; 32])
+fn seed(seed: u8) -> Seed {
+    Seed::new([seed; 32])
 }
 
 // ── constant values ──────────────────────────────────────────────────
@@ -73,28 +72,28 @@ fn token_kind_hash_is_usable() {
 
 #[test]
 fn random_base62_zero_length() {
-    let s = random_base62(&mut rng(1), 0);
+    let s = random_base62(seed(1), 0);
     assert!(s.is_empty());
 }
 
 #[test]
 fn random_base62_one_char() {
-    let s = random_base62(&mut rng(2), 1);
+    let s = random_base62(seed(2), 1);
     assert_eq!(s.len(), 1);
     assert!(s.chars().next().unwrap().is_ascii_alphanumeric());
 }
 
 #[test]
 fn random_base62_large_length() {
-    let s = random_base62(&mut rng(3), 1000);
+    let s = random_base62(seed(3), 1000);
     assert_eq!(s.len(), 1000);
     assert!(s.chars().all(|c| c.is_ascii_alphanumeric()));
 }
 
 #[test]
 fn random_base62_deterministic() {
-    let a = random_base62(&mut rng(4), 50);
-    let b = random_base62(&mut rng(4), 50);
+    let a = random_base62(seed(4), 50);
+    let b = random_base62(seed(4), 50);
     assert_eq!(a, b);
 }
 
@@ -102,9 +101,9 @@ fn random_base62_deterministic() {
 
 #[test]
 fn same_seed_different_kinds_produce_different_tokens() {
-    let api = generate_token("label", TokenKind::ApiKey, &mut rng(20));
-    let bearer = generate_token("label", TokenKind::Bearer, &mut rng(20));
-    let oauth = generate_token("label", TokenKind::OAuthAccessToken, &mut rng(20));
+    let api = generate_token("label", TokenKind::ApiKey, seed(20));
+    let bearer = generate_token("label", TokenKind::Bearer, seed(20));
+    let oauth = generate_token("label", TokenKind::OAuthAccessToken, seed(20));
 
     assert_ne!(api, bearer);
     assert_ne!(api, oauth);
@@ -124,14 +123,14 @@ fn authorization_scheme_covers_all_kinds() {
 
 #[test]
 fn different_seeds_produce_different_api_keys() {
-    let a = generate_token("lbl", TokenKind::ApiKey, &mut rng(30));
-    let b = generate_token("lbl", TokenKind::ApiKey, &mut rng(31));
+    let a = generate_token("lbl", TokenKind::ApiKey, seed(30));
+    let b = generate_token("lbl", TokenKind::ApiKey, seed(31));
     assert_ne!(a, b);
 }
 
 #[test]
 fn different_seeds_produce_different_bearer_tokens() {
-    let a = generate_token("lbl", TokenKind::Bearer, &mut rng(32));
-    let b = generate_token("lbl", TokenKind::Bearer, &mut rng(33));
+    let a = generate_token("lbl", TokenKind::Bearer, seed(32));
+    let b = generate_token("lbl", TokenKind::Bearer, seed(33));
     assert_ne!(a, b);
 }

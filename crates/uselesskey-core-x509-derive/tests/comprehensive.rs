@@ -10,11 +10,10 @@
 
 #![forbid(unsafe_code)]
 
-use rand_chacha::ChaCha20Rng;
-use rand_core::SeedableRng;
 use std::collections::HashSet;
 use time::OffsetDateTime;
 use uselesskey_core_hash::Hasher;
+use uselesskey_core_seed::Seed;
 use uselesskey_core_x509_derive::{
     BASE_TIME_EPOCH_UNIX, BASE_TIME_WINDOW_DAYS, SERIAL_NUMBER_BYTES, deterministic_base_time,
     deterministic_base_time_from_parts, deterministic_serial_number, write_len_prefixed,
@@ -96,8 +95,8 @@ fn serial_number_uniqueness_across_1000_seeds() {
     for i in 0u32..1000 {
         let mut seed = [0u8; 32];
         seed[..4].copy_from_slice(&i.to_le_bytes());
-        let mut rng = ChaCha20Rng::from_seed(seed);
-        let serial = deterministic_serial_number(&mut rng);
+        let rng = Seed::new(seed);
+        let serial = deterministic_serial_number(rng);
         assert!(
             seen.insert(serial.to_bytes()),
             "collision at seed index {i}"
@@ -105,25 +104,26 @@ fn serial_number_uniqueness_across_1000_seeds() {
     }
 }
 
-/// Multiple consecutive serial numbers from the same RNG should all be unique.
+/// Multiple distinct seed values should all derive unique serial numbers.
 #[test]
-fn serial_number_consecutive_uniqueness_50() {
-    let mut rng = ChaCha20Rng::from_seed([0xAB; 32]);
+fn serial_number_distinct_seed_uniqueness_50() {
     let mut seen = HashSet::new();
     for i in 0..50 {
-        let serial = deterministic_serial_number(&mut rng);
+        let mut seed = [0xAB; 32];
+        seed[0] = i as u8;
+        let serial = deterministic_serial_number(Seed::new(seed));
         let bytes = serial.to_bytes();
         assert_eq!(bytes.len(), SERIAL_NUMBER_BYTES);
         assert_eq!(bytes[0] & 0x80, 0, "serial {i} high bit must be cleared");
-        assert!(seen.insert(bytes), "collision at consecutive serial {i}");
+        assert!(seen.insert(bytes), "collision at distinct seed index {i}");
     }
 }
 
 /// Serial number bytes are not all zeros (extremely unlikely but worth checking).
 #[test]
 fn serial_number_is_not_all_zeros() {
-    let mut rng = ChaCha20Rng::from_seed([42u8; 32]);
-    let serial = deterministic_serial_number(&mut rng);
+    let rng = Seed::new([42u8; 32]);
+    let serial = deterministic_serial_number(rng);
     let bytes = serial.to_bytes();
     assert!(
         bytes.iter().any(|&b| b != 0),
@@ -138,8 +138,8 @@ fn serial_number_high_bit_clearing_does_not_zero_remaining_bytes() {
     // bytes[1..] as all zeros.
     let mut any_nonzero_tail = false;
     for seed_byte in 0u8..=255 {
-        let mut rng = ChaCha20Rng::from_seed([seed_byte; 32]);
-        let serial = deterministic_serial_number(&mut rng);
+        let rng = Seed::new([seed_byte; 32]);
+        let serial = deterministic_serial_number(rng);
         let bytes = serial.to_bytes();
         if bytes[1..].iter().any(|&b| b != 0) {
             any_nonzero_tail = true;
@@ -278,12 +278,12 @@ fn determinism_snapshot_base_time() {
 /// Snapshot pin: a known seed must always produce the same serial bytes.
 #[test]
 fn determinism_snapshot_serial_number() {
-    let mut rng = ChaCha20Rng::from_seed([0x42; 32]);
-    let serial = deterministic_serial_number(&mut rng);
+    let rng = Seed::new([0x42; 32]);
+    let serial = deterministic_serial_number(rng);
     let expected = serial.to_bytes();
 
-    let mut rng2 = ChaCha20Rng::from_seed([0x42; 32]);
-    let serial2 = deterministic_serial_number(&mut rng2);
+    let rng2 = Seed::new([0x42; 32]);
+    let serial2 = deterministic_serial_number(rng2);
     assert_eq!(
         expected,
         serial2.to_bytes(),
@@ -339,8 +339,8 @@ fn determinism_base_time_and_serial_are_independent() {
     let _t = deterministic_base_time_from_parts(parts);
 
     // Serial number uses a separate RNG, not the hasher
-    let mut rng = ChaCha20Rng::from_seed([7u8; 32]);
-    let serial = deterministic_serial_number(&mut rng);
+    let rng = Seed::new([7u8; 32]);
+    let serial = deterministic_serial_number(rng);
     let bytes = serial.to_bytes();
     assert_eq!(bytes.len(), SERIAL_NUMBER_BYTES);
     assert_eq!(bytes[0] & 0x80, 0);
@@ -414,8 +414,8 @@ fn edge_case_empty_hasher() {
 /// Serial number from a zero seed still has correct length and positive high bit.
 #[test]
 fn edge_case_serial_from_zero_seed() {
-    let mut rng = ChaCha20Rng::from_seed([0u8; 32]);
-    let serial = deterministic_serial_number(&mut rng);
+    let rng = Seed::new([0u8; 32]);
+    let serial = deterministic_serial_number(rng);
     let bytes = serial.to_bytes();
     assert_eq!(bytes.len(), SERIAL_NUMBER_BYTES);
     assert_eq!(bytes[0] & 0x80, 0);
@@ -424,8 +424,8 @@ fn edge_case_serial_from_zero_seed() {
 /// Serial number from max seed (all 0xFF) still has correct properties.
 #[test]
 fn edge_case_serial_from_max_seed() {
-    let mut rng = ChaCha20Rng::from_seed([0xFF; 32]);
-    let serial = deterministic_serial_number(&mut rng);
+    let rng = Seed::new([0xFF; 32]);
+    let serial = deterministic_serial_number(rng);
     let bytes = serial.to_bytes();
     assert_eq!(bytes.len(), SERIAL_NUMBER_BYTES);
     assert_eq!(bytes[0] & 0x80, 0);

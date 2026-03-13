@@ -3,6 +3,9 @@
 use std::fmt;
 use std::sync::Arc;
 
+use rand_chacha::ChaCha20Rng;
+use rand_core::RngCore;
+use rand_core::SeedableRng;
 use rcgen::{
     BasicConstraints, CertificateParams, DnType, ExtendedKeyUsagePurpose, IsCa, KeyPair,
     KeyUsagePurpose, PKCS_RSA_SHA256,
@@ -14,7 +17,6 @@ use uselesskey_core::sink::TempArtifact;
 use uselesskey_core::{Error, Factory};
 use uselesskey_core_x509::{
     ChainSpec, NotBeforeOffset, X509Negative, X509Spec, deterministic_base_time_from_parts,
-    deterministic_serial_number,
 };
 use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 
@@ -478,7 +480,8 @@ fn load_inner_with_spec(
 ) -> Arc<Inner> {
     let spec_bytes = spec.stable_bytes();
 
-    factory.get_or_init(DOMAIN_X509_CERT, label, &spec_bytes, variant, |rng| {
+    factory.get_or_init(DOMAIN_X509_CERT, label, &spec_bytes, variant, |seed| {
+        let mut rng = ChaCha20Rng::from_seed(*seed.bytes());
         // Generate RSA key using uselesskey-rsa for deterministic key generation.
         // We use the label + variant to derive a unique key.
         let key_label = format!("{}-key", label);
@@ -515,7 +518,7 @@ fn load_inner_with_spec(
 
         params.not_before = not_before;
         params.not_after = not_after;
-        params.serial_number = Some(deterministic_serial_number(rng));
+        params.serial_number = Some(next_serial_number(&mut rng));
 
         // Set CA status
         if spec.is_ca {
@@ -574,6 +577,13 @@ fn load_inner_with_spec(
             private_key_pkcs8_pem,
         }
     })
+}
+
+fn next_serial_number(rng: &mut impl RngCore) -> rcgen::SerialNumber {
+    let mut bytes = [0u8; 16];
+    rng.fill_bytes(&mut bytes);
+    bytes[0] &= 0x7F;
+    rcgen::SerialNumber::from_slice(&bytes)
 }
 
 #[cfg(test)]

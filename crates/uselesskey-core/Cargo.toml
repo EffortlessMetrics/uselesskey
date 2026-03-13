@@ -19,7 +19,6 @@ default = ["std"]
 std = [
     "dep:uselesskey-core-sink",
     "thiserror/std",
-    "rand_chacha/std",
     "uselesskey-core-factory/std",
     "uselesskey-core-cache/std",
     "uselesskey-core-id/std",
@@ -28,7 +27,6 @@ std = [
 
 [dependencies]
 thiserror = { version = "2.0.18", default-features = false }
-rand_chacha = { workspace = true }
 uselesskey-core-factory = { path = "../uselesskey-core-factory", version = "0.3.0", default-features = false }
 uselesskey-core-sink = { path = "../uselesskey-core-sink", version = "0.3.0", optional = true }
 
