@@ -124,7 +124,7 @@ trybuild = "1.0.116"
 
 # CLI helpers (xtask)
 anyhow = "1.0.102"
-clap = { version = "4.5.60", features = ["derive"] }
+clap = { version = "4.6.0", features = ["derive"] }
 
 # BDD
 cucumber = { version = "0.22.1", features = ["macros"] }
