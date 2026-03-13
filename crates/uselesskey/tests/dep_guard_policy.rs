@@ -1,7 +1,7 @@
 //! Dependency-guard and license-policy tests.
 //!
 //! These tests parse `Cargo.lock` and `deny.toml` programmatically to verify:
-//! - No duplicate semver-major versions of critical RNG dependencies
+//! - The RNG transition uses only approved version lines
 //! - No duplicate semver-major versions of critical crypto dependencies
 //! - All direct workspace dependencies use only approved licenses
 
@@ -98,6 +98,22 @@ fn major_versions_by_crate(entries: &[LockEntry]) -> HashMap<String, Vec<u64>> {
     map
 }
 
+/// Collect distinct `major.minor` version lines per crate name.
+fn version_lines_by_crate(entries: &[LockEntry]) -> HashMap<String, Vec<String>> {
+    let mut map: HashMap<String, Vec<String>> = HashMap::new();
+    for e in entries {
+        let mut parts = e.version.split('.');
+        let major = parts.next().unwrap_or("0");
+        let minor = parts.next().unwrap_or("0");
+        let line = format!("{major}.{minor}");
+        let lines = map.entry(e.name.clone()).or_default();
+        if !lines.contains(&line) {
+            lines.push(line);
+        }
+    }
+    map
+}
+
 /// Assert that `crate_name` has at most one semver-major version resolved.
 fn assert_single_major(majors: &HashMap<String, Vec<u64>>, crate_name: &str, category: &str) {
     if let Some(versions) = majors.get(crate_name) {
@@ -185,17 +201,28 @@ fn license_expression_allowed(expr: &str, allowed: &[String]) -> bool {
 // Tests: RNG dependency guard
 // ---------------------------------------------------------------------------
 
-/// Critical RNG crates whose major versions must not diverge.
-const RNG_DEPS: &[&str] = &["rand", "rand_core", "rand_chacha"];
+/// Approved RNG version lines during the dual-stack transition.
+const RNG_ALLOWED_LINES: &[(&str, &[&str])] = &[
+    ("rand", &["0.8", "0.9", "0.10"]),
+    ("rand_core", &["0.6", "0.9", "0.10"]),
+    ("rand_chacha", &["0.3", "0.9", "0.10"]),
+];
 
 #[test]
-fn no_duplicate_major_versions_of_rng_deps() {
+fn rng_deps_use_only_approved_transition_lines() {
     let root = workspace_root();
     let entries = parse_cargo_lock(&root);
-    let majors = major_versions_by_crate(&entries);
+    let lines = version_lines_by_crate(&entries);
 
-    for dep in RNG_DEPS {
-        assert_single_major(&majors, dep, "RNG");
+    for (dep, allowed) in RNG_ALLOWED_LINES {
+        if let Some(actual) = lines.get(*dep) {
+            for line in actual {
+                assert!(
+                    allowed.contains(&line.as_str()),
+                    "RNG dep `{dep}` uses unapproved version line `{line}`; allowed: {allowed:?}",
+                );
+            }
+        }
     }
 }
 
