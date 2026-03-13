@@ -3,7 +3,6 @@
 use arbitrary::Arbitrary;
 use libfuzzer_sys::fuzz_target;
 
-use rand_core::RngCore;
 use std::sync::Arc;
 use std::thread;
 use uselesskey::Seed;
@@ -46,9 +45,9 @@ fuzz_target!(|input: ConcurrentInput| {
                 for v in 0..variant_count {
                     let label = format!("label-{v}");
                     let val: Arc<u64> =
-                        fx.get_or_init(domain, &label, &sp, "v", |rng| {
+                        fx.get_or_init(domain, &label, &sp, "v", |seed| {
                             let mut buf = [0u8; 8];
-                            rng.fill_bytes(&mut buf);
+                            seed.fill_bytes(&mut buf);
                             u64::from_le_bytes(buf)
                         });
                     results.push((label, val));
@@ -57,9 +56,9 @@ fuzz_target!(|input: ConcurrentInput| {
                 for v in 0..variant_count {
                     let label = format!("label-{v}");
                     let val2: Arc<u64> =
-                        fx.get_or_init(domain, &label, &sp, "v", |rng| {
+                        fx.get_or_init(domain, &label, &sp, "v", |seed| {
                             let mut buf = [0u8; 8];
-                            rng.fill_bytes(&mut buf);
+                            seed.fill_bytes(&mut buf);
                             u64::from_le_bytes(buf)
                         });
                     assert_eq!(*val2, *results[v].1);
@@ -90,9 +89,9 @@ fuzz_target!(|input: ConcurrentInput| {
         for v in 0..variant_count {
             let label = format!("label-{v}");
             let val: Arc<u64> =
-                factory.get_or_init(domain, &label, &spec_owned, "v", |rng| {
+                factory.get_or_init(domain, &label, &spec_owned, "v", |seed| {
                     let mut buf = [0u8; 8];
-                    rng.fill_bytes(&mut buf);
+                    seed.fill_bytes(&mut buf);
                     u64::from_le_bytes(buf)
                 });
 
@@ -107,9 +106,9 @@ fuzz_target!(|input: ConcurrentInput| {
     let alt_domain = DOMAINS[(input.domain_idx as usize + 1) % DOMAINS.len()];
     if alt_domain != domain {
         let val_alt: Arc<u64> =
-            factory.get_or_init(alt_domain, "label-0", &spec_owned, "v", |rng| {
+            factory.get_or_init(alt_domain, "label-0", &spec_owned, "v", |seed| {
                 let mut buf = [0u8; 8];
-                rng.fill_bytes(&mut buf);
+                seed.fill_bytes(&mut buf);
                 u64::from_le_bytes(buf)
             });
         // Different domain may or may not produce same value, but must not panic.

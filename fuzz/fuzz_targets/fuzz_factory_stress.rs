@@ -3,7 +3,6 @@
 use arbitrary::Arbitrary;
 use libfuzzer_sys::fuzz_target;
 
-use rand_core::RngCore;
 use std::sync::Arc;
 use uselesskey::Seed;
 use uselesskey_core_factory::Factory;
@@ -55,9 +54,9 @@ fuzz_target!(|input: FactoryStressInput| {
                     &label,
                     b"spec",
                     "v",
-                    |rng| {
+                    |seed| {
                         let mut buf = [0u8; 8];
-                        rng.fill_bytes(&mut buf);
+                        seed.fill_bytes(&mut buf);
                         u64::from_le_bytes(buf)
                     },
                 );
@@ -80,14 +79,14 @@ fuzz_target!(|input: FactoryStressInput| {
     // Final verification: deterministic factories re-derive identical values after clear.
     for fx in &factories {
         fx.clear_cache();
-        let a: Arc<u64> = fx.get_or_init("fuzz:stress", "verify", b"spec", "v", |rng| {
+        let a: Arc<u64> = fx.get_or_init("fuzz:stress", "verify", b"spec", "v", |seed| {
             let mut buf = [0u8; 8];
-            rng.fill_bytes(&mut buf);
+            seed.fill_bytes(&mut buf);
             u64::from_le_bytes(buf)
         });
-        let b: Arc<u64> = fx.get_or_init("fuzz:stress", "verify", b"spec", "v", |rng| {
+        let b: Arc<u64> = fx.get_or_init("fuzz:stress", "verify", b"spec", "v", |seed| {
             let mut buf = [0u8; 8];
-            rng.fill_bytes(&mut buf);
+            seed.fill_bytes(&mut buf);
             u64::from_le_bytes(buf)
         });
         assert_eq!(*a, *b);

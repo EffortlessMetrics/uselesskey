@@ -25,8 +25,8 @@ mod rsa_pss {
     use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
     use uselesskey_rustcrypto::RustCryptoRsaExt;
 
-    fn rng() -> rand_core::OsRng {
-        rand_core::OsRng
+    fn rng() -> rsa::rand_core::OsRng {
+        rsa::rand_core::OsRng
     }
 
     #[test]

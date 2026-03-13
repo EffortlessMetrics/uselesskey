@@ -17,15 +17,15 @@ fuzz_target!(|data: &[u8]| {
     let spec = format!("spec-{}", data.first().copied().unwrap_or(0));
     let variant = "v";
 
-    let first: Arc<u64> = factory.get_or_init(domain, &label, spec.as_bytes(), variant, |rng| {
+    let first: Arc<u64> = factory.get_or_init(domain, &label, spec.as_bytes(), variant, |seed| {
         let mut out = [0u8; 8];
-        rng.fill_bytes(&mut out);
+        seed.fill_bytes(&mut out);
         u64::from_le_bytes(out)
     });
 
-    let second: Arc<u64> = factory.get_or_init(domain, &label, spec.as_bytes(), variant, |rng| {
+    let second: Arc<u64> = factory.get_or_init(domain, &label, spec.as_bytes(), variant, |seed| {
         let mut fallback = [0u8; 8];
-        rng.fill_bytes(&mut fallback);
+        seed.fill_bytes(&mut fallback);
         u64::from_le_bytes(fallback)
     });
 
@@ -34,9 +34,9 @@ fuzz_target!(|data: &[u8]| {
 
     factory.clear_cache();
 
-    let third: Arc<u64> = factory.get_or_init(domain, &label, spec.as_bytes(), variant, |rng| {
+    let third: Arc<u64> = factory.get_or_init(domain, &label, spec.as_bytes(), variant, |seed| {
         let mut out = [0u8; 8];
-        rng.fill_bytes(&mut out);
+        seed.fill_bytes(&mut out);
         u64::from_le_bytes(out)
     });
 
