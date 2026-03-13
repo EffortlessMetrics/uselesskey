@@ -2,7 +2,6 @@
 
 use libfuzzer_sys::fuzz_target;
 
-use rand_core::RngCore;
 use std::sync::Arc;
 use std::thread;
 use uselesskey::Seed;
@@ -29,9 +28,9 @@ fuzz_target!(|data: &[u8]| {
                 for v in 0..variant_count {
                     let label = format!("label-{}", v);
                     let val: Arc<u64> =
-                        fx.get_or_init("fuzz", &label, b"spec", "v", |rng| {
+                        fx.get_or_init("fuzz", &label, b"spec", "v", |seed| {
                             let mut buf = [0u8; 8];
-                            rng.fill_bytes(&mut buf);
+                            seed.fill_bytes(&mut buf);
                             u64::from_le_bytes(buf)
                         });
                     results.push((label, val));
@@ -40,9 +39,9 @@ fuzz_target!(|data: &[u8]| {
                 for v in 0..variant_count {
                     let label = format!("label-{}", v);
                     let val2: Arc<u64> =
-                        fx.get_or_init("fuzz", &label, b"spec", "v", |rng| {
+                        fx.get_or_init("fuzz", &label, b"spec", "v", |seed| {
                             let mut buf = [0u8; 8];
-                            rng.fill_bytes(&mut buf);
+                            seed.fill_bytes(&mut buf);
                             u64::from_le_bytes(buf)
                         });
                     // Value must match (deterministic derivation)

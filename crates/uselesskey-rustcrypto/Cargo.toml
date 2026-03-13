@@ -48,7 +48,6 @@ uselesskey-hmac = { path = "../uselesskey-hmac", version = "0.3.0" }
 proptest.workspace = true
 sha2 = "0.10"
 rsa = { workspace = true }
-rand_core.workspace = true
 hex = "0.4"
 serde.workspace = true
 insta.workspace = true

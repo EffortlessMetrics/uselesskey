@@ -7,7 +7,6 @@ use uselesskey::Seed;
 use uselesskey_core_factory::Factory;
 use uselesskey_core_id::{ArtifactId, DerivationVersion, derive_seed};
 
-use rand_core::RngCore;
 use std::sync::Arc;
 
 #[derive(Arbitrary, Debug)]
@@ -49,9 +48,9 @@ fuzz_target!(|input: LabelEdgeInput| {
             label.as_str(),
             b"spec",
             "v",
-            |rng| {
+            |seed| {
                 let mut buf = [0u8; 8];
-                rng.fill_bytes(&mut buf);
+                seed.fill_bytes(&mut buf);
                 u64::from_le_bytes(buf)
             },
         );
@@ -62,9 +61,9 @@ fuzz_target!(|input: LabelEdgeInput| {
             label.as_str(),
             b"spec",
             "v",
-            |rng| {
+            |seed| {
                 let mut buf = [0u8; 8];
-                rng.fill_bytes(&mut buf);
+                seed.fill_bytes(&mut buf);
                 u64::from_le_bytes(buf)
             },
         );

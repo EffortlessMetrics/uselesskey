@@ -3,7 +3,7 @@ use base64::Engine as _;
 #[cfg(feature = "uk-core-token-shape")]
 use cucumber::{then, when};
 #[cfg(feature = "uk-core-token-shape")]
-use uselesskey_core_seed::Seed;
+use uselesskey_core::Seed;
 #[cfg(feature = "uk-core-token-shape")]
 use uselesskey_core_token_shape::{
     TokenKind, authorization_scheme, generate_api_key, generate_bearer_token,

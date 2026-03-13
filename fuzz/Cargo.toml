@@ -10,8 +10,6 @@ cargo-fuzz = true
 [dependencies]
 libfuzzer-sys = "0.4"
 arbitrary = { version = "1", features = ["derive"] }
-rand_core = "0.6.4"
-rand_chacha = "0.3.1"
 blake3 = "1.8.3"
 
 # fuzz targets
