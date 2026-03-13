@@ -28,9 +28,8 @@
 
 use base64::Engine as _;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-use rand_chacha::ChaCha20Rng;
-use rand_core::RngCore;
-use rand_core::SeedableRng;
+use rand_chacha10::ChaCha20Rng;
+use rand_core10::{Rng, SeedableRng};
 
 use serde_json::json;
 pub use uselesskey_core_base62::random_base62;

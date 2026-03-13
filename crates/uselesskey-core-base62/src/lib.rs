@@ -5,9 +5,8 @@
 //! Provides deterministic, seed-driven generation of base62 strings without
 //! modulo bias under normal RNG behavior.
 
-use rand_chacha::ChaCha20Rng;
-use rand_core::RngCore;
-use rand_core::SeedableRng;
+use rand_chacha10::ChaCha20Rng;
+use rand_core10::{Rng, SeedableRng};
 use uselesskey_core_seed::Seed;
 
 /// Base62 alphabet used by fixture generators.
@@ -26,7 +25,7 @@ pub fn random_base62(seed: Seed, len: usize) -> String {
     random_base62_with_rng(&mut rng, len)
 }
 
-fn random_base62_with_rng(rng: &mut impl RngCore, len: usize) -> String {
+fn random_base62_with_rng(rng: &mut impl Rng, len: usize) -> String {
     let mut out = String::with_capacity(len);
     let mut buf = [0u8; 64];
 
@@ -59,8 +58,8 @@ fn random_base62_with_rng(rng: &mut impl RngCore, len: usize) -> String {
 #[cfg(test)]
 mod tests {
     use super::{BASE62_ALPHABET, random_base62, random_base62_with_rng};
-    use rand_chacha::ChaCha20Rng;
-    use rand_core::{RngCore, SeedableRng};
+    use rand_chacha10::ChaCha20Rng;
+    use rand_core10::{Infallible, SeedableRng, TryRng};
     use uselesskey_core_seed::Seed;
 
     #[test]
@@ -87,22 +86,26 @@ mod tests {
     fn fallback_path_terminates_for_constant_rng() {
         struct ConstantRng;
 
-        impl RngCore for ConstantRng {
-            fn next_u32(&mut self) -> u32 {
-                u32::from_le_bytes([255, 255, 255, 255])
+        impl TryRng for ConstantRng {
+            type Error = Infallible;
+
+            fn try_next_u32(&mut self) -> Result<u32, Self::Error> {
+                Ok(u32::from_le_bytes([255, 255, 255, 255]))
             }
 
-            fn next_u64(&mut self) -> u64 {
-                u64::from_le_bytes([255, 255, 255, 255, 255, 255, 255, 255])
+            fn try_next_u64(&mut self) -> Result<u64, Self::Error> {
+                Ok(u64::from_le_bytes([255, 255, 255, 255, 255, 255, 255, 255]))
             }
 
-            fn fill_bytes(&mut self, dest: &mut [u8]) {
-                dest.fill(255);
-            }
-
-            fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_core::Error> {
+            fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Self::Error> {
                 self.fill_bytes(dest);
                 Ok(())
+            }
+        }
+
+        impl ConstantRng {
+            fn fill_bytes(&mut self, dest: &mut [u8]) {
+                dest.fill(255);
             }
         }
 
@@ -133,22 +136,26 @@ mod tests {
         // Mutation / 62: (255 / 62) = 4 → alphabet[4] = 'E'.
         struct AllMaxRng;
 
-        impl RngCore for AllMaxRng {
-            fn next_u32(&mut self) -> u32 {
-                u32::MAX
+        impl TryRng for AllMaxRng {
+            type Error = Infallible;
+
+            fn try_next_u32(&mut self) -> Result<u32, Self::Error> {
+                Ok(u32::MAX)
             }
 
-            fn next_u64(&mut self) -> u64 {
-                u64::MAX
+            fn try_next_u64(&mut self) -> Result<u64, Self::Error> {
+                Ok(u64::MAX)
             }
 
-            fn fill_bytes(&mut self, dest: &mut [u8]) {
-                dest.fill(255);
-            }
-
-            fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_core::Error> {
+            fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Self::Error> {
                 self.fill_bytes(dest);
                 Ok(())
+            }
+        }
+
+        impl AllMaxRng {
+            fn fill_bytes(&mut self, dest: &mut [u8]) {
+                dest.fill(255);
             }
         }
 
