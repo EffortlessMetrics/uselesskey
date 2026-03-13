@@ -379,8 +379,8 @@ fn feature_matrix_cmd() -> Result<()> {
 
 const PUBLISH_CRATES: &[&str] = &[
     // Leaf crates (no workspace deps)
-    "uselesskey-core-base62",
     "uselesskey-core-seed",
+    "uselesskey-core-base62",
     "uselesskey-core-hash",
     "uselesskey-core-hmac-spec",
     "uselesskey-core-id",
@@ -437,8 +437,8 @@ const PUBLISH_CRATES: &[&str] = &[
 /// (RSA, ECDSA, Ed25519, PGP, X.509, adapters). These are still
 /// mutant-tested when directly impacted in PR-scoped runs.
 const MUTANT_CRATES: &[&str] = &[
-    "uselesskey-core-base62",
     "uselesskey-core-seed",
+    "uselesskey-core-base62",
     "uselesskey-core-hash",
     "uselesskey-core-hmac-spec",
     "uselesskey-core-id",
@@ -2027,8 +2027,24 @@ end_of_record
 
     #[test]
     fn resolve_start_index_from_first_crate() {
-        let idx = resolve_start_index(Some("uselesskey-core-base62"), false).unwrap();
+        let idx = resolve_start_index(Some("uselesskey-core-seed"), false).unwrap();
         assert_eq!(idx, 0);
+    }
+
+    #[test]
+    fn publish_order_keeps_core_seed_before_base62() {
+        let seed_idx = PUBLISH_CRATES
+            .iter()
+            .position(|name| *name == "uselesskey-core-seed")
+            .expect("seed crate present");
+        let base62_idx = PUBLISH_CRATES
+            .iter()
+            .position(|name| *name == "uselesskey-core-base62")
+            .expect("base62 crate present");
+        assert!(
+            seed_idx < base62_idx,
+            "publish order must place uselesskey-core-seed before uselesskey-core-base62"
+        );
     }
 
     #[test]
@@ -2080,7 +2096,7 @@ end_of_record
 
     #[test]
     fn resolve_start_index_from_and_resume_mutual_exclusion() {
-        let err = resolve_start_index(Some("uselesskey-core-base62"), true).unwrap_err();
+        let err = resolve_start_index(Some("uselesskey-core-seed"), true).unwrap_err();
         let msg = err.to_string();
         assert!(
             msg.contains("mutually exclusive"),
