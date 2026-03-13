@@ -2,12 +2,11 @@
 
 use arbitrary::Arbitrary;
 use libfuzzer_sys::fuzz_target;
-use rand_chacha::ChaCha20Rng;
-use rand_core::SeedableRng;
 
+use uselesskey::Seed;
 use uselesskey_core_token_shape::{
-    TokenKind, authorization_scheme, generate_api_key, generate_bearer_token,
-    generate_oauth_access_token, generate_token, random_base62,
+    authorization_scheme, generate_api_key, generate_bearer_token, generate_oauth_access_token,
+    generate_token, random_base62, TokenKind,
 };
 
 #[derive(Arbitrary, Debug)]
@@ -31,13 +30,12 @@ fuzz_target!(|input: TokenShapeInput| {
     };
 
     // Exercise generate_token with arbitrary labels.
-    let mut rng = ChaCha20Rng::from_seed(input.seed);
-    let token = generate_token(&input.label, kind, &mut rng);
+    let seed = Seed::new(input.seed);
+    let token = generate_token(&input.label, kind, seed);
     assert!(!token.is_empty());
 
     // Determinism: same seed + label + kind = same output.
-    let mut rng2 = ChaCha20Rng::from_seed(input.seed);
-    let token2 = generate_token(&input.label, kind, &mut rng2);
+    let token2 = generate_token(&input.label, kind, seed);
     assert_eq!(token, token2);
 
     // authorization_scheme must not panic for any kind.
@@ -45,22 +43,18 @@ fuzz_target!(|input: TokenShapeInput| {
     assert!(!scheme.is_empty());
 
     // Exercise individual generators with fuzz-derived label.
-    let mut rng_api = ChaCha20Rng::from_seed(input.seed);
-    let api = generate_api_key(&mut rng_api);
+    let api = generate_api_key(seed);
     assert!(api.starts_with("uk_test_"));
 
-    let mut rng_bearer = ChaCha20Rng::from_seed(input.seed);
-    let bearer = generate_bearer_token(&mut rng_bearer);
+    let bearer = generate_bearer_token(seed);
     assert_eq!(bearer.len(), 43);
 
-    let mut rng_oauth = ChaCha20Rng::from_seed(input.seed);
-    let oauth = generate_oauth_access_token(&input.label, &mut rng_oauth);
+    let oauth = generate_oauth_access_token(&input.label, seed);
     assert_eq!(oauth.matches('.').count(), 2);
 
     // Exercise random_base62 with fuzz-derived length.
     let len = input.base62_len as usize;
-    let mut rng_b62 = ChaCha20Rng::from_seed(input.seed);
-    let b62 = random_base62(&mut rng_b62, len);
+    let b62 = random_base62(seed, len);
     assert_eq!(b62.len(), len);
     assert!(b62.chars().all(|c| c.is_ascii_alphanumeric()));
 });
