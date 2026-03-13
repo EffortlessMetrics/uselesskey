@@ -228,6 +228,16 @@ mod tests {
     }
 
     #[test]
+    fn fill_bytes_overwrites_destination_buffer() {
+        let seed = Seed::new([7u8; 32]);
+        let mut out = [0xAA; 16];
+
+        seed.fill_bytes(&mut out);
+
+        assert_ne!(out, [0xAA; 16]);
+    }
+
+    #[test]
     fn from_env_value_short_string_uses_blake3() {
         let seed = Seed::from_env_value("abc").unwrap();
         let expected = blake3::hash(b"abc");
