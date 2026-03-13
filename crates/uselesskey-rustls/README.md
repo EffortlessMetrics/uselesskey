@@ -30,7 +30,7 @@ optional `ServerConfig` / `ClientConfig` builders (including mTLS support).
 
 ```toml
 [dev-dependencies]
-uselesskey-rustls = { version = "0.3.0", features = ["tls-config", "rustls-ring"] }
+uselesskey-rustls = { version = "0.4.0", features = ["tls-config", "rustls-ring"] }
 ```
 
 ```rust

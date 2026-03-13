@@ -2090,13 +2090,13 @@ end_of_record
 
     #[test]
     fn unpublished_workspace_dep_error_matches_no_matching_package() {
-        let stderr = "error: no matching package named `uselesskey-core-hash` found\nlocation searched: crates.io index\nrequired by package `uselesskey-core-id v0.3.0`";
+        let stderr = "error: no matching package named `uselesskey-core-hash` found\nlocation searched: crates.io index\nrequired by package `uselesskey-core-id v0.4.0`";
         assert!(is_unpublished_workspace_dep_error(stderr));
     }
 
     #[test]
     fn unpublished_workspace_dep_error_matches_version_mismatch_form() {
-        let stderr = "error: failed to prepare local package for uploading\n\nCaused by:\n  failed to select a version for the requirement `uselesskey-core-hash = \"^0.3.0\"`\n  candidate versions found which didn't match: 0.2.0\n  location searched: crates.io index\n  required by package `uselesskey-core-id v0.3.0`";
+        let stderr = "error: failed to prepare local package for uploading\n\nCaused by:\n  failed to select a version for the requirement `uselesskey-core-hash = \"^0.4.0\"`\n  candidate versions found which didn't match: 0.3.0\n  location searched: crates.io index\n  required by package `uselesskey-core-id v0.4.0`";
         assert!(is_unpublished_workspace_dep_error(stderr));
     }
 
