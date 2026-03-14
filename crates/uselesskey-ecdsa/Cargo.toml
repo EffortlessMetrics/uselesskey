@@ -22,8 +22,8 @@ uselesskey-core-keypair-material.workspace = true
 p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "pem"] }
 p384 = { version = "0.13", features = ["ecdsa", "pkcs8", "pem"] }
 elliptic-curve = { version = "0.13", features = ["pkcs8", "pem", "sec1"] }
-rand_chacha.workspace = true
-rand_core.workspace = true
+rand_chacha = { version = "0.3.1", default-features = false }
+rand_core = { version = "0.6.4", default-features = false }
 
 # Optional JWK/JWKS support
 serde_json = { workspace = true, optional = true }

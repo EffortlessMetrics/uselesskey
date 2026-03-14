@@ -101,11 +101,6 @@ blake3 = "1.8.3"
 # concurrency-friendly cache
 dashmap = "6.1.0"
 
-# RNG — legacy line kept for stable crypto-edge crates
-rand = "0.8.5"
-rand_core = { version = "0.6.4", default-features = false }
-rand_chacha = { version = "0.3.1", default-features = false }
-
 # RNG — current line for seed/core/helper crates
 rand10 = { package = "rand", version = "0.10.0", default-features = false }
 rand_core10 = { package = "rand_core", version = "0.10.0", default-features = false }
@@ -131,6 +126,9 @@ cucumber = { version = "0.22.1", features = ["macros"] }
 tokio = { version = "1.50.0", features = ["macros", "rt-multi-thread"] }
 
 # RSA
+# Stable crypto-edge deps still carry the legacy rand_core line transitively.
+# Direct legacy RNG deps are localized in uselesskey-rsa/uselesskey-ecdsa/
+# uselesskey-pgp/uselesskey-x509 instead of living at workspace scope.
 rsa = { version = "0.9.10", features = ["pem"] }
 
 # Ed25519
