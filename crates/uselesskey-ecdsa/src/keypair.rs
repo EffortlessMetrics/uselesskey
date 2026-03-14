@@ -1,9 +1,12 @@
 use std::fmt;
 use std::sync::Arc;
 
-use elliptic_curve::pkcs8::{EncodePrivateKey, EncodePublicKey, LineEnding};
-use rand_chacha::ChaCha20Rng;
-use rand_core::SeedableRng;
+use elliptic_curve::{
+    Generate,
+    pkcs8::{EncodePrivateKey, EncodePublicKey, LineEnding},
+};
+use rand_chacha10::ChaCha20Rng;
+use rand_core10::SeedableRng;
 use uselesskey_core::negative::CorruptPem;
 use uselesskey_core::sink::TempArtifact;
 use uselesskey_core::{Error, Factory};
@@ -532,10 +535,11 @@ fn load_inner(factory: &Factory, label: &str, spec: EcdsaSpec, variant: &str) ->
     })
 }
 
-fn generate_p256(spec: EcdsaSpec, rng: &mut impl rand_core::CryptoRngCore) -> Inner {
+fn generate_p256(spec: EcdsaSpec, rng: &mut impl rand_core10::CryptoRng) -> Inner {
     use p256::ecdsa::SigningKey;
 
-    let signing_key = SigningKey::random(rng);
+    let signing_key =
+        SigningKey::try_generate_from_rng(rng).expect("failed to generate deterministic P-256 key");
     let verifying_key = signing_key.verifying_key();
 
     let pkcs8_der_doc = signing_key
@@ -558,7 +562,7 @@ fn generate_p256(spec: EcdsaSpec, rng: &mut impl rand_core::CryptoRngCore) -> In
         .expect("failed to encode P-256 public key as SPKI PEM");
 
     // Get uncompressed point for JWK
-    let point = verifying_key.to_encoded_point(false);
+    let point = verifying_key.to_sec1_point(false);
     let public_key_bytes = point.as_bytes().to_vec();
     let private_key_bytes = signing_key.to_bytes().to_vec();
 
@@ -572,10 +576,11 @@ fn generate_p256(spec: EcdsaSpec, rng: &mut impl rand_core::CryptoRngCore) -> In
     }
 }
 
-fn generate_p384(spec: EcdsaSpec, rng: &mut impl rand_core::CryptoRngCore) -> Inner {
+fn generate_p384(spec: EcdsaSpec, rng: &mut impl rand_core10::CryptoRng) -> Inner {
     use p384::ecdsa::SigningKey;
 
-    let signing_key = SigningKey::random(rng);
+    let signing_key =
+        SigningKey::try_generate_from_rng(rng).expect("failed to generate deterministic P-384 key");
     let verifying_key = signing_key.verifying_key();
 
     let pkcs8_der_doc = signing_key
@@ -598,7 +603,7 @@ fn generate_p384(spec: EcdsaSpec, rng: &mut impl rand_core::CryptoRngCore) -> In
         .expect("failed to encode P-384 public key as SPKI PEM");
 
     // Get uncompressed point for JWK
-    let point = verifying_key.to_encoded_point(false);
+    let point = verifying_key.to_sec1_point(false);
     let public_key_bytes = point.as_bytes().to_vec();
     let private_key_bytes = signing_key.to_bytes().to_vec();
 
