@@ -4125,6 +4125,7 @@ name = "uselesskey-integration-tests"
 version = "0.0.0"
 dependencies = [
  "base64",
+ "blake3",
  "der-parser",
  "ed25519-dalek",
  "insta",

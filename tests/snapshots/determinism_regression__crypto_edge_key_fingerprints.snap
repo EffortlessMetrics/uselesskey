@@ -1,0 +1,32 @@
+---
+source: tests/determinism_regression.rs
+expression: snapshot
+---
+rsa:
+  label: fingerprint-rsa
+  private_der_len: 1217
+  private_der_blake3: 1a1409b1aee0f015b5cb6eccc4f01692c65b021e8d5dec9364f95336e43ce1c8
+  public_der_len: 294
+  public_der_blake3: 41caac6abddeae375ee7d6cc09591a849071c9aba0341a7ce6a162c4f8bbc38e
+  kid: Qcqsar3erjde59bM
+ecdsa_p256:
+  label: fingerprint-ecdsa-p256
+  private_der_len: 138
+  private_der_blake3: a5bcd562e908a0b3710cec9664cf19f2218a8fae7f594a0f0f1f01a21816f4d6
+  public_der_len: 91
+  public_der_blake3: 93fb65c3ccd9e22f4d6c5d13dbeb305bc047b93b12098832d3db57e105fe2f9a
+  kid: k_tlw8zZ4i9NbF0T
+ecdsa_p384:
+  label: fingerprint-ecdsa-p384
+  private_der_len: 185
+  private_der_blake3: f87044617fd5be83da0697cd47e8679d844d35e877031291fb2e0e96a0030c19
+  public_der_len: 120
+  public_der_blake3: f136ec7e3a2604695879618f708bb141571e5e2e200a8de9bee2f3ad530ea05e
+  kid: 8TbsfjomBGlYeWGP
+ed25519:
+  label: fingerprint-ed25519
+  private_der_len: 83
+  private_der_blake3: a6db3785112b07d2ece76429ee3392f32dc956eafc736c516d995172b114d2a2
+  public_der_len: 44
+  public_der_blake3: 004da03e3111ff18e6f69aff4793e6987a76f7405a3c338c3f693af986741fc8
+  kid: AE2gPjER_xjm9pr_

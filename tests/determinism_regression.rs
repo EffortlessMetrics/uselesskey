@@ -10,6 +10,7 @@
 
 #![cfg(feature = "determinism-regression")]
 
+use serde::Serialize;
 use uselesskey::jwk::JwksBuilder;
 use uselesskey::prelude::*;
 
@@ -26,6 +27,53 @@ fn fx() -> Factory {
 /// Extract just the first line (PEM header) from a PEM string.
 fn pem_header(pem: &str) -> &str {
     pem.lines().next().unwrap_or("")
+}
+
+fn blake3_hex(bytes: &[u8]) -> String {
+    blake3::hash(bytes).to_hex().to_string()
+}
+
+#[derive(Serialize)]
+struct KeyMaterialFingerprint<'a> {
+    label: &'a str,
+    private_der_len: usize,
+    private_der_blake3: String,
+    public_der_len: usize,
+    public_der_blake3: String,
+    kid: String,
+}
+
+#[derive(Serialize)]
+struct X509MaterialFingerprint<'a> {
+    label: &'a str,
+    cert_der_len: usize,
+    cert_der_blake3: String,
+    key_der_len: usize,
+    key_der_blake3: String,
+    cert_pem_header: String,
+}
+
+#[derive(Serialize)]
+struct CryptoEdgeKeyFingerprints<'a> {
+    rsa: KeyMaterialFingerprint<'a>,
+    ecdsa_p256: KeyMaterialFingerprint<'a>,
+    ecdsa_p384: KeyMaterialFingerprint<'a>,
+    ed25519: KeyMaterialFingerprint<'a>,
+}
+
+#[derive(Serialize)]
+struct X509ChainFingerprint<'a> {
+    label: &'a str,
+    chain_pem_cert_count: usize,
+    leaf_cert_der_len: usize,
+    leaf_cert_der_blake3: String,
+    intermediate_cert_der_len: usize,
+    intermediate_cert_der_blake3: String,
+    root_cert_der_len: usize,
+    root_cert_der_blake3: String,
+    leaf_key_der_blake3: String,
+    intermediate_key_der_blake3: String,
+    root_key_der_blake3: String,
 }
 
 // =========================================================================
@@ -160,6 +208,51 @@ fn seed_stability_ed25519() {
             ),
         ])
     );
+}
+
+#[test]
+fn seed_stability_crypto_edge_key_fingerprints() {
+    let rsa = fx().rsa("fingerprint-rsa", RsaSpec::rs256());
+    let ecdsa_p256 = fx().ecdsa("fingerprint-ecdsa-p256", EcdsaSpec::es256());
+    let ecdsa_p384 = fx().ecdsa("fingerprint-ecdsa-p384", EcdsaSpec::es384());
+    let ed25519 = fx().ed25519("fingerprint-ed25519", Ed25519Spec::new());
+
+    let snapshot = CryptoEdgeKeyFingerprints {
+        rsa: KeyMaterialFingerprint {
+            label: "fingerprint-rsa",
+            private_der_len: rsa.private_key_pkcs8_der().len(),
+            private_der_blake3: blake3_hex(rsa.private_key_pkcs8_der()),
+            public_der_len: rsa.public_key_spki_der().len(),
+            public_der_blake3: blake3_hex(rsa.public_key_spki_der()),
+            kid: rsa.kid(),
+        },
+        ecdsa_p256: KeyMaterialFingerprint {
+            label: "fingerprint-ecdsa-p256",
+            private_der_len: ecdsa_p256.private_key_pkcs8_der().len(),
+            private_der_blake3: blake3_hex(ecdsa_p256.private_key_pkcs8_der()),
+            public_der_len: ecdsa_p256.public_key_spki_der().len(),
+            public_der_blake3: blake3_hex(ecdsa_p256.public_key_spki_der()),
+            kid: ecdsa_p256.kid(),
+        },
+        ecdsa_p384: KeyMaterialFingerprint {
+            label: "fingerprint-ecdsa-p384",
+            private_der_len: ecdsa_p384.private_key_pkcs8_der().len(),
+            private_der_blake3: blake3_hex(ecdsa_p384.private_key_pkcs8_der()),
+            public_der_len: ecdsa_p384.public_key_spki_der().len(),
+            public_der_blake3: blake3_hex(ecdsa_p384.public_key_spki_der()),
+            kid: ecdsa_p384.kid(),
+        },
+        ed25519: KeyMaterialFingerprint {
+            label: "fingerprint-ed25519",
+            private_der_len: ed25519.private_key_pkcs8_der().len(),
+            private_der_blake3: blake3_hex(ed25519.private_key_pkcs8_der()),
+            public_der_len: ed25519.public_key_spki_der().len(),
+            public_der_blake3: blake3_hex(ed25519.public_key_spki_der()),
+            kid: ed25519.kid(),
+        },
+    };
+
+    insta::assert_yaml_snapshot!("crypto_edge_key_fingerprints", snapshot);
 }
 
 #[test]
@@ -774,6 +867,24 @@ fn x509_metadata_snapshot() {
 }
 
 #[test]
+fn x509_self_signed_fingerprints_snapshot() {
+    let cert = fx().x509_self_signed(
+        "x509-fingerprint",
+        X509Spec::self_signed("fingerprint.local"),
+    );
+    let snapshot = X509MaterialFingerprint {
+        label: "x509-fingerprint",
+        cert_der_len: cert.cert_der().len(),
+        cert_der_blake3: blake3_hex(cert.cert_der()),
+        key_der_len: cert.private_key_pkcs8_der().len(),
+        key_der_blake3: blake3_hex(cert.private_key_pkcs8_der()),
+        cert_pem_header: pem_header(cert.cert_pem()).to_string(),
+    };
+
+    insta::assert_yaml_snapshot!("x509_self_signed_fingerprints", snapshot);
+}
+
+#[test]
 fn x509_negative_expired_deterministic() {
     let c1 = fx().x509_self_signed("x509-exp", X509Spec::self_signed("exp.local"));
     let c2 = fx().x509_self_signed("x509-exp", X509Spec::self_signed("exp.local"));
@@ -825,6 +936,29 @@ fn x509_chain_deterministic() {
     assert_eq!(ch1.leaf_cert_pem(), ch2.leaf_cert_pem());
     assert_eq!(ch1.root_cert_pem(), ch2.root_cert_pem());
     assert_eq!(ch1.chain_pem(), ch2.chain_pem());
+}
+
+#[test]
+fn x509_chain_fingerprints_snapshot() {
+    let chain = fx().x509_chain(
+        "x509-chain-fingerprint",
+        ChainSpec::new("fingerprint-chain.local"),
+    );
+    let snapshot = X509ChainFingerprint {
+        label: "x509-chain-fingerprint",
+        chain_pem_cert_count: chain.chain_pem().matches("BEGIN CERTIFICATE").count(),
+        leaf_cert_der_len: chain.leaf_cert_der().len(),
+        leaf_cert_der_blake3: blake3_hex(chain.leaf_cert_der()),
+        intermediate_cert_der_len: chain.intermediate_cert_der().len(),
+        intermediate_cert_der_blake3: blake3_hex(chain.intermediate_cert_der()),
+        root_cert_der_len: chain.root_cert_der().len(),
+        root_cert_der_blake3: blake3_hex(chain.root_cert_der()),
+        leaf_key_der_blake3: blake3_hex(chain.leaf_private_key_pkcs8_der()),
+        intermediate_key_der_blake3: blake3_hex(chain.intermediate_private_key_pkcs8_der()),
+        root_key_der_blake3: blake3_hex(chain.root_private_key_pkcs8_der()),
+    };
+
+    insta::assert_yaml_snapshot!("x509_chain_fingerprints", snapshot);
 }
 
 // =========================================================================
