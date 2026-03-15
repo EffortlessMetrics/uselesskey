@@ -231,7 +231,7 @@ fn rng_deps_use_only_approved_transition_lines() {
 // ---------------------------------------------------------------------------
 
 /// Critical crypto crates whose major versions must not diverge.
-const CRYPTO_DEPS: &[&str] = &["blake3", "sha2", "hmac", "digest"];
+const CRYPTO_DEPS: &[&str] = &["blake3", "sha2", "hmac", "digest", "ed25519-dalek"];
 
 #[test]
 fn no_duplicate_major_versions_of_crypto_deps() {

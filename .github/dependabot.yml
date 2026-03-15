@@ -6,6 +6,11 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 10
     ignore:
+      # Suppress major-bump PRs for RNG crates during the dual-stack transition.
+      # Three crates (uselesskey-rsa, uselesskey-pgp, uselesskey-x509) are stuck
+      # on the legacy rand_core 0.6 line because their upstream crypto deps
+      # (rsa 0.9, pgp 0.19) have not yet released versions using rand_core ≥0.9.
+      # Remove these ignores once the upstream blockers are resolved.
       - dependency-name: "rand"
         update-types:
           - "version-update:semver-major"
