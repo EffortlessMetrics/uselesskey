@@ -20,7 +20,7 @@ Path ignores exist but require ongoing maintenance. This crate replaces "securit
 
 ### Why we exist (ecosystem gaps)
 
-> Snapshot: last reviewed 2025-02-03. This is context, not a compatibility matrix.
+> Snapshot: last reviewed 2026-03-14. This is context, not a compatibility matrix.
 
 | Existing solution | Gap uselesskey fills |
 |-------------------|---------------------|
