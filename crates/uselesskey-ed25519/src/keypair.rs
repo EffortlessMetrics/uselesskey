@@ -110,6 +110,36 @@ impl Ed25519KeyPair {
         load_inner(&self.factory, &self.label, self.spec, variant)
     }
 
+    /// Returns the spec used to create this keypair.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
+    /// let fx = Factory::random();
+    /// let kp = fx.ed25519("svc", Ed25519Spec::new());
+    /// assert_eq!(kp.spec(), Ed25519Spec::new());
+    /// ```
+    pub fn spec(&self) -> Ed25519Spec {
+        self.spec
+    }
+
+    /// Returns the label used to create this keypair.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
+    /// let fx = Factory::random();
+    /// let kp = fx.ed25519("my-svc", Ed25519Spec::new());
+    /// assert_eq!(kp.label(), "my-svc");
+    /// ```
+    pub fn label(&self) -> &str {
+        &self.label
+    }
+
     /// PKCS#8 DER-encoded private key bytes.
     ///
     /// # Examples

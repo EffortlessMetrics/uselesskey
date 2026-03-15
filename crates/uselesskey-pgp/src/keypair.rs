@@ -77,6 +77,21 @@ impl PgpKeyPair {
         self.spec
     }
 
+    /// Returns the label used to create this keypair.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_pgp::{PgpFactoryExt, PgpSpec};
+    /// let fx = Factory::random();
+    /// let kp = fx.pgp("my-svc", PgpSpec::ed25519());
+    /// assert_eq!(kp.label(), "my-svc");
+    /// ```
+    pub fn label(&self) -> &str {
+        &self.label
+    }
+
     /// Returns the generated OpenPGP user id.
     pub fn user_id(&self) -> &str {
         &self.inner.user_id
