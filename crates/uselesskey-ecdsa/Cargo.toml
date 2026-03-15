@@ -18,12 +18,12 @@ authors.workspace = true
 uselesskey-core = { path = "../uselesskey-core", version = "0.4.0" }
 uselesskey-core-keypair-material.workspace = true
 
-# Elliptic curve support from RustCrypto
-p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "pem"] }
-p384 = { version = "0.13", features = ["ecdsa", "pkcs8", "pem"] }
-elliptic-curve = { version = "0.13", features = ["pkcs8", "pem", "sec1"] }
-rand_chacha = { version = "0.3.1", default-features = false }
-rand_core = { version = "0.6.4", default-features = false }
+# Elliptic curve support from RustCrypto's current RC line
+p256 = { version = "0.14.0-rc.8", features = ["ecdsa", "pkcs8", "pem"] }
+p384 = { version = "0.14.0-rc.8", features = ["ecdsa", "pkcs8", "pem"] }
+elliptic-curve = { version = "0.14.0-rc.29", features = ["pkcs8", "pem", "sec1"] }
+rand_chacha10.workspace = true
+rand_core10.workspace = true
 
 # Optional JWK/JWKS support
 serde_json = { workspace = true, optional = true }

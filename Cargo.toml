@@ -127,8 +127,8 @@ tokio = { version = "1.50.0", features = ["macros", "rt-multi-thread"] }
 
 # RSA
 # Stable crypto-edge deps still carry the legacy rand_core line transitively.
-# Direct legacy RNG deps are localized in uselesskey-rsa/uselesskey-ecdsa/
-# uselesskey-pgp/uselesskey-x509 instead of living at workspace scope.
+# Direct legacy RNG deps are localized in uselesskey-rsa/uselesskey-pgp/
+# uselesskey-x509 instead of living at workspace scope.
 rsa = { version = "0.9.10", features = ["pem"] }
 
 # Ed25519

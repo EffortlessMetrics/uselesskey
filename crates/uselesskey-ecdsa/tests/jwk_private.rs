@@ -117,24 +117,24 @@ mod jwk_private_tests {
 
             match spec {
                 EcdsaSpec::Es256 => {
-                    use p256::elliptic_curve::sec1::ToEncodedPoint as _;
+                    use p256::elliptic_curve::sec1::ToSec1Point as _;
                     use p256::pkcs8::DecodePublicKey as _;
 
                     let public = p256::PublicKey::from_public_key_der(key.public_key_spki_der())
                         .expect("P-256 SPKI should parse");
-                    let encoded = public.to_encoded_point(false);
+                    let encoded = public.to_sec1_point(false);
                     let bytes = encoded.as_bytes();
 
                     assert_eq!(x.as_slice(), &bytes[1..1 + coord_len]);
                     assert_eq!(y.as_slice(), &bytes[1 + coord_len..]);
                 }
                 EcdsaSpec::Es384 => {
-                    use p384::elliptic_curve::sec1::ToEncodedPoint as _;
+                    use p384::elliptic_curve::sec1::ToSec1Point as _;
                     use p384::pkcs8::DecodePublicKey as _;
 
                     let public = p384::PublicKey::from_public_key_der(key.public_key_spki_der())
                         .expect("P-384 SPKI should parse");
-                    let encoded = public.to_encoded_point(false);
+                    let encoded = public.to_sec1_point(false);
                     let bytes = encoded.as_bytes();
 
                     assert_eq!(x.as_slice(), &bytes[1..1 + coord_len]);
@@ -161,13 +161,13 @@ mod jwk_private_tests {
 
             match spec {
                 EcdsaSpec::Es256 => {
-                    use p256::elliptic_curve::sec1::ToEncodedPoint as _;
+                    use p256::elliptic_curve::sec1::ToSec1Point as _;
                     use p256::pkcs8::DecodePrivateKey as _;
 
                     let secret = p256::SecretKey::from_pkcs8_der(key.private_key_pkcs8_der())
                         .expect("P-256 PKCS#8 should parse");
                     let public = secret.public_key();
-                    let encoded = public.to_encoded_point(false);
+                    let encoded = public.to_sec1_point(false);
                     let bytes = encoded.as_bytes();
                     let scalar = secret.to_bytes();
 
@@ -176,13 +176,13 @@ mod jwk_private_tests {
                     assert_eq!(d.as_slice(), &scalar[..]);
                 }
                 EcdsaSpec::Es384 => {
-                    use p384::elliptic_curve::sec1::ToEncodedPoint as _;
+                    use p384::elliptic_curve::sec1::ToSec1Point as _;
                     use p384::pkcs8::DecodePrivateKey as _;
 
                     let secret = p384::SecretKey::from_pkcs8_der(key.private_key_pkcs8_der())
                         .expect("P-384 PKCS#8 should parse");
                     let public = secret.public_key();
-                    let encoded = public.to_encoded_point(false);
+                    let encoded = public.to_sec1_point(false);
                     let bytes = encoded.as_bytes();
                     let scalar = secret.to_bytes();
 
