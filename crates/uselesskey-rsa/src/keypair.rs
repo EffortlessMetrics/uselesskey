@@ -110,6 +110,36 @@ impl RsaKeyPair {
         load_inner(&self.factory, &self.label, self.spec, variant)
     }
 
+    /// Returns the spec used to create this keypair.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+    /// let fx = Factory::random();
+    /// let kp = fx.rsa("svc", RsaSpec::rs256());
+    /// assert_eq!(kp.spec(), RsaSpec::rs256());
+    /// ```
+    pub fn spec(&self) -> RsaSpec {
+        self.spec
+    }
+
+    /// Returns the label used to create this keypair.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+    /// let fx = Factory::random();
+    /// let kp = fx.rsa("my-svc", RsaSpec::rs256());
+    /// assert_eq!(kp.label(), "my-svc");
+    /// ```
+    pub fn label(&self) -> &str {
+        &self.label
+    }
+
     #[cfg(feature = "jwk")]
     fn jwk_alg(&self) -> &'static str {
         match self.spec.bits {

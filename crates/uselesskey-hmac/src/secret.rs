@@ -97,6 +97,36 @@ impl HmacSecret {
         load_inner(&self.factory, &self.label, self.spec, variant)
     }
 
+    /// Returns the spec used to create this secret.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_hmac::{HmacFactoryExt, HmacSpec};
+    /// let fx = Factory::random();
+    /// let secret = fx.hmac("jwt", HmacSpec::hs256());
+    /// assert_eq!(secret.spec(), HmacSpec::hs256());
+    /// ```
+    pub fn spec(&self) -> HmacSpec {
+        self.spec
+    }
+
+    /// Returns the label used to create this secret.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_hmac::{HmacFactoryExt, HmacSpec};
+    /// let fx = Factory::random();
+    /// let secret = fx.hmac("my-jwt", HmacSpec::hs256());
+    /// assert_eq!(secret.label(), "my-jwt");
+    /// ```
+    pub fn label(&self) -> &str {
+        &self.label
+    }
+
     /// Access raw secret bytes.
     ///
     /// # Examples
