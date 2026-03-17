@@ -831,7 +831,11 @@ fn publish_preflight() -> Result<()> {
 
 fn run_publish_preflight(runner: &mut receipt::Runner) -> Result<()> {
     runner.step("preflight:metadata", None, check_crate_metadata)?;
-    runner.step("preflight:doc-versions", None, check_doc_dependency_versions)?;
+    runner.step(
+        "preflight:doc-versions",
+        None,
+        check_doc_dependency_versions,
+    )?;
     let mut first_err: Option<anyhow::Error> = None;
     for name in PUBLISH_CRATES {
         let step_name = format!("preflight:package:{name}");
@@ -986,7 +990,9 @@ fn versioned_dependency_snippet_files() -> Result<Vec<PathBuf>> {
         PathBuf::from("crates/uselesskey/src/lib.rs"),
     ];
 
-    for entry in fs::read_dir("crates").context("failed to read crates dir for doc version checks")? {
+    for entry in
+        fs::read_dir("crates").context("failed to read crates dir for doc version checks")?
+    {
         let entry = entry.context("failed to read crates dir entry for doc version checks")?;
         let readme = entry.path().join("README.md");
         if readme.is_file() {

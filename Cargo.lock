@@ -3951,7 +3951,7 @@ checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
 
 [[package]]
 name = "uselesskey"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "criterion",
  "insta",
@@ -3978,7 +3978,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-aws-lc-rs"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "aws-lc-rs",
  "hex",
@@ -4002,7 +4002,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-bdd-steps"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "aws-lc-rs",
  "base64",
@@ -4040,7 +4040,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "insta",
  "proptest",
@@ -4056,7 +4056,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core-base62"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "insta",
  "proptest",
@@ -4069,7 +4069,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core-cache"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "dashmap",
  "insta",
@@ -4082,7 +4082,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core-factory"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "insta",
  "proptest",
@@ -4094,7 +4094,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core-hash"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "blake3",
  "insta",
@@ -4104,7 +4104,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core-hmac-spec"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "insta",
  "proptest",
@@ -4113,7 +4113,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core-id"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "insta",
  "proptest",
@@ -4125,7 +4125,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core-jwk"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "insta",
  "proptest",
@@ -4137,7 +4137,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core-jwk-builder"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "insta",
  "proptest",
@@ -4149,7 +4149,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core-jwk-shape"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "insta",
  "proptest",
@@ -4159,7 +4159,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core-jwks-order"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "insta",
  "proptest",
@@ -4168,7 +4168,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core-keypair"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "insta",
  "proptest",
@@ -4179,7 +4179,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core-keypair-material"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "insta",
  "proptest",
@@ -4190,7 +4190,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core-kid"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "base64",
  "blake3",
@@ -4202,7 +4202,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core-negative"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "insta",
  "proptest",
@@ -4214,7 +4214,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core-negative-der"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "insta",
  "proptest",
@@ -4225,7 +4225,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core-negative-pem"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "insta",
  "proptest",
@@ -4235,7 +4235,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core-rustls-pki"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "insta",
  "rustls-pki-types",
@@ -4249,7 +4249,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core-seed"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "blake3",
  "insta",
@@ -4262,7 +4262,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core-sink"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "insta",
  "proptest",
@@ -4273,7 +4273,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core-token"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "base64",
  "insta",
@@ -4286,7 +4286,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core-token-shape"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "base64",
  "insta",
@@ -4302,7 +4302,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core-x509"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "insta",
  "proptest",
@@ -4316,7 +4316,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core-x509-chain-negative"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "insta",
  "proptest",
@@ -4327,7 +4327,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core-x509-derive"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "insta",
  "proptest",
@@ -4342,7 +4342,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core-x509-negative"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "insta",
  "proptest",
@@ -4354,7 +4354,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core-x509-spec"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "insta",
  "proptest",
@@ -4364,7 +4364,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-ecdsa"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "base64",
  "elliptic-curve 0.14.0-rc.29",
@@ -4385,7 +4385,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-ed25519"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "base64",
  "ed25519-dalek",
@@ -4403,11 +4403,11 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-feature-grid"
-version = "0.4.0"
+version = "0.4.1"
 
 [[package]]
 name = "uselesskey-hmac"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "base64",
  "insta",
@@ -4491,7 +4491,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-jsonwebtoken"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "insta",
  "jsonwebtoken",
@@ -4506,7 +4506,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-jwk"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "insta",
  "serde",
@@ -4517,7 +4517,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-pgp"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "insta",
  "pgp",
@@ -4530,7 +4530,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-ring"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "hex",
  "insta",
@@ -4545,7 +4545,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-rsa"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "base64",
  "insta",
@@ -4563,7 +4563,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-rustcrypto"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "ed25519-dalek",
  "hex",
@@ -4584,7 +4584,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-rustls"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "hex",
  "insta",
@@ -4602,14 +4602,14 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-test-grid"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "uselesskey-feature-grid",
 ]
 
 [[package]]
 name = "uselesskey-token"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "base64",
  "insta",
@@ -4623,7 +4623,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-token-spec"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "insta",
  "serde",
@@ -4631,7 +4631,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-tonic"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "insta",
  "proptest",
@@ -4643,7 +4643,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-x509"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "base64",
  "insta",
