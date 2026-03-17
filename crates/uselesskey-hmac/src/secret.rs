@@ -315,6 +315,17 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "jwk")]
+    fn kid_is_not_placeholder_for_any_spec() {
+        let fx = Factory::random();
+
+        for spec in [HmacSpec::hs256(), HmacSpec::hs384(), HmacSpec::hs512()] {
+            let secret = fx.hmac("kid-placeholder", spec);
+            assert_ne!(secret.kid(), "xyzzy");
+        }
+    }
+
+    #[test]
     fn debug_includes_label_and_type() {
         let fx = Factory::random();
         let secret = fx.hmac("debug-label", HmacSpec::hs256());
