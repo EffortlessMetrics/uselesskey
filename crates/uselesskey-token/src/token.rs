@@ -126,6 +126,36 @@ impl TokenFixture {
         load_inner(&self.factory, &self.label, self.spec, variant)
     }
 
+    /// Returns the spec used to create this token.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_token::{TokenFactoryExt, TokenSpec};
+    /// let fx = Factory::random();
+    /// let tok = fx.token("svc", TokenSpec::api_key());
+    /// assert_eq!(tok.spec(), TokenSpec::api_key());
+    /// ```
+    pub fn spec(&self) -> TokenSpec {
+        self.spec
+    }
+
+    /// Returns the label used to create this token.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_token::{TokenFactoryExt, TokenSpec};
+    /// let fx = Factory::random();
+    /// let tok = fx.token("my-svc", TokenSpec::api_key());
+    /// assert_eq!(tok.label(), "my-svc");
+    /// ```
+    pub fn label(&self) -> &str {
+        &self.label
+    }
+
     /// Access the token value.
     ///
     /// # Examples

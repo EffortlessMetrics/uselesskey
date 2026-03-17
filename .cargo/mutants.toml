@@ -53,4 +53,10 @@ exclude_re = [
     # KeyUsage::default() calls Self::leaf(), so replacing leaf() with
     # Default::default() causes infinite recursion → unkillable timeout.
     "replace KeyUsage::leaf.* with Default::default",
+
+    # ── semantically equivalent singleton accessor ────────────────────────
+    # Ed25519Spec is intentionally a singleton value with no configurable
+    # state, so replacing Ed25519KeyPair::spec() with Default::default()
+    # is behaviorally identical and cannot be distinguished by tests.
+    "replace Ed25519KeyPair::spec.* with Default::default",
 ]

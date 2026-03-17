@@ -132,6 +132,21 @@ impl EcdsaKeyPair {
         self.spec
     }
 
+    /// Returns the label used to create this keypair.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
+    /// let fx = Factory::random();
+    /// let kp = fx.ecdsa("my-svc", EcdsaSpec::es256());
+    /// assert_eq!(kp.label(), "my-svc");
+    /// ```
+    pub fn label(&self) -> &str {
+        &self.label
+    }
+
     /// PKCS#8 DER-encoded private key bytes.
     ///
     /// # Examples

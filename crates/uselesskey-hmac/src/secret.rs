@@ -97,6 +97,36 @@ impl HmacSecret {
         load_inner(&self.factory, &self.label, self.spec, variant)
     }
 
+    /// Returns the spec used to create this secret.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_hmac::{HmacFactoryExt, HmacSpec};
+    /// let fx = Factory::random();
+    /// let secret = fx.hmac("jwt", HmacSpec::hs256());
+    /// assert_eq!(secret.spec(), HmacSpec::hs256());
+    /// ```
+    pub fn spec(&self) -> HmacSpec {
+        self.spec
+    }
+
+    /// Returns the label used to create this secret.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::Factory;
+    /// # use uselesskey_hmac::{HmacFactoryExt, HmacSpec};
+    /// let fx = Factory::random();
+    /// let secret = fx.hmac("my-jwt", HmacSpec::hs256());
+    /// assert_eq!(secret.label(), "my-jwt");
+    /// ```
+    pub fn label(&self) -> &str {
+        &self.label
+    }
+
     /// Access raw secret bytes.
     ///
     /// # Examples
@@ -282,6 +312,17 @@ mod tests {
         let s1 = fx.hmac("issuer", HmacSpec::hs512());
         let s2 = fx.hmac("issuer", HmacSpec::hs512());
         assert_eq!(s1.kid(), s2.kid());
+    }
+
+    #[test]
+    #[cfg(feature = "jwk")]
+    fn kid_is_not_placeholder_for_any_spec() {
+        let fx = Factory::random();
+
+        for spec in [HmacSpec::hs256(), HmacSpec::hs384(), HmacSpec::hs512()] {
+            let secret = fx.hmac("kid-placeholder", spec);
+            assert_ne!(secret.kid(), "xyzzy");
+        }
     }
 
     #[test]
