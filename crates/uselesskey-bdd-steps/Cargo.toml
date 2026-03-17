@@ -1,6 +1,6 @@
 [package]
 name = "uselesskey-bdd-steps"
-version = "0.4.0"
+version = "0.4.1"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
@@ -36,11 +36,11 @@ x509-parser = "0.18.1"
 serde_json.workspace = true
 base64.workspace = true
 pgp = { version = "0.19.0", default-features = false }
-uselesskey-aws-lc-rs = { path = "../uselesskey-aws-lc-rs", version = "0.4.0", optional = true, default-features = false, features = ["all"] }
-uselesskey-ring = { path = "../uselesskey-ring", version = "0.4.0", optional = true, default-features = false, features = ["all"] }
-uselesskey-rustcrypto = { path = "../uselesskey-rustcrypto", version = "0.4.0", optional = true, default-features = false, features = ["all"] }
-uselesskey-rustls = { path = "../uselesskey-rustls", version = "0.4.0", optional = true, default-features = false, features = ["x509", "tls-config", "rustls-ring"] }
-uselesskey-tonic = { path = "../uselesskey-tonic", version = "0.4.0", optional = true, default-features = false, features = ["x509"] }
+uselesskey-aws-lc-rs = { path = "../uselesskey-aws-lc-rs", version = "0.4.1", optional = true, default-features = false, features = ["all"] }
+uselesskey-ring = { path = "../uselesskey-ring", version = "0.4.1", optional = true, default-features = false, features = ["all"] }
+uselesskey-rustcrypto = { path = "../uselesskey-rustcrypto", version = "0.4.1", optional = true, default-features = false, features = ["all"] }
+uselesskey-rustls = { path = "../uselesskey-rustls", version = "0.4.1", optional = true, default-features = false, features = ["x509", "tls-config", "rustls-ring"] }
+uselesskey-tonic = { path = "../uselesskey-tonic", version = "0.4.1", optional = true, default-features = false, features = ["x509"] }
 hmac = { version = "0.12", optional = true }
 sha2 = { version = "0.10", optional = true }
 aws-lc-rs = { version = "1", optional = true }
