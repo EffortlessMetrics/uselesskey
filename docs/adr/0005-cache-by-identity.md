@@ -7,12 +7,12 @@ Accepted
 RSA key generation is expensive (especially for 4096-bit keys). Without caching, tests that repeatedly request the same fixture would regenerate keys each time, making test suites slow.
 
 ## Decision
-Per-process cache keyed by `(domain, label, spec, variant)` using `DashMap` with `Arc<dyn Any + Send + Sync>` storage.
+Per-factory cache keyed by `(domain, label, spec, variant)` using `DashMap` with `Arc<dyn Any + Send + Sync>` storage.
 
 - Cache key is the full artifact identity tuple
 - Storage is thread-safe via DashMap
 - Values are Arc'd for cheap cloning
-- Cache lives for the process lifetime
+- Cache is tied to a `Factory` instance and shared across cloned `Factory`s
 
 ## Consequences
 
@@ -23,7 +23,7 @@ Per-process cache keyed by `(domain, label, spec, variant)` using `DashMap` with
 
 **Negative:**
 - Memory usage grows with unique fixtures (acceptable for test usage)
-- Cache invalidation is process-bound (acceptable for test usage)
+- Cache invalidation is factory-bound (acceptable for test usage)
 
 ## Alternatives Considered
 - **No cache:** Too slow for RSA-heavy tests

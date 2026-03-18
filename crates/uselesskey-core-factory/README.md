@@ -3,7 +3,7 @@
 This crate owns the `Factory` type for `uselesskey` and is focused on:
 
 - random vs deterministic modes
-- deterministic, thread-safe per-process cache lookup
+- deterministic, thread-safe per-factory cache lookup
 - id-driven RNG initialization
 - deterministic fixture reuse across repeated lookups
 

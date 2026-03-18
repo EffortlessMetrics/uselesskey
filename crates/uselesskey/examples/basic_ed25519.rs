@@ -3,7 +3,7 @@
 //! Demonstrates generating Ed25519 keypairs and accessing them in
 //! PEM, DER, and JWK formats.
 //!
-//! Run with: cargo run -p uselesskey --example basic_ed25519 --features full
+//! Run with: cargo run -p uselesskey --example basic_ed25519 --features "ed25519,jwk"
 
 #[cfg(all(feature = "ed25519", feature = "jwk"))]
 fn main() {
@@ -68,5 +68,5 @@ fn main() {
 #[cfg(not(all(feature = "ed25519", feature = "jwk")))]
 fn main() {
     eprintln!("Enable 'ed25519' and 'jwk' features:");
-    eprintln!("  cargo run -p uselesskey --example basic_ed25519 --features full");
+    eprintln!("  cargo run -p uselesskey --example basic_ed25519 --features \"ed25519,jwk\"");
 }

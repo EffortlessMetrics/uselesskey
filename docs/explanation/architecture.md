@@ -57,7 +57,7 @@ set of focused microcrates that each own a single concern:
 
 - `uselesskey-core-factory` — factory orchestration: mode
   (Random/Deterministic), derivation dispatch, artifact generation
-- `uselesskey-core-cache` — per-process artifact cache keyed by identity
+- `uselesskey-core-cache` — per-factory artifact cache keyed by identity
   (DashMap + `Arc<dyn Any>`)
 - `uselesskey-core-sink` — tempfile-backed artifact sinks for disk output
 

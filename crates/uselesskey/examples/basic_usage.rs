@@ -3,7 +3,7 @@
 //! Shows how to create a deterministic factory and generate keypairs for
 //! all three asymmetric key types, accessing PEM, DER, and JWK outputs.
 //!
-//! Run with: cargo run -p uselesskey --example basic_usage --features full
+//! Run with: cargo run -p uselesskey --example basic_usage --features "ecdsa,ed25519,rsa,jwk"
 
 #[cfg(all(
     feature = "rsa",
@@ -169,5 +169,7 @@ fn main() {
 )))]
 fn main() {
     eprintln!("Enable required features:");
-    eprintln!("  cargo run -p uselesskey --example basic_usage --features full");
+    eprintln!(
+        "  cargo run -p uselesskey --example basic_usage --features \"ecdsa,ed25519,rsa,jwk\""
+    );
 }

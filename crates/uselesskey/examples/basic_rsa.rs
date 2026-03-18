@@ -3,7 +3,7 @@
 //! Demonstrates generating RSA keypairs and accessing them in
 //! PEM, DER, and JWK formats — without printing actual key material.
 //!
-//! Run with: cargo run -p uselesskey --example basic_rsa --features full
+//! Run with: cargo run -p uselesskey --example basic_rsa --features "rsa,jwk"
 
 #[cfg(all(feature = "rsa", feature = "jwk"))]
 fn main() {
@@ -74,5 +74,5 @@ fn main() {
 #[cfg(not(all(feature = "rsa", feature = "jwk")))]
 fn main() {
     eprintln!("Enable 'rsa' and 'jwk' features:");
-    eprintln!("  cargo run -p uselesskey --example basic_rsa --features full");
+    eprintln!("  cargo run -p uselesskey --example basic_rsa --features \"rsa,jwk\"");
 }

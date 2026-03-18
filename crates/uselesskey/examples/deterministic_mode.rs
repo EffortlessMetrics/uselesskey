@@ -4,7 +4,7 @@
 //! label, and spec always produce the same key — regardless of the order in
 //! which fixtures are requested.
 //!
-//! Run with: cargo run -p uselesskey --example deterministic_mode --features full
+//! Run with: cargo run -p uselesskey --example deterministic_mode --features "ecdsa,ed25519,rsa"
 
 #[cfg(all(feature = "rsa", feature = "ecdsa", feature = "ed25519"))]
 fn main() {
@@ -138,5 +138,7 @@ fn main() {
 #[cfg(not(all(feature = "rsa", feature = "ecdsa", feature = "ed25519")))]
 fn main() {
     eprintln!("Enable required features:");
-    eprintln!("  cargo run -p uselesskey --example deterministic_mode --features full");
+    eprintln!(
+        "  cargo run -p uselesskey --example deterministic_mode --features \"ecdsa,ed25519,rsa\""
+    );
 }

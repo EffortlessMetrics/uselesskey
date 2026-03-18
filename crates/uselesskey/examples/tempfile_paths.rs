@@ -11,9 +11,9 @@
 //!
 //! # Running this example
 //!
-//! With RSA (default feature):
+//! With RSA:
 //! ```bash
-//! cargo run -p uselesskey --example tempfile_paths
+//! cargo run -p uselesskey --example tempfile_paths --features "rsa"
 //! ```
 //!
 //! With Ed25519:

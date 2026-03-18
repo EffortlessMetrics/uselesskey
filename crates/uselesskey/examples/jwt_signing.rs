@@ -5,7 +5,10 @@
 //! - Using JWK outputs for JWT verification
 //! - Creating a JWKS for multiple keys
 //!
-//! Run with: cargo run --example jwt_signing --features "rsa,ecdsa,hmac,jwk"
+//! Run with:
+//! ```sh
+//! cargo run -p uselesskey --example jwt_signing --features "rsa,jwk"
+//! ```
 
 use uselesskey::prelude::*;
 
@@ -54,7 +57,7 @@ fn main() {
 #[cfg(not(all(feature = "rsa", feature = "jwk")))]
 fn main() {
     eprintln!("Enable 'rsa' and 'jwk' features to run this example:");
-    eprintln!("  cargo run --example jwt_signing --features \"rsa,jwk\"");
-    eprintln!("\nFor full functionality with all key types:");
-    eprintln!("  cargo run --example jwt_signing --features \"rsa,ecdsa,hmac,jwk\"");
+    eprintln!("  cargo run -p uselesskey --example jwt_signing --features \"rsa,jwk\"");
+    eprintln!("\nFor optional ECDSA/HMAC variants:");
+    eprintln!("  cargo run -p uselesskey --example jwt_signing --features \"rsa,ecdsa,hmac,jwk\"");
 }

@@ -3,7 +3,7 @@
 //! Demonstrates converting uselesskey X.509 fixtures into rustls types
 //! for building TLS server and client configurations.
 //!
-//! Run with: cargo run -p uselesskey --example adapter_rustls --features full
+//! Run with: cargo run -p uselesskey --example adapter_rustls --features x509
 
 #[cfg(feature = "x509")]
 fn main() {
@@ -99,5 +99,5 @@ fn main() {
 #[cfg(not(feature = "x509"))]
 fn main() {
     eprintln!("Enable 'x509' feature:");
-    eprintln!("  cargo run -p uselesskey --example adapter_rustls --features full");
+    eprintln!("  cargo run -p uselesskey --example adapter_rustls --features x509");
 }
