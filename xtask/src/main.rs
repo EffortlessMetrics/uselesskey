@@ -854,7 +854,7 @@ fn run_publish_preflight(runner: &mut receipt::Runner) -> Result<()> {
                 eprintln!("  [warn] {name}: skipped (workspace dep not yet on crates.io)");
                 return Ok(());
             }
-            bail!("cargo package -p {name} failed:\n{stderr}");
+            bail!("cargo package --no-verify -p {name} failed:\n{stderr}");
         }) && first_err.is_none()
         {
             first_err = Some(e);
@@ -985,13 +985,14 @@ fn workspace_publish_versions() -> Result<BTreeMap<String, String>> {
 }
 
 fn versioned_dependency_snippet_files() -> Result<Vec<PathBuf>> {
+    let workspace_root = workspace_root_path();
     let mut files = vec![
-        PathBuf::from("README.md"),
-        PathBuf::from("crates/uselesskey/src/lib.rs"),
+        workspace_root.join("README.md"),
+        workspace_root.join("crates/uselesskey/src/lib.rs"),
     ];
 
-    for entry in
-        fs::read_dir("crates").context("failed to read crates dir for doc version checks")?
+    for entry in fs::read_dir(workspace_root.join("crates"))
+        .context("failed to read crates dir for doc version checks")?
     {
         let entry = entry.context("failed to read crates dir entry for doc version checks")?;
         let readme = entry.path().join("README.md");
@@ -1001,6 +1002,7 @@ fn versioned_dependency_snippet_files() -> Result<Vec<PathBuf>> {
     }
 
     files.sort();
+    files.dedup();
     Ok(files)
 }
 
@@ -1627,6 +1629,13 @@ fn workspace_path(rel: &str) -> PathBuf {
     cwd_rel
 }
 
+fn workspace_root_path() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).parent().map_or_else(
+        || PathBuf::from(env!("CARGO_MANIFEST_DIR")),
+        |p| p.to_path_buf(),
+    )
+}
+
 fn nextest() -> Result<()> {
     let status = Command::new("cargo")
         .args(["nextest", "--version"])
@@ -2058,6 +2067,27 @@ mod tests {
         let _cwd = CwdGuard::new(dir.path());
         let targets = list_fuzz_targets().expect("list targets");
         assert!(targets.is_empty());
+    }
+
+    #[test]
+    fn versioned_dependency_snippet_files_uses_workspace_root_from_crate_path() {
+        let _cwd_lock = CWD_LOCK.lock().unwrap();
+        let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .expect("workspace root")
+            .to_path_buf();
+        let crate_dir = workspace_root.join("crates").join("uselesskey");
+
+        let _cwd = CwdGuard::new(&crate_dir);
+        let files = versioned_dependency_snippet_files().expect("collect versioned snippet files");
+
+        assert!(files.iter().all(|path| path.is_absolute()));
+        assert!(
+            files.contains(&workspace_root.join("README.md")),
+            "workspace root README should be included"
+        );
+        assert!(files.contains(&workspace_root.join("crates/uselesskey/src/lib.rs")));
+        assert!(files.contains(&workspace_root.join("crates/uselesskey/README.md")));
     }
 
     #[test]
