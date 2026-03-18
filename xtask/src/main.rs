@@ -1185,6 +1185,7 @@ fn run_pr_plan(
         runner.skip("root-tests", reason.clone());
         runner.skip("xtask-tests", reason.clone());
         runner.skip("preflight:metadata", reason.clone());
+        runner.skip("preflight:doc-versions", reason.clone());
         for name in PUBLISH_CRATES {
             runner.skip(&format!("preflight:package:{name}"), reason.clone());
         }
@@ -1955,6 +1956,22 @@ mod tests {
         }
     }
 
+    fn assert_versioned_dependency_snippet_files_from_cwd(
+        cwd: &std::path::Path,
+        workspace_root: &std::path::Path,
+    ) {
+        let _cwd = CwdGuard::new(cwd);
+        let files = versioned_dependency_snippet_files().expect("collect versioned snippet files");
+
+        assert!(files.iter().all(|path| path.is_absolute()));
+        assert!(
+            files.contains(&workspace_root.join("README.md")),
+            "workspace root README should be included"
+        );
+        assert!(files.contains(&workspace_root.join("crates/uselesskey/src/lib.rs")));
+        assert!(files.contains(&workspace_root.join("crates/uselesskey/README.md")));
+    }
+
     #[test]
     fn resolve_base_ref_prefers_xtask_base_ref() {
         let _lock = ENV_LOCK.lock().unwrap();
@@ -2072,22 +2089,17 @@ mod tests {
     #[test]
     fn versioned_dependency_snippet_files_uses_workspace_root_from_crate_path() {
         let _cwd_lock = CWD_LOCK.lock().unwrap();
-        let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
-            .parent()
-            .expect("workspace root")
-            .to_path_buf();
+        let workspace_root = workspace_root_path();
         let crate_dir = workspace_root.join("crates").join("uselesskey");
+        assert_versioned_dependency_snippet_files_from_cwd(&crate_dir, &workspace_root);
+    }
 
-        let _cwd = CwdGuard::new(&crate_dir);
-        let files = versioned_dependency_snippet_files().expect("collect versioned snippet files");
-
-        assert!(files.iter().all(|path| path.is_absolute()));
-        assert!(
-            files.contains(&workspace_root.join("README.md")),
-            "workspace root README should be included"
-        );
-        assert!(files.contains(&workspace_root.join("crates/uselesskey/src/lib.rs")));
-        assert!(files.contains(&workspace_root.join("crates/uselesskey/README.md")));
+    #[test]
+    fn versioned_dependency_snippet_files_uses_workspace_root_from_xtask_path() {
+        let _cwd_lock = CWD_LOCK.lock().unwrap();
+        let workspace_root = workspace_root_path();
+        let xtask_dir = workspace_root.join("xtask");
+        assert_versioned_dependency_snippet_files_from_cwd(&xtask_dir, &workspace_root);
     }
 
     #[test]
