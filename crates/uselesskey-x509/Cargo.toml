@@ -19,7 +19,7 @@ uselesskey-core = { path = "../uselesskey-core", version = "0.4.1" }
 uselesskey-core-x509 = { path = "../uselesskey-core-x509", version = "0.4.1" }
 uselesskey-rsa = { path = "../uselesskey-rsa", version = "0.4.1" }
 uselesskey-jwk = { path = "../uselesskey-jwk", version = "0.4.1", optional = true }
-rcgen = "0.13"
+rcgen = "0.14.7"
 rustls-pki-types = "1"
 x509-parser = "0.18"
 time = "0.3"

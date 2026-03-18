@@ -18,7 +18,7 @@ authors.workspace = true
 uselesskey-core-hash = { workspace = true }
 rand_chacha10.workspace = true
 rand_core10.workspace = true
-rcgen = "0.13"
+rcgen = "0.14.7"
 time = "0.3"
 uselesskey-core-seed.workspace = true
 
