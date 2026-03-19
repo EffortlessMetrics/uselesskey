@@ -7,7 +7,7 @@
 //! - Chain negative fixtures (hostname mismatch, unknown CA, revoked leaf)
 //! - Writing certificates to tempfiles for external tools
 //!
-//! Run with: cargo run --example x509_certificates -p uselesskey --features x509
+//! Run with: cargo run -p uselesskey --example x509_certificates --features "x509"
 
 #[cfg(feature = "x509")]
 fn main() {
@@ -266,5 +266,5 @@ fn main() {
 #[cfg(not(feature = "x509"))]
 fn main() {
     eprintln!("Enable required feature to run this example:");
-    eprintln!("  cargo run --example x509_certificates -p uselesskey --features x509");
+    eprintln!("  cargo run -p uselesskey --example x509_certificates --features \"x509\"");
 }

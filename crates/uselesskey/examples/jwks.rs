@@ -1,3 +1,10 @@
+//! Demonstrates building a JWKS from RSA and ECDSA public keys.
+//!
+//! Run with:
+//! ```sh
+//! cargo run -p uselesskey --example jwks --features "rsa,ecdsa,jwk"
+//! ```
+
 #[cfg(all(feature = "jwk", feature = "rsa", feature = "ecdsa"))]
 fn main() {
     use uselesskey::jwk::JwksBuilder;
@@ -17,5 +24,6 @@ fn main() {
 
 #[cfg(not(all(feature = "jwk", feature = "rsa", feature = "ecdsa")))]
 fn main() {
-    eprintln!("Enable 'jwk', 'rsa', and 'ecdsa' features to run this example.");
+    eprintln!("Enable 'jwk', 'rsa', and 'ecdsa' features to run this example:");
+    eprintln!("  cargo run -p uselesskey --example jwks --features \"rsa,ecdsa,jwk\"");
 }

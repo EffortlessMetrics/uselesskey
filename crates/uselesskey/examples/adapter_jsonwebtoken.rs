@@ -3,7 +3,7 @@
 //! Demonstrates signing and verifying JWTs using uselesskey fixtures
 //! with the popular `jsonwebtoken` crate via `uselesskey-jsonwebtoken`.
 //!
-//! Run with: cargo run -p uselesskey --example adapter_jsonwebtoken --features full
+//! Run with: cargo run -p uselesskey --example adapter_jsonwebtoken --features "rsa,ecdsa,ed25519,hmac"
 
 #[cfg(all(
     feature = "rsa",
@@ -147,5 +147,7 @@ fn main() {
 )))]
 fn main() {
     eprintln!("Enable all key type features:");
-    eprintln!("  cargo run -p uselesskey --example adapter_jsonwebtoken --features full");
+    eprintln!(
+        "  cargo run -p uselesskey --example adapter_jsonwebtoken --features \"rsa,ecdsa,ed25519,hmac\""
+    );
 }

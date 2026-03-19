@@ -3,7 +3,7 @@
 //! Demonstrates how deterministic derivation works: same seed + same label +
 //! same spec always produces the same key, regardless of call order.
 //!
-//! Run with: cargo run -p uselesskey --example deterministic --features full
+//! Run with: cargo run -p uselesskey --example deterministic --features rsa
 
 #[cfg(feature = "rsa")]
 fn main() {
@@ -117,5 +117,5 @@ fn main() {
 #[cfg(not(feature = "rsa"))]
 fn main() {
     eprintln!("Enable 'rsa' feature:");
-    eprintln!("  cargo run -p uselesskey --example deterministic --features full");
+    eprintln!("  cargo run -p uselesskey --example deterministic --features rsa");
 }

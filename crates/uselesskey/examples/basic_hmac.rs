@@ -3,7 +3,7 @@
 //! Demonstrates generating HMAC secrets of different sizes and
 //! accessing them as raw bytes and (with `jwk` feature) as JWK/JWKS.
 //!
-//! Run with: cargo run -p uselesskey --example basic_hmac --features full
+//! Run with: cargo run -p uselesskey --example basic_hmac --features "hmac,jwk"
 
 #[cfg(all(feature = "hmac", feature = "jwk"))]
 fn main() {
@@ -67,5 +67,5 @@ fn main() {
 #[cfg(not(all(feature = "hmac", feature = "jwk")))]
 fn main() {
     eprintln!("Enable 'hmac' and 'jwk' features:");
-    eprintln!("  cargo run -p uselesskey --example basic_hmac --features full");
+    eprintln!("  cargo run -p uselesskey --example basic_hmac --features \"hmac,jwk\"");
 }

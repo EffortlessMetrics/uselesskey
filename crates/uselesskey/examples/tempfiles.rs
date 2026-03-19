@@ -1,3 +1,10 @@
+//! X.509 file-writing example for cert, key, and identity tempfiles.
+//!
+//! Run with:
+//! ```sh
+//! cargo run -p uselesskey --example tempfiles --features "x509"
+//! ```
+
 #[cfg(feature = "x509")]
 fn main() {
     use uselesskey::{Factory, X509FactoryExt, X509Spec};
@@ -16,5 +23,6 @@ fn main() {
 
 #[cfg(not(feature = "x509"))]
 fn main() {
-    eprintln!("Enable the 'x509' feature to run this example.");
+    eprintln!("Enable the 'x509' feature to run this example:");
+    eprintln!("  cargo run -p uselesskey --example tempfiles --features \"x509\"");
 }

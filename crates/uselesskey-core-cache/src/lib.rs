@@ -1,4 +1,4 @@
-//! Per-process artifact cache keyed by [`ArtifactId`].
+//! Per-factory artifact cache keyed by [`ArtifactId`].
 //!
 //! Stores generated fixtures behind `Arc<dyn Any>` so expensive key generation
 //! (especially RSA) only happens once per unique identity tuple. Thread-safe:

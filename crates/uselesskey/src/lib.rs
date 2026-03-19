@@ -47,7 +47,7 @@
 //! # fn main() {
 //! use uselesskey::{Factory, RsaFactoryExt, RsaSpec};
 //!
-//! // Random mode: each run produces different keys (still cached per-process)
+//! // Random mode: each run produces different keys (still cached per-factory)
 //! let fx = Factory::random();
 //! let keypair = fx.rsa("my-service", RsaSpec::rs256());
 //!

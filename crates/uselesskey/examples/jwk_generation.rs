@@ -3,7 +3,7 @@
 //! Demonstrates building individual JWKs, combining them into a JWKS using
 //! `JwksBuilder`, and inspecting key metadata — without printing key material.
 //!
-//! Run with: cargo run -p uselesskey --example jwk_generation --features full
+//! Run with: cargo run -p uselesskey --example jwk_generation --features "ecdsa,ed25519,hmac,rsa,jwk"
 
 #[cfg(all(
     feature = "jwk",
@@ -152,5 +152,7 @@ fn main() {
 )))]
 fn main() {
     eprintln!("Enable required features:");
-    eprintln!("  cargo run -p uselesskey --example jwk_generation --features full");
+    eprintln!(
+        "  cargo run -p uselesskey --example jwk_generation --features \"ecdsa,ed25519,hmac,rsa,jwk\""
+    );
 }

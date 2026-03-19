@@ -8,7 +8,7 @@
 //!
 //! Run with:
 //! ```sh
-//! cargo run --example jwt_rs256_jwks --features "rsa jwk"
+//! cargo run -p uselesskey --example jwt_rs256_jwks --features "rsa,jwk"
 //! ```
 
 use std::error::Error;
@@ -18,7 +18,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     use uselesskey::{Factory, RsaFactoryExt, RsaSpec, Seed};
 
     // ==========================================================================
-    // Random mode: each run produces different keys (still cached per-process)
+    // Random mode: each run produces different keys (still cached per-factory)
     // ==========================================================================
     println!("=== Random Mode ===\n");
 
@@ -69,5 +69,5 @@ fn main() -> Result<(), Box<dyn Error>> {
 #[cfg(not(all(feature = "rsa", feature = "jwk")))]
 fn main() {
     eprintln!("Enable 'rsa' and 'jwk' features to run this example:");
-    eprintln!("  cargo run --example jwt_rs256_jwks --features \"rsa jwk\"");
+    eprintln!("  cargo run -p uselesskey --example jwt_rs256_jwks --features \"rsa,jwk\"");
 }

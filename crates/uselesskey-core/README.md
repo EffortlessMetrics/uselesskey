@@ -16,7 +16,7 @@ primitives.
 
 - `Factory` in random and deterministic modes
 - Order-independent derivation from `(domain, label, spec, variant)`
-- Per-process cache for generated artifacts (powered by `uselesskey-core-cache`)
+- Per-factory cache for generated artifacts (powered by `uselesskey-core-cache`)
 - Generic negative helpers for corrupted PEM / truncated DER
 - Tempfile sinks when `std` is enabled (implemented in `uselesskey-core-sink`)
 
@@ -38,7 +38,7 @@ let fx = Factory::deterministic(seed);
 
 assert!(matches!(fx.mode(), Mode::Deterministic { .. }));
 
-// Random mode: different keys each run (still cached per-process)
+// Random mode: different keys each run (still cached per-factory)
 let fx = Factory::random();
 ```
 

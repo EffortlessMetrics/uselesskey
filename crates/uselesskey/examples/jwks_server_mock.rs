@@ -9,7 +9,7 @@
 //! - Simulate key rotation by building JWKS with old and new keys
 //! - Verify your code handles multi-algorithm JWKS correctly
 //!
-//! Run with: cargo run --example jwks_server_mock -p uselesskey --features "rsa,ecdsa,ed25519,jwk"
+//! Run with: cargo run -p uselesskey --example jwks_server_mock --features "rsa,ecdsa,ed25519,jwk"
 
 #[cfg(all(
     feature = "rsa",
@@ -218,6 +218,6 @@ fn main() {
 fn main() {
     eprintln!("Enable required features to run this example:");
     eprintln!(
-        "  cargo run --example jwks_server_mock -p uselesskey --features \"rsa,ecdsa,ed25519,jwk\""
+        "  cargo run -p uselesskey --example jwks_server_mock --features \"rsa,ecdsa,ed25519,jwk\""
     );
 }

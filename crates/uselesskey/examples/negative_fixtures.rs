@@ -6,7 +6,7 @@
 //! - Using corrupt PEM variants and truncated DER
 //! - Tempfile outputs for testing external tools
 //!
-//! Run with: cargo run --example negative_fixtures --features x509
+//! Run with: cargo run -p uselesskey --example negative_fixtures --features "x509"
 
 #[cfg(feature = "x509")]
 use std::io::Read;
@@ -107,5 +107,5 @@ fn main() {
 #[cfg(not(feature = "x509"))]
 fn main() {
     eprintln!("Enable required feature to run this example:");
-    eprintln!("  cargo run --example negative_fixtures --features \"x509\"");
+    eprintln!("  cargo run -p uselesskey --example negative_fixtures --features \"x509\"");
 }

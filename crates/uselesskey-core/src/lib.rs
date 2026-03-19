@@ -16,7 +16,7 @@
 //! The core concept is the [`Factory`], which manages artifact generation and caching.
 //! It operates in two modes:
 //!
-//! - **Random mode**: Artifacts are generated with OS randomness, cached per-process.
+//! - **Random mode**: Artifacts are generated with OS randomness, cached per-factory.
 //! - **Deterministic mode**: Artifacts are derived from a master seed using BLAKE3,
 //!   ensuring the same `(domain, label, spec, variant)` always produces the same artifact.
 //!

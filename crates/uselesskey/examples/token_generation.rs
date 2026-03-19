@@ -3,7 +3,7 @@
 //! Demonstrates generating realistic test-token shapes that look like
 //! real secrets but are deterministic and safe for version control.
 //!
-//! Run with: cargo run -p uselesskey --example token_generation --features full
+//! Run with: cargo run -p uselesskey --example token_generation --features token
 
 #[cfg(feature = "token")]
 fn main() {
@@ -78,5 +78,5 @@ fn main() {
 #[cfg(not(feature = "token"))]
 fn main() {
     eprintln!("Enable 'token' feature:");
-    eprintln!("  cargo run -p uselesskey --example token_generation --features full");
+    eprintln!("  cargo run -p uselesskey --example token_generation --features token");
 }

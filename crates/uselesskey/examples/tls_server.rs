@@ -5,7 +5,7 @@
 //! - Accessing certificates in PEM/DER formats
 //! - Creating self-signed certificates for testing
 //!
-//! Run with: cargo run --example tls_server --features "x509"
+//! Run with: cargo run -p uselesskey --example tls_server --features "x509"
 
 #[cfg(feature = "x509")]
 fn main() {
@@ -78,5 +78,5 @@ fn main() {
 #[cfg(not(feature = "x509"))]
 fn main() {
     eprintln!("Enable required feature to run this example:");
-    eprintln!("  cargo run --example tls_server --features \"x509\"");
+    eprintln!("  cargo run -p uselesskey --example tls_server --features \"x509\"");
 }

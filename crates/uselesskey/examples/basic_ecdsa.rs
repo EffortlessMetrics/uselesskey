@@ -3,7 +3,7 @@
 //! Demonstrates generating ECDSA keypairs for P-256 (ES256) and P-384 (ES384),
 //! and accessing them in PEM, DER, and JWK formats.
 //!
-//! Run with: cargo run -p uselesskey --example basic_ecdsa --features full
+//! Run with: cargo run -p uselesskey --example basic_ecdsa --features "ecdsa,jwk"
 
 #[cfg(all(feature = "ecdsa", feature = "jwk"))]
 fn main() {
@@ -84,5 +84,5 @@ fn main() {
 #[cfg(not(all(feature = "ecdsa", feature = "jwk")))]
 fn main() {
     eprintln!("Enable 'ecdsa' and 'jwk' features:");
-    eprintln!("  cargo run -p uselesskey --example basic_ecdsa --features full");
+    eprintln!("  cargo run -p uselesskey --example basic_ecdsa --features \"ecdsa,jwk\"");
 }
