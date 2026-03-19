@@ -2,27 +2,32 @@
 
 This roadmap reflects the strategic direction for uselesskey as a **test-fixture layer** (not a crypto library).
 
-## Now (v0.4.1)
+Execution details for the next cycle are collected in [`roadmap-followups-0251.md`](roadmap-followups-0251.md).
 
-*Release polish and publish hygiene*
+## Now (v0.5.0)
 
-- [x] Rust 1.92 / edition 2024 line is green on `main`
-- [x] Fixture families expose consistent `label()` / `spec()` accessors
-- [x] Publish preflight catches stale versioned dependency snippets in docs
-- [x] README and crate README dependency snippets track the current release line
+*Adapter wave 1*
 
-## Next (v0.5.0+)
+- [ ] Publish adapter acceptance criteria ADR
+- [ ] Add reusable adapter crate template/checklist
+- [ ] Ship 2 additional adapter microcrates for ecosystem-specific test harnesses
+- [ ] Add runnable examples and smoke coverage for each new adapter
+- [ ] Keep release/publish hygiene green for the expanded crate set
 
-*Planned - Next wave of improvements*
+## Next (v0.5.1 / v0.5.2)
 
-- [ ] Additional adapter microcrates for ecosystem-specific test harnesses
+*Core depth and observability*
+
+- [ ] Additional negative fixture variants for X.509, JWK/JWKS, and token-shape fixtures
+- [ ] Performance benchmarks for generation and cache-hit paths
 
 ## Later (Backlog)
 
 *Under evaluation - No commitment*
 
-- [ ] Additional negative fixture variants
-- [ ] Performance benchmarks for key generation paths
+- [ ] Additional adapter microcrates beyond wave 1
+- [ ] Framework-specific shims when existing adapters already provide the native types
+- [ ] Performance regression thresholds in scheduled CI after baseline capture
 
 ## Shipped
 
