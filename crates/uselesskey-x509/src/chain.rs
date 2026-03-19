@@ -8,8 +8,8 @@ use rand_core::RngCore;
 use rand_core::SeedableRng;
 use rcgen::{
     BasicConstraints, CertificateParams, CertificateRevocationListParams, DnType,
-    ExtendedKeyUsagePurpose, IsCa, KeyPair, KeyUsagePurpose, PKCS_RSA_SHA256, RevocationReason,
-    RevokedCertParams,
+    ExtendedKeyUsagePurpose, IsCa, Issuer, KeyPair, KeyUsagePurpose, PKCS_RSA_SHA256,
+    RevocationReason, RevokedCertParams,
 };
 use rustls_pki_types::PrivatePkcs8KeyDer;
 use time::Duration as TimeDuration;
@@ -627,8 +627,9 @@ fn load_chain_inner(
             int_params.not_before + TimeDuration::days(spec.intermediate_validity_days as i64);
         int_params.serial_number = Some(next_serial_number(&mut rng));
 
+        let root_issuer = Issuer::from_params(&root_params, &root_kp);
         let int_cert = int_params
-            .signed_by(&int_kp, &root_cert, &root_kp)
+            .signed_by(&int_kp, &root_issuer)
             .expect("intermediate cert gen");
 
         // --- Leaf ---
@@ -667,8 +668,9 @@ fn load_chain_inner(
             .clone()
             .expect("leaf serial number");
 
+        let int_issuer = Issuer::from_params(&int_params, &int_kp);
         let leaf_cert = leaf_params
-            .signed_by(&leaf_kp, &int_cert, &int_kp)
+            .signed_by(&leaf_kp, &int_issuer)
             .expect("leaf cert gen");
 
         // --- CRL (only for revoked_leaf variant) ---
@@ -691,7 +693,8 @@ fn load_chain_inner(
                 key_identifier_method: rcgen::KeyIdMethod::Sha256,
             };
 
-            let crl = crl_params.signed_by(&int_cert, &int_kp).expect("CRL gen");
+            let int_issuer = Issuer::from_params(&int_params, &int_kp);
+            let crl = crl_params.signed_by(&int_issuer).expect("CRL gen");
 
             (
                 Some(Arc::from(crl.der().as_ref())),

@@ -599,7 +599,7 @@ mod hmac_jwk_consistency {
         // Both should produce identical tags
         assert_eq!(
             ring_tag.as_ref(),
-            rc_tag.as_slice(),
+            &rc_tag[..],
             "ring and rustcrypto HMAC tags must be identical for the same key"
         );
     }
@@ -616,7 +616,7 @@ mod hmac_jwk_consistency {
         rc_mac.update(msg);
         let rc_tag = rc_mac.finalize().into_bytes();
 
-        assert_eq!(ring_tag.as_ref(), rc_tag.as_slice());
+        assert_eq!(ring_tag.as_ref(), &rc_tag[..]);
     }
 
     #[test]
@@ -631,7 +631,7 @@ mod hmac_jwk_consistency {
         rc_mac.update(msg);
         let rc_tag = rc_mac.finalize().into_bytes();
 
-        assert_eq!(ring_tag.as_ref(), rc_tag.as_slice());
+        assert_eq!(ring_tag.as_ref(), &rc_tag[..]);
     }
 
     #[test]
