@@ -235,6 +235,8 @@ Add workflow that runs benchmark suite on a controlled schedule / manual dispatc
 - Workflow executes successfully on a known branch.
 - Baseline report committed and linked from docs.
 
+## Milestone: release governance
+
 ### Issue 14 — release: add release category configuration
 **Title:** `release: add release note categories and post-release checklist`  
 **Body:**  
