@@ -30,9 +30,15 @@ single source of truth.
 ## Dry run
 
 ```bash
-cargo xtask publish-check       # dry-run publish in dependency order
-cargo xtask publish-preflight   # metadata validation + cargo package
+cargo xtask publish-preflight   # metadata + doc snippet versions + cargo package
+cargo xtask publish-check       # cargo publish --dry-run in dependency order
 ```
+
+Before tagging, make sure the release PR has already:
+
+- bumped publishable crate versions
+- updated `CHANGELOG.md`
+- refreshed versioned `uselesskey*` dependency snippets in README/doc examples
 
 ## Publish
 

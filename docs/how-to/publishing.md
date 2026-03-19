@@ -20,7 +20,8 @@ These are the minimum gates to treat as non-negotiable for a publishable workspa
 - `cargo xtask test`
 - `cargo xtask feature-matrix` (or your feature sweep)
 - `cargo xtask bdd` (use `--release` if crypto/keygen makes debug too slow)
-- `cargo xtask publish-check` (the crates.io preflight)
+- `cargo xtask publish-preflight` (metadata, doc snippet versions, cargo package)
+- `cargo xtask publish-check` (cargo publish dry-run in dependency order)
 - `cargo fuzz build` (compile-only in CI; running fuzz can be scheduled/nightly)
 
 If CI does not run one of these, it is not a gate.
@@ -143,15 +144,16 @@ Verify with `cargo package --list`.
 
 ### The one command that matters
 
-`cargo xtask publish-check` should:
+`cargo xtask publish-preflight` should:
 
 - enumerate publishable crates in dependency order
+- validate versioned `uselesskey*` dependency snippets in release-facing docs
 - run `cargo package` for each
 - verify readmes exist and are included
 - fail when packaged crates depend on unresolved workspace paths
 - optionally verify docs.rs feature policy
 
-If `publish-check` does not call `cargo package`, it is not a preflight.
+If `publish-preflight` does not call `cargo package`, it is not a preflight.
 
 ### Extra reality checks
 
@@ -197,6 +199,7 @@ Recommended implementation:
 - `cargo xtask test`
 - `cargo xtask feature-matrix`
 - `cargo xtask bdd`
+- `cargo xtask publish-preflight`
 - `cargo xtask publish-check`
 - `cargo fuzz build`
 
@@ -220,7 +223,7 @@ On `vX.Y.Z` tags:
 Recommended flow:
 
 1. bump versions
-2. update changelogs
+2. update changelogs and versioned dependency snippets
 3. merge to `main` with green CI
 4. tag `vX.Y.Z`
 5. publish in dependency order

@@ -17,7 +17,7 @@ Converts fixture keypairs into native ring signing key types for tests that call
 
 ```toml
 [dev-dependencies]
-uselesskey-ring = { version = "0.4.0", features = ["rsa"] }
+uselesskey-ring = { version = "0.4.1", features = ["rsa"] }
 ```
 
 ```rust

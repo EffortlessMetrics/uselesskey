@@ -8,6 +8,7 @@ use anyhow::{Context, Result, bail};
 use clap::{Parser, Subcommand};
 use indicatif::{ProgressBar, ProgressStyle};
 use owo_colors::OwoColorize;
+use regex::Regex;
 use uselesskey_feature_grid::{BDD_FEATURE_MATRIX, CORE_FEATURE_MATRIX};
 
 mod plan;
@@ -830,6 +831,11 @@ fn publish_preflight() -> Result<()> {
 
 fn run_publish_preflight(runner: &mut receipt::Runner) -> Result<()> {
     runner.step("preflight:metadata", None, check_crate_metadata)?;
+    runner.step(
+        "preflight:doc-versions",
+        None,
+        check_doc_dependency_versions,
+    )?;
     let mut first_err: Option<anyhow::Error> = None;
     for name in PUBLISH_CRATES {
         let step_name = format!("preflight:package:{name}");
@@ -848,7 +854,7 @@ fn run_publish_preflight(runner: &mut receipt::Runner) -> Result<()> {
                 eprintln!("  [warn] {name}: skipped (workspace dep not yet on crates.io)");
                 return Ok(());
             }
-            bail!("cargo package -p {name} failed:\n{stderr}");
+            bail!("cargo package --no-verify -p {name} failed:\n{stderr}");
         }) && first_err.is_none()
         {
             first_err = Some(e);
@@ -927,6 +933,120 @@ fn check_crate_metadata() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn check_doc_dependency_versions() -> Result<()> {
+    let versions = workspace_publish_versions()?;
+    let files = versioned_dependency_snippet_files()?;
+    let errors = collect_dependency_version_snippet_errors(&files, &versions)?;
+
+    if !errors.is_empty() {
+        bail!(
+            "versioned dependency snippet errors:\n  {}",
+            errors.join("\n  ")
+        );
+    }
+
+    Ok(())
+}
+
+fn workspace_publish_versions() -> Result<BTreeMap<String, String>> {
+    let output = Command::new("cargo")
+        .args(["metadata", "--format-version", "1", "--no-deps"])
+        .output()
+        .context("failed to run `cargo metadata` for doc version checks")?;
+
+    if !output.status.success() {
+        bail!(
+            "`cargo metadata` failed during doc version checks: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    let meta: serde_json::Value = serde_json::from_slice(&output.stdout)
+        .context("failed to parse cargo metadata JSON for doc version checks")?;
+    let packages = meta["packages"]
+        .as_array()
+        .context("missing 'packages' in cargo metadata for doc version checks")?;
+
+    let mut versions = BTreeMap::new();
+    for crate_name in PUBLISH_CRATES {
+        let pkg = packages
+            .iter()
+            .find(|p| p["name"].as_str().is_some_and(|n| n == *crate_name))
+            .with_context(|| format!("{crate_name}: not found in workspace metadata"))?;
+        let version = pkg["version"]
+            .as_str()
+            .with_context(|| format!("{crate_name}: missing `version` in workspace metadata"))?;
+        versions.insert((*crate_name).to_string(), version.to_string());
+    }
+
+    Ok(versions)
+}
+
+fn versioned_dependency_snippet_files() -> Result<Vec<PathBuf>> {
+    let workspace_root = workspace_root_path();
+    let mut files = vec![
+        workspace_root.join("README.md"),
+        workspace_root.join("crates/uselesskey/src/lib.rs"),
+    ];
+
+    for entry in fs::read_dir(workspace_root.join("crates"))
+        .context("failed to read crates dir for doc version checks")?
+    {
+        let entry = entry.context("failed to read crates dir entry for doc version checks")?;
+        let readme = entry.path().join("README.md");
+        if readme.is_file() {
+            files.push(readme);
+        }
+    }
+
+    files.sort();
+    files.dedup();
+    Ok(files)
+}
+
+fn collect_dependency_version_snippet_errors(
+    files: &[PathBuf],
+    versions: &BTreeMap<String, String>,
+) -> Result<Vec<String>> {
+    let dep_re = Regex::new(
+        r#"(?s)\b(?P<name>uselesskey(?:-[a-z0-9-]+)?)\s*=\s*(?:\{[^}]*?\bversion\s*=\s*"(?P<inline>[^"]+)"[^}]*\}|"(?P<bare>[^"]+)")"#,
+    )
+    .expect("dependency version regex is valid");
+
+    let mut errors = Vec::new();
+
+    for path in files {
+        let content = fs::read_to_string(path)
+            .with_context(|| format!("failed to read {}", path.display()))?;
+
+        for caps in dep_re.captures_iter(&content) {
+            let name = caps.name("name").expect("name capture").as_str();
+            let Some(expected) = versions.get(name) else {
+                errors.push(format!(
+                    "{}: dependency snippet references unknown workspace crate `{name}`",
+                    path.display()
+                ));
+                continue;
+            };
+
+            let found = caps
+                .name("inline")
+                .or_else(|| caps.name("bare"))
+                .expect("version capture")
+                .as_str();
+
+            if found != expected {
+                errors.push(format!(
+                    "{}: `{name}` example uses version `{found}`, expected `{expected}`",
+                    path.display()
+                ));
+            }
+        }
+    }
+
+    Ok(errors)
 }
 
 fn run_mutants(crates: &[&str]) -> Result<()> {
@@ -1065,6 +1185,7 @@ fn run_pr_plan(
         runner.skip("root-tests", reason.clone());
         runner.skip("xtask-tests", reason.clone());
         runner.skip("preflight:metadata", reason.clone());
+        runner.skip("preflight:doc-versions", reason.clone());
         for name in PUBLISH_CRATES {
             runner.skip(&format!("preflight:package:{name}"), reason.clone());
         }
@@ -1191,6 +1312,7 @@ fn run_pr_plan(
         run_publish_preflight(runner)?;
     } else {
         runner.skip("preflight:metadata", Some("no cargo changes".into()));
+        runner.skip("preflight:doc-versions", Some("no cargo changes".into()));
         for name in PUBLISH_CRATES {
             runner.skip(
                 &format!("preflight:package:{name}"),
@@ -1506,6 +1628,13 @@ fn workspace_path(rel: &str) -> PathBuf {
     }
 
     cwd_rel
+}
+
+fn workspace_root_path() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).parent().map_or_else(
+        || PathBuf::from(env!("CARGO_MANIFEST_DIR")),
+        |p| p.to_path_buf(),
+    )
 }
 
 fn nextest() -> Result<()> {
@@ -1827,6 +1956,22 @@ mod tests {
         }
     }
 
+    fn assert_versioned_dependency_snippet_files_from_cwd(
+        cwd: &std::path::Path,
+        workspace_root: &std::path::Path,
+    ) {
+        let _cwd = CwdGuard::new(cwd);
+        let files = versioned_dependency_snippet_files().expect("collect versioned snippet files");
+
+        assert!(files.iter().all(|path| path.is_absolute()));
+        assert!(
+            files.contains(&workspace_root.join("README.md")),
+            "workspace root README should be included"
+        );
+        assert!(files.contains(&workspace_root.join("crates/uselesskey/src/lib.rs")));
+        assert!(files.contains(&workspace_root.join("crates/uselesskey/README.md")));
+    }
+
     #[test]
     fn resolve_base_ref_prefers_xtask_base_ref() {
         let _lock = ENV_LOCK.lock().unwrap();
@@ -1939,6 +2084,22 @@ mod tests {
         let _cwd = CwdGuard::new(dir.path());
         let targets = list_fuzz_targets().expect("list targets");
         assert!(targets.is_empty());
+    }
+
+    #[test]
+    fn versioned_dependency_snippet_files_uses_workspace_root_from_crate_path() {
+        let _cwd_lock = CWD_LOCK.lock().unwrap();
+        let workspace_root = workspace_root_path();
+        let crate_dir = workspace_root.join("crates").join("uselesskey");
+        assert_versioned_dependency_snippet_files_from_cwd(&crate_dir, &workspace_root);
+    }
+
+    #[test]
+    fn versioned_dependency_snippet_files_uses_workspace_root_from_xtask_path() {
+        let _cwd_lock = CWD_LOCK.lock().unwrap();
+        let workspace_root = workspace_root_path();
+        let xtask_dir = workspace_root.join("xtask");
+        assert_versioned_dependency_snippet_files_from_cwd(&xtask_dir, &workspace_root);
     }
 
     #[test]
@@ -2106,14 +2267,57 @@ end_of_record
 
     #[test]
     fn unpublished_workspace_dep_error_matches_no_matching_package() {
-        let stderr = "error: no matching package named `uselesskey-core-hash` found\nlocation searched: crates.io index\nrequired by package `uselesskey-core-id v0.4.0`";
+        let stderr = "error: no matching package named `uselesskey-core-hash` found\nlocation searched: crates.io index\nrequired by package `uselesskey-core-id v0.4.1`";
         assert!(is_unpublished_workspace_dep_error(stderr));
     }
 
     #[test]
     fn unpublished_workspace_dep_error_matches_version_mismatch_form() {
-        let stderr = "error: failed to prepare local package for uploading\n\nCaused by:\n  failed to select a version for the requirement `uselesskey-core-hash = \"^0.4.0\"`\n  candidate versions found which didn't match: 0.3.0\n  location searched: crates.io index\n  required by package `uselesskey-core-id v0.4.0`";
+        let stderr = "error: failed to prepare local package for uploading\n\nCaused by:\n  failed to select a version for the requirement `uselesskey-core-hash = \"^0.4.1\"`\n  candidate versions found which didn't match: 0.4.0\n  location searched: crates.io index\n  required by package `uselesskey-core-id v0.4.1`";
         assert!(is_unpublished_workspace_dep_error(stderr));
+    }
+
+    #[test]
+    fn dependency_version_snippet_errors_accept_matching_versions() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let readme = dir.path().join("README.md");
+        fs::write(
+            &readme,
+            r#"[dev-dependencies]
+uselesskey = { version = "0.4.1", features = ["rsa"] }
+uselesskey-tonic = "0.4.1"
+"#,
+        )
+        .unwrap();
+
+        let versions = BTreeMap::from([
+            ("uselesskey".to_string(), "0.4.1".to_string()),
+            ("uselesskey-tonic".to_string(), "0.4.1".to_string()),
+        ]);
+
+        let errors =
+            collect_dependency_version_snippet_errors(&[readme], &versions).expect("collect");
+        assert!(errors.is_empty(), "unexpected errors: {errors:?}");
+    }
+
+    #[test]
+    fn dependency_version_snippet_errors_report_mismatches() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let readme = dir.path().join("README.md");
+        fs::write(
+            &readme,
+            r#"[dev-dependencies]
+uselesskey = { version = "0.4.0", features = ["rsa"] }
+"#,
+        )
+        .unwrap();
+
+        let versions = BTreeMap::from([("uselesskey".to_string(), "0.4.1".to_string())]);
+
+        let errors =
+            collect_dependency_version_snippet_errors(&[readme], &versions).expect("collect");
+        assert_eq!(errors.len(), 1);
+        assert!(errors[0].contains("expected `0.4.1`"), "got: {}", errors[0]);
     }
 
     #[test]

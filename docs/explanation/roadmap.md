@@ -2,15 +2,14 @@
 
 This roadmap reflects the strategic direction for uselesskey as a **test-fixture layer** (not a crypto library).
 
-## Now (v0.4.0)
+## Now (v0.4.1)
 
-*In progress - RNG boundary cleanup and API hardening*
+*Release polish and publish hygiene*
 
-- [ ] Hide rand ABI behind seed boundaries (PR #243)
-- [ ] Public API no longer leaks rand types
-- [ ] Seed becomes the stable boundary between user code and RNG implementation
-
-**PR Reference:** [#243](https://github.com/EffortlessMetrics/uselesskey/pull/243)
+- [x] Rust 1.92 / edition 2024 line is green on `main`
+- [x] Fixture families expose consistent `label()` / `spec()` accessors
+- [x] Publish preflight catches stale versioned dependency snippets in docs
+- [x] README and crate README dependency snippets track the current release line
 
 ## Next (v0.5.0+)
 
@@ -27,7 +26,17 @@ This roadmap reflects the strategic direction for uselesskey as a **test-fixture
 
 ## Shipped
 
-### v0.3.0 (2025-03)
+### v0.4.0 (2026-03)
+
+*RNG boundary cleanup and API hardening*
+
+- [x] Hide rand ABI behind seed boundaries
+- [x] Public API no longer leaks rand types
+- [x] `Seed` is now the stable boundary between user code and RNG
+  implementation
+- [x] Support crates and fuzz targets consume the seed-oriented helper APIs
+
+### v0.3.0 (2026-03)
 
 *Façade ergonomics and lightweight token path*
 

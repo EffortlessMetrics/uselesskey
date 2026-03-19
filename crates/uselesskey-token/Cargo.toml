@@ -1,6 +1,6 @@
 [package]
 name = "uselesskey-token"
-version = "0.4.0"
+version = "0.4.1"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
@@ -15,7 +15,7 @@ documentation = "https://docs.rs/uselesskey-token"
 authors.workspace = true
 
 [dependencies]
-uselesskey-core = { path = "../uselesskey-core", version = "0.4.0" }
+uselesskey-core = { path = "../uselesskey-core", version = "0.4.1" }
 uselesskey-core-token.workspace = true
 uselesskey-token-spec.workspace = true
 

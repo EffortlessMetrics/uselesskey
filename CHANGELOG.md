@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-03-17
+
+### Added
+
+- Consistent `label()` / `spec()` accessors across RSA, ECDSA, Ed25519, HMAC,
+  token, and OpenPGP fixture types.
+- `cargo xtask publish-preflight` now validates versioned `uselesskey*`
+  dependency snippets in release-facing docs so stale README examples are
+  caught before publish.
+
+### Changed
+
+- Workspace manifests and versioned dependency snippets now target `0.4.1`
+  ahead of the release tag.
+- Release and roadmap docs now reflect the shipped RNG-boundary work and the
+  current publish flow.
+
+### Fixed
+
+- `rustfmt.toml` now explicitly matches the workspace's Rust 2024 edition.
+- `uselesskey-interop-tests` now explicitly forbids unsafe code like the rest
+  of the workspace.
+- Accessor mutation coverage is hardened, including the singleton Ed25519-spec
+  equivalent-mutant exclusion and a fast HMAC `kid()` regression killer.
+
 ## [0.4.0] - 2026-03-13
 
 ### Changed
@@ -290,7 +315,8 @@ Repository organised into four layers:
 - **Determinism regression** — hardcoded expected-value snapshots ensure
   derivation stability across releases
 
-[Unreleased]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.1.0...v0.2.0

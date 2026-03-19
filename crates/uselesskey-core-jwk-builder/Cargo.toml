@@ -1,6 +1,6 @@
 [package]
 name = "uselesskey-core-jwk-builder"
-version = "0.4.0"
+version = "0.4.1"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
@@ -15,8 +15,8 @@ documentation = "https://docs.rs/uselesskey-core-jwk-builder"
 authors.workspace = true
 
 [dependencies]
-uselesskey-core-jwk-shape = { path = "../uselesskey-core-jwk-shape", version = "0.4.0" }
-uselesskey-core-jwks-order = { path = "../uselesskey-core-jwks-order", version = "0.4.0" }
+uselesskey-core-jwk-shape = { path = "../uselesskey-core-jwk-shape", version = "0.4.1" }
+uselesskey-core-jwks-order = { path = "../uselesskey-core-jwks-order", version = "0.4.1" }
 serde_json.workspace = true
 
 [dev-dependencies]
