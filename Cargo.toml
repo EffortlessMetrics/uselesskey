@@ -147,7 +147,7 @@ rustls = { version = "0.23.37", default-features = false, features = ["std", "tl
 rustls-pki-types = "1.14.0"
 
 # Crypto backends
-aws-lc-rs = { version = "1.16.1", default-features = false, features = ["alloc", "non-fips"] }
+aws-lc-rs = { version = "1.16.2", default-features = false, features = ["alloc", "non-fips"] }
 ring = { version = "0.17.14", default-features = false, features = ["std"] }
 
 [profile.dev]
