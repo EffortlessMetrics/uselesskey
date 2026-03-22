@@ -1,0 +1,366 @@
+{
+  "workspace_crates": [
+    {
+      "name": "uselesskey",
+      "description": "Public facade — re-exports all key types and traits behind feature flags"
+    },
+    {
+      "name": "uselesskey-core",
+      "description": "Factory, deterministic derivation, caching, and negative-fixture helpers"
+    },
+    {
+      "name": "uselesskey-rsa",
+      "description": "RSA 2048/3072/4096 keypairs (PKCS#8, SPKI, PEM, DER)"
+    },
+    {
+      "name": "uselesskey-ecdsa",
+      "description": "ECDSA P-256 / P-384 keypairs"
+    },
+    {
+      "name": "uselesskey-ed25519",
+      "description": "Ed25519 keypairs"
+    },
+    {
+      "name": "uselesskey-hmac",
+      "description": "HMAC HS256/HS384/HS512 secrets"
+    },
+    {
+      "name": "uselesskey-pgp",
+      "description": "OpenPGP key fixtures (armored + binary keyblocks)"
+    },
+    {
+      "name": "uselesskey-token",
+      "description": "API key, bearer token, and OAuth access-token fixtures"
+    },
+    {
+      "name": "uselesskey-jwk",
+      "description": "Typed JWK/JWKS models and builders"
+    },
+    {
+      "name": "uselesskey-x509",
+      "description": "X.509 self-signed certificates and certificate chains"
+    }
+  ],
+  "adapter_crates": [
+    {
+      "name": "uselesskey-jsonwebtoken",
+      "description": "`jsonwebtoken` `EncodingKey` / `DecodingKey`"
+    },
+    {
+      "name": "uselesskey-rustls",
+      "description": "`rustls` `ServerConfig` / `ClientConfig` builders"
+    },
+    {
+      "name": "uselesskey-tonic",
+      "description": "`tonic::transport` TLS identity / config for gRPC"
+    },
+    {
+      "name": "uselesskey-ring",
+      "description": "`ring` 0.17 native signing key types"
+    },
+    {
+      "name": "uselesskey-rustcrypto",
+      "description": "RustCrypto native types (`rsa::RsaPrivateKey`, etc.)"
+    },
+    {
+      "name": "uselesskey-aws-lc-rs",
+      "description": "`aws-lc-rs` native types"
+    }
+  ],
+  "runnable_examples": [
+    {
+      "name": "adapter_jsonwebtoken",
+      "path": "crates/uselesskey/examples/adapter_jsonwebtoken.rs",
+      "feature_set": "rsa,ecdsa,ed25519,hmac",
+      "description": "Sign and verify JWTs using `jsonwebtoken` crate integration",
+      "run_smoke": false
+    },
+    {
+      "name": "adapter_rustls",
+      "path": "crates/uselesskey/examples/adapter_rustls.rs",
+      "feature_set": "x509",
+      "description": "Convert X.509 fixtures into rustls `ServerConfig` / `ClientConfig`",
+      "run_smoke": true
+    },
+    {
+      "name": "basic_ecdsa",
+      "path": "crates/uselesskey/examples/basic_ecdsa.rs",
+      "feature_set": "ecdsa,jwk",
+      "description": "Generate ECDSA keypairs for P-256 and P-384 in PEM, DER, JWK",
+      "run_smoke": true
+    },
+    {
+      "name": "basic_ed25519",
+      "path": "crates/uselesskey/examples/basic_ed25519.rs",
+      "feature_set": "ed25519,jwk",
+      "description": "Generate Ed25519 keypairs in PEM, DER, and JWK formats",
+      "run_smoke": true
+    },
+    {
+      "name": "basic_hmac",
+      "path": "crates/uselesskey/examples/basic_hmac.rs",
+      "feature_set": "hmac,jwk",
+      "description": "Generate HMAC secrets for HS256, HS384, and HS512",
+      "run_smoke": true
+    },
+    {
+      "name": "basic_rsa",
+      "path": "crates/uselesskey/examples/basic_rsa.rs",
+      "feature_set": "rsa,jwk",
+      "description": "Generate RSA keypairs in PEM, DER, and JWK formats",
+      "run_smoke": true
+    },
+    {
+      "name": "basic_token",
+      "path": "crates/uselesskey/examples/basic_token.rs",
+      "feature_set": "token",
+      "description": "Generate API key, bearer token, and OAuth access-token fixtures",
+      "run_smoke": true
+    },
+    {
+      "name": "basic_usage",
+      "path": "crates/uselesskey/examples/basic_usage.rs",
+      "feature_set": "ecdsa,ed25519,rsa,jwk",
+      "description": "All-in-one: RSA, ECDSA, and Ed25519 fixture generation",
+      "run_smoke": false
+    },
+    {
+      "name": "deterministic",
+      "path": "crates/uselesskey/examples/deterministic.rs",
+      "feature_set": "rsa",
+      "description": "Reproducible fixtures from seeds - same seed always yields the same key",
+      "run_smoke": true
+    },
+    {
+      "name": "deterministic_mode",
+      "path": "crates/uselesskey/examples/deterministic_mode.rs",
+      "feature_set": "rsa,ecdsa,ed25519",
+      "description": "Order-independent deterministic derivation guarantees",
+      "run_smoke": false
+    },
+    {
+      "name": "jwk_generation",
+      "path": "crates/uselesskey/examples/jwk_generation.rs",
+      "feature_set": "ecdsa,ed25519,hmac,rsa,jwk",
+      "description": "Build JWKs and JWKS with `JwksBuilder` across key types",
+      "run_smoke": false
+    },
+    {
+      "name": "jwk_jwks",
+      "path": "crates/uselesskey/examples/jwk_jwks.rs",
+      "feature_set": "ecdsa,ed25519,hmac,rsa,jwk",
+      "description": "JWK sets from multiple key types with metadata inspection",
+      "run_smoke": false
+    },
+    {
+      "name": "jwks",
+      "path": "crates/uselesskey/examples/jwks.rs",
+      "feature_set": "rsa,ecdsa,jwk",
+      "description": "Build a JWKS from RSA and ECDSA public keys",
+      "run_smoke": false
+    },
+    {
+      "name": "jwks_server_mock",
+      "path": "crates/uselesskey/examples/jwks_server_mock.rs",
+      "feature_set": "rsa,ecdsa,ed25519,jwk",
+      "description": "Generate a JWKS response body for a mock `/.well-known/jwks.json` endpoint",
+      "run_smoke": false
+    },
+    {
+      "name": "jwt_rs256_jwks",
+      "path": "crates/uselesskey/examples/jwt_rs256_jwks.rs",
+      "feature_set": "rsa,jwk",
+      "description": "RSA keypairs with JWK/JWKS extraction for JWT verification flows",
+      "run_smoke": false
+    },
+    {
+      "name": "jwt_signing",
+      "path": "crates/uselesskey/examples/jwt_signing.rs",
+      "feature_set": "rsa,jwk",
+      "description": "JWT signing with deterministic RSA, ECDSA, and HMAC keys (ECDSA/HMAC optional)",
+           "run_smoke": false
+    },
+    {
+      "name": "negative_fixtures",
+      "path": "crates/uselesskey/examples/negative_fixtures.rs",
+      "feature_set": "x509",
+      "description": "Intentionally invalid certificates and keys for error-path testing",
+      "run_smoke": true
+    },
+    {
+      "name": "tempfile_paths",
+      "path": "crates/uselesskey/examples/tempfile_paths.rs",
+      "feature_set": "rsa,ed25519",
+      "description": "Write key fixtures to temporary files for path-based APIs",
+      "run_smoke": false
+    },
+    {
+      "name": "tempfiles",
+      "path": "crates/uselesskey/examples/tempfiles.rs",
+      "feature_set": "x509",
+      "description": "Write X.509 cert, key, and identity PEM to temp files",
+      "run_smoke": false
+    },
+    {
+      "name": "tls_server",
+      "path": "crates/uselesskey/examples/tls_server.rs",
+      "feature_set": "x509",
+      "description": "Certificate chain generation for TLS server testing",
+      "run_smoke": true
+    },
+    {
+      "name": "token_generation",
+      "path": "crates/uselesskey/examples/token_generation.rs",
+      "feature_set": "token",
+      "description": "Realistic API keys, bearer tokens, and OAuth tokens for tests",
+      "run_smoke": true
+    },
+    {
+      "name": "x509_certificates",
+      "path": "crates/uselesskey/examples/x509_certificates.rs",
+      "feature_set": "x509",
+      "description": "Self-signed certs, cert chains, and negative X.509 fixtures",
+      "run_smoke": true
+    }
+  ],
+  "facade_feature_matrix": [
+    {
+      "feature": "rsa",
+      "extension_trait": "RsaFactoryExt",
+      "algorithms": "RSA 2048/3072/4096 — PKCS#8, SPKI, PEM, DER",
+      "implies": "-"
+    },
+    {
+      "feature": "ecdsa",
+      "extension_trait": "EcdsaFactoryExt",
+      "algorithms": "P-256 (ES256), P-384 (ES384) — PKCS#8, SPKI",
+      "implies": "-"
+    },
+    {
+      "feature": "ed25519",
+      "extension_trait": "Ed25519FactoryExt",
+      "algorithms": "Ed25519 — PKCS#8, SPKI",
+      "implies": "-"
+    },
+    {
+      "feature": "hmac",
+      "extension_trait": "HmacFactoryExt",
+      "algorithms": "HS256, HS384, HS512",
+      "implies": "-"
+    },
+    {
+      "feature": "pgp",
+      "extension_trait": "PgpFactoryExt",
+      "algorithms": "OpenPGP RSA 2048/3072, Ed25519 — armored, binary",
+      "implies": "-"
+    },
+    {
+      "feature": "token",
+      "extension_trait": "TokenFactoryExt",
+      "algorithms": "API key, bearer access token, and OAuth access token",
+      "implies": "-"
+    },
+    {
+      "feature": "x509",
+      "extension_trait": "X509FactoryExt",
+      "algorithms": "Self-signed certs, cert chains, negative certs",
+      "implies": "rsa"
+    },
+    {
+      "feature": "jwk",
+      "extension_trait": "-",
+      "algorithms": "JWK/JWKS output for all enabled key types",
+      "implies": "-"
+    },
+    {
+      "feature": "all-keys",
+      "extension_trait": "-",
+      "algorithms": "(bundle)",
+      "implies": "rsa ecdsa ed25519 hmac pgp"
+    },
+    {
+      "feature": "full",
+      "extension_trait": "-",
+      "algorithms": "(everything)",
+      "implies": "all-keys token x509 jwk"
+    }
+  ],
+  "adapter_feature_matrix": [
+    {
+      "adapter": "uselesskey-jsonwebtoken",
+      "rsa": true,
+      "ecdsa": true,
+      "ed25519": true,
+      "hmac": true,
+      "x509_tls": false,
+      "extra_features": ""
+    },
+    {
+      "adapter": "uselesskey-ring",
+      "rsa": true,
+      "ecdsa": true,
+      "ed25519": true,
+      "hmac": false,
+      "x509_tls": false,
+      "extra_features": "-"
+    },
+    {
+      "adapter": "uselesskey-rustcrypto",
+      "rsa": true,
+      "ecdsa": true,
+      "ed25519": true,
+      "hmac": true,
+      "x509_tls": false,
+      "extra_features": ""
+    },
+    {
+      "adapter": "uselesskey-aws-lc-rs",
+      "rsa": true,
+      "ecdsa": true,
+      "ed25519": true,
+      "hmac": false,
+      "x509_tls": false,
+      "extra_features": "native (enables aws-lc-rs dep)"
+    },
+    {
+      "adapter": "uselesskey-rustls",
+      "rsa": true,
+      "ecdsa": true,
+      "ed25519": true,
+      "hmac": false,
+      "x509_tls": true,
+      "extra_features": "tls-config, rustls-ring, rustls-aws-lc-rs"
+    },
+    {
+      "adapter": "uselesskey-tonic",
+      "rsa": false,
+      "ecdsa": false,
+      "ed25519": false,
+      "hmac": false,
+      "x509_tls": true,
+      "extra_features": ""
+    }
+  ],
+  "dependency_snippets": [
+    {
+      "name": "Quick start (RSA)",
+      "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.4.1\", features = [\"rsa\"] }"
+    },
+    {
+      "name": "Token-only",
+      "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.4.1\", default-features = false, features = [\"token\"] }"
+    },
+    {
+      "name": "JWT/JWK",
+      "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.4.1\", features = [\"rsa\", \"jwk\"] }"
+    },
+    {
+      "name": "X.509 + rustls",
+      "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.4.1\", features = [\"x509\"] }\nuselesskey-rustls = { version = \"0.4.1\", features = [\"tls-config\", \"rustls-ring\"] }"
+    },
+    {
+      "name": "jsonwebtoken adapter",
+      "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.4.1\", features = [\"rsa\", \"ecdsa\", \"ed25519\", \"hmac\"] }\nuselesskey-jsonwebtoken = { version = \"0.4.1\" }"
+    }
+  ]
+}

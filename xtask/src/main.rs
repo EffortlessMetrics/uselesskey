@@ -13,6 +13,7 @@ use uselesskey_feature_grid::{BDD_FEATURE_MATRIX, CORE_FEATURE_MATRIX};
 
 mod plan;
 mod receipt;
+mod docs_sync;
 
 #[derive(Parser)]
 #[command(
@@ -53,6 +54,18 @@ enum Cmd {
     FeatureMatrix,
     /// Enforce no secret-shaped blobs in test/fixture paths.
     NoBlob,
+    /// Synchronize docs from metadata source.
+    DocsSync {
+        /// Verify generated output instead of writing files.
+        #[arg(long)]
+        check: bool,
+    },
+    /// Compile example list from metadata and optionally run curated examples.
+    ExamplesSmoke {
+        /// Run curated smoke examples after compile checks.
+        #[arg(long)]
+        run: bool,
+    },
     /// Run publish dry-runs for crates in dependency order.
     PublishCheck,
     /// Run PR-scoped tests based on git diff.
@@ -138,6 +151,8 @@ fn main() -> Result<()> {
         Cmd::Ci => ci(),
         Cmd::FeatureMatrix => feature_matrix_cmd(),
         Cmd::NoBlob => no_blob_gate(),
+        Cmd::DocsSync { check } => docs_sync::docs_sync_cmd(check),
+        Cmd::ExamplesSmoke { run } => docs_sync::examples_smoke_cmd(run),
         Cmd::PublishCheck => publish_check(),
         Cmd::Pr => pr(),
         Cmd::DepGuard => dep_guard(),
