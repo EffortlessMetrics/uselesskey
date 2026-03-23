@@ -2,27 +2,31 @@
 
 This roadmap reflects the strategic direction for uselesskey as a **test-fixture layer** (not a crypto library).
 
-## Now (v0.4.1)
+## Now (v0.5.x)
 
-*Release polish and publish hygiene*
+*Post-release planning reset for the next cycle*
 
-- [x] Rust 1.92 / edition 2024 line is green on `main`
-- [x] Fixture families expose consistent `label()` / `spec()` accessors
-- [x] Publish preflight catches stale versioned dependency snippets in docs
-- [x] README and crate README dependency snippets track the current release line
+- [ ] [Roadmap reset for v0.5.x][roadmap-followups]
+- [ ] Create milestones and execution issues from the follow-up plan
+- [ ] ADR: adapter acceptance criteria
+- [ ] ADR: public surface policy
+- [ ] Add docs metadata source and sync enforcement
+- [ ] Add examples-smoke validation in the docs/examples path
 
-## Next (v0.5.0+)
+## Next (v0.5.0 adapter wave)
 
-*Planned - Next wave of improvements*
+*Planned - Next wave of work*
 
-- [ ] Additional adapter microcrates for ecosystem-specific test harnesses
+- [ ] Two adapter microcrates with complete per-adapter docs/tests/examples coverage
+- [ ] Release prep and release-note entries for v0.5.0
 
-## Later (Backlog)
+## Later (v0.5.1+)
 
-*Under evaluation - No commitment*
+*Under evaluation - Planned follow-up*
 
 - [ ] Additional negative fixture variants
 - [ ] Performance benchmarks for key generation paths
+- [ ] Release governance and post-release audit automation
 
 ## Shipped
 
@@ -136,3 +140,5 @@ These are explicitly out of scope:
 - **Derivation stability**: Changing the derivation algorithm requires bumping the derivation version field. Existing tests should not break.
 - **Semver**: Breaking API changes bump the minor version until 1.0, then major version.
 - **Feature flags**: New key types are opt-in via Cargo features to keep compile times reasonable.
+
+[roadmap-followups]: roadmap-followups-0251.md
