@@ -142,14 +142,9 @@ fn render_dependency_snippets(metadata: &DocsMetadata) -> String {
     output.push_str("Dependency snippets:");
     output.push('\n');
     for item in &metadata.dependency_snippets {
-        writeln!(output, "- **{}**", item.name).expect("write to string");
-        writeln!(
-            output,
-            "  ```toml\n{}",
-            indent_lines(&item.snippet, "  ")
-        )
-        .expect("write to string");
-        output.push_str("  ```\n\n");
+        writeln!(output, "- **{}**\n  ```toml\n{}\n  ```\n", item.name, indent_lines(&item.snippet, "  "))
+            .expect("write to string");
+        output.push('\n');
     }
     output
 }
@@ -266,11 +261,13 @@ fn replace_block(input: &str, marker: &str, replacement: &str) -> Result<String>
 fn compile_example(root: &Path, example: &ExampleEntry) -> Result<()> {
     let mut cmd = Command::new("cargo");
     cmd.current_dir(root);
-    cmd.args(["check", "-p", "uselesskey", "--example", &example.name, "--no-default-features"]);
+    cmd.args(["build", "-p", "uselesskey", "--example", &example.name, "--no-default-features"]);
     if !example.feature_set.trim().is_empty() {
         cmd.args(["--features", &example.feature_set]);
     }
-    crate::run(&mut cmd).with_context(|| format!("cargo check failed for example {}", example.name))
+    crate::run(&mut cmd).with_context(|| {
+        format!("cargo build failed for example {}", example.name)
+    })
 }
 
 fn run_example(root: &Path, example: &ExampleEntry) -> Result<()> {
@@ -285,11 +282,29 @@ fn run_example(root: &Path, example: &ExampleEntry) -> Result<()> {
 }
 
 fn validate_examples_match_workspace(root: &Path, metadata: &DocsMetadata) -> Result<()> {
-    let metadata_paths: BTreeSet<String> = metadata
-        .runnable_examples
-        .iter()
-        .map(|entry| normalize_path_string(Path::new(&entry.path)))
-        .collect();
+    let mut seen_paths = BTreeSet::new();
+    let mut metadata_paths = BTreeSet::new();
+    let mut errors = Vec::new();
+
+    for entry in &metadata.runnable_examples {
+        let normalized_path = normalize_path_string(Path::new(&entry.path));
+        if !seen_paths.insert(normalized_path.clone()) {
+            errors.push(format!("metadata contains duplicate example path: {normalized_path}"));
+        }
+
+        let file_stem = Path::new(&entry.path)
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("");
+        if file_stem != entry.name {
+            errors.push(format!(
+                "example name mismatch: metadata name '{}' does not match file stem '{}'",
+                entry.name, file_stem
+            ));
+        }
+
+        metadata_paths.insert(normalized_path);
+    }
 
     let examples_dir = root.join("crates/uselesskey/examples");
     let mut filesystem_paths = BTreeSet::new();
@@ -314,7 +329,6 @@ fn validate_examples_match_workspace(root: &Path, metadata: &DocsMetadata) -> Re
         .cloned()
         .collect();
 
-    let mut errors = Vec::new();
     if !missing_in_metadata.is_empty() {
         errors.push(format!("examples found on disk but missing from metadata:\n- {}", missing_in_metadata.join("\n- ")));
     }

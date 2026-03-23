@@ -111,11 +111,13 @@ Dependency snippets:
   uselesskey = { version = "0.4.1", features = ["rsa"] }
   ```
 
+
 - **Token-only**
   ```toml
   [dev-dependencies]
   uselesskey = { version = "0.4.1", default-features = false, features = ["token"] }
   ```
+
 
 - **JWT/JWK**
   ```toml
@@ -123,12 +125,14 @@ Dependency snippets:
   uselesskey = { version = "0.4.1", features = ["rsa", "jwk"] }
   ```
 
+
 - **X.509 + rustls**
   ```toml
   [dev-dependencies]
   uselesskey = { version = "0.4.1", features = ["x509"] }
   uselesskey-rustls = { version = "0.4.1", features = ["tls-config", "rustls-ring"] }
   ```
+
 
 - **jsonwebtoken adapter**
   ```toml
@@ -465,7 +469,7 @@ Each adapter crate has per-algorithm feature flags (`rsa`, `ecdsa`, `ed25519`, `
 | Adapter | RSA | ECDSA | Ed25519 | HMAC | X.509 / TLS | Extra features |
 |---------|:---:|:-----:|:-------:|:----:|:-----------:|----------------|
 | `uselesskey-jsonwebtoken` | ✓ | ✓ | ✓ | ✓ | — | — |
-| `uselesskey-ring` | ✓ | ✓ | ✓ | — | — | `-` |
+| `uselesskey-ring` | ✓ | ✓ | ✓ | — | — | — |
 | `uselesskey-rustcrypto` | ✓ | ✓ | ✓ | ✓ | — | — |
 | `uselesskey-aws-lc-rs` | ✓ | ✓ | ✓ | — | — | `native (enables aws-lc-rs dep)` |
 | `uselesskey-rustls` | ✓ | ✓ | ✓ | — | ✓ | `tls-config, rustls-ring, rustls-aws-lc-rs` |

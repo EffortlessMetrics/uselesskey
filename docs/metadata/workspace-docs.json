@@ -302,7 +302,7 @@
       "ed25519": true,
       "hmac": false,
       "x509_tls": false,
-      "extra_features": "-"
+      "extra_features": ""
     },
     {
       "adapter": "uselesskey-rustcrypto",
