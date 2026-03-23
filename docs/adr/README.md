@@ -67,6 +67,8 @@ NNNN-short-title.md
 | [0024](0024-bias-free-base62.md) | Bias-Free Base62 Generation | Accepted | 2026-03-13 |
 | [0025](0025-pr-scoped-ci.md) | PR-Scoped CI | Accepted | 2026-03-13 |
 | [0026](0026-empty-default-features.md) | Empty Default Features | Accepted | 2026-03-13 |
+| [0027](0027-adapter-acceptance-criteria.md) | Adapter Acceptance Criteria | Accepted | 2026-03-22 |
+| [0028](0028-workspace-public-surface-policy.md) | Workspace Public Surface Policy | Accepted | 2026-03-22 |
 
 ## References
 
