@@ -8,98 +8,107 @@
 
 *Deterministic cryptographic test fixtures for Rust.*
 
-**Stop committing PEM/DER/JWK blobs into your repos.**
+`uselesskey` is a test-fixture factory, not a crypto library. It generates key material,
+certificates, and token-shaped artifacts at runtime so tests do not need committed PEM/DER/JWK
+blobs.
 
-A test-fixture factory that generates cryptographic key material and X.509 certificates at runtime. Not a crypto library.
+## Why this exists
 
-## The Problem
+Fixture-heavy projects need realistic cryptographic artifacts without committing secret-shaped content:
 
-Secret scanners have changed the game for test fixtures:
+- scanners inspect every commit in a PR, not just the final diff
+- push protection requires cleanup across commit history
+- path ignores and exceptions become maintenance debt
 
-- **GitGuardian** scans each commit in a PR. "Add then remove" still triggers incidents.
-- **GitHub push protection** blocks pushes until the secret is removed from all commits.
-- Path ignores exist but require ongoing maintenance and documentation.
+`uselesskey` replaces that workflow with one dev-dependency and runtime generation.
 
-Even fake keys that look real cause friction. This crate replaces "security policy + docs + exceptions" with one dev-dependency.
+> Do not use this for production key or certificate work.
+> Deterministic fixtures are intentionally predictable. Random fixtures are test-only.
 
-> **Do not use for production keys.** Deterministic keys are predictable by design. Even random-mode keys are intended for tests only.
+## What problem it solves
 
-## Why Not Just...
+Without this layer, teams commonly end up with:
 
-| Approach | Drawback |
+| Approach | Problem |
 |----------|----------|
-| Check in PEM files | Triggers GitGuardian/GitHub push protection |
-| Generate keys ad-hoc in tests | No caching, slow RSA keygen, no determinism |
-| Use raw crypto crates directly | Boilerplate for PEM/DER encoding, no negative fixtures |
-| Use `rcgen` directly | Not test-fixture-focused; no deterministic mode, no negative fixtures |
+| Commit PEM/DER files | Triggers scanners and blocks pushes |
+| Generate keys ad-hoc in tests | No shared cache, slower RSA, ad-hoc shape handling |
+| Use raw crypto crates directly | You still assemble PEM/DER/JWK/TLS shapes manually |
+| Use rcgen directly | Useful for runtime generation, not fixture ergonomics |
 
-## What You Get
+`uselesskey` exists for test artifacts: shape-first outputs with stable fixture APIs.
 
-**Algorithms:**
-- RSA (2048, 3072, 4096 bits)
+## What you get
+
+- RSA (2048, 3072, 4096)
 - ECDSA (P-256, P-384)
 - Ed25519
 - HMAC (HS256, HS384, HS512)
 - OpenPGP (RSA 2048/3072, Ed25519)
-- Token fixtures (API key, bearer, OAuth access token/JWT shape)
+- Token fixtures (API key, bearer, OAuth/JWT shape)
+- X.509 self-signed certificates and certificate chains
 
-**Output formats:**
-- PKCS#8 PEM/DER (private keys)
-- SPKI PEM/DER (public keys)
-- OpenPGP armored and binary keyblocks (with `pgp` feature)
-- JWK/JWKS (with `jwk` feature)
-- Tempfiles (for libraries that need paths)
-- X.509 self-signed certificates and certificate chains (with `x509` feature)
+### Output shapes
 
-**Negative fixtures:**
-- Corrupt PEM (bad base64, wrong headers, truncated)
+- PKCS#8 PEM/DER
+- SPKI PEM/DER
+- JWK / JWKS
+- Tempfiles
+- OpenPGP armored and binary blocks
+- Certificate leafs and chains
+
+### Negative fixtures
+
+- Corrupt PEM variants
 - Truncated DER
-- Mismatched keypairs (valid public key that doesn't match the private key)
-- X.509: expired leaf/intermediate, hostname mismatch, unknown CA, revoked leaf (with CRL)
+- Mismatched keypairs
+- Expired/revoked/not-yet-valid certificates
+- Hostname and CA-chain mismatch families
 
-## Quick Start
+## Choose the smallest feature set
 
-Choose the fixture families you need explicitly. For RSA fixtures:
+The facade defaults to no features. Start with only what your test package needs.
 
 ```toml
 [dev-dependencies]
 uselesskey = { version = "0.4.1", features = ["rsa"] }
 ```
 
-Generate keys:
-
-```rust
-use uselesskey::{Factory, RsaFactoryExt, RsaSpec};
-
-// Random mode (different keys each run)
-let fx = Factory::random();
-
-// Deterministic mode (stable keys from text)
-let fx = Factory::deterministic_from_str("my-test-seed");
-
-// Or fall back to random if env var not set
-let fx = Factory::deterministic_from_env("USELESSKEY_SEED")
-    .unwrap_or_else(|_| Factory::random());
-
-// Generate RSA keypair
-let rsa = fx.rsa("issuer", RsaSpec::rs256());
-
-let pkcs8_pem = rsa.private_key_pkcs8_pem();
-let spki_der = rsa.public_key_spki_der();
-```
-
-For token-only fixtures without pulling RSA:
-
 ```toml
 [dev-dependencies]
 uselesskey = { version = "0.4.1", default-features = false, features = ["token"] }
 ```
 
-Feature reminders for the snippets below:
+```toml
+[dev-dependencies]
+uselesskey = { version = "0.4.1", features = ["rsa", "jwk"] }
+```
 
-- `rsa` for PEM/DER, tempfile, and negative-key examples
-- `rsa` + `jwk` for `public_jwk()` / `public_jwks()`
-- `x509` for certificate, rustls, and tonic examples
+```toml
+[dev-dependencies]
+uselesskey = { version = "0.4.1", features = ["x509"] }
+```
+
+## Quick Start
+
+```rust
+use uselesskey::{Factory, RsaFactoryExt, RsaSpec};
+
+// Random mode: different keys every run
+let fx = Factory::random();
+
+// Deterministic mode: stable output for a seed string
+let fx = Factory::deterministic_from_str("my-test-seed");
+
+// Or use env-var seed with random fallback
+let fx = Factory::deterministic_from_env("USELESSKEY_SEED")
+    .unwrap_or_else(|_| Factory::random());
+
+let rsa = fx.rsa("issuer", RsaSpec::rs256());
+
+let pkcs8_pem = rsa.private_key_pkcs8_pem();
+let spki_der = rsa.public_key_spki_der();
+```
 
 ## Dependency Snippet Reminders
 
@@ -239,6 +248,9 @@ let mismatched_pub = rsa.mismatched_public_key_spki_der();
 ```
 
 ### Token Fixtures
+
+Token fixtures are fixture artifacts by shape, not a signing engine.
+Use them for realistic token-shaped payloads in tests; not for authorization policy or signature verification.
 
 Generate realistic token-shaped fixtures without committing token blobs:
 
@@ -418,6 +430,8 @@ Depend on the facade for convenience, or on individual crates to minimize compil
 
 ## Feature Flags
 
+Use this list for quick feature-to-trait selection. For output-family coverage and dependency impact, use the matrix below.
+
 | Feature | Description |
 |---------|-------------|
 | `rsa` | RSA keypairs |
@@ -476,7 +490,7 @@ Each adapter crate has per-algorithm feature flags (`rsa`, `ecdsa`, `ed25519`, `
 | `uselesskey-tonic` | — | — | — | — | ✓ | — |
 <!-- docs-sync:feature-matrix-adapters-end -->
 
-## Why This Crate?
+## Why this crate
 
 ### Order-independent determinism
 
@@ -490,7 +504,8 @@ RSA keygen is expensive. Per-factory caching by `(domain, label, spec, variant)`
 
 ### Shape-first outputs
 
-Ask for PKCS#8/SPKI/JWK, not crypto primitives. Users shouldn't need to know which crate does the encoding.
+Ask for shapes first: PKCS#8, SPKI, PEM, DER, JWK, JWKS, or tempfiles.
+The crate should not force consumers to reason about lower-level algorithm internals.
 
 ### Negative fixtures first-class
 
@@ -499,8 +514,8 @@ Corrupt PEM, truncated DER, mismatched keys, expired certs, revoked leaves with 
 ### When NOT to use this crate
 
 - Production key generation or certificate management
-- Certificate validation logic (use `rustls`, `x509-parser`)
-- Runtime CA operations (use `rcgen` directly)
+- Runtime validation or policy logic (use `rustls`, `x509-parser` in production paths)
+- Certificate authority operations and operational PKI workflows (use `rcgen` directly)
 
 ## Ecosystem
 
