@@ -98,7 +98,9 @@ fn run_docs_sync(check: bool) -> Result<()> {
     }
 
     if check {
-        bail!("docs-sync check failed: README.md is out of sync with docs/metadata/workspace-docs.json");
+        bail!(
+            "docs-sync check failed: README.md is out of sync with docs/metadata/workspace-docs.json"
+        );
     }
 
     fs::write(&readme_path, updated).context("failed to write README.md")?;
@@ -124,11 +126,7 @@ fn rewrite_document(input: &str, metadata: &DocsMetadata) -> Result<String> {
     let feature_facade = render_facade_feature_matrix(metadata);
     let feature_adapters = render_adapter_feature_matrix(metadata);
 
-    let mut output = replace_block(
-        &input,
-        "dependency-snippets",
-        &dependency_snippets,
-    )?;
+    let mut output = replace_block(input, "dependency-snippets", &dependency_snippets)?;
     output = replace_block(&output, "runnable-examples", &examples)?;
     output = replace_block(&output, "workspace-crates", &workspace_crates)?;
     output = replace_block(&output, "adapter-crates", &adapter_crates)?;
@@ -142,8 +140,13 @@ fn render_dependency_snippets(metadata: &DocsMetadata) -> String {
     output.push_str("Dependency snippets:");
     output.push('\n');
     for item in &metadata.dependency_snippets {
-        writeln!(output, "- **{}**\n  ```toml\n{}\n  ```\n", item.name, indent_lines(&item.snippet, "  "))
-            .expect("write to string");
+        writeln!(
+            output,
+            "- **{}**\n  ```toml\n{}\n  ```\n",
+            item.name,
+            indent_lines(&item.snippet, "  ")
+        )
+        .expect("write to string");
         output.push('\n');
     }
     output
@@ -153,7 +156,12 @@ fn render_crate_table(_kind: &str, entries: &[CrateEntry]) -> String {
     let mut output = String::new();
     output.push_str("| Crate | Description |\n|-------|-------------|\n");
     for entry in entries {
-        let _ = writeln!(output, "| {} | {} |", crate_link(&entry.name), entry.description);
+        let _ = writeln!(
+            output,
+            "| {} | {} |",
+            crate_link(&entry.name),
+            entry.description
+        );
     }
     output
 }
@@ -173,10 +181,7 @@ fn render_example_table(metadata: &DocsMetadata) -> String {
         let _ = writeln!(
             output,
             "| [{}]({}) | {} | {} |",
-            example.name,
-            example.path,
-            feature_set,
-            example.description
+            example.name, example.path, feature_set, example.description
         );
     }
 
@@ -236,7 +241,11 @@ fn render_adapter_feature_matrix(metadata: &DocsMetadata) -> String {
 }
 
 fn checkmark(enabled: bool) -> String {
-    if enabled { "✓".to_string() } else { "—".to_string() }
+    if enabled {
+        "✓".to_string()
+    } else {
+        "—".to_string()
+    }
 }
 
 fn replace_block(input: &str, marker: &str, replacement: &str) -> Result<String> {
@@ -261,24 +270,35 @@ fn replace_block(input: &str, marker: &str, replacement: &str) -> Result<String>
 fn compile_example(root: &Path, example: &ExampleEntry) -> Result<()> {
     let mut cmd = Command::new("cargo");
     cmd.current_dir(root);
-    cmd.args(["build", "-p", "uselesskey", "--example", &example.name, "--no-default-features"]);
+    cmd.args([
+        "build",
+        "-p",
+        "uselesskey",
+        "--example",
+        &example.name,
+        "--no-default-features",
+    ]);
     if !example.feature_set.trim().is_empty() {
         cmd.args(["--features", &example.feature_set]);
     }
-    crate::run(&mut cmd).with_context(|| {
-        format!("cargo build failed for example {}", example.name)
-    })
+    crate::run(&mut cmd).with_context(|| format!("cargo build failed for example {}", example.name))
 }
 
 fn run_example(root: &Path, example: &ExampleEntry) -> Result<()> {
     let mut cmd = Command::new("cargo");
     cmd.current_dir(root);
-    cmd.args(["run", "-p", "uselesskey", "--example", &example.name, "--no-default-features"]);
+    cmd.args([
+        "run",
+        "-p",
+        "uselesskey",
+        "--example",
+        &example.name,
+        "--no-default-features",
+    ]);
     if !example.feature_set.trim().is_empty() {
         cmd.args(["--features", &example.feature_set]);
     }
-    crate::run(&mut cmd)
-        .with_context(|| format!("cargo run failed for example {}", example.name))
+    crate::run(&mut cmd).with_context(|| format!("cargo run failed for example {}", example.name))
 }
 
 fn validate_examples_match_workspace(root: &Path, metadata: &DocsMetadata) -> Result<()> {
@@ -289,7 +309,9 @@ fn validate_examples_match_workspace(root: &Path, metadata: &DocsMetadata) -> Re
     for entry in &metadata.runnable_examples {
         let normalized_path = normalize_path_string(Path::new(&entry.path));
         if !seen_paths.insert(normalized_path.clone()) {
-            errors.push(format!("metadata contains duplicate example path: {normalized_path}"));
+            errors.push(format!(
+                "metadata contains duplicate example path: {normalized_path}"
+            ));
         }
 
         let file_stem = Path::new(&entry.path)
@@ -330,7 +352,10 @@ fn validate_examples_match_workspace(root: &Path, metadata: &DocsMetadata) -> Re
         .collect();
 
     if !missing_in_metadata.is_empty() {
-        errors.push(format!("examples found on disk but missing from metadata:\n- {}", missing_in_metadata.join("\n- ")));
+        errors.push(format!(
+            "examples found on disk but missing from metadata:\n- {}",
+            missing_in_metadata.join("\n- ")
+        ));
     }
     if !missing_in_filesystem.is_empty() {
         errors.push(format!(

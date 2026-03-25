@@ -11,9 +11,9 @@ use owo_colors::OwoColorize;
 use regex::Regex;
 use uselesskey_feature_grid::{BDD_FEATURE_MATRIX, CORE_FEATURE_MATRIX};
 
+mod docs_sync;
 mod plan;
 mod receipt;
-mod docs_sync;
 
 #[derive(Parser)]
 #[command(
