@@ -21,6 +21,7 @@ Task-oriented instructions for common workflows.
 - [migration.md](how-to/migration.md) — Migrating between uselesskey versions
 - [publishing.md](how-to/publishing.md) — Publishing crates to crates.io
 - [release.md](how-to/release.md) — Cutting a release
+- [choose-features.md](how-to/choose-features.md) — Choosing feature sets by need
 
 ## Explanation
 
