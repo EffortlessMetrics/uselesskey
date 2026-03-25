@@ -4,14 +4,14 @@ This plan decomposes `roadmap.md` into milestone-aligned execution items.
 
 ## v0.5.0 adapter wave
 
-- [ ] Roadmap reset for v0.5.x
-- [ ] ADR: adapter acceptance criteria
-- [ ] ADR: workspace public-surface policy
-- [ ] Docs metadata source + docs-sync command
-- [ ] examples-smoke command
-- [ ] Adapter A
-- [ ] Adapter B
-- [ ] v0.5.0 release prep
+- [x] Roadmap reset for v0.5.x
+- [x] ADR: adapter acceptance criteria
+- [x] ADR: workspace public-surface policy
+- [x] Docs metadata source + docs-sync command
+- [x] examples-smoke command
+- [x] Adapter A
+- [x] Adapter B
+- [x] v0.5.0 release prep
 
 ## v0.5.1 negative fixtures
 

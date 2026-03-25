@@ -6,21 +6,14 @@ This roadmap reflects the strategic direction for uselesskey as a **test-fixture
 
 *Post-release planning reset for the next cycle*
 
-- [ ] [Roadmap reset for v0.5.x][roadmap-followups]
-- [ ] Create milestones and execution issues from the follow-up plan
-- [ ] ADR: adapter acceptance criteria
-- [ ] ADR: public surface policy
-- [ ] Add docs metadata source and sync enforcement
-- [ ] Add examples-smoke validation in the docs/examples path
+- [x] [Roadmap reset for v0.5.x][roadmap-followups]
+- [x] Create milestones and execution issues from the follow-up plan
+- [x] ADR: adapter acceptance criteria
+- [x] ADR: public surface policy
+- [x] Add docs metadata source and sync enforcement
+- [x] Add examples-smoke validation in the docs/examples path
 
-## Next (v0.5.0 adapter wave)
-
-*Planned - Next wave of work*
-
-- [ ] Two adapter microcrates with complete per-adapter docs/tests/examples coverage
-- [ ] Release prep and release-note entries for v0.5.0
-
-## Later (v0.5.1+)
+## Next (v0.5.1+)
 
 *Under evaluation - Planned follow-up*
 
@@ -29,6 +22,17 @@ This roadmap reflects the strategic direction for uselesskey as a **test-fixture
 - [ ] Release governance and post-release audit automation
 
 ## Shipped
+
+### v0.5.0 (2026-03-25)
+
+*Adapter-wave release and docs/infrastructure alignment*
+
+- Added a reusable adapter-scaffold template and established adapter acceptance
+  requirements.
+- Added `uselesskey-jose-openid` and `uselesskey-pgp-native` adapter
+  microcrates with runtime examples and smoke/integration coverage.
+- Added docs metadata source, `docs-sync`, and examples-smoke coverage to PR
+  checks, and aligned release-facing docs to avoid drift.
 
 ### v0.4.0 (2026-03)
 
