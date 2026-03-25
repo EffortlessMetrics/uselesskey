@@ -8,98 +8,135 @@
 
 *Deterministic cryptographic test fixtures for Rust.*
 
-**Stop committing PEM/DER/JWK blobs into your repos.**
+`uselesskey` is a **test-fixture factory**, not a crypto library. It generates key material, certificates, token-shaped fixtures, and negative artifacts at runtime so tests do not need committed PEM/DER/JWK blobs.
 
-A test-fixture factory that generates cryptographic key material and X.509 certificates at runtime. Not a crypto library.
+## Why this exists
 
-## The Problem
+`uselesskey` is a **test-fixture layer**, not a runtime crypto service.
 
-Secret scanners have changed the game for test fixtures:
+Use it when you need realistic cryptographic fixtures without committing PEM/DER/JWK files.
 
-- **GitGuardian** scans each commit in a PR. "Add then remove" still triggers incidents.
-- **GitHub push protection** blocks pushes until the secret is removed from all commits.
-- Path ignores exist but require ongoing maintenance and documentation.
+It exists to remove this test friction:
 
-Even fake keys that look real cause friction. This crate replaces "security policy + docs + exceptions" with one dev-dependency.
+- scanners inspect every commit in a PR, not just the final diff
+- fake-looking keys still trigger policy, push protection, and review friction
 
-> **Do not use for production keys.** Deterministic keys are predictable by design. Even random-mode keys are intended for tests only.
+`uselesskey` replaces security exceptions + path ignores + fixture directories with one dev-dependency and runtime generation.
 
-## Why Not Just...
+> **Do not use this crate for production key generation or certificate management.**
+> Deterministic mode is intentionally predictable by design. Random mode is for tests only.
 
-| Approach | Drawback |
+## What problem it solves
+
+Without this layer, teams commonly end up with one of these:
+
+| Approach | Problem |
 |----------|----------|
-| Check in PEM files | Triggers GitGuardian/GitHub push protection |
-| Generate keys ad-hoc in tests | No caching, slow RSA keygen, no determinism |
-| Use raw crypto crates directly | Boilerplate for PEM/DER encoding, no negative fixtures |
-| Use `rcgen` directly | Not test-fixture-focused; no deterministic mode, no negative fixtures |
+| Commit PEM/DER files | Triggers scanners and push protection |
+| Generate keys ad hoc in tests | Repeated boilerplate, slow RSA, no shared determinism |
+| Use raw crypto crates directly | You still have to assemble PEM/DER/JWK/X.509 shapes yourself |
+| Use `rcgen` or other runtime crates directly | Useful, but not centered on fixture ergonomics, determinism, or negative cases |
 
-## What You Get
+`uselesskey` is built specifically for **test artifacts**.
 
-**Algorithms:**
-- RSA (2048, 3072, 4096 bits)
+## What you get
+
+### Fixture families
+
+- RSA (2048, 3072, 4096)
 - ECDSA (P-256, P-384)
 - Ed25519
 - HMAC (HS256, HS384, HS512)
 - OpenPGP (RSA 2048/3072, Ed25519)
-- Token fixtures (API key, bearer, OAuth access token/JWT shape)
+- Token fixtures (API key, bearer, OAuth access-token / JWT shape)
+- X.509 self-signed certificates and certificate chains
 
-**Output formats:**
-- PKCS#8 PEM/DER (private keys)
-- SPKI PEM/DER (public keys)
-- OpenPGP armored and binary keyblocks (with `pgp` feature)
-- JWK/JWKS (with `jwk` feature)
-- Tempfiles (for libraries that need paths)
-- X.509 self-signed certificates and certificate chains (with `x509` feature)
+### Output shapes
 
-**Negative fixtures:**
-- Corrupt PEM (bad base64, wrong headers, truncated)
-- Truncated DER
-- Mismatched keypairs (valid public key that doesn't match the private key)
-- X.509: expired leaf/intermediate, hostname mismatch, unknown CA, revoked leaf (with CRL)
+- PKCS#8 PEM/DER
+- SPKI PEM/DER
+- OpenPGP armored and binary keyblocks
+- JWK / JWKS
+- tempfiles for path-based APIs
+- X.509 leafs, chains, and negative variants
 
-## Quick Start
+### Negative artifacts
 
-Choose the fixture families you need explicitly. For RSA fixtures:
+- corrupt PEM
+- truncated DER
+- mismatched keypairs
+- expired / revoked / hostname-mismatch / unknown-CA certificates
+
+## Choose the smallest feature set
+
+The `uselesskey` facade has an empty default feature set. Enable only the fixture families you need.
+
+Common starting points:
 
 ```toml
+# RSA fixtures
 [dev-dependencies]
 uselesskey = { version = "0.4.1", features = ["rsa"] }
 ```
 
-Generate keys:
+```toml
+# Token-only fixtures, no RSA/X.509 pull-in
+[dev-dependencies]
+uselesskey = { version = "0.4.1", default-features = false, features = ["token"] }
+```
+
+```toml
+# RSA + JWK/JWKS
+[dev-dependencies]
+uselesskey = { version = "0.4.1", features = ["rsa", "jwk"] }
+```
+
+```toml
+# X.509 fixtures
+[dev-dependencies]
+uselesskey = { version = "0.4.1", features = ["x509"] }
+```
+
+Use the facade for convenience. Depend on leaf crates only when compile-time minimization matters enough to justify the sharper API.
+
+If you are unsure which flags to start with, start from [docs/how-to/choose-features.md](docs/how-to/choose-features.md).
+
+## Quick start
 
 ```rust
 use uselesskey::{Factory, RsaFactoryExt, RsaSpec};
 
-// Random mode (different keys each run)
+// Random mode: different keys every run
 let fx = Factory::random();
 
-// Deterministic mode (stable keys from text)
+// Deterministic mode: stable output for a seed string
 let fx = Factory::deterministic_from_str("my-test-seed");
 
-// Or fall back to random if env var not set
+// Or use env-var seed with random fallback
 let fx = Factory::deterministic_from_env("USELESSKEY_SEED")
     .unwrap_or_else(|_| Factory::random());
 
-// Generate RSA keypair
 let rsa = fx.rsa("issuer", RsaSpec::rs256());
 
 let pkcs8_pem = rsa.private_key_pkcs8_pem();
 let spki_der = rsa.public_key_spki_der();
 ```
 
-For token-only fixtures without pulling RSA:
+The core shape is always:
 
-```toml
-[dev-dependencies]
-uselesskey = { version = "0.4.1", default-features = false, features = ["token"] }
+```text
+(mode, domain, label, spec, variant) -> artifact
 ```
 
-Feature reminders for the snippets below:
+That keeps fixtures stable in deterministic mode and cacheable in both modes.
 
-- `rsa` for PEM/DER, tempfile, and negative-key examples
+## Feature reminders for common snippets
+
+- `rsa` for PEM/DER, tempfiles, and negative-key examples
 - `rsa` + `jwk` for `public_jwk()` / `public_jwks()`
 - `x509` for certificate, rustls, and tonic examples
+- `token` for token-shaped fixtures only
+- `pgp` for armored/binary OpenPGP fixtures
 
 ## Dependency Snippet Reminders
 
@@ -184,7 +221,7 @@ let cert_pem = cert.cert_pem();
 let key_pem = cert.private_key_pkcs8_pem();
 ```
 
-Three-level certificate chains (root CA → intermediate CA → leaf):
+Three-level chains (root  intermediate  leaf):
 
 ```rust
 use uselesskey::{Factory, X509FactoryExt, ChainSpec};
@@ -192,17 +229,17 @@ use uselesskey::{Factory, X509FactoryExt, ChainSpec};
 let fx = Factory::random();
 let chain = fx.x509_chain("my-service", ChainSpec::new("test.example.com"));
 
-// Standard TLS server chain (leaf + intermediate, no root)
+// Standard TLS server chain: leaf + intermediate, no root
 let chain_pem = chain.chain_pem();
 
-// Individual certs for custom setups
+// Individual artifacts for custom setups
 let root_pem = chain.root_cert_pem();
 let leaf_key = chain.leaf_private_key_pkcs8_pem();
 ```
 
-### X.509 Negative Fixtures
+### X.509 negative fixtures
 
-Generate intentionally invalid certificates for testing error-handling paths:
+These are for error-path tests, not validation logic.
 
 ```rust
 use uselesskey::{Factory, X509FactoryExt, ChainSpec};
@@ -224,7 +261,7 @@ let revoked = chain.revoked_leaf();
 let crl_pem = revoked.crl_pem().expect("CRL present for revoked variant");
 ```
 
-### Negative Fixtures (Keys)
+### Negative fixtures (keys)
 
 ```rust
 use uselesskey::{Factory, RsaSpec, RsaFactoryExt};
@@ -238,9 +275,9 @@ let truncated = rsa.private_key_pkcs8_der_truncated(32);
 let mismatched_pub = rsa.mismatched_public_key_spki_der();
 ```
 
-### Token Fixtures
+### Token fixtures
 
-Generate realistic token-shaped fixtures without committing token blobs:
+Token fixtures are **artifact shapes**, not an auth framework. They exist so tests can use realistic-looking token values without committing blobs.
 
 ```rust
 use uselesskey::{Factory, TokenFactoryExt, TokenSpec};
@@ -255,13 +292,15 @@ assert!(bearer.authorization_header().starts_with("Bearer "));
 assert_eq!(oauth.value().split('.').count(), 3);
 ```
 
-## Adapter Examples
+## Adapter crates
 
-Adapter crates bridge uselesskey fixtures to third-party library types. They are separate crates (not features) to avoid coupling versioning. See the [Workspace Crates](#workspace-crates) section below for the public crates and adapter overview.
+Adapter crates are separate packages, not facade features. That keeps integration versioning explicit and avoids coupling the facade to every downstream ecosystem type.
 
-### TLS Config Builders (uselesskey-rustls)
+Use them when you want **native third-party library types** returned directly from fixture artifacts.
 
-With the `tls-config` feature, build rustls configs in one line:
+### TLS config builders (`uselesskey-rustls`)
+
+With the `tls-config` feature, build rustls configs in one step:
 
 ```toml
 [dev-dependencies]
@@ -276,11 +315,11 @@ use uselesskey_rustls::{RustlsServerConfigExt, RustlsClientConfigExt};
 let fx = Factory::random();
 let chain = fx.x509_chain("my-service", ChainSpec::new("test.example.com"));
 
-let server_config = chain.server_config_rustls();   // ServerConfig (no client auth)
-let client_config = chain.client_config_rustls();    // ClientConfig (trusts root CA)
+let server_config = chain.server_config_rustls();
+let client_config = chain.client_config_rustls();
 ```
 
-### ring Signing Keys (uselesskey-ring)
+### ring signing keys (`uselesskey-ring`)
 
 ```toml
 [dev-dependencies]
@@ -294,10 +333,10 @@ use uselesskey_ring::RingRsaKeyPairExt;
 
 let fx = Factory::random();
 let rsa = fx.rsa("signer", RsaSpec::rs256());
-let ring_kp = rsa.rsa_key_pair_ring();  // ring::rsa::KeyPair
+let ring_kp = rsa.rsa_key_pair_ring();
 ```
 
-### RustCrypto Types (uselesskey-rustcrypto)
+### RustCrypto types (`uselesskey-rustcrypto`)
 
 ```toml
 [dev-dependencies]
@@ -311,10 +350,10 @@ use uselesskey_rustcrypto::RustCryptoRsaExt;
 
 let fx = Factory::random();
 let rsa = fx.rsa("signer", RsaSpec::rs256());
-let rsa_pk = rsa.rsa_private_key(); // rsa::RsaPrivateKey
+let rsa_pk = rsa.rsa_private_key();
 ```
 
-### aws-lc-rs Types (uselesskey-aws-lc-rs)
+### aws-lc-rs types (`uselesskey-aws-lc-rs`)
 
 ```toml
 [dev-dependencies]
@@ -328,10 +367,10 @@ use uselesskey_aws_lc_rs::AwsLcRsRsaKeyPairExt;
 
 let fx = Factory::random();
 let rsa = fx.rsa("signer", RsaSpec::rs256());
-let lc_kp = rsa.rsa_key_pair_aws_lc_rs();  // aws_lc_rs::rsa::KeyPair
+let lc_kp = rsa.rsa_key_pair_aws_lc_rs();
 ```
 
-### gRPC TLS (uselesskey-tonic)
+### gRPC TLS (`uselesskey-tonic`)
 
 ```toml
 [dev-dependencies]
@@ -418,20 +457,7 @@ Depend on the facade for convenience, or on individual crates to minimize compil
 
 ## Feature Flags
 
-| Feature | Description |
-|---------|-------------|
-| `rsa` | RSA keypairs |
-| `ecdsa` | ECDSA P-256/P-384 keypairs |
-| `ed25519` | Ed25519 keypairs |
-| `hmac` | HMAC secrets |
-| `pgp` | OpenPGP keypairs (armored + binary keyblocks) |
-| `token` | API key, bearer token, and OAuth access token fixtures |
-| `x509` | X.509 certificate generation (implies `rsa`) |
-| `jwk` | JWK/JWKS output for enabled key types |
-| `all-keys` | All key algorithms (`rsa` + `ecdsa` + `ed25519` + `hmac` + `pgp`) |
-| `full` | Everything (`all-keys` + `token` + `x509` + `jwk`) |
-
-The `uselesskey` facade default feature set is empty.
+The `uselesskey` facade defaults to no features.
 
 Extension traits by feature:
 - `rsa`: `RsaFactoryExt`
@@ -442,7 +468,9 @@ Extension traits by feature:
 - `token`: `TokenFactoryExt`
 - `x509`: `X509FactoryExt`
 
-## Feature Matrix
+For output-family coverage and dependency implications, use the matrix below.
+
+## Feature matrix
 
 ### Facade features (`uselesskey` crate)
 
@@ -476,11 +504,15 @@ Each adapter crate has per-algorithm feature flags (`rsa`, `ecdsa`, `ed25519`, `
 | `uselesskey-tonic` | — | — | — | — | ✓ | — |
 <!-- docs-sync:feature-matrix-adapters-end -->
 
-## Why This Crate?
+## Why this crate
 
 ### Order-independent determinism
 
-`seed + (domain, label, spec, variant) -> derived seed -> artifact`
+Fixtures derive from stable identity components:
+
+```text
+seed + (domain, label, spec, variant) -> derived seed -> artifact
+```
 
 Adding new fixtures doesn't perturb existing ones. Test order doesn't matter.
 
@@ -490,21 +522,33 @@ RSA keygen is expensive. Per-factory caching by `(domain, label, spec, variant)`
 
 ### Shape-first outputs
 
-Ask for PKCS#8/SPKI/JWK, not crypto primitives. Users shouldn't need to know which crate does the encoding.
+Ask for shapes first: PKCS#8, SPKI, PEM, DER, JWK, JWKS, or tempfiles.
+Consumers ask for artifact shapes; low-level crypto primitives are intentionally not the default output.
 
-### Negative fixtures first-class
+### Negative artifacts as first-class
 
-Corrupt PEM, truncated DER, mismatched keys, expired certs, revoked leaves with CRLs. These are annoying to produce manually, which is why teams commit them. This crate makes them cheap and ephemeral.
+Corrupt PEM, truncated DER, mismatched keys, expired certs, revoked leaves with CRLs: these are exactly the artifacts teams otherwise handcraft and commit.
+`uselesskey` makes them deterministic, cheap, and disposable.
 
-### When NOT to use this crate
+## When not to use this crate
 
-- Production key generation or certificate management
-- Certificate validation logic (use `rustls`, `x509-parser`)
-- Runtime CA operations (use `rcgen` directly)
+- production key generation
+- runtime certificate authority behavior
+- certificate validation logic
+- HSM / TPM / hardware-backed keys
+- signing or verification APIs as the primary abstraction
+
+For runtime certificate generation, reach for `rcgen` directly. For validation, use `rustls`, `x509-parser`, or the library actually responsible for verification.
 
 ## Ecosystem
 
-Use uselesskey when you need **test fixtures that don't trip secret scanners**. If you need runtime certificate generation for production (e.g., an internal CA), reach for [`rcgen`](https://docs.rs/rcgen) directly. If you need certificate validation logic, see [`rustls`](https://docs.rs/rustls) or [`x509-parser`](https://docs.rs/x509-parser).
+Use `uselesskey` when you need **realistic test fixtures that should not live in git history**.
+
+Reach for:
+
+- `rcgen` when you need runtime certificate generation outside a fixture-centric workflow
+- `rustls` when you need TLS runtime integration and validation
+- `x509-parser` when you need parsing/inspection/validation work
 
 ## Community
 
@@ -514,11 +558,17 @@ Use uselesskey when you need **test fixtures that don't trip secret scanners**. 
 - [CODE_OF_CONDUCT](CODE_OF_CONDUCT.md) — Contributor Covenant
 - [SUPPORT](SUPPORT.md) — how to get help
 
-## Stability & Versioning
+## Stability and versioning
 
-**Derivation stability:** Artifacts generated with a given `(seed, domain, label, spec, variant)` tuple are stable within the same `DerivationVersion`. We will never change `V1` output; if derivation logic changes, a new version (e.g., `V2`) will be introduced.
+**Derivation stability**
+Artifacts for a given `(seed, domain, label, spec, variant)` tuple are stable within the same `DerivationVersion`.
+If derivation logic changes, a new derivation version is introduced instead of mutating the old one.
 
-**MSRV:** The minimum supported Rust version is **1.92** (edition 2024).
+**Semver**
+Breaking API changes bump the minor version until `1.0`, then the major version.
+
+**MSRV**
+The minimum supported Rust version is **1.92** (edition 2024).
 
 ## License
 
