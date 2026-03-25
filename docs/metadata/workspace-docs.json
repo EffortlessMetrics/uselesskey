@@ -309,6 +309,8 @@
       "ecdsa": true,
       "ed25519": true,
       "hmac": true,
+      "x509_tls": false,
+      "extra_features": ""
     },
     {
       "adapter": "uselesskey-pgp-native",

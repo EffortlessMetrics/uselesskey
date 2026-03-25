@@ -186,13 +186,13 @@ Dependency snippets:
   uselesskey-jose-openid = { version = "0.4.1" }
   ```
 
+
 - **pgp-native adapter**
   ```toml
   [dev-dependencies]
   uselesskey = { version = "0.4.1", features = ["pgp"] }
   uselesskey-pgp-native = { version = "0.4.1" }
   ```
-
 <!-- docs-sync:dependency-snippets-end -->
 
 ### JWK / JWKS
