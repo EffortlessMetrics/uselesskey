@@ -57,8 +57,8 @@ mod rsa_cross {
     use super::*;
     use ring::signature as ring_sig;
     use rsa::pkcs1v15;
+    use rsa::sha2::Sha256;
     use rsa::signature::{SignatureEncoding, Signer, Verifier};
-    use sha2::Sha256;
     use uselesskey_ring::RingRsaKeyPairExt;
     use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
     use uselesskey_rustcrypto::RustCryptoRsaExt;

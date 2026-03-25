@@ -1,6 +1,6 @@
 ---
 source: crates/uselesskey-tonic/tests/snapshots_tonic.rs
-assertion_line: 149
+assertion_line: 176
 expression: result
 ---
 domain: test.example.com
@@ -8,9 +8,9 @@ chain_pem_cert_count: 2
 full_chain_pem_cert_count: 3
 root_cert_pem_cert_count: 1
 leaf_cert_pem_cert_count: 1
-root_cert_der_len: 794
-intermediate_cert_der_len: 802
-leaf_cert_der_len: 803
+root_cert_der_len: 793
+intermediate_cert_der_len: 801
+leaf_cert_der_len: 802
 leaf_private_key_der_len: 1217
 chain_pem: "[REDACTED]"
 root_cert_pem: "[REDACTED]"

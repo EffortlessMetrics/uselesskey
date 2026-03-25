@@ -65,8 +65,8 @@ mod rustcrypto_aws {
             let kp = fx().rsa("xv-rsa-rc2a", RsaSpec::rs256());
 
             use rsa::pkcs1v15;
+            use rsa::sha2::Sha256;
             use rsa::signature::{SignatureEncoding, Signer};
-            use sha2::Sha256;
             let signing_key = pkcs1v15::SigningKey::<Sha256>::new(kp.rsa_private_key());
             let msg = b"rustcrypto-to-aws RSA cross-verify";
             let sig = signing_key.sign(msg);
@@ -94,8 +94,8 @@ mod rustcrypto_aws {
                 .expect("aws sign");
 
             use rsa::pkcs1v15;
+            use rsa::sha2::Sha256;
             use rsa::signature::Verifier;
-            use sha2::Sha256;
             let verifying_key = pkcs1v15::VerifyingKey::<Sha256>::new(kp.rsa_public_key());
             let signature = pkcs1v15::Signature::try_from(sig.as_slice()).expect("valid signature");
             verifying_key

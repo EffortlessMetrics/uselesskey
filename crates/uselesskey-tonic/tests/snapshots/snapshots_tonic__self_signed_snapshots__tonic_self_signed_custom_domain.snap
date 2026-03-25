@@ -1,10 +1,11 @@
 ---
 source: crates/uselesskey-tonic/tests/snapshots_tonic.rs
+assertion_line: 121
 expression: result
 ---
 domain: api.example.com
 cert_pem_has_begin: true
 cert_pem_has_end: true
-cert_der_len: 756
+cert_der_len: 755
 private_key_der_len: 1219
 identity_built: true

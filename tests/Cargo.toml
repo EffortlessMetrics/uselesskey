@@ -41,7 +41,7 @@ uselesskey = { path = "../crates/uselesskey", version = "0.4.1", optional = true
 jsonwebtoken = { workspace = true, optional = true }
 ring = { workspace = true, optional = true }
 rustls = { workspace = true, optional = true }
-rsa = { workspace = true, optional = true }
+rsa = { workspace = true, optional = true, features = ["sha2"] }
 p256 = { version = "0.13", features = ["ecdsa", "pkcs8"], optional = true }
 ed25519-dalek = { workspace = true, optional = true }
 sha2 = { version = "0.10", features = ["oid"], optional = true }

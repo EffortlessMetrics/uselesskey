@@ -111,8 +111,8 @@ mod rsa_all_adapters {
     #[test]
     fn rsa_rustcrypto_sign_verify() {
         use rsa::pkcs1v15;
+        use rsa::sha2::Sha256;
         use rsa::signature::{Signer, Verifier};
-        use sha2::Sha256;
         use uselesskey_rustcrypto::RustCryptoRsaExt;
 
         let kp = fx().rsa("all-rsa-rc-sv", RsaSpec::rs256());

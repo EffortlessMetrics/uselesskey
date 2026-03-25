@@ -1,10 +1,11 @@
 ---
 source: crates/uselesskey-tonic/tests/snapshots_tonic.rs
+assertion_line: 236
 expression: result
 ---
 domain: rpc.custom.io
 chain_pem_cert_count: 2
-root_cert_der_len: 788
-intermediate_cert_der_len: 796
-leaf_cert_der_len: 794
+root_cert_der_len: 787
+intermediate_cert_der_len: 795
+leaf_cert_der_len: 793
 leaf_private_key_der_len: 1217

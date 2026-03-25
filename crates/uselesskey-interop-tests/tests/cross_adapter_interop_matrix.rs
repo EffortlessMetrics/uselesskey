@@ -153,8 +153,8 @@ mod rsa_ring_to_rustcrypto {
 
         // Verify with rustcrypto adapter
         use rsa::pkcs1v15;
+        use rsa::sha2::Sha256;
         use rsa::signature::Verifier;
-        use sha2::Sha256;
         let verifying_key = pkcs1v15::VerifyingKey::<Sha256>::new(kp.rsa_public_key());
         let signature =
             pkcs1v15::Signature::try_from(sig.as_slice()).expect("valid signature bytes");
@@ -169,8 +169,8 @@ mod rsa_ring_to_rustcrypto {
 
         // Sign with rustcrypto adapter
         use rsa::pkcs1v15;
+        use rsa::sha2::Sha256;
         use rsa::signature::{SignatureEncoding, Signer};
-        use sha2::Sha256;
         let signing_key = pkcs1v15::SigningKey::<Sha256>::new(kp.rsa_private_key());
         let msg = b"rustcrypto-to-ring RSA interop matrix test";
         let sig = signing_key.sign(msg);

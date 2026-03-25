@@ -1,10 +1,25 @@
 use std::fmt;
 use std::sync::Arc;
 
+#[cfg(feature = "legacy-rsa09")]
 use rand_chacha::ChaCha20Rng;
-use rand_core::SeedableRng;
-use rsa::pkcs8::LineEnding;
-use rsa::{RsaPrivateKey, RsaPublicKey, pkcs8::EncodePrivateKey, pkcs8::EncodePublicKey};
+#[cfg(feature = "legacy-rsa09")]
+use rand_chacha::rand_core::SeedableRng;
+#[cfg(not(feature = "legacy-rsa09"))]
+use rand_chacha10::ChaCha20Rng;
+#[cfg(not(feature = "legacy-rsa09"))]
+use rand_chacha10::rand_core::SeedableRng;
+use rsa as rsa10;
+#[cfg(feature = "legacy-rsa09")]
+use rsa09::pkcs8::{EncodePrivateKey, EncodePublicKey, LineEnding};
+#[cfg(feature = "legacy-rsa09")]
+use rsa09::{RsaPrivateKey, RsaPublicKey};
+#[cfg(feature = "legacy-rsa09")]
+use rsa10::pkcs8::DecodePrivateKey;
+#[cfg(feature = "jwk")]
+use rsa10::pkcs8::DecodePublicKey;
+#[cfg(not(feature = "legacy-rsa09"))]
+use rsa10::pkcs8::{EncodePrivateKey, EncodePublicKey, LineEnding};
 use uselesskey_core::negative::CorruptPem;
 use uselesskey_core::sink::TempArtifact;
 use uselesskey_core::{Error, Factory};
@@ -51,9 +66,9 @@ pub struct RsaKeyPair {
 
 struct Inner {
     /// Kept for potential signing methods; not currently used.
-    _private: RsaPrivateKey,
+    _private: rsa10::RsaPrivateKey,
     #[cfg(feature = "jwk")]
-    public: RsaPublicKey,
+    public: rsa10::RsaPublicKey,
     material: Pkcs8SpkiKeyMaterial,
 }
 
@@ -387,11 +402,11 @@ impl RsaKeyPair {
     pub fn public_jwk(&self) -> uselesskey_jwk::PublicJwk {
         use base64::Engine as _;
         use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-        use rsa::traits::PublicKeyParts;
+        use rsa10::traits::PublicKeyParts;
         use uselesskey_jwk::{PublicJwk, RsaPublicJwk};
 
-        let n = self.inner.public.n().to_bytes_be();
-        let e = self.inner.public.e().to_bytes_be();
+        let n = self.inner.public.n_bytes();
+        let e = self.inner.public.e_bytes();
 
         PublicJwk::Rsa(RsaPublicJwk {
             kty: "RSA",
@@ -423,21 +438,25 @@ impl RsaKeyPair {
     pub fn private_key_jwk(&self) -> uselesskey_jwk::PrivateJwk {
         use base64::Engine as _;
         use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-        use rsa::traits::{PrivateKeyParts, PublicKeyParts};
+        use rsa10::traits::{PrivateKeyParts, PublicKeyParts};
         use uselesskey_jwk::{PrivateJwk, RsaPrivateJwk};
 
         let private = &self.inner._private;
         let primes = private.primes();
         assert!(primes.len() >= 2, "expected at least two RSA primes");
 
-        let n = private.n().to_bytes_be();
-        let e = private.e().to_bytes_be();
-        let d = private.d().to_bytes_be();
-        let p = primes[0].to_bytes_be();
-        let q = primes[1].to_bytes_be();
-        let dp = private.dp().expect("dp").to_bytes_be();
-        let dq = private.dq().expect("dq").to_bytes_be();
-        let qi = private.qinv().expect("qinv").to_bytes_be().1;
+        let n = private.n_bytes();
+        let e = private.e_bytes();
+        let d = private.d().to_be_bytes_trimmed_vartime();
+        let p = primes[0].to_be_bytes_trimmed_vartime();
+        let q = primes[1].to_be_bytes_trimmed_vartime();
+        let dp = private.dp().expect("dp").to_be_bytes_trimmed_vartime();
+        let dq = private.dq().expect("dq").to_be_bytes_trimmed_vartime();
+        let qi = private
+            .qinv()
+            .expect("qinv")
+            .retrieve()
+            .to_be_bytes_trimmed_vartime();
 
         PrivateJwk::Rsa(RsaPrivateJwk {
             kty: "RSA",
@@ -552,24 +571,67 @@ fn load_inner(factory: &Factory, label: &str, spec: RsaSpec, variant: &str) -> A
 
     factory.get_or_init(DOMAIN_RSA_KEYPAIR, label, &spec_bytes, variant, |seed| {
         let mut rng = ChaCha20Rng::from_seed(*seed.bytes());
-        let private = RsaPrivateKey::new(&mut rng, spec.bits).expect("RSA keygen failed");
-        let public = RsaPublicKey::from(&private);
 
-        let pkcs8_der_doc = private
+        #[cfg(feature = "legacy-rsa09")]
+        let private09 = RsaPrivateKey::new(&mut rng, spec.bits).expect("RSA keygen failed");
+        #[cfg(feature = "legacy-rsa09")]
+        let public09 = RsaPublicKey::from(&private09);
+
+        #[cfg(feature = "legacy-rsa09")]
+        let pkcs8_der_doc = private09
             .to_pkcs8_der()
             .expect("failed to encode RSA private key as PKCS#8 DER");
+        #[cfg(feature = "legacy-rsa09")]
         let pkcs8_der: Arc<[u8]> = Arc::from(pkcs8_der_doc.as_bytes());
 
-        let pkcs8_pem = private
+        #[cfg(feature = "legacy-rsa09")]
+        let pkcs8_pem = private09
             .to_pkcs8_pem(LineEnding::LF)
             .expect("failed to encode RSA private key as PKCS#8 PEM")
             .to_string();
 
+        #[cfg(feature = "legacy-rsa09")]
+        let spki_der_doc = public09
+            .to_public_key_der()
+            .expect("failed to encode RSA public key as SPKI DER");
+        #[cfg(feature = "legacy-rsa09")]
+        let spki_der: Arc<[u8]> = Arc::from(spki_der_doc.as_bytes());
+
+        #[cfg(feature = "legacy-rsa09")]
+        let spki_pem = public09
+            .to_public_key_pem(LineEnding::LF)
+            .expect("failed to encode RSA public key as SPKI PEM")
+            .to_string();
+
+        #[cfg(feature = "legacy-rsa09")]
+        let private = rsa10::RsaPrivateKey::from_pkcs8_der(&pkcs8_der)
+            .expect("failed to parse V1 RSA private key into rsa 0.10");
+        #[cfg(feature = "jwk")]
+        #[cfg(feature = "legacy-rsa09")]
+        let public = rsa10::RsaPublicKey::from_public_key_der(&spki_der)
+            .expect("failed to parse V1 RSA public key into rsa 0.10");
+        #[cfg(not(feature = "legacy-rsa09"))]
+        let private = rsa10::RsaPrivateKey::new(&mut rng, spec.bits).expect("RSA keygen failed");
+        #[cfg(not(feature = "legacy-rsa09"))]
+        let public = rsa10::RsaPublicKey::from(&private);
+        #[cfg(not(feature = "legacy-rsa09"))]
+        let pkcs8_der_doc = private
+            .to_pkcs8_der()
+            .expect("failed to encode RSA private key as PKCS#8 DER");
+        #[cfg(not(feature = "legacy-rsa09"))]
+        let pkcs8_der: Arc<[u8]> = Arc::from(pkcs8_der_doc.as_bytes());
+        #[cfg(not(feature = "legacy-rsa09"))]
+        let pkcs8_pem = private
+            .to_pkcs8_pem(LineEnding::LF)
+            .expect("failed to encode RSA private key as PKCS#8 PEM")
+            .to_string();
+        #[cfg(not(feature = "legacy-rsa09"))]
         let spki_der_doc = public
             .to_public_key_der()
             .expect("failed to encode RSA public key as SPKI DER");
+        #[cfg(not(feature = "legacy-rsa09"))]
         let spki_der: Arc<[u8]> = Arc::from(spki_der_doc.as_bytes());
-
+        #[cfg(not(feature = "legacy-rsa09"))]
         let spki_pem = public
             .to_public_key_pem(LineEnding::LF)
             .expect("failed to encode RSA public key as SPKI PEM")

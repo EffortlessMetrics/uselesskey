@@ -223,8 +223,8 @@ mod rustcrypto_ring_cross {
             .expect("ring sign");
 
         use rsa::pkcs1v15;
+        use rsa::sha2::Sha256;
         use rsa::signature::Verifier;
-        use sha2::Sha256;
         let public_key = keypair.rsa_public_key();
         let verifying_key = pkcs1v15::VerifyingKey::<Sha256>::new(public_key);
         let signature =
@@ -241,8 +241,8 @@ mod rustcrypto_ring_cross {
         let keypair = fx.rsa("xadapt-rsa-rc2r", RsaSpec::rs256());
 
         use rsa::pkcs1v15;
+        use rsa::sha2::Sha256;
         use rsa::signature::{SignatureEncoding, Signer};
-        use sha2::Sha256;
         let private_key = keypair.rsa_private_key();
         let signing_key = pkcs1v15::SigningKey::<Sha256>::new(private_key);
         let msg = b"rustcrypto-to-ring RSA cross-adapter expanded";

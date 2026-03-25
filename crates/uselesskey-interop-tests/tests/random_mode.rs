@@ -53,8 +53,8 @@ mod rsa_random {
             .expect("ring sign");
 
         use rsa::pkcs1v15;
+        use rsa::sha2::Sha256;
         use rsa::signature::Verifier;
-        use sha2::Sha256;
         let verifying_key = pkcs1v15::VerifyingKey::<Sha256>::new(kp.rsa_public_key());
         let signature =
             pkcs1v15::Signature::try_from(sig.as_slice()).expect("valid signature bytes");

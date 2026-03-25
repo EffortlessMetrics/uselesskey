@@ -127,10 +127,12 @@ clap = { version = "4.6.0", features = ["derive"] }
 cucumber = { version = "0.22.1", features = ["macros"] }
 tokio = { version = "1.50.0", features = ["macros", "rt-multi-thread"] }
 
-# RSA — blocked on rsa 0.9 → rand_core 0.6; direct legacy RNG deps are
-# localized in uselesskey-rsa/uselesskey-pgp/uselesskey-x509 Cargo.toml files.
-# Revisit when `rsa` crate releases a version using rand_core ≥0.9.
-rsa = { version = "0.9.10", features = ["pem"] }
+# RSA internal path uses rsa 0.10.x.
+# Deterministic V1 RSA fixture bytes are preserved via a local compatibility bridge
+# inside uselesskey-rsa.
+# Legacy rsa 0.9 / rand_core 0.6 remains as an explicit upstream island under
+# adapters such as jsonwebtoken and pgp.
+rsa = { version = "0.10.0-rc.17", features = ["sha2"] }
 
 # Ed25519
 ed25519-dalek = { version = "2.2.0", features = ["pkcs8", "pem", "rand_core"] }

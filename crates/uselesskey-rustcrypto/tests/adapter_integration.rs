@@ -30,8 +30,8 @@ fn fx() -> Factory {
 mod rsa_rustcrypto {
     use super::*;
     use rsa::pkcs1v15::{SigningKey, VerifyingKey};
+    use rsa::sha2::Sha256;
     use rsa::signature::{Signer, Verifier};
-    use sha2::Sha256;
     use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
     use uselesskey_rustcrypto::RustCryptoRsaExt;
 

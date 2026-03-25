@@ -1,14 +1,15 @@
 ---
 source: crates/uselesskey-rustls/tests/snapshots_rustls.rs
+assertion_line: 350
 expression: cases
 ---
 - rsa_bits: 2048
   chain_len: 2
-  leaf_cert_der_len: 815
-  root_cert_der_len: 802
+  leaf_cert_der_len: 814
+  root_cert_der_len: 801
   private_key_der_len: 1216
 - rsa_bits: 4096
   chain_len: 2
-  leaf_cert_der_len: 1327
-  root_cert_der_len: 1314
+  leaf_cert_der_len: 1326
+  root_cert_der_len: 1313
   private_key_der_len: 2374

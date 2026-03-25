@@ -9,7 +9,7 @@ cert_pem_has_begin: true
 cert_pem_has_end: true
 private_key_pem_has_begin: true
 private_key_pem_has_end: true
-cert_der_len: 744
+cert_der_len: 743
 private_key_der_len: 1217
 cert_pem: "[REDACTED]"
 private_key_pem: "[REDACTED]"

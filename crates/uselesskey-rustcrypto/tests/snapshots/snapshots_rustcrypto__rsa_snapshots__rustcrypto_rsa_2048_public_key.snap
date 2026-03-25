@@ -5,4 +5,4 @@ expression: result
 ---
 algorithm: RSA-2048
 modulus_bits: 2048
-e_hex: "10001"
+e_hex: "0000000000010001"

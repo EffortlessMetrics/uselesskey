@@ -129,8 +129,8 @@ mod rsa_cross {
     use super::*;
     use ring::signature;
     use rsa::pkcs1v15::VerifyingKey;
+    use rsa::sha2::Sha256;
     use rsa::signature::{Signer as _, Verifier as _};
-    use sha2::Sha256;
     use uselesskey_ring::RingRsaKeyPairExt;
     use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
     use uselesskey_rustcrypto::RustCryptoRsaExt;

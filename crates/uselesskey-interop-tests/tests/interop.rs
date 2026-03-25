@@ -164,9 +164,9 @@ mod rsa_rustcrypto_to_ring {
     use ring::signature::{self, UnparsedPublicKey};
     use rsa::pkcs1v15::SigningKey;
     use rsa::pkcs8::DecodePrivateKey;
+    use rsa::sha2::Sha256;
     use rsa::signature::SignatureEncoding;
     use rsa::signature::Signer;
-    use sha2::Sha256;
     use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 
     #[test]

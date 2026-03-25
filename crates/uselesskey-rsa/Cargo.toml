@@ -18,8 +18,11 @@ authors.workspace = true
 uselesskey-core = { path = "../uselesskey-core", version = "0.4.1" }
 uselesskey-core-keypair-material.workspace = true
 rsa.workspace = true
-rand_chacha = { version = "0.3.1", default-features = false }
-rand_core = { version = "0.6.4", default-features = false }
+rsa09 = { package = "rsa", version = "0.9.10", features = ["pem"], optional = true }
+rand_chacha = { version = "0.3.1", default-features = false, optional = true }
+rand_core = { version = "0.6.4", default-features = false, optional = true }
+rand_core10.workspace = true
+rand_chacha10.workspace = true
 
 # Optional JWK/JWKS support
 serde_json = { workspace = true, optional = true }
@@ -27,7 +30,8 @@ base64 = { workspace = true, optional = true }
 uselesskey-jwk = { path = "../uselesskey-jwk", version = "0.4.1", optional = true }
 
 [features]
-default = []
+default = ["legacy-rsa09"]
+legacy-rsa09 = ["dep:rsa09", "dep:rand_chacha", "dep:rand_core"]
 jwk = ["dep:serde_json", "dep:base64", "dep:uselesskey-jwk"]
 
 [package.metadata.docs.rs]
