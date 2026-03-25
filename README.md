@@ -58,7 +58,7 @@ Without this layer, teams commonly end up with one of these:
 - OpenPGP armored and binary keyblocks
 - JWK / JWKS
 - tempfiles for path-based APIs
-- X.509 leafs, chains, and negative variants
+- X.509 leaves and chains, and negative variants
 
 ### Negative artifacts
 
