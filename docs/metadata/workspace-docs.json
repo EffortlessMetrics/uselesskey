@@ -51,6 +51,10 @@
       "description": "JOSE/OpenID-oriented native `jsonwebtoken` key conversions"
     },
     {
+      "name": "uselesskey-pgp-native",
+      "description": "Native `pgp` `SignedSecretKey` / `SignedPublicKey` adapters"
+    },
+    {
       "name": "uselesskey-rustls",
       "description": "`rustls` `ServerConfig` / `ClientConfig` builders"
     },
@@ -305,6 +309,13 @@
       "ecdsa": true,
       "ed25519": true,
       "hmac": true,
+    },
+    {
+      "adapter": "uselesskey-pgp-native",
+      "rsa": false,
+      "ecdsa": false,
+      "ed25519": false,
+      "hmac": false,
       "x509_tls": false,
       "extra_features": ""
     },
@@ -378,6 +389,10 @@
     {
       "name": "JOSE/OpenID adapter",
       "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.4.1\", features = [\"rsa\", \"ecdsa\", \"ed25519\", \"hmac\"] }\nuselesskey-jose-openid = { version = \"0.4.1\" }"
+    },
+    {
+      "name": "pgp-native adapter",
+      "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.4.1\", features = [\"pgp\"] }\nuselesskey-pgp-native = { version = \"0.4.1\" }"
     }
   ]
 }
