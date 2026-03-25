@@ -46,6 +46,7 @@ members = [
   "crates/uselesskey-ring",
   "crates/uselesskey-rustcrypto",
   "crates/uselesskey-aws-lc-rs",
+  "crates/uselesskey-jose-openid",
   "crates/uselesskey-interop-tests",
   "crates/uselesskey-bdd",
   "crates/uselesskey-bdd-steps",

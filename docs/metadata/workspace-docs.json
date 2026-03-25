@@ -47,6 +47,10 @@
       "description": "`jsonwebtoken` `EncodingKey` / `DecodingKey`"
     },
     {
+      "name": "uselesskey-jose-openid",
+      "description": "JOSE/OpenID-oriented native `jsonwebtoken` key conversions"
+    },
+    {
       "name": "uselesskey-rustls",
       "description": "`rustls` `ServerConfig` / `ClientConfig` builders"
     },
@@ -296,6 +300,15 @@
       "extra_features": ""
     },
     {
+      "adapter": "uselesskey-jose-openid",
+      "rsa": true,
+      "ecdsa": true,
+      "ed25519": true,
+      "hmac": true,
+      "x509_tls": false,
+      "extra_features": ""
+    },
+    {
       "adapter": "uselesskey-ring",
       "rsa": true,
       "ecdsa": true,
@@ -361,6 +374,10 @@
     {
       "name": "jsonwebtoken adapter",
       "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.4.1\", features = [\"rsa\", \"ecdsa\", \"ed25519\", \"hmac\"] }\nuselesskey-jsonwebtoken = { version = \"0.4.1\" }"
+    },
+    {
+      "name": "JOSE/OpenID adapter",
+      "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.4.1\", features = [\"rsa\", \"ecdsa\", \"ed25519\", \"hmac\"] }\nuselesskey-jose-openid = { version = \"0.4.1\" }"
     }
   ]
 }

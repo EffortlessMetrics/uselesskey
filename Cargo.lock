@@ -4493,6 +4493,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "uselesskey-jose-openid"
+version = "0.4.1"
+dependencies = [
+ "jsonwebtoken",
+ "serde",
+ "serde_json",
+ "uselesskey-core",
+ "uselesskey-ecdsa",
+ "uselesskey-ed25519",
+ "uselesskey-hmac",
+ "uselesskey-rsa",
+]
+
+[[package]]
 name = "uselesskey-jsonwebtoken"
 version = "0.4.1"
 dependencies = [
