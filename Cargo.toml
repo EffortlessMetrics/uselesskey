@@ -113,7 +113,7 @@ tempfile = "3.27.0"
 uselesskey-core-sink = { path = "crates/uselesskey-core-sink", version = "0.4.1" }
 
 # testing
-proptest = "1.10.0"
+proptest = "1.11.0"
 rstest = "0.26.1"
 insta = { version = "1.46.3", features = ["yaml", "redactions"] }
 criterion = { version = "0.8.2", default-features = false, features = ["html_reports", "cargo_bench_support"] }
