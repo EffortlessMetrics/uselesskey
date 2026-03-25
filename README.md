@@ -177,6 +177,14 @@ Dependency snippets:
   uselesskey = { version = "0.4.1", features = ["rsa", "ecdsa", "ed25519", "hmac"] }
   uselesskey-jsonwebtoken = { version = "0.4.1" }
   ```
+
+
+- **JOSE/OpenID adapter**
+  ```toml
+  [dev-dependencies]
+  uselesskey = { version = "0.4.1", features = ["rsa", "ecdsa", "ed25519", "hmac"] }
+  uselesskey-jose-openid = { version = "0.4.1" }
+  ```
 <!-- docs-sync:dependency-snippets-end -->
 
 ### JWK / JWKS
@@ -448,6 +456,7 @@ Depend on the facade for convenience, or on individual crates to minimize compil
 | Crate | Description |
 |-------|-------------|
 | [`uselesskey-jsonwebtoken`](https://crates.io/crates/uselesskey-jsonwebtoken) | `jsonwebtoken` `EncodingKey` / `DecodingKey` |
+| [`uselesskey-jose-openid`](https://crates.io/crates/uselesskey-jose-openid) | JOSE/OpenID-oriented native `jsonwebtoken` key conversions |
 | [`uselesskey-rustls`](https://crates.io/crates/uselesskey-rustls) | `rustls` `ServerConfig` / `ClientConfig` builders |
 | [`uselesskey-tonic`](https://crates.io/crates/uselesskey-tonic) | `tonic::transport` TLS identity / config for gRPC |
 | [`uselesskey-ring`](https://crates.io/crates/uselesskey-ring) | `ring` 0.17 native signing key types |
@@ -497,6 +506,7 @@ Each adapter crate has per-algorithm feature flags (`rsa`, `ecdsa`, `ed25519`, `
 | Adapter | RSA | ECDSA | Ed25519 | HMAC | X.509 / TLS | Extra features |
 |---------|:---:|:-----:|:-------:|:----:|:-----------:|----------------|
 | `uselesskey-jsonwebtoken` | ✓ | ✓ | ✓ | ✓ | — | — |
+| `uselesskey-jose-openid` | ✓ | ✓ | ✓ | ✓ | — | — |
 | `uselesskey-ring` | ✓ | ✓ | ✓ | — | — | — |
 | `uselesskey-rustcrypto` | ✓ | ✓ | ✓ | ✓ | — | — |
 | `uselesskey-aws-lc-rs` | ✓ | ✓ | ✓ | — | — | `native (enables aws-lc-rs dep)` |

@@ -438,6 +438,7 @@ const PUBLISH_CRATES: &[&str] = &[
     // Adapters (depend on key crates, NOT on facade)
     "uselesskey-core-rustls-pki",
     "uselesskey-jsonwebtoken",
+    "uselesskey-jose-openid",
     "uselesskey-rustls",
     "uselesskey-tonic",
     "uselesskey-ring",
