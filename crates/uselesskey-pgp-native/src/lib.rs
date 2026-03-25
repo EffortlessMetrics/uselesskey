@@ -61,9 +61,21 @@ mod tests {
         let fx = Factory::random();
         let keypair = fx.pgp("fixture", PgpSpec::ed25519());
 
-        assert_eq!(keypair.fingerprint(), keypair.secret_key().fingerprint().to_string());
-        assert_eq!(keypair.fingerprint(), keypair.secret_key_armor().fingerprint().to_string());
-        assert_eq!(keypair.fingerprint(), keypair.public_key().fingerprint().to_string());
-        assert_eq!(keypair.fingerprint(), keypair.public_key_armor().fingerprint().to_string());
+        assert_eq!(
+            keypair.fingerprint(),
+            keypair.secret_key().fingerprint().to_string()
+        );
+        assert_eq!(
+            keypair.fingerprint(),
+            keypair.secret_key_armor().fingerprint().to_string()
+        );
+        assert_eq!(
+            keypair.fingerprint(),
+            keypair.public_key().fingerprint().to_string()
+        );
+        assert_eq!(
+            keypair.fingerprint(),
+            keypair.public_key_armor().fingerprint().to_string()
+        );
     }
 }

@@ -1,7 +1,7 @@
+use pgp::types::KeyDetails;
 use uselesskey_core::Factory;
 use uselesskey_pgp::{PgpFactoryExt, PgpSpec};
 use uselesskey_pgp_native::PgpNativeExt;
-use pgp::types::KeyDetails;
 
 fn main() {
     let fx = Factory::random();
@@ -11,5 +11,8 @@ fn main() {
     let public = keypair.public_key_armor();
 
     println!("fingerprint: {}", secret.fingerprint());
-    println!("public key matches: {}", secret.fingerprint() == public.fingerprint());
+    println!(
+        "public key matches: {}",
+        secret.fingerprint() == public.fingerprint()
+    );
 }
