@@ -22,6 +22,7 @@ Task-oriented instructions for common workflows.
 - [publishing.md](how-to/publishing.md) — Publishing crates to crates.io
 - [release.md](how-to/release.md) — Cutting a release
 - [choose-features.md](how-to/choose-features.md) — Choosing feature sets by need
+- [adapter-template.md](how-to/adapter-template.md) — Scaffolding and validating new adapter crates
 
 ## Explanation
 

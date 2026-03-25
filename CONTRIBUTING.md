@@ -78,6 +78,14 @@ Current adapter crates: `uselesskey-jsonwebtoken`, `uselesskey-rustls`, `useless
 6. Add the crate to `publish_check()` order in `xtask/src/main.rs`.
 7. Add the crate to `dependents()` in `xtask/src/plan.rs`.
 
+### Adding a new Adapter Crate
+
+1. Use the adapter scaffold checklist in [`docs/how-to/adapter-template.md`](docs/how-to/adapter-template.md).
+2. Place new adapter crates under `crates/uselesskey-<adapter>`.
+3. Keep the adapter as a narrow conversion boundary from fixture artifacts to native ecosystem types.
+4. Add adapter test/example/docs surfaces before broadening the public API.
+5. Update publish/release metadata when the crate is intended for release.
+
 ## Design constraints
 
 - **Deterministic Stability**: Keep deterministic derivation stable. If you must change an algorithm, bump the `derivation_version` in the artifact ID.
