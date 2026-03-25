@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-03-25
+
+### Added
+
+- Added a reusable adapter template with a scoped checklist for public-surface
+  additions and release-readiness requirements.
+- Added the `uselesskey-jose-openid` adapter crate for JOSE/OpenID-oriented
+  native key conversion flows and example coverage.
+- Added the `uselesskey-pgp-native` adapter crate for native OpenPGP key handling
+  and example coverage.
+
+### Changed
+
+- Added `docs-sync` and metadata-driven docs checks to PR validation, including
+  release-facing example/snippet verification.
+- Moved README, adapter matrix, and workspace documentation to the cleaner
+  adapter-wave wording and boundary-focused guidance.
+
 ## [0.4.1] - 2026-03-17
 
 ### Added
