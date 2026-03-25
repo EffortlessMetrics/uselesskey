@@ -4546,6 +4546,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "uselesskey-pgp-native"
+version = "0.4.1"
+dependencies = [
+ "pgp",
+ "uselesskey-core",
+ "uselesskey-pgp",
+]
+
+[[package]]
 name = "uselesskey-ring"
 version = "0.4.1"
 dependencies = [

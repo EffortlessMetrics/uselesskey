@@ -439,6 +439,7 @@ const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-core-rustls-pki",
     "uselesskey-jsonwebtoken",
     "uselesskey-jose-openid",
+    "uselesskey-pgp-native",
     "uselesskey-rustls",
     "uselesskey-tonic",
     "uselesskey-ring",
