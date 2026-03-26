@@ -1,0 +1,28 @@
+changelog:
+  categories:
+    - title: '🚀 Features'
+      labels:
+        - enhancement
+        - adapters
+    - title: '🐛 Fixes'
+      labels:
+        - bug
+    - title: '📚 Docs'
+      labels:
+        - docs
+        - documentation
+    - title: '🧩 Fixture'
+      labels:
+        - fixtures
+        - negatives
+    - title: '⚡ Performance'
+      labels:
+        - perf
+    - title: '🛠️ Maintenance'
+      labels:
+        - dependencies
+        - release
+        - rust
+    - title: 'Other Changes'
+      labels:
+        - "*"
