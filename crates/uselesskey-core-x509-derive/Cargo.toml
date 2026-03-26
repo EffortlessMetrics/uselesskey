@@ -1,6 +1,6 @@
 [package]
 name = "uselesskey-core-x509-derive"
-version = "0.4.1"
+version = "0.5.0"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
@@ -30,3 +30,4 @@ uselesskey-core-hash = { workspace = true }
 
 [package.metadata.docs.rs]
 all-features = true
+

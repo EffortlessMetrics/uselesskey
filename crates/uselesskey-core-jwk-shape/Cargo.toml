@@ -1,6 +1,6 @@
 [package]
 name = "uselesskey-core-jwk-shape"
-version = "0.4.1"
+version = "0.5.0"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
@@ -26,3 +26,4 @@ serde_json.workspace = true
 
 [package.metadata.docs.rs]
 all-features = true
+

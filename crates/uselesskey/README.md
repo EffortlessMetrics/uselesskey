@@ -36,7 +36,7 @@ Token-only consumers can stay lightweight:
 
 ```toml
 [dev-dependencies]
-uselesskey = { version = "0.4.1", default-features = false, features = ["token"] }
+uselesskey = { version = "0.5.0", default-features = false, features = ["token"] }
 ```
 
 ```rust
@@ -54,7 +54,7 @@ If you want RSA fixtures, enable `rsa` explicitly:
 
 ```toml
 [dev-dependencies]
-uselesskey = { version = "0.4.1", features = ["rsa"] }
+uselesskey = { version = "0.5.0", features = ["rsa"] }
 ```
 
 ```rust
@@ -193,3 +193,4 @@ on the implementation crate directly:
 
 Licensed under either of [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0)
 or [MIT license](https://opensource.org/licenses/MIT) at your option.
+

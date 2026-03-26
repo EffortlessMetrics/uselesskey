@@ -3,9 +3,9 @@ source: crates/uselesskey-core-rustls-pki/tests/snapshots_rustls_pki.rs
 expression: snap
 ---
 leaf_private_key_der_len: 1217
-leaf_cert_der_len: 806
+leaf_cert_der_len: 805
 chain_cert_count: 2
-root_cert_der_len: 796
+root_cert_der_len: 795
 private_key_matches_source: true
 leaf_cert_matches_source: true
 root_cert_matches_source: true
