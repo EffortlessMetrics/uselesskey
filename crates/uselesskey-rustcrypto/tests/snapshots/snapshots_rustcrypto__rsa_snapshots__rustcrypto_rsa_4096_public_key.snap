@@ -1,7 +1,8 @@
 ---
 source: crates/uselesskey-rustcrypto/tests/snapshots_rustcrypto.rs
+assertion_line: 97
 expression: result
 ---
 algorithm: RSA-4096
 modulus_bits: 4096
-e_hex: "10001"
+e_hex: "0000000000010001"

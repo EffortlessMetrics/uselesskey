@@ -763,6 +763,7 @@ dependencies = [
  "hybrid-array",
  "num-traits",
  "rand_core 0.10.0",
+ "serdect 0.4.2",
  "subtle",
  "zeroize",
 ]
@@ -786,6 +787,17 @@ checksum = "77727bb15fa921304124b128af125e7e3b968275d1b108b379190264f4423710"
 dependencies = [
  "getrandom 0.4.2",
  "hybrid-array",
+ "rand_core 0.10.0",
+]
+
+[[package]]
+name = "crypto-primes"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "21f41f23de7d24cdbda7f0c4d9c0351f99a4ceb258ef30e5c1927af8987ffe5a"
+dependencies = [
+ "crypto-bigint 0.7.1",
+ "libm",
  "rand_core 0.10.0",
 ]
 
@@ -1957,7 +1969,7 @@ dependencies = [
  "p384 0.13.1",
  "pem",
  "rand 0.8.5",
- "rsa",
+ "rsa 0.9.10",
  "serde",
  "serde_json",
  "sha2 0.10.9",
@@ -2509,7 +2521,7 @@ dependencies = [
  "regex",
  "replace_with",
  "ripemd",
- "rsa",
+ "rsa 0.9.10",
  "sha1",
  "sha1-checked",
  "sha2 0.10.9",
@@ -2563,6 +2575,16 @@ dependencies = [
  "der 0.7.10",
  "pkcs8 0.10.2",
  "spki 0.7.3",
+]
+
+[[package]]
+name = "pkcs1"
+version = "0.8.0-rc.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "986d2e952779af96ea048f160fd9194e1751b4faea78bcf3ceb456efe008088e"
+dependencies = [
+ "der 0.8.0",
+ "spki 0.8.0-rc.4",
 ]
 
 [[package]]
@@ -2962,12 +2984,31 @@ dependencies = [
  "num-bigint-dig",
  "num-integer",
  "num-traits",
- "pkcs1",
+ "pkcs1 0.7.5",
  "pkcs8 0.10.2",
  "rand_core 0.6.4",
  "signature 2.2.0",
  "spki 0.7.3",
  "subtle",
+ "zeroize",
+]
+
+[[package]]
+name = "rsa"
+version = "0.10.0-rc.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "87ed3e93fc7e473e464b9726f4759659e72bc8665e4b8ea227547024f416d905"
+dependencies = [
+ "const-oid 0.10.2",
+ "crypto-bigint 0.7.1",
+ "crypto-primes",
+ "digest 0.11.2",
+ "pkcs1 0.8.0-rc.4",
+ "pkcs8 0.11.0-rc.11",
+ "rand_core 0.10.0",
+ "sha2 0.11.0-rc.5",
+ "signature 3.0.0-rc.10",
+ "spki 0.8.0-rc.4",
  "zeroize",
 ]
 
@@ -3237,6 +3278,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f42f67da2385b51a5f9652db9c93d78aeaf7610bf5ec366080b6de810604af53"
 dependencies = [
  "base16ct 0.2.0",
+ "serde",
+]
+
+[[package]]
+name = "serdect"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9af4a3e75ebd5599b30d4de5768e00b5095d518a79fefc3ecbaf77e665d1ec06"
+dependencies = [
+ "base16ct 1.0.0",
  "serde",
 ]
 
@@ -4017,10 +4068,9 @@ dependencies = [
  "p384 0.13.1",
  "pgp",
  "ring",
- "rsa",
+ "rsa 0.10.0-rc.17",
  "rustls-pki-types",
  "serde_json",
- "sha2 0.10.9",
  "uselesskey",
  "uselesskey-aws-lc-rs",
  "uselesskey-core",
@@ -4436,7 +4486,7 @@ dependencies = [
  "jsonwebtoken",
  "p256 0.13.2",
  "ring",
- "rsa",
+ "rsa 0.10.0-rc.17",
  "rustls",
  "serde",
  "serde_json",
@@ -4472,7 +4522,7 @@ dependencies = [
  "p256 0.13.2",
  "p384 0.13.1",
  "ring",
- "rsa",
+ "rsa 0.10.0-rc.17",
  "rustls",
  "rustls-pki-types",
  "serde",
@@ -4576,9 +4626,12 @@ dependencies = [
  "base64",
  "insta",
  "proptest",
+ "rand_chacha 0.10.0",
  "rand_chacha 0.3.1",
+ "rand_core 0.10.0",
  "rand_core 0.6.4",
- "rsa",
+ "rsa 0.10.0-rc.17",
+ "rsa 0.9.10",
  "rstest",
  "serde",
  "serde_json",
@@ -4598,7 +4651,8 @@ dependencies = [
  "p256 0.13.2",
  "p384 0.13.1",
  "proptest",
- "rsa",
+ "rand_chacha 0.10.0",
+ "rsa 0.10.0-rc.17",
  "serde",
  "sha2 0.10.9",
  "uselesskey-core",
@@ -4677,7 +4731,7 @@ dependencies = [
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
  "rcgen",
- "rsa",
+ "rsa 0.10.0-rc.17",
  "rstest",
  "rustls-pki-types",
  "serde",

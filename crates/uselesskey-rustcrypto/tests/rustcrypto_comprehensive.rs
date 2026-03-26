@@ -20,9 +20,9 @@ fn deterministic_factory(seed_str: &str) -> Factory {
 mod rsa_comprehensive {
     use super::*;
     use rsa::pkcs1v15::{SigningKey, VerifyingKey};
+    use rsa::sha2::Sha256;
     use rsa::signature::{Signer, Verifier};
     use rsa::traits::PublicKeyParts;
-    use sha2::Sha256;
     use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
     use uselesskey_rustcrypto::RustCryptoRsaExt;
 

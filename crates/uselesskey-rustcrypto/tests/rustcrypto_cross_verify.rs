@@ -20,13 +20,15 @@ use uselesskey_core::{Factory, Seed};
 mod rsa_pss {
     use super::*;
     use rsa::pss::{SigningKey as PssSigningKey, VerifyingKey as PssVerifyingKey};
+    use rsa::sha2::Sha256;
     use rsa::signature::{RandomizedSigner, Verifier};
-    use sha2::Sha256;
     use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
     use uselesskey_rustcrypto::RustCryptoRsaExt;
 
-    fn rng() -> rsa::rand_core::OsRng {
-        rsa::rand_core::OsRng
+    fn rng() -> rand_chacha10::ChaCha20Rng {
+        use rand_chacha10::rand_core::SeedableRng;
+        let seed = [7_u8; 32];
+        rand_chacha10::ChaCha20Rng::from_seed(seed)
     }
 
     #[test]
@@ -70,8 +72,8 @@ mod rsa_pss {
 mod rsa_cross_factory {
     use super::*;
     use rsa::pkcs1v15::{SigningKey, VerifyingKey};
+    use rsa::sha2::Sha256;
     use rsa::signature::{Signer, Verifier};
-    use sha2::Sha256;
     use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
     use uselesskey_rustcrypto::RustCryptoRsaExt;
 
@@ -204,8 +206,8 @@ mod hmac_cross_factory {
 mod rsa_multi_sig {
     use super::*;
     use rsa::pkcs1v15::{SigningKey, VerifyingKey};
+    use rsa::sha2::Sha256;
     use rsa::signature::{Signer, Verifier};
-    use sha2::Sha256;
     use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
     use uselesskey_rustcrypto::RustCryptoRsaExt;
 

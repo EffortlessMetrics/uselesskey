@@ -25,7 +25,7 @@
 //! use uselesskey_rustcrypto::RustCryptoRsaExt;
 //! use rsa::pkcs1v15::SigningKey;
 //! use rsa::signature::{Signer, Verifier};
-//! use sha2::Sha256;
+//! use rsa::sha2::Sha256;
 //!
 //! let fx = Factory::random();
 //! let keypair = fx.rsa("test", RsaSpec::rs256());
@@ -60,7 +60,7 @@
 ///
 /// // Verify the key is usable
 /// use rsa::signature::Signer;
-/// let signing_key = rsa::pkcs1v15::SigningKey::<sha2::Sha256>::new_unprefixed(private);
+/// let signing_key = rsa::pkcs1v15::SigningKey::<rsa::sha2::Sha256>::new_unprefixed(private);
 /// let _sig = signing_key.sign(b"test");
 /// ```
 #[cfg(feature = "rsa")]
@@ -283,8 +283,8 @@ mod tests {
     mod rsa_tests {
         use crate::RustCryptoRsaExt;
         use rsa::pkcs1v15::{SigningKey, VerifyingKey};
+        use rsa::sha2::Sha256;
         use rsa::signature::{Signer, Verifier};
-        use sha2::Sha256;
         use uselesskey_core::Factory;
         use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 

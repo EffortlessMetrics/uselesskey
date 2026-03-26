@@ -1,13 +1,13 @@
 ---
 source: crates/uselesskey-tonic/tests/snapshots_tonic.rs
-assertion_line: 258
+assertion_line: 355
 expression: cases
 ---
 - rsa_bits: 2048
-  leaf_cert_der_len: 815
+  leaf_cert_der_len: 814
   leaf_private_key_der_len: 1216
-  root_cert_der_len: 802
+  root_cert_der_len: 801
 - rsa_bits: 4096
-  leaf_cert_der_len: 1327
+  leaf_cert_der_len: 1326
   leaf_private_key_der_len: 2374
-  root_cert_der_len: 1314
+  root_cert_der_len: 1313

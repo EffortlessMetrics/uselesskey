@@ -1,10 +1,10 @@
 ---
 source: crates/uselesskey-tonic/tests/snapshots_tonic.rs
-assertion_line: 219
+assertion_line: 275
 expression: result
 ---
 domain: mtls.example.com
 server_mtls_built: true
 client_mtls_built: true
 chain_pem_cert_count: 2
-root_cert_der_len: 794
+root_cert_der_len: 793

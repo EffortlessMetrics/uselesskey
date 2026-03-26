@@ -1,13 +1,14 @@
 ---
 source: crates/uselesskey-rustls/tests/snapshots_rustls.rs
+assertion_line: 309
 expression: result
 ---
 chain_len: 2
-leaf_cert_der_len: 803
+leaf_cert_der_len: 802
 leaf_cert_der_hex: "[REDACTED]"
-intermediate_cert_der_len: 802
+intermediate_cert_der_len: 801
 intermediate_cert_der_hex: "[REDACTED]"
-root_cert_der_len: 794
+root_cert_der_len: 793
 root_cert_der_hex: "[REDACTED]"
 private_key_der_len: 1217
 private_key_der_hex: "[REDACTED]"

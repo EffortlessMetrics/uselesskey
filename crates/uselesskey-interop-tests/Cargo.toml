@@ -35,7 +35,7 @@ p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "pem"] }
 p384 = { version = "0.13", features = ["ecdsa", "pkcs8", "pem"] }
 rustls-pki-types = { workspace = true }
 ed25519-dalek = { workspace = true }
-rsa = { workspace = true }
+rsa = { workspace = true, features = ["sha2"] }
 sha2 = { version = "0.10", features = ["oid"] }
 signature = "2"
 hmac = "0.12"

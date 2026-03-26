@@ -4257,10 +4257,9 @@ fn rsa_modulus_size(world: &mut UselessWorld, expected: usize) {
 
     let der = world.spki_der_1.as_ref().expect("spki_der_1 not set");
     let pub_key = rsa::RsaPublicKey::from_public_key_der(der).unwrap();
-    let modulus_bytes = pub_key.n().to_bytes_be();
+    let modulus_bytes = pub_key.size();
     assert_eq!(
-        modulus_bytes.len(),
-        expected,
+        modulus_bytes, expected,
         "modulus should have {expected} bytes"
     );
 }
@@ -5486,7 +5485,8 @@ fn rustcrypto_rsa_sign(world: &mut UselessWorld) {
 
     let kp = world.rsa.as_ref().expect("RSA key not set");
     let private_key = kp.rsa_private_key();
-    let signing_key = SigningKey::<sha2::Sha256>::new_unprefixed(private_key);
+    use rsa::sha2::Sha256;
+    let signing_key = SigningKey::<Sha256>::new_unprefixed(private_key);
     let sig = signing_key.sign(RUSTCRYPTO_TEST_MSG);
     world.rustcrypto_signature_bytes = Some(sig.to_vec());
 }
@@ -5500,7 +5500,8 @@ fn rustcrypto_rsa_verify(world: &mut UselessWorld) {
 
     let kp = world.rsa.as_ref().expect("RSA key not set");
     let public_key = kp.rsa_public_key();
-    let verifying_key = VerifyingKey::<sha2::Sha256>::new_unprefixed(public_key);
+    use rsa::sha2::Sha256;
+    let verifying_key = VerifyingKey::<Sha256>::new_unprefixed(public_key);
     let sig_bytes = world
         .rustcrypto_signature_bytes
         .as_ref()
@@ -5520,7 +5521,8 @@ fn rustcrypto_rsa_wrong_key(world: &mut UselessWorld) {
 
     let kp = world.rsa.as_ref().expect("RSA key not set");
     let public_key = kp.rsa_public_key();
-    let verifying_key = VerifyingKey::<sha2::Sha256>::new_unprefixed(public_key);
+    use rsa::sha2::Sha256;
+    let verifying_key = VerifyingKey::<Sha256>::new_unprefixed(public_key);
     let sig_bytes = world
         .rustcrypto_signature_bytes
         .as_ref()

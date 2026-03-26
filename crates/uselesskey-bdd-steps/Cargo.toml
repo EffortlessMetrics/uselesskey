@@ -27,7 +27,7 @@ uselesskey-core-sink = { workspace = true, optional = true }
 uselesskey-core = { path = "../uselesskey-core" }
 uselesskey-jsonwebtoken = { path = "../uselesskey-jsonwebtoken", default-features = false, features = ["all"] }
 
-rsa.workspace = true
+rsa = { workspace = true, features = ["sha2"] }
 jsonwebtoken.workspace = true
 ed25519-dalek.workspace = true
 p256 = { version = "0.13.2", features = ["ecdsa", "pkcs8", "pem"] }
@@ -42,7 +42,6 @@ uselesskey-rustcrypto = { path = "../uselesskey-rustcrypto", version = "0.4.1", 
 uselesskey-rustls = { path = "../uselesskey-rustls", version = "0.4.1", optional = true, default-features = false, features = ["x509", "tls-config", "rustls-ring"] }
 uselesskey-tonic = { path = "../uselesskey-tonic", version = "0.4.1", optional = true, default-features = false, features = ["x509"] }
 hmac = { version = "0.12", optional = true }
-sha2 = { version = "0.10", optional = true }
 aws-lc-rs = { version = "1", optional = true }
 ring = { workspace = true, optional = true }
 rustls-pki-types = { version = "1", optional = true }
@@ -73,4 +72,4 @@ uk-aws-lc-rs = ["dep:uselesskey-aws-lc-rs", "dep:aws-lc-rs", "uk-bdd-keys"]
 uk-rustls = ["dep:uselesskey-rustls", "dep:rustls-pki-types", "uk-bdd-keys"]
 uk-tonic = ["dep:uselesskey-tonic"]
 uk-ring = ["dep:uselesskey-ring", "dep:ring", "uk-bdd-keys"]
-uk-rustcrypto = ["dep:uselesskey-rustcrypto", "dep:hmac", "dep:sha2", "uk-bdd-keys"]
+uk-rustcrypto = ["dep:uselesskey-rustcrypto", "dep:hmac", "uk-bdd-keys"]
