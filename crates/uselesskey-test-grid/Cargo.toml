@@ -1,6 +1,6 @@
 [package]
 name = "uselesskey-test-grid"
-version = "0.4.1"
+version = "0.5.0"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
@@ -19,3 +19,4 @@ uselesskey-feature-grid.workspace = true
 
 [dev-dependencies]
 uselesskey-feature-grid.workspace = true
+

@@ -3,8 +3,8 @@ source: tests/determinism_regression.rs
 expression: snapshot
 ---
 label: x509-fingerprint
-cert_der_len: 760
-cert_der_blake3: 6399e18b8d0c7b591c108d2a0adc1d710d14580e4e32353ea0041f7a828608b1
+cert_der_len: 759
+cert_der_blake3: f823c61b781dccd6a2c2c2d19f5c1bf9fe23ff8f34a71c7060add95a2f2ffd14
 key_der_len: 1216
 key_der_blake3: 6286be49a20879bc99d3ce7f3d753c52afebac35f730d76ff7f8c8d8700c4437
 cert_pem_header: "-----BEGIN CERTIFICATE-----"

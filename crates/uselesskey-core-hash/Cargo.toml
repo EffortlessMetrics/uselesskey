@@ -1,6 +1,6 @@
 [package]
 name = "uselesskey-core-hash"
-version = "0.4.1"
+version = "0.5.0"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
@@ -28,3 +28,4 @@ std = ["blake3/std"]
 
 [package.metadata.docs.rs]
 features = ["std"]
+

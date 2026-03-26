@@ -20,7 +20,7 @@ When `native` is disabled, this crate builds as a no-op and exports no adapter t
 
 ```toml
 [dev-dependencies]
-uselesskey-aws-lc-rs = { version = "0.4.1", features = ["native", "rsa"] }
+uselesskey-aws-lc-rs = { version = "0.5.0", features = ["native", "rsa"] }
 ```
 
 ```rust
@@ -42,3 +42,4 @@ or [MIT license](https://opensource.org/licenses/MIT) at your option.
 
 See the [`uselesskey` crate](https://crates.io/crates/uselesskey) for full
 documentation.
+
