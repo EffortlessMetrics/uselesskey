@@ -39,7 +39,7 @@ uselesskey-rustcrypto = { path = "../crates/uselesskey-rustcrypto", features = [
 uselesskey-rustls = { path = "../crates/uselesskey-rustls", features = ["x509", "ecdsa", "ed25519"] }
 rustls-pki-types = "1"
 ring = "0.17"
-hmac = "0.12"
+hmac = "0.13.0-rc.6"
 sha2 = "0.10"
 rsa = { version = "0.9", features = ["pem"] }
 p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "pem"] }
