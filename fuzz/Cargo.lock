@@ -2772,7 +2772,7 @@ dependencies = [
  "base64",
  "blake3",
  "ed25519-dalek",
- "hmac 0.12.1",
+ "hmac 0.13.0-rc.6",
  "libfuzzer-sys",
  "p256 0.13.2",
  "ring",
@@ -2875,11 +2875,11 @@ name = "uselesskey-rustcrypto"
 version = "0.5.0"
 dependencies = [
  "ed25519-dalek",
- "hmac 0.12.1",
+ "hmac 0.13.0-rc.6",
  "p256 0.13.2",
  "p384 0.13.1",
  "rsa 0.10.0-rc.17",
- "sha2 0.10.9",
+ "sha2 0.11.0",
  "uselesskey-ecdsa",
  "uselesskey-ed25519",
  "uselesskey-hmac",
