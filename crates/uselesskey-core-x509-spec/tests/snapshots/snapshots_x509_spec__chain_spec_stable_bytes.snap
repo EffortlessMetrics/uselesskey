@@ -4,5 +4,5 @@ assertion_line: 242
 expression: result
 ---
 description: "ChainSpec::new default"
-stable_bytes_len: 125
+stable_bytes_len: 123
 is_deterministic: true

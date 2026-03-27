@@ -136,45 +136,42 @@ impl ChainSpec {
     /// Stable byte representation for deterministic derivation.
     ///
     /// SANs are sorted and deduplicated before encoding for stability.
+    ///
+    /// For backward compatibility, specs that only use the pre-#279 surface
+    /// keep the legacy v2 encoding so existing good/expired chain fixtures do
+    /// not drift. Richer time offsets and intermediate overrides use v3.
     pub fn stable_bytes(&self) -> Vec<u8> {
+        if self.uses_v2_compat_encoding() {
+            return self.stable_bytes_v2_compat();
+        }
+
+        self.stable_bytes_v3()
+    }
+
+    fn uses_v2_compat_encoding(&self) -> bool {
+        self.intermediate_is_ca.is_none()
+            && self.intermediate_key_usage.is_none()
+            && supports_v2_not_before(self.leaf_not_before)
+            && supports_v2_not_before(self.intermediate_not_before)
+    }
+
+    fn stable_bytes_v2_compat(&self) -> Vec<u8> {
+        let mut out = Vec::new();
+
+        // Version prefix (v2: pre-#279 ChainSpec encoding)
+        out.push(2);
+        encode_common_fields(self, &mut out);
+        encode_optional_days_ago_i64(&mut out, self.leaf_not_before);
+        encode_optional_days_ago_i64(&mut out, self.intermediate_not_before);
+        out
+    }
+
+    fn stable_bytes_v3(&self) -> Vec<u8> {
         let mut out = Vec::new();
 
         // Version prefix (v3: rich not_before offsets + intermediate overrides)
         out.push(3);
-
-        // leaf_cn
-        let leaf_cn_bytes = self.leaf_cn.as_bytes();
-        out.extend_from_slice(&(leaf_cn_bytes.len() as u32).to_be_bytes());
-        out.extend_from_slice(leaf_cn_bytes);
-
-        // leaf_sans (sorted and deduplicated for stability)
-        let mut sorted_sans = self.leaf_sans.clone();
-        sorted_sans.sort();
-        sorted_sans.dedup();
-        out.extend_from_slice(&(sorted_sans.len() as u32).to_be_bytes());
-        for san in &sorted_sans {
-            let san_bytes = san.as_bytes();
-            out.extend_from_slice(&(san_bytes.len() as u32).to_be_bytes());
-            out.extend_from_slice(san_bytes);
-        }
-
-        // root_cn
-        let root_cn_bytes = self.root_cn.as_bytes();
-        out.extend_from_slice(&(root_cn_bytes.len() as u32).to_be_bytes());
-        out.extend_from_slice(root_cn_bytes);
-
-        // intermediate_cn
-        let int_cn_bytes = self.intermediate_cn.as_bytes();
-        out.extend_from_slice(&(int_cn_bytes.len() as u32).to_be_bytes());
-        out.extend_from_slice(int_cn_bytes);
-
-        // rsa_bits
-        out.extend_from_slice(&(self.rsa_bits as u32).to_be_bytes());
-
-        // validity periods
-        out.extend_from_slice(&self.root_validity_days.to_be_bytes());
-        out.extend_from_slice(&self.intermediate_validity_days.to_be_bytes());
-        out.extend_from_slice(&self.leaf_validity_days.to_be_bytes());
+        encode_common_fields(self, &mut out);
 
         // not_before offsets and intermediate overrides
         encode_optional_not_before(&mut out, self.leaf_not_before);
@@ -195,6 +192,59 @@ impl ChainSpec {
         }
 
         out
+    }
+}
+
+fn encode_common_fields(spec: &ChainSpec, out: &mut Vec<u8>) {
+    // leaf_cn
+    let leaf_cn_bytes = spec.leaf_cn.as_bytes();
+    out.extend_from_slice(&(leaf_cn_bytes.len() as u32).to_be_bytes());
+    out.extend_from_slice(leaf_cn_bytes);
+
+    // leaf_sans (sorted and deduplicated for stability)
+    let mut sorted_sans = spec.leaf_sans.clone();
+    sorted_sans.sort();
+    sorted_sans.dedup();
+    out.extend_from_slice(&(sorted_sans.len() as u32).to_be_bytes());
+    for san in &sorted_sans {
+        let san_bytes = san.as_bytes();
+        out.extend_from_slice(&(san_bytes.len() as u32).to_be_bytes());
+        out.extend_from_slice(san_bytes);
+    }
+
+    // root_cn
+    let root_cn_bytes = spec.root_cn.as_bytes();
+    out.extend_from_slice(&(root_cn_bytes.len() as u32).to_be_bytes());
+    out.extend_from_slice(root_cn_bytes);
+
+    // intermediate_cn
+    let int_cn_bytes = spec.intermediate_cn.as_bytes();
+    out.extend_from_slice(&(int_cn_bytes.len() as u32).to_be_bytes());
+    out.extend_from_slice(int_cn_bytes);
+
+    // rsa_bits
+    out.extend_from_slice(&(spec.rsa_bits as u32).to_be_bytes());
+
+    // validity periods
+    out.extend_from_slice(&spec.root_validity_days.to_be_bytes());
+    out.extend_from_slice(&spec.intermediate_validity_days.to_be_bytes());
+    out.extend_from_slice(&spec.leaf_validity_days.to_be_bytes());
+}
+
+fn supports_v2_not_before(offset: Option<NotBeforeOffset>) -> bool {
+    matches!(offset, None | Some(NotBeforeOffset::DaysAgo(_)))
+}
+
+fn encode_optional_days_ago_i64(out: &mut Vec<u8>, offset: Option<NotBeforeOffset>) {
+    match offset {
+        None => out.push(0),
+        Some(NotBeforeOffset::DaysAgo(days)) => {
+            out.push(1);
+            out.extend_from_slice(&i64::from(days).to_be_bytes());
+        }
+        Some(NotBeforeOffset::DaysFromNow(_)) => {
+            unreachable!("DaysFromNow requires v3 encoding")
+        }
     }
 }
 
@@ -408,5 +458,33 @@ mod tests {
             base_bytes,
             "intermediate_key_usage must affect stable_bytes"
         );
+    }
+
+    #[test]
+    fn test_stable_bytes_default_uses_v2_compat_prefix() {
+        let spec = ChainSpec::new("compat.example.com");
+        assert_eq!(spec.stable_bytes()[0], 2);
+    }
+
+    #[test]
+    fn test_stable_bytes_days_ago_only_stays_on_v2_compat() {
+        let spec = ChainSpec::new("compat.example.com")
+            .with_leaf_not_before(NotBeforeOffset::DaysAgo(7))
+            .with_intermediate_not_before(NotBeforeOffset::DaysAgo(30));
+        assert_eq!(spec.stable_bytes()[0], 2);
+    }
+
+    #[test]
+    fn test_stable_bytes_days_from_now_or_intermediate_overrides_use_v3() {
+        let future = ChainSpec::new("future.example.com")
+            .with_leaf_not_before(NotBeforeOffset::DaysFromNow(7));
+        assert_eq!(future.stable_bytes()[0], 3);
+
+        let not_ca = ChainSpec::new("path.example.com").with_intermediate_is_ca(false);
+        assert_eq!(not_ca.stable_bytes()[0], 3);
+
+        let wrong_ku =
+            ChainSpec::new("path.example.com").with_intermediate_key_usage(KeyUsage::leaf());
+        assert_eq!(wrong_ku.stable_bytes()[0], 3);
     }
 }

@@ -13,10 +13,13 @@ fn x509_spec_stable_bytes_version_prefix() {
 }
 
 #[test]
-fn chain_spec_stable_bytes_version_prefix() {
+fn chain_spec_stable_bytes_default_uses_v2_compat_prefix() {
     let spec = ChainSpec::new("test.example.com");
     let bytes = spec.stable_bytes();
-    assert_eq!(bytes[0], 3, "stable_bytes version prefix should be 3");
+    assert_eq!(
+        bytes[0], 2,
+        "default ChainSpec stable_bytes should keep the v2 compatibility prefix"
+    );
 }
 
 #[test]
@@ -278,8 +281,14 @@ fn x509_spec_stable_bytes_starts_with_version_4() {
 }
 
 #[test]
-fn chain_spec_stable_bytes_starts_with_version_3() {
+fn chain_spec_stable_bytes_starts_with_version_2_by_default() {
     let spec = ChainSpec::new("test.example.com");
+    assert_eq!(spec.stable_bytes()[0], 2);
+}
+
+#[test]
+fn chain_spec_stable_bytes_uses_v3_for_new_shape() {
+    let spec = ChainSpec::new("test.example.com").with_intermediate_is_ca(false);
     assert_eq!(spec.stable_bytes()[0], 3);
 }
 

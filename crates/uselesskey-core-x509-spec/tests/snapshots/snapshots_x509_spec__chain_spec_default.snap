@@ -15,4 +15,4 @@ leaf_not_before: ~
 intermediate_not_before: ~
 intermediate_is_ca: ~
 intermediate_key_usage: ~
-stable_bytes_len: 129
+stable_bytes_len: 127

@@ -65,8 +65,14 @@ fn x509_spec_stable_bytes_has_version_4() {
 }
 
 #[test]
-fn chain_spec_stable_bytes_has_version_3() {
+fn chain_spec_stable_bytes_has_v2_compat_prefix_by_default() {
     let spec = ChainSpec::new("test");
+    assert_eq!(spec.stable_bytes()[0], 2);
+}
+
+#[test]
+fn chain_spec_stable_bytes_has_v3_prefix_for_future_offsets() {
+    let spec = ChainSpec::new("test").with_leaf_not_before(NotBeforeOffset::DaysFromNow(1));
     assert_eq!(spec.stable_bytes()[0], 3);
 }
 

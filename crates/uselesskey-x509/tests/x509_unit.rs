@@ -149,12 +149,23 @@ fn test_different_labels_different_certs() {
 // =========================================================================
 
 #[test]
-fn test_chain_spec_stable_bytes_version_prefix() {
+fn test_chain_spec_stable_bytes_default_uses_v2_compat_prefix() {
     let spec = ChainSpec::new("test.example.com");
     let bytes = spec.stable_bytes();
     assert_eq!(
+        bytes[0], 2,
+        "default ChainSpec stable_bytes should keep the v2 compatibility prefix"
+    );
+}
+
+#[test]
+fn test_chain_spec_stable_bytes_uses_v3_for_new_shape() {
+    let spec =
+        ChainSpec::new("test.example.com").with_leaf_not_before(NotBeforeOffset::DaysFromNow(7));
+    let bytes = spec.stable_bytes();
+    assert_eq!(
         bytes[0], 3,
-        "ChainSpec stable_bytes version prefix should be 3"
+        "future not_before offsets should opt into the v3 ChainSpec encoding"
     );
 }
 

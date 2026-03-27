@@ -192,7 +192,17 @@ fn chain_spec_new_defaults() {
 fn chain_spec_stable_bytes_version_is_2() {
     let spec = ChainSpec::new("test");
     let bytes = spec.stable_bytes();
-    assert_eq!(bytes[0], 3, "chain spec stable_bytes version must be 3");
+    assert_eq!(
+        bytes[0], 2,
+        "default chain spec stable_bytes must keep the v2 compatibility prefix"
+    );
+}
+
+#[test]
+fn chain_spec_future_offsets_use_v3() {
+    let spec = ChainSpec::new("test").with_leaf_not_before(NotBeforeOffset::DaysFromNow(1));
+    let bytes = spec.stable_bytes();
+    assert_eq!(bytes[0], 3, "future offsets must opt into v3 encoding");
 }
 
 #[test]

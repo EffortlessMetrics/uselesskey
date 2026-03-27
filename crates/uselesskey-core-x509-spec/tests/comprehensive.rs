@@ -189,7 +189,7 @@ fn chain_stable_bytes_exact_format_minimal() {
 
     let mut expected = Vec::new();
     // Version prefix
-    expected.push(3);
+    expected.push(2);
     // leaf_cn: "x"
     expected.extend_from_slice(&1u32.to_be_bytes());
     expected.push(b'x');
@@ -215,10 +215,6 @@ fn chain_stable_bytes_exact_format_minimal() {
     expected.push(0);
     // intermediate_not_before: None → tag=0
     expected.push(0);
-    // intermediate_is_ca: None → tag=0
-    expected.push(0);
-    // intermediate_key_usage: None → tag=0
-    expected.push(0);
 
     assert_eq!(
         bytes, expected,
@@ -227,21 +223,26 @@ fn chain_stable_bytes_exact_format_minimal() {
 }
 
 #[test]
-fn chain_stable_bytes_exact_format_with_offsets() {
+fn chain_stable_bytes_exact_format_with_new_fields_uses_v3() {
     let mut spec = ChainSpec::new("y").with_rsa_bits(4096);
     spec.leaf_not_before = Some(NotBeforeOffset::DaysFromNow(730));
     spec.intermediate_not_before = Some(NotBeforeOffset::DaysAgo(365));
+    spec.intermediate_is_ca = Some(false);
+    spec.intermediate_key_usage = Some(KeyUsage::leaf());
     let bytes = spec.stable_bytes();
 
-    // Verify new tail encoding:
-    // leaf tag=2 + u32, intermediate tag=1 + u32, intermediate_is_ca tag=0, key_usage tag=0
+    assert_eq!(bytes[0], 3, "new fields should opt into v3 encoding");
+
+    // Verify v3 tail encoding:
+    // leaf tag=2 + u32, intermediate tag=1 + u32, intermediate_is_ca tag=1, key_usage tag=1 + leaf bytes
     let len = bytes.len();
-    assert_eq!(bytes[len - 2], 0, "intermediate_is_ca None tag");
-    assert_eq!(bytes[len - 1], 0, "intermediate_key_usage None tag");
-    assert_eq!(&bytes[len - 6..len - 2], &365u32.to_be_bytes());
-    assert_eq!(bytes[len - 7], 1, "intermediate DaysAgo tag");
-    assert_eq!(&bytes[len - 11..len - 7], &730u32.to_be_bytes());
-    assert_eq!(bytes[len - 12], 2, "leaf DaysFromNow tag");
+    assert_eq!(&bytes[len - 4..len], &KeyUsage::leaf().stable_bytes());
+    assert_eq!(bytes[len - 5], 1, "intermediate_key_usage Some tag");
+    assert_eq!(bytes[len - 6], 1, "intermediate_is_ca Some(false) tag");
+    assert_eq!(&bytes[len - 10..len - 6], &365u32.to_be_bytes());
+    assert_eq!(bytes[len - 11], 1, "intermediate DaysAgo tag");
+    assert_eq!(&bytes[len - 15..len - 11], &730u32.to_be_bytes());
+    assert_eq!(bytes[len - 16], 2, "leaf DaysFromNow tag");
 }
 
 // =========================================================================
