@@ -19,7 +19,7 @@ rsa = { workspace = true, optional = true }
 p256 = { version = "0.13", features = ["ecdsa", "pkcs8"], optional = true }
 p384 = { version = "0.13", features = ["ecdsa", "pkcs8"], optional = true }
 ed25519-dalek = { workspace = true, optional = true }
-hmac = { version = "0.12", optional = true }
+hmac = { version = "0.13.0-rc.6", optional = true }
 sha2 = { version = "0.11", optional = true }
 
 # Key type crates (all optional)

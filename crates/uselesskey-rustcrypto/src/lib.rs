@@ -241,19 +241,19 @@ pub trait RustCryptoHmacExt {
 #[cfg(feature = "hmac")]
 impl RustCryptoHmacExt for uselesskey_hmac::HmacSecret {
     fn hmac_sha256(&self) -> hmac::Hmac<sha2::Sha256> {
-        use hmac::Mac;
+        use hmac::KeyInit;
         hmac::Hmac::<sha2::Sha256>::new_from_slice(self.secret_bytes())
             .expect("HMAC accepts any key length")
     }
 
     fn hmac_sha384(&self) -> hmac::Hmac<sha2::Sha384> {
-        use hmac::Mac;
+        use hmac::KeyInit;
         hmac::Hmac::<sha2::Sha384>::new_from_slice(self.secret_bytes())
             .expect("HMAC accepts any key length")
     }
 
     fn hmac_sha512(&self) -> hmac::Hmac<sha2::Sha512> {
-        use hmac::Mac;
+        use hmac::KeyInit;
         hmac::Hmac::<sha2::Sha512>::new_from_slice(self.secret_bytes())
             .expect("HMAC accepts any key length")
     }

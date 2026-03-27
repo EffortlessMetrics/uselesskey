@@ -1651,9 +1651,9 @@ dependencies = [
 
 [[package]]
 name = "hmac"
-version = "0.13.0-rc.5"
+version = "0.13.0-rc.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef451d73f36d8a3f93ad32c332ea01146c9650e1ec821a9b0e46c01277d544f8"
+checksum = "60017b071c523c9e5a55dd1253582bff6150c5e96a7e8511e419de1ab5ee97f9"
 dependencies = [
  "digest 0.11.2",
 ]
@@ -2943,7 +2943,7 @@ version = "0.5.0-rc.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "23a3127ee32baec36af75b4107082d9bd823501ec14a4e016be4b6b37faa74ae"
 dependencies = [
- "hmac 0.13.0-rc.5",
+ "hmac 0.13.0-rc.6",
  "subtle",
 ]
 
@@ -4059,7 +4059,7 @@ dependencies = [
  "base64",
  "cucumber",
  "ed25519-dalek",
- "hmac 0.12.1",
+ "hmac 0.13.0-rc.6",
  "jsonwebtoken",
  "p256 0.13.2",
  "p384 0.13.1",
@@ -4513,7 +4513,7 @@ dependencies = [
  "aws-lc-rs",
  "base64",
  "ed25519-dalek",
- "hmac 0.12.1",
+ "hmac 0.13.0-rc.6",
  "insta",
  "jsonwebtoken",
  "p256 0.13.2",
@@ -4643,7 +4643,7 @@ version = "0.5.0"
 dependencies = [
  "ed25519-dalek",
  "hex",
- "hmac 0.12.1",
+ "hmac 0.13.0-rc.6",
  "insta",
  "p256 0.13.2",
  "p384 0.13.1",
