@@ -477,7 +477,7 @@ mod tls_rustls_ring_verify {
 #[cfg(feature = "cross-signing")]
 mod hmac_jwk_consistency {
     use super::*;
-    use hmac::Mac;
+    use hmac::{KeyInit, Mac};
     use uselesskey_hmac::{HmacFactoryExt, HmacSpec};
     use uselesskey_rustcrypto::RustCryptoHmacExt;
 
