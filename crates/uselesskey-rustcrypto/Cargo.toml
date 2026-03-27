@@ -20,7 +20,7 @@ p256 = { version = "0.13", features = ["ecdsa", "pkcs8"], optional = true }
 p384 = { version = "0.13", features = ["ecdsa", "pkcs8"], optional = true }
 ed25519-dalek = { workspace = true, optional = true }
 hmac = { version = "0.12", optional = true }
-sha2 = { version = "0.10", optional = true }
+sha2 = { version = "0.11", optional = true }
 
 # Key type crates (all optional)
 uselesskey-rsa = { path = "../uselesskey-rsa", version = "0.5.0", optional = true, default-features = false }
