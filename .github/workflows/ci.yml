@@ -56,6 +56,9 @@ jobs:
         if: github.base_ref != ''
         run: git fetch origin ${{ github.base_ref }}
 
+      - name: cargo deny advisories
+        run: cargo deny check advisories
+
       - name: xtask pr
         run: cargo xtask pr
 
