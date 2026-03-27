@@ -6,5 +6,9 @@ variants:
   - "hostname_mismatch:wrong.example.com"
   - unknown_ca
   - expired_leaf
+  - not_yet_valid_leaf
   - expired_intermediate
+  - not_yet_valid_intermediate
+  - intermediate_not_ca
+  - intermediate_wrong_key_usage
   - revoked_leaf

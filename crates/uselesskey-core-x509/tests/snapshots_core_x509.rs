@@ -93,8 +93,10 @@ struct ChainNegativeSpecSnapshot {
     root_cn: String,
     leaf_validity_days: u32,
     intermediate_validity_days: u32,
-    leaf_not_before_offset_days: Option<i64>,
-    intermediate_not_before_offset_days: Option<i64>,
+    leaf_not_before: Option<String>,
+    intermediate_not_before: Option<String>,
+    intermediate_is_ca: Option<bool>,
+    intermediate_key_usage: Option<[u8; 4]>,
 }
 
 fn chain_neg_snapshot(neg: &ChainNegative) -> ChainNegativeSpecSnapshot {
@@ -107,8 +109,10 @@ fn chain_neg_snapshot(neg: &ChainNegative) -> ChainNegativeSpecSnapshot {
         root_cn: spec.root_cn,
         leaf_validity_days: spec.leaf_validity_days,
         intermediate_validity_days: spec.intermediate_validity_days,
-        leaf_not_before_offset_days: spec.leaf_not_before_offset_days,
-        intermediate_not_before_offset_days: spec.intermediate_not_before_offset_days,
+        leaf_not_before: spec.leaf_not_before.map(|o| fmt_offset(&o)),
+        intermediate_not_before: spec.intermediate_not_before.map(|o| fmt_offset(&o)),
+        intermediate_is_ca: spec.intermediate_is_ca,
+        intermediate_key_usage: spec.intermediate_key_usage.map(|ku| ku.stable_bytes()),
     }
 }
 
@@ -120,7 +124,11 @@ fn snapshot_chain_negative_all_variants() {
         }),
         chain_neg_snapshot(&ChainNegative::UnknownCa),
         chain_neg_snapshot(&ChainNegative::ExpiredLeaf),
+        chain_neg_snapshot(&ChainNegative::NotYetValidLeaf),
         chain_neg_snapshot(&ChainNegative::ExpiredIntermediate),
+        chain_neg_snapshot(&ChainNegative::NotYetValidIntermediate),
+        chain_neg_snapshot(&ChainNegative::IntermediateNotCa),
+        chain_neg_snapshot(&ChainNegative::IntermediateWrongKeyUsage),
         chain_neg_snapshot(&ChainNegative::RevokedLeaf),
     ];
     insta::assert_yaml_snapshot!("chain_negative_all_variants", variants);

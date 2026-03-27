@@ -1,5 +1,6 @@
 ---
 source: crates/uselesskey-core-x509/tests/snapshots_core_x509.rs
+assertion_line: 134
 expression: variants
 ---
 - variant: "hostname_mismatch:evil.example.com"
@@ -9,8 +10,10 @@ expression: variants
   root_cn: chain.example.com Root CA
   leaf_validity_days: 3650
   intermediate_validity_days: 1825
-  leaf_not_before_offset_days: ~
-  intermediate_not_before_offset_days: ~
+  leaf_not_before: ~
+  intermediate_not_before: ~
+  intermediate_is_ca: ~
+  intermediate_key_usage: ~
 - variant: unknown_ca
   leaf_cn: chain.example.com
   leaf_sans:
@@ -18,8 +21,10 @@ expression: variants
   root_cn: chain.example.com Unknown Root CA
   leaf_validity_days: 3650
   intermediate_validity_days: 1825
-  leaf_not_before_offset_days: ~
-  intermediate_not_before_offset_days: ~
+  leaf_not_before: ~
+  intermediate_not_before: ~
+  intermediate_is_ca: ~
+  intermediate_key_usage: ~
 - variant: expired_leaf
   leaf_cn: chain.example.com
   leaf_sans:
@@ -27,8 +32,21 @@ expression: variants
   root_cn: chain.example.com Root CA
   leaf_validity_days: 1
   intermediate_validity_days: 1825
-  leaf_not_before_offset_days: 730
-  intermediate_not_before_offset_days: ~
+  leaf_not_before: DaysAgo(730)
+  intermediate_not_before: ~
+  intermediate_is_ca: ~
+  intermediate_key_usage: ~
+- variant: not_yet_valid_leaf
+  leaf_cn: chain.example.com
+  leaf_sans:
+    - chain.example.com
+  root_cn: chain.example.com Root CA
+  leaf_validity_days: 3650
+  intermediate_validity_days: 1825
+  leaf_not_before: DaysFromNow(730)
+  intermediate_not_before: ~
+  intermediate_is_ca: ~
+  intermediate_key_usage: ~
 - variant: expired_intermediate
   leaf_cn: chain.example.com
   leaf_sans:
@@ -36,8 +54,47 @@ expression: variants
   root_cn: chain.example.com Root CA
   leaf_validity_days: 3650
   intermediate_validity_days: 1
-  leaf_not_before_offset_days: ~
-  intermediate_not_before_offset_days: 730
+  leaf_not_before: ~
+  intermediate_not_before: DaysAgo(730)
+  intermediate_is_ca: ~
+  intermediate_key_usage: ~
+- variant: not_yet_valid_intermediate
+  leaf_cn: chain.example.com
+  leaf_sans:
+    - chain.example.com
+  root_cn: chain.example.com Root CA
+  leaf_validity_days: 3650
+  intermediate_validity_days: 1825
+  leaf_not_before: ~
+  intermediate_not_before: DaysFromNow(730)
+  intermediate_is_ca: ~
+  intermediate_key_usage: ~
+- variant: intermediate_not_ca
+  leaf_cn: chain.example.com
+  leaf_sans:
+    - chain.example.com
+  root_cn: chain.example.com Root CA
+  leaf_validity_days: 3650
+  intermediate_validity_days: 1825
+  leaf_not_before: ~
+  intermediate_not_before: ~
+  intermediate_is_ca: false
+  intermediate_key_usage: ~
+- variant: intermediate_wrong_key_usage
+  leaf_cn: chain.example.com
+  leaf_sans:
+    - chain.example.com
+  root_cn: chain.example.com Root CA
+  leaf_validity_days: 3650
+  intermediate_validity_days: 1825
+  leaf_not_before: ~
+  intermediate_not_before: ~
+  intermediate_is_ca: true
+  intermediate_key_usage:
+    - 0
+    - 0
+    - 1
+    - 0
 - variant: revoked_leaf
   leaf_cn: chain.example.com
   leaf_sans:
@@ -45,5 +102,7 @@ expression: variants
   root_cn: chain.example.com Root CA
   leaf_validity_days: 3650
   intermediate_validity_days: 1825
-  leaf_not_before_offset_days: ~
-  intermediate_not_before_offset_days: ~
+  leaf_not_before: ~
+  intermediate_not_before: ~
+  intermediate_is_ca: ~
+  intermediate_key_usage: ~

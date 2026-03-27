@@ -1,5 +1,6 @@
 ---
 source: crates/uselesskey-core-x509-spec/tests/snapshots_x509_spec.rs
+assertion_line: 203
 expression: chain_shape(&spec)
 ---
 leaf_cn: test.example.com
@@ -10,6 +11,8 @@ rsa_bits: 2048
 root_validity_days: 3650
 intermediate_validity_days: 1825
 leaf_validity_days: 3650
-leaf_not_before_offset_days: ~
-intermediate_not_before_offset_days: ~
-stable_bytes_len: 127
+leaf_not_before: ~
+intermediate_not_before: ~
+intermediate_is_ca: ~
+intermediate_key_usage: ~
+stable_bytes_len: 129

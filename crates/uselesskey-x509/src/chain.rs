@@ -13,9 +13,12 @@ use rcgen::{
 };
 use rustls_pki_types::PrivatePkcs8KeyDer;
 use time::Duration as TimeDuration;
+use time::OffsetDateTime;
 use uselesskey_core::sink::TempArtifact;
 use uselesskey_core::{Error, Factory};
-use uselesskey_core_x509::{ChainSpec, deterministic_base_time_from_parts};
+use uselesskey_core_x509::{
+    ChainSpec, KeyUsage, NotBeforeOffset, deterministic_base_time_from_parts,
+};
 use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 
 /// Cache domain for X.509 certificate chain fixtures.
@@ -543,6 +546,30 @@ impl X509Chain {
     }
 }
 
+fn apply_not_before(base_time: OffsetDateTime, offset: Option<NotBeforeOffset>) -> OffsetDateTime {
+    match offset.unwrap_or(NotBeforeOffset::DaysAgo(1)) {
+        NotBeforeOffset::DaysAgo(days) => base_time - TimeDuration::days(days as i64),
+        NotBeforeOffset::DaysFromNow(days) => base_time + TimeDuration::days(days as i64),
+    }
+}
+
+fn key_usage_purposes(key_usage: KeyUsage) -> Vec<KeyUsagePurpose> {
+    let mut purposes = Vec::new();
+    if key_usage.key_cert_sign {
+        purposes.push(KeyUsagePurpose::KeyCertSign);
+    }
+    if key_usage.crl_sign {
+        purposes.push(KeyUsagePurpose::CrlSign);
+    }
+    if key_usage.digital_signature {
+        purposes.push(KeyUsagePurpose::DigitalSignature);
+    }
+    if key_usage.key_encipherment {
+        purposes.push(KeyUsagePurpose::KeyEncipherment);
+    }
+    purposes
+}
+
 fn load_chain_inner(
     factory: &Factory,
     label: &str,
@@ -615,14 +642,15 @@ fn load_chain_inner(
         int_params
             .distinguished_name
             .push(DnType::CommonName, spec.intermediate_cn.clone());
-        int_params.is_ca = IsCa::Ca(BasicConstraints::Constrained(0));
-        int_params.key_usages = vec![
-            KeyUsagePurpose::KeyCertSign,
-            KeyUsagePurpose::CrlSign,
-            KeyUsagePurpose::DigitalSignature,
-        ];
-        let int_offset = spec.intermediate_not_before_offset_days.unwrap_or(1);
-        int_params.not_before = base_time - TimeDuration::days(int_offset);
+        let intermediate_is_ca = spec.intermediate_is_ca.unwrap_or(true);
+        int_params.is_ca = if intermediate_is_ca {
+            IsCa::Ca(BasicConstraints::Constrained(0))
+        } else {
+            IsCa::NoCa
+        };
+        int_params.key_usages =
+            key_usage_purposes(spec.intermediate_key_usage.unwrap_or_else(KeyUsage::ca));
+        int_params.not_before = apply_not_before(base_time, spec.intermediate_not_before);
         int_params.not_after =
             int_params.not_before + TimeDuration::days(spec.intermediate_validity_days as i64);
         int_params.serial_number = Some(next_serial_number(&mut rng));
@@ -657,8 +685,7 @@ fn load_chain_inner(
             ));
         }
 
-        let leaf_offset = spec.leaf_not_before_offset_days.unwrap_or(1);
-        leaf_params.not_before = base_time - TimeDuration::days(leaf_offset);
+        leaf_params.not_before = apply_not_before(base_time, spec.leaf_not_before);
         leaf_params.not_after =
             leaf_params.not_before + TimeDuration::days(spec.leaf_validity_days as i64);
         leaf_params.serial_number = Some(next_serial_number(&mut rng));

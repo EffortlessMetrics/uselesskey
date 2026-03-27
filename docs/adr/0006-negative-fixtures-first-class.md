@@ -12,7 +12,8 @@ Negative fixtures are first-class API citizens with dedicated types and variants
 - `CorruptPem` enum with variants: `BadHeader`, `BadFooter`, `MissingDashes`, `CorruptBase64`, `Truncated`
 - `corrupt_der_deterministic()` for reproducible DER corruption
 - `"mismatch"` variant for keypair mismatches
-- X.509 negative fixtures: expired, hostname mismatch, unknown CA, revoked
+- X.509 negative fixtures: expired, not-yet-valid, hostname mismatch,
+  unknown CA, intermediate CA/key-usage violations, revoked
 
 ## Consequences
 

@@ -69,6 +69,10 @@ fn fmt_offset(o: &NotBeforeOffset) -> String {
     }
 }
 
+fn nbo_string(o: &NotBeforeOffset) -> String {
+    fmt_offset(o)
+}
+
 fn apply_snapshot(variant: &'static str, neg: X509Negative) -> AppliedSpecSnapshot {
     let base = X509Spec::self_signed("neg.example.com");
     let spec = neg.apply_to_spec(&base);
@@ -125,8 +129,24 @@ fn snapshot_chain_negative_variant_names() {
             variant_name: ChainNegative::ExpiredLeaf.variant_name(),
         },
         ChainVariantMeta {
+            variant: "NotYetValidLeaf",
+            variant_name: ChainNegative::NotYetValidLeaf.variant_name(),
+        },
+        ChainVariantMeta {
             variant: "ExpiredIntermediate",
             variant_name: ChainNegative::ExpiredIntermediate.variant_name(),
+        },
+        ChainVariantMeta {
+            variant: "NotYetValidIntermediate",
+            variant_name: ChainNegative::NotYetValidIntermediate.variant_name(),
+        },
+        ChainVariantMeta {
+            variant: "IntermediateNotCa",
+            variant_name: ChainNegative::IntermediateNotCa.variant_name(),
+        },
+        ChainVariantMeta {
+            variant: "IntermediateWrongKeyUsage",
+            variant_name: ChainNegative::IntermediateWrongKeyUsage.variant_name(),
         },
         ChainVariantMeta {
             variant: "RevokedLeaf",
@@ -148,8 +168,10 @@ struct ChainAppliedSnapshot {
     root_cn: String,
     leaf_validity_days: u32,
     intermediate_validity_days: u32,
-    leaf_not_before_offset_days: Option<i64>,
-    intermediate_not_before_offset_days: Option<i64>,
+    leaf_not_before: Option<String>,
+    intermediate_not_before: Option<String>,
+    intermediate_is_ca: Option<bool>,
+    intermediate_key_usage: Option<[u8; 4]>,
 }
 
 fn chain_apply_snapshot(neg: &ChainNegative) -> ChainAppliedSnapshot {
@@ -162,8 +184,10 @@ fn chain_apply_snapshot(neg: &ChainNegative) -> ChainAppliedSnapshot {
         root_cn: spec.root_cn,
         leaf_validity_days: spec.leaf_validity_days,
         intermediate_validity_days: spec.intermediate_validity_days,
-        leaf_not_before_offset_days: spec.leaf_not_before_offset_days,
-        intermediate_not_before_offset_days: spec.intermediate_not_before_offset_days,
+        leaf_not_before: spec.leaf_not_before.map(|o| nbo_string(&o)),
+        intermediate_not_before: spec.intermediate_not_before.map(|o| nbo_string(&o)),
+        intermediate_is_ca: spec.intermediate_is_ca,
+        intermediate_key_usage: spec.intermediate_key_usage.map(|ku| ku.stable_bytes()),
     }
 }
 
@@ -175,7 +199,11 @@ fn snapshot_chain_negative_applied_specs() {
         }),
         chain_apply_snapshot(&ChainNegative::UnknownCa),
         chain_apply_snapshot(&ChainNegative::ExpiredLeaf),
+        chain_apply_snapshot(&ChainNegative::NotYetValidLeaf),
         chain_apply_snapshot(&ChainNegative::ExpiredIntermediate),
+        chain_apply_snapshot(&ChainNegative::NotYetValidIntermediate),
+        chain_apply_snapshot(&ChainNegative::IntermediateNotCa),
+        chain_apply_snapshot(&ChainNegative::IntermediateWrongKeyUsage),
         chain_apply_snapshot(&ChainNegative::RevokedLeaf),
     ];
     insta::assert_yaml_snapshot!("chain_negative_applied_specs", specs);

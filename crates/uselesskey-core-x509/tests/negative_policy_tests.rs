@@ -16,6 +16,13 @@ use uselesskey_core_x509::{
     ChainNegative, ChainSpec, KeyUsage, NotBeforeOffset, X509Negative, X509Spec,
 };
 
+fn expect_days_ago(offset: NotBeforeOffset) -> u32 {
+    match offset {
+        NotBeforeOffset::DaysAgo(days) => days,
+        NotBeforeOffset::DaysFromNow(days) => panic!("expected DaysAgo, got DaysFromNow({days})"),
+    }
+}
+
 // =========================================================================
 // 1. X509Negative: construction and exhaustiveness
 // =========================================================================
@@ -55,7 +62,11 @@ fn chain_negative_exhaustive_match() {
             ChainNegative::HostnameMismatch { .. } => "hostname_mismatch",
             ChainNegative::UnknownCa => "unknown_ca",
             ChainNegative::ExpiredLeaf => "expired_leaf",
+            ChainNegative::NotYetValidLeaf => "not_yet_valid_leaf",
             ChainNegative::ExpiredIntermediate => "expired_intermediate",
+            ChainNegative::NotYetValidIntermediate => "not_yet_valid_intermediate",
+            ChainNegative::IntermediateNotCa => "intermediate_not_ca",
+            ChainNegative::IntermediateWrongKeyUsage => "intermediate_wrong_key_usage",
             ChainNegative::RevokedLeaf => "revoked_leaf",
         }
     }
@@ -103,8 +114,8 @@ fn expired_chain_leaf_offset_exceeds_validity() {
     let base = ChainSpec::new("chain-expired.example.com");
     let modified = ChainNegative::ExpiredLeaf.apply_to_spec(&base);
 
-    let offset = modified.leaf_not_before_offset_days.unwrap();
-    let validity = modified.leaf_validity_days as i64;
+    let offset = expect_days_ago(modified.leaf_not_before.unwrap());
+    let validity = modified.leaf_validity_days;
     assert!(
         offset > validity,
         "offset ({offset}) must exceed validity ({validity}) for the cert to be expired"
@@ -116,8 +127,8 @@ fn expired_chain_intermediate_offset_exceeds_validity() {
     let base = ChainSpec::new("chain-expired.example.com");
     let modified = ChainNegative::ExpiredIntermediate.apply_to_spec(&base);
 
-    let offset = modified.intermediate_not_before_offset_days.unwrap();
-    let validity = modified.intermediate_validity_days as i64;
+    let offset = expect_days_ago(modified.intermediate_not_before.unwrap());
+    let validity = modified.intermediate_validity_days;
     assert!(
         offset > validity,
         "offset ({offset}) must exceed validity ({validity}) for the cert to be expired"

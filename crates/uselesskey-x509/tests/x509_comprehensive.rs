@@ -700,6 +700,136 @@ fn chain_expired_intermediate_not_after_in_past() {
     );
 }
 
+#[test]
+fn chain_not_yet_valid_leaf_not_before_in_future() {
+    let fx = fx();
+    let chain = fx.x509_chain("nyv-leaf-v", ChainSpec::new("nyv-leaf-v.example.com"));
+    let future = chain.not_yet_valid_leaf();
+
+    let (_, leaf) = X509Certificate::from_der(future.leaf_cert_der()).expect("parse leaf");
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs() as i64;
+    assert!(
+        leaf.validity().not_before.timestamp() > now,
+        "not-yet-valid leaf not_before should be after now"
+    );
+}
+
+#[test]
+fn chain_not_yet_valid_intermediate_not_before_in_future() {
+    let fx = fx();
+    let chain = fx.x509_chain("nyv-int-v", ChainSpec::new("nyv-int-v.example.com"));
+    let future = chain.not_yet_valid_intermediate();
+
+    let (_, int) =
+        X509Certificate::from_der(future.intermediate_cert_der()).expect("parse intermediate");
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs() as i64;
+    assert!(
+        int.validity().not_before.timestamp() > now,
+        "not-yet-valid intermediate not_before should be after now"
+    );
+}
+
+#[test]
+fn chain_intermediate_not_ca_clears_ca_flag() {
+    let fx = fx();
+    let chain = fx.x509_chain("int-not-ca", ChainSpec::new("int-not-ca.example.com"));
+    let bad = chain.intermediate_not_ca();
+
+    let (_, int) =
+        X509Certificate::from_der(bad.intermediate_cert_der()).expect("parse intermediate");
+    assert!(!int.is_ca(), "intermediate_not_ca should clear the CA flag");
+}
+
+#[test]
+fn chain_intermediate_wrong_key_usage_keeps_ca_but_drops_cert_sign() {
+    let fx = fx();
+    let chain = fx.x509_chain("int-wku", ChainSpec::new("int-wku.example.com"));
+    let bad = chain.intermediate_wrong_key_usage();
+
+    let (_, int) =
+        X509Certificate::from_der(bad.intermediate_cert_der()).expect("parse intermediate");
+    assert!(
+        int.is_ca(),
+        "wrong-key-usage intermediate should still claim CA"
+    );
+
+    let ku_ext = int
+        .extensions()
+        .iter()
+        .find(|ext| ext.oid == x509_parser::oid_registry::OID_X509_EXT_KEY_USAGE)
+        .expect("intermediate KeyUsage");
+
+    let ku = match ku_ext.parsed_extension() {
+        x509_parser::extensions::ParsedExtension::KeyUsage(ku) => ku,
+        other => panic!("expected KeyUsage, got {:?}", other),
+    };
+
+    assert!(
+        !ku.key_cert_sign(),
+        "intermediate_wrong_key_usage must omit keyCertSign"
+    );
+}
+
+#[test]
+fn new_chain_negative_variants_preserve_key_material() {
+    let fx = fx();
+    let chain = fx.x509_chain(
+        "chain-neg-keys",
+        ChainSpec::new("chain-neg-keys.example.com"),
+    );
+
+    let variants: Vec<(&str, uselesskey_x509::X509Chain)> = vec![
+        ("not_yet_valid_leaf", chain.not_yet_valid_leaf()),
+        (
+            "not_yet_valid_intermediate",
+            chain.not_yet_valid_intermediate(),
+        ),
+        ("intermediate_not_ca", chain.intermediate_not_ca()),
+        (
+            "intermediate_wrong_key_usage",
+            chain.intermediate_wrong_key_usage(),
+        ),
+    ];
+
+    for (name, bad) in &variants {
+        assert_eq!(
+            bad.root_private_key_pkcs8_der(),
+            chain.root_private_key_pkcs8_der(),
+            "{name} should preserve the root key"
+        );
+        assert_eq!(
+            bad.intermediate_private_key_pkcs8_der(),
+            chain.intermediate_private_key_pkcs8_der(),
+            "{name} should preserve the intermediate key"
+        );
+        assert_eq!(
+            bad.leaf_private_key_pkcs8_der(),
+            chain.leaf_private_key_pkcs8_der(),
+            "{name} should preserve the leaf key"
+        );
+
+        if *name == "not_yet_valid_leaf" {
+            assert_ne!(
+                bad.leaf_cert_der(),
+                chain.leaf_cert_der(),
+                "{name} should change the leaf certificate"
+            );
+        } else {
+            assert_ne!(
+                bad.intermediate_cert_der(),
+                chain.intermediate_cert_der(),
+                "{name} should change the intermediate certificate"
+            );
+        }
+    }
+}
+
 // =========================================================================
 // Negative fixtures: chain hostname mismatch
 // =========================================================================
@@ -1079,13 +1209,29 @@ fn all_chain_negative_variants_produce_parseable_certs() {
     let variants: Vec<NegativeVariant<'_>> = vec![
         ("expired_leaf", Box::new(|| chain.expired_leaf())),
         (
+            "not_yet_valid_leaf",
+            Box::new(|| chain.not_yet_valid_leaf()),
+        ),
+        (
             "expired_intermediate",
             Box::new(|| chain.expired_intermediate()),
+        ),
+        (
+            "not_yet_valid_intermediate",
+            Box::new(|| chain.not_yet_valid_intermediate()),
         ),
         ("unknown_ca", Box::new(|| chain.unknown_ca())),
         (
             "hostname_mismatch",
             Box::new(|| chain.hostname_mismatch("wrong.example.com")),
+        ),
+        (
+            "intermediate_not_ca",
+            Box::new(|| chain.intermediate_not_ca()),
+        ),
+        (
+            "intermediate_wrong_key_usage",
+            Box::new(|| chain.intermediate_wrong_key_usage()),
         ),
         ("revoked_leaf", Box::new(|| chain.revoked_leaf())),
     ];

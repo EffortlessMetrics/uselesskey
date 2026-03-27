@@ -4,7 +4,8 @@
 //! - Self-signed certificates with various specs (CN, SANs, validity)
 //! - Three-level certificate chains (Root CA → Intermediate → Leaf)
 //! - X.509 negative fixtures (expired, not-yet-valid, wrong key usage)
-//! - Chain negative fixtures (hostname mismatch, unknown CA, revoked leaf)
+//! - Chain negative fixtures (hostname mismatch, unknown CA, not-yet-valid
+//!   leaf/intermediate, intermediate CA/key-usage violations, revoked leaf)
 //! - Writing certificates to tempfiles for external tools
 //!
 //! Run with: cargo run -p uselesskey --example x509_certificates --features "x509"
@@ -215,6 +216,59 @@ fn main() {
     println!(
         "  Intermediate differs: {}",
         good_chain.intermediate_cert_der() != expired_int.intermediate_cert_der()
+    );
+    assert_ne!(
+        good_chain.intermediate_cert_der(),
+        expired_int.intermediate_cert_der()
+    );
+
+    // Not-yet-valid leaf certificate
+    let future_leaf = good_chain.not_yet_valid_leaf();
+    println!("Not-yet-valid leaf chain:");
+    println!(
+        "  Leaf cert differs: {}",
+        good_chain.leaf_cert_der() != future_leaf.leaf_cert_der()
+    );
+    assert_ne!(good_chain.leaf_cert_der(), future_leaf.leaf_cert_der());
+
+    // Not-yet-valid intermediate certificate
+    let future_int = good_chain.not_yet_valid_intermediate();
+    println!("Not-yet-valid intermediate chain:");
+    println!(
+        "  Intermediate cert differs: {}",
+        good_chain.intermediate_cert_der() != future_int.intermediate_cert_der()
+    );
+    assert_ne!(
+        good_chain.intermediate_cert_der(),
+        future_int.intermediate_cert_der()
+    );
+
+    // Intermediate that no longer claims CA status
+    let not_ca = good_chain.intermediate_not_ca();
+    println!("Intermediate-not-CA chain:");
+    println!(
+        "  Intermediate is CA: {}",
+        not_ca.spec().intermediate_is_ca.unwrap_or(true)
+    );
+    assert_eq!(not_ca.spec().intermediate_is_ca, Some(false));
+
+    // Intermediate with missing keyCertSign usage
+    let bad_usage = good_chain.intermediate_wrong_key_usage();
+    println!("Intermediate wrong key usage chain:");
+    println!(
+        "  keyCertSign present: {}",
+        bad_usage
+            .spec()
+            .intermediate_key_usage
+            .expect("intermediate key usage")
+            .key_cert_sign
+    );
+    assert!(
+        !bad_usage
+            .spec()
+            .intermediate_key_usage
+            .unwrap()
+            .key_cert_sign
     );
 
     // Revoked leaf (includes CRL)

@@ -148,7 +148,7 @@ fn chain_expired_leaf_sets_short_validity_and_past_offset() {
     let base = ChainSpec::new("api.example.com");
     let mutated = ChainNegative::ExpiredLeaf.apply_to_spec(&base);
     assert_eq!(mutated.leaf_validity_days, 1);
-    assert_eq!(mutated.leaf_not_before_offset_days, Some(730));
+    assert_eq!(mutated.leaf_not_before, Some(NotBeforeOffset::DaysAgo(730)));
     // Intermediate should be unchanged
     assert_eq!(
         mutated.intermediate_validity_days,
@@ -161,7 +161,10 @@ fn chain_expired_intermediate_sets_short_validity_and_past_offset() {
     let base = ChainSpec::new("api.example.com");
     let mutated = ChainNegative::ExpiredIntermediate.apply_to_spec(&base);
     assert_eq!(mutated.intermediate_validity_days, 1);
-    assert_eq!(mutated.intermediate_not_before_offset_days, Some(730));
+    assert_eq!(
+        mutated.intermediate_not_before,
+        Some(NotBeforeOffset::DaysAgo(730))
+    );
     // Leaf should be unchanged
     assert_eq!(mutated.leaf_validity_days, base.leaf_validity_days);
 }
@@ -186,7 +189,11 @@ fn chain_variant_names_are_unique() {
         .variant_name(),
         ChainNegative::UnknownCa.variant_name(),
         ChainNegative::ExpiredLeaf.variant_name(),
+        ChainNegative::NotYetValidLeaf.variant_name(),
         ChainNegative::ExpiredIntermediate.variant_name(),
+        ChainNegative::NotYetValidIntermediate.variant_name(),
+        ChainNegative::IntermediateNotCa.variant_name(),
+        ChainNegative::IntermediateWrongKeyUsage.variant_name(),
         ChainNegative::RevokedLeaf.variant_name(),
     ];
 

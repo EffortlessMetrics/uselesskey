@@ -84,6 +84,11 @@ impl X509Chain {
         self.negative(ChainNegative::ExpiredLeaf)
     }
 
+    /// Get a chain where the leaf certificate is not yet valid.
+    pub fn not_yet_valid_leaf(&self) -> X509Chain {
+        self.negative(ChainNegative::NotYetValidLeaf)
+    }
+
     /// Get a chain where the intermediate certificate has a very short validity period.
     ///
     /// # Examples
@@ -98,6 +103,21 @@ impl X509Chain {
     /// ```
     pub fn expired_intermediate(&self) -> X509Chain {
         self.negative(ChainNegative::ExpiredIntermediate)
+    }
+
+    /// Get a chain where the intermediate certificate is not yet valid.
+    pub fn not_yet_valid_intermediate(&self) -> X509Chain {
+        self.negative(ChainNegative::NotYetValidIntermediate)
+    }
+
+    /// Get a chain where the intermediate no longer claims CA status.
+    pub fn intermediate_not_ca(&self) -> X509Chain {
+        self.negative(ChainNegative::IntermediateNotCa)
+    }
+
+    /// Get a chain where the intermediate claims CA but lacks CA signing usage.
+    pub fn intermediate_wrong_key_usage(&self) -> X509Chain {
+        self.negative(ChainNegative::IntermediateWrongKeyUsage)
     }
 
     /// Get a chain with a CRL listing the leaf certificate as revoked.
@@ -223,6 +243,89 @@ mod tests {
     }
 
     #[test]
+    fn test_not_yet_valid_leaf() {
+        let factory = fx();
+        let spec = ChainSpec::new("test.example.com");
+        let chain = X509Chain::new(factory, "test", spec);
+
+        let future = chain.not_yet_valid_leaf();
+        assert_ne!(chain.leaf_cert_der(), future.leaf_cert_der());
+
+        use x509_parser::prelude::*;
+        let (_, leaf) =
+            X509Certificate::from_der(future.leaf_cert_der()).expect("parse future leaf");
+        let not_before = leaf.validity().not_before.timestamp();
+        let now = ::time::OffsetDateTime::now_utc().unix_timestamp();
+        assert!(not_before > now, "not_before should be in the future");
+    }
+
+    #[test]
+    fn test_not_yet_valid_intermediate() {
+        let factory = fx();
+        let spec = ChainSpec::new("test.example.com");
+        let chain = X509Chain::new(factory, "test", spec);
+
+        let future = chain.not_yet_valid_intermediate();
+        assert_ne!(
+            chain.intermediate_cert_der(),
+            future.intermediate_cert_der()
+        );
+
+        use x509_parser::prelude::*;
+        let (_, int) = X509Certificate::from_der(future.intermediate_cert_der())
+            .expect("parse future intermediate");
+        let not_before = int.validity().not_before.timestamp();
+        let now = ::time::OffsetDateTime::now_utc().unix_timestamp();
+        assert!(not_before > now, "not_before should be in the future");
+    }
+
+    #[test]
+    fn test_intermediate_not_ca() {
+        use x509_parser::prelude::*;
+
+        let factory = fx();
+        let spec = ChainSpec::new("test.example.com");
+        let chain = X509Chain::new(factory, "test", spec);
+
+        let bad = chain.intermediate_not_ca();
+        assert_ne!(chain.intermediate_cert_der(), bad.intermediate_cert_der());
+
+        let (_, int) =
+            X509Certificate::from_der(bad.intermediate_cert_der()).expect("parse intermediate");
+        assert!(!int.is_ca(), "intermediate should not claim CA");
+    }
+
+    #[test]
+    fn test_intermediate_wrong_key_usage() {
+        use x509_parser::extensions::ParsedExtension;
+        use x509_parser::prelude::*;
+
+        let factory = fx();
+        let spec = ChainSpec::new("test.example.com");
+        let chain = X509Chain::new(factory, "test", spec);
+
+        let bad = chain.intermediate_wrong_key_usage();
+        assert_ne!(chain.intermediate_cert_der(), bad.intermediate_cert_der());
+
+        let (_, int) =
+            X509Certificate::from_der(bad.intermediate_cert_der()).expect("parse intermediate");
+        assert!(int.is_ca(), "intermediate should still claim CA");
+
+        let key_usage = int
+            .extensions()
+            .iter()
+            .find_map(|ext| match ext.parsed_extension() {
+                ParsedExtension::KeyUsage(ku) => Some(ku),
+                _ => None,
+            })
+            .expect("key usage extension");
+        assert!(
+            !key_usage.key_cert_sign(),
+            "intermediate should be missing keyCertSign"
+        );
+    }
+
+    #[test]
     fn test_negative_variants_reuse_keys() {
         let factory = fx();
         let spec = ChainSpec::new("test.example.com");
@@ -230,9 +333,13 @@ mod tests {
 
         let variants: Vec<X509Chain> = vec![
             good.expired_leaf(),
+            good.not_yet_valid_leaf(),
             good.expired_intermediate(),
+            good.not_yet_valid_intermediate(),
             good.unknown_ca(),
             good.hostname_mismatch("wrong.example.com"),
+            good.intermediate_not_ca(),
+            good.intermediate_wrong_key_usage(),
             good.revoked_leaf(),
         ];
 
@@ -257,8 +364,24 @@ mod tests {
         assert_eq!(ChainNegative::UnknownCa.variant_name(), "unknown_ca");
         assert_eq!(ChainNegative::ExpiredLeaf.variant_name(), "expired_leaf");
         assert_eq!(
+            ChainNegative::NotYetValidLeaf.variant_name(),
+            "not_yet_valid_leaf"
+        );
+        assert_eq!(
             ChainNegative::ExpiredIntermediate.variant_name(),
             "expired_intermediate"
+        );
+        assert_eq!(
+            ChainNegative::NotYetValidIntermediate.variant_name(),
+            "not_yet_valid_intermediate"
+        );
+        assert_eq!(
+            ChainNegative::IntermediateNotCa.variant_name(),
+            "intermediate_not_ca"
+        );
+        assert_eq!(
+            ChainNegative::IntermediateWrongKeyUsage.variant_name(),
+            "intermediate_wrong_key_usage"
         );
         assert_eq!(ChainNegative::RevokedLeaf.variant_name(), "revoked_leaf");
     }

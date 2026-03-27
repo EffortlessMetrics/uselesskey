@@ -145,8 +145,9 @@ let truncated = rsa.private_key_pkcs8_der_truncated(32);
 let mismatch  = rsa.mismatched_public_key_spki_der();
 ```
 
-X.509 chains support expired certs, hostname mismatch, unknown CA, and revoked
-leaf (with CRL):
+X.509 chains support expired and not-yet-valid leaf/intermediate certs,
+hostname mismatch, unknown CA, intermediate CA/key-usage violations, and
+revoked leaf (with CRL):
 
 ```rust
 use uselesskey::{Factory, X509FactoryExt, ChainSpec};
@@ -155,8 +156,11 @@ let fx = Factory::random();
 let chain = fx.x509_chain("svc", ChainSpec::new("test.example.com"));
 
 let expired    = chain.expired_leaf();
+let future     = chain.not_yet_valid_leaf();
 let wrong_host = chain.hostname_mismatch("wrong.example.com");
 let unknown_ca = chain.unknown_ca();
+let bad_ca     = chain.intermediate_not_ca();
+let bad_usage  = chain.intermediate_wrong_key_usage();
 let revoked    = chain.revoked_leaf();
 ```
 
@@ -193,4 +197,3 @@ on the implementation crate directly:
 
 Licensed under either of [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0)
 or [MIT license](https://opensource.org/licenses/MIT) at your option.
-

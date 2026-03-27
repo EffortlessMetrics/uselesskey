@@ -225,8 +225,8 @@ fn chain_spec_defaults() {
     assert_eq!(cs.root_validity_days, 3650);
     assert_eq!(cs.intermediate_validity_days, 1825);
     assert_eq!(cs.leaf_validity_days, 3650);
-    assert!(cs.leaf_not_before_offset_days.is_none());
-    assert!(cs.intermediate_not_before_offset_days.is_none());
+    assert!(cs.leaf_not_before.is_none());
+    assert!(cs.intermediate_not_before.is_none());
 }
 
 #[test]
@@ -318,15 +318,15 @@ fn chain_stable_bytes_optional_offsets_matter() {
     let base_bytes = base.stable_bytes();
 
     let mut with_leaf_offset = base.clone();
-    with_leaf_offset.leaf_not_before_offset_days = Some(100);
+    with_leaf_offset.leaf_not_before = Some(NotBeforeOffset::DaysAgo(100));
     assert_ne!(with_leaf_offset.stable_bytes(), base_bytes);
 
     let mut with_int_offset = base.clone();
-    with_int_offset.intermediate_not_before_offset_days = Some(100);
+    with_int_offset.intermediate_not_before = Some(NotBeforeOffset::DaysAgo(100));
     assert_ne!(with_int_offset.stable_bytes(), base_bytes);
 
     // Different offset values differ from each other
     let mut offset_200 = base.clone();
-    offset_200.leaf_not_before_offset_days = Some(200);
+    offset_200.leaf_not_before = Some(NotBeforeOffset::DaysAgo(200));
     assert_ne!(with_leaf_offset.stable_bytes(), offset_200.stable_bytes());
 }

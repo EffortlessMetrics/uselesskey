@@ -2,13 +2,13 @@
 source: crates/uselesskey-core-x509-chain-negative/tests/snapshots_chain_negative.rs
 expression: variant_shape(&variant)
 ---
-variant_name: expired_intermediate
+variant_name: not_yet_valid_leaf
 leaf_cn: test.example.com
 root_cn: test.example.com Root CA
 leaf_validity_days: 3650
-intermediate_validity_days: 1
-leaf_not_before: ~
-intermediate_not_before: DaysAgo(730)
+intermediate_validity_days: 1825
+leaf_not_before: DaysFromNow(730)
+intermediate_not_before: ~
 intermediate_is_ca: ~
 intermediate_key_usage: ~
 leaf_sans_count: 1

@@ -16,7 +16,9 @@
 mod testutil;
 
 use testutil::fx;
-use uselesskey_x509::{ChainNegative, ChainSpec, KeyUsage, X509FactoryExt, X509Negative, X509Spec};
+use uselesskey_x509::{
+    ChainNegative, ChainSpec, KeyUsage, NotBeforeOffset, X509FactoryExt, X509Negative, X509Spec,
+};
 
 // =========================================================================
 // X509Spec tests
@@ -151,8 +153,8 @@ fn test_chain_spec_stable_bytes_version_prefix() {
     let spec = ChainSpec::new("test.example.com");
     let bytes = spec.stable_bytes();
     assert_eq!(
-        bytes[0], 2,
-        "ChainSpec stable_bytes version prefix should be 2"
+        bytes[0], 3,
+        "ChainSpec stable_bytes version prefix should be 3"
     );
 }
 
@@ -287,13 +289,54 @@ fn test_chain_negative_apply_to_spec_all_variants() {
     let expired_leaf_neg = ChainNegative::ExpiredLeaf;
     let modified = expired_leaf_neg.apply_to_spec(&base);
     assert_eq!(modified.leaf_validity_days, 1);
-    assert_eq!(modified.leaf_not_before_offset_days, Some(730));
+    assert_eq!(
+        modified.leaf_not_before,
+        Some(NotBeforeOffset::DaysAgo(730))
+    );
+
+    // NotYetValidLeaf
+    let not_yet_valid_leaf_neg = ChainNegative::NotYetValidLeaf;
+    let modified = not_yet_valid_leaf_neg.apply_to_spec(&base);
+    assert_eq!(
+        modified.leaf_not_before,
+        Some(NotBeforeOffset::DaysFromNow(730))
+    );
 
     // ExpiredIntermediate
     let expired_int_neg = ChainNegative::ExpiredIntermediate;
     let modified = expired_int_neg.apply_to_spec(&base);
     assert_eq!(modified.intermediate_validity_days, 1);
-    assert_eq!(modified.intermediate_not_before_offset_days, Some(730));
+    assert_eq!(
+        modified.intermediate_not_before,
+        Some(NotBeforeOffset::DaysAgo(730))
+    );
+
+    // NotYetValidIntermediate
+    let not_yet_valid_int_neg = ChainNegative::NotYetValidIntermediate;
+    let modified = not_yet_valid_int_neg.apply_to_spec(&base);
+    assert_eq!(
+        modified.intermediate_not_before,
+        Some(NotBeforeOffset::DaysFromNow(730))
+    );
+
+    // IntermediateNotCa
+    let int_not_ca_neg = ChainNegative::IntermediateNotCa;
+    let modified = int_not_ca_neg.apply_to_spec(&base);
+    assert_eq!(modified.intermediate_is_ca, Some(false));
+
+    // IntermediateWrongKeyUsage
+    let int_wrong_ku_neg = ChainNegative::IntermediateWrongKeyUsage;
+    let modified = int_wrong_ku_neg.apply_to_spec(&base);
+    assert_eq!(modified.intermediate_is_ca, Some(true));
+    assert_eq!(
+        modified.intermediate_key_usage,
+        Some(KeyUsage {
+            key_cert_sign: false,
+            crl_sign: false,
+            digital_signature: true,
+            key_encipherment: false,
+        })
+    );
 
     // RevokedLeaf
     let revoked_neg = ChainNegative::RevokedLeaf;

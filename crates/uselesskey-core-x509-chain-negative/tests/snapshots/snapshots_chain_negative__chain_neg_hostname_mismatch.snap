@@ -7,7 +7,9 @@ leaf_cn: evil.example.com
 root_cn: test.example.com Root CA
 leaf_validity_days: 3650
 intermediate_validity_days: 1825
-leaf_not_before_offset_days: ~
-intermediate_not_before_offset_days: ~
+leaf_not_before: ~
+intermediate_not_before: ~
+intermediate_is_ca: ~
+intermediate_key_usage: ~
 leaf_sans_count: 1
 differs_from_base: true

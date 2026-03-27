@@ -7,6 +7,13 @@ use rstest::rstest;
 use uselesskey_core_x509_negative::{ChainNegative, X509Negative};
 use uselesskey_core_x509_spec::{ChainSpec, KeyUsage, NotBeforeOffset, X509Spec};
 
+fn expect_days_ago(offset: NotBeforeOffset) -> u32 {
+    match offset {
+        NotBeforeOffset::DaysAgo(days) => days,
+        NotBeforeOffset::DaysFromNow(days) => panic!("expected DaysAgo, got DaysFromNow({days})"),
+    }
+}
+
 // ---------------------------------------------------------------------------
 // 1. Construction of each variant
 // ---------------------------------------------------------------------------
@@ -40,7 +47,11 @@ fn chain_negative_all_variants_construct() {
             ChainNegative::HostnameMismatch { .. } => {}
             ChainNegative::UnknownCa => {}
             ChainNegative::ExpiredLeaf => {}
+            ChainNegative::NotYetValidLeaf => {}
             ChainNegative::ExpiredIntermediate => {}
+            ChainNegative::NotYetValidIntermediate => {}
+            ChainNegative::IntermediateNotCa => {}
+            ChainNegative::IntermediateWrongKeyUsage => {}
             ChainNegative::RevokedLeaf => {}
         }
     }
@@ -51,7 +62,11 @@ fn chain_negative_all_variants_construct() {
         },
         ChainNegative::UnknownCa,
         ChainNegative::ExpiredLeaf,
+        ChainNegative::NotYetValidLeaf,
         ChainNegative::ExpiredIntermediate,
+        ChainNegative::NotYetValidIntermediate,
+        ChainNegative::IntermediateNotCa,
+        ChainNegative::IntermediateWrongKeyUsage,
         ChainNegative::RevokedLeaf,
     ];
     for variant in variants {
@@ -90,7 +105,16 @@ fn chain_negative_debug_contains_variant_info() {
 
     assert!(format!("{:?}", ChainNegative::UnknownCa).contains("UnknownCa"));
     assert!(format!("{:?}", ChainNegative::ExpiredLeaf).contains("ExpiredLeaf"));
+    assert!(format!("{:?}", ChainNegative::NotYetValidLeaf).contains("NotYetValidLeaf"));
     assert!(format!("{:?}", ChainNegative::ExpiredIntermediate).contains("ExpiredIntermediate"));
+    assert!(
+        format!("{:?}", ChainNegative::NotYetValidIntermediate).contains("NotYetValidIntermediate")
+    );
+    assert!(format!("{:?}", ChainNegative::IntermediateNotCa).contains("IntermediateNotCa"));
+    assert!(
+        format!("{:?}", ChainNegative::IntermediateWrongKeyUsage)
+            .contains("IntermediateWrongKeyUsage")
+    );
     assert!(format!("{:?}", ChainNegative::RevokedLeaf).contains("RevokedLeaf"));
 }
 
@@ -159,7 +183,11 @@ fn chain_negative_variant_names_are_pairwise_distinct() {
         },
         ChainNegative::UnknownCa,
         ChainNegative::ExpiredLeaf,
+        ChainNegative::NotYetValidLeaf,
         ChainNegative::ExpiredIntermediate,
+        ChainNegative::NotYetValidIntermediate,
+        ChainNegative::IntermediateNotCa,
+        ChainNegative::IntermediateWrongKeyUsage,
         ChainNegative::RevokedLeaf,
     ];
     let names: HashSet<String> = variants.iter().map(|v| v.variant_name()).collect();
@@ -175,7 +203,11 @@ fn chain_negative_variants_produce_pairwise_distinct_specs() {
         },
         ChainNegative::UnknownCa,
         ChainNegative::ExpiredLeaf,
+        ChainNegative::NotYetValidLeaf,
         ChainNegative::ExpiredIntermediate,
+        ChainNegative::NotYetValidIntermediate,
+        ChainNegative::IntermediateNotCa,
+        ChainNegative::IntermediateWrongKeyUsage,
         // RevokedLeaf is excluded: it intentionally leaves the spec unchanged.
     ];
     let specs: Vec<ChainSpec> = variants.iter().map(|v| v.apply_to_spec(&base)).collect();
@@ -395,15 +427,18 @@ fn expired_leaf_only_affects_leaf_fields() {
     let modified = ChainNegative::ExpiredLeaf.apply_to_spec(&base);
 
     assert_eq!(modified.leaf_validity_days, 1);
-    assert_eq!(modified.leaf_not_before_offset_days, Some(730));
+    assert_eq!(
+        modified.leaf_not_before,
+        Some(NotBeforeOffset::DaysAgo(730))
+    );
     // Intermediate untouched.
     assert_eq!(
         modified.intermediate_validity_days,
         base.intermediate_validity_days
     );
     assert_eq!(
-        modified.intermediate_not_before_offset_days,
-        base.intermediate_not_before_offset_days
+        modified.intermediate_not_before,
+        base.intermediate_not_before
     );
 }
 
@@ -413,13 +448,13 @@ fn expired_intermediate_only_affects_intermediate_fields() {
     let modified = ChainNegative::ExpiredIntermediate.apply_to_spec(&base);
 
     assert_eq!(modified.intermediate_validity_days, 1);
-    assert_eq!(modified.intermediate_not_before_offset_days, Some(730));
+    assert_eq!(
+        modified.intermediate_not_before,
+        Some(NotBeforeOffset::DaysAgo(730))
+    );
     // Leaf untouched.
     assert_eq!(modified.leaf_validity_days, base.leaf_validity_days);
-    assert_eq!(
-        modified.leaf_not_before_offset_days,
-        base.leaf_not_before_offset_days
-    );
+    assert_eq!(modified.leaf_not_before, base.leaf_not_before);
 }
 
 #[test]
@@ -573,8 +608,8 @@ proptest! {
         let base = ChainSpec::new(&leaf);
         let modified = ChainNegative::ExpiredLeaf.apply_to_spec(&base);
 
-        let offset = modified.leaf_not_before_offset_days.unwrap();
-        let validity = modified.leaf_validity_days as i64;
+        let offset = expect_days_ago(modified.leaf_not_before.unwrap());
+        let validity = modified.leaf_validity_days;
         // not_after = base_time - offset + validity; must be well in the past.
         prop_assert!(offset > validity, "offset({offset}) must exceed validity({validity})");
     }
@@ -584,8 +619,8 @@ proptest! {
         let base = ChainSpec::new(&leaf);
         let modified = ChainNegative::ExpiredIntermediate.apply_to_spec(&base);
 
-        let offset = modified.intermediate_not_before_offset_days.unwrap();
-        let validity = modified.intermediate_validity_days as i64;
+        let offset = expect_days_ago(modified.intermediate_not_before.unwrap());
+        let validity = modified.intermediate_validity_days;
         prop_assert!(offset > validity, "offset({offset}) must exceed validity({validity})");
     }
 

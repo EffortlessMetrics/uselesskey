@@ -1,5 +1,6 @@
 ---
 source: crates/uselesskey-core-x509-negative/tests/snapshots_negative.rs
+assertion_line: 156
 expression: metas
 ---
 - variant: HostnameMismatch
@@ -8,7 +9,15 @@ expression: metas
   variant_name: unknown_ca
 - variant: ExpiredLeaf
   variant_name: expired_leaf
+- variant: NotYetValidLeaf
+  variant_name: not_yet_valid_leaf
 - variant: ExpiredIntermediate
   variant_name: expired_intermediate
+- variant: NotYetValidIntermediate
+  variant_name: not_yet_valid_intermediate
+- variant: IntermediateNotCa
+  variant_name: intermediate_not_ca
+- variant: IntermediateWrongKeyUsage
+  variant_name: intermediate_wrong_key_usage
 - variant: RevokedLeaf
   variant_name: revoked_leaf

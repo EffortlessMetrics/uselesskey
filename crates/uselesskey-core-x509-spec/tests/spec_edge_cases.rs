@@ -65,9 +65,9 @@ fn x509_spec_stable_bytes_has_version_4() {
 }
 
 #[test]
-fn chain_spec_stable_bytes_has_version_2() {
+fn chain_spec_stable_bytes_has_version_3() {
     let spec = ChainSpec::new("test");
-    assert_eq!(spec.stable_bytes()[0], 2);
+    assert_eq!(spec.stable_bytes()[0], 3);
 }
 
 // =========================================================================
@@ -158,7 +158,7 @@ fn days_from_now_zero() {
 fn chain_stable_bytes_leaf_offset_none_vs_some_differ() {
     let base = ChainSpec::new("test");
     let mut with_offset = base.clone();
-    with_offset.leaf_not_before_offset_days = Some(1);
+    with_offset.leaf_not_before = Some(NotBeforeOffset::DaysAgo(1));
     assert_ne!(base.stable_bytes(), with_offset.stable_bytes());
 }
 
@@ -166,17 +166,17 @@ fn chain_stable_bytes_leaf_offset_none_vs_some_differ() {
 fn chain_stable_bytes_intermediate_offset_none_vs_some_differ() {
     let base = ChainSpec::new("test");
     let mut with_offset = base.clone();
-    with_offset.intermediate_not_before_offset_days = Some(1);
+    with_offset.intermediate_not_before = Some(NotBeforeOffset::DaysAgo(1));
     assert_ne!(base.stable_bytes(), with_offset.stable_bytes());
 }
 
 #[test]
 fn chain_stable_bytes_both_offsets_set_differs_from_one() {
     let mut one = ChainSpec::new("test");
-    one.leaf_not_before_offset_days = Some(100);
+    one.leaf_not_before = Some(NotBeforeOffset::DaysAgo(100));
 
     let mut both = one.clone();
-    both.intermediate_not_before_offset_days = Some(200);
+    both.intermediate_not_before = Some(NotBeforeOffset::DaysAgo(200));
 
     assert_ne!(one.stable_bytes(), both.stable_bytes());
 }

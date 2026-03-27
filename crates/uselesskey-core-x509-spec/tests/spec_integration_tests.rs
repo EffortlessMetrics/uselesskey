@@ -16,7 +16,7 @@ fn x509_spec_stable_bytes_version_prefix() {
 fn chain_spec_stable_bytes_version_prefix() {
     let spec = ChainSpec::new("test.example.com");
     let bytes = spec.stable_bytes();
-    assert_eq!(bytes[0], 2, "stable_bytes version prefix should be 2");
+    assert_eq!(bytes[0], 3, "stable_bytes version prefix should be 3");
 }
 
 #[test]
@@ -102,11 +102,11 @@ fn chain_spec_stable_bytes_san_order_independent() {
 #[test]
 fn chain_spec_not_before_offsets() {
     let mut spec = ChainSpec::new("test.example.com");
-    assert!(spec.leaf_not_before_offset_days.is_none());
-    assert!(spec.intermediate_not_before_offset_days.is_none());
+    assert!(spec.leaf_not_before.is_none());
+    assert!(spec.intermediate_not_before.is_none());
 
-    spec.leaf_not_before_offset_days = Some(730);
-    spec.intermediate_not_before_offset_days = Some(365);
+    spec.leaf_not_before = Some(NotBeforeOffset::DaysAgo(730));
+    spec.intermediate_not_before = Some(NotBeforeOffset::DaysAgo(365));
 
     let bytes = spec.stable_bytes();
     assert!(!bytes.is_empty());
@@ -278,9 +278,9 @@ fn x509_spec_stable_bytes_starts_with_version_4() {
 }
 
 #[test]
-fn chain_spec_stable_bytes_starts_with_version_2() {
+fn chain_spec_stable_bytes_starts_with_version_3() {
     let spec = ChainSpec::new("test.example.com");
-    assert_eq!(spec.stable_bytes()[0], 2);
+    assert_eq!(spec.stable_bytes()[0], 3);
 }
 
 #[test]

@@ -189,7 +189,7 @@ fn chain_stable_bytes_exact_format_minimal() {
 
     let mut expected = Vec::new();
     // Version prefix
-    expected.push(2);
+    expected.push(3);
     // leaf_cn: "x"
     expected.extend_from_slice(&1u32.to_be_bytes());
     expected.push(b'x');
@@ -211,9 +211,13 @@ fn chain_stable_bytes_exact_format_minimal() {
     expected.extend_from_slice(&3650u32.to_be_bytes());
     expected.extend_from_slice(&1825u32.to_be_bytes());
     expected.extend_from_slice(&3650u32.to_be_bytes());
-    // leaf_not_before_offset_days: None → tag=0
+    // leaf_not_before: None → tag=0
     expected.push(0);
-    // intermediate_not_before_offset_days: None → tag=0
+    // intermediate_not_before: None → tag=0
+    expected.push(0);
+    // intermediate_is_ca: None → tag=0
+    expected.push(0);
+    // intermediate_key_usage: None → tag=0
     expected.push(0);
 
     assert_eq!(
@@ -225,20 +229,19 @@ fn chain_stable_bytes_exact_format_minimal() {
 #[test]
 fn chain_stable_bytes_exact_format_with_offsets() {
     let mut spec = ChainSpec::new("y").with_rsa_bits(4096);
-    spec.leaf_not_before_offset_days = Some(-730);
-    spec.intermediate_not_before_offset_days = Some(365);
+    spec.leaf_not_before = Some(NotBeforeOffset::DaysFromNow(730));
+    spec.intermediate_not_before = Some(NotBeforeOffset::DaysAgo(365));
     let bytes = spec.stable_bytes();
 
-    // Verify offset encoding at the end
+    // Verify new tail encoding:
+    // leaf tag=2 + u32, intermediate tag=1 + u32, intermediate_is_ca tag=0, key_usage tag=0
     let len = bytes.len();
-    // intermediate offset: tag=1, then i64 365
-    let int_value_bytes = &bytes[len - 8..len];
-    assert_eq!(int_value_bytes, &365i64.to_be_bytes());
-    assert_eq!(bytes[len - 9], 1, "intermediate Some tag");
-    // leaf offset: tag=1, then i64 -730
-    let leaf_value_bytes = &bytes[len - 9 - 8..len - 9];
-    assert_eq!(leaf_value_bytes, &(-730i64).to_be_bytes());
-    assert_eq!(bytes[len - 9 - 8 - 1], 1, "leaf Some tag");
+    assert_eq!(bytes[len - 2], 0, "intermediate_is_ca None tag");
+    assert_eq!(bytes[len - 1], 0, "intermediate_key_usage None tag");
+    assert_eq!(&bytes[len - 6..len - 2], &365u32.to_be_bytes());
+    assert_eq!(bytes[len - 7], 1, "intermediate DaysAgo tag");
+    assert_eq!(&bytes[len - 11..len - 7], &730u32.to_be_bytes());
+    assert_eq!(bytes[len - 12], 2, "leaf DaysFromNow tag");
 }
 
 // =========================================================================
@@ -425,7 +428,7 @@ fn x509_spec_zero_validity_days_from_now() {
 #[test]
 fn chain_spec_negative_leaf_offset() {
     let mut spec = ChainSpec::new("test");
-    spec.leaf_not_before_offset_days = Some(-730);
+    spec.leaf_not_before = Some(NotBeforeOffset::DaysFromNow(730));
     let bytes = spec.stable_bytes();
     assert_eq!(bytes, spec.stable_bytes());
 }
@@ -433,7 +436,7 @@ fn chain_spec_negative_leaf_offset() {
 #[test]
 fn chain_spec_negative_intermediate_offset() {
     let mut spec = ChainSpec::new("test");
-    spec.intermediate_not_before_offset_days = Some(-365);
+    spec.intermediate_not_before = Some(NotBeforeOffset::DaysFromNow(365));
     let bytes = spec.stable_bytes();
     assert_eq!(bytes, spec.stable_bytes());
 }
@@ -441,9 +444,9 @@ fn chain_spec_negative_intermediate_offset() {
 #[test]
 fn chain_spec_positive_vs_negative_offset_differ() {
     let mut pos = ChainSpec::new("test");
-    pos.leaf_not_before_offset_days = Some(100);
+    pos.leaf_not_before = Some(NotBeforeOffset::DaysAgo(100));
     let mut neg = ChainSpec::new("test");
-    neg.leaf_not_before_offset_days = Some(-100);
+    neg.leaf_not_before = Some(NotBeforeOffset::DaysFromNow(100));
     assert_ne!(pos.stable_bytes(), neg.stable_bytes());
 }
 
@@ -451,7 +454,7 @@ fn chain_spec_positive_vs_negative_offset_differ() {
 fn chain_spec_zero_offset_differs_from_none() {
     let base = ChainSpec::new("test");
     let mut zero = ChainSpec::new("test");
-    zero.leaf_not_before_offset_days = Some(0);
+    zero.leaf_not_before = Some(NotBeforeOffset::DaysAgo(0));
     assert_ne!(
         base.stable_bytes(),
         zero.stable_bytes(),

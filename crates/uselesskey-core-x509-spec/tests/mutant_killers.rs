@@ -184,15 +184,15 @@ fn chain_spec_new_defaults() {
     assert_eq!(spec.root_validity_days, 3650);
     assert_eq!(spec.intermediate_validity_days, 1825);
     assert_eq!(spec.leaf_validity_days, 3650);
-    assert!(spec.leaf_not_before_offset_days.is_none());
-    assert!(spec.intermediate_not_before_offset_days.is_none());
+    assert!(spec.leaf_not_before.is_none());
+    assert!(spec.intermediate_not_before.is_none());
 }
 
 #[test]
 fn chain_spec_stable_bytes_version_is_2() {
     let spec = ChainSpec::new("test");
     let bytes = spec.stable_bytes();
-    assert_eq!(bytes[0], 2, "chain spec stable_bytes version must be 2");
+    assert_eq!(bytes[0], 3, "chain spec stable_bytes version must be 3");
 }
 
 #[test]
@@ -210,7 +210,7 @@ fn chain_spec_none_offset_tag_is_0() {
 #[test]
 fn chain_spec_some_offset_tag_is_1() {
     let mut spec = ChainSpec::new("test");
-    spec.leaf_not_before_offset_days = Some(100);
+    spec.leaf_not_before = Some(NotBeforeOffset::DaysAgo(100));
     let bytes = spec.stable_bytes();
     // The intermediate is still None (last byte = 0), leaf has Some (tag = 1)
     let len = bytes.len();

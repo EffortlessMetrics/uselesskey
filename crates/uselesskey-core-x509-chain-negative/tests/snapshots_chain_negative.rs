@@ -5,7 +5,7 @@
 
 use serde::Serialize;
 use uselesskey_core_x509_chain_negative::ChainNegative;
-use uselesskey_core_x509_spec::ChainSpec;
+use uselesskey_core_x509_spec::{ChainSpec, NotBeforeOffset};
 
 #[derive(Serialize)]
 struct ChainNegativeVariantShape {
@@ -14,14 +14,23 @@ struct ChainNegativeVariantShape {
     root_cn: String,
     leaf_validity_days: u32,
     intermediate_validity_days: u32,
-    leaf_not_before_offset_days: Option<i64>,
-    intermediate_not_before_offset_days: Option<i64>,
+    leaf_not_before: Option<String>,
+    intermediate_not_before: Option<String>,
+    intermediate_is_ca: Option<bool>,
+    intermediate_key_usage: Option<[u8; 4]>,
     leaf_sans_count: usize,
     differs_from_base: bool,
 }
 
 fn base_spec() -> ChainSpec {
     ChainSpec::new("test.example.com")
+}
+
+fn optional_nbo_string(nbo: Option<NotBeforeOffset>) -> Option<String> {
+    nbo.map(|nbo| match nbo {
+        NotBeforeOffset::DaysAgo(days) => format!("DaysAgo({days})"),
+        NotBeforeOffset::DaysFromNow(days) => format!("DaysFromNow({days})"),
+    })
 }
 
 fn variant_shape(variant: &ChainNegative) -> ChainNegativeVariantShape {
@@ -33,8 +42,10 @@ fn variant_shape(variant: &ChainNegative) -> ChainNegativeVariantShape {
         root_cn: modified.root_cn.clone(),
         leaf_validity_days: modified.leaf_validity_days,
         intermediate_validity_days: modified.intermediate_validity_days,
-        leaf_not_before_offset_days: modified.leaf_not_before_offset_days,
-        intermediate_not_before_offset_days: modified.intermediate_not_before_offset_days,
+        leaf_not_before: optional_nbo_string(modified.leaf_not_before),
+        intermediate_not_before: optional_nbo_string(modified.intermediate_not_before),
+        intermediate_is_ca: modified.intermediate_is_ca,
+        intermediate_key_usage: modified.intermediate_key_usage.map(|ku| ku.stable_bytes()),
         leaf_sans_count: modified.leaf_sans.len(),
         differs_from_base: modified != base,
     }
@@ -67,6 +78,36 @@ fn snapshot_chain_negative_expired_intermediate() {
 }
 
 #[test]
+fn snapshot_chain_negative_not_yet_valid_leaf() {
+    let variant = ChainNegative::NotYetValidLeaf;
+    insta::assert_yaml_snapshot!("chain_neg_not_yet_valid_leaf", variant_shape(&variant));
+}
+
+#[test]
+fn snapshot_chain_negative_not_yet_valid_intermediate() {
+    let variant = ChainNegative::NotYetValidIntermediate;
+    insta::assert_yaml_snapshot!(
+        "chain_neg_not_yet_valid_intermediate",
+        variant_shape(&variant)
+    );
+}
+
+#[test]
+fn snapshot_chain_negative_intermediate_not_ca() {
+    let variant = ChainNegative::IntermediateNotCa;
+    insta::assert_yaml_snapshot!("chain_neg_intermediate_not_ca", variant_shape(&variant));
+}
+
+#[test]
+fn snapshot_chain_negative_intermediate_wrong_key_usage() {
+    let variant = ChainNegative::IntermediateWrongKeyUsage;
+    insta::assert_yaml_snapshot!(
+        "chain_neg_intermediate_wrong_key_usage",
+        variant_shape(&variant)
+    );
+}
+
+#[test]
 fn snapshot_chain_negative_revoked_leaf() {
     let variant = ChainNegative::RevokedLeaf;
     insta::assert_yaml_snapshot!("chain_neg_revoked_leaf", variant_shape(&variant));
@@ -85,7 +126,11 @@ fn snapshot_chain_negative_all_variant_names() {
         },
         ChainNegative::UnknownCa,
         ChainNegative::ExpiredLeaf,
+        ChainNegative::NotYetValidLeaf,
         ChainNegative::ExpiredIntermediate,
+        ChainNegative::NotYetValidIntermediate,
+        ChainNegative::IntermediateNotCa,
+        ChainNegative::IntermediateWrongKeyUsage,
         ChainNegative::RevokedLeaf,
     ];
 

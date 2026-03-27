@@ -104,7 +104,8 @@ set of focused microcrates that each own a single concern:
 - `uselesskey-core-x509-negative` — X.509 negative-fixture policy
   helpers (expired, wrong-usage)
 - `uselesskey-core-x509-chain-negative` — chain-level negative policies
-  (hostname mismatch, revoked leaf)
+  (hostname mismatch, unknown CA, expired/not-yet-valid leaf and
+  intermediate, intermediate CA/key-usage violations, revoked leaf)
 
 **Adapter bridge**
 

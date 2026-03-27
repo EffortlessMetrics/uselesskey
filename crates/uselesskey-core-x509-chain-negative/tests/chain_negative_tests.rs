@@ -9,7 +9,7 @@
 use std::collections::HashSet;
 
 use uselesskey_core_x509_chain_negative::ChainNegative;
-use uselesskey_core_x509_spec::ChainSpec;
+use uselesskey_core_x509_spec::{ChainSpec, NotBeforeOffset};
 
 // =========================================================================
 // variant_name stability
@@ -24,8 +24,24 @@ fn chain_negative_variant_names_are_stable() {
     assert_eq!(ChainNegative::UnknownCa.variant_name(), "unknown_ca");
     assert_eq!(ChainNegative::ExpiredLeaf.variant_name(), "expired_leaf");
     assert_eq!(
+        ChainNegative::NotYetValidLeaf.variant_name(),
+        "not_yet_valid_leaf"
+    );
+    assert_eq!(
         ChainNegative::ExpiredIntermediate.variant_name(),
         "expired_intermediate"
+    );
+    assert_eq!(
+        ChainNegative::NotYetValidIntermediate.variant_name(),
+        "not_yet_valid_intermediate"
+    );
+    assert_eq!(
+        ChainNegative::IntermediateNotCa.variant_name(),
+        "intermediate_not_ca"
+    );
+    assert_eq!(
+        ChainNegative::IntermediateWrongKeyUsage.variant_name(),
+        "intermediate_wrong_key_usage"
     );
     assert_eq!(ChainNegative::RevokedLeaf.variant_name(), "revoked_leaf");
 }
@@ -39,7 +55,11 @@ fn all_variant_names_are_distinct() {
         .variant_name(),
         ChainNegative::UnknownCa.variant_name(),
         ChainNegative::ExpiredLeaf.variant_name(),
+        ChainNegative::NotYetValidLeaf.variant_name(),
         ChainNegative::ExpiredIntermediate.variant_name(),
+        ChainNegative::NotYetValidIntermediate.variant_name(),
+        ChainNegative::IntermediateNotCa.variant_name(),
+        ChainNegative::IntermediateWrongKeyUsage.variant_name(),
         ChainNegative::RevokedLeaf.variant_name(),
     ];
     let unique: HashSet<&str> = names.iter().map(|s| s.as_str()).collect();
@@ -86,12 +106,49 @@ fn chain_negative_apply_to_spec_all_variants() {
     let expired_leaf_neg = ChainNegative::ExpiredLeaf;
     let modified = expired_leaf_neg.apply_to_spec(&base);
     assert_eq!(modified.leaf_validity_days, 1);
-    assert_eq!(modified.leaf_not_before_offset_days, Some(730));
+    assert_eq!(
+        modified.leaf_not_before,
+        Some(NotBeforeOffset::DaysAgo(730))
+    );
 
     let expired_int_neg = ChainNegative::ExpiredIntermediate;
     let modified = expired_int_neg.apply_to_spec(&base);
     assert_eq!(modified.intermediate_validity_days, 1);
-    assert_eq!(modified.intermediate_not_before_offset_days, Some(730));
+    assert_eq!(
+        modified.intermediate_not_before,
+        Some(NotBeforeOffset::DaysAgo(730))
+    );
+
+    let not_yet_valid_leaf_neg = ChainNegative::NotYetValidLeaf;
+    let modified = not_yet_valid_leaf_neg.apply_to_spec(&base);
+    assert_eq!(
+        modified.leaf_not_before,
+        Some(NotBeforeOffset::DaysFromNow(730))
+    );
+
+    let not_yet_valid_int_neg = ChainNegative::NotYetValidIntermediate;
+    let modified = not_yet_valid_int_neg.apply_to_spec(&base);
+    assert_eq!(
+        modified.intermediate_not_before,
+        Some(NotBeforeOffset::DaysFromNow(730))
+    );
+
+    let int_not_ca_neg = ChainNegative::IntermediateNotCa;
+    let modified = int_not_ca_neg.apply_to_spec(&base);
+    assert_eq!(modified.intermediate_is_ca, Some(false));
+
+    let int_wrong_ku_neg = ChainNegative::IntermediateWrongKeyUsage;
+    let modified = int_wrong_ku_neg.apply_to_spec(&base);
+    assert_eq!(modified.intermediate_is_ca, Some(true));
+    assert_eq!(
+        modified.intermediate_key_usage,
+        Some(uselesskey_core_x509_spec::KeyUsage {
+            key_cert_sign: false,
+            crl_sign: false,
+            digital_signature: true,
+            key_encipherment: false,
+        })
+    );
 
     let revoked_neg = ChainNegative::RevokedLeaf;
     let modified = revoked_neg.apply_to_spec(&base);
@@ -187,8 +244,8 @@ fn expired_leaf_preserves_root_and_intermediate() {
         base.intermediate_validity_days
     );
     assert_eq!(
-        modified.intermediate_not_before_offset_days,
-        base.intermediate_not_before_offset_days
+        modified.intermediate_not_before,
+        base.intermediate_not_before
     );
 }
 
@@ -214,10 +271,7 @@ fn expired_intermediate_preserves_leaf_and_root() {
     assert_eq!(modified.root_validity_days, base.root_validity_days);
     assert_eq!(modified.leaf_cn, base.leaf_cn);
     assert_eq!(modified.leaf_validity_days, base.leaf_validity_days);
-    assert_eq!(
-        modified.leaf_not_before_offset_days,
-        base.leaf_not_before_offset_days
-    );
+    assert_eq!(modified.leaf_not_before, base.leaf_not_before);
 }
 
 // =========================================================================
@@ -254,7 +308,11 @@ fn clone_and_eq_work_for_all_variants() {
         },
         ChainNegative::UnknownCa,
         ChainNegative::ExpiredLeaf,
+        ChainNegative::NotYetValidLeaf,
         ChainNegative::ExpiredIntermediate,
+        ChainNegative::NotYetValidIntermediate,
+        ChainNegative::IntermediateNotCa,
+        ChainNegative::IntermediateWrongKeyUsage,
         ChainNegative::RevokedLeaf,
     ];
 
@@ -270,6 +328,10 @@ fn debug_output_is_meaningful() {
     let dbg = format!("{:?}", neg);
     assert!(dbg.contains("ExpiredLeaf"));
 
+    let neg_nyv = ChainNegative::NotYetValidLeaf;
+    let dbg_nyv = format!("{:?}", neg_nyv);
+    assert!(dbg_nyv.contains("NotYetValidLeaf"));
+
     let neg_hm = ChainNegative::HostnameMismatch {
         wrong_hostname: "evil.example.com".to_string(),
     };
@@ -283,8 +345,9 @@ fn hash_works_in_hashset() {
     let mut set = HashSet::new();
     set.insert(ChainNegative::UnknownCa);
     set.insert(ChainNegative::ExpiredLeaf);
+    set.insert(ChainNegative::NotYetValidLeaf);
     set.insert(ChainNegative::UnknownCa); // duplicate
-    assert_eq!(set.len(), 2);
+    assert_eq!(set.len(), 3);
 }
 
 // =========================================================================

@@ -5,7 +5,7 @@
 use proptest::prelude::*;
 use rstest::rstest;
 use uselesskey_core_x509_chain_negative::ChainNegative;
-use uselesskey_core_x509_spec::ChainSpec;
+use uselesskey_core_x509_spec::{ChainSpec, NotBeforeOffset};
 
 // ---------------------------------------------------------------------------
 // rstest: parameterized variant_name stability
@@ -15,6 +15,16 @@ use uselesskey_core_x509_spec::ChainSpec;
 #[case::unknown_ca(ChainNegative::UnknownCa, "unknown_ca")]
 #[case::expired_leaf(ChainNegative::ExpiredLeaf, "expired_leaf")]
 #[case::expired_intermediate(ChainNegative::ExpiredIntermediate, "expired_intermediate")]
+#[case::not_yet_valid_leaf(ChainNegative::NotYetValidLeaf, "not_yet_valid_leaf")]
+#[case::not_yet_valid_intermediate(
+    ChainNegative::NotYetValidIntermediate,
+    "not_yet_valid_intermediate"
+)]
+#[case::intermediate_not_ca(ChainNegative::IntermediateNotCa, "intermediate_not_ca")]
+#[case::intermediate_wrong_key_usage(
+    ChainNegative::IntermediateWrongKeyUsage,
+    "intermediate_wrong_key_usage"
+)]
 #[case::revoked_leaf(ChainNegative::RevokedLeaf, "revoked_leaf")]
 fn unit_variant_name_is_stable(#[case] variant: ChainNegative, #[case] expected: &str) {
     assert_eq!(variant.variant_name(), expected);
@@ -28,6 +38,10 @@ fn unit_variant_name_is_stable(#[case] variant: ChainNegative, #[case] expected:
 #[case::unknown_ca(ChainNegative::UnknownCa)]
 #[case::expired_leaf(ChainNegative::ExpiredLeaf)]
 #[case::expired_intermediate(ChainNegative::ExpiredIntermediate)]
+#[case::not_yet_valid_leaf(ChainNegative::NotYetValidLeaf)]
+#[case::not_yet_valid_intermediate(ChainNegative::NotYetValidIntermediate)]
+#[case::intermediate_not_ca(ChainNegative::IntermediateNotCa)]
+#[case::intermediate_wrong_key_usage(ChainNegative::IntermediateWrongKeyUsage)]
 #[case::revoked_leaf(ChainNegative::RevokedLeaf)]
 fn variant_preserves_rsa_bits(#[case] variant: ChainNegative) {
     let base = ChainSpec::new("test.example.com").with_rsa_bits(4096);
@@ -39,6 +53,10 @@ fn variant_preserves_rsa_bits(#[case] variant: ChainNegative) {
 #[case::unknown_ca(ChainNegative::UnknownCa)]
 #[case::expired_leaf(ChainNegative::ExpiredLeaf)]
 #[case::expired_intermediate(ChainNegative::ExpiredIntermediate)]
+#[case::not_yet_valid_leaf(ChainNegative::NotYetValidLeaf)]
+#[case::not_yet_valid_intermediate(ChainNegative::NotYetValidIntermediate)]
+#[case::intermediate_not_ca(ChainNegative::IntermediateNotCa)]
+#[case::intermediate_wrong_key_usage(ChainNegative::IntermediateWrongKeyUsage)]
 #[case::revoked_leaf(ChainNegative::RevokedLeaf)]
 #[case::hostname_mismatch(ChainNegative::HostnameMismatch { wrong_hostname: "evil.example.com".to_string() })]
 fn apply_to_spec_returns_new_spec(#[case] variant: ChainNegative) {
@@ -96,7 +114,7 @@ proptest! {
         let base = ChainSpec::new(leaf_cn);
         let spec = ChainNegative::ExpiredLeaf.apply_to_spec(&base);
         prop_assert_eq!(spec.leaf_validity_days, 1);
-        prop_assert_eq!(spec.leaf_not_before_offset_days, Some(730));
+        prop_assert_eq!(spec.leaf_not_before, Some(NotBeforeOffset::DaysAgo(730)));
     }
 
     #[test]
@@ -104,7 +122,27 @@ proptest! {
         let base = ChainSpec::new(leaf_cn);
         let spec = ChainNegative::ExpiredIntermediate.apply_to_spec(&base);
         prop_assert_eq!(spec.intermediate_validity_days, 1);
-        prop_assert_eq!(spec.intermediate_not_before_offset_days, Some(730));
+        prop_assert_eq!(
+            spec.intermediate_not_before,
+            Some(NotBeforeOffset::DaysAgo(730))
+        );
+    }
+
+    #[test]
+    fn not_yet_valid_leaf_has_future_offset(leaf_cn in "[a-z]{1,15}\\.example\\.com") {
+        let base = ChainSpec::new(leaf_cn);
+        let spec = ChainNegative::NotYetValidLeaf.apply_to_spec(&base);
+        prop_assert_eq!(spec.leaf_not_before, Some(NotBeforeOffset::DaysFromNow(730)));
+    }
+
+    #[test]
+    fn not_yet_valid_intermediate_has_future_offset(leaf_cn in "[a-z]{1,15}\\.example\\.com") {
+        let base = ChainSpec::new(leaf_cn);
+        let spec = ChainNegative::NotYetValidIntermediate.apply_to_spec(&base);
+        prop_assert_eq!(
+            spec.intermediate_not_before,
+            Some(NotBeforeOffset::DaysFromNow(730))
+        );
     }
 }
 
@@ -190,10 +228,7 @@ fn revoked_leaf_spec_eq_base_with_custom_spec() {
 fn expired_leaf_does_not_change_intermediate_offset() {
     let base = ChainSpec::new("test.example.com");
     let spec = ChainNegative::ExpiredLeaf.apply_to_spec(&base);
-    assert_eq!(
-        spec.intermediate_not_before_offset_days,
-        base.intermediate_not_before_offset_days
-    );
+    assert_eq!(spec.intermediate_not_before, base.intermediate_not_before);
     assert_eq!(
         spec.intermediate_validity_days,
         base.intermediate_validity_days
@@ -204,11 +239,24 @@ fn expired_leaf_does_not_change_intermediate_offset() {
 fn expired_intermediate_does_not_change_leaf_offset() {
     let base = ChainSpec::new("test.example.com");
     let spec = ChainNegative::ExpiredIntermediate.apply_to_spec(&base);
-    assert_eq!(
-        spec.leaf_not_before_offset_days,
-        base.leaf_not_before_offset_days
-    );
+    assert_eq!(spec.leaf_not_before, base.leaf_not_before);
     assert_eq!(spec.leaf_validity_days, base.leaf_validity_days);
+}
+
+#[test]
+fn intermediate_path_negatives_preserve_unrelated_fields() {
+    let base = ChainSpec::new("test.example.com").with_rsa_bits(4096);
+
+    let not_ca = ChainNegative::IntermediateNotCa.apply_to_spec(&base);
+    assert_eq!(not_ca.rsa_bits, 4096);
+    assert_eq!(not_ca.root_cn, base.root_cn);
+    assert_eq!(not_ca.leaf_cn, base.leaf_cn);
+
+    let wrong_ku = ChainNegative::IntermediateWrongKeyUsage.apply_to_spec(&base);
+    assert_eq!(wrong_ku.rsa_bits, 4096);
+    assert_eq!(wrong_ku.root_cn, base.root_cn);
+    assert_eq!(wrong_ku.leaf_cn, base.leaf_cn);
+    assert_eq!(wrong_ku.intermediate_is_ca, Some(true));
 }
 
 // ---------------------------------------------------------------------------

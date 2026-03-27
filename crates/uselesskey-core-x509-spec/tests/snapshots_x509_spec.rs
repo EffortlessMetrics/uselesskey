@@ -168,9 +168,15 @@ struct ChainSpecShape {
     root_validity_days: u32,
     intermediate_validity_days: u32,
     leaf_validity_days: u32,
-    leaf_not_before_offset_days: Option<i64>,
-    intermediate_not_before_offset_days: Option<i64>,
+    leaf_not_before: Option<String>,
+    intermediate_not_before: Option<String>,
+    intermediate_is_ca: Option<bool>,
+    intermediate_key_usage: Option<KeyUsageShape>,
     stable_bytes_len: usize,
+}
+
+fn optional_nbo_string(nbo: Option<NotBeforeOffset>) -> Option<String> {
+    nbo.map(|nbo| nbo_string(&nbo))
 }
 
 fn chain_shape(spec: &ChainSpec) -> ChainSpecShape {
@@ -183,8 +189,10 @@ fn chain_shape(spec: &ChainSpec) -> ChainSpecShape {
         root_validity_days: spec.root_validity_days,
         intermediate_validity_days: spec.intermediate_validity_days,
         leaf_validity_days: spec.leaf_validity_days,
-        leaf_not_before_offset_days: spec.leaf_not_before_offset_days,
-        intermediate_not_before_offset_days: spec.intermediate_not_before_offset_days,
+        leaf_not_before: optional_nbo_string(spec.leaf_not_before),
+        intermediate_not_before: optional_nbo_string(spec.intermediate_not_before),
+        intermediate_is_ca: spec.intermediate_is_ca,
+        intermediate_key_usage: spec.intermediate_key_usage.map(|ku| ku_shape(&ku)),
         stable_bytes_len: spec.stable_bytes().len(),
     }
 }
