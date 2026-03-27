@@ -320,6 +320,49 @@ fn chain_serials_are_unique() {
 }
 
 #[test]
+fn chain_serials_are_pinned_for_regression_seed() {
+    let fx = det("serial-probe");
+    let chain = fx.x509_chain("serial-probe", ChainSpec::new("serial-probe.example.com"));
+
+    let parsed = [
+        (
+            "root",
+            X509Certificate::from_der(chain.root_cert_der())
+                .expect("parse root")
+                .1,
+            "50:42:01:f5:84:e1:68:4a:eb:63:a8:61:e0:a4:83:3f",
+        ),
+        (
+            "intermediate",
+            X509Certificate::from_der(chain.intermediate_cert_der())
+                .expect("parse intermediate")
+                .1,
+            "31:1d:3e:70:e5:4d:92:56:b4:d9:65:dc:06:ae:b1:b3",
+        ),
+        (
+            "leaf",
+            X509Certificate::from_der(chain.leaf_cert_der())
+                .expect("parse leaf")
+                .1,
+            "53:04:fe:8a:aa:3f:6f:35:eb:67:17:1b:c7:72:ee:9c",
+        ),
+    ];
+
+    for (role, cert, expected_serial) in parsed {
+        assert_eq!(
+            cert.raw_serial().len(),
+            16,
+            "{role} serial should stay 16 bytes"
+        );
+        assert_eq!(
+            cert.raw_serial_as_string(),
+            expected_serial,
+            "{role} serial should remain pinned for deterministic derivation"
+        );
+    }
+}
+
+#[test]
 fn chain_root_key_usage_includes_cert_sign_and_crl_sign() {
     let fx = fx();
     let chain = fx.x509_chain("root-ku", ChainSpec::new("root-ku.example.com"));
