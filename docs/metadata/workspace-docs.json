@@ -2,7 +2,7 @@
   "workspace_crates": [
     {
       "name": "uselesskey",
-      "description": "Public facade — re-exports all key types and traits behind feature flags"
+      "description": "Public facade \u2014 re-exports all key types and traits behind feature flags"
     },
     {
       "name": "uselesskey-core",
@@ -186,7 +186,7 @@
       "path": "crates/uselesskey/examples/jwt_signing.rs",
       "feature_set": "rsa,jwk",
       "description": "JWT signing with deterministic RSA, ECDSA, and HMAC keys (ECDSA/HMAC optional)",
-           "run_smoke": false
+      "run_smoke": false
     },
     {
       "name": "negative_fixtures",
@@ -235,19 +235,19 @@
     {
       "feature": "rsa",
       "extension_trait": "RsaFactoryExt",
-      "algorithms": "RSA 2048/3072/4096 — PKCS#8, SPKI, PEM, DER",
+      "algorithms": "RSA 2048/3072/4096 \u2014 PKCS#8, SPKI, PEM, DER",
       "implies": "-"
     },
     {
       "feature": "ecdsa",
       "extension_trait": "EcdsaFactoryExt",
-      "algorithms": "P-256 (ES256), P-384 (ES384) — PKCS#8, SPKI",
+      "algorithms": "P-256 (ES256), P-384 (ES384) \u2014 PKCS#8, SPKI",
       "implies": "-"
     },
     {
       "feature": "ed25519",
       "extension_trait": "Ed25519FactoryExt",
-      "algorithms": "Ed25519 — PKCS#8, SPKI",
+      "algorithms": "Ed25519 \u2014 PKCS#8, SPKI",
       "implies": "-"
     },
     {
@@ -259,7 +259,7 @@
     {
       "feature": "pgp",
       "extension_trait": "PgpFactoryExt",
-      "algorithms": "OpenPGP RSA 2048/3072, Ed25519 — armored, binary",
+      "algorithms": "OpenPGP RSA 2048/3072, Ed25519 \u2014 armored, binary",
       "implies": "-"
     },
     {
@@ -396,6 +396,476 @@
       "name": "pgp-native adapter",
       "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.5.1\", features = [\"pgp\"] }\nuselesskey-pgp-native = { version = \"0.5.1\" }"
     }
+  ],
+  "crate_support_matrix": [
+    {
+      "name": "uselesskey",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": true,
+      "semver_expectation": "SemVer with documented API guarantees.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "most-users"
+    },
+    {
+      "name": "uselesskey-aws-lc-rs",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "SemVer with documented API guarantees.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "adapter-users"
+    },
+    {
+      "name": "uselesskey-bdd",
+      "support_tier": "stable",
+      "publish_status": "test-only",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Tracks workspace toolchain; not covered by external MSRV guarantees.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-bdd-steps",
+      "support_tier": "stable",
+      "publish_status": "test-only",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Tracks workspace toolchain; not covered by external MSRV guarantees.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "SemVer with documented API guarantees.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "most-users"
+    },
+    {
+      "name": "uselesskey-core-base62",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-cache",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-factory",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-hash",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-hmac-spec",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-id",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-jwk",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-jwk-builder",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-jwk-shape",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-jwks-order",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-keypair",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-keypair-material",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-kid",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-negative",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-negative-der",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-negative-pem",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-rustls-pki",
+      "support_tier": "experimental",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-seed",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-sink",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-token",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-token-shape",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-x509",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-x509-chain-negative",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-x509-derive",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-x509-negative",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-x509-spec",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-ecdsa",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": true,
+      "semver_expectation": "SemVer with documented API guarantees.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "most-users"
+    },
+    {
+      "name": "uselesskey-ed25519",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": true,
+      "semver_expectation": "SemVer with documented API guarantees.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "most-users"
+    },
+    {
+      "name": "uselesskey-feature-grid",
+      "support_tier": "stable",
+      "publish_status": "internal",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Tracks workspace toolchain; not covered by external MSRV guarantees.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-hmac",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": true,
+      "semver_expectation": "SemVer with documented API guarantees.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "most-users"
+    },
+    {
+      "name": "uselesskey-integration-tests",
+      "support_tier": "stable",
+      "publish_status": "test-only",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Tracks workspace toolchain; not covered by external MSRV guarantees.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-interop-tests",
+      "support_tier": "stable",
+      "publish_status": "test-only",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Tracks workspace toolchain; not covered by external MSRV guarantees.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-jose-openid",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "SemVer with documented API guarantees.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "adapter-users"
+    },
+    {
+      "name": "uselesskey-jsonwebtoken",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "SemVer with documented API guarantees.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "adapter-users"
+    },
+    {
+      "name": "uselesskey-jwk",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": true,
+      "semver_expectation": "SemVer with documented API guarantees.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "most-users",
+      "replacement_path": "Prefer `uselesskey` with the `jwk` feature for most users."
+    },
+    {
+      "name": "uselesskey-pgp",
+      "support_tier": "experimental",
+      "publish_status": "published",
+      "facade_exposed": true,
+      "semver_expectation": "SemVer with documented API guarantees.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "most-users"
+    },
+    {
+      "name": "uselesskey-pgp-native",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "SemVer with documented API guarantees.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "adapter-users"
+    },
+    {
+      "name": "uselesskey-ring",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "SemVer with documented API guarantees.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "adapter-users"
+    },
+    {
+      "name": "uselesskey-rsa",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": true,
+      "semver_expectation": "SemVer with documented API guarantees.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "most-users"
+    },
+    {
+      "name": "uselesskey-rustcrypto",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "SemVer with documented API guarantees.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "adapter-users"
+    },
+    {
+      "name": "uselesskey-rustls",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "SemVer with documented API guarantees.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "adapter-users"
+    },
+    {
+      "name": "uselesskey-test-grid",
+      "support_tier": "stable",
+      "publish_status": "internal",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Tracks workspace toolchain; not covered by external MSRV guarantees.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-token",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": true,
+      "semver_expectation": "SemVer with documented API guarantees.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "most-users"
+    },
+    {
+      "name": "uselesskey-token-spec",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "SemVer with documented API guarantees.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "most-users"
+    },
+    {
+      "name": "uselesskey-tonic",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "SemVer with documented API guarantees.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "adapter-users"
+    },
+    {
+      "name": "uselesskey-x509",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": true,
+      "semver_expectation": "SemVer with documented API guarantees.",
+      "msrv_policy": "Follows workspace MSRV policy (currently Rust 1.92).",
+      "intended_audience": "most-users"
+    },
+    {
+      "name": "xtask",
+      "support_tier": "stable",
+      "publish_status": "internal",
+      "facade_exposed": false,
+      "semver_expectation": "No external stability contract; may change between minor releases.",
+      "msrv_policy": "Tracks workspace toolchain; not covered by external MSRV guarantees.",
+      "intended_audience": "repo-internal"
+    }
   ]
 }
-

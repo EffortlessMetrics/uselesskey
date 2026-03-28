@@ -348,6 +348,7 @@ fn ci() -> Result<()> {
 }
 
 fn run_ci_plan(runner: &mut receipt::Runner) -> Result<()> {
+    runner.step("docs-sync", None, || docs_sync::docs_sync_cmd(true))?;
     runner.step("fmt", None, || fmt(false))?;
     runner.step("clippy", None, clippy)?;
     runner.step("typos", None, || typos(false))?;

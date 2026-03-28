@@ -27,6 +27,9 @@ leaves first:
 Do **not** maintain a separate crate list here — `PUBLISH_CRATES` is the
 single source of truth.
 
+For support expectations and intended audiences, reference the generated
+[support matrix](../reference/support-matrix.md) before changing publish scope.
+
 ## Dry run
 
 ```bash
