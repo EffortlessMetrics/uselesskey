@@ -1,0 +1,27 @@
+{
+  "artifact_type": "rsa_pkcs8_pem",
+  "source": {
+    "seed_fingerprint": "blake3:5f1c1c",
+    "label": "issuer",
+    "domain": "rsa"
+  },
+  "output_paths": [
+    "fixtures/issuer.pem",
+    "fixtures/issuer.pub.pem"
+  ],
+  "fingerprints": [
+    {
+      "algorithm": "sha256",
+      "value": "aabbcc"
+    }
+  ],
+  "env_vars": [
+    "ISSUER_PRIVATE_KEY"
+  ],
+  "external_key_refs": [
+    {
+      "kind": "vault",
+      "path": "kv/dev/issuer"
+    }
+  ]
+}
