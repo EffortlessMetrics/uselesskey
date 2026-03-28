@@ -5,9 +5,10 @@
 //! Run with: `cargo bench -p uselesskey --features full`
 
 use criterion::{Criterion, criterion_group, criterion_main};
+use uselesskey::negative::CorruptPem;
 use uselesskey::{
-    EcdsaFactoryExt, EcdsaSpec, Ed25519FactoryExt, Ed25519Spec, Factory, HmacFactoryExt, HmacSpec,
-    RsaFactoryExt, RsaSpec, Seed, X509FactoryExt, X509Spec,
+    ChainSpec, EcdsaFactoryExt, EcdsaSpec, Ed25519FactoryExt, Ed25519Spec, Factory, HmacFactoryExt,
+    HmacSpec, RsaFactoryExt, RsaSpec, Seed, TokenFactoryExt, TokenSpec, X509FactoryExt, X509Spec,
 };
 
 // ── RSA key generation (the biggest hot path) ───────────────────────
@@ -124,6 +125,78 @@ fn bench_x509_generation(c: &mut Criterion) {
     group.finish();
 }
 
+// ── X.509 chain generation ──────────────────────────────────────────
+
+fn bench_x509_chain(c: &mut Criterion) {
+    let mut group = c.benchmark_group("x509_chain");
+    group.sample_size(10);
+
+    group.bench_function("cold", |b| {
+        b.iter_batched(
+            Factory::random,
+            |fx| fx.x509_chain("bench", ChainSpec::new("bench.example.com")),
+            criterion::BatchSize::PerIteration,
+        );
+    });
+
+    group.bench_function("warm", |b| {
+        let fx = Factory::random();
+        let _ = fx.x509_chain("bench", ChainSpec::new("bench.example.com"));
+        b.iter(|| fx.x509_chain("bench", ChainSpec::new("bench.example.com")));
+    });
+
+    group.finish();
+}
+
+// ── Token generation ────────────────────────────────────────────────
+
+fn bench_token_generation(c: &mut Criterion) {
+    let mut group = c.benchmark_group("token_generation");
+
+    group.bench_function("cold", |b| {
+        b.iter_batched(
+            Factory::random,
+            |fx| fx.token("bench", TokenSpec::api_key()),
+            criterion::BatchSize::SmallInput,
+        );
+    });
+
+    group.bench_function("warm", |b| {
+        let fx = Factory::random();
+        let _ = fx.token("bench", TokenSpec::api_key());
+        b.iter(|| fx.token("bench", TokenSpec::api_key()));
+    });
+
+    group.finish();
+}
+
+// ── Negative fixture generation ─────────────────────────────────────
+
+fn bench_negative_generation(c: &mut Criterion) {
+    let mut group = c.benchmark_group("negative_generation");
+    group.sample_size(10);
+
+    group.bench_function("cold", |b| {
+        b.iter_batched(
+            Factory::random,
+            |fx| {
+                let kp = fx.rsa("bench", RsaSpec::rs256());
+                kp.private_key_pkcs8_pem_corrupt(CorruptPem::BadBase64)
+            },
+            criterion::BatchSize::PerIteration,
+        );
+    });
+
+    group.bench_function("warm", |b| {
+        let fx = Factory::random();
+        let kp = fx.rsa("bench", RsaSpec::rs256());
+        let _ = kp.private_key_pkcs8_pem_corrupt(CorruptPem::BadBase64);
+        b.iter(|| kp.private_key_pkcs8_pem_corrupt(CorruptPem::BadBase64));
+    });
+
+    group.finish();
+}
+
 // ── Factory cache: hit vs miss ──────────────────────────────────────
 
 fn bench_cache_hit_vs_miss(c: &mut Criterion) {
@@ -192,7 +265,10 @@ criterion_group!(
     bench_ecdsa_keygen,
     bench_ed25519_keygen,
     bench_hmac_keygen,
+    bench_token_generation,
     bench_x509_generation,
+    bench_x509_chain,
+    bench_negative_generation,
     bench_cache_hit_vs_miss,
     bench_deterministic_vs_random,
 );

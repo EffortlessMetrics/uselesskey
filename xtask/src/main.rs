@@ -70,6 +70,15 @@ enum Cmd {
     PublishCheck,
     /// Run PR-scoped tests based on git diff.
     Pr,
+    /// Run performance harness and optionally compare against budgets.
+    Perf {
+        /// Compare measured timings against docs/metadata/perf-baselines.json.
+        #[arg(long)]
+        compare: bool,
+        /// Iterations per benchmark entry.
+        #[arg(long, default_value_t = 3)]
+        iterations: u32,
+    },
     /// Guard against multiple semver-major versions of pinned deps (e.g. rand_core).
     DepGuard,
     /// Run cucumber BDD features.
@@ -155,6 +164,10 @@ fn main() -> Result<()> {
         Cmd::ExamplesSmoke { run } => docs_sync::examples_smoke_cmd(run),
         Cmd::PublishCheck => publish_check(),
         Cmd::Pr => pr(),
+        Cmd::Perf {
+            compare,
+            iterations,
+        } => perf(compare, iterations),
         Cmd::DepGuard => dep_guard(),
         Cmd::Bdd => bdd(),
         Cmd::BddMatrix => bdd_matrix(),
@@ -531,6 +544,33 @@ fn typos(fix: bool) -> Result<()> {
     if fix {
         cmd.arg("--write-changes");
     }
+    run(&mut cmd)
+}
+
+fn perf(compare: bool, iterations: u32) -> Result<()> {
+    let mut cmd = Command::new("cargo");
+    cmd.args([
+        "run",
+        "-p",
+        "uselesskey-bench",
+        "--release",
+        "--",
+        "--iterations",
+    ])
+    .arg(iterations.to_string())
+    .args(["--output", "target/perf/perf-summary.json"]);
+
+    if compare {
+        cmd.args([
+            "--compare",
+            "--baseline",
+            "docs/metadata/perf-baselines.json",
+        ]);
+        if env::var_os("CI").is_some() {
+            cmd.arg("--fail-on-ci");
+        }
+    }
+
     run(&mut cmd)
 }
 

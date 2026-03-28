@@ -4089,6 +4089,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "uselesskey-bench"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "uselesskey",
+]
+
+[[package]]
 name = "uselesskey-core"
 version = "0.5.1"
 dependencies = [
