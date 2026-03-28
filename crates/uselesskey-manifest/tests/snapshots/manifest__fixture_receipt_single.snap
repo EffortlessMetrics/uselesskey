@@ -1,0 +1,25 @@
+---
+source: crates/uselesskey-manifest/tests/manifest.rs
+expression: "String::from_utf8(one.to_canonical_json_vec().expect(\"serialize\")).expect(\"utf8\")"
+---
+{
+  "schema_version": 1,
+  "uselesskey_version": "0.5.1",
+  "domain": "d",
+  "label": "a",
+  "variant": "good",
+  "spec_fingerprint": "6eac81badc8e459696f472aa72d7444770f7a426b4d0b27baa6fc1395282b783",
+  "derivation_version": 1,
+  "generated_at_mode": "deterministic",
+  "files": [
+    {
+      "logical_name": "key",
+      "path": "a/key.pem",
+      "format": "pem",
+      "sha256": "9834876dcfb05cb167a5c24953eba58c4ac89b1adf57f28f2f9d09af107ee8f0",
+      "blake3": "30c0f9c6a167fc2a91285c85be7ea341569b3b39fcc5f77fd34534cade971d20",
+      "byte_len": 3
+    }
+  ],
+  "metadata": {}
+}

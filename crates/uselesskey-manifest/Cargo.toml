@@ -1,28 +1,28 @@
 [package]
-name = "uselesskey-core-sink"
+name = "uselesskey-manifest"
 version = "0.5.1"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "Tempfile-backed artifact sinks used by uselesskey."
+description = "Stable machine-readable fixture receipts for uselesskey outputs."
 categories.workspace = true
-keywords = ["fixtures", "tempfile", "testing", "pki", "interop"]
+keywords = ["fixtures", "manifest", "receipt", "testing", "deterministic"]
 readme = "README.md"
 exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
 homepage.workspace = true
-documentation = "https://docs.rs/uselesskey-core-sink"
+documentation = "https://docs.rs/uselesskey-manifest"
 authors.workspace = true
 
 [dependencies]
-tempfile.workspace = true
-uselesskey-manifest.workspace = true
+blake3.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2 = "0.10.9"
+uselesskey-core-id.workspace = true
 
 [dev-dependencies]
 insta.workspace = true
-proptest.workspace = true
-rstest.workspace = true
-serde.workspace = true
 
 [package.metadata.docs.rs]
 all-features = true

@@ -42,5 +42,9 @@ pub mod sink;
 pub use crate::error::Error;
 pub use crate::factory::{Factory, Mode};
 pub use crate::id::{ArtifactDomain, ArtifactId, DerivationVersion, Seed};
+#[cfg(feature = "std")]
+pub use uselesskey_manifest::{
+    BundleReceipt, FixtureReceipt, GeneratedAtMode, OutputFile, ReceiptRelationship,
+};
 
 extern crate alloc;

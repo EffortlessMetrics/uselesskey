@@ -2,6 +2,7 @@ use std::fmt;
 use std::path::Path;
 
 use crate::Error;
+use uselesskey_manifest::OutputFile;
 use uselesskey_core_sink::TempArtifact as RawTempArtifact;
 
 pub struct TempArtifact {
@@ -38,6 +39,12 @@ impl TempArtifact {
     pub fn read_to_string(&self) -> Result<String, Error> {
         self.inner.read_to_string().map_err(Error::from)
     }
+
+    pub fn output_file(&self, logical_name: &str, format: &str) -> Result<OutputFile, Error> {
+        self.inner
+            .output_file(logical_name, format)
+            .map_err(Error::from)
+    }
 }
 
 #[cfg(test)]
@@ -65,5 +72,15 @@ mod tests {
 
         let read = artifact.read_to_bytes().expect("read_to_bytes");
         assert_eq!(read, bytes);
+    }
+
+    #[test]
+    fn output_file_metadata_round_trip() {
+        let artifact = TempArtifact::new_string("uselesskey-", ".unit.pem", "abc")
+            .expect("create TempArtifact");
+        let output = artifact.output_file("private_key", "pem").expect("output file");
+        assert_eq!(output.logical_name, "private_key");
+        assert_eq!(output.format, "pem");
+        assert_eq!(output.byte_len, 3);
     }
 }
