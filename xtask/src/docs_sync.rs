@@ -120,13 +120,17 @@ fn run_docs_sync(check: bool) -> Result<()> {
 
     for target in targets {
         let path = root.join(target.path);
-        let original = fs::read_to_string(&path)
-            .with_context(|| format!("failed to read {}", target.path))?;
+        let original =
+            fs::read_to_string(&path).with_context(|| format!("failed to read {}", target.path))?;
         let updated = rewrite_document(&original, &metadata, &target.blocks)?;
         if updated != original {
             changed.push(SnippetInventoryEntry {
                 path: target.path.to_string(),
-                markers: target.blocks.iter().map(|block| block.marker.to_string()).collect(),
+                markers: target
+                    .blocks
+                    .iter()
+                    .map(|block| block.marker.to_string())
+                    .collect(),
             });
             if !check {
                 fs::write(&path, updated)
@@ -231,16 +235,15 @@ fn validate_metadata_against_workspace(
             validate_dependency_entry(
                 dep,
                 workspace,
-                &format!("dependency_snippets.{}.extra_dependencies[{idx}]", snippet.name),
+                &format!(
+                    "dependency_snippets.{}.extra_dependencies[{idx}]",
+                    snippet.name
+                ),
                 &mut errors,
             );
         }
 
-        validate_example_command(
-            &snippet.minimal_example_command,
-            &snippet.name,
-            &mut errors,
-        );
+        validate_example_command(&snippet.minimal_example_command, &snippet.name, &mut errors);
     }
 
     if let Some(info) = workspace.get("uselesskey") {
@@ -271,7 +274,10 @@ fn validate_metadata_against_workspace(
     }
 
     if !errors.is_empty() {
-        bail!("docs metadata validation failed:\n- {}", errors.join("\n- "));
+        bail!(
+            "docs metadata validation failed:\n- {}",
+            errors.join("\n- ")
+        );
     }
 
     Ok(())
@@ -284,7 +290,10 @@ fn validate_dependency_entry(
     errors: &mut Vec<String>,
 ) {
     let Some(info) = workspace.get(&dep.crate_name) else {
-        errors.push(format!("{context}: unknown workspace crate `{}`", dep.crate_name));
+        errors.push(format!(
+            "{context}: unknown workspace crate `{}`",
+            dep.crate_name
+        ));
         return;
     };
 
@@ -358,11 +367,15 @@ fn docs_targets() -> Vec<DocTarget> {
                 },
                 BlockTarget {
                     marker: "workspace-crates",
-                    renderer: |metadata| render_crate_table("workspace crate", &metadata.workspace_crates),
+                    renderer: |metadata| {
+                        render_crate_table("workspace crate", &metadata.workspace_crates)
+                    },
                 },
                 BlockTarget {
                     marker: "adapter-crates",
-                    renderer: |metadata| render_crate_table("adapter crate", &metadata.adapter_crates),
+                    renderer: |metadata| {
+                        render_crate_table("adapter crate", &metadata.adapter_crates)
+                    },
                 },
                 BlockTarget {
                     marker: "feature-matrix-facade",
@@ -391,7 +404,11 @@ fn docs_targets() -> Vec<DocTarget> {
     ]
 }
 
-fn rewrite_document(input: &str, metadata: &DocsMetadata, blocks: &[BlockTarget]) -> Result<String> {
+fn rewrite_document(
+    input: &str,
+    metadata: &DocsMetadata,
+    blocks: &[BlockTarget],
+) -> Result<String> {
     let mut output = input.to_string();
     for block in blocks {
         let rendered = (block.renderer)(metadata);
@@ -755,6 +772,7 @@ fn print_snippet_inventory(changed: &[SnippetInventoryEntry], check: bool) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::tempdir;
 
     #[test]
     fn snapshot_dependency_render_includes_commands() {
@@ -859,5 +877,70 @@ mod tests {
             .expect_err("validation should fail");
         let text = format!("{error:#}");
         assert!(text.contains("stale version"), "{text}");
+    }
+
+    #[test]
+    fn rejects_duplicate_example_paths_in_docs_metadata() {
+        let root = tempdir().expect("tempdir");
+        let examples_dir = root.path().join("crates/uselesskey/examples");
+        fs::create_dir_all(&examples_dir).expect("create examples dir");
+        fs::write(examples_dir.join("basic_rsa.rs"), "// smoke").expect("write example");
+
+        let metadata = DocsMetadata {
+            workspace_crates: vec![],
+            adapter_crates: vec![],
+            runnable_examples: vec![
+                ExampleEntry {
+                    name: "basic_rsa".to_string(),
+                    path: "crates/uselesskey/examples/basic_rsa.rs".to_string(),
+                    description: "one".to_string(),
+                    feature_set: "rsa".to_string(),
+                    run_smoke: false,
+                },
+                ExampleEntry {
+                    name: "basic_rsa".to_string(),
+                    path: "crates/uselesskey/examples/basic_rsa.rs".to_string(),
+                    description: "two".to_string(),
+                    feature_set: "rsa".to_string(),
+                    run_smoke: false,
+                },
+            ],
+            facade_feature_matrix: vec![],
+            adapter_feature_matrix: vec![],
+            dependency_snippets: vec![],
+        };
+
+        let error = validate_examples_match_workspace(root.path(), &metadata)
+            .expect_err("validation should fail");
+        let text = format!("{error:#}");
+        assert!(text.contains("duplicate example path"), "{text}");
+    }
+
+    #[test]
+    fn rejects_example_name_mismatch_in_docs_metadata() {
+        let root = tempdir().expect("tempdir");
+        let examples_dir = root.path().join("crates/uselesskey/examples");
+        fs::create_dir_all(&examples_dir).expect("create examples dir");
+        fs::write(examples_dir.join("basic_rsa.rs"), "// smoke").expect("write example");
+
+        let metadata = DocsMetadata {
+            workspace_crates: vec![],
+            adapter_crates: vec![],
+            runnable_examples: vec![ExampleEntry {
+                name: "wrong_name".to_string(),
+                path: "crates/uselesskey/examples/basic_rsa.rs".to_string(),
+                description: "mismatch".to_string(),
+                feature_set: "rsa".to_string(),
+                run_smoke: false,
+            }],
+            facade_feature_matrix: vec![],
+            adapter_feature_matrix: vec![],
+            dependency_snippets: vec![],
+        };
+
+        let error = validate_examples_match_workspace(root.path(), &metadata)
+            .expect_err("validation should fail");
+        let text = format!("{error:#}");
+        assert!(text.contains("example name mismatch"), "{text}");
     }
 }
