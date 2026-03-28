@@ -1,6 +1,6 @@
 [package]
 name = "uselesskey-core-x509"
-version = "0.5.0"
+version = "0.5.1"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
@@ -15,9 +15,9 @@ documentation = "https://docs.rs/uselesskey-core-x509"
 authors.workspace = true
 
 [dependencies]
-uselesskey-core-x509-negative = { path = "../uselesskey-core-x509-negative", version = "0.5.0" }
-uselesskey-core-x509-derive = { path = "../uselesskey-core-x509-derive", version = "0.5.0" }
-uselesskey-core-x509-spec = { path = "../uselesskey-core-x509-spec", version = "0.5.0" }
+uselesskey-core-x509-negative = { path = "../uselesskey-core-x509-negative", version = "0.5.1" }
+uselesskey-core-x509-derive = { path = "../uselesskey-core-x509-derive", version = "0.5.1" }
+uselesskey-core-x509-spec = { path = "../uselesskey-core-x509-spec", version = "0.5.1" }
 
 [dev-dependencies]
 insta.workspace = true

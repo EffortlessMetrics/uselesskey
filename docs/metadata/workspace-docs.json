@@ -370,31 +370,31 @@
   "dependency_snippets": [
     {
       "name": "Quick start (RSA)",
-      "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.5.0\", features = [\"rsa\"] }"
+      "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.5.1\", features = [\"rsa\"] }"
     },
     {
       "name": "Token-only",
-      "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.5.0\", default-features = false, features = [\"token\"] }"
+      "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.5.1\", default-features = false, features = [\"token\"] }"
     },
     {
       "name": "JWT/JWK",
-      "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.5.0\", features = [\"rsa\", \"jwk\"] }"
+      "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.5.1\", features = [\"rsa\", \"jwk\"] }"
     },
     {
       "name": "X.509 + rustls",
-      "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.5.0\", features = [\"x509\"] }\nuselesskey-rustls = { version = \"0.5.0\", features = [\"tls-config\", \"rustls-ring\"] }"
+      "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.5.1\", features = [\"x509\"] }\nuselesskey-rustls = { version = \"0.5.1\", features = [\"tls-config\", \"rustls-ring\"] }"
     },
     {
       "name": "jsonwebtoken adapter",
-      "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.5.0\", features = [\"rsa\", \"ecdsa\", \"ed25519\", \"hmac\"] }\nuselesskey-jsonwebtoken = { version = \"0.5.0\" }"
+      "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.5.1\", features = [\"rsa\", \"ecdsa\", \"ed25519\", \"hmac\"] }\nuselesskey-jsonwebtoken = { version = \"0.5.1\" }"
     },
     {
       "name": "JOSE/OpenID adapter",
-      "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.5.0\", features = [\"rsa\", \"ecdsa\", \"ed25519\", \"hmac\"] }\nuselesskey-jose-openid = { version = \"0.5.0\" }"
+      "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.5.1\", features = [\"rsa\", \"ecdsa\", \"ed25519\", \"hmac\"] }\nuselesskey-jose-openid = { version = \"0.5.1\" }"
     },
     {
       "name": "pgp-native adapter",
-      "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.5.0\", features = [\"pgp\"] }\nuselesskey-pgp-native = { version = \"0.5.0\" }"
+      "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.5.1\", features = [\"pgp\"] }\nuselesskey-pgp-native = { version = \"0.5.1\" }"
     }
   ]
 }
