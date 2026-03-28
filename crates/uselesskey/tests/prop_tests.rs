@@ -187,15 +187,17 @@ mod negative_props {
         #![proptest_config(ProptestConfig { cases: 30, ..ProptestConfig::default() })]
 
         #[test]
+        #[cfg(feature = "rsa")]
         fn corrupt_pem_never_returns_original(seed in any::<[u8; 32]>()) {
-            let pem = "-----BEGIN PRIVATE KEY-----\nMIIBVQIBADANBg==\n-----END PRIVATE KEY-----\n";
+            use uselesskey::{RsaFactoryExt, RsaSpec};
+
+            let fx = Factory::deterministic(Seed::new(seed));
+            let kp = fx.rsa("prop-negative-pem", RsaSpec::rs256());
+            let pem = kp.private_key_pkcs8_pem();
 
             let bad_header = corrupt_pem(pem, CorruptPem::BadHeader);
             let bad_footer = corrupt_pem(pem, CorruptPem::BadFooter);
             let bad_base64 = corrupt_pem(pem, CorruptPem::BadBase64);
-
-            // Suppress unused variable warning
-            let _ = seed;
 
             prop_assert_ne!(bad_header, pem);
             prop_assert_ne!(bad_footer, pem);

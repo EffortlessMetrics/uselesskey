@@ -204,8 +204,13 @@ fn ed25519_debug_is_safe() {
 // =========================================================================
 
 #[test]
+#[cfg(feature = "rsa")]
 fn corrupt_pem_produces_bad_output() {
-    let pem = "-----BEGIN PRIVATE KEY-----\nMIIBVQIBADANBg==\n-----END PRIVATE KEY-----\n";
+    use uselesskey::{RsaFactoryExt, RsaSpec};
+
+    let fx = Factory::deterministic_from_str("facade-e2e-negative");
+    let kp = fx.rsa("negative-pem", RsaSpec::rs256());
+    let pem = kp.private_key_pkcs8_pem();
     let corrupted = corrupt_pem(pem, CorruptPem::BadHeader);
     assert!(
         !corrupted.contains("BEGIN PRIVATE KEY"),
@@ -214,8 +219,13 @@ fn corrupt_pem_produces_bad_output() {
 }
 
 #[test]
+#[cfg(feature = "rsa")]
 fn corrupt_pem_all_variants_differ() {
-    let pem = "-----BEGIN PRIVATE KEY-----\nMIIBVQIBADANBg==\n-----END PRIVATE KEY-----\n";
+    use uselesskey::{RsaFactoryExt, RsaSpec};
+
+    let fx = Factory::deterministic_from_str("facade-e2e-negative");
+    let kp = fx.rsa("negative-pem", RsaSpec::rs256());
+    let pem = kp.private_key_pkcs8_pem();
 
     let bad_header = corrupt_pem(pem, CorruptPem::BadHeader);
     let bad_footer = corrupt_pem(pem, CorruptPem::BadFooter);
