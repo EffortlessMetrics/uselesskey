@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+  "crates/uselesskey-test-server",
   "crates/uselesskey-test-grid",
   "crates/uselesskey-feature-grid",
   "crates/uselesskey",
@@ -160,4 +161,3 @@ opt-level = 2
 
 [profile.test]
 opt-level = 2
-
