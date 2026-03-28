@@ -1,0 +1,18 @@
+[package]
+name = "canary-adapter-rustls"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[workspace]
+
+[features]
+default = ["path-deps"]
+path-deps = ["dep:uselesskey_path", "dep:uselesskey_rustls_path"]
+published = ["dep:uselesskey_pub", "dep:uselesskey_rustls_pub"]
+
+[dependencies]
+uselesskey_path = { package = "uselesskey", path = "../../crates/uselesskey", features = ["x509"], optional = true }
+uselesskey_rustls_path = { package = "uselesskey-rustls", path = "../../crates/uselesskey-rustls", features = ["tls-config", "rustls-ring"], optional = true }
+uselesskey_pub = { package = "uselesskey", version = ">=0.5.0, <0.6.0", features = ["x509"], optional = true }
+uselesskey_rustls_pub = { package = "uselesskey-rustls", version = ">=0.5.0, <0.6.0", features = ["tls-config", "rustls-ring"], optional = true }

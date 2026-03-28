@@ -1,0 +1,16 @@
+[package]
+name = "canary-facade-minimal"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[workspace]
+
+[features]
+default = ["path-deps"]
+path-deps = ["dep:uselesskey_path"]
+published = ["dep:uselesskey_pub"]
+
+[dependencies]
+uselesskey_path = { package = "uselesskey", path = "../../crates/uselesskey", features = ["rsa", "token", "x509"], optional = true }
+uselesskey_pub = { package = "uselesskey", version = ">=0.5.0, <0.6.0", features = ["rsa", "token", "x509"], optional = true }

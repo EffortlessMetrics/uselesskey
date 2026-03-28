@@ -43,6 +43,9 @@ jobs:
       - name: Publish dry-run
         run: cargo xtask publish-check
 
+      - name: Canaries (path deps)
+        run: cargo xtask canaries
+
   publish:
     needs: preflight
     runs-on: ubuntu-latest
@@ -62,6 +65,9 @@ jobs:
 
       - name: Publish all crates
         run: cargo xtask publish
+
+      - name: Canary smoke (published)
+        run: cargo xtask canaries --published "${GITHUB_REF_NAME#v}"
 
       - name: Upload publish state
         if: always()

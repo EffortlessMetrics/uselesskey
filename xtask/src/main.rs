@@ -66,6 +66,12 @@ enum Cmd {
         #[arg(long)]
         run: bool,
     },
+    /// Run external consumer canary crates.
+    Canaries {
+        /// Run against published crates.io versions instead of local path dependencies.
+        #[arg(long, value_name = "VERSION")]
+        published: Option<String>,
+    },
     /// Run publish dry-runs for crates in dependency order.
     PublishCheck,
     /// Run PR-scoped tests based on git diff.
@@ -153,6 +159,7 @@ fn main() -> Result<()> {
         Cmd::NoBlob => no_blob_gate(),
         Cmd::DocsSync { check } => docs_sync::docs_sync_cmd(check),
         Cmd::ExamplesSmoke { run } => docs_sync::examples_smoke_cmd(run),
+        Cmd::Canaries { published } => canaries(published.as_deref()),
         Cmd::PublishCheck => publish_check(),
         Cmd::Pr => pr(),
         Cmd::DepGuard => dep_guard(),
@@ -275,6 +282,101 @@ fn test() -> Result<()> {
         "--exclude",
         "uselesskey-bdd",
     ]))
+}
+
+struct Canary {
+    name: &'static str,
+    manifest_path: &'static str,
+}
+
+const CANARIES: &[Canary] = &[
+    Canary {
+        name: "facade-minimal",
+        manifest_path: "canaries/facade-minimal/Cargo.toml",
+    },
+    Canary {
+        name: "adapter-rustls",
+        manifest_path: "canaries/adapter-rustls/Cargo.toml",
+    },
+    Canary {
+        name: "release-doc-copy-paste",
+        manifest_path: "canaries/release-doc-copy-paste/Cargo.toml",
+    },
+];
+
+fn canaries(published: Option<&str>) -> Result<()> {
+    for canary in CANARIES {
+        eprintln!(
+            "{} running canary: {}",
+            " RUN ".on_bright_blue().black().bold(),
+            canary.name.bold()
+        );
+
+        let manifest_path = if let Some(version) = published {
+            write_published_canary_manifest(canary, version)?
+        } else {
+            PathBuf::from(canary.manifest_path)
+        };
+
+        let mut test_cmd = Command::new("cargo");
+        test_cmd.args([
+            "test",
+            "--manifest-path",
+            manifest_path.to_str().context("invalid manifest path")?,
+        ]);
+        if published.is_some() {
+            test_cmd.args(["--no-default-features", "--features", "published"]);
+        }
+        run(&mut test_cmd).with_context(|| format!("canary tests failed for {}", canary.name))?;
+
+        let mut run_cmd = Command::new("cargo");
+        run_cmd.args([
+            "run",
+            "--manifest-path",
+            manifest_path.to_str().context("invalid manifest path")?,
+        ]);
+        if published.is_some() {
+            run_cmd.args(["--no-default-features", "--features", "published"]);
+        }
+        run(&mut run_cmd).with_context(|| format!("canary run failed for {}", canary.name))?;
+    }
+
+    Ok(())
+}
+
+fn write_published_canary_manifest(canary: &Canary, version: &str) -> Result<PathBuf> {
+    let out_dir = Path::new("target")
+        .join("xtask")
+        .join("canaries-published")
+        .join(canary.name);
+    if out_dir.exists() {
+        fs::remove_dir_all(&out_dir)
+            .with_context(|| format!("failed to reset published canary dir for {}", canary.name))?;
+    }
+    let src_dir = out_dir.join("src");
+    fs::create_dir_all(&src_dir)
+        .with_context(|| format!("failed to create published canary dir for {}", canary.name))?;
+
+    let manifest_contents = fs::read_to_string(canary.manifest_path)
+        .with_context(|| format!("failed to read {}", canary.manifest_path))?;
+    let pinned_manifest = manifest_contents
+        .replace(">=0.5.0, <0.6.0", &format!("={version}"))
+        .replace("../../crates/", "../../../../crates/");
+    fs::write(out_dir.join("Cargo.toml"), pinned_manifest)
+        .with_context(|| format!("failed to write published manifest for {}", canary.name))?;
+
+    let source_path = Path::new(canary.manifest_path)
+        .parent()
+        .context("missing manifest parent directory")?
+        .join("src/main.rs");
+    fs::copy(&source_path, src_dir.join("main.rs")).with_context(|| {
+        format!(
+            "failed to copy canary source from {}",
+            source_path.display()
+        )
+    })?;
+
+    Ok(out_dir.join("Cargo.toml"))
 }
 
 fn bdd() -> Result<()> {
