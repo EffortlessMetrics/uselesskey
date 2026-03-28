@@ -17,6 +17,22 @@ fn det(seed: &str) -> Factory {
     Factory::deterministic(Seed::from_env_value(seed).unwrap())
 }
 
+fn generated_private_key_pem() -> String {
+    #[cfg(feature = "rsa")]
+    {
+        use uselesskey::{RsaFactoryExt, RsaSpec};
+        return det("integration-facade-negative-pem")
+            .rsa("negative", RsaSpec::rs256())
+            .private_key_pkcs8_pem()
+            .to_owned();
+    }
+
+    #[cfg(not(feature = "rsa"))]
+    {
+        "-----BEGIN PRIVATE KEY-----\nMIIB\n-----END PRIVATE KEY-----\n".to_owned()
+    }
+}
+
 // ===========================================================================
 // 1. Factory creation & core re-exports
 // ===========================================================================
@@ -1347,7 +1363,7 @@ fn negative_module_exports_corrupt_pem_enum() {
 #[test]
 fn negative_module_exports_corrupt_pem_fn() {
     use uselesskey::negative::corrupt_pem;
-    let pem = "-----BEGIN PRIVATE KEY-----\nMIIB\n-----END PRIVATE KEY-----\n";
-    let bad = corrupt_pem(pem, uselesskey::negative::CorruptPem::BadBase64);
+    let pem = generated_private_key_pem();
+    let bad = corrupt_pem(&pem, uselesskey::negative::CorruptPem::BadBase64);
     assert!(bad.contains("THIS_IS_NOT_BASE64"));
 }

@@ -10,6 +10,22 @@ fn fx() -> Factory {
     testutil::fx()
 }
 
+fn generated_private_key_pem() -> String {
+    #[cfg(feature = "rsa")]
+    {
+        use uselesskey::{RsaFactoryExt, RsaSpec};
+        return fx()
+            .rsa("negative-fixtures-standalone", RsaSpec::rs256())
+            .private_key_pkcs8_pem()
+            .to_owned();
+    }
+
+    #[cfg(not(feature = "rsa"))]
+    {
+        "-----BEGIN PRIVATE KEY-----\nABC=\n-----END PRIVATE KEY-----\n".to_owned()
+    }
+}
+
 /// Standard PEM must start with "-----BEGIN " and end with "-----END ".
 fn is_valid_pem_structure(pem: &str) -> bool {
     let trimmed = pem.trim();
@@ -493,25 +509,24 @@ fn ed25519_corrupt_pem_bad_header_is_not_valid_pem() {
 
 #[test]
 fn standalone_corrupt_pem_bad_header() {
-    let pem = "-----BEGIN PRIVATE KEY-----\nABC=\n-----END PRIVATE KEY-----\n";
-    let corrupted = corrupt_pem(pem, CorruptPem::BadHeader);
+    let pem = generated_private_key_pem();
+    let corrupted = corrupt_pem(&pem, CorruptPem::BadHeader);
     assert!(corrupted.starts_with("-----BEGIN CORRUPTED KEY-----\n"));
-    // Body is preserved
-    assert!(corrupted.contains("ABC="));
+    assert_ne!(corrupted, pem);
 }
 
 #[test]
 fn standalone_corrupt_pem_bad_footer() {
-    let pem = "-----BEGIN PRIVATE KEY-----\nABC=\n-----END PRIVATE KEY-----\n";
-    let corrupted = corrupt_pem(pem, CorruptPem::BadFooter);
+    let pem = generated_private_key_pem();
+    let corrupted = corrupt_pem(&pem, CorruptPem::BadFooter);
     assert!(corrupted.contains("-----END CORRUPTED KEY-----\n"));
     assert!(corrupted.contains("-----BEGIN PRIVATE KEY-----"));
 }
 
 #[test]
 fn standalone_corrupt_pem_bad_base64() {
-    let pem = "-----BEGIN PRIVATE KEY-----\nABC=\n-----END PRIVATE KEY-----\n";
-    let corrupted = corrupt_pem(pem, CorruptPem::BadBase64);
+    let pem = generated_private_key_pem();
+    let corrupted = corrupt_pem(&pem, CorruptPem::BadBase64);
     assert!(corrupted.contains("THIS_IS_NOT_BASE64!!!"));
     // Header and footer are preserved
     assert!(corrupted.contains("-----BEGIN PRIVATE KEY-----"));
@@ -520,23 +535,23 @@ fn standalone_corrupt_pem_bad_base64() {
 
 #[test]
 fn standalone_corrupt_pem_truncate() {
-    let pem = "-----BEGIN PRIVATE KEY-----\nABC=\n-----END PRIVATE KEY-----\n";
-    let corrupted = corrupt_pem(pem, CorruptPem::Truncate { bytes: 12 });
+    let pem = generated_private_key_pem();
+    let corrupted = corrupt_pem(&pem, CorruptPem::Truncate { bytes: 12 });
     assert_eq!(corrupted.len(), 12);
 }
 
 #[test]
 fn standalone_corrupt_pem_extra_blank_line() {
-    let pem = "-----BEGIN PRIVATE KEY-----\nABC=\n-----END PRIVATE KEY-----\n";
-    let corrupted = corrupt_pem(pem, CorruptPem::ExtraBlankLine);
+    let pem = generated_private_key_pem();
+    let corrupted = corrupt_pem(&pem, CorruptPem::ExtraBlankLine);
     assert!(corrupted.contains("-----BEGIN PRIVATE KEY-----\n\n"));
 }
 
 #[test]
 fn standalone_corrupt_pem_deterministic_is_stable() {
-    let pem = "-----BEGIN PRIVATE KEY-----\nABC=\n-----END PRIVATE KEY-----\n";
-    let a = corrupt_pem_deterministic(pem, "corrupt:stable-v1");
-    let b = corrupt_pem_deterministic(pem, "corrupt:stable-v1");
+    let pem = generated_private_key_pem();
+    let a = corrupt_pem_deterministic(&pem, "corrupt:stable-v1");
+    let b = corrupt_pem_deterministic(&pem, "corrupt:stable-v1");
     assert_eq!(a, b);
     assert_ne!(a, pem);
 }

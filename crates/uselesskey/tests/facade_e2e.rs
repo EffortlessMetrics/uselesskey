@@ -11,6 +11,22 @@ fn deterministic_fx(seed_str: &str) -> Factory {
     Factory::deterministic(seed)
 }
 
+fn generated_private_key_pem() -> String {
+    #[cfg(feature = "rsa")]
+    {
+        use uselesskey::{RsaFactoryExt, RsaSpec};
+        return deterministic_fx("facade-e2e-corrupt-pem")
+            .rsa("negative", RsaSpec::rs256())
+            .private_key_pkcs8_pem()
+            .to_owned();
+    }
+
+    #[cfg(not(feature = "rsa"))]
+    {
+        "-----BEGIN PRIVATE KEY-----\nMIIBVQIBADANBg==\n-----END PRIVATE KEY-----\n".to_owned()
+    }
+}
+
 // =========================================================================
 // Deterministic derivation contract
 // =========================================================================
@@ -205,8 +221,8 @@ fn ed25519_debug_is_safe() {
 
 #[test]
 fn corrupt_pem_produces_bad_output() {
-    let pem = "-----BEGIN PRIVATE KEY-----\nMIIBVQIBADANBg==\n-----END PRIVATE KEY-----\n";
-    let corrupted = corrupt_pem(pem, CorruptPem::BadHeader);
+    let pem = generated_private_key_pem();
+    let corrupted = corrupt_pem(&pem, CorruptPem::BadHeader);
     assert!(
         !corrupted.contains("BEGIN PRIVATE KEY"),
         "corrupted PEM should not have original header"
@@ -215,11 +231,11 @@ fn corrupt_pem_produces_bad_output() {
 
 #[test]
 fn corrupt_pem_all_variants_differ() {
-    let pem = "-----BEGIN PRIVATE KEY-----\nMIIBVQIBADANBg==\n-----END PRIVATE KEY-----\n";
+    let pem = generated_private_key_pem();
 
-    let bad_header = corrupt_pem(pem, CorruptPem::BadHeader);
-    let bad_footer = corrupt_pem(pem, CorruptPem::BadFooter);
-    let bad_base64 = corrupt_pem(pem, CorruptPem::BadBase64);
+    let bad_header = corrupt_pem(&pem, CorruptPem::BadHeader);
+    let bad_footer = corrupt_pem(&pem, CorruptPem::BadFooter);
+    let bad_base64 = corrupt_pem(&pem, CorruptPem::BadBase64);
 
     assert_ne!(bad_header, bad_footer);
     assert_ne!(bad_header, bad_base64);

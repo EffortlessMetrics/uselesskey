@@ -5,6 +5,22 @@
 use proptest::prelude::*;
 use uselesskey::prelude::*;
 
+fn generated_private_key_pem() -> String {
+    #[cfg(feature = "rsa")]
+    {
+        use uselesskey::{RsaFactoryExt, RsaSpec};
+        return Factory::deterministic_from_str("prop-tests-negative")
+            .rsa("negative", RsaSpec::rs256())
+            .private_key_pkcs8_pem()
+            .to_owned();
+    }
+
+    #[cfg(not(feature = "rsa"))]
+    {
+        "-----BEGIN PRIVATE KEY-----\nMIIBVQIBADANBg==\n-----END PRIVATE KEY-----\n".to_owned()
+    }
+}
+
 // =========================================================================
 // RSA property tests (low case count — keygen is expensive)
 // =========================================================================
@@ -188,18 +204,18 @@ mod negative_props {
 
         #[test]
         fn corrupt_pem_never_returns_original(seed in any::<[u8; 32]>()) {
-            let pem = "-----BEGIN PRIVATE KEY-----\nMIIBVQIBADANBg==\n-----END PRIVATE KEY-----\n";
+            let pem = generated_private_key_pem();
 
-            let bad_header = corrupt_pem(pem, CorruptPem::BadHeader);
-            let bad_footer = corrupt_pem(pem, CorruptPem::BadFooter);
-            let bad_base64 = corrupt_pem(pem, CorruptPem::BadBase64);
+            let bad_header = corrupt_pem(&pem, CorruptPem::BadHeader);
+            let bad_footer = corrupt_pem(&pem, CorruptPem::BadFooter);
+            let bad_base64 = corrupt_pem(&pem, CorruptPem::BadBase64);
 
             // Suppress unused variable warning
             let _ = seed;
 
-            prop_assert_ne!(bad_header, pem);
-            prop_assert_ne!(bad_footer, pem);
-            prop_assert_ne!(bad_base64, pem);
+            prop_assert_ne!(bad_header, pem.as_str());
+            prop_assert_ne!(bad_footer, pem.as_str());
+            prop_assert_ne!(bad_base64, pem.as_str());
         }
     }
 }
