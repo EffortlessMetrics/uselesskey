@@ -35,8 +35,10 @@ like `Factory`, `Mode`, and `Seed`; enable only the fixture families you need.
 Token-only consumers can stay lightweight:
 
 ```toml
+<!-- docs-sync:feature-selection-token-only-start -->
 [dev-dependencies]
 uselesskey = { version = "0.5.1", default-features = false, features = ["token"] }
+<!-- docs-sync:feature-selection-token-only-end -->
 ```
 
 ```rust
@@ -53,8 +55,10 @@ assert!(token.value().starts_with("uk_test_"));
 If you want RSA fixtures, enable `rsa` explicitly:
 
 ```toml
+<!-- docs-sync:quick-start-rsa-start -->
 [dev-dependencies]
 uselesskey = { version = "0.5.1", features = ["rsa"] }
+<!-- docs-sync:quick-start-rsa-end -->
 ```
 
 ```rust

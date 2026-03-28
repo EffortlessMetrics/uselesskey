@@ -148,6 +148,8 @@ Dependency snippets:
   uselesskey = { version = "0.5.1", features = ["rsa"] }
   ```
 
+  Minimal command: `cargo run -p uselesskey --example basic_rsa --no-default-features --features rsa,jwk`
+
 
 - **Token-only**
   ```toml
@@ -155,12 +157,16 @@ Dependency snippets:
   uselesskey = { version = "0.5.1", default-features = false, features = ["token"] }
   ```
 
+  Minimal command: `cargo run -p uselesskey --example basic_token --no-default-features --features token`
+
 
 - **JWT/JWK**
   ```toml
   [dev-dependencies]
   uselesskey = { version = "0.5.1", features = ["rsa", "jwk"] }
   ```
+
+  Minimal command: `cargo run -p uselesskey --example jwt_rs256_jwks --no-default-features --features rsa,jwk`
 
 
 - **X.509 + rustls**
@@ -170,6 +176,8 @@ Dependency snippets:
   uselesskey-rustls = { version = "0.5.1", features = ["tls-config", "rustls-ring"] }
   ```
 
+  Minimal command: `cargo run -p uselesskey --example adapter_rustls --no-default-features --features x509`
+
 
 - **jsonwebtoken adapter**
   ```toml
@@ -178,21 +186,7 @@ Dependency snippets:
   uselesskey-jsonwebtoken = { version = "0.5.1" }
   ```
 
-
-- **JOSE/OpenID adapter**
-  ```toml
-  [dev-dependencies]
-  uselesskey = { version = "0.5.1", features = ["rsa", "ecdsa", "ed25519", "hmac"] }
-  uselesskey-jose-openid = { version = "0.5.1" }
-  ```
-
-
-- **pgp-native adapter**
-  ```toml
-  [dev-dependencies]
-  uselesskey = { version = "0.5.1", features = ["pgp"] }
-  uselesskey-pgp-native = { version = "0.5.1" }
-  ```
+  Minimal command: `cargo run -p uselesskey --example adapter_jsonwebtoken --no-default-features --features rsa,ecdsa,ed25519,hmac`
 <!-- docs-sync:dependency-snippets-end -->
 
 ### JWK / JWKS

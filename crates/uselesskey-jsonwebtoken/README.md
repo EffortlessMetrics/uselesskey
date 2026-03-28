@@ -23,9 +23,11 @@ Implements `JwtKeyExt` so fixture types return `jsonwebtoken::EncodingKey` and
 ## Usage
 
 ```toml
+<!-- docs-sync:usage-dependency-snippet-start -->
 [dev-dependencies]
-uselesskey-jsonwebtoken = { version = "0.5.1", features = ["rsa"] }
-jsonwebtoken = { version = "10", features = ["use_pem", "rust_crypto"] }
+uselesskey = { version = "0.5.1", features = ["rsa", "ecdsa", "ed25519", "hmac"] }
+uselesskey-jsonwebtoken = { version = "0.5.1" }
+<!-- docs-sync:usage-dependency-snippet-end -->
 ```
 
 ```rust
@@ -58,4 +60,3 @@ or [MIT license](https://opensource.org/licenses/MIT) at your option.
 
 See the [`uselesskey` crate](https://crates.io/crates/uselesskey) for full
 documentation.
-

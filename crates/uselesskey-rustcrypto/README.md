@@ -17,8 +17,10 @@ Converts fixture key material into native RustCrypto types (`rsa`, `p256`/`p384`
 ## Example
 
 ```toml
+<!-- docs-sync:usage-dependency-snippet-start -->
 [dev-dependencies]
 uselesskey-rustcrypto = { version = "0.5.1", features = ["rsa"] }
+<!-- docs-sync:usage-dependency-snippet-end -->
 ```
 
 ```rust
@@ -46,4 +48,3 @@ or [MIT license](https://opensource.org/licenses/MIT) at your option.
 
 See the [`uselesskey` crate](https://crates.io/crates/uselesskey) for full
 documentation.
-

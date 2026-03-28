@@ -2,7 +2,7 @@
   "workspace_crates": [
     {
       "name": "uselesskey",
-      "description": "Public facade — re-exports all key types and traits behind feature flags"
+      "description": "Public facade \u2014 re-exports all key types and traits behind feature flags"
     },
     {
       "name": "uselesskey-core",
@@ -186,7 +186,7 @@
       "path": "crates/uselesskey/examples/jwt_signing.rs",
       "feature_set": "rsa,jwk",
       "description": "JWT signing with deterministic RSA, ECDSA, and HMAC keys (ECDSA/HMAC optional)",
-           "run_smoke": false
+      "run_smoke": false
     },
     {
       "name": "negative_fixtures",
@@ -235,19 +235,19 @@
     {
       "feature": "rsa",
       "extension_trait": "RsaFactoryExt",
-      "algorithms": "RSA 2048/3072/4096 — PKCS#8, SPKI, PEM, DER",
+      "algorithms": "RSA 2048/3072/4096 \u2014 PKCS#8, SPKI, PEM, DER",
       "implies": "-"
     },
     {
       "feature": "ecdsa",
       "extension_trait": "EcdsaFactoryExt",
-      "algorithms": "P-256 (ES256), P-384 (ES384) — PKCS#8, SPKI",
+      "algorithms": "P-256 (ES256), P-384 (ES384) \u2014 PKCS#8, SPKI",
       "implies": "-"
     },
     {
       "feature": "ed25519",
       "extension_trait": "Ed25519FactoryExt",
-      "algorithms": "Ed25519 — PKCS#8, SPKI",
+      "algorithms": "Ed25519 \u2014 PKCS#8, SPKI",
       "implies": "-"
     },
     {
@@ -259,7 +259,7 @@
     {
       "feature": "pgp",
       "extension_trait": "PgpFactoryExt",
-      "algorithms": "OpenPGP RSA 2048/3072, Ed25519 — armored, binary",
+      "algorithms": "OpenPGP RSA 2048/3072, Ed25519 \u2014 armored, binary",
       "implies": "-"
     },
     {
@@ -370,32 +370,243 @@
   "dependency_snippets": [
     {
       "name": "Quick start (RSA)",
-      "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.5.1\", features = [\"rsa\"] }"
+      "snippet_id": "facade-rsa-quickstart"
     },
     {
       "name": "Token-only",
-      "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.5.1\", default-features = false, features = [\"token\"] }"
+      "snippet_id": "facade-token-only"
     },
     {
       "name": "JWT/JWK",
-      "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.5.1\", features = [\"rsa\", \"jwk\"] }"
+      "snippet_id": "facade-jwt-jwk"
     },
     {
       "name": "X.509 + rustls",
-      "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.5.1\", features = [\"x509\"] }\nuselesskey-rustls = { version = \"0.5.1\", features = [\"tls-config\", \"rustls-ring\"] }"
+      "snippet_id": "facade-x509-rustls"
     },
     {
       "name": "jsonwebtoken adapter",
-      "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.5.1\", features = [\"rsa\", \"ecdsa\", \"ed25519\", \"hmac\"] }\nuselesskey-jsonwebtoken = { version = \"0.5.1\" }"
+      "snippet_id": "adapter-jsonwebtoken-rsa"
+    }
+  ],
+  "public_snippets": [
+    {
+      "id": "facade-rsa-quickstart",
+      "name": "Quick start (RSA)",
+      "crate_name": "uselesskey",
+      "current_release_version": "0.5.1",
+      "supported_feature_flags": [
+        "rsa"
+      ],
+      "minimal_example_command": "cargo run -p uselesskey --example basic_rsa --no-default-features --features rsa,jwk",
+      "dependency_snippet": "[dev-dependencies]\nuselesskey = { version = \"{{version}}\", features = [\"rsa\"] }"
     },
     {
-      "name": "JOSE/OpenID adapter",
-      "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.5.1\", features = [\"rsa\", \"ecdsa\", \"ed25519\", \"hmac\"] }\nuselesskey-jose-openid = { version = \"0.5.1\" }"
+      "id": "facade-token-only",
+      "name": "Token-only",
+      "crate_name": "uselesskey",
+      "current_release_version": "0.5.1",
+      "supported_feature_flags": [
+        "token"
+      ],
+      "minimal_example_command": "cargo run -p uselesskey --example basic_token --no-default-features --features token",
+      "dependency_snippet": "[dev-dependencies]\nuselesskey = { version = \"{{version}}\", default-features = false, features = [\"token\"] }"
     },
     {
-      "name": "pgp-native adapter",
-      "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.5.1\", features = [\"pgp\"] }\nuselesskey-pgp-native = { version = \"0.5.1\" }"
+      "id": "facade-jwt-jwk",
+      "name": "JWT/JWK",
+      "crate_name": "uselesskey",
+      "current_release_version": "0.5.1",
+      "supported_feature_flags": [
+        "rsa",
+        "jwk"
+      ],
+      "minimal_example_command": "cargo run -p uselesskey --example jwt_rs256_jwks --no-default-features --features rsa,jwk",
+      "dependency_snippet": "[dev-dependencies]\nuselesskey = { version = \"{{version}}\", features = [\"rsa\", \"jwk\"] }"
+    },
+    {
+      "id": "facade-x509-rustls",
+      "name": "X.509 + rustls",
+      "crate_name": "uselesskey",
+      "current_release_version": "0.5.1",
+      "supported_feature_flags": [
+        "x509"
+      ],
+      "minimal_example_command": "cargo run -p uselesskey --example adapter_rustls --no-default-features --features x509",
+      "dependency_snippet": "[dev-dependencies]\nuselesskey = { version = \"{{version}}\", features = [\"x509\"] }\nuselesskey-rustls = { version = \"{{version}}\", features = [\"tls-config\", \"rustls-ring\"] }"
+    },
+    {
+      "id": "adapter-jsonwebtoken-rsa",
+      "name": "jsonwebtoken adapter",
+      "crate_name": "uselesskey-jsonwebtoken",
+      "current_release_version": "0.5.1",
+      "supported_feature_flags": [
+        "rsa"
+      ],
+      "minimal_example_command": "cargo run -p uselesskey --example adapter_jsonwebtoken --no-default-features --features rsa,ecdsa,ed25519,hmac",
+      "dependency_snippet": "[dev-dependencies]\nuselesskey = { version = \"{{version}}\", features = [\"rsa\", \"ecdsa\", \"ed25519\", \"hmac\"] }\nuselesskey-jsonwebtoken = { version = \"{{version}}\" }"
+    },
+    {
+      "id": "adapter-rustls-tls-config",
+      "name": "rustls adapter",
+      "crate_name": "uselesskey-rustls",
+      "current_release_version": "0.5.1",
+      "supported_feature_flags": [
+        "tls-config",
+        "rustls-ring"
+      ],
+      "minimal_example_command": "cargo run -p uselesskey --example adapter_rustls --no-default-features --features x509",
+      "dependency_snippet": "[dev-dependencies]\nuselesskey-rustls = { version = \"{{version}}\", features = [\"tls-config\", \"rustls-ring\"] }"
+    },
+    {
+      "id": "adapter-ring-rsa",
+      "name": "ring adapter",
+      "crate_name": "uselesskey-ring",
+      "current_release_version": "0.5.1",
+      "supported_feature_flags": [
+        "rsa"
+      ],
+      "minimal_example_command": "cargo test -p uselesskey-ring --no-default-features --features rsa",
+      "dependency_snippet": "[dev-dependencies]\nuselesskey-ring = { version = \"{{version}}\", features = [\"rsa\"] }"
+    },
+    {
+      "id": "adapter-rustcrypto-rsa",
+      "name": "rustcrypto adapter",
+      "crate_name": "uselesskey-rustcrypto",
+      "current_release_version": "0.5.1",
+      "supported_feature_flags": [
+        "rsa"
+      ],
+      "minimal_example_command": "cargo test -p uselesskey-rustcrypto --no-default-features --features rsa",
+      "dependency_snippet": "[dev-dependencies]\nuselesskey-rustcrypto = { version = \"{{version}}\", features = [\"rsa\"] }"
+    },
+    {
+      "id": "adapter-aws-lc-rs-native-rsa",
+      "name": "aws-lc-rs adapter",
+      "crate_name": "uselesskey-aws-lc-rs",
+      "current_release_version": "0.5.1",
+      "supported_feature_flags": [
+        "native",
+        "rsa"
+      ],
+      "minimal_example_command": "cargo test -p uselesskey-aws-lc-rs --no-default-features --features native,rsa",
+      "dependency_snippet": "[dev-dependencies]\nuselesskey-aws-lc-rs = { version = \"{{version}}\", features = [\"native\", \"rsa\"] }"
+    },
+    {
+      "id": "facade-all-keys",
+      "name": "All key families",
+      "crate_name": "uselesskey",
+      "current_release_version": "0.5.1",
+      "supported_feature_flags": [
+        "rsa",
+        "ecdsa",
+        "ed25519",
+        "hmac",
+        "pgp"
+      ],
+      "minimal_example_command": "cargo run -p uselesskey --example basic_usage --no-default-features --features rsa,ecdsa,ed25519,jwk",
+      "dependency_snippet": "[dev-dependencies]\nuselesskey = { version = \"{{version}}\", features = [\"rsa\", \"ecdsa\", \"ed25519\", \"hmac\", \"pgp\"] }"
+    }
+  ],
+  "docs_sync_targets": [
+    {
+      "path": "README.md",
+      "blocks": [
+        {
+          "marker": "dependency-snippets",
+          "kind": "dependency-list"
+        }
+      ]
+    },
+    {
+      "path": "crates/uselesskey/README.md",
+      "blocks": [
+        {
+          "marker": "feature-selection-token-only",
+          "kind": "single-snippet",
+          "snippet_id": "facade-token-only"
+        },
+        {
+          "marker": "quick-start-rsa",
+          "kind": "single-snippet",
+          "snippet_id": "facade-rsa-quickstart"
+        }
+      ]
+    },
+    {
+      "path": "crates/uselesskey-jsonwebtoken/README.md",
+      "blocks": [
+        {
+          "marker": "usage-dependency-snippet",
+          "kind": "single-snippet",
+          "snippet_id": "adapter-jsonwebtoken-rsa"
+        }
+      ]
+    },
+    {
+      "path": "crates/uselesskey-rustls/README.md",
+      "blocks": [
+        {
+          "marker": "usage-dependency-snippet",
+          "kind": "single-snippet",
+          "snippet_id": "adapter-rustls-tls-config"
+        }
+      ]
+    },
+    {
+      "path": "crates/uselesskey-ring/README.md",
+      "blocks": [
+        {
+          "marker": "usage-dependency-snippet",
+          "kind": "single-snippet",
+          "snippet_id": "adapter-ring-rsa"
+        }
+      ]
+    },
+    {
+      "path": "crates/uselesskey-rustcrypto/README.md",
+      "blocks": [
+        {
+          "marker": "usage-dependency-snippet",
+          "kind": "single-snippet",
+          "snippet_id": "adapter-rustcrypto-rsa"
+        }
+      ]
+    },
+    {
+      "path": "crates/uselesskey-aws-lc-rs/README.md",
+      "blocks": [
+        {
+          "marker": "usage-dependency-snippet",
+          "kind": "single-snippet",
+          "snippet_id": "adapter-aws-lc-rs-native-rsa"
+        }
+      ]
+    },
+    {
+      "path": "docs/how-to/choose-features.md",
+      "blocks": [
+        {
+          "marker": "all-keys-snippet",
+          "kind": "single-snippet",
+          "snippet_id": "facade-all-keys"
+        },
+        {
+          "marker": "jwk-snippet",
+          "kind": "single-snippet",
+          "snippet_id": "facade-jwt-jwk"
+        },
+        {
+          "marker": "x509-rustls-snippet",
+          "kind": "single-snippet",
+          "snippet_id": "facade-x509-rustls"
+        },
+        {
+          "marker": "token-only-snippet",
+          "kind": "single-snippet",
+          "snippet_id": "facade-token-only"
+        }
+      ]
     }
   ]
 }
-

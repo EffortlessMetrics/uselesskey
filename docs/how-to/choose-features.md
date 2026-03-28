@@ -13,8 +13,10 @@ Use this page when you are deciding which feature flags to enable first.
 - Add `pgp` for OpenPGP armored/binary artifacts.
 
 ```toml
+<!-- docs-sync:all-keys-snippet-start -->
 [dev-dependencies]
 uselesskey = { version = "0.5.1", features = ["rsa", "ecdsa", "ed25519", "hmac", "pgp"] }
+<!-- docs-sync:all-keys-snippet-end -->
 ```
 
 If you need every key family, use `all-keys`.
@@ -25,8 +27,10 @@ If you need every key family, use `all-keys`.
 - Keep `jwk` off when all you need is PEM/DER/private-key text.
 
 ```toml
+<!-- docs-sync:jwk-snippet-start -->
 [dev-dependencies]
 uselesskey = { version = "0.5.1", features = ["rsa", "jwk"] }
+<!-- docs-sync:jwk-snippet-end -->
 ```
 
 ## I need X.509 / TLS
@@ -36,9 +40,11 @@ uselesskey = { version = "0.5.1", features = ["rsa", "jwk"] }
 - Add `uselesskey-tonic` when you need gRPC TLS examples.
 
 ```toml
+<!-- docs-sync:x509-rustls-snippet-start -->
 [dev-dependencies]
 uselesskey = { version = "0.5.1", features = ["x509"] }
 uselesskey-rustls = { version = "0.5.1", features = ["tls-config", "rustls-ring"] }
+<!-- docs-sync:x509-rustls-snippet-end -->
 ```
 
 ## I need token shapes only
@@ -46,12 +52,13 @@ uselesskey-rustls = { version = "0.5.1", features = ["tls-config", "rustls-ring"
 - Add `token` (and disable default features if you only want token fixtures).
 
 ```toml
+<!-- docs-sync:token-only-snippet-start -->
 [dev-dependencies]
 uselesskey = { version = "0.5.1", default-features = false, features = ["token"] }
+<!-- docs-sync:token-only-snippet-end -->
 ```
 
 ## When you want fewer dependencies
 
 - Prefer the facade for speed and convenience.
 - Prefer direct leaf crates when dependency shape is more important than convenience.
-
