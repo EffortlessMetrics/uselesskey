@@ -15,7 +15,11 @@ This plan decomposes `roadmap.md` into milestone-aligned execution items.
 
 ## v0.5.1 negative fixtures
 
-- [ ] X.509 negative wave 1
+- [x] X.509 negative wave 1
+- [x] v0.5.1 release prep
+
+## v0.5.2 follow-on negatives
+
 - [ ] JWK/JWKS negative wave 1
 - [ ] token-shape negative wave 1
 - [ ] docs/examples coverage for negative fixtures

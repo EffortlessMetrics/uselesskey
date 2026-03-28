@@ -14,7 +14,7 @@ Use this page when you are deciding which feature flags to enable first.
 
 ```toml
 [dev-dependencies]
-uselesskey = { version = "0.5.0", features = ["rsa", "ecdsa", "ed25519", "hmac", "pgp"] }
+uselesskey = { version = "0.5.1", features = ["rsa", "ecdsa", "ed25519", "hmac", "pgp"] }
 ```
 
 If you need every key family, use `all-keys`.
@@ -26,7 +26,7 @@ If you need every key family, use `all-keys`.
 
 ```toml
 [dev-dependencies]
-uselesskey = { version = "0.5.0", features = ["rsa", "jwk"] }
+uselesskey = { version = "0.5.1", features = ["rsa", "jwk"] }
 ```
 
 ## I need X.509 / TLS
@@ -37,8 +37,8 @@ uselesskey = { version = "0.5.0", features = ["rsa", "jwk"] }
 
 ```toml
 [dev-dependencies]
-uselesskey = { version = "0.5.0", features = ["x509"] }
-uselesskey-rustls = { version = "0.5.0", features = ["tls-config", "rustls-ring"] }
+uselesskey = { version = "0.5.1", features = ["x509"] }
+uselesskey-rustls = { version = "0.5.1", features = ["tls-config", "rustls-ring"] }
 ```
 
 ## I need token shapes only
@@ -47,7 +47,7 @@ uselesskey-rustls = { version = "0.5.0", features = ["tls-config", "rustls-ring"
 
 ```toml
 [dev-dependencies]
-uselesskey = { version = "0.5.0", default-features = false, features = ["token"] }
+uselesskey = { version = "0.5.1", default-features = false, features = ["token"] }
 ```
 
 ## When you want fewer dependencies

@@ -13,15 +13,29 @@ This roadmap reflects the strategic direction for uselesskey as a **test-fixture
 - [x] Add docs metadata source and sync enforcement
 - [x] Add examples-smoke validation in the docs/examples path
 
-## Next (v0.5.1+)
+## Next (v0.5.2+)
 
 *Under evaluation - Planned follow-up*
 
-- [ ] Additional negative fixture variants
+- [ ] JWK/JWKS and token-shape negative fixture follow-ons
+- [ ] Docs/examples coverage for the remaining negative-fixture surface
 - [ ] Performance benchmarks for key generation paths
 - [ ] Release governance and post-release audit automation
 
 ## Shipped
+
+### v0.5.1 (2026-03-27)
+
+*X.509 negative-fixture expansion and dependency-lane stabilization*
+
+- Added the first X.509 chain-negative wave for not-yet-valid fixtures and
+  intermediate path-validation failures, while preserving default deterministic
+  certificate outputs.
+- Landed the queued maintenance dependency refreshes, including `toml`,
+  `insta`, and `sha2`, plus the supporting RustCrypto/HMAC compatibility fixes
+  needed to keep adapters, fuzz targets, and CI aligned.
+- Prepared the `0.5.1` release manifests, changelog, and release-facing
+  dependency snippets.
 
 ### v0.5.0 (2026-03-25)
 
