@@ -236,6 +236,7 @@
 //! | `hmac` | HMAC secret fixtures |
 //! | `token` | API key/bearer token fixtures |
 //! | `ssh` | OpenSSH key and cert fixtures |
+//! | `webhook` | Webhook signature fixtures (GitHub/Stripe/Slack) |
 //! | `pgp` | OpenPGP key fixtures |
 //! | `x509` | X.509 certificate and chain fixtures |
 //! | `jwk` | JWK/JWKS output for all key types |
@@ -296,6 +297,12 @@ pub use uselesskey_ssh::{
     SshCertType, SshFactoryExt, SshKeyPair, SshSpec, SshValidity,
 };
 
+#[cfg(feature = "webhook")]
+pub use uselesskey_webhook::{
+    DOMAIN_WEBHOOK_FIXTURE, NearMissScenario, NearMissWebhookFixture, WebhookFactoryExt,
+    WebhookFixture, WebhookPayloadSpec, WebhookProfile,
+};
+
 #[cfg(feature = "pgp")]
 pub use uselesskey_pgp::{DOMAIN_PGP_KEYPAIR, PgpFactoryExt, PgpKeyPair, PgpSpec};
 
@@ -336,6 +343,12 @@ pub mod prelude {
     pub use crate::{
         SshCertFactoryExt, SshCertFixture, SshCertSpec, SshCertType, SshFactoryExt, SshKeyPair,
         SshSpec, SshValidity,
+    };
+
+    #[cfg(feature = "webhook")]
+    pub use crate::{
+        NearMissScenario, NearMissWebhookFixture, WebhookFactoryExt, WebhookFixture,
+        WebhookPayloadSpec, WebhookProfile,
     };
 
     #[cfg(feature = "pgp")]
