@@ -148,6 +148,7 @@ Dependency snippets:
   uselesskey = { version = "0.5.1", features = ["rsa"] }
   ```
 
+  Minimal run command: `cargo run -p uselesskey --example basic_rsa --no-default-features --features "rsa"`
 
 - **Token-only**
   ```toml
@@ -155,6 +156,7 @@ Dependency snippets:
   uselesskey = { version = "0.5.1", default-features = false, features = ["token"] }
   ```
 
+  Minimal run command: `cargo run -p uselesskey --example basic_token --no-default-features --features "token"`
 
 - **JWT/JWK**
   ```toml
@@ -162,6 +164,7 @@ Dependency snippets:
   uselesskey = { version = "0.5.1", features = ["rsa", "jwk"] }
   ```
 
+  Minimal run command: `cargo run -p uselesskey --example jwk_generation --no-default-features --features "rsa,jwk"`
 
 - **X.509 + rustls**
   ```toml
@@ -170,6 +173,7 @@ Dependency snippets:
   uselesskey-rustls = { version = "0.5.1", features = ["tls-config", "rustls-ring"] }
   ```
 
+  Minimal run command: `cargo run -p uselesskey --example adapter_rustls --no-default-features --features "x509"`
 
 - **jsonwebtoken adapter**
   ```toml
@@ -178,6 +182,7 @@ Dependency snippets:
   uselesskey-jsonwebtoken = { version = "0.5.1" }
   ```
 
+  Minimal run command: `cargo run -p uselesskey --example adapter_jsonwebtoken --no-default-features --features "rsa,ecdsa,ed25519,hmac"`
 
 - **JOSE/OpenID adapter**
   ```toml
@@ -186,6 +191,7 @@ Dependency snippets:
   uselesskey-jose-openid = { version = "0.5.1" }
   ```
 
+  Minimal run command: `cargo run -p uselesskey --example adapter_jsonwebtoken --no-default-features --features "rsa,ecdsa,ed25519,hmac"`
 
 - **pgp-native adapter**
   ```toml
@@ -193,6 +199,8 @@ Dependency snippets:
   uselesskey = { version = "0.5.1", features = ["pgp"] }
   uselesskey-pgp-native = { version = "0.5.1" }
   ```
+
+  Minimal run command: `cargo run -p uselesskey --example basic_usage --no-default-features --features "pgp"`
 <!-- docs-sync:dependency-snippets-end -->
 
 ### JWK / JWKS
@@ -410,30 +418,30 @@ let client_tls = chain.client_tls_config_tonic("test.example.com");
 The [`crates/uselesskey/examples/`](crates/uselesskey/examples/) directory contains standalone programs. Because the facade default feature set is empty, run them with `cargo run -p uselesskey --example <name> --features "<flags>"` using one working feature set below:
 
 <!-- docs-sync:runnable-examples-start -->
-| Example | Feature(s) | Description |
-|---------|------------|-------------|
-| [adapter_jsonwebtoken](crates/uselesskey/examples/adapter_jsonwebtoken.rs) | `rsa,ecdsa,ed25519,hmac` | Sign and verify JWTs using `jsonwebtoken` crate integration |
-| [adapter_rustls](crates/uselesskey/examples/adapter_rustls.rs) | `x509` | Convert X.509 fixtures into rustls `ServerConfig` / `ClientConfig` |
-| [basic_ecdsa](crates/uselesskey/examples/basic_ecdsa.rs) | `ecdsa,jwk` | Generate ECDSA keypairs for P-256 and P-384 in PEM, DER, JWK |
-| [basic_ed25519](crates/uselesskey/examples/basic_ed25519.rs) | `ed25519,jwk` | Generate Ed25519 keypairs in PEM, DER, and JWK formats |
-| [basic_hmac](crates/uselesskey/examples/basic_hmac.rs) | `hmac,jwk` | Generate HMAC secrets for HS256, HS384, and HS512 |
-| [basic_rsa](crates/uselesskey/examples/basic_rsa.rs) | `rsa,jwk` | Generate RSA keypairs in PEM, DER, and JWK formats |
-| [basic_token](crates/uselesskey/examples/basic_token.rs) | `token` | Generate API key, bearer token, and OAuth access-token fixtures |
-| [basic_usage](crates/uselesskey/examples/basic_usage.rs) | `ecdsa,ed25519,rsa,jwk` | All-in-one: RSA, ECDSA, and Ed25519 fixture generation |
-| [deterministic](crates/uselesskey/examples/deterministic.rs) | `rsa` | Reproducible fixtures from seeds - same seed always yields the same key |
-| [deterministic_mode](crates/uselesskey/examples/deterministic_mode.rs) | `rsa,ecdsa,ed25519` | Order-independent deterministic derivation guarantees |
-| [jwk_generation](crates/uselesskey/examples/jwk_generation.rs) | `ecdsa,ed25519,hmac,rsa,jwk` | Build JWKs and JWKS with `JwksBuilder` across key types |
-| [jwk_jwks](crates/uselesskey/examples/jwk_jwks.rs) | `ecdsa,ed25519,hmac,rsa,jwk` | JWK sets from multiple key types with metadata inspection |
-| [jwks](crates/uselesskey/examples/jwks.rs) | `rsa,ecdsa,jwk` | Build a JWKS from RSA and ECDSA public keys |
-| [jwks_server_mock](crates/uselesskey/examples/jwks_server_mock.rs) | `rsa,ecdsa,ed25519,jwk` | Generate a JWKS response body for a mock `/.well-known/jwks.json` endpoint |
-| [jwt_rs256_jwks](crates/uselesskey/examples/jwt_rs256_jwks.rs) | `rsa,jwk` | RSA keypairs with JWK/JWKS extraction for JWT verification flows |
-| [jwt_signing](crates/uselesskey/examples/jwt_signing.rs) | `rsa,jwk` | JWT signing with deterministic RSA, ECDSA, and HMAC keys (ECDSA/HMAC optional) |
-| [negative_fixtures](crates/uselesskey/examples/negative_fixtures.rs) | `x509` | Intentionally invalid certificates and keys for error-path testing |
-| [tempfile_paths](crates/uselesskey/examples/tempfile_paths.rs) | `rsa,ed25519` | Write key fixtures to temporary files for path-based APIs |
-| [tempfiles](crates/uselesskey/examples/tempfiles.rs) | `x509` | Write X.509 cert, key, and identity PEM to temp files |
-| [tls_server](crates/uselesskey/examples/tls_server.rs) | `x509` | Certificate chain generation for TLS server testing |
-| [token_generation](crates/uselesskey/examples/token_generation.rs) | `token` | Realistic API keys, bearer tokens, and OAuth tokens for tests |
-| [x509_certificates](crates/uselesskey/examples/x509_certificates.rs) | `x509` | Self-signed certs, cert chains, and negative X.509 fixtures |
+| Example | Feature(s) | Command | Description |
+|---------|------------|---------|-------------|
+| [adapter_jsonwebtoken](crates/uselesskey/examples/adapter_jsonwebtoken.rs) | `rsa,ecdsa,ed25519,hmac` | `cargo run -p uselesskey --example adapter_jsonwebtoken --no-default-features --features "rsa,ecdsa,ed25519,hmac"` | Sign and verify JWTs using `jsonwebtoken` crate integration |
+| [adapter_rustls](crates/uselesskey/examples/adapter_rustls.rs) | `x509` | `cargo run -p uselesskey --example adapter_rustls --no-default-features --features "x509"` | Convert X.509 fixtures into rustls `ServerConfig` / `ClientConfig` |
+| [basic_ecdsa](crates/uselesskey/examples/basic_ecdsa.rs) | `ecdsa,jwk` | `cargo run -p uselesskey --example basic_ecdsa --no-default-features --features "ecdsa,jwk"` | Generate ECDSA keypairs for P-256 and P-384 in PEM, DER, JWK |
+| [basic_ed25519](crates/uselesskey/examples/basic_ed25519.rs) | `ed25519,jwk` | `cargo run -p uselesskey --example basic_ed25519 --no-default-features --features "ed25519,jwk"` | Generate Ed25519 keypairs in PEM, DER, and JWK formats |
+| [basic_hmac](crates/uselesskey/examples/basic_hmac.rs) | `hmac,jwk` | `cargo run -p uselesskey --example basic_hmac --no-default-features --features "hmac,jwk"` | Generate HMAC secrets for HS256, HS384, and HS512 |
+| [basic_rsa](crates/uselesskey/examples/basic_rsa.rs) | `rsa,jwk` | `cargo run -p uselesskey --example basic_rsa --no-default-features --features "rsa,jwk"` | Generate RSA keypairs in PEM, DER, and JWK formats |
+| [basic_token](crates/uselesskey/examples/basic_token.rs) | `token` | `cargo run -p uselesskey --example basic_token --no-default-features --features "token"` | Generate API key, bearer token, and OAuth access-token fixtures |
+| [basic_usage](crates/uselesskey/examples/basic_usage.rs) | `ecdsa,ed25519,rsa,jwk` | `cargo run -p uselesskey --example basic_usage --no-default-features --features "ecdsa,ed25519,rsa,jwk"` | All-in-one: RSA, ECDSA, and Ed25519 fixture generation |
+| [deterministic](crates/uselesskey/examples/deterministic.rs) | `rsa` | `cargo run -p uselesskey --example deterministic --no-default-features --features "rsa"` | Reproducible fixtures from seeds - same seed always yields the same key |
+| [deterministic_mode](crates/uselesskey/examples/deterministic_mode.rs) | `rsa,ecdsa,ed25519` | `cargo run -p uselesskey --example deterministic_mode --no-default-features --features "rsa,ecdsa,ed25519"` | Order-independent deterministic derivation guarantees |
+| [jwk_generation](crates/uselesskey/examples/jwk_generation.rs) | `ecdsa,ed25519,hmac,rsa,jwk` | `cargo run -p uselesskey --example jwk_generation --no-default-features --features "ecdsa,ed25519,hmac,rsa,jwk"` | Build JWKs and JWKS with `JwksBuilder` across key types |
+| [jwk_jwks](crates/uselesskey/examples/jwk_jwks.rs) | `ecdsa,ed25519,hmac,rsa,jwk` | `cargo run -p uselesskey --example jwk_jwks --no-default-features --features "ecdsa,ed25519,hmac,rsa,jwk"` | JWK sets from multiple key types with metadata inspection |
+| [jwks](crates/uselesskey/examples/jwks.rs) | `rsa,ecdsa,jwk` | `cargo run -p uselesskey --example jwks --no-default-features --features "rsa,ecdsa,jwk"` | Build a JWKS from RSA and ECDSA public keys |
+| [jwks_server_mock](crates/uselesskey/examples/jwks_server_mock.rs) | `rsa,ecdsa,ed25519,jwk` | `cargo run -p uselesskey --example jwks_server_mock --no-default-features --features "rsa,ecdsa,ed25519,jwk"` | Generate a JWKS response body for a mock `/.well-known/jwks.json` endpoint |
+| [jwt_rs256_jwks](crates/uselesskey/examples/jwt_rs256_jwks.rs) | `rsa,jwk` | `cargo run -p uselesskey --example jwt_rs256_jwks --no-default-features --features "rsa,jwk"` | RSA keypairs with JWK/JWKS extraction for JWT verification flows |
+| [jwt_signing](crates/uselesskey/examples/jwt_signing.rs) | `rsa,jwk` | `cargo run -p uselesskey --example jwt_signing --no-default-features --features "rsa,jwk"` | JWT signing with deterministic RSA, ECDSA, and HMAC keys (ECDSA/HMAC optional) |
+| [negative_fixtures](crates/uselesskey/examples/negative_fixtures.rs) | `x509` | `cargo run -p uselesskey --example negative_fixtures --no-default-features --features "x509"` | Intentionally invalid certificates and keys for error-path testing |
+| [tempfile_paths](crates/uselesskey/examples/tempfile_paths.rs) | `rsa,ed25519` | `cargo run -p uselesskey --example tempfile_paths --no-default-features --features "rsa,ed25519"` | Write key fixtures to temporary files for path-based APIs |
+| [tempfiles](crates/uselesskey/examples/tempfiles.rs) | `x509` | `cargo run -p uselesskey --example tempfiles --no-default-features --features "x509"` | Write X.509 cert, key, and identity PEM to temp files |
+| [tls_server](crates/uselesskey/examples/tls_server.rs) | `x509` | `cargo run -p uselesskey --example tls_server --no-default-features --features "x509"` | Certificate chain generation for TLS server testing |
+| [token_generation](crates/uselesskey/examples/token_generation.rs) | `token` | `cargo run -p uselesskey --example token_generation --no-default-features --features "token"` | Realistic API keys, bearer tokens, and OAuth tokens for tests |
+| [x509_certificates](crates/uselesskey/examples/x509_certificates.rs) | `x509` | `cargo run -p uselesskey --example x509_certificates --no-default-features --features "x509"` | Self-signed certs, cert chains, and negative X.509 fixtures |
 <!-- docs-sync:runnable-examples-end -->
 
 ## Workspace Crates
