@@ -68,6 +68,12 @@ enum Cmd {
     },
     /// Run publish dry-runs for crates in dependency order.
     PublishCheck,
+    /// Run external consumer canaries in path-dep or published-version mode.
+    Canaries {
+        /// Use crates.io dependencies at this version (e.g. 0.5.1).
+        #[arg(long)]
+        published: Option<String>,
+    },
     /// Run PR-scoped tests based on git diff.
     Pr,
     /// Guard against multiple semver-major versions of pinned deps (e.g. rand_core).
@@ -154,6 +160,7 @@ fn main() -> Result<()> {
         Cmd::DocsSync { check } => docs_sync::docs_sync_cmd(check),
         Cmd::ExamplesSmoke { run } => docs_sync::examples_smoke_cmd(run),
         Cmd::PublishCheck => publish_check(),
+        Cmd::Canaries { published } => canaries(published.as_deref()),
         Cmd::Pr => pr(),
         Cmd::DepGuard => dep_guard(),
         Cmd::Bdd => bdd(),
@@ -355,6 +362,7 @@ fn run_ci_plan(runner: &mut receipt::Runner) -> Result<()> {
     runner.step("tests", None, test)?;
 
     run_feature_matrix(runner)?;
+    run_canaries(runner, None)?;
 
     runner.step("dep-guard", None, dep_guard)?;
     runner.step("bdd", None, bdd)?;
@@ -391,6 +399,158 @@ fn feature_matrix_cmd() -> Result<()> {
         }
     }
     result
+}
+
+#[derive(Clone, Copy)]
+struct Canary {
+    name: &'static str,
+    manifest_path: &'static str,
+    deps: &'static [&'static str],
+}
+
+const CANARIES: &[Canary] = &[
+    Canary {
+        name: "facade-minimal",
+        manifest_path: "canaries/facade-minimal/Cargo.toml",
+        deps: &["uselesskey"],
+    },
+    Canary {
+        name: "adapter-rustls",
+        manifest_path: "canaries/adapter-rustls/Cargo.toml",
+        deps: &["uselesskey-core", "uselesskey-x509", "uselesskey-rustls"],
+    },
+    Canary {
+        name: "release-doc-copy-paste",
+        manifest_path: "canaries/release-doc-copy-paste/Cargo.toml",
+        deps: &["uselesskey"],
+    },
+];
+
+fn canaries(published: Option<&str>) -> Result<()> {
+    let mut runner = receipt::Runner::new("target/xtask/receipt.json");
+    let result = run_canaries(&mut runner, published);
+    runner.summary();
+    if let Err(err) = runner.write() {
+        eprintln!("failed to write receipt: {err}");
+        if result.is_ok() {
+            return Err(err);
+        }
+    }
+    result
+}
+
+fn run_canaries(runner: &mut receipt::Runner, published: Option<&str>) -> Result<()> {
+    match published {
+        Some(version) => run_canaries_published(runner, version),
+        None => run_canaries_path(runner),
+    }
+}
+
+fn run_canaries_path(runner: &mut receipt::Runner) -> Result<()> {
+    for canary in CANARIES {
+        let step_name = format!("canary:{}:path", canary.name);
+        runner.step(&step_name, None, || {
+            run(Command::new("cargo").args([
+                "test",
+                "--manifest-path",
+                canary.manifest_path,
+            ]))
+        })?;
+    }
+    Ok(())
+}
+
+fn run_canaries_published(runner: &mut receipt::Runner, version: &str) -> Result<()> {
+    let root = workspace_root_path();
+    let staging = root.join("target/xtask/canaries-published");
+    if staging.exists() {
+        fs::remove_dir_all(&staging).context("failed to clean canary staging directory")?;
+    }
+    fs::create_dir_all(&staging).context("failed to create canary staging directory")?;
+
+    for canary in CANARIES {
+        let src_dir = root.join(canary_dir(canary.manifest_path));
+        let dst_dir = staging.join(canary.name);
+        copy_dir_recursive(&src_dir, &dst_dir)
+            .with_context(|| format!("failed to stage canary {}", canary.name))?;
+
+        let manifest_path = dst_dir.join("Cargo.toml");
+        rewrite_canary_manifest_to_published(&manifest_path, canary.deps, version).with_context(
+            || format!("failed to rewrite canary manifest for {}", canary.name),
+        )?;
+
+        let step_name = format!("canary:{}:published:{version}", canary.name);
+        runner.step(&step_name, None, || {
+            let mut cmd = Command::new("cargo");
+            cmd.arg("test");
+            cmd.current_dir(&dst_dir);
+            cmd.env("USELESSKEY_CANARY_PUBLISHED", "1");
+            run(&mut cmd)
+        })?;
+    }
+    Ok(())
+}
+
+fn canary_dir(manifest_path: &str) -> &str {
+    manifest_path
+        .strip_suffix("/Cargo.toml")
+        .expect("canary manifest path must end with /Cargo.toml")
+}
+
+fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<()> {
+    fs::create_dir_all(dst).with_context(|| format!("failed to create {}", dst.display()))?;
+    for entry in fs::read_dir(src).with_context(|| format!("failed to read {}", src.display()))? {
+        let entry = entry.context("failed to read directory entry")?;
+        let path = entry.path();
+        let target = dst.join(entry.file_name());
+        let file_type = entry.file_type().context("failed to read file type")?;
+        if file_type.is_dir() {
+            copy_dir_recursive(&path, &target)?;
+        } else if file_type.is_file() {
+            fs::copy(&path, &target).with_context(|| {
+                format!(
+                    "failed to copy file from {} to {}",
+                    path.display(),
+                    target.display()
+                )
+            })?;
+        }
+    }
+    Ok(())
+}
+
+fn rewrite_canary_manifest_to_published(
+    manifest_path: &Path,
+    dep_names: &[&str],
+    version: &str,
+) -> Result<()> {
+    let manifest = fs::read_to_string(manifest_path)
+        .with_context(|| format!("failed to read {}", manifest_path.display()))?;
+    let path_re =
+        Regex::new(r#"path\s*=\s*"[^"]+",?\s*"#).context("failed to build canary path regex")?;
+    let trailing_comma_re =
+        Regex::new(r#",\s*}"#).context("failed to build canary trailing-comma regex")?;
+    let mut rewritten = String::with_capacity(manifest.len());
+    for line in manifest.lines() {
+        let mut updated = line.to_string();
+        for dep in dep_names {
+            if line.trim_start().starts_with(&format!("{dep} ="))
+                && line.contains("path")
+                && line.contains('{')
+                && line.contains('}')
+            {
+                updated = path_re
+                    .replace(&updated, format!(r#"version = "{version}", "#))
+                    .to_string();
+                updated = trailing_comma_re.replace(&updated, " }").to_string();
+            }
+        }
+        rewritten.push_str(&updated);
+        rewritten.push('\n');
+    }
+    fs::write(manifest_path, rewritten)
+        .with_context(|| format!("failed to write {}", manifest_path.display()))?;
+    Ok(())
 }
 
 const PUBLISH_CRATES: &[&str] = &[
@@ -853,6 +1013,7 @@ fn run_publish_preflight(runner: &mut receipt::Runner) -> Result<()> {
         None,
         check_doc_dependency_versions,
     )?;
+    run_canaries(runner, None)?;
     let mut first_err: Option<anyhow::Error> = None;
     for name in PUBLISH_CRATES {
         let step_name = format!("preflight:package:{name}");

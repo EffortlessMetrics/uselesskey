@@ -1,0 +1,12 @@
+[package]
+name = "canary-adapter-rustls"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[dependencies]
+uselesskey-core = { path = "../../crates/uselesskey-core" }
+uselesskey-x509 = { path = "../../crates/uselesskey-x509" }
+uselesskey-rustls = { path = "../../crates/uselesskey-rustls", features = ["tls-config", "rustls-ring"] }
+
+[workspace]

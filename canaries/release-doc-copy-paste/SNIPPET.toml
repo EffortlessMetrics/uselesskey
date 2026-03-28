@@ -1,0 +1,2 @@
+[dev-dependencies]
+uselesskey = { version = "0.5.1", features = ["rsa"] }

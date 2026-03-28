@@ -32,6 +32,7 @@ single source of truth.
 ```bash
 cargo xtask publish-preflight   # metadata + doc snippet versions + cargo package
 cargo xtask publish-check       # cargo publish --dry-run in dependency order
+cargo xtask canaries            # external-consumer canaries in path-dep mode
 ```
 
 Before tagging, make sure the release PR has already:
@@ -53,3 +54,11 @@ This command handles crates.io indexing lag automatically. Current behavior:
 - backs off on rate limits (`429` / `too many requests`) with `120 s * attempt`
 - treats "already uploaded" / "already exists" as success for reruns
 - waits 30 s after each successful publish for indexing
+
+## Post-publish smoke
+
+Run at least one published-version canary against crates.io:
+
+```bash
+cargo xtask canaries --published 0.5.1
+```
