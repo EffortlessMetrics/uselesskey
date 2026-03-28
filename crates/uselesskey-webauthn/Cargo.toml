@@ -1,0 +1,33 @@
+[package]
+name = "uselesskey-webauthn"
+version = "0.5.1"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "Deterministic WebAuthn ceremony fixtures for tests."
+categories.workspace = true
+keywords = ["webauthn", "fido2", "fixtures", "testing", "deterministic"]
+readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
+homepage.workspace = true
+documentation = "https://docs.rs/uselesskey-webauthn"
+authors.workspace = true
+
+[dependencies]
+blake3.workspace = true
+ed25519-dalek.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2 = "0.10.9"
+thiserror.workspace = true
+uselesskey-core-id.workspace = true
+uselesskey-core-seed.workspace = true
+serde_cbor = "0.11.2"
+base64.workspace = true
+
+[dev-dependencies]
+insta.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true

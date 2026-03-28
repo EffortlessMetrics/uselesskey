@@ -46,6 +46,8 @@ members = [
   "crates/uselesskey-ring",
   "crates/uselesskey-rustcrypto",
   "crates/uselesskey-aws-lc-rs",
+  "crates/uselesskey-pkcs11-mock",
+  "crates/uselesskey-webauthn",
   "crates/uselesskey-jose-openid",
   "crates/uselesskey-pgp-native",
   "crates/uselesskey-interop-tests",
@@ -96,6 +98,8 @@ uselesskey-core-x509-chain-negative = { path = "crates/uselesskey-core-x509-chai
 uselesskey-core-x509-negative = { path = "crates/uselesskey-core-x509-negative", version = "0.5.1" }
 uselesskey-core-x509-spec = { path = "crates/uselesskey-core-x509-spec", version = "0.5.1" }
 uselesskey-core-x509 = { path = "crates/uselesskey-core-x509", version = "0.5.1" }
+uselesskey-pkcs11-mock = { path = "crates/uselesskey-pkcs11-mock", version = "0.5.1" }
+uselesskey-webauthn = { path = "crates/uselesskey-webauthn", version = "0.5.1" }
 
 # determinism / hashing
 blake3 = "1.8.3"
