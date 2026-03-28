@@ -235,6 +235,7 @@
 //! | `ed25519` | Ed25519 key fixtures |
 //! | `hmac` | HMAC secret fixtures |
 //! | `token` | API key/bearer token fixtures |
+//! | `ssh` | OpenSSH key and cert fixtures |
 //! | `pgp` | OpenPGP key fixtures |
 //! | `x509` | X.509 certificate and chain fixtures |
 //! | `jwk` | JWK/JWKS output for all key types |
@@ -289,6 +290,12 @@ pub use uselesskey_hmac::{DOMAIN_HMAC_SECRET, HmacFactoryExt, HmacSecret, HmacSp
 #[cfg(feature = "token")]
 pub use uselesskey_token::{DOMAIN_TOKEN_FIXTURE, TokenFactoryExt, TokenFixture, TokenSpec};
 
+#[cfg(feature = "ssh")]
+pub use uselesskey_ssh::{
+    DOMAIN_SSH_CERT, DOMAIN_SSH_KEYPAIR, SshCertFactoryExt, SshCertFixture, SshCertSpec,
+    SshCertType, SshFactoryExt, SshKeyPair, SshSpec, SshValidity,
+};
+
 #[cfg(feature = "pgp")]
 pub use uselesskey_pgp::{DOMAIN_PGP_KEYPAIR, PgpFactoryExt, PgpKeyPair, PgpSpec};
 
@@ -324,6 +331,12 @@ pub mod prelude {
 
     #[cfg(feature = "token")]
     pub use crate::{TokenFactoryExt, TokenFixture, TokenSpec};
+
+    #[cfg(feature = "ssh")]
+    pub use crate::{
+        SshCertFactoryExt, SshCertFixture, SshCertSpec, SshCertType, SshFactoryExt, SshKeyPair,
+        SshSpec, SshValidity,
+    };
 
     #[cfg(feature = "pgp")]
     pub use crate::{PgpFactoryExt, PgpKeyPair, PgpSpec};
