@@ -1,0 +1,11 @@
+---
+source: crates/uselesskey-cli/tests/export_formats.rs
+expression: stable
+---
+{
+  "bundle_name": "fixture-bundle",
+  "references": {},
+  "source_receipt_path": "target/fixtures/receipt.json",
+  "target_format": "generic_manifest",
+  "written_files": []
+}

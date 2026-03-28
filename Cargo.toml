@@ -51,6 +51,7 @@ members = [
   "crates/uselesskey-interop-tests",
   "crates/uselesskey-bdd",
   "crates/uselesskey-bdd-steps",
+  "crates/uselesskey-cli",
   "tests",
   "xtask",
 ]

@@ -1,0 +1,27 @@
+---
+source: crates/uselesskey-cli/tests/export_formats.rs
+expression: stable
+---
+{
+  "bundle_name": "fixture-bundle",
+  "references": {
+    "client_token": [
+      {
+        "kind": "file",
+        "path": "<TMP>/FlatFileBundle/client_token"
+      }
+    ],
+    "issuer_key": [
+      {
+        "kind": "file",
+        "path": "<TMP>/FlatFileBundle/issuer_key"
+      }
+    ]
+  },
+  "source_receipt_path": "target/fixtures/receipt.json",
+  "target_format": "flat_file_bundle",
+  "written_files": [
+    "<TMP>/FlatFileBundle/client_token",
+    "<TMP>/FlatFileBundle/issuer_key"
+  ]
+}

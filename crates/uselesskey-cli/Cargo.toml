@@ -1,0 +1,30 @@
+[package]
+name = "uselesskey-cli"
+version = "0.5.1"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+documentation = "https://docs.rs/uselesskey-cli"
+readme = "README.md"
+homepage = "https://github.com/EffortlessMetrics/uselesskey"
+description = "CLI exports deterministic uselesskey fixtures into bundle formats that existing secret tools can ingest."
+categories = ["development-tools::testing", "command-line-utilities"]
+keywords = ["testing", "fixtures", "secrets", "kubernetes", "vault"]
+authors.workspace = true
+publish = false
+
+[[bin]]
+name = "uselesskey"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml = "0.9.34-deprecated"
+
+[dev-dependencies]
+insta.workspace = true
+tempfile.workspace = true

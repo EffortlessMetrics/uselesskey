@@ -1,0 +1,26 @@
+---
+source: crates/uselesskey-cli/tests/export_formats.rs
+expression: stable
+---
+{
+  "bundle_name": "fixture-bundle",
+  "references": {
+    "client_token": [
+      {
+        "kind": "env",
+        "var_name": "CLIENT_TOKEN"
+      }
+    ],
+    "issuer_key": [
+      {
+        "kind": "env",
+        "var_name": "ISSUER_KEY"
+      }
+    ]
+  },
+  "source_receipt_path": "target/fixtures/receipt.json",
+  "target_format": "dotenv_fragment",
+  "written_files": [
+    "<TMP>/DotenvFragment/fixture-bundle.env"
+  ]
+}

@@ -1,0 +1,26 @@
+---
+source: crates/uselesskey-cli/tests/export_formats.rs
+expression: stable
+---
+{
+  "bundle_name": "fixture-bundle",
+  "references": {
+    "client_token": [
+      {
+        "kind": "vault",
+        "path": "secret/data/uselesskey/fixture-bundle"
+      }
+    ],
+    "issuer_key": [
+      {
+        "kind": "vault",
+        "path": "secret/data/uselesskey/fixture-bundle"
+      }
+    ]
+  },
+  "source_receipt_path": "target/fixtures/receipt.json",
+  "target_format": "vault_kv_json",
+  "written_files": [
+    "<TMP>/VaultKvJson/fixture-bundle-vault-kv.json"
+  ]
+}

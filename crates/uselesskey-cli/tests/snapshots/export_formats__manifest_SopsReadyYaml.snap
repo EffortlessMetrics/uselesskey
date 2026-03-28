@@ -1,0 +1,26 @@
+---
+source: crates/uselesskey-cli/tests/export_formats.rs
+expression: stable
+---
+{
+  "bundle_name": "fixture-bundle",
+  "references": {
+    "client_token": [
+      {
+        "kind": "file",
+        "path": "<TMP>/SopsReadyYaml/fixture-bundle.sops.yaml"
+      }
+    ],
+    "issuer_key": [
+      {
+        "kind": "file",
+        "path": "<TMP>/SopsReadyYaml/fixture-bundle.sops.yaml"
+      }
+    ]
+  },
+  "source_receipt_path": "target/fixtures/receipt.json",
+  "target_format": "sops_ready_yaml",
+  "written_files": [
+    "<TMP>/SopsReadyYaml/fixture-bundle.sops.yaml"
+  ]
+}
