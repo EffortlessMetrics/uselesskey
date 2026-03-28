@@ -17,11 +17,22 @@ pub enum KeyRef {
         #[serde(with = "portable_path")]
         path: PathBuf,
     },
-    Env { var_name: String },
-    Vault { path: String },
-    AwsSecret { name: String },
-    GcpSecret { name: String },
-    K8sSecret { name: String, key: String },
+    Env {
+        var_name: String,
+    },
+    Vault {
+        path: String,
+    },
+    AwsSecret {
+        name: String,
+    },
+    GcpSecret {
+        name: String,
+    },
+    K8sSecret {
+        name: String,
+        key: String,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
