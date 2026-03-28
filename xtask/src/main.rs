@@ -434,6 +434,7 @@ const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-hmac",
     "uselesskey-token",
     "uselesskey-pgp",
+    "uselesskey-ssh",
     "uselesskey-x509",
     // Adapters (depend on key crates, NOT on facade)
     "uselesskey-core-rustls-pki",

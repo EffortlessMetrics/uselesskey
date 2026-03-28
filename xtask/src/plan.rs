@@ -248,6 +248,7 @@ fn dependents(crate_name: &str) -> &'static [&'static str] {
             "uselesskey-hmac",
             "uselesskey-token",
             "uselesskey-pgp",
+            "uselesskey-ssh",
             "uselesskey-x509",
             "uselesskey",
             "uselesskey-bdd",
@@ -292,6 +293,7 @@ fn dependents(crate_name: &str) -> &'static [&'static str] {
         ],
         "uselesskey-token" => &["uselesskey"],
         "uselesskey-pgp" => &["uselesskey"],
+        "uselesskey-ssh" => &["uselesskey"],
         "uselesskey" => &[],
         "uselesskey-jsonwebtoken" => &[],
         "uselesskey-rustls" => &[],
@@ -343,6 +345,7 @@ mod tests {
         assert!(impacted.contains("uselesskey-hmac"));
         assert!(impacted.contains("uselesskey-token"));
         assert!(impacted.contains("uselesskey-pgp"));
+        assert!(impacted.contains("uselesskey-ssh"));
         assert!(impacted.contains("uselesskey-x509"));
         assert!(impacted.contains("uselesskey"));
         assert!(impacted.contains("uselesskey-bdd"));
