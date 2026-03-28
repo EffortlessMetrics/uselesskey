@@ -1,0 +1,68 @@
+---
+source: crates/uselesskey-manifest/tests/integration.rs
+expression: bundle.to_canonical_json_pretty().unwrap()
+---
+{
+  "bundle_name": "interop-bundle",
+  "receipts": [
+    {
+      "schema_version": "1",
+      "uselesskey_version": "0.5.1",
+      "domain": "jwks",
+      "label": "issuer-set",
+      "variant": "default",
+      "spec_fingerprint": "spec:jwks01",
+      "derivation_version": 1,
+      "generated_at_mode": "deterministic",
+      "files": [
+        {
+          "logical_name": "jwks",
+          "path": "fixtures/jwks.json",
+          "format": "jwks",
+          "sha256": "9638d11914735d0072002dd4d67c734a94ee7a0cd845e6dcbc984ee7581860a7",
+          "blake3": "9dd8a3a4e50a36c8eb0a341e1e5875a71988fabedf1b0293e10f50f9db72bea7",
+          "byte_len": 11
+        }
+      ]
+    },
+    {
+      "schema_version": "1",
+      "uselesskey_version": "0.5.1",
+      "domain": "rsa",
+      "label": "issuer",
+      "variant": "default",
+      "spec_fingerprint": "spec:abc123",
+      "derivation_version": 1,
+      "generated_at_mode": "deterministic",
+      "files": [
+        {
+          "logical_name": "private",
+          "path": "fixtures/issuer.key.pem",
+          "format": "pem",
+          "sha256": "74b6777be0f3ffc93e7df6ef173887c254f52d249f91e18aa7b5da9c1d87f63b",
+          "blake3": "bc7bd9d0033a817c4f59003c51d9969ae3edca489c7f374cfbb88289d82299bf",
+          "byte_len": 13
+        },
+        {
+          "logical_name": "public",
+          "path": "fixtures/issuer.pub.pem",
+          "format": "pem",
+          "sha256": "fd46c136080fea854e9499e8ddbb2b2181f7e2a4a6d239889a653f326a1f68a8",
+          "blake3": "68c78c7113fe62bbabbdef2fb033ff1439c34d4b01b5ee1e82c9b48d45ec61f5",
+          "byte_len": 12
+        }
+      ],
+      "metadata": {
+        "alpha": "first",
+        "zeta": "last"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "relation": "jwks_member",
+      "from": "jwks:issuer-set",
+      "to": "rsa:issuer"
+    }
+  ]
+}

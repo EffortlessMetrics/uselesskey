@@ -14,6 +14,7 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
 use tempfile::NamedTempFile;
+use uselesskey_manifest::{BundleReceipt, FixtureReceipt, OutputFile};
 
 /// A tempfile-backed artifact that cleans up on drop.
 ///
@@ -165,6 +166,28 @@ impl TempArtifact {
         let bytes = self.read_to_bytes()?;
         Ok(String::from_utf8_lossy(&bytes).to_string())
     }
+
+    /// Build an [`OutputFile`] manifest entry from this temp artifact.
+    pub fn output_file(&self, logical_name: &str, format: &str) -> std::io::Result<OutputFile> {
+        let bytes = self.read_to_bytes()?;
+        Ok(OutputFile::from_bytes(logical_name, &self.path, format, &bytes))
+    }
+}
+
+/// Write a canonical JSON fixture receipt to `path`.
+pub fn write_fixture_receipt(
+    path: impl AsRef<Path>,
+    receipt: &FixtureReceipt,
+) -> std::io::Result<()> {
+    receipt.write_canonical_json(path)
+}
+
+/// Write a canonical JSON bundle receipt to `path`.
+pub fn write_bundle_receipt(
+    path: impl AsRef<Path>,
+    bundle: &BundleReceipt,
+) -> std::io::Result<()> {
+    bundle.write_canonical_json(path)
 }
 
 #[cfg(test)]

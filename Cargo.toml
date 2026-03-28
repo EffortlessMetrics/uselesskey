@@ -18,6 +18,7 @@ members = [
   "crates/uselesskey-core-negative-der",
   "crates/uselesskey-core-negative-pem",
   "crates/uselesskey-core-sink",
+  "crates/uselesskey-manifest",
   "crates/uselesskey-core-token",
   "crates/uselesskey-core-token-shape",
   "crates/uselesskey-core-jwk-builder",
@@ -111,6 +112,7 @@ rand_chacha10 = { package = "rand_chacha", version = "0.10.0", default-features 
 # sinks
 tempfile = "3.27.0"
 uselesskey-core-sink = { path = "crates/uselesskey-core-sink", version = "0.5.1" }
+uselesskey-manifest = { path = "crates/uselesskey-manifest", version = "0.5.1" }
 
 # testing
 proptest = "1.11.0"

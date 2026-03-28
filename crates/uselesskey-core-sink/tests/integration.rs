@@ -1,4 +1,5 @@
 use uselesskey_core_sink::TempArtifact;
+use uselesskey_manifest::{FixtureReceipt, GeneratedAtMode};
 
 // ── tempfile creation and read-back ──────────────────────────────────
 
@@ -167,6 +168,43 @@ fn new_string_creates_readable_file() {
     let temp = TempArtifact::new_string("uk-write-", ".txt", text).unwrap();
     let content = std::fs::read_to_string(temp.path()).unwrap();
     assert_eq!(content, text);
+}
+
+#[test]
+fn output_file_manifest_entry_contains_hashes() {
+    let temp = TempArtifact::new_string("uk-receipt-", ".pem", "fixture-content").unwrap();
+    let output = temp.output_file("private_key", "pem").unwrap();
+
+    assert_eq!(output.logical_name, "private_key");
+    assert_eq!(output.format, "pem");
+    assert_eq!(output.byte_len, "fixture-content".len() as u64);
+    assert_eq!(output.sha256.len(), 64);
+    assert_eq!(output.blake3.len(), 64);
+}
+
+#[test]
+fn write_fixture_receipt_round_trip() {
+    let temp = TempArtifact::new_string("uk-receipt-", ".pem", "fixture-content").unwrap();
+    let output = temp.output_file("private_key", "pem").unwrap();
+
+    let mut receipt = FixtureReceipt::new(
+        "0.5.1",
+        "rsa",
+        "issuer",
+        "default",
+        "spec:123",
+        1,
+        GeneratedAtMode::Deterministic,
+    );
+    receipt.push_file(output);
+
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("receipt.json");
+    uselesskey_core_sink::write_fixture_receipt(&path, &receipt).unwrap();
+
+    let serialized = std::fs::read_to_string(path).unwrap();
+    assert!(serialized.contains("\"schema_version\": \"1\""));
+    assert!(serialized.contains("\"logical_name\": \"private_key\""));
 }
 
 // ── Debug shows path but uses finish_non_exhaustive ──────────────────
