@@ -16,6 +16,8 @@ authors.workspace = true
 
 [dependencies]
 tempfile.workspace = true
+uselesskey-core-id.workspace = true
+uselesskey-manifest.workspace = true
 
 [dev-dependencies]
 insta.workspace = true

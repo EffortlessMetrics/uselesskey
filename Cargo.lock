@@ -4465,6 +4465,8 @@ dependencies = [
  "rstest",
  "serde",
  "tempfile",
+ "uselesskey-core-id",
+ "uselesskey-manifest",
 ]
 
 [[package]]
@@ -4723,6 +4725,20 @@ dependencies = [
  "serde_json",
  "uselesskey-core-jwk",
  "uselesskey-core-jwk-builder",
+]
+
+[[package]]
+name = "uselesskey-manifest"
+version = "0.5.1"
+dependencies = [
+ "blake3",
+ "hex",
+ "insta",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "tempfile",
+ "uselesskey-core-id",
 ]
 
 [[package]]

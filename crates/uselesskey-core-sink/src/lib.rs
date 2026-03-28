@@ -8,12 +8,15 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
+use std::collections::BTreeMap;
 use std::fmt;
 use std::fs;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
 use tempfile::NamedTempFile;
+use uselesskey_core_id::ArtifactId;
+use uselesskey_manifest::{FixtureReceipt, GenerationMode};
 
 /// A tempfile-backed artifact that cleans up on drop.
 ///
@@ -107,6 +110,48 @@ impl TempArtifact {
         Self::new_bytes(prefix, suffix, s.as_bytes())
     }
 
+    /// Create a new temporary artifact and also build a fixture receipt.
+    ///
+    /// Receipt generation is optional and does not influence fixture bytes.
+    pub fn new_bytes_with_receipt(
+        prefix: &str,
+        suffix: &str,
+        bytes: &[u8],
+        artifact_id: &ArtifactId,
+        generated_at_mode: GenerationMode,
+        logical_name: &str,
+        format: &str,
+    ) -> std::io::Result<(Self, FixtureReceipt)> {
+        Self::new_bytes_with_receipt_and_metadata(
+            prefix,
+            suffix,
+            bytes,
+            artifact_id,
+            generated_at_mode,
+            logical_name,
+            format,
+            BTreeMap::new(),
+        )
+    }
+
+    /// Create a new temporary artifact and build a fixture receipt with metadata.
+    pub fn new_bytes_with_receipt_and_metadata(
+        prefix: &str,
+        suffix: &str,
+        bytes: &[u8],
+        artifact_id: &ArtifactId,
+        generated_at_mode: GenerationMode,
+        logical_name: &str,
+        format: &str,
+        metadata: BTreeMap<String, String>,
+    ) -> std::io::Result<(Self, FixtureReceipt)> {
+        let artifact = Self::new_bytes(prefix, suffix, bytes)?;
+        let mut receipt = FixtureReceipt::from_artifact_id(artifact_id, generated_at_mode);
+        receipt.metadata = metadata;
+        receipt.push_file_from_bytes(logical_name, artifact.path(), format, bytes);
+        Ok((artifact, receipt))
+    }
+
     /// Returns the path to the temporary file.
     ///
     /// This path can be passed to libraries that require file paths.
@@ -170,6 +215,7 @@ impl TempArtifact {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use uselesskey_core_id::{ArtifactId, DerivationVersion};
     use std::thread;
     use std::time::Duration;
 
@@ -219,6 +265,31 @@ mod tests {
         }
 
         assert!(!path.exists(), "tempfile should be deleted on drop");
+    }
+
+    #[test]
+    fn new_bytes_with_receipt_records_artifact_inputs() {
+        let id = ArtifactId::new("rsa", "issuer", b"spec", "default", DerivationVersion::V1);
+        let (temp, receipt) = TempArtifact::new_bytes_with_receipt(
+            "uk-test-",
+            ".pem",
+            b"-----BEGIN TEST-----\nabc\n",
+            &id,
+            GenerationMode::Deterministic,
+            "private_key",
+            "pem",
+        )
+        .expect("create with receipt");
+
+        assert!(temp.path().exists());
+        assert_eq!(receipt.domain, "rsa");
+        assert_eq!(receipt.label, "issuer");
+        assert_eq!(receipt.variant, "default");
+        assert_eq!(receipt.derivation_version, 1);
+        assert_eq!(receipt.generated_at_mode, GenerationMode::Deterministic);
+        assert_eq!(receipt.files.len(), 1);
+        assert_eq!(receipt.files[0].logical_name, "private_key");
+        assert_eq!(receipt.files[0].format, "pem");
     }
 
     #[test]

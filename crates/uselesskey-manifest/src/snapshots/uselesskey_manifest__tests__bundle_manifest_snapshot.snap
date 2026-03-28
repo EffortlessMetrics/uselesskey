@@ -1,0 +1,54 @@
+---
+source: crates/uselesskey-manifest/src/lib.rs
+expression: json_str
+---
+{
+  "bundle_name": "chain-bundle",
+  "receipts": [
+    {
+      "schema_version": "1",
+      "uselesskey_version": "0.5.1",
+      "domain": "rsa",
+      "label": "issuer",
+      "variant": "default",
+      "spec_fingerprint": "6eac81badc8e459696f472aa72d7444770f7a426b4d0b27baa6fc1395282b783",
+      "derivation_version": 1,
+      "generated_at_mode": "deterministic",
+      "files": [
+        {
+          "logical_name": "issuer_pub",
+          "path": "bundle/issuer.pub.pem",
+          "format": "pem",
+          "sha256": "5dda5e9d0384b2871509abd01e55b470beea426432f18d4f5fa50939377318dd",
+          "blake3": "15aaa60f6f708ed2d4f44d20d9e46bc39f7680af9518bce7adf5d8145ec50761",
+          "byte_len": 10
+        }
+      ],
+      "metadata": {}
+    },
+    {
+      "schema_version": "1",
+      "uselesskey_version": "0.5.1",
+      "domain": "rsa",
+      "label": "leaf",
+      "variant": "default",
+      "spec_fingerprint": "15cf329d227352fb5542e8ce7d984e90b16fd7d6c84d13363ae703e74e8f41b8",
+      "derivation_version": 1,
+      "generated_at_mode": "deterministic",
+      "files": [
+        {
+          "logical_name": "leaf_pub",
+          "path": "bundle/leaf.pub.pem",
+          "format": "pem",
+          "sha256": "72a7bd67760e2601d866dd0a7118acac8ba595ac61423902ce69fa297fe009f2",
+          "blake3": "e359971058d428214e8ea350edf157473558a8b886a6316a01e114614b90d876",
+          "byte_len": 8
+        }
+      ],
+      "metadata": {}
+    }
+  ],
+  "relationships": {
+    "cert_chain": "issuer->leaf"
+  }
+}

@@ -1,0 +1,30 @@
+[package]
+name = "uselesskey-manifest"
+version = "0.5.1"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "Stable fixture manifest and receipt schema for uselesskey outputs."
+readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
+categories.workspace = true
+keywords = ["fixtures", "manifest", "receipt", "testing", "determinism"]
+homepage.workspace = true
+documentation = "https://docs.rs/uselesskey-manifest"
+authors.workspace = true
+
+[dependencies]
+blake3.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2 = "0.10.9"
+hex = "0.4.3"
+uselesskey-core-id = { workspace = true }
+
+[dev-dependencies]
+insta.workspace = true
+tempfile.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
