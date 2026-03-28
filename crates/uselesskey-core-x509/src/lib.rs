@@ -43,3 +43,6 @@ pub use uselesskey_core_x509_derive::{
     deterministic_base_time_from_parts, deterministic_serial_number, write_len_prefixed,
 };
 pub use uselesskey_core_x509_spec::{ChainSpec, KeyUsage, NotBeforeOffset, X509Spec};
+pub use uselesskey_core_x509_spec::{
+    CertStatus, CrlIssuerKind, CrlReasonCode, CrlSpec, NoncePolicy, OcspResponderKind, OcspSpec,
+};

@@ -39,7 +39,11 @@
 //! ```
 
 mod chain_spec;
+mod revocation_spec;
 mod spec;
 
 pub use chain_spec::ChainSpec;
+pub use revocation_spec::{
+    CertStatus, CrlIssuerKind, CrlReasonCode, CrlSpec, NoncePolicy, OcspResponderKind, OcspSpec,
+};
 pub use spec::{KeyUsage, NotBeforeOffset, X509Spec};

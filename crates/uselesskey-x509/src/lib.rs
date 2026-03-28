@@ -76,7 +76,8 @@ pub mod negative;
 mod testutil;
 
 pub use cert::{DOMAIN_X509_CERT, X509Cert, X509FactoryExt};
-pub use chain::{DOMAIN_X509_CHAIN, X509Chain};
+pub use chain::{DOMAIN_X509_CHAIN, RevocationFixture, X509Chain};
 pub use uselesskey_core_x509::{
-    ChainNegative, ChainSpec, KeyUsage, NotBeforeOffset, X509Negative, X509Spec,
+    CertStatus, ChainNegative, ChainSpec, CrlIssuerKind, CrlReasonCode, CrlSpec, KeyUsage,
+    NoncePolicy, NotBeforeOffset, OcspResponderKind, OcspSpec, X509Negative, X509Spec,
 };
