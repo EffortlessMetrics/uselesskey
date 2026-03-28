@@ -1,0 +1,28 @@
+[package]
+name = "uselesskey-pkcs11-mock"
+version = "0.5.1"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "Deterministic PKCS#11-style mock fixtures for hardware-adjacent tests."
+categories.workspace = true
+keywords = ["pkcs11", "hsm", "fixtures", "testing", "deterministic"]
+readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
+homepage.workspace = true
+documentation = "https://docs.rs/uselesskey-pkcs11-mock"
+authors.workspace = true
+
+[dependencies]
+uselesskey-core = { path = "../uselesskey-core", version = "0.5.1" }
+rand_chacha10.workspace = true
+rand_core10.workspace = true
+blake3.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+insta.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true

@@ -31,6 +31,8 @@ uselesskey-ecdsa = { path = "../uselesskey-ecdsa", version = "0.5.1", optional =
 uselesskey-ed25519 = { path = "../uselesskey-ed25519", version = "0.5.1", optional = true }
 uselesskey-hmac = { path = "../uselesskey-hmac", version = "0.5.1", optional = true }
 uselesskey-token = { path = "../uselesskey-token", version = "0.5.1", optional = true }
+uselesskey-pkcs11-mock = { path = "../uselesskey-pkcs11-mock", version = "0.5.1", optional = true }
+uselesskey-webauthn = { path = "../uselesskey-webauthn", version = "0.5.1", optional = true }
 uselesskey-pgp = { path = "../uselesskey-pgp", version = "0.5.1", optional = true }
 uselesskey-x509 = { path = "../uselesskey-x509", version = "0.5.1", optional = true }
 
@@ -43,6 +45,8 @@ ecdsa = ["dep:uselesskey-ecdsa"]
 ed25519 = ["dep:uselesskey-ed25519"]
 hmac = ["dep:uselesskey-hmac"]
 token = ["dep:uselesskey-token"]
+pkcs11-mock = ["dep:uselesskey-pkcs11-mock"]
+webauthn = ["dep:uselesskey-webauthn"]
 pgp = ["dep:uselesskey-pgp"]
 
 # X.509 certificates (implies rsa for now)
@@ -59,7 +63,7 @@ jwk = [
 
 # Convenience bundles
 all-keys = ["rsa", "ecdsa", "ed25519", "hmac", "pgp"]
-full = ["all-keys", "token", "x509", "jwk"]
+full = ["all-keys", "token", "pkcs11-mock", "webauthn", "x509", "jwk"]
 
 [dev-dependencies]
 tempfile.workspace = true
@@ -79,4 +83,3 @@ rustls-pki-types.workspace = true
 name = "keygen"
 harness = false
 required-features = ["full"]
-

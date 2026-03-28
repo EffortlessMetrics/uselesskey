@@ -235,6 +235,8 @@
 //! | `ed25519` | Ed25519 key fixtures |
 //! | `hmac` | HMAC secret fixtures |
 //! | `token` | API key/bearer token fixtures |
+//! | `pkcs11-mock` | PKCS#11-style mock provider fixtures |
+//! | `webauthn` | WebAuthn ceremony fixtures |
 //! | `pgp` | OpenPGP key fixtures |
 //! | `x509` | X.509 certificate and chain fixtures |
 //! | `jwk` | JWK/JWKS output for all key types |
@@ -289,6 +291,18 @@ pub use uselesskey_hmac::{DOMAIN_HMAC_SECRET, HmacFactoryExt, HmacSecret, HmacSp
 #[cfg(feature = "token")]
 pub use uselesskey_token::{DOMAIN_TOKEN_FIXTURE, TokenFactoryExt, TokenFixture, TokenSpec};
 
+#[cfg(feature = "pkcs11-mock")]
+pub use uselesskey_pkcs11_mock::{
+    CertificateFixture, DOMAIN_PKCS11_MOCK, KeyHandle, Pkcs11Mock, Pkcs11MockError,
+    Pkcs11MockFactoryExt, Pkcs11MockSpec, Pkcs11Provider, SlotMetadata,
+};
+
+#[cfg(feature = "webauthn")]
+pub use uselesskey_webauthn::{
+    AssertionFixture, AttestationMode, DOMAIN_WEBAUTHN_FIXTURE, ParsedClientData,
+    RegistrationFixture, WebauthnFactoryExt, WebauthnFixture, WebauthnFixtureError, WebauthnSpec,
+};
+
 #[cfg(feature = "pgp")]
 pub use uselesskey_pgp::{DOMAIN_PGP_KEYPAIR, PgpFactoryExt, PgpKeyPair, PgpSpec};
 
@@ -324,6 +338,12 @@ pub mod prelude {
 
     #[cfg(feature = "token")]
     pub use crate::{TokenFactoryExt, TokenFixture, TokenSpec};
+
+    #[cfg(feature = "pkcs11-mock")]
+    pub use crate::{Pkcs11MockFactoryExt, Pkcs11MockSpec, Pkcs11Provider};
+
+    #[cfg(feature = "webauthn")]
+    pub use crate::{AttestationMode, WebauthnFactoryExt, WebauthnSpec};
 
     #[cfg(feature = "pgp")]
     pub use crate::{PgpFactoryExt, PgpKeyPair, PgpSpec};
