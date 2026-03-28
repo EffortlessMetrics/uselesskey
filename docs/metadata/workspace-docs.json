@@ -2,7 +2,7 @@
   "workspace_crates": [
     {
       "name": "uselesskey",
-      "description": "Public facade — re-exports all key types and traits behind feature flags"
+      "description": "Public facade \u2014 re-exports all key types and traits behind feature flags"
     },
     {
       "name": "uselesskey-core",
@@ -186,7 +186,7 @@
       "path": "crates/uselesskey/examples/jwt_signing.rs",
       "feature_set": "rsa,jwk",
       "description": "JWT signing with deterministic RSA, ECDSA, and HMAC keys (ECDSA/HMAC optional)",
-           "run_smoke": false
+      "run_smoke": false
     },
     {
       "name": "negative_fixtures",
@@ -235,19 +235,19 @@
     {
       "feature": "rsa",
       "extension_trait": "RsaFactoryExt",
-      "algorithms": "RSA 2048/3072/4096 — PKCS#8, SPKI, PEM, DER",
+      "algorithms": "RSA 2048/3072/4096 \u2014 PKCS#8, SPKI, PEM, DER",
       "implies": "-"
     },
     {
       "feature": "ecdsa",
       "extension_trait": "EcdsaFactoryExt",
-      "algorithms": "P-256 (ES256), P-384 (ES384) — PKCS#8, SPKI",
+      "algorithms": "P-256 (ES256), P-384 (ES384) \u2014 PKCS#8, SPKI",
       "implies": "-"
     },
     {
       "feature": "ed25519",
       "extension_trait": "Ed25519FactoryExt",
-      "algorithms": "Ed25519 — PKCS#8, SPKI",
+      "algorithms": "Ed25519 \u2014 PKCS#8, SPKI",
       "implies": "-"
     },
     {
@@ -259,7 +259,7 @@
     {
       "feature": "pgp",
       "extension_trait": "PgpFactoryExt",
-      "algorithms": "OpenPGP RSA 2048/3072, Ed25519 — armored, binary",
+      "algorithms": "OpenPGP RSA 2048/3072, Ed25519 \u2014 armored, binary",
       "implies": "-"
     },
     {
@@ -396,6 +396,265 @@
       "name": "pgp-native adapter",
       "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.5.1\", features = [\"pgp\"] }\nuselesskey-pgp-native = { version = \"0.5.1\" }"
     }
+  ],
+  "public_snippets": [
+    {
+      "id": "quick-start-rsa",
+      "name": "Quick start (RSA)",
+      "dependencies": [
+        {
+          "crate_name": "uselesskey",
+          "release_version": "0.5.1",
+          "features": [
+            "rsa"
+          ]
+        }
+      ],
+      "supported_feature_flags": [
+        "rsa"
+      ],
+      "minimal_example_command": "cargo run -p uselesskey --example basic_rsa --no-default-features --features rsa,jwk"
+    },
+    {
+      "id": "token-only",
+      "name": "Token-only",
+      "dependencies": [
+        {
+          "crate_name": "uselesskey",
+          "release_version": "0.5.1",
+          "default_features": false,
+          "features": [
+            "token"
+          ]
+        }
+      ],
+      "supported_feature_flags": [
+        "token"
+      ],
+      "minimal_example_command": "cargo run -p uselesskey --example basic_token --no-default-features --features token"
+    },
+    {
+      "id": "jwt-jwk",
+      "name": "JWT/JWK",
+      "dependencies": [
+        {
+          "crate_name": "uselesskey",
+          "release_version": "0.5.1",
+          "features": [
+            "rsa",
+            "jwk"
+          ]
+        }
+      ],
+      "supported_feature_flags": [
+        "rsa",
+        "jwk"
+      ],
+      "minimal_example_command": "cargo run -p uselesskey --example jwt_rs256_jwks --no-default-features --features rsa,jwk"
+    },
+    {
+      "id": "x509-rustls",
+      "name": "X.509 + rustls",
+      "dependencies": [
+        {
+          "crate_name": "uselesskey",
+          "release_version": "0.5.1",
+          "features": [
+            "x509"
+          ]
+        },
+        {
+          "crate_name": "uselesskey-rustls",
+          "release_version": "0.5.1",
+          "features": [
+            "tls-config",
+            "rustls-ring"
+          ]
+        }
+      ],
+      "supported_feature_flags": [
+        "x509"
+      ],
+      "minimal_example_command": "cargo run -p uselesskey --example adapter_rustls --no-default-features --features x509"
+    },
+    {
+      "id": "jsonwebtoken-adapter",
+      "name": "jsonwebtoken adapter",
+      "dependencies": [
+        {
+          "crate_name": "uselesskey",
+          "release_version": "0.5.1",
+          "features": [
+            "rsa",
+            "ecdsa",
+            "ed25519",
+            "hmac"
+          ]
+        },
+        {
+          "crate_name": "uselesskey-jsonwebtoken",
+          "release_version": "0.5.1"
+        }
+      ],
+      "supported_feature_flags": [
+        "rsa",
+        "ecdsa",
+        "ed25519",
+        "hmac"
+      ],
+      "minimal_example_command": "cargo run -p uselesskey --example adapter_jsonwebtoken --no-default-features --features rsa,ecdsa,ed25519,hmac"
+    },
+    {
+      "id": "jose-openid-adapter",
+      "name": "JOSE/OpenID adapter",
+      "dependencies": [
+        {
+          "crate_name": "uselesskey",
+          "release_version": "0.5.1",
+          "features": [
+            "rsa",
+            "ecdsa",
+            "ed25519",
+            "hmac"
+          ]
+        },
+        {
+          "crate_name": "uselesskey-jose-openid",
+          "release_version": "0.5.1"
+        }
+      ],
+      "supported_feature_flags": [
+        "rsa",
+        "ecdsa",
+        "ed25519",
+        "hmac"
+      ],
+      "minimal_example_command": "cargo run -p uselesskey --example adapter_jsonwebtoken --no-default-features --features rsa,ecdsa,ed25519,hmac"
+    },
+    {
+      "id": "pgp-native-adapter",
+      "name": "pgp-native adapter",
+      "dependencies": [
+        {
+          "crate_name": "uselesskey",
+          "release_version": "0.5.1",
+          "features": [
+            "pgp"
+          ]
+        },
+        {
+          "crate_name": "uselesskey-pgp-native",
+          "release_version": "0.5.1"
+        }
+      ],
+      "supported_feature_flags": [
+        "pgp"
+      ],
+      "minimal_example_command": "cargo test -p uselesskey-pgp-native --all-features"
+    },
+    {
+      "id": "all-key-families",
+      "name": "All key families",
+      "dependencies": [
+        {
+          "crate_name": "uselesskey",
+          "release_version": "0.5.1",
+          "features": [
+            "rsa",
+            "ecdsa",
+            "ed25519",
+            "hmac",
+            "pgp"
+          ]
+        }
+      ],
+      "supported_feature_flags": [
+        "rsa",
+        "ecdsa",
+        "ed25519",
+        "hmac",
+        "pgp"
+      ],
+      "minimal_example_command": "cargo run -p uselesskey --example basic_usage --no-default-features --features rsa,ecdsa,ed25519,jwk"
+    },
+    {
+      "id": "rustls-adapter-only",
+      "name": "Rustls adapter only",
+      "dependencies": [
+        {
+          "crate_name": "uselesskey-rustls",
+          "release_version": "0.5.1",
+          "features": [
+            "tls-config",
+            "rustls-ring"
+          ]
+        }
+      ],
+      "supported_feature_flags": [
+        "tls-config",
+        "rustls-ring"
+      ],
+      "minimal_example_command": "cargo test -p uselesskey-rustls --features tls-config,rustls-ring"
+    },
+    {
+      "id": "jsonwebtoken-adapter-rsa",
+      "name": "jsonwebtoken adapter (RSA)",
+      "dependencies": [
+        {
+          "crate_name": "uselesskey-jsonwebtoken",
+          "release_version": "0.5.1",
+          "features": [
+            "rsa"
+          ]
+        }
+      ],
+      "supported_feature_flags": [
+        "rsa"
+      ],
+      "minimal_example_command": "cargo test -p uselesskey-jsonwebtoken --features rsa"
+    }
+  ],
+  "snippet_blocks": [
+    {
+      "path": "crates/uselesskey/README.md",
+      "marker": "public-dependency-snippets",
+      "snippet_ids": [
+        "token-only",
+        "quick-start-rsa"
+      ]
+    },
+    {
+      "path": "crates/uselesskey-jsonwebtoken/README.md",
+      "marker": "usage-dependency-snippets",
+      "snippet_ids": [
+        "jsonwebtoken-adapter-rsa"
+      ]
+    },
+    {
+      "path": "crates/uselesskey-rustls/README.md",
+      "marker": "usage-dependency-snippets",
+      "snippet_ids": [
+        "rustls-adapter-only"
+      ]
+    },
+    {
+      "path": "docs/how-to/choose-features.md",
+      "marker": "feature-choice-snippets",
+      "snippet_ids": [
+        "all-key-families",
+        "jwt-jwk",
+        "x509-rustls",
+        "token-only"
+      ]
+    }
+  ],
+  "root_dependency_snippet_ids": [
+    "quick-start-rsa",
+    "token-only",
+    "jwt-jwk",
+    "x509-rustls",
+    "jsonwebtoken-adapter",
+    "jose-openid-adapter",
+    "pgp-native-adapter"
   ]
 }
-

@@ -22,9 +22,24 @@ Implements `JwtKeyExt` so fixture types return `jsonwebtoken::EncodingKey` and
 
 ## Usage
 
+<!-- docs-sync:usage-dependency-snippets-start -->
+### jsonwebtoken adapter (RSA)
+
 ```toml
 [dev-dependencies]
 uselesskey-jsonwebtoken = { version = "0.5.1", features = ["rsa"] }
+```
+
+Minimal example command:
+
+```bash
+cargo test -p uselesskey-jsonwebtoken --features rsa
+```
+<!-- docs-sync:usage-dependency-snippets-end -->
+
+Add `jsonwebtoken` itself if your tests sign and verify JWT payloads.
+
+```toml
 jsonwebtoken = { version = "10", features = ["use_pem", "rust_crypto"] }
 ```
 
@@ -58,4 +73,3 @@ or [MIT license](https://opensource.org/licenses/MIT) at your option.
 
 See the [`uselesskey` crate](https://crates.io/crates/uselesskey) for full
 documentation.
-

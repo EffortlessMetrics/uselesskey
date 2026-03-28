@@ -34,10 +34,33 @@ like `Factory`, `Mode`, and `Seed`; enable only the fixture families you need.
 
 Token-only consumers can stay lightweight:
 
+<!-- docs-sync:public-dependency-snippets-start -->
+### Token-only
+
 ```toml
 [dev-dependencies]
 uselesskey = { version = "0.5.1", default-features = false, features = ["token"] }
 ```
+
+Minimal example command:
+
+```bash
+cargo run -p uselesskey --example basic_token --no-default-features --features token
+```
+
+### Quick start (RSA)
+
+```toml
+[dev-dependencies]
+uselesskey = { version = "0.5.1", features = ["rsa"] }
+```
+
+Minimal example command:
+
+```bash
+cargo run -p uselesskey --example basic_rsa --no-default-features --features rsa,jwk
+```
+<!-- docs-sync:public-dependency-snippets-end -->
 
 ```rust
 use uselesskey::{Factory, TokenFactoryExt, TokenSpec};
@@ -51,11 +74,6 @@ assert!(token.value().starts_with("uk_test_"));
 ## Quick Start
 
 If you want RSA fixtures, enable `rsa` explicitly:
-
-```toml
-[dev-dependencies]
-uselesskey = { version = "0.5.1", features = ["rsa"] }
-```
 
 ```rust
 use uselesskey::{Factory, RsaFactoryExt, RsaSpec};

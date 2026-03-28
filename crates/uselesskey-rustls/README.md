@@ -28,10 +28,20 @@ optional `ServerConfig` / `ClientConfig` builders (including mTLS support).
 
 ## Usage
 
+<!-- docs-sync:usage-dependency-snippets-start -->
+### Rustls adapter only
+
 ```toml
 [dev-dependencies]
 uselesskey-rustls = { version = "0.5.1", features = ["tls-config", "rustls-ring"] }
 ```
+
+Minimal example command:
+
+```bash
+cargo test -p uselesskey-rustls --features tls-config,rustls-ring
+```
+<!-- docs-sync:usage-dependency-snippets-end -->
 
 ```rust
 use uselesskey_core::Factory;
@@ -54,4 +64,3 @@ or [MIT license](https://opensource.org/licenses/MIT) at your option.
 
 See the [`uselesskey` crate](https://crates.io/crates/uselesskey) for full
 documentation.
-
