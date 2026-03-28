@@ -1,10 +1,11 @@
 ---
 source: crates/uselesskey-core-keypair/tests/snapshots_keypair.rs
+assertion_line: 40
 expression: result
 ---
-pkcs8_der_len: 4
-pkcs8_pem_len: 59
-spki_der_len: 4
-spki_pem_len: 57
+pkcs8_der_len: 1218
+pkcs8_pem_len: 1704
+spki_der_len: 294
+spki_pem_len: 451
 kid_len: 16
-kid_is_ascii_alphanumeric: true
+kid_is_base64url_charset: true

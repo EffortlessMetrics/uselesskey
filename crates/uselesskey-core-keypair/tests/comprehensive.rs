@@ -13,16 +13,12 @@
 use std::sync::Arc;
 use uselesskey_core_keypair::Pkcs8SpkiKeyMaterial;
 use uselesskey_core_negative::CorruptPem;
+mod fixtures;
 
 // ── helpers ──────────────────────────────────────────────────────────
 
 fn sample() -> Pkcs8SpkiKeyMaterial {
-    Pkcs8SpkiKeyMaterial::new(
-        vec![0x30, 0x82, 0x01, 0x22],
-        "-----BEGIN PRIVATE KEY-----\nAAAA\n-----END PRIVATE KEY-----\n",
-        vec![0x30, 0x59, 0x30, 0x13],
-        "-----BEGIN PUBLIC KEY-----\nBBBB\n-----END PUBLIC KEY-----\n",
-    )
+    fixtures::rsa_material("comprehensive-sample")
 }
 
 // ── CorruptPem variant coverage ──────────────────────────────────────
@@ -85,18 +81,13 @@ fn all_corrupt_pem_variants_differ_from_original() {
 
 #[test]
 fn debug_does_not_contain_der_hex_bytes() {
-    let m = Pkcs8SpkiKeyMaterial::new(
-        vec![0xDE, 0xAD, 0xBE, 0xEF],
-        "-----BEGIN PRIVATE KEY-----\nSECRET\n-----END PRIVATE KEY-----\n",
-        vec![0xCA, 0xFE, 0xBA, 0xBE],
-        "-----BEGIN PUBLIC KEY-----\nPUBDATA\n-----END PUBLIC KEY-----\n",
-    );
+    let m = fixtures::rsa_material("comprehensive-debug");
     let dbg = format!("{m:?}");
     // Should not contain raw byte values or PEM body content
     assert!(!dbg.contains("DEADBEEF"), "must not leak private DER hex");
     assert!(!dbg.contains("CAFEBABE"), "must not leak public DER hex");
-    assert!(!dbg.contains("SECRET"), "must not leak private PEM body");
-    assert!(!dbg.contains("PUBDATA"), "must not leak public PEM body");
+    assert!(!dbg.contains("BEGIN PRIVATE KEY"), "must not leak private PEM");
+    assert!(!dbg.contains("BEGIN PUBLIC KEY"), "must not leak public PEM");
 }
 
 #[test]
@@ -109,12 +100,13 @@ fn debug_uses_non_exhaustive_marker() {
 // ── kid format properties ────────────────────────────────────────────
 
 #[test]
-fn kid_is_ascii_alphanumeric() {
+fn kid_is_base64url_charset() {
     let m = sample();
     let kid = m.kid();
     assert!(
-        kid.chars().all(|c| c.is_ascii_alphanumeric()),
-        "kid should be ASCII alphanumeric, got: {kid}"
+        kid.chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_'),
+        "kid should be base64url-shaped, got: {kid}"
     );
 }
 

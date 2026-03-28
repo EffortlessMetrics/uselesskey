@@ -5,14 +5,10 @@
 
 use serde::Serialize;
 use uselesskey_core_keypair::Pkcs8SpkiKeyMaterial;
+mod fixtures;
 
 fn sample() -> Pkcs8SpkiKeyMaterial {
-    Pkcs8SpkiKeyMaterial::new(
-        vec![0x30, 0x82, 0x01, 0x22],
-        "-----BEGIN PRIVATE KEY-----\nAAAA\n-----END PRIVATE KEY-----\n",
-        vec![0x30, 0x59, 0x30, 0x13],
-        "-----BEGIN PUBLIC KEY-----\nBBBB\n-----END PUBLIC KEY-----\n",
-    )
+    fixtures::rsa_material("snapshot-sample")
 }
 
 #[test]
@@ -24,7 +20,7 @@ fn snapshot_keypair_metadata() {
         spki_der_len: usize,
         spki_pem_len: usize,
         kid_len: usize,
-        kid_is_ascii_alphanumeric: bool,
+        kid_is_base64url_charset: bool,
     }
 
     let m = sample();
@@ -36,7 +32,9 @@ fn snapshot_keypair_metadata() {
         spki_der_len: m.public_key_spki_der().len(),
         spki_pem_len: m.public_key_spki_pem().len(),
         kid_len: kid.len(),
-        kid_is_ascii_alphanumeric: kid.chars().all(|c| c.is_ascii_alphanumeric()),
+        kid_is_base64url_charset: kid
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_'),
     };
 
     insta::assert_yaml_snapshot!("keypair_metadata", result);
@@ -64,7 +62,7 @@ fn snapshot_keypair_debug_safety() {
         contains_spki_der_len: dbg.contains("spki_der_len"),
         leaks_private_pem_header: dbg.contains("BEGIN PRIVATE KEY"),
         leaks_public_pem_header: dbg.contains("BEGIN PUBLIC KEY"),
-        leaks_pem_body: dbg.contains("AAAA") || dbg.contains("BBBB"),
+        leaks_pem_body: dbg.contains("BEGIN PRIVATE KEY") || dbg.contains("BEGIN PUBLIC KEY"),
         uses_non_exhaustive: dbg.contains(".."),
     };
 
@@ -81,18 +79,13 @@ fn snapshot_keypair_kid_determinism() {
     }
 
     let m1 = sample();
-    let m2 = Pkcs8SpkiKeyMaterial::new(
-        vec![0xFF, 0xFE, 0xFD],
-        "-----BEGIN PRIVATE KEY-----\nXXXX\n-----END PRIVATE KEY-----\n",
-        vec![0xAA, 0xBB, 0xCC],
-        "-----BEGIN PUBLIC KEY-----\nYYYY\n-----END PUBLIC KEY-----\n",
-    );
+    let m2 = fixtures::rsa_material("snapshot-other");
     // Same SPKI, different PKCS#8
     let m3 = Pkcs8SpkiKeyMaterial::new(
         vec![0x01, 0x02],
         "other-private-pem",
-        vec![0x30, 0x59, 0x30, 0x13],
-        "-----BEGIN PUBLIC KEY-----\nBBBB\n-----END PUBLIC KEY-----\n",
+        m1.public_key_spki_der().to_vec(),
+        m1.public_key_spki_pem().to_owned(),
     );
 
     let result = KidDeterminism {

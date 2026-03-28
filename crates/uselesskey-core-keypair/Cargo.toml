@@ -22,7 +22,8 @@ insta.workspace = true
 proptest.workspace = true
 serde.workspace = true
 uselesskey-core-negative.workspace = true
+uselesskey-core = { path = "../uselesskey-core", version = "0.5.1" }
+uselesskey-rsa = { path = "../uselesskey-rsa", version = "0.5.1" }
 
 [package.metadata.docs.rs]
 all-features = true
-

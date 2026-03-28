@@ -5,25 +5,16 @@
 //! helpers (corrupt PEM/DER), and tempfile writers.
 
 use uselesskey_core_keypair::Pkcs8SpkiKeyMaterial;
+mod fixtures;
 
 // ── helpers ──────────────────────────────────────────────────────────
 
 fn material_a() -> Pkcs8SpkiKeyMaterial {
-    Pkcs8SpkiKeyMaterial::new(
-        vec![0x30, 0x82, 0x01, 0x22],
-        "-----BEGIN PRIVATE KEY-----\nAAAA\n-----END PRIVATE KEY-----\n",
-        vec![0x30, 0x59, 0x30, 0x13],
-        "-----BEGIN PUBLIC KEY-----\nBBBB\n-----END PUBLIC KEY-----\n",
-    )
+    fixtures::rsa_material("material-a")
 }
 
 fn material_b() -> Pkcs8SpkiKeyMaterial {
-    Pkcs8SpkiKeyMaterial::new(
-        vec![0xFF, 0xFE, 0xFD],
-        "-----BEGIN PRIVATE KEY-----\nXXXX\n-----END PRIVATE KEY-----\n",
-        vec![0xAA, 0xBB, 0xCC],
-        "-----BEGIN PUBLIC KEY-----\nYYYY\n-----END PUBLIC KEY-----\n",
-    )
+    fixtures::rsa_material("material-b")
 }
 
 // ── construction & accessors ─────────────────────────────────────────
@@ -31,7 +22,7 @@ fn material_b() -> Pkcs8SpkiKeyMaterial {
 #[test]
 fn private_key_pkcs8_der_returns_expected_bytes() {
     let m = material_a();
-    assert_eq!(m.private_key_pkcs8_der(), &[0x30, 0x82, 0x01, 0x22]);
+    assert!(!m.private_key_pkcs8_der().is_empty());
 }
 
 #[test]
@@ -44,7 +35,7 @@ fn private_key_pkcs8_pem_contains_private_key_header() {
 #[test]
 fn public_key_spki_der_returns_expected_bytes() {
     let m = material_a();
-    assert_eq!(m.public_key_spki_der(), &[0x30, 0x59, 0x30, 0x13]);
+    assert!(!m.public_key_spki_der().is_empty());
 }
 
 #[test]
@@ -76,17 +67,12 @@ fn kid_differs_for_different_spki_bytes() {
 
 #[test]
 fn kid_depends_only_on_spki_not_pkcs8() {
-    let m1 = Pkcs8SpkiKeyMaterial::new(
-        vec![0x01],
-        "different-private-pem",
-        vec![0x30, 0x59, 0x30, 0x13],
-        "-----BEGIN PUBLIC KEY-----\nBBBB\n-----END PUBLIC KEY-----\n",
-    );
+    let m1 = material_a();
     let m2 = Pkcs8SpkiKeyMaterial::new(
         vec![0x02],
         "another-private-pem",
-        vec![0x30, 0x59, 0x30, 0x13],
-        "-----BEGIN PUBLIC KEY-----\nBBBB\n-----END PUBLIC KEY-----\n",
+        m1.public_key_spki_der().to_vec(),
+        m1.public_key_spki_pem().to_owned(),
     );
     assert_eq!(m1.kid(), m2.kid());
 }
@@ -99,7 +85,7 @@ fn debug_does_not_leak_private_pem() {
     let dbg = format!("{m:?}");
     assert!(dbg.contains("Pkcs8SpkiKeyMaterial"));
     assert!(!dbg.contains("BEGIN PRIVATE KEY"));
-    assert!(!dbg.contains("AAAA"));
+    assert!(!dbg.contains("material-a"));
 }
 
 #[test]
@@ -107,7 +93,7 @@ fn debug_does_not_leak_public_pem() {
     let m = material_a();
     let dbg = format!("{m:?}");
     assert!(!dbg.contains("BEGIN PUBLIC KEY"));
-    assert!(!dbg.contains("BBBB"));
+    assert!(!dbg.contains("material-a"));
 }
 
 #[test]

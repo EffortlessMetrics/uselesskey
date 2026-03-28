@@ -4223,8 +4223,10 @@ dependencies = [
  "insta",
  "proptest",
  "serde",
+ "uselesskey-core",
  "uselesskey-core-keypair-material",
  "uselesskey-core-negative",
+ "uselesskey-rsa",
 ]
 
 [[package]]
