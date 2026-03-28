@@ -4748,6 +4748,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "uselesskey-proptest"
+version = "0.5.1"
+dependencies = [
+ "proptest",
+ "serde_json",
+ "uselesskey-core",
+ "uselesskey-ecdsa",
+ "uselesskey-ed25519",
+ "uselesskey-hmac",
+ "uselesskey-jwk",
+ "uselesskey-rsa",
+ "uselesskey-token",
+ "uselesskey-token-spec",
+ "uselesskey-x509",
+]
+
+[[package]]
 name = "uselesskey-ring"
 version = "0.5.1"
 dependencies = [
