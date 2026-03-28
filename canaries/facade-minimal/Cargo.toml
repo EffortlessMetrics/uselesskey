@@ -1,0 +1,10 @@
+[package]
+name = "canary-facade-minimal"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[workspace]
+
+[dependencies]
+uselesskey = { version = "0.5.1", features = ["rsa", "token", "x509"] }

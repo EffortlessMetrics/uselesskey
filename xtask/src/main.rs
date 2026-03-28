@@ -66,6 +66,12 @@ enum Cmd {
         #[arg(long)]
         run: bool,
     },
+    /// Run external consumer canary crates in path-dep or published-version mode.
+    Canaries {
+        /// Use crates.io dependencies at this version (e.g. 0.5.1) instead of path patches.
+        #[arg(long)]
+        published: Option<String>,
+    },
     /// Run publish dry-runs for crates in dependency order.
     PublishCheck,
     /// Run PR-scoped tests based on git diff.
@@ -153,6 +159,7 @@ fn main() -> Result<()> {
         Cmd::NoBlob => no_blob_gate(),
         Cmd::DocsSync { check } => docs_sync::docs_sync_cmd(check),
         Cmd::ExamplesSmoke { run } => docs_sync::examples_smoke_cmd(run),
+        Cmd::Canaries { published } => canaries(published.as_deref()),
         Cmd::PublishCheck => publish_check(),
         Cmd::Pr => pr(),
         Cmd::DepGuard => dep_guard(),
@@ -353,6 +360,7 @@ fn run_ci_plan(runner: &mut receipt::Runner) -> Result<()> {
     runner.step("typos", None, || typos(false))?;
     runner.step("deny", None, deny)?;
     runner.step("tests", None, test)?;
+    runner.step("canaries:path", None, || canaries(None))?;
 
     run_feature_matrix(runner)?;
 
@@ -505,6 +513,41 @@ fn publish_check() -> Result<()> {
             continue;
         }
         bail!("cargo publish --dry-run -p {name} failed:\n{stderr}");
+    }
+    Ok(())
+}
+
+const CANARY_MANIFESTS: &[(&str, &str, bool)] = &[
+    ("facade-minimal", "canaries/facade-minimal/Cargo.toml", false),
+    ("adapter-rustls", "canaries/adapter-rustls/Cargo.toml", true),
+    (
+        "release-doc-copy-paste",
+        "canaries/release-doc-copy-paste/Cargo.toml",
+        true,
+    ),
+];
+
+fn canaries(published: Option<&str>) -> Result<()> {
+    for (name, manifest, needs_rustls_patch) in CANARY_MANIFESTS {
+        let mut cmd = Command::new("cargo");
+        cmd.args(["test", "--manifest-path", manifest]);
+        if let Some(version) = published {
+            cmd.env("USELESSKEY_CANARY_MODE", "published");
+            cmd.env("USELESSKEY_CANARY_PUBLISHED_VERSION", version);
+        } else {
+            cmd.env("USELESSKEY_CANARY_MODE", "path");
+            cmd.args([
+                "--config",
+                "patch.crates-io.uselesskey.path=\"crates/uselesskey\"",
+            ]);
+            if *needs_rustls_patch {
+                cmd.args([
+                    "--config",
+                    "patch.crates-io.uselesskey-rustls.path=\"crates/uselesskey-rustls\"",
+                ]);
+            }
+        }
+        run(&mut cmd).with_context(|| format!("failed canary `{name}`"))?;
     }
     Ok(())
 }

@@ -1,0 +1,11 @@
+[package]
+name = "canary-adapter-rustls"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[workspace]
+
+[dependencies]
+uselesskey = { version = "0.5.1", features = ["x509"] }
+uselesskey-rustls = { version = "0.5.1", features = ["tls-config", "rustls-ring"] }

@@ -68,6 +68,9 @@ jobs:
       - name: examples smoke check
         run: cargo xtask examples-smoke
 
+      - name: canaries (path mode)
+        run: cargo xtask canaries
+
       - name: Upload receipt
         uses: actions/upload-artifact@v7
         with:

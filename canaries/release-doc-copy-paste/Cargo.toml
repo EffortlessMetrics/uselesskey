@@ -1,0 +1,11 @@
+[package]
+name = "canary-release-doc-copy-paste"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[workspace]
+
+[dev-dependencies]
+uselesskey = { version = "0.5.1", features = ["x509"] }
+uselesskey-rustls = { version = "0.5.1", features = ["tls-config", "rustls-ring"] }
