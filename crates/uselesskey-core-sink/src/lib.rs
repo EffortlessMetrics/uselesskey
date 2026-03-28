@@ -14,6 +14,7 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
 use tempfile::NamedTempFile;
+use uselesskey_manifest::OutputFile;
 
 /// A tempfile-backed artifact that cleans up on drop.
 ///
@@ -165,6 +166,17 @@ impl TempArtifact {
         let bytes = self.read_to_bytes()?;
         Ok(String::from_utf8_lossy(&bytes).to_string())
     }
+
+    /// Compute manifest metadata for this tempfile output.
+    pub fn to_output_file(&self, logical_name: &str, format: &str) -> std::io::Result<OutputFile> {
+        let bytes = self.read_to_bytes()?;
+        Ok(OutputFile::from_bytes(
+            logical_name,
+            self.path(),
+            format,
+            &bytes,
+        ))
+    }
 }
 
 #[cfg(test)]
@@ -226,5 +238,16 @@ mod tests {
         let temp = TempArtifact::new_string("uk-test-", ".txt", "dbg").unwrap();
         let dbg = format!("{:?}", temp);
         assert!(dbg.contains("TempArtifact"));
+    }
+
+    #[test]
+    fn to_output_file_includes_hashes_and_byte_len() {
+        let temp = TempArtifact::new_string("uk-test-", ".txt", "manifest").unwrap();
+        let output = temp.to_output_file("fixture", "txt").unwrap();
+        assert_eq!(output.logical_name, "fixture");
+        assert_eq!(output.format, "txt");
+        assert_eq!(output.byte_len, 8);
+        assert_eq!(output.sha256.len(), 64);
+        assert_eq!(output.blake3.len(), 64);
     }
 }

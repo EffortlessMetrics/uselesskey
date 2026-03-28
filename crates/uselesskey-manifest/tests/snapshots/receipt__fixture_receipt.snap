@@ -1,0 +1,27 @@
+---
+source: crates/uselesskey-manifest/tests/receipt.rs
+expression: json
+---
+derivation_version: 1
+domain: rsa
+files:
+  - blake3: 06f456140dcfdbcb67a8c451a4d1deb73758769de1144ad0d8fd747af5c6048e
+    byte_len: 7
+    format: pem
+    logical_name: private
+    path: tmp/issuer.key.pem
+    sha256: 7109ec0807d8f2bd40aa93347ea112977e316242f2d457864041f59dfb684fc0
+  - blake3: a534e859f46fb3e02e3fb41d3f4ea649dea0233d90c014c3d4daf02c4bbd2208
+    byte_len: 6
+    format: pem
+    logical_name: public
+    path: tmp/issuer.pub.pem
+    sha256: d9262e7fb868c502061473089e5212378ac3935e2f96294266da6d7eec7d44e0
+generated_at_mode: deterministic
+label: issuer
+metadata:
+  purpose: snapshot-test
+schema_version: 1
+spec_fingerprint: 6fc3a18f7eb9fecef2c8b701443313d92421055c3a4f811405b81f70a264b476
+uselesskey_version: 0.5.1
+variant: default

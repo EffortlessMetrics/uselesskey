@@ -18,6 +18,7 @@ authors.workspace = true
 default = ["std"]
 std = [
     "dep:uselesskey-core-sink",
+    "dep:uselesskey-manifest",
     "thiserror/std",
     "uselesskey-core-factory/std",
     "uselesskey-core-cache/std",
@@ -29,6 +30,7 @@ std = [
 thiserror = { version = "2.0.18", default-features = false }
 uselesskey-core-factory = { path = "../uselesskey-core-factory", version = "0.5.1", default-features = false }
 uselesskey-core-sink = { path = "../uselesskey-core-sink", version = "0.5.1", optional = true }
+uselesskey-manifest = { path = "../uselesskey-manifest", version = "0.5.1", optional = true }
 
 uselesskey-core-cache = { path = "../uselesskey-core-cache", version = "0.5.1", default-features = false }
 uselesskey-core-id = { path = "../uselesskey-core-id", version = "0.5.1", default-features = false }
@@ -42,4 +44,3 @@ serde = { workspace = true }
 
 [package.metadata.docs.rs]
 features = ["std"]
-

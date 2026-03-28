@@ -1,0 +1,42 @@
+---
+source: crates/uselesskey-manifest/tests/receipt.rs
+expression: json
+---
+bundle_name: x509-chain
+receipts:
+  - derivation_version: 1
+    domain: x509
+    files:
+      - blake3: 6b1b9cbf7c90b58807fce04f9a575fea9d831620e1729c55de743f8326fdd258
+        byte_len: 4
+        format: pem
+        logical_name: leaf_cert
+        path: bundle/leaf.pem
+        sha256: 21b04fab319f57c9ab68d5f246a5b6a07145b960907bd327d2dc77534395be69
+    generated_at_mode: deterministic
+    label: leaf
+    metadata: {}
+    schema_version: 1
+    spec_fingerprint: fbd2f0e6b41f84997a398413a7343ed08c12d3f8bbb3fe082d898ccff023ba20
+    uselesskey_version: 0.5.1
+    variant: default
+  - derivation_version: 1
+    domain: x509
+    files:
+      - blake3: 525aa4c3bbb951a750c91c438e7d7a2bf45ed2a963f52277f5d07f91b6c6a9ef
+        byte_len: 4
+        format: pem
+        logical_name: root_cert
+        path: bundle/root.pem
+        sha256: fed4199357214dfb94724176c68a76698dbc3c2d36317a895320207ac910dea6
+    generated_at_mode: deterministic
+    label: root
+    metadata: {}
+    schema_version: 1
+    spec_fingerprint: 58f7160b773e63340f15b2774e984a46d8c27a4e36fac99c0eca059ada525907
+    uselesskey_version: 0.5.1
+    variant: default
+relationship_graph:
+  - from: leaf
+    relation: cert_chain
+    to: root

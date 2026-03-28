@@ -16,6 +16,7 @@ authors.workspace = true
 
 [dependencies]
 tempfile.workspace = true
+uselesskey-manifest.workspace = true
 
 [dev-dependencies]
 insta.workspace = true
@@ -25,4 +26,3 @@ serde.workspace = true
 
 [package.metadata.docs.rs]
 all-features = true
-

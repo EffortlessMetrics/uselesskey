@@ -3,6 +3,7 @@ use std::path::Path;
 
 use crate::Error;
 use uselesskey_core_sink::TempArtifact as RawTempArtifact;
+use uselesskey_manifest::OutputFile;
 
 pub struct TempArtifact {
     inner: RawTempArtifact,
@@ -38,6 +39,12 @@ impl TempArtifact {
     pub fn read_to_string(&self) -> Result<String, Error> {
         self.inner.read_to_string().map_err(Error::from)
     }
+
+    pub fn to_output_file(&self, logical_name: &str, format: &str) -> Result<OutputFile, Error> {
+        self.inner
+            .to_output_file(logical_name, format)
+            .map_err(Error::from)
+    }
 }
 
 #[cfg(test)]
@@ -65,5 +72,17 @@ mod tests {
 
         let read = artifact.read_to_bytes().expect("read_to_bytes");
         assert_eq!(read, bytes);
+    }
+
+    #[test]
+    fn temp_artifact_to_output_file_has_hashes() {
+        let artifact =
+            TempArtifact::new_string("uselesskey-", ".unit.txt", "manifest").expect("create");
+        let output = artifact
+            .to_output_file("fixture", "txt")
+            .expect("to_output_file");
+        assert_eq!(output.logical_name, "fixture");
+        assert_eq!(output.byte_len, 8);
+        assert_eq!(output.sha256.len(), 64);
     }
 }

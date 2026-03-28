@@ -17,6 +17,7 @@ members = [
   "crates/uselesskey-core-negative",
   "crates/uselesskey-core-negative-der",
   "crates/uselesskey-core-negative-pem",
+  "crates/uselesskey-manifest",
   "crates/uselesskey-core-sink",
   "crates/uselesskey-core-token",
   "crates/uselesskey-core-token-shape",
@@ -85,6 +86,7 @@ uselesskey-core-keypair-material = { path = "crates/uselesskey-core-keypair-mate
 uselesskey-core-negative = { path = "crates/uselesskey-core-negative", version = "0.5.1", default-features = false }
 uselesskey-core-negative-der = { path = "crates/uselesskey-core-negative-der", version = "0.5.1", default-features = false }
 uselesskey-core-negative-pem = { path = "crates/uselesskey-core-negative-pem", version = "0.5.1", default-features = false }
+uselesskey-manifest = { path = "crates/uselesskey-manifest", version = "0.5.1" }
 uselesskey-core-token = { path = "crates/uselesskey-core-token", version = "0.5.1" }
 uselesskey-token-spec = { path = "crates/uselesskey-token-spec", version = "0.5.1" }
 uselesskey-core-jwk-builder = { path = "crates/uselesskey-core-jwk-builder", version = "0.5.1" }
@@ -160,4 +162,3 @@ opt-level = 2
 
 [profile.test]
 opt-level = 2
-
