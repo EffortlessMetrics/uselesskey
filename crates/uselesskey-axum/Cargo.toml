@@ -1,0 +1,32 @@
+[package]
+name = "uselesskey-axum"
+version = "0.5.1"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "Axum auth-test helpers backed by deterministic uselesskey JWT fixtures."
+categories.workspace = true
+keywords = ["axum", "jwt", "jwks", "oidc", "testing"]
+readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
+homepage.workspace = true
+documentation = "https://docs.rs/uselesskey-axum"
+authors.workspace = true
+
+[dependencies]
+uselesskey-rsa = { path = "../uselesskey-rsa", version = "0.5.1", features = ["jwk"] }
+axum = { version = "0.8.6", default-features = false, features = ["json", "tokio", "http1", "query"] }
+http = "1.3.1"
+jsonwebtoken.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tower-layer = "0.3.3"
+tower-service = "0.3.3"
+
+[dev-dependencies]
+tokio.workspace = true
+tower = { version = "0.5.2", features = ["util"] }
+uselesskey-core = { path = "../uselesskey-core", version = "0.5.1" }
+uselesskey-rsa = { path = "../uselesskey-rsa", version = "0.5.1", features = ["jwk"] }
+
