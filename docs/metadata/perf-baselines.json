@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "id": "rsa.fixture.cold",
+      "category": "hot",
+      "baseline_median_ns": 507650184,
+      "max_regression_pct": 10.0,
+      "enforce_in_ci": true
+    },
+    {
+      "id": "rsa.fixture.warm",
+      "category": "hot",
+      "baseline_median_ns": 601,
+      "max_regression_pct": 10.0,
+      "enforce_in_ci": true
+    },
+    {
+      "id": "ecdsa.fixture.p256",
+      "category": "hot",
+      "baseline_median_ns": 1520744,
+      "max_regression_pct": 10.0,
+      "enforce_in_ci": true
+    },
+    {
+      "id": "ed25519.fixture",
+      "category": "hot",
+      "baseline_median_ns": 56580,
+      "max_regression_pct": 10.0,
+      "enforce_in_ci": true
+    },
+    {
+      "id": "hmac.fixture.hs256",
+      "category": "hot",
+      "baseline_median_ns": 2563,
+      "max_regression_pct": 10.0,
+      "enforce_in_ci": true
+    },
+    {
+      "id": "token.fixture.api_key",
+      "category": "hot",
+      "baseline_median_ns": 2977,
+      "max_regression_pct": 10.0,
+      "enforce_in_ci": true
+    },
+    {
+      "id": "x509.self_signed",
+      "category": "rare-heavy",
+      "baseline_median_ns": 591602159,
+      "max_regression_pct": 20.0,
+      "enforce_in_ci": false
+    },
+    {
+      "id": "x509.chain",
+      "category": "rare-heavy",
+      "baseline_median_ns": 1372182437,
+      "max_regression_pct": 20.0,
+      "enforce_in_ci": false
+    },
+    {
+      "id": "negative.fixture.corrupt_pem",
+      "category": "rare-heavy",
+      "baseline_median_ns": 396004200,
+      "max_regression_pct": 20.0,
+      "enforce_in_ci": false
+    }
+  ]
+}
