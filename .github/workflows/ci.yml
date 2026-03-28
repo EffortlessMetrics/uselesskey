@@ -112,6 +112,10 @@ jobs:
       - name: xtask ci
         run: cargo xtask ci
 
+      - name: Clean target test scratch dirs
+        if: always()
+        run: rm -rf target/tests
+
       - name: Upload receipt
         uses: actions/upload-artifact@v7
         with:
