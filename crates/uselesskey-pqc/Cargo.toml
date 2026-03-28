@@ -1,0 +1,22 @@
+[package]
+name = "uselesskey-pqc"
+version = "0.5.1"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "Experimental PQC-shaped fixture generator for parser and size-bound tests."
+categories.workspace = true
+keywords = ["pqc", "post-quantum", "fixtures", "testing", "experimental"]
+readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
+homepage.workspace = true
+documentation = "https://docs.rs/uselesskey-pqc"
+authors.workspace = true
+
+[dependencies]
+uselesskey-core = { path = "../uselesskey-core", version = "0.5.1" }
+blake3.workspace = true
+
+[dev-dependencies]
+insta.workspace = true
