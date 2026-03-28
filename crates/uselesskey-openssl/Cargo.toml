@@ -1,0 +1,37 @@
+[package]
+name = "uselesskey-openssl"
+version = "0.5.1"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "OpenSSL native-type adapters for uselesskey fixtures."
+categories.workspace = true
+keywords = ["openssl", "tls", "fixtures", "testing", "adapter"]
+readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
+homepage.workspace = true
+documentation = "https://docs.rs/uselesskey-openssl"
+authors.workspace = true
+
+[dependencies]
+openssl = { version = "0.10", features = ["vendored"] }
+uselesskey-rsa = { path = "../uselesskey-rsa", version = "0.5.1", optional = true }
+uselesskey-ecdsa = { path = "../uselesskey-ecdsa", version = "0.5.1", optional = true }
+uselesskey-ed25519 = { path = "../uselesskey-ed25519", version = "0.5.1", optional = true }
+uselesskey-x509 = { path = "../uselesskey-x509", version = "0.5.1", optional = true }
+
+[features]
+default = ["x509"]
+rsa = ["dep:uselesskey-rsa"]
+ecdsa = ["dep:uselesskey-ecdsa"]
+ed25519 = ["dep:uselesskey-ed25519"]
+x509 = ["dep:uselesskey-x509"]
+all = ["rsa", "ecdsa", "ed25519", "x509"]
+
+[dev-dependencies]
+uselesskey-core = { path = "../uselesskey-core", version = "0.5.1" }
+uselesskey-rsa = { path = "../uselesskey-rsa", version = "0.5.1" }
+uselesskey-ecdsa = { path = "../uselesskey-ecdsa", version = "0.5.1" }
+uselesskey-ed25519 = { path = "../uselesskey-ed25519", version = "0.5.1" }
+uselesskey-x509 = { path = "../uselesskey-x509", version = "0.5.1" }
