@@ -42,6 +42,9 @@ members = [
   "crates/uselesskey-x509",
   "crates/uselesskey-jsonwebtoken",
   "crates/uselesskey-rustls",
+  "crates/uselesskey-openssl",
+  "crates/uselesskey-native-tls",
+  "crates/uselesskey-webpki",
   "crates/uselesskey-tonic",
   "crates/uselesskey-ring",
   "crates/uselesskey-rustcrypto",
@@ -160,4 +163,3 @@ opt-level = 2
 
 [profile.test]
 opt-level = 2
-

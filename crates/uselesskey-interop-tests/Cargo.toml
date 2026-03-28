@@ -18,6 +18,9 @@ uselesskey-ring = { path = "../uselesskey-ring", features = ["all"], optional = 
 uselesskey-rustcrypto = { path = "../uselesskey-rustcrypto", features = ["all"], optional = true }
 uselesskey-aws-lc-rs = { path = "../uselesskey-aws-lc-rs", features = ["all"], optional = true }
 uselesskey-rustls = { path = "../uselesskey-rustls", features = ["tls-config", "all", "rustls-ring"], optional = true }
+uselesskey-openssl = { path = "../uselesskey-openssl", features = ["all"], optional = true }
+uselesskey-native-tls = { path = "../uselesskey-native-tls", features = ["x509"], optional = true }
+uselesskey-webpki = { path = "../uselesskey-webpki", features = ["x509"], optional = true }
 uselesskey-x509 = { path = "../uselesskey-x509", optional = true }
 uselesskey-hmac = { path = "../uselesskey-hmac", features = ["jwk"], optional = true }
 uselesskey-jsonwebtoken = { path = "../uselesskey-jsonwebtoken", features = ["all"], optional = true }
@@ -49,7 +52,13 @@ insta = { workspace = true }
 [features]
 default = []
 cross-signing = ["dep:uselesskey-ring", "dep:uselesskey-rustcrypto", "dep:uselesskey-hmac"]
-cross-tls = ["dep:uselesskey-x509", "dep:uselesskey-rustls"]
+cross-tls = [
+  "dep:uselesskey-x509",
+  "dep:uselesskey-rustls",
+  "dep:uselesskey-openssl",
+  "dep:uselesskey-native-tls",
+  "dep:uselesskey-webpki",
+]
 jwt-interop = ["dep:uselesskey-jsonwebtoken"]
 aws-lc-rs-interop = ["dep:uselesskey-aws-lc-rs", "dep:aws-lc-rs", "uselesskey-rustls?/rustls-aws-lc-rs"]
 all = ["cross-signing", "cross-tls", "jwt-interop", "aws-lc-rs-interop"]
