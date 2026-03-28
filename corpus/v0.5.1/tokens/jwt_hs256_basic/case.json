@@ -1,0 +1,17 @@
+{
+  "id": "jwt_hs256_basic",
+  "category": "tokens",
+  "description": "OAuth/JWT-shape HS256 access token fixture.",
+  "files": [
+    {
+      "path": "tokens/jwt_hs256_basic/authorization_header.txt",
+      "blake3": "7f2d1e67e06ae4f888d22c48412a3d7e8a7b9de1ba2b372da70c4fcc97144a82",
+      "size_bytes": 262
+    },
+    {
+      "path": "tokens/jwt_hs256_basic/token.txt",
+      "blake3": "d59bc51b7909b23ed8bc348b6751d698399dead570048ccb6b89a3b8b11903c7",
+      "size_bytes": 255
+    }
+  ]
+}

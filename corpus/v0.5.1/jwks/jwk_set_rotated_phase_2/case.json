@@ -1,0 +1,12 @@
+{
+  "id": "jwk_set_rotated_phase_2",
+  "category": "jwks",
+  "description": "Two-key JWKS representing a rotation window with active and next keys.",
+  "files": [
+    {
+      "path": "jwks/jwk_set_rotated_phase_2/jwks.json",
+      "blake3": "a7f10bd40b620dc45c8e3c1f186c6fdd3887bd2837ac609dd4d0b0dd640e3504",
+      "size_bytes": 984
+    }
+  ]
+}

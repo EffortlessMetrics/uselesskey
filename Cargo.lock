@@ -5286,6 +5286,7 @@ name = "xtask"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "blake3",
  "chrono",
  "clap",
  "indicatif",
@@ -5294,6 +5295,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
+ "uselesskey",
  "uselesskey-feature-grid",
 ]
 

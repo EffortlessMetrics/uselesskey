@@ -14,6 +14,7 @@ use uselesskey_feature_grid::{BDD_FEATURE_MATRIX, CORE_FEATURE_MATRIX};
 mod docs_sync;
 mod plan;
 mod pr_bundles;
+mod corpus;
 mod receipt;
 
 #[derive(Parser)]
@@ -60,6 +61,11 @@ enum Cmd {
         /// Verify generated output instead of writing files.
         #[arg(long)]
         check: bool,
+    },
+    /// Build and verify the public fixture corpus.
+    Corpus {
+        #[command(subcommand)]
+        cmd: CorpusCmd,
     },
     /// Compile example list from metadata and optionally run curated examples.
     ExamplesSmoke {
@@ -209,6 +215,14 @@ enum PrBundlesCmd {
     },
 }
 
+#[derive(Subcommand)]
+enum CorpusCmd {
+    /// Build versioned corpus files under `corpus/vX.Y.Z`.
+    Build,
+    /// Rebuild corpus in a temp directory and compare with checked-in files.
+    Verify,
+}
+
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
@@ -223,6 +237,10 @@ fn main() -> Result<()> {
         Cmd::FeatureMatrix => feature_matrix_cmd(),
         Cmd::NoBlob => no_blob_gate(),
         Cmd::DocsSync { check } => docs_sync::docs_sync_cmd(check),
+        Cmd::Corpus { cmd } => match cmd {
+            CorpusCmd::Build => corpus::build(),
+            CorpusCmd::Verify => corpus::verify(),
+        },
         Cmd::ExamplesSmoke { run } => docs_sync::examples_smoke_cmd(run),
         Cmd::PublishCheck => publish_check(),
         Cmd::Pr => pr(),

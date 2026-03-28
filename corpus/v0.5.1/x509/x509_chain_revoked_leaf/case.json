@@ -1,0 +1,27 @@
+{
+  "id": "x509_chain_revoked_leaf",
+  "category": "x509",
+  "description": "Chain negative fixture where leaf is revoked and CRL is present.",
+  "files": [
+    {
+      "path": "x509/x509_chain_revoked_leaf/intermediate_cert.pem",
+      "blake3": "8c3765ab84b355bc4227b39cdd8f672446e5f6462d5338652ee9b2d52bc8e6db",
+      "size_bytes": 1139
+    },
+    {
+      "path": "x509/x509_chain_revoked_leaf/leaf_cert.pem",
+      "blake3": "69b3ab6e497a4c76d54789391f6e89a7ff7d51b4c8c4f555362aa1bad177551e",
+      "size_bytes": 1143
+    },
+    {
+      "path": "x509/x509_chain_revoked_leaf/leaf_revocation.crl.pem",
+      "blake3": "a545ad75919b785fb35c193c7adb78c087e971cb46376a24b8b8f4da04d58105",
+      "size_bytes": 715
+    },
+    {
+      "path": "x509/x509_chain_revoked_leaf/root_cert.pem",
+      "blake3": "ce00d259b25fa0d7353a19274955a3da01c1b133c25564d04a878367d359c9a7",
+      "size_bytes": 1131
+    }
+  ]
+}

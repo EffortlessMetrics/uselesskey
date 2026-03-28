@@ -1,0 +1,17 @@
+{
+  "id": "pem_corrupt_truncated",
+  "category": "negative",
+  "description": "Deterministic corrupted PKCS#8 PEM fixture for parser error-path tests.",
+  "files": [
+    {
+      "path": "negative/pem_corrupt_truncated/private_key_corrupt.pem",
+      "blake3": "d0d4a851643557e60e1d957a0adbe748f92bd21c79197668ea90ae34a64cb204",
+      "size_bytes": 424
+    },
+    {
+      "path": "negative/pem_corrupt_truncated/reference_public_key.pem",
+      "blake3": "64d664222a251eac887ffadbcb4ee3371b14e3ba878e982fb7d85e81d6d58157",
+      "size_bytes": 451
+    }
+  ]
+}

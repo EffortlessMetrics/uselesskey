@@ -1,0 +1,32 @@
+{
+  "id": "x509_chain_good_default",
+  "category": "x509",
+  "description": "Valid TLS-style chain with leaf/intermediate/root plus leaf key.",
+  "files": [
+    {
+      "path": "x509/x509_chain_good_default/chain.pem",
+      "blake3": "35038237a510fe30592b6b8bf104f69e265cde84c9365fcbf6da5a0a651fc48a",
+      "size_bytes": 2283
+    },
+    {
+      "path": "x509/x509_chain_good_default/intermediate_cert.pem",
+      "blake3": "6d1ddddc1bf912168f686d1a274088b2cff7cdc22ce329e3790b107bdccde345",
+      "size_bytes": 1139
+    },
+    {
+      "path": "x509/x509_chain_good_default/leaf_cert.pem",
+      "blake3": "4c19284900d97bc903f8c626634011d446f2adc248ffdd76a34b19481dfd2118",
+      "size_bytes": 1143
+    },
+    {
+      "path": "x509/x509_chain_good_default/leaf_key.pk8.pem",
+      "blake3": "e37eb9ab81ae00d8954b543af0e52191ad77ccb10c6ce15b6e498261de5fe2a6",
+      "size_bytes": 1704
+    },
+    {
+      "path": "x509/x509_chain_good_default/root_cert.pem",
+      "blake3": "ed80ee2548c02b9ecb02b922cddb0566ca98ce9cdcf4e9f85fb2795629b4de78",
+      "size_bytes": 1131
+    }
+  ]
+}
