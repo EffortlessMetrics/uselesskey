@@ -38,6 +38,7 @@ members = [
   "crates/uselesskey-hmac",
   "crates/uselesskey-token",
   "crates/uselesskey-token-spec",
+  "crates/uselesskey-pqc",
   "crates/uselesskey-pgp",
   "crates/uselesskey-x509",
   "crates/uselesskey-jsonwebtoken",
@@ -160,4 +161,3 @@ opt-level = 2
 
 [profile.test]
 opt-level = 2
-

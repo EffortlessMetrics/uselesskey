@@ -4602,6 +4602,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "uselesskey-pqc"
+version = "0.5.1"
+dependencies = [
+ "proptest",
+ "thiserror",
+ "uselesskey-core",
+]
+
+[[package]]
 name = "uselesskey-ring"
 version = "0.5.1"
 dependencies = [
