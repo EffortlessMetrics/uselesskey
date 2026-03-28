@@ -1,0 +1,30 @@
+[package]
+name = "uselesskey-cli"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+categories.workspace = true
+description = "CLI export helpers for uselesskey fixture handoff workflows."
+readme = "README.md"
+keywords = ["fixtures", "secrets", "cli", "kubernetes", "vault"]
+exclude = ["**/*.der", "**/*.pem"]
+
+[[bin]]
+name = "uselesskey"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+serde_yaml = "0.9.34-deprecated"
+base64.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
