@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "artifacts": [
+    {
+      "artifact_type": "rsa_pkcs8_pem",
+      "source_seed": "seed-1",
+      "source_label": "issuer",
+      "output_paths": [
+        "out/issuer.pem"
+      ],
+      "fingerprints": [
+        {
+          "algorithm": "sha256",
+          "value": "77fbb9"
+        }
+      ],
+      "env_var_names": [
+        "ISSUER_PEM"
+      ],
+      "external_key_ref": null
+    },
+    {
+      "artifact_type": "token",
+      "source_seed": "seed-1",
+      "source_label": "svc-token",
+      "output_paths": [
+        "out/token.txt"
+      ],
+      "fingerprints": [
+        {
+          "algorithm": "sha256",
+          "value": "8cae31"
+        }
+      ],
+      "env_var_names": [
+        "SERVICE_TOKEN"
+      ],
+      "external_key_ref": null
+    }
+  ]
+}
