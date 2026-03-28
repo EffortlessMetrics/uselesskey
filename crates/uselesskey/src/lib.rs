@@ -234,6 +234,7 @@
 //! | `ecdsa` | ECDSA P-256/P-384 key fixtures |
 //! | `ed25519` | Ed25519 key fixtures |
 //! | `hmac` | HMAC secret fixtures |
+//! | `symmetric` | Symmetric key + AEAD vector fixtures |
 //! | `token` | API key/bearer token fixtures |
 //! | `ssh` | OpenSSH key and cert fixtures |
 //! | `webhook` | Webhook signature fixtures (GitHub/Stripe/Slack) |
@@ -288,6 +289,12 @@ pub use uselesskey_ed25519::{
 #[cfg(feature = "hmac")]
 pub use uselesskey_hmac::{DOMAIN_HMAC_SECRET, HmacFactoryExt, HmacSecret, HmacSpec};
 
+#[cfg(feature = "symmetric")]
+pub use uselesskey_symmetric::{
+    AadMode, AeadVectorFixture, AeadVectorSpec, DOMAIN_SYMMETRIC_AEAD_VECTOR, DOMAIN_SYMMETRIC_KEY,
+    NoncePolicy, PlaintextMode, SymmetricFactoryExt, SymmetricFixture, SymmetricSpec,
+};
+
 #[cfg(feature = "token")]
 pub use uselesskey_token::{DOMAIN_TOKEN_FIXTURE, TokenFactoryExt, TokenFixture, TokenSpec};
 
@@ -335,6 +342,12 @@ pub mod prelude {
 
     #[cfg(feature = "hmac")]
     pub use crate::{HmacFactoryExt, HmacSecret, HmacSpec};
+
+    #[cfg(feature = "symmetric")]
+    pub use crate::{
+        AadMode, AeadVectorFixture, AeadVectorSpec, NoncePolicy, PlaintextMode,
+        SymmetricFactoryExt, SymmetricFixture, SymmetricSpec,
+    };
 
     #[cfg(feature = "token")]
     pub use crate::{TokenFactoryExt, TokenFixture, TokenSpec};

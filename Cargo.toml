@@ -20,6 +20,7 @@ members = [
   "crates/uselesskey-core-sink",
   "crates/uselesskey-core-token",
   "crates/uselesskey-core-token-shape",
+  "crates/uselesskey-core-symmetric-spec",
   "crates/uselesskey-core-jwk-builder",
   "crates/uselesskey-core-jwks-order",
   "crates/uselesskey-core-jwk",
@@ -39,6 +40,7 @@ members = [
   "crates/uselesskey-token",
   "crates/uselesskey-ssh",
   "crates/uselesskey-webhook",
+  "crates/uselesskey-symmetric",
   "crates/uselesskey-token-spec",
   "crates/uselesskey-pgp",
   "crates/uselesskey-x509",
@@ -99,6 +101,7 @@ uselesskey-core-token = { path = "crates/uselesskey-core-token", version = "0.5.
 uselesskey-webhook = { path = "crates/uselesskey-webhook", version = "0.5.1" }
 uselesskey-token-spec = { path = "crates/uselesskey-token-spec", version = "0.5.1" }
 uselesskey-ssh = { path = "crates/uselesskey-ssh", version = "0.5.1" }
+uselesskey-core-symmetric-spec = { path = "crates/uselesskey-core-symmetric-spec", version = "0.5.1" }
 uselesskey-core-jwk-builder = { path = "crates/uselesskey-core-jwk-builder", version = "0.5.1" }
 uselesskey-core-jwk = { path = "crates/uselesskey-core-jwk", version = "0.5.1" }
 uselesskey-core-hmac-spec = { path = "crates/uselesskey-core-hmac-spec", version = "0.5.1" }

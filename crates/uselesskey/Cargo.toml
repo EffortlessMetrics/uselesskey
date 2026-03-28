@@ -33,6 +33,7 @@ uselesskey-hmac = { path = "../uselesskey-hmac", version = "0.5.1", optional = t
 uselesskey-token = { path = "../uselesskey-token", version = "0.5.1", optional = true }
 uselesskey-ssh = { path = "../uselesskey-ssh", version = "0.5.1", optional = true }
 uselesskey-webhook = { path = "../uselesskey-webhook", version = "0.5.1", optional = true }
+uselesskey-symmetric = { path = "../uselesskey-symmetric", version = "0.5.1", optional = true }
 uselesskey-pgp = { path = "../uselesskey-pgp", version = "0.5.1", optional = true }
 uselesskey-x509 = { path = "../uselesskey-x509", version = "0.5.1", optional = true }
 
@@ -47,6 +48,7 @@ hmac = ["dep:uselesskey-hmac"]
 token = ["dep:uselesskey-token"]
 ssh = ["dep:uselesskey-ssh"]
 webhook = ["dep:uselesskey-webhook"]
+symmetric = ["dep:uselesskey-symmetric"]
 pgp = ["dep:uselesskey-pgp"]
 
 # X.509 certificates (implies rsa for now)
@@ -62,7 +64,7 @@ jwk = [
 ]
 
 # Convenience bundles
-all-keys = ["rsa", "ecdsa", "ed25519", "hmac", "pgp", "ssh"]
+all-keys = ["rsa", "ecdsa", "ed25519", "hmac", "symmetric", "pgp", "ssh"]
 full = ["all-keys", "token", "webhook", "x509", "jwk"]
 
 [dev-dependencies]
