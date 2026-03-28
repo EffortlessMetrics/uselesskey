@@ -1,0 +1,27 @@
+[package]
+name = "uselesskey-webhook"
+version = "0.5.1"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "Deterministic webhook fixtures (GitHub/Stripe/Slack) for tests."
+categories.workspace = true
+keywords = ["webhook", "fixtures", "hmac", "testing", "deterministic"]
+readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
+homepage.workspace = true
+documentation = "https://docs.rs/uselesskey-webhook"
+authors.workspace = true
+
+[dependencies]
+uselesskey-core = { path = "../uselesskey-core", version = "0.5.1" }
+hmac = "0.13.0-rc.6"
+sha2 = "0.11"
+hex = "0.4"
+base64.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+rstest.workspace = true
