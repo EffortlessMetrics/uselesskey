@@ -1,0 +1,25 @@
+[package]
+name = "uselesskey-cli"
+version = "0.5.1"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+homepage.workspace = true
+categories.workspace = true
+authors.workspace = true
+description = "CLI for exporting uselesskey fixtures into downstream secret-delivery formats."
+
+[[bin]]
+name = "uselesskey"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml = "0.9.34"
+
+[dev-dependencies]
+tempfile.workspace = true
