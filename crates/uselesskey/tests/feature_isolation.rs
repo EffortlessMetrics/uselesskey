@@ -15,6 +15,22 @@ mod core_always_available {
     use uselesskey::negative::CorruptPem;
     use uselesskey::{ArtifactDomain, DerivationVersion, Error, Factory, Mode, Seed, TempArtifact};
 
+    fn generated_private_key_pem() -> String {
+        #[cfg(feature = "rsa")]
+        {
+            use uselesskey::{RsaFactoryExt, RsaSpec};
+            Factory::deterministic_from_str("feature-isolation-negative")
+                .rsa("core-negative", RsaSpec::rs256())
+                .private_key_pkcs8_pem()
+                .to_owned()
+        }
+
+        #[cfg(not(feature = "rsa"))]
+        {
+            "-----BEGIN PRIVATE KEY-----\ndata\n-----END PRIVATE KEY-----\n".to_owned()
+        }
+    }
+
     #[test]
     fn factory_constructors() {
         let _random = Factory::random();
@@ -32,8 +48,8 @@ mod core_always_available {
 
     #[test]
     fn negative_module_always_available() {
-        let pem = "-----BEGIN PRIVATE KEY-----\ndata\n-----END PRIVATE KEY-----\n";
-        let bad = uselesskey::negative::corrupt_pem(pem, CorruptPem::BadHeader);
+        let pem = generated_private_key_pem();
+        let bad = uselesskey::negative::corrupt_pem(&pem, CorruptPem::BadHeader);
         assert!(bad.contains("CORRUPTED"));
     }
 
