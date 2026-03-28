@@ -72,11 +72,14 @@ mod cert;
 mod chain;
 mod chain_negative;
 pub mod negative;
+mod revocation;
 #[cfg(test)]
 mod testutil;
 
 pub use cert::{DOMAIN_X509_CERT, X509Cert, X509FactoryExt};
 pub use chain::{DOMAIN_X509_CHAIN, X509Chain};
+pub use revocation::RevocationFixture;
 pub use uselesskey_core_x509::{
-    ChainNegative, ChainSpec, KeyUsage, NotBeforeOffset, X509Negative, X509Spec,
+    ChainNegative, ChainSpec, CrlIssuerKind, CrlReasonCode, CrlSpec, KeyUsage, NotBeforeOffset,
+    OcspCertStatus, OcspNoncePolicy, OcspResponderKind, OcspSpec, X509Negative, X509Spec,
 };
