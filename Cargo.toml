@@ -39,6 +39,7 @@ members = [
   "crates/uselesskey-token",
   "crates/uselesskey-ssh",
   "crates/uselesskey-webhook",
+  "crates/uselesskey-pqc",
   "crates/uselesskey-token-spec",
   "crates/uselesskey-pgp",
   "crates/uselesskey-x509",
@@ -97,6 +98,7 @@ uselesskey-core-negative-der = { path = "crates/uselesskey-core-negative-der", v
 uselesskey-core-negative-pem = { path = "crates/uselesskey-core-negative-pem", version = "0.5.1", default-features = false }
 uselesskey-core-token = { path = "crates/uselesskey-core-token", version = "0.5.1" }
 uselesskey-webhook = { path = "crates/uselesskey-webhook", version = "0.5.1" }
+uselesskey-pqc = { path = "crates/uselesskey-pqc", version = "0.5.1" }
 uselesskey-token-spec = { path = "crates/uselesskey-token-spec", version = "0.5.1" }
 uselesskey-ssh = { path = "crates/uselesskey-ssh", version = "0.5.1" }
 uselesskey-core-jwk-builder = { path = "crates/uselesskey-core-jwk-builder", version = "0.5.1" }

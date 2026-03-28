@@ -33,6 +33,10 @@
       "description": "OpenPGP key fixtures (armored + binary keyblocks)"
     },
     {
+      "name": "uselesskey-pqc",
+      "description": "Experimental PQC-shaped test fixtures for parser, size-bound, and TLS-prep testing."
+    },
+    {
       "name": "uselesskey-token",
       "description": "API key, bearer token, and OAuth access-token fixtures"
     },
@@ -533,6 +537,15 @@
       "publish_status": "published",
       "facade_exposed": false,
       "semver_expectation": "Normal semver guarantees for public APIs.",
+      "msrv_policy": "Tracks workspace MSRV (Rust 1.92).",
+      "intended_audience": "most-users"
+    },
+    {
+      "name": "uselesskey-pqc",
+      "support_tier": "experimental",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Experimental fixture APIs may change between minor releases.",
       "msrv_policy": "Tracks workspace MSRV (Rust 1.92).",
       "intended_audience": "most-users"
     },

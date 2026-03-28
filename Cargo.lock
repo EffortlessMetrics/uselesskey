@@ -5206,6 +5206,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "uselesskey-pqc"
+version = "0.5.1"
+dependencies = [
+ "blake3",
+ "uselesskey-core",
+]
+
+[[package]]
 name = "uselesskey-ring"
 version = "0.5.1"
 dependencies = [
