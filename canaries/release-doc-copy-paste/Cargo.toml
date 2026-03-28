@@ -1,0 +1,10 @@
+[package]
+name = "release-doc-copy-paste-canary"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[workspace]
+
+[dependencies]
+uselesskey = { path = "../../crates/uselesskey", default-features = false, features = ["token"] }

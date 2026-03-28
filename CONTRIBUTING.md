@@ -40,6 +40,8 @@ cargo xtask fuzz            # Fuzz testing (requires cargo-fuzz)
 cargo xtask mutants         # Mutation testing (requires cargo-mutants)
 cargo xtask deny            # License/advisory checks (requires cargo-deny)
 cargo xtask feature-matrix  # Run feature matrix checks (default, no-default, each feature, all-features)
+cargo xtask canaries        # Run external consumer canaries (path mode by default)
+cargo xtask canaries --published 0.5.1 # Run canaries against published crates.io versions
 cargo xtask publish-check   # Run publish dry-runs in dependency order
 cargo xtask publish-preflight # Validate metadata + cargo package --no-verify
 cargo xtask no-blob         # Enforce no secret-shaped blobs in test/fixture paths

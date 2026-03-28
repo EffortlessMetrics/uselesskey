@@ -66,6 +66,12 @@ enum Cmd {
         #[arg(long)]
         run: bool,
     },
+    /// Run external consumer canaries (path mode by default; published mode with --published).
+    Canaries {
+        /// Use crates.io versions instead of local path dependencies.
+        #[arg(long, value_name = "VERSION")]
+        published: Option<String>,
+    },
     /// Run publish dry-runs for crates in dependency order.
     PublishCheck,
     /// Run PR-scoped tests based on git diff.
@@ -153,6 +159,7 @@ fn main() -> Result<()> {
         Cmd::NoBlob => no_blob_gate(),
         Cmd::DocsSync { check } => docs_sync::docs_sync_cmd(check),
         Cmd::ExamplesSmoke { run } => docs_sync::examples_smoke_cmd(run),
+        Cmd::Canaries { published } => canaries(published.as_deref()),
         Cmd::PublishCheck => publish_check(),
         Cmd::Pr => pr(),
         Cmd::DepGuard => dep_guard(),
@@ -1652,6 +1659,89 @@ fn workspace_root_path() -> PathBuf {
         || PathBuf::from(env!("CARGO_MANIFEST_DIR")),
         |p| p.to_path_buf(),
     )
+}
+
+const CANARY_DIRS: &[&str] = &[
+    "canaries/facade-minimal",
+    "canaries/adapter-rustls",
+    "canaries/release-doc-copy-paste",
+];
+
+fn canaries(published: Option<&str>) -> Result<()> {
+    match published {
+        Some(version) => run_canaries_published(version),
+        None => run_canaries_path_mode(),
+    }
+}
+
+fn run_canaries_path_mode() -> Result<()> {
+    for rel in CANARY_DIRS {
+        let manifest = workspace_path(&format!("{rel}/Cargo.toml"));
+        run(Command::new("cargo").args(["run", "--quiet", "--manifest-path"]).arg(&manifest))?;
+        run(Command::new("cargo").args(["test", "--quiet", "--manifest-path"]).arg(&manifest))?;
+    }
+    Ok(())
+}
+
+fn run_canaries_published(version: &str) -> Result<()> {
+    for rel in CANARY_DIRS {
+        let temp_dir = create_canary_temp_dir(rel)?;
+        let published_template = workspace_path(&format!("{rel}/Cargo.published.toml"));
+        let rendered = render_published_manifest(&published_template, version)?;
+        fs::write(temp_dir.join("Cargo.toml"), rendered)
+            .with_context(|| format!("failed to write {}", temp_dir.join("Cargo.toml").display()))?;
+
+        run(Command::new("cargo")
+            .current_dir(&temp_dir)
+            .args(["run", "--quiet", "--manifest-path", "Cargo.toml"]))?;
+        run(Command::new("cargo")
+            .current_dir(&temp_dir)
+            .args(["test", "--quiet", "--manifest-path", "Cargo.toml"]))?;
+    }
+    Ok(())
+}
+
+fn render_published_manifest(template_path: &Path, version: &str) -> Result<String> {
+    let template = fs::read_to_string(template_path)
+        .with_context(|| format!("failed to read {}", template_path.display()))?;
+    Ok(template.replace("{{version}}", version))
+}
+
+fn create_canary_temp_dir(rel: &str) -> Result<PathBuf> {
+    let source = workspace_path(rel);
+    let base = workspace_path("target/xtask/canaries");
+    fs::create_dir_all(&base).with_context(|| format!("failed to create {}", base.display()))?;
+
+    let unique = format!(
+        "{}-{}-{}",
+        rel.replace('/', "-"),
+        std::process::id(),
+        chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+    );
+    let dest = base.join(unique);
+    copy_dir_recursive(&source, &dest)?;
+    Ok(dest)
+}
+
+fn copy_dir_recursive(from: &Path, to: &Path) -> Result<()> {
+    fs::create_dir_all(to).with_context(|| format!("failed to create {}", to.display()))?;
+    for entry in fs::read_dir(from).with_context(|| format!("failed to read {}", from.display()))? {
+        let entry = entry.with_context(|| format!("failed to read entry under {}", from.display()))?;
+        let path = entry.path();
+        let name = entry.file_name();
+        if name == "target" {
+            continue;
+        }
+        let dest = to.join(&name);
+        if path.is_dir() {
+            copy_dir_recursive(&path, &dest)?;
+        } else {
+            fs::copy(&path, &dest).with_context(|| {
+                format!("failed to copy {} -> {}", path.display(), dest.display())
+            })?;
+        }
+    }
+    Ok(())
 }
 
 fn nextest() -> Result<()> {
