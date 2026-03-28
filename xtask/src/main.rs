@@ -80,6 +80,12 @@ enum Cmd {
     Mutants,
     /// Run code coverage via cargo-llvm-cov (requires `cargo-llvm-cov` installed).
     Coverage,
+    /// Run performance fixture summary and optionally compare against budgets.
+    Perf {
+        /// Compare current measurements against docs/metadata/perf-baselines.json budgets.
+        #[arg(long)]
+        compare: bool,
+    },
     /// Validate publish metadata and run `cargo package --no-verify` for all crates.
     PublishPreflight,
     /// Publish all crates to crates.io in dependency order (with retry logic).
@@ -159,6 +165,7 @@ fn main() -> Result<()> {
         Cmd::Bdd => bdd(),
         Cmd::BddMatrix => bdd_matrix(),
         Cmd::Coverage => coverage(),
+        Cmd::Perf { compare } => perf(compare),
         Cmd::PublishPreflight => publish_preflight(),
         Cmd::Publish { from, resume } => publish(from, resume),
         Cmd::Mutants => run_mutants(PUBLISH_CRATES),
@@ -831,6 +838,130 @@ fn parse_lcov_coverage(lcov_path: &str) -> Option<f64> {
     } else {
         None
     }
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct PerfSummary {
+    schema_version: u32,
+    iterations: u32,
+    scenarios: Vec<PerfScenarioResult>,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct PerfScenarioResult {
+    id: String,
+    elapsed_ns_per_iter: u128,
+    allocs_per_iter: u64,
+    bytes_allocated_per_iter: u64,
+    output_size_bytes: usize,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct PerfBaseline {
+    schema_version: u32,
+    paths: Vec<PerfBaselinePath>,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct PerfBaselinePath {
+    id: String,
+    baseline_elapsed_ns_per_iter: u128,
+    max_regression_pct: f64,
+    enforce_in_ci: bool,
+}
+
+fn perf(compare: bool) -> Result<()> {
+    let output_path = "target/xtask/perf-summary.json";
+    run(Command::new("cargo").args([
+        "run",
+        "-p",
+        "uselesskey",
+        "--example",
+        "perf_summary",
+        "--features",
+        "full",
+        "--",
+        "--output",
+        output_path,
+    ]))?;
+
+    let json = fs::read_to_string(output_path).context("failed to read perf summary output")?;
+    let summary: PerfSummary =
+        serde_json::from_str(&json).context("failed to parse perf summary JSON")?;
+
+    eprintln!(
+        "perf summary schema={}, iterations={}, scenarios={}",
+        summary.schema_version,
+        summary.iterations,
+        summary.scenarios.len()
+    );
+
+    if compare {
+        compare_perf_against_baseline(&summary)?;
+    }
+
+    Ok(())
+}
+
+fn compare_perf_against_baseline(summary: &PerfSummary) -> Result<()> {
+    let baseline_path = "docs/metadata/perf-baselines.json";
+    let baseline_json =
+        fs::read_to_string(baseline_path).context("failed to read perf baseline file")?;
+    let baseline: PerfBaseline =
+        serde_json::from_str(&baseline_json).context("failed to parse perf baseline JSON")?;
+
+    if baseline.schema_version != 1 {
+        bail!(
+            "unsupported perf baseline schema version {}; expected 1",
+            baseline.schema_version
+        );
+    }
+
+    let observed: BTreeMap<&str, &PerfScenarioResult> =
+        summary.scenarios.iter().map(|s| (s.id.as_str(), s)).collect();
+    let mut violations = Vec::new();
+
+    for path in &baseline.paths {
+        let Some(current) = observed.get(path.id.as_str()) else {
+            if path.enforce_in_ci {
+                violations.push(format!(
+                    "{}: missing scenario in current perf summary",
+                    path.id
+                ));
+            } else {
+                eprintln!("perf compare (non-enforced): {} missing from summary", path.id);
+            }
+            continue;
+        };
+
+        let baseline_elapsed = path.baseline_elapsed_ns_per_iter as f64;
+        let current_elapsed = current.elapsed_ns_per_iter as f64;
+        let regression_pct = ((current_elapsed - baseline_elapsed) / baseline_elapsed) * 100.0;
+
+        eprintln!(
+            "perf {}: current={}ns baseline={}ns Δ={:.2}% allocs={} bytes={} output={}",
+            path.id,
+            current.elapsed_ns_per_iter,
+            path.baseline_elapsed_ns_per_iter,
+            regression_pct,
+            current.allocs_per_iter,
+            current.bytes_allocated_per_iter,
+            current.output_size_bytes
+        );
+
+        if path.enforce_in_ci && regression_pct > path.max_regression_pct {
+            violations.push(format!(
+                "{} regressed by {:.2}% (budget {:.2}%)",
+                path.id, regression_pct, path.max_regression_pct
+            ));
+        }
+    }
+
+    if !violations.is_empty() {
+        bail!("perf budget check failed:\n{}", violations.join("\n"));
+    }
+
+    Ok(())
 }
 
 fn publish_preflight() -> Result<()> {

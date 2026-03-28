@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "paths": [
+    {
+      "id": "rsa_fixture_generation",
+      "baseline_elapsed_ns_per_iter": 877018213,
+      "max_regression_pct": 10.0,
+      "enforce_in_ci": true
+    },
+    {
+      "id": "ecdsa_fixture_generation",
+      "baseline_elapsed_ns_per_iter": 1136214,
+      "max_regression_pct": 10.0,
+      "enforce_in_ci": true
+    },
+    {
+      "id": "ed25519_fixture_generation",
+      "baseline_elapsed_ns_per_iter": 64094,
+      "max_regression_pct": 20.0,
+      "enforce_in_ci": false
+    },
+    {
+      "id": "hmac_secret_generation",
+      "baseline_elapsed_ns_per_iter": 3520,
+      "max_regression_pct": 10.0,
+      "enforce_in_ci": false
+    },
+    {
+      "id": "token_generation",
+      "baseline_elapsed_ns_per_iter": 22626,
+      "max_regression_pct": 10.0,
+      "enforce_in_ci": false
+    },
+    {
+      "id": "x509_self_signed",
+      "baseline_elapsed_ns_per_iter": 382018812,
+      "max_regression_pct": 20.0,
+      "enforce_in_ci": true
+    },
+    {
+      "id": "x509_chain",
+      "baseline_elapsed_ns_per_iter": 1141120497,
+      "max_regression_pct": 20.0,
+      "enforce_in_ci": true
+    },
+    {
+      "id": "negative_fixture_generation",
+      "baseline_elapsed_ns_per_iter": 159980682,
+      "max_regression_pct": 20.0,
+      "enforce_in_ci": false
+    },
+    {
+      "id": "rsa_cold_cache",
+      "baseline_elapsed_ns_per_iter": 365594701,
+      "max_regression_pct": 20.0,
+      "enforce_in_ci": false
+    },
+    {
+      "id": "rsa_warm_cache",
+      "baseline_elapsed_ns_per_iter": 1480,
+      "max_regression_pct": 20.0,
+      "enforce_in_ci": false
+    }
+  ]
+}

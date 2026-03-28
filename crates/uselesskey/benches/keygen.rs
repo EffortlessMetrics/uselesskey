@@ -6,8 +6,10 @@
 
 use criterion::{Criterion, criterion_group, criterion_main};
 use uselesskey::{
-    EcdsaFactoryExt, EcdsaSpec, Ed25519FactoryExt, Ed25519Spec, Factory, HmacFactoryExt, HmacSpec,
-    RsaFactoryExt, RsaSpec, Seed, X509FactoryExt, X509Spec,
+    ChainSpec, EcdsaFactoryExt, EcdsaSpec, Ed25519FactoryExt, Ed25519Spec, Factory,
+    HmacFactoryExt, HmacSpec, RsaFactoryExt, RsaSpec, Seed, TokenFactoryExt, TokenSpec,
+    X509FactoryExt, X509Spec,
+    negative::CorruptPem,
 };
 
 // ── RSA key generation (the biggest hot path) ───────────────────────
@@ -121,6 +123,77 @@ fn bench_x509_generation(c: &mut Criterion) {
         );
     });
 
+    group.bench_function("chain_default", |b| {
+        b.iter_batched(
+            Factory::random,
+            |fx| fx.x509_chain("bench", ChainSpec::new("bench.example.com")),
+            criterion::BatchSize::PerIteration,
+        );
+    });
+
+    group.finish();
+}
+
+// ── Token generation ────────────────────────────────────────────────
+
+fn bench_token_generation(c: &mut Criterion) {
+    let mut group = c.benchmark_group("token_generation");
+
+    group.bench_function("api_key", |b| {
+        b.iter_batched(
+            Factory::random,
+            |fx| fx.token("bench", TokenSpec::api_key()),
+            criterion::BatchSize::SmallInput,
+        );
+    });
+
+    group.bench_function("bearer", |b| {
+        b.iter_batched(
+            Factory::random,
+            |fx| fx.token("bench", TokenSpec::bearer()),
+            criterion::BatchSize::SmallInput,
+        );
+    });
+
+    group.bench_function("oauth_access_token", |b| {
+        b.iter_batched(
+            Factory::random,
+            |fx| fx.token("bench", TokenSpec::oauth_access_token()),
+            criterion::BatchSize::SmallInput,
+        );
+    });
+
+    group.finish();
+}
+
+// ── Negative fixture generation ─────────────────────────────────────
+
+fn bench_negative_fixture_generation(c: &mut Criterion) {
+    let mut group = c.benchmark_group("negative_fixture_generation");
+    group.sample_size(10);
+
+    group.bench_function("rsa_corrupt_pem", |b| {
+        b.iter_batched(
+            Factory::random,
+            |fx| {
+                let key = fx.rsa("bench", RsaSpec::rs256());
+                key.private_key_pkcs8_pem_corrupt(CorruptPem::BadBase64)
+            },
+            criterion::BatchSize::PerIteration,
+        );
+    });
+
+    group.bench_function("rsa_mismatched_public_der", |b| {
+        b.iter_batched(
+            Factory::random,
+            |fx| {
+                let key = fx.rsa("bench", RsaSpec::rs256());
+                key.mismatched_public_key_spki_der()
+            },
+            criterion::BatchSize::PerIteration,
+        );
+    });
+
     group.finish();
 }
 
@@ -192,7 +265,9 @@ criterion_group!(
     bench_ecdsa_keygen,
     bench_ed25519_keygen,
     bench_hmac_keygen,
+    bench_token_generation,
     bench_x509_generation,
+    bench_negative_fixture_generation,
     bench_cache_hit_vs_miss,
     bench_deterministic_vs_random,
 );
