@@ -13,7 +13,10 @@ pub const RECEIPT_SCHEMA: &str = "uselesskey.export.receipt/v1";
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum KeyRef {
-    File { path: PathBuf },
+    File {
+        #[serde(with = "portable_path")]
+        path: PathBuf,
+    },
     Env { var_name: String },
     Vault { path: String },
     AwsSecret { name: String },
@@ -127,11 +130,16 @@ pub fn export_bundle(spec: &ExportBundleSpec) -> Result<ExportBundleResult, Expo
             written_files.push(path);
         }
         ExportTarget::KubernetesSecretYaml => {
-            let path = spec.output_dir.join(format!("{}-secret.yaml", spec.bundle_name));
+            let path = spec
+                .output_dir
+                .join(format!("{}-secret.yaml", spec.bundle_name));
             let name = spec.bundle_name.replace('_', "-");
             let mut data: BTreeMap<String, String> = BTreeMap::new();
             for entry in &spec.entries {
-                data.insert(entry.file_name.clone(), base64::engine::general_purpose::STANDARD.encode(&entry.value));
+                data.insert(
+                    entry.file_name.clone(),
+                    base64::engine::general_purpose::STANDARD.encode(&entry.value),
+                );
                 references.insert(
                     entry.id.clone(),
                     KeyRef::K8sSecret {
@@ -152,16 +160,16 @@ pub fn export_bundle(spec: &ExportBundleSpec) -> Result<ExportBundleResult, Expo
             written_files.push(path);
         }
         ExportTarget::SopsReadyYamlSkeleton => {
-            let path = spec.output_dir.join(format!("{}-sops.yaml", spec.bundle_name));
+            let path = spec
+                .output_dir
+                .join(format!("{}-sops.yaml", spec.bundle_name));
             let mut values = BTreeMap::new();
             for entry in &spec.entries {
-                values.insert(entry.id.clone(), format!("ENC[AES256_GCM,data:{},type:str]", entry.value));
-                references.insert(
+                values.insert(
                     entry.id.clone(),
-                    KeyRef::File {
-                        path: path.clone(),
-                    },
+                    format!("ENC[AES256_GCM,data:{},type:str]", entry.value),
                 );
+                references.insert(entry.id.clone(), KeyRef::File { path: path.clone() });
             }
             let doc = serde_yaml::to_string(&serde_json::json!({
                 "bundle": spec.bundle_name,
@@ -180,7 +188,9 @@ pub fn export_bundle(spec: &ExportBundleSpec) -> Result<ExportBundleResult, Expo
             written_files.push(path);
         }
         ExportTarget::VaultKvJsonPayload => {
-            let path = spec.output_dir.join(format!("{}-vault-kv.json", spec.bundle_name));
+            let path = spec
+                .output_dir
+                .join(format!("{}-vault-kv.json", spec.bundle_name));
             let mount_path = format!("kv/data/{}", spec.bundle_name);
             let mut kv = BTreeMap::new();
             for entry in &spec.entries {
@@ -222,12 +232,17 @@ fn write_receipt(
     written_files: &[PathBuf],
     references: &BTreeMap<String, KeyRef>,
 ) -> Result<PathBuf, ExportError> {
-    let manifest_path = spec.output_dir.join(format!("{}-manifest.json", spec.bundle_name));
+    let manifest_path = spec
+        .output_dir
+        .join(format!("{}-manifest.json", spec.bundle_name));
     let receipt = ExportReceipt {
         schema: RECEIPT_SCHEMA.to_string(),
         bundle_name: spec.bundle_name.clone(),
         target: spec.target.clone(),
-        written_files: written_files.iter().map(|path| path_to_string(path.as_path())).collect(),
+        written_files: written_files
+            .iter()
+            .map(|path| path_to_string(path.as_path()))
+            .collect(),
         references: references.clone(),
     };
     fs::write(&manifest_path, serde_json::to_vec_pretty(&receipt)?)?;
@@ -236,6 +251,26 @@ fn write_receipt(
 
 fn path_to_string(path: &Path) -> String {
     path.to_string_lossy().replace('\\', "/")
+}
+
+mod portable_path {
+    use std::path::{Path, PathBuf};
+
+    use serde::{Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<S>(path: &Path, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&path.to_string_lossy().replace('\\', "/"))
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<PathBuf, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        String::deserialize(deserializer).map(PathBuf::from)
+    }
 }
 
 fn validate_spec(spec: &ExportBundleSpec) -> Result<(), ExportError> {
@@ -252,7 +287,13 @@ fn validate_spec(spec: &ExportBundleSpec) -> Result<(), ExportError> {
 
 fn sanitize_env_name(s: &str) -> String {
     s.chars()
-        .map(|ch| if ch.is_ascii_alphanumeric() { ch.to_ascii_uppercase() } else { '_' })
+        .map(|ch| {
+            if ch.is_ascii_alphanumeric() {
+                ch.to_ascii_uppercase()
+            } else {
+                '_'
+            }
+        })
         .collect()
 }
 

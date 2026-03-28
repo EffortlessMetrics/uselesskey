@@ -4,7 +4,8 @@ use std::fs;
 use serde_json::Value as JsonValue;
 use tempfile::tempdir;
 use uselesskey_cli::{
-    ExportBundleSpec, ExportEntry, ExportReceipt, ExportTarget, KeyRef, RECEIPT_SCHEMA, export_bundle,
+    ExportBundleSpec, ExportEntry, ExportReceipt, ExportTarget, KeyRef, RECEIPT_SCHEMA,
+    export_bundle,
 };
 
 fn spec(target: ExportTarget, dir: &std::path::Path) -> ExportBundleSpec {
@@ -47,7 +48,10 @@ fn golden_outputs_are_written_for_each_target() {
         let dir = tempdir().expect("tempdir");
         let res = export_bundle(&spec(target.clone(), dir.path())).expect("export succeeded");
 
-        assert!(res.manifest_path.exists(), "manifest missing for {target:?}");
+        assert!(
+            res.manifest_path.exists(),
+            "manifest missing for {target:?}"
+        );
         let manifest_json = fs::read_to_string(&res.manifest_path).expect("read manifest");
         let receipt: ExportReceipt = serde_json::from_str(&manifest_json).expect("parse receipt");
         assert_eq!(receipt.schema, RECEIPT_SCHEMA);
@@ -88,7 +92,11 @@ fn manifest_references_align_with_written_files() {
         .collect();
 
     for path in paths.values() {
-        assert!(path.exists(), "reference path should exist: {}", path.display());
+        assert!(
+            path.exists(),
+            "reference path should exist: {}",
+            path.display()
+        );
     }
 
     assert_eq!(result.written_files.len(), paths.len());
@@ -105,5 +113,13 @@ fn receipt_paths_are_portable_forward_slashes() {
     for value in arr {
         let s = value.as_str().expect("string");
         assert!(!s.contains('\\'));
+    }
+
+    let refs = parsed["references"].as_object().expect("references object");
+    for value in refs.values() {
+        if value["kind"] == "file" {
+            let s = value["path"].as_str().expect("file path string");
+            assert!(!s.contains('\\'));
+        }
     }
 }
