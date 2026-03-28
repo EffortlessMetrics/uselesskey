@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "artifacts": [
+    {
+      "artifact_id": "token:issuer",
+      "artifact_type": "token",
+      "source": {
+        "domain": "token",
+        "label": "issuer",
+        "seed_mode": "deterministic"
+      },
+      "output_paths": [
+        {
+          "target": "envdir",
+          "path": "./fixtures/env/API_KEY"
+        }
+      ],
+      "fingerprints": [
+        {
+          "algorithm": "sha256",
+          "value": "abc123"
+        }
+      ],
+      "env_vars": [
+        "API_KEY"
+      ],
+      "external_key_refs": [
+        {
+          "kind": "vault",
+          "path": "kv/dev/uselesskey/api_key"
+        },
+        {
+          "kind": "k8s_secret",
+          "name": "issuer-keys",
+          "key": "api-key"
+        }
+      ]
+    }
+  ]
+}

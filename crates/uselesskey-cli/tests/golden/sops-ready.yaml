@@ -1,0 +1,14 @@
+data:
+  API_KEY: uk_test_12345
+  PRIVATE_KEY_PEM: '-----BEGIN PRIVATE KEY-----'
+sops:
+  age: []
+  azure_kv: []
+  encrypted_regex: ^(data|stringData)$
+  gcp_kms: []
+  hc_vault: []
+  kms: []
+  lastmodified: null
+  mac: null
+  pgp: []
+  version: 3.9.0
