@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "benchmarks": [
+    {
+      "id": "rsa/cold",
+      "baseline_mean_ns": 700000000,
+      "max_regression_percent": 35.0,
+      "fail_on_regression": true,
+      "note": "hot path: rsa keypair generation (cold cache)"
+    },
+    {
+      "id": "rsa/warm",
+      "baseline_mean_ns": 12000,
+      "max_regression_percent": 35.0,
+      "fail_on_regression": true,
+      "note": "hot path: cached rsa fixture retrieval"
+    },
+    {
+      "id": "ecdsa/cold",
+      "baseline_mean_ns": 1755915,
+      "max_regression_percent": 10.0,
+      "fail_on_regression": false,
+      "note": "fast path; monitor without CI hard-fail initially"
+    },
+    {
+      "id": "ed25519/cold",
+      "baseline_mean_ns": 201609,
+      "max_regression_percent": 10.0,
+      "fail_on_regression": false,
+      "note": "fast path; monitor without CI hard-fail initially"
+    },
+    {
+      "id": "hmac/cold",
+      "baseline_mean_ns": 8329,
+      "max_regression_percent": 10.0,
+      "fail_on_regression": false,
+      "note": "fast path; monitor without CI hard-fail initially"
+    },
+    {
+      "id": "token/cold",
+      "baseline_mean_ns": 81792,
+      "max_regression_percent": 10.0,
+      "fail_on_regression": false,
+      "note": "token generation"
+    },
+    {
+      "id": "x509/self-signed/cold",
+      "baseline_mean_ns": 650000000,
+      "max_regression_percent": 50.0,
+      "fail_on_regression": true,
+      "note": "rare heavy path"
+    },
+    {
+      "id": "x509/chain/cold",
+      "baseline_mean_ns": 1400000000,
+      "max_regression_percent": 50.0,
+      "fail_on_regression": true,
+      "note": "rare heavy path"
+    },
+    {
+      "id": "negative/rsa-corrupt-pem",
+      "baseline_mean_ns": 251150531,
+      "max_regression_percent": 20.0,
+      "fail_on_regression": false,
+      "note": "negative-fixture generation"
+    }
+  ]
+}

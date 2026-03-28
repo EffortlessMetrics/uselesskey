@@ -12,6 +12,7 @@ use regex::Regex;
 use uselesskey_feature_grid::{BDD_FEATURE_MATRIX, CORE_FEATURE_MATRIX};
 
 mod docs_sync;
+mod perf;
 mod plan;
 mod receipt;
 
@@ -117,6 +118,15 @@ enum Cmd {
     },
     /// Configure git hooks (sets core.hooksPath to .githooks).
     Setup,
+    /// Run performance harness and optionally compare against checked-in budgets.
+    Perf {
+        /// Compare measured results against docs/metadata/perf-baselines.json and fail on budget regressions.
+        #[arg(long)]
+        compare: bool,
+        /// Number of iterations per benchmark case.
+        #[arg(long, default_value_t = 5)]
+        iterations: u32,
+    },
     /// Lint commit message (used by git hooks).
     CommitLint {
         /// Path to the commit message file.
@@ -166,6 +176,10 @@ fn main() -> Result<()> {
         Cmd::LintFix { check, no_clippy } => lint_fix(check, no_clippy),
         Cmd::Gate { check: _ } => gate(),
         Cmd::Setup => setup(),
+        Cmd::Perf {
+            compare,
+            iterations,
+        } => perf::run(compare, iterations),
         Cmd::CommitLint { message_file } => commit_lint(&message_file),
         Cmd::Hook { hook } => match hook {
             HookCmd::PreCommit => hook_pre_commit(),

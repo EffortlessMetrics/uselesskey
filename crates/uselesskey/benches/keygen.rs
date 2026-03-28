@@ -1,200 +1,188 @@
 #![forbid(unsafe_code)]
 
-//! Criterion benchmarks for the hot paths in the uselesskey workspace.
+//! Criterion benchmarks for hot fixture paths.
 //!
-//! Run with: `cargo bench -p uselesskey --features full`
+//! Run with:
+//! - `cargo bench -p uselesskey --features full`
+//! - `cargo xtask perf` for machine-readable CI summaries.
 
-use criterion::{Criterion, criterion_group, criterion_main};
+use criterion::{BatchSize, Criterion, criterion_group, criterion_main};
+use uselesskey::negative::CorruptPem;
 use uselesskey::{
-    EcdsaFactoryExt, EcdsaSpec, Ed25519FactoryExt, Ed25519Spec, Factory, HmacFactoryExt, HmacSpec,
-    RsaFactoryExt, RsaSpec, Seed, X509FactoryExt, X509Spec,
+    ChainSpec, EcdsaFactoryExt, EcdsaSpec, Ed25519FactoryExt, Ed25519Spec, Factory,
+    HmacFactoryExt, HmacSpec, RsaFactoryExt, RsaSpec, TokenFactoryExt, TokenSpec, X509FactoryExt,
+    X509Spec,
 };
 
-// ── RSA key generation (the biggest hot path) ───────────────────────
-
-fn bench_rsa_keygen(c: &mut Criterion) {
-    let mut group = c.benchmark_group("rsa_keygen");
+fn bench_rsa_fixture_generation(c: &mut Criterion) {
+    let mut group = c.benchmark_group("rsa_fixture_generation");
     group.sample_size(10);
 
-    group.bench_function("2048", |b| {
+    group.bench_function("cold_cache/rs256", |b| {
         b.iter_batched(
             Factory::random,
-            |fx| fx.rsa("bench", RsaSpec::rs256()),
-            criterion::BatchSize::PerIteration,
+            |fx| fx.rsa("bench-rsa", RsaSpec::rs256()),
+            BatchSize::PerIteration,
         );
     });
 
-    group.bench_function("4096", |b| {
-        b.iter_batched(
-            Factory::random,
-            |fx| fx.rsa("bench", RsaSpec::new(4096)),
-            criterion::BatchSize::PerIteration,
-        );
-    });
-
-    group.finish();
-}
-
-// ── ECDSA P-256 / P-384 key generation ──────────────────────────────
-
-fn bench_ecdsa_keygen(c: &mut Criterion) {
-    let mut group = c.benchmark_group("ecdsa_keygen");
-
-    group.bench_function("p256", |b| {
-        b.iter_batched(
-            Factory::random,
-            |fx| fx.ecdsa("bench", EcdsaSpec::es256()),
-            criterion::BatchSize::SmallInput,
-        );
-    });
-
-    group.bench_function("p384", |b| {
-        b.iter_batched(
-            Factory::random,
-            |fx| fx.ecdsa("bench", EcdsaSpec::es384()),
-            criterion::BatchSize::SmallInput,
-        );
+    let fx = Factory::random();
+    let _ = fx.rsa("bench-rsa", RsaSpec::rs256());
+    group.bench_function("warm_cache/rs256", |b| {
+        b.iter(|| fx.rsa("bench-rsa", RsaSpec::rs256()));
     });
 
     group.finish();
 }
 
-// ── Ed25519 key generation ──────────────────────────────────────────
+fn bench_ecdsa_fixture_generation(c: &mut Criterion) {
+    let mut group = c.benchmark_group("ecdsa_fixture_generation");
 
-fn bench_ed25519_keygen(c: &mut Criterion) {
-    let mut group = c.benchmark_group("ed25519_keygen");
-
-    group.bench_function("ed25519", |b| {
+    group.bench_function("cold_cache/es256", |b| {
         b.iter_batched(
             Factory::random,
-            |fx| fx.ed25519("bench", Ed25519Spec::new()),
-            criterion::BatchSize::SmallInput,
+            |fx| fx.ecdsa("bench-ecdsa", EcdsaSpec::es256()),
+            BatchSize::SmallInput,
         );
+    });
+
+    let fx = Factory::random();
+    let _ = fx.ecdsa("bench-ecdsa", EcdsaSpec::es256());
+    group.bench_function("warm_cache/es256", |b| {
+        b.iter(|| fx.ecdsa("bench-ecdsa", EcdsaSpec::es256()));
     });
 
     group.finish();
 }
 
-// ── HMAC key generation ─────────────────────────────────────────────
+fn bench_ed25519_fixture_generation(c: &mut Criterion) {
+    let mut group = c.benchmark_group("ed25519_fixture_generation");
 
-fn bench_hmac_keygen(c: &mut Criterion) {
-    let mut group = c.benchmark_group("hmac_keygen");
-
-    group.bench_function("hs256", |b| {
+    group.bench_function("cold_cache", |b| {
         b.iter_batched(
             Factory::random,
-            |fx| fx.hmac("bench", HmacSpec::hs256()),
-            criterion::BatchSize::SmallInput,
+            |fx| fx.ed25519("bench-ed25519", Ed25519Spec::new()),
+            BatchSize::SmallInput,
         );
     });
 
-    group.bench_function("hs384", |b| {
-        b.iter_batched(
-            Factory::random,
-            |fx| fx.hmac("bench", HmacSpec::hs384()),
-            criterion::BatchSize::SmallInput,
-        );
-    });
-
-    group.bench_function("hs512", |b| {
-        b.iter_batched(
-            Factory::random,
-            |fx| fx.hmac("bench", HmacSpec::hs512()),
-            criterion::BatchSize::SmallInput,
-        );
+    let fx = Factory::random();
+    let _ = fx.ed25519("bench-ed25519", Ed25519Spec::new());
+    group.bench_function("warm_cache", |b| {
+        b.iter(|| fx.ed25519("bench-ed25519", Ed25519Spec::new()));
     });
 
     group.finish();
 }
 
-// ── X.509 self-signed certificate generation ────────────────────────
+fn bench_hmac_secret_generation(c: &mut Criterion) {
+    let mut group = c.benchmark_group("hmac_secret_generation");
 
-fn bench_x509_generation(c: &mut Criterion) {
-    let mut group = c.benchmark_group("x509_generation");
+    group.bench_function("cold_cache/hs512", |b| {
+        b.iter_batched(
+            Factory::random,
+            |fx| fx.hmac("bench-hmac", HmacSpec::hs512()),
+            BatchSize::SmallInput,
+        );
+    });
+
+    let fx = Factory::random();
+    let _ = fx.hmac("bench-hmac", HmacSpec::hs512());
+    group.bench_function("warm_cache/hs512", |b| {
+        b.iter(|| fx.hmac("bench-hmac", HmacSpec::hs512()));
+    });
+
+    group.finish();
+}
+
+fn bench_token_generation(c: &mut Criterion) {
+    let mut group = c.benchmark_group("token_generation");
+
+    group.bench_function("cold_cache/oauth", |b| {
+        b.iter_batched(
+            Factory::random,
+            |fx| fx.token("bench-token", TokenSpec::oauth_access_token()),
+            BatchSize::SmallInput,
+        );
+    });
+
+    let fx = Factory::random();
+    let _ = fx.token("bench-token", TokenSpec::oauth_access_token());
+    group.bench_function("warm_cache/oauth", |b| {
+        b.iter(|| fx.token("bench-token", TokenSpec::oauth_access_token()));
+    });
+
+    group.finish();
+}
+
+fn bench_x509_self_signed(c: &mut Criterion) {
+    let mut group = c.benchmark_group("x509_self_signed");
     group.sample_size(10);
 
-    group.bench_function("self_signed_2048", |b| {
+    group.bench_function("cold_cache", |b| {
         b.iter_batched(
             Factory::random,
-            |fx| fx.x509_self_signed("bench", X509Spec::self_signed("bench.example.com")),
-            criterion::BatchSize::PerIteration,
+            |fx| fx.x509_self_signed("bench-cert", X509Spec::self_signed("bench.example.com")),
+            BatchSize::PerIteration,
         );
+    });
+
+    let fx = Factory::random();
+    let _ = fx.x509_self_signed("bench-cert", X509Spec::self_signed("bench.example.com"));
+    group.bench_function("warm_cache", |b| {
+        b.iter(|| fx.x509_self_signed("bench-cert", X509Spec::self_signed("bench.example.com")));
     });
 
     group.finish();
 }
 
-// ── Factory cache: hit vs miss ──────────────────────────────────────
-
-fn bench_cache_hit_vs_miss(c: &mut Criterion) {
-    // Cache miss: fresh factory ⇒ forces full RSA keygen each iteration
-    {
-        let mut group = c.benchmark_group("cache/miss");
-        group.sample_size(10);
-
-        group.bench_function("rsa_2048", |b| {
-            b.iter_batched(
-                Factory::random,
-                |fx| fx.rsa("bench", RsaSpec::rs256()),
-                criterion::BatchSize::PerIteration,
-            );
-        });
-
-        group.finish();
-    }
-
-    // Cache hit: reuse factory, key already materialised
-    {
-        let mut group = c.benchmark_group("cache/hit");
-
-        let fx = Factory::random();
-        let _ = fx.rsa("bench", RsaSpec::rs256()); // prime the cache
-
-        group.bench_function("rsa_2048", |b| {
-            b.iter(|| fx.rsa("bench", RsaSpec::rs256()));
-        });
-
-        group.finish();
-    }
-}
-
-// ── Deterministic vs random mode ────────────────────────────────────
-
-fn bench_deterministic_vs_random(c: &mut Criterion) {
-    let mut group = c.benchmark_group("deterministic_vs_random");
+fn bench_x509_chain(c: &mut Criterion) {
+    let mut group = c.benchmark_group("x509_chain");
     group.sample_size(10);
 
-    group.bench_function("rsa_2048_random", |b| {
+    group.bench_function("cold_cache", |b| {
         b.iter_batched(
             Factory::random,
-            |fx| fx.rsa("bench", RsaSpec::rs256()),
-            criterion::BatchSize::PerIteration,
+            |fx| fx.x509_chain("bench-chain", ChainSpec::new("bench.example.com")),
+            BatchSize::PerIteration,
         );
     });
 
-    let seed = Seed::from_env_value("bench-seed").expect("valid seed");
-    group.bench_function("rsa_2048_deterministic", |b| {
-        b.iter_batched(
-            || Factory::deterministic(seed),
-            |fx| fx.rsa("bench", RsaSpec::rs256()),
-            criterion::BatchSize::PerIteration,
-        );
+    let fx = Factory::random();
+    let _ = fx.x509_chain("bench-chain", ChainSpec::new("bench.example.com"));
+    group.bench_function("warm_cache", |b| {
+        b.iter(|| fx.x509_chain("bench-chain", ChainSpec::new("bench.example.com")));
     });
 
     group.finish();
 }
 
-// ── Criterion wiring ────────────────────────────────────────────────
+fn bench_negative_fixture_generation(c: &mut Criterion) {
+    let mut group = c.benchmark_group("negative_fixture_generation");
+
+    group.bench_function("rsa_bad_base64", |b| {
+        b.iter_batched(
+            || {
+                let fx = Factory::random();
+                fx.rsa("bench-negative", RsaSpec::rs256())
+            },
+            |rsa| rsa.private_key_pkcs8_pem_corrupt(CorruptPem::BadBase64),
+            BatchSize::SmallInput,
+        );
+    });
+
+    group.finish();
+}
 
 criterion_group!(
     keygen,
-    bench_rsa_keygen,
-    bench_ecdsa_keygen,
-    bench_ed25519_keygen,
-    bench_hmac_keygen,
-    bench_x509_generation,
-    bench_cache_hit_vs_miss,
-    bench_deterministic_vs_random,
+    bench_rsa_fixture_generation,
+    bench_ecdsa_fixture_generation,
+    bench_ed25519_fixture_generation,
+    bench_hmac_secret_generation,
+    bench_token_generation,
+    bench_x509_self_signed,
+    bench_x509_chain,
+    bench_negative_fixture_generation,
 );
-
 criterion_main!(keygen);

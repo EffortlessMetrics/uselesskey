@@ -22,6 +22,7 @@ regex = "1.11"
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 uselesskey-feature-grid.workspace = true
+uselesskey = { path = "../crates/uselesskey", features = ["full"] }
 
 [dev-dependencies]
 tempfile.workspace = true
