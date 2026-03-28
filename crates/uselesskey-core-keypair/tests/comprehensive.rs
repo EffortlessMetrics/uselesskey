@@ -86,8 +86,14 @@ fn debug_does_not_contain_der_hex_bytes() {
     // Should not contain raw byte values or PEM body content
     assert!(!dbg.contains("DEADBEEF"), "must not leak private DER hex");
     assert!(!dbg.contains("CAFEBABE"), "must not leak public DER hex");
-    assert!(!dbg.contains("BEGIN PRIVATE KEY"), "must not leak private PEM");
-    assert!(!dbg.contains("BEGIN PUBLIC KEY"), "must not leak public PEM");
+    assert!(
+        !dbg.contains("BEGIN PRIVATE KEY"),
+        "must not leak private PEM"
+    );
+    assert!(
+        !dbg.contains("BEGIN PUBLIC KEY"),
+        "must not leak public PEM"
+    );
 }
 
 #[test]
