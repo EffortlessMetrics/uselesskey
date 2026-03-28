@@ -348,6 +348,7 @@ fn ci() -> Result<()> {
 }
 
 fn run_ci_plan(runner: &mut receipt::Runner) -> Result<()> {
+    runner.step("docs-sync", None, || docs_sync::docs_sync_cmd(true))?;
     runner.step("fmt", None, || fmt(false))?;
     runner.step("clippy", None, clippy)?;
     runner.step("typos", None, || typos(false))?;
@@ -1226,6 +1227,8 @@ fn run_pr_plan(
     } else {
         runner.skip("tests", Some("no impacted crates".to_string()));
     }
+
+    runner.step("docs-sync", None, || docs_sync::docs_sync_cmd(true))?;
 
     if plan.run_feature_matrix {
         run_feature_matrix(runner)?;

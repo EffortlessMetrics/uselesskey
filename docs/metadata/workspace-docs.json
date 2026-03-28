@@ -2,7 +2,7 @@
   "workspace_crates": [
     {
       "name": "uselesskey",
-      "description": "Public facade — re-exports all key types and traits behind feature flags"
+      "description": "Public facade \u2014 re-exports all key types and traits behind feature flags"
     },
     {
       "name": "uselesskey-core",
@@ -186,7 +186,7 @@
       "path": "crates/uselesskey/examples/jwt_signing.rs",
       "feature_set": "rsa,jwk",
       "description": "JWT signing with deterministic RSA, ECDSA, and HMAC keys (ECDSA/HMAC optional)",
-           "run_smoke": false
+      "run_smoke": false
     },
     {
       "name": "negative_fixtures",
@@ -235,19 +235,19 @@
     {
       "feature": "rsa",
       "extension_trait": "RsaFactoryExt",
-      "algorithms": "RSA 2048/3072/4096 — PKCS#8, SPKI, PEM, DER",
+      "algorithms": "RSA 2048/3072/4096 \u2014 PKCS#8, SPKI, PEM, DER",
       "implies": "-"
     },
     {
       "feature": "ecdsa",
       "extension_trait": "EcdsaFactoryExt",
-      "algorithms": "P-256 (ES256), P-384 (ES384) — PKCS#8, SPKI",
+      "algorithms": "P-256 (ES256), P-384 (ES384) \u2014 PKCS#8, SPKI",
       "implies": "-"
     },
     {
       "feature": "ed25519",
       "extension_trait": "Ed25519FactoryExt",
-      "algorithms": "Ed25519 — PKCS#8, SPKI",
+      "algorithms": "Ed25519 \u2014 PKCS#8, SPKI",
       "implies": "-"
     },
     {
@@ -259,7 +259,7 @@
     {
       "feature": "pgp",
       "extension_trait": "PgpFactoryExt",
-      "algorithms": "OpenPGP RSA 2048/3072, Ed25519 — armored, binary",
+      "algorithms": "OpenPGP RSA 2048/3072, Ed25519 \u2014 armored, binary",
       "implies": "-"
     },
     {
@@ -396,6 +396,529 @@
       "name": "pgp-native adapter",
       "snippet": "[dev-dependencies]\nuselesskey = { version = \"0.5.1\", features = [\"pgp\"] }\nuselesskey-pgp-native = { version = \"0.5.1\" }"
     }
+  ],
+  "crate_support_matrix": [
+    {
+      "name": "uselesskey",
+      "description": "Public facade \u2014 re-exports all key types and traits behind feature flags",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "SemVer applies to documented public API within a major release.",
+      "msrv_policy": "MSRV follows workspace policy; bumps are announced in release notes.",
+      "intended_audience": "most-users"
+    },
+    {
+      "name": "uselesskey-aws-lc-rs",
+      "description": "`aws-lc-rs` native types",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "SemVer applies to adapter API and supported conversions.",
+      "msrv_policy": "MSRV follows workspace policy and adapter dependency constraints.",
+      "intended_audience": "adapter-users"
+    },
+    {
+      "name": "uselesskey-bdd",
+      "description": "Cucumber BDD test runner for uselesskey fixture crates.",
+      "support_tier": "experimental",
+      "publish_status": "test-only",
+      "facade_exposed": false,
+      "semver_expectation": "No semver guarantees; may change at any time.",
+      "msrv_policy": "No standalone MSRV guarantee; follows workspace CI.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-bdd-steps",
+      "description": "Cucumber BDD step definitions for uselesskey fixture crates.",
+      "support_tier": "experimental",
+      "publish_status": "test-only",
+      "facade_exposed": false,
+      "semver_expectation": "No semver guarantees; may change at any time.",
+      "msrv_policy": "No standalone MSRV guarantee; follows workspace CI.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core",
+      "description": "Factory, deterministic derivation, caching, and negative-fixture helpers",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": true,
+      "semver_expectation": "SemVer applies to documented public API within a major release.",
+      "msrv_policy": "MSRV follows workspace policy; bumps are announced in release notes.",
+      "intended_audience": "most-users"
+    },
+    {
+      "name": "uselesskey-core-base62",
+      "description": "Base62 generation primitives for uselesskey fixture crates.",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Published internal building block; API may evolve to support higher-level crates.",
+      "msrv_policy": "MSRV follows workspace policy.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-cache",
+      "description": "Identity-keyed typed cache primitives for uselesskey fixture factories.",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Published internal building block; API may evolve to support higher-level crates.",
+      "msrv_policy": "MSRV follows workspace policy.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-factory",
+      "description": "Factory orchestration and cache lookup behavior for uselesskey fixtures.",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Published internal building block; API may evolve to support higher-level crates.",
+      "msrv_policy": "MSRV follows workspace policy.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-hash",
+      "description": "Length-prefixed hashing helpers shared by deterministic fixture derivation paths.",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Published internal building block; API may evolve to support higher-level crates.",
+      "msrv_policy": "MSRV follows workspace policy.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-hmac-spec",
+      "description": "HMAC algorithm spec model shared across uselesskey hmac-related crates.",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Published internal building block; API may evolve to support higher-level crates.",
+      "msrv_policy": "MSRV follows workspace policy.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-id",
+      "description": "Core identity and derivation primitives for uselesskey.",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Published internal building block; API may evolve to support higher-level crates.",
+      "msrv_policy": "MSRV follows workspace policy.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-jwk",
+      "description": "Compatibility fa\u00e7ade for typed JWK/JWKS models used by uselesskey fixture crates.",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Published internal building block; API may evolve to support higher-level crates.",
+      "msrv_policy": "MSRV follows workspace policy.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-jwk-builder",
+      "description": "JWKS builder with deterministic, stable key ordering.",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Published internal building block; API may evolve to support higher-level crates.",
+      "msrv_policy": "MSRV follows workspace policy.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-jwk-shape",
+      "description": "Core JWK shape types used by JWK/JWKS fixtures.",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Published internal building block; API may evolve to support higher-level crates.",
+      "msrv_policy": "MSRV follows workspace policy.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-jwks-order",
+      "description": "Stable kid-based ordering helper for JWKS-like collections.",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Published internal building block; API may evolve to support higher-level crates.",
+      "msrv_policy": "MSRV follows workspace policy.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-keypair",
+      "description": "Shared PKCS#8/SPKI key-material helpers for uselesskey fixture crates.",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Published internal building block; API may evolve to support higher-level crates.",
+      "msrv_policy": "MSRV follows workspace policy.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-keypair-material",
+      "description": "PKCS#8/SPKI key-material helpers shared by key fixture crates.",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Published internal building block; API may evolve to support higher-level crates.",
+      "msrv_policy": "MSRV follows workspace policy.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-kid",
+      "description": "Deterministic key-id helpers for uselesskey fixture crates.",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Published internal building block; API may evolve to support higher-level crates.",
+      "msrv_policy": "MSRV follows workspace policy.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-negative",
+      "description": "Compatibility facade for negative fixture builders used by uselesskey.",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Published internal building block; API may evolve to support higher-level crates.",
+      "msrv_policy": "MSRV follows workspace policy.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-negative-der",
+      "description": "DER-focused negative fixture builders for deterministic corruption in uselesskey.",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Published internal building block; API may evolve to support higher-level crates.",
+      "msrv_policy": "MSRV follows workspace policy.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-negative-pem",
+      "description": "PEM-focused negative fixture corruption helpers for test fixtures.",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Published internal building block; API may evolve to support higher-level crates.",
+      "msrv_policy": "MSRV follows workspace policy.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-rustls-pki",
+      "description": "rustls-pki-types adapters for uselesskey fixture crates.",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Public crate but intended as a low-level building block.",
+      "msrv_policy": "MSRV follows workspace policy; subject to ecosystem-driven updates.",
+      "intended_audience": "adapter-users"
+    },
+    {
+      "name": "uselesskey-core-seed",
+      "description": "Seed parsing and redaction primitives for uselesskey.",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Published internal building block; API may evolve to support higher-level crates.",
+      "msrv_policy": "MSRV follows workspace policy.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-sink",
+      "description": "Tempfile-backed artifact sinks used by uselesskey.",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Published internal building block; API may evolve to support higher-level crates.",
+      "msrv_policy": "MSRV follows workspace policy.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-token",
+      "description": "Deterministic token-shape generation helpers shared by uselesskey fixture crates.",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Published internal building block; API may evolve to support higher-level crates.",
+      "msrv_policy": "MSRV follows workspace policy.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-token-shape",
+      "description": "Token shape generation primitives shared across uselesskey token crates.",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Published internal building block; API may evolve to support higher-level crates.",
+      "msrv_policy": "MSRV follows workspace policy.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-x509",
+      "description": "Deterministic X.509 policy helpers shared by uselesskey fixture crates.",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Published internal building block; API may evolve to support higher-level crates.",
+      "msrv_policy": "MSRV follows workspace policy.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-x509-chain-negative",
+      "description": "X.509 chain negative-fixture policy helpers for uselesskey.",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Published internal building block; API may evolve to support higher-level crates.",
+      "msrv_policy": "MSRV follows workspace policy.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-x509-derive",
+      "description": "Deterministic X.509 derivation helpers for uselesskey fixture crates.",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Published internal building block; API may evolve to support higher-level crates.",
+      "msrv_policy": "MSRV follows workspace policy.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-x509-negative",
+      "description": "X.509 negative-fixture policy helpers for uselesskey.",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Published internal building block; API may evolve to support higher-level crates.",
+      "msrv_policy": "MSRV follows workspace policy.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-core-x509-spec",
+      "description": "X.509 fixture spec models and stable encoders for uselesskey.",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Published internal building block; API may evolve to support higher-level crates.",
+      "msrv_policy": "MSRV follows workspace policy.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-ecdsa",
+      "description": "ECDSA P-256 / P-384 keypairs",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": true,
+      "semver_expectation": "SemVer applies to documented public API within a major release.",
+      "msrv_policy": "MSRV follows workspace policy; bumps are announced in release notes.",
+      "intended_audience": "most-users"
+    },
+    {
+      "name": "uselesskey-ed25519",
+      "description": "Ed25519 keypairs",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": true,
+      "semver_expectation": "SemVer applies to documented public API within a major release.",
+      "msrv_policy": "MSRV follows workspace policy; bumps are announced in release notes.",
+      "intended_audience": "most-users"
+    },
+    {
+      "name": "uselesskey-feature-grid",
+      "description": "Canonical feature and matrix definitions for uselesskey automation.",
+      "support_tier": "experimental",
+      "publish_status": "test-only",
+      "facade_exposed": false,
+      "semver_expectation": "No semver guarantees; may change at any time.",
+      "msrv_policy": "No standalone MSRV guarantee; follows workspace CI.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-hmac",
+      "description": "HMAC HS256/HS384/HS512 secrets",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": true,
+      "semver_expectation": "SemVer applies to documented public API within a major release.",
+      "msrv_policy": "MSRV follows workspace policy; bumps are announced in release notes.",
+      "intended_audience": "most-users"
+    },
+    {
+      "name": "uselesskey-integration-tests",
+      "description": "Integration and cross-crate tests for the uselesskey workspace.",
+      "support_tier": "experimental",
+      "publish_status": "test-only",
+      "facade_exposed": false,
+      "semver_expectation": "No semver guarantees; may change at any time.",
+      "msrv_policy": "No standalone MSRV guarantee; follows workspace CI.",
+      "intended_audience": "repo-internal",
+      "replacement_path": "uselesskey-interop-tests",
+      "deprecation_note": "Legacy integration harness; prefer interop suite for new coverage."
+    },
+    {
+      "name": "uselesskey-interop-tests",
+      "description": "Cross-adapter interoperability tests for uselesskey fixture crates.",
+      "support_tier": "experimental",
+      "publish_status": "test-only",
+      "facade_exposed": false,
+      "semver_expectation": "No semver guarantees; may change at any time.",
+      "msrv_policy": "No standalone MSRV guarantee; follows workspace CI.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-jose-openid",
+      "description": "JOSE/OpenID-oriented native `jsonwebtoken` key conversions",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "SemVer applies to adapter API and supported conversions.",
+      "msrv_policy": "MSRV follows workspace policy and adapter dependency constraints.",
+      "intended_audience": "adapter-users"
+    },
+    {
+      "name": "uselesskey-jsonwebtoken",
+      "description": "`jsonwebtoken` `EncodingKey` / `DecodingKey`",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "SemVer applies to adapter API and supported conversions.",
+      "msrv_policy": "MSRV follows workspace policy and adapter dependency constraints.",
+      "intended_audience": "adapter-users"
+    },
+    {
+      "name": "uselesskey-jwk",
+      "description": "Typed JWK/JWKS models and builders",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": true,
+      "semver_expectation": "SemVer applies to documented public API within a major release.",
+      "msrv_policy": "MSRV follows workspace policy; bumps are announced in release notes.",
+      "intended_audience": "most-users"
+    },
+    {
+      "name": "uselesskey-pgp",
+      "description": "OpenPGP key fixtures (armored + binary keyblocks)",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": true,
+      "semver_expectation": "SemVer applies to documented public API within a major release.",
+      "msrv_policy": "MSRV follows workspace policy; bumps are announced in release notes.",
+      "intended_audience": "most-users"
+    },
+    {
+      "name": "uselesskey-pgp-native",
+      "description": "Native `pgp` `SignedSecretKey` / `SignedPublicKey` adapters",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "SemVer applies to adapter API and supported conversions.",
+      "msrv_policy": "MSRV follows workspace policy and adapter dependency constraints.",
+      "intended_audience": "adapter-users"
+    },
+    {
+      "name": "uselesskey-ring",
+      "description": "`ring` 0.17 native signing key types",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "SemVer applies to adapter API and supported conversions.",
+      "msrv_policy": "MSRV follows workspace policy and adapter dependency constraints.",
+      "intended_audience": "adapter-users"
+    },
+    {
+      "name": "uselesskey-rsa",
+      "description": "RSA 2048/3072/4096 keypairs (PKCS#8, SPKI, PEM, DER)",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": true,
+      "semver_expectation": "SemVer applies to documented public API within a major release.",
+      "msrv_policy": "MSRV follows workspace policy; bumps are announced in release notes.",
+      "intended_audience": "most-users"
+    },
+    {
+      "name": "uselesskey-rustcrypto",
+      "description": "RustCrypto native types (`rsa::RsaPrivateKey`, etc.)",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "SemVer applies to adapter API and supported conversions.",
+      "msrv_policy": "MSRV follows workspace policy and adapter dependency constraints.",
+      "intended_audience": "adapter-users"
+    },
+    {
+      "name": "uselesskey-rustls",
+      "description": "`rustls` `ServerConfig` / `ClientConfig` builders",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "SemVer applies to adapter API and supported conversions.",
+      "msrv_policy": "MSRV follows workspace policy and adapter dependency constraints.",
+      "intended_audience": "adapter-users"
+    },
+    {
+      "name": "uselesskey-test-grid",
+      "description": "Compatibility fa\u00e7ade for `uselesskey-feature-grid` data exports.",
+      "support_tier": "experimental",
+      "publish_status": "test-only",
+      "facade_exposed": false,
+      "semver_expectation": "No semver guarantees; may change at any time.",
+      "msrv_policy": "No standalone MSRV guarantee; follows workspace CI.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-token",
+      "description": "API key, bearer token, and OAuth access-token fixtures",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": true,
+      "semver_expectation": "SemVer applies to documented public API within a major release.",
+      "msrv_policy": "MSRV follows workspace policy; bumps are announced in release notes.",
+      "intended_audience": "most-users"
+    },
+    {
+      "name": "uselesskey-token-spec",
+      "description": "Stable token fixture specification shared across token generators.",
+      "support_tier": "incubating",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Public crate but intended as a low-level building block.",
+      "msrv_policy": "MSRV follows workspace policy; subject to ecosystem-driven updates.",
+      "intended_audience": "adapter-users"
+    },
+    {
+      "name": "uselesskey-tonic",
+      "description": "`tonic::transport` TLS identity / config for gRPC",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "SemVer applies to adapter API and supported conversions.",
+      "msrv_policy": "MSRV follows workspace policy and adapter dependency constraints.",
+      "intended_audience": "adapter-users"
+    },
+    {
+      "name": "uselesskey-x509",
+      "description": "X.509 self-signed certificates and certificate chains",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": true,
+      "semver_expectation": "SemVer applies to documented public API within a major release.",
+      "msrv_policy": "MSRV follows workspace policy; bumps are announced in release notes.",
+      "intended_audience": "most-users"
+    },
+    {
+      "name": "xtask",
+      "description": "Build automation tasks (CI, test, lint, publish) for the uselesskey workspace.",
+      "support_tier": "experimental",
+      "publish_status": "internal",
+      "facade_exposed": false,
+      "semver_expectation": "Internal automation only; compatibility is best-effort.",
+      "msrv_policy": "Follows workspace MSRV for contributor tooling.",
+      "intended_audience": "repo-internal"
+    }
   ]
 }
-

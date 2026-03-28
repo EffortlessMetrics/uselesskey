@@ -39,6 +39,7 @@ Before tagging, make sure the release PR has already:
 - bumped publishable crate versions
 - updated `CHANGELOG.md`
 - refreshed versioned `uselesskey*` dependency snippets in README/doc examples
+- regenerated support contract docs (`cargo xtask docs-sync`) so `docs/reference/support-matrix.md` matches metadata
 
 ## Publish
 

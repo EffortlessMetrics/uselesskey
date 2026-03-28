@@ -441,6 +441,35 @@ The [`crates/uselesskey/examples/`](crates/uselesskey/examples/) directory conta
 `uselesskey` is a **facade crate** that re-exports from focused implementation crates.
 Depend on the facade for convenience, or on individual crates to minimize compile time.
 
+### Support summary
+
+Generated full matrix: [`docs/reference/support-matrix.md`](docs/reference/support-matrix.md).
+
+<!-- docs-sync:support-summary-start -->
+| Crate | Support tier | Publish status | Audience |
+|------|--------------|----------------|----------|
+| `uselesskey` | `stable` | `published` | `most-users` |
+| `uselesskey-aws-lc-rs` | `stable` | `published` | `adapter-users` |
+| `uselesskey-core` | `stable` | `published` | `most-users` |
+| `uselesskey-core-rustls-pki` | `incubating` | `published` | `adapter-users` |
+| `uselesskey-ecdsa` | `stable` | `published` | `most-users` |
+| `uselesskey-ed25519` | `stable` | `published` | `most-users` |
+| `uselesskey-hmac` | `stable` | `published` | `most-users` |
+| `uselesskey-jose-openid` | `stable` | `published` | `adapter-users` |
+| `uselesskey-jsonwebtoken` | `stable` | `published` | `adapter-users` |
+| `uselesskey-jwk` | `stable` | `published` | `most-users` |
+| `uselesskey-pgp` | `stable` | `published` | `most-users` |
+| `uselesskey-pgp-native` | `stable` | `published` | `adapter-users` |
+| `uselesskey-ring` | `stable` | `published` | `adapter-users` |
+| `uselesskey-rsa` | `stable` | `published` | `most-users` |
+| `uselesskey-rustcrypto` | `stable` | `published` | `adapter-users` |
+| `uselesskey-rustls` | `stable` | `published` | `adapter-users` |
+| `uselesskey-token` | `stable` | `published` | `most-users` |
+| `uselesskey-token-spec` | `incubating` | `published` | `adapter-users` |
+| `uselesskey-tonic` | `stable` | `published` | `adapter-users` |
+| `uselesskey-x509` | `stable` | `published` | `most-users` |
+<!-- docs-sync:support-summary-end -->
+
 ### Implementation Crates
 
 <!-- docs-sync:workspace-crates-start -->
@@ -598,4 +627,3 @@ Licensed under either of:
 - MIT license ([LICENSE-MIT](LICENSE-MIT))
 
 at your option.
-
