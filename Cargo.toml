@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
   "crates/uselesskey-test-grid",
+  "crates/uselesskey-test-server",
   "crates/uselesskey-feature-grid",
   "crates/uselesskey",
   "crates/uselesskey-core",
