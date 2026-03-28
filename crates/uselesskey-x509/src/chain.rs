@@ -3,6 +3,7 @@
 use std::fmt;
 use std::sync::Arc;
 
+use base64::Engine;
 use rand_chacha::ChaCha20Rng;
 use rand_core::RngCore;
 use rand_core::SeedableRng;
@@ -12,19 +13,59 @@ use rcgen::{
     RevocationReason, RevokedCertParams,
 };
 use rustls_pki_types::PrivatePkcs8KeyDer;
+use rsa::pkcs1v15::{Signature as RsaSignature, SigningKey, VerifyingKey};
+use rsa::pkcs8::DecodePrivateKey;
+use rsa::signature::{SignatureEncoding, Signer, Verifier};
+use rsa::sha2::Sha256;
+use rsa::{RsaPrivateKey, RsaPublicKey};
 use time::Duration as TimeDuration;
 use time::OffsetDateTime;
 use uselesskey_core::sink::TempArtifact;
 use uselesskey_core::{Error, Factory};
 use uselesskey_core_x509::{
-    ChainSpec, KeyUsage, NotBeforeOffset, deterministic_base_time_from_parts,
+    ChainSpec, CrlIssuerKind, CrlSpec, KeyUsage, NotBeforeOffset, OcspCertStatus, OcspSpec,
+    RevocationReasonCode, TimeOffsetDays, deterministic_base_time_from_parts,
 };
 use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+use x509_parser::prelude::FromDer;
 
 /// Cache domain for X.509 certificate chain fixtures.
 ///
 /// Keep this stable: changing it changes deterministic outputs.
 pub const DOMAIN_X509_CHAIN: &str = "uselesskey:x509:chain";
+pub const DOMAIN_X509_REVOCATION: &str = "uselesskey:x509:revocation";
+
+/// Deterministic revocation fixture payload.
+#[derive(Clone, Debug)]
+pub struct RevocationFixture {
+    der: Arc<[u8]>,
+    pem: Option<String>,
+    base64: String,
+    issuer_binding: String,
+    serial_binding_hex: String,
+}
+
+impl RevocationFixture {
+    pub fn der(&self) -> &[u8] {
+        &self.der
+    }
+
+    pub fn pem(&self) -> Option<&str> {
+        self.pem.as_deref()
+    }
+
+    pub fn base64(&self) -> &str {
+        &self.base64
+    }
+
+    pub fn issuer_binding(&self) -> &str {
+        &self.issuer_binding
+    }
+
+    pub fn serial_binding_hex(&self) -> &str {
+        &self.serial_binding_hex
+    }
+}
 
 /// A three-level X.509 certificate chain (root CA → intermediate CA → leaf).
 #[derive(Clone)]
@@ -506,6 +547,48 @@ impl X509Chain {
             .map(|der| TempArtifact::new_bytes("uselesskey-", ".crl.der", der))
     }
 
+    /// Build an explicit CRL fixture for the leaf certificate.
+    pub fn crl_for_leaf(&self) -> RevocationFixture {
+        let (_, leaf) =
+            x509_parser::certificate::X509Certificate::from_der(self.leaf_cert_der()).expect("leaf parse");
+        let serial = leaf.raw_serial().to_vec();
+        let spec = CrlSpec::for_intermediate(serial.clone());
+        self.build_crl_fixture("leaf", &spec, serial)
+    }
+
+    /// Build an explicit CRL fixture for the intermediate certificate.
+    pub fn crl_for_intermediate(&self) -> RevocationFixture {
+        let (_, int_cert) = x509_parser::certificate::X509Certificate::from_der(
+            self.intermediate_cert_der(),
+        )
+        .expect("intermediate parse");
+        let serial = int_cert.raw_serial().to_vec();
+        let spec = CrlSpec {
+            issuer_kind: CrlIssuerKind::Root,
+            this_update: TimeOffsetDays::from_base(0),
+            next_update: TimeOffsetDays::from_base(30),
+            revoked_serials: vec![serial.clone()],
+            reason_code: Some(RevocationReasonCode::KeyCompromise),
+            crl_number: 2,
+        };
+        self.build_crl_fixture("intermediate", &spec, serial)
+    }
+
+    /// Build an explicit OCSP fixture for the leaf certificate.
+    pub fn ocsp_for_leaf(&self, status: OcspCertStatus) -> RevocationFixture {
+        self.build_ocsp_fixture("leaf", self.leaf_cert_der(), self.intermediate_cert_der(), status)
+    }
+
+    /// Build an explicit OCSP fixture for the intermediate certificate.
+    pub fn ocsp_for_intermediate(&self, status: OcspCertStatus) -> RevocationFixture {
+        self.build_ocsp_fixture(
+            "intermediate",
+            self.intermediate_cert_der(),
+            self.root_cert_der(),
+            status,
+        )
+    }
+
     // =========================================================================
     // Metadata
     // =========================================================================
@@ -544,6 +627,198 @@ impl X509Chain {
     pub(crate) fn factory(&self) -> &Factory {
         &self.factory
     }
+
+    fn build_crl_fixture(
+        &self,
+        scope: &str,
+        spec: &CrlSpec,
+        serial: Vec<u8>,
+    ) -> RevocationFixture {
+        let variant = format!("crl:{scope}");
+        let mut spec_bytes = self.spec.stable_bytes();
+        spec_bytes.extend_from_slice(&spec.stable_bytes());
+        self.factory
+            .get_or_init(
+            DOMAIN_X509_REVOCATION,
+            &self.label,
+            &spec_bytes,
+            &variant,
+            |_seed| {
+                let base_time = deterministic_base_time_from_parts(&[
+                    self.label.as_bytes(),
+                    self.spec.leaf_cn.as_bytes(),
+                    b"revocation",
+                ]);
+                let this_update =
+                    base_time + TimeDuration::days(i64::from(spec.this_update.days_from_base));
+                let next_update =
+                    base_time + TimeDuration::days(i64::from(spec.next_update.days_from_base));
+                let reason = spec.reason_code.map(map_reason_code);
+                let mut revoked = Vec::new();
+                for serial in &spec.revoked_serials {
+                    revoked.push(RevokedCertParams {
+                        serial_number: rcgen::SerialNumber::from_slice(serial),
+                        revocation_time: this_update,
+                        reason_code: reason,
+                        invalidity_date: None,
+                    });
+                }
+
+                let crl_params = CertificateRevocationListParams {
+                    this_update,
+                    next_update,
+                    crl_number: rcgen::SerialNumber::from(spec.crl_number),
+                    issuing_distribution_point: None,
+                    revoked_certs: revoked,
+                    key_identifier_method: rcgen::KeyIdMethod::Sha256,
+                };
+
+                let (issuer_cn, issuer_key_der, issuer_ca) =
+                    if matches!(spec.issuer_kind, CrlIssuerKind::Root) {
+                        (self.spec.root_cn.clone(), self.root_private_key_pkcs8_der(), true)
+                    } else {
+                        (
+                            self.spec.intermediate_cn.clone(),
+                            self.intermediate_private_key_pkcs8_der(),
+                            self.spec.intermediate_is_ca.unwrap_or(true),
+                        )
+                    };
+                let mut issuer_params = CertificateParams::default();
+                issuer_params.is_ca = if issuer_ca {
+                    IsCa::Ca(BasicConstraints::Constrained(0))
+                } else {
+                    IsCa::NoCa
+                };
+                issuer_params.key_usages = vec![KeyUsagePurpose::KeyCertSign, KeyUsagePurpose::CrlSign];
+                let issuer_kp = KeyPair::from_pkcs8_der_and_sign_algo(
+                    &PrivatePkcs8KeyDer::from(issuer_key_der.to_vec()),
+                    &PKCS_RSA_SHA256,
+                )
+                .expect("issuer key parse");
+                let issuer = Issuer::from_params(&issuer_params, issuer_kp);
+                let crl = crl_params.signed_by(&issuer).expect("CRL gen");
+                let der: Arc<[u8]> = Arc::from(crl.der().as_ref());
+                let pem = crl.pem().ok();
+                RevocationFixture {
+                    der: der.clone(),
+                    base64: base64::engine::general_purpose::STANDARD.encode(der.as_ref()),
+                    pem,
+                    issuer_binding: issuer_cn,
+                    serial_binding_hex: hex_encode(&serial),
+                }
+            },
+        )
+            .as_ref()
+            .clone()
+    }
+
+    fn build_ocsp_fixture(
+        &self,
+        scope: &str,
+        cert_der: &[u8],
+        issuer_der: &[u8],
+        status: OcspCertStatus,
+    ) -> RevocationFixture {
+        let spec = OcspSpec::for_issuer(status);
+        let variant = format!("ocsp:{scope}:{status:?}");
+        let mut spec_bytes = self.spec.stable_bytes();
+        spec_bytes.extend_from_slice(&spec.stable_bytes());
+        self.factory
+            .get_or_init(
+            DOMAIN_X509_REVOCATION,
+            &self.label,
+            &spec_bytes,
+            &variant,
+            |_seed| {
+                let (_, cert) =
+                    x509_parser::certificate::X509Certificate::from_der(cert_der).expect("cert parse");
+                let (_, issuer) = x509_parser::certificate::X509Certificate::from_der(issuer_der)
+                    .expect("issuer parse");
+                let serial = cert.raw_serial().to_vec();
+                let payload = ocsp_like_payload(&spec, &serial, issuer.subject().to_string());
+                let issuer_key = if scope == "leaf" {
+                    self.intermediate_private_key_pkcs8_der()
+                } else {
+                    self.root_private_key_pkcs8_der()
+                };
+                let private_key = RsaPrivateKey::from_pkcs8_der(issuer_key).expect("issuer key");
+                let signing_key = SigningKey::<Sha256>::new(private_key);
+                let signature = signing_key.sign(&payload);
+                let mut der = b"UKOCSP1".to_vec();
+                der.extend_from_slice(&(payload.len() as u32).to_be_bytes());
+                der.extend_from_slice(&payload);
+                der.extend_from_slice(&(signature.to_vec().len() as u32).to_be_bytes());
+                der.extend_from_slice(&signature.to_vec());
+                let der: Arc<[u8]> = Arc::from(der);
+                RevocationFixture {
+                    der: der.clone(),
+                    pem: None,
+                    base64: base64::engine::general_purpose::STANDARD.encode(der.as_ref()),
+                    issuer_binding: issuer.subject().to_string(),
+                    serial_binding_hex: hex_encode(&serial),
+                }
+            },
+        )
+            .as_ref()
+            .clone()
+    }
+}
+
+fn map_reason_code(reason: RevocationReasonCode) -> RevocationReason {
+    match reason {
+        RevocationReasonCode::Unspecified => RevocationReason::Unspecified,
+        RevocationReasonCode::KeyCompromise => RevocationReason::KeyCompromise,
+        RevocationReasonCode::CaCompromise => RevocationReason::CaCompromise,
+        RevocationReasonCode::AffiliationChanged => RevocationReason::AffiliationChanged,
+        RevocationReasonCode::Superseded => RevocationReason::Superseded,
+        RevocationReasonCode::CessationOfOperation => RevocationReason::CessationOfOperation,
+        RevocationReasonCode::CertificateHold => RevocationReason::CertificateHold,
+        RevocationReasonCode::PrivilegeWithdrawn => RevocationReason::PrivilegeWithdrawn,
+        RevocationReasonCode::AaCompromise => RevocationReason::AaCompromise,
+    }
+}
+
+fn hex_encode(bytes: &[u8]) -> String {
+    bytes.iter().map(|b| format!("{b:02x}")).collect::<String>()
+}
+
+fn ocsp_like_payload(spec: &OcspSpec, serial: &[u8], issuer_binding: String) -> Vec<u8> {
+    let mut out = b"ukocsp-payload-v1|".to_vec();
+    out.extend_from_slice(&spec.stable_bytes());
+    out.extend_from_slice(b"|issuer=");
+    out.extend_from_slice(issuer_binding.as_bytes());
+    out.extend_from_slice(b"|serial=");
+    out.extend_from_slice(hex_encode(serial).as_bytes());
+    out
+}
+
+#[cfg(test)]
+pub(crate) fn verify_ocsp_like_signature(der: &[u8], issuer_public_key: RsaPublicKey) -> bool {
+    if !der.starts_with(b"UKOCSP1") {
+        return false;
+    }
+    let mut idx = 7usize;
+    if der.len() < idx + 4 {
+        return false;
+    }
+    let payload_len = u32::from_be_bytes([der[idx], der[idx + 1], der[idx + 2], der[idx + 3]]) as usize;
+    idx += 4;
+    if der.len() < idx + payload_len + 4 {
+        return false;
+    }
+    let payload = &der[idx..idx + payload_len];
+    idx += payload_len;
+    let sig_len = u32::from_be_bytes([der[idx], der[idx + 1], der[idx + 2], der[idx + 3]]) as usize;
+    idx += 4;
+    if der.len() < idx + sig_len {
+        return false;
+    }
+    let sig = RsaSignature::try_from(&der[idx..idx + sig_len]);
+    let Ok(sig) = sig else {
+        return false;
+    };
+    let verifying = VerifyingKey::<Sha256>::new(issuer_public_key);
+    verifying.verify(payload, &sig).is_ok()
 }
 
 fn apply_not_before(base_time: OffsetDateTime, offset: Option<NotBeforeOffset>) -> OffsetDateTime {
@@ -765,6 +1040,7 @@ mod tests {
     use super::*;
     use crate::cert::X509FactoryExt;
     use crate::testutil::fx;
+    use rsa::pkcs8::DecodePublicKey;
     use uselesskey_core::Seed;
 
     #[test]
@@ -1018,5 +1294,35 @@ mod tests {
                 .intermediate_private_key_pkcs8_pem()
                 .contains("BEGIN PRIVATE KEY")
         );
+    }
+
+    #[test]
+    fn test_explicit_crl_leaf_fixture_contains_leaf_serial() {
+        let factory = fx();
+        let chain = X509Chain::new(factory, "svc", ChainSpec::new("svc.example.com"));
+        let crl = chain.crl_for_leaf();
+        assert!(!crl.der().is_empty());
+        assert!(crl.pem().is_some());
+
+        let (_, leaf) = x509_parser::certificate::X509Certificate::from_der(chain.leaf_cert_der())
+            .expect("leaf parse");
+        assert_eq!(crl.serial_binding_hex(), hex_encode(leaf.raw_serial()));
+    }
+
+    #[test]
+    fn test_explicit_ocsp_fixture_signature_verifies() {
+        let factory = fx();
+        let chain = X509Chain::new(factory, "svc-ocsp", ChainSpec::new("svc.example.com"));
+        let ocsp = chain.ocsp_for_leaf(OcspCertStatus::Revoked);
+        assert!(ocsp.pem().is_none());
+        assert!(!ocsp.base64().is_empty());
+
+        let (_, int_cert) = x509_parser::certificate::X509Certificate::from_der(
+            chain.intermediate_cert_der(),
+        )
+        .expect("intermediate parse");
+        let public_key = RsaPublicKey::from_public_key_der(int_cert.public_key().raw)
+            .expect("pubkey parse");
+        assert!(verify_ocsp_like_signature(ocsp.der(), public_key));
     }
 }

@@ -42,4 +42,7 @@ pub use uselesskey_core_x509_derive::{
     BASE_TIME_EPOCH_UNIX, BASE_TIME_WINDOW_DAYS, SERIAL_NUMBER_BYTES, deterministic_base_time,
     deterministic_base_time_from_parts, deterministic_serial_number, write_len_prefixed,
 };
-pub use uselesskey_core_x509_spec::{ChainSpec, KeyUsage, NotBeforeOffset, X509Spec};
+pub use uselesskey_core_x509_spec::{
+    ChainSpec, CrlIssuerKind, CrlSpec, KeyUsage, NotBeforeOffset, OcspCertStatus,
+    OcspNoncePolicy, OcspResponderKind, OcspSpec, RevocationReasonCode, TimeOffsetDays, X509Spec,
+};
