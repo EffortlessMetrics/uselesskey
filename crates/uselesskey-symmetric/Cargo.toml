@@ -1,0 +1,29 @@
+[package]
+name = "uselesskey-symmetric"
+version = "0.5.1"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "Deterministic symmetric key and AEAD vector fixtures for tests."
+categories.workspace = true
+keywords = ["symmetric", "aead", "fixtures", "testing", "deterministic"]
+readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
+homepage.workspace = true
+documentation = "https://docs.rs/uselesskey-symmetric"
+authors.workspace = true
+
+[dependencies]
+uselesskey-core = { path = "../uselesskey-core", version = "0.5.1" }
+uselesskey-core-kid.workspace = true
+uselesskey-core-symmetric-spec.workspace = true
+rand_chacha10.workspace = true
+rand_core10.workspace = true
+thiserror.workspace = true
+aes-gcm = "0.10.3"
+chacha20poly1305 = "0.10.1"
+serde_json.workspace = true
+
+[dev-dependencies]
+insta.workspace = true

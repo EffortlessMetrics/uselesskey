@@ -1,0 +1,17 @@
+[package]
+name = "uselesskey-core-symmetric-spec"
+version = "0.5.1"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "Core symmetric and AEAD vector specification models for uselesskey fixtures."
+categories.workspace = true
+keywords = ["symmetric", "aead", "fixtures", "testing", "deterministic"]
+readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
+homepage.workspace = true
+documentation = "https://docs.rs/uselesskey-core-symmetric-spec"
+authors.workspace = true
+
+[dependencies]

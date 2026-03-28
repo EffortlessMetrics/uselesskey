@@ -30,6 +30,8 @@ uselesskey-rsa = { path = "../uselesskey-rsa", version = "0.5.1", optional = tru
 uselesskey-ecdsa = { path = "../uselesskey-ecdsa", version = "0.5.1", optional = true }
 uselesskey-ed25519 = { path = "../uselesskey-ed25519", version = "0.5.1", optional = true }
 uselesskey-hmac = { path = "../uselesskey-hmac", version = "0.5.1", optional = true }
+uselesskey-symmetric = { path = "../uselesskey-symmetric", version = "0.5.1", optional = true }
+uselesskey-jwe = { path = "../uselesskey-jwe", version = "0.5.1", optional = true }
 uselesskey-token = { path = "../uselesskey-token", version = "0.5.1", optional = true }
 uselesskey-pgp = { path = "../uselesskey-pgp", version = "0.5.1", optional = true }
 uselesskey-x509 = { path = "../uselesskey-x509", version = "0.5.1", optional = true }
@@ -43,6 +45,8 @@ ecdsa = ["dep:uselesskey-ecdsa"]
 ed25519 = ["dep:uselesskey-ed25519"]
 hmac = ["dep:uselesskey-hmac"]
 token = ["dep:uselesskey-token"]
+symmetric = ["dep:uselesskey-symmetric"]
+jwe = ["dep:uselesskey-jwe", "symmetric"]
 pgp = ["dep:uselesskey-pgp"]
 
 # X.509 certificates (implies rsa for now)
@@ -58,8 +62,8 @@ jwk = [
 ]
 
 # Convenience bundles
-all-keys = ["rsa", "ecdsa", "ed25519", "hmac", "pgp"]
-full = ["all-keys", "token", "x509", "jwk"]
+all-keys = ["rsa", "ecdsa", "ed25519", "hmac", "symmetric", "pgp"]
+full = ["all-keys", "token", "x509", "jwk", "jwe"]
 
 [dev-dependencies]
 tempfile.workspace = true

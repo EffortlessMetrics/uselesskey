@@ -234,6 +234,8 @@
 //! | `ecdsa` | ECDSA P-256/P-384 key fixtures |
 //! | `ed25519` | Ed25519 key fixtures |
 //! | `hmac` | HMAC secret fixtures |
+//! | `symmetric` | Symmetric key + AEAD vector fixtures |
+//! | `jwe` | JWE fixtures (`alg=dir` in v1) |
 //! | `token` | API key/bearer token fixtures |
 //! | `pgp` | OpenPGP key fixtures |
 //! | `x509` | X.509 certificate and chain fixtures |
@@ -286,6 +288,19 @@ pub use uselesskey_ed25519::{
 #[cfg(feature = "hmac")]
 pub use uselesskey_hmac::{DOMAIN_HMAC_SECRET, HmacFactoryExt, HmacSecret, HmacSpec};
 
+#[cfg(feature = "symmetric")]
+pub use uselesskey_symmetric::{
+    AadMode, AeadVectorFixture, AeadVectorSpec, NoncePolicy, PlaintextMode, SymmetricError,
+    SymmetricFactoryExt, SymmetricFixture, SymmetricSpec, DOMAIN_AEAD_VECTOR_FIXTURE,
+    DOMAIN_SYMMETRIC_FIXTURE,
+};
+
+#[cfg(feature = "jwe")]
+pub use uselesskey_jwe::{
+    DOMAIN_JWE_FIXTURE, JweAlg, JweEnc, JweError, JweFactoryExt, JweFixture, JwePayloadSource,
+    JweSerialization, JweSpec,
+};
+
 #[cfg(feature = "token")]
 pub use uselesskey_token::{DOMAIN_TOKEN_FIXTURE, TokenFactoryExt, TokenFixture, TokenSpec};
 
@@ -321,6 +336,17 @@ pub mod prelude {
 
     #[cfg(feature = "hmac")]
     pub use crate::{HmacFactoryExt, HmacSecret, HmacSpec};
+
+    #[cfg(feature = "symmetric")]
+    pub use crate::{
+        AadMode, AeadVectorFixture, AeadVectorSpec, NoncePolicy, PlaintextMode,
+        SymmetricFactoryExt, SymmetricFixture, SymmetricSpec,
+    };
+
+    #[cfg(feature = "jwe")]
+    pub use crate::{
+        JweAlg, JweEnc, JweFactoryExt, JweFixture, JwePayloadSource, JweSerialization, JweSpec,
+    };
 
     #[cfg(feature = "token")]
     pub use crate::{TokenFactoryExt, TokenFixture, TokenSpec};
