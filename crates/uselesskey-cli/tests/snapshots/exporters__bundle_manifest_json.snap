@@ -1,0 +1,40 @@
+---
+source: crates/uselesskey-cli/tests/exporters.rs
+assertion_line: 48
+expression: rendered
+---
+{
+  "artifact_type": "rsa",
+  "source": {
+    "seed_id": "seed:integration-tests",
+    "label": "issuer",
+    "variant": "default"
+  },
+  "output_paths": [
+    {
+      "target": "envdir",
+      "path": "/tmp/bundle/envdir"
+    }
+  ],
+  "fingerprints": [
+    {
+      "algorithm": "sha256",
+      "value": "f00dbabe"
+    }
+  ],
+  "intended_env_vars": [
+    "API_TOKEN",
+    "PRIVATE_KEY"
+  ],
+  "external_key_refs": [
+    {
+      "kind": "vault",
+      "path": "kv/data/service/dev"
+    },
+    {
+      "kind": "k8s_secret",
+      "name": "service-secret",
+      "key": "api-token"
+    }
+  ]
+}

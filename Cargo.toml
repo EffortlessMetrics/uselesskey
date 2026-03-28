@@ -4,6 +4,7 @@ members = [
   "crates/uselesskey-test-grid",
   "crates/uselesskey-feature-grid",
   "crates/uselesskey",
+  "crates/uselesskey-cli",
   "crates/uselesskey-core",
   "crates/uselesskey-core-base62",
   "crates/uselesskey-core-factory",
@@ -160,4 +161,3 @@ opt-level = 2
 
 [profile.test]
 opt-level = 2
-

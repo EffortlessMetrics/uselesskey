@@ -4089,6 +4089,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "uselesskey-cli"
+version = "0.5.1"
+dependencies = [
+ "insta",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
 name = "uselesskey-core"
 version = "0.5.1"
 dependencies = [
