@@ -1,0 +1,28 @@
+[package]
+name = "uselesskey-ssh"
+version = "0.5.1"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "OpenSSH key and certificate fixtures for deterministic and random infra tests."
+categories.workspace = true
+keywords = ["ssh", "openssh", "fixtures", "testing", "deterministic"]
+readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
+homepage.workspace = true
+documentation = "https://docs.rs/uselesskey-ssh"
+authors.workspace = true
+
+[dependencies]
+uselesskey-core = { path = "../uselesskey-core", version = "0.5.1" }
+ssh-key = { version = "0.7.0-rc.9", default-features = false, features = ["alloc", "std", "ed25519", "rsa", "rand_core"] }
+rand_chacha10.workspace = true
+rand_core10.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+insta.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
