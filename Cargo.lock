@@ -4602,6 +4602,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "uselesskey-pqc"
+version = "0.5.1"
+dependencies = [
+ "blake3",
+ "rand_chacha 0.10.0",
+ "rand_core 0.10.0",
+ "rstest",
+ "uselesskey-core",
+]
+
+[[package]]
 name = "uselesskey-ring"
 version = "0.5.1"
 dependencies = [

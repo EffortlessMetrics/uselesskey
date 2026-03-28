@@ -1,0 +1,24 @@
+[package]
+name = "uselesskey-pqc"
+version = "0.5.1"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+homepage.workspace = true
+categories.workspace = true
+authors.workspace = true
+description = "Experimental PQC test fixtures (opaque-first) for parser/size/buffer testing"
+keywords = ["pqc", "testing", "fixtures", "deterministic", "experimental"]
+readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
+documentation = "https://docs.rs/uselesskey-pqc"
+
+[dependencies]
+uselesskey-core = { path = "../uselesskey-core", version = "0.5.1" }
+rand_chacha10 = { workspace = true }
+rand_core10 = { workspace = true }
+blake3 = { workspace = true }
+
+[dev-dependencies]
+rstest = { workspace = true }
