@@ -1,0 +1,22 @@
+[package]
+name = "uselesskey-native-tls"
+version = "0.5.1"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+description = "native-tls adapter helpers for uselesskey X.509 fixtures."
+categories.workspace = true
+keywords = ["native-tls", "openssl", "fixtures", "testing", "adapter"]
+readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
+documentation = "https://docs.rs/uselesskey-native-tls"
+
+[dependencies]
+native-tls = "0.2"
+uselesskey-x509 = { path = "../uselesskey-x509", version = "0.5.1" }
+
+[dev-dependencies]
+uselesskey-core = { path = "../uselesskey-core", version = "0.5.1" }
