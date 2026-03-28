@@ -19,6 +19,7 @@ members = [
   "crates/uselesskey-core-negative-pem",
   "crates/uselesskey-core-sink",
   "crates/uselesskey-core-token",
+  "crates/uselesskey-core-symmetric-spec",
   "crates/uselesskey-core-token-shape",
   "crates/uselesskey-core-jwk-builder",
   "crates/uselesskey-core-jwks-order",
@@ -36,6 +37,7 @@ members = [
   "crates/uselesskey-ecdsa",
   "crates/uselesskey-ed25519",
   "crates/uselesskey-hmac",
+  "crates/uselesskey-symmetric",
   "crates/uselesskey-token",
   "crates/uselesskey-token-spec",
   "crates/uselesskey-pgp",
@@ -90,6 +92,7 @@ uselesskey-token-spec = { path = "crates/uselesskey-token-spec", version = "0.5.
 uselesskey-core-jwk-builder = { path = "crates/uselesskey-core-jwk-builder", version = "0.5.1" }
 uselesskey-core-jwk = { path = "crates/uselesskey-core-jwk", version = "0.5.1" }
 uselesskey-core-hmac-spec = { path = "crates/uselesskey-core-hmac-spec", version = "0.5.1" }
+uselesskey-core-symmetric-spec = { path = "crates/uselesskey-core-symmetric-spec", version = "0.5.1" }
 uselesskey-core-jwk-shape = { path = "crates/uselesskey-core-jwk-shape", version = "0.5.1" }
 uselesskey-core-x509-derive = { path = "crates/uselesskey-core-x509-derive", version = "0.5.1" }
 uselesskey-core-x509-chain-negative = { path = "crates/uselesskey-core-x509-chain-negative", version = "0.5.1" }
@@ -142,6 +145,8 @@ pkcs8 = { version = "0.10.2", features = ["pem"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 base64 = "0.22.1"
+
+uselesskey-symmetric = { path = "crates/uselesskey-symmetric", version = "0.5.1" }
 
 # JWT
 jsonwebtoken = { version = "10.3.0", features = ["use_pem", "rust_crypto"] }
