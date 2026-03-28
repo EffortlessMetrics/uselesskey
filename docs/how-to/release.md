@@ -38,6 +38,7 @@ Before tagging, make sure the release PR has already:
 
 - bumped publishable crate versions
 - updated `CHANGELOG.md`
+- regenerated docs via `cargo xtask docs-sync` (including `docs/reference/support-matrix.md`)
 - refreshed versioned `uselesskey*` dependency snippets in README/doc examples
 
 ## Publish

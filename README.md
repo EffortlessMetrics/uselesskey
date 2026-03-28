@@ -573,6 +573,7 @@ Reach for:
 ## Community
 
 - [CHANGELOG](CHANGELOG.md) — release history
+- [Support matrix](docs/reference/support-matrix.md) — crate-by-crate stability and audience contract
 - [CONTRIBUTING](CONTRIBUTING.md) — how to build, test, and add new key types
 - [SECURITY](SECURITY.md) — security policy (this is a test-only crate)
 - [CODE_OF_CONDUCT](CODE_OF_CONDUCT.md) — Contributor Covenant
@@ -598,4 +599,3 @@ Licensed under either of:
 - MIT license ([LICENSE-MIT](LICENSE-MIT))
 
 at your option.
-
