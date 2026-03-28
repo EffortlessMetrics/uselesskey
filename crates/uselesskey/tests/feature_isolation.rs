@@ -280,7 +280,44 @@ mod token_isolation {
 }
 
 // ===========================================================================
-// 7. X.509 feature isolation (implies rsa)
+// 7. Webhook feature isolation
+// ===========================================================================
+
+#[cfg(feature = "webhook")]
+mod webhook_isolation {
+    use super::testutil;
+    use uselesskey::{
+        DOMAIN_WEBHOOK_FIXTURE, WebhookFactoryExt, WebhookFixture, WebhookPayloadSpec,
+        WebhookProfile,
+    };
+
+    #[test]
+    fn domain_constant_re_exported() {
+        assert!(!DOMAIN_WEBHOOK_FIXTURE.is_empty());
+    }
+
+    #[test]
+    fn extension_trait_adds_webhook_method() {
+        let fx = testutil::fx();
+        let w: WebhookFixture = fx.webhook_github("webhook-iso-trait", WebhookPayloadSpec::BasicEvent);
+        assert!(w.headers.contains_key("X-Hub-Signature-256"));
+    }
+
+    #[test]
+    fn webhook_profile_variants_accessible() {
+        let _: fn() -> Option<WebhookProfile> = || None;
+    }
+
+    #[test]
+    fn webhook_prelude_types() {
+        use uselesskey::prelude::*;
+        let fx = Factory::random();
+        let _w: WebhookFixture = fx.webhook_slack("webhook-iso-prelude", WebhookPayloadSpec::BasicEvent);
+    }
+}
+
+// ===========================================================================
+// 8. X.509 feature isolation (implies rsa)
 // ===========================================================================
 
 #[cfg(feature = "x509")]
@@ -348,7 +385,7 @@ mod x509_isolation {
 }
 
 // ===========================================================================
-// 8. PGP feature isolation
+// 9. PGP feature isolation
 // ===========================================================================
 
 #[cfg(feature = "pgp")]
@@ -395,7 +432,7 @@ mod pgp_isolation {
 }
 
 // ===========================================================================
-// 9. JWK feature isolation
+// 10. JWK feature isolation
 // ===========================================================================
 
 #[cfg(feature = "jwk")]
@@ -410,7 +447,7 @@ mod jwk_isolation {
 }
 
 // ===========================================================================
-// 10. Feature combinations: RSA + ECDSA
+// 11. Feature combinations: RSA + ECDSA
 // ===========================================================================
 
 #[cfg(all(feature = "rsa", feature = "ecdsa"))]

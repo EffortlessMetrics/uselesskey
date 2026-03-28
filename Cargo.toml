@@ -37,6 +37,7 @@ members = [
   "crates/uselesskey-ed25519",
   "crates/uselesskey-hmac",
   "crates/uselesskey-token",
+  "crates/uselesskey-webhook",
   "crates/uselesskey-token-spec",
   "crates/uselesskey-pgp",
   "crates/uselesskey-x509",
@@ -145,6 +146,9 @@ base64 = "0.22.1"
 
 # JWT
 jsonwebtoken = { version = "10.3.0", features = ["use_pem", "rust_crypto"] }
+hmac = "0.12.1"
+sha2 = "0.10.9"
+hex = "0.4.3"
 
 # TLS
 rustls = { version = "0.23.37", default-features = false, features = ["std", "tls12", "ring"] }
@@ -160,4 +164,3 @@ opt-level = 2
 
 [profile.test]
 opt-level = 2
-

@@ -72,6 +72,16 @@ fn token_reexport_works() {
 }
 
 #[test]
+#[cfg(feature = "webhook")]
+fn webhook_reexport_works() {
+    use uselesskey::{WebhookFactoryExt, WebhookPayloadSpec};
+
+    let fx = testutil::fx();
+    let fixture = fx.webhook_github("issuer", WebhookPayloadSpec::BasicEvent);
+    assert!(fixture.headers.contains_key("X-Hub-Signature-256"));
+}
+
+#[test]
 #[cfg(all(feature = "rsa", feature = "token"))]
 fn deterministic_facade_usage_is_order_independent() {
     use uselesskey::{Factory, RsaFactoryExt, RsaSpec, Seed, TokenFactoryExt, TokenSpec};
