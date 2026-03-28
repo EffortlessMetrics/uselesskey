@@ -353,6 +353,7 @@ fn run_ci_plan(runner: &mut receipt::Runner) -> Result<()> {
     runner.step("typos", None, || typos(false))?;
     runner.step("deny", None, deny)?;
     runner.step("tests", None, test)?;
+    runner.step("docs-sync", None, || docs_sync::docs_sync_cmd(true))?;
 
     run_feature_matrix(runner)?;
 

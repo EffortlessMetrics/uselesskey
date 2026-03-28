@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write;
 use std::fs;
 use std::path::Path;
@@ -18,6 +18,7 @@ struct DocsMetadata {
     facade_feature_matrix: Vec<FeatureMatrixEntry>,
     adapter_feature_matrix: Vec<AdapterMatrixEntry>,
     dependency_snippets: Vec<DependencySnippet>,
+    crate_support_matrix: Vec<SupportMatrixEntry>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -60,6 +61,73 @@ struct DependencySnippet {
     snippet: String,
 }
 
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd)]
+#[serde(rename_all = "kebab-case")]
+enum SupportTier {
+    Stable,
+    Incubating,
+    Experimental,
+}
+
+impl SupportTier {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Stable => "stable",
+            Self::Incubating => "incubating",
+            Self::Experimental => "experimental",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd)]
+#[serde(rename_all = "kebab-case")]
+enum PublishStatus {
+    Published,
+    Internal,
+    TestOnly,
+}
+
+impl PublishStatus {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Published => "published",
+            Self::Internal => "internal",
+            Self::TestOnly => "test-only",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd)]
+#[serde(rename_all = "kebab-case")]
+enum IntendedAudience {
+    MostUsers,
+    AdapterUsers,
+    RepoInternal,
+}
+
+impl IntendedAudience {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::MostUsers => "most-users",
+            Self::AdapterUsers => "adapter-users",
+            Self::RepoInternal => "repo-internal",
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct SupportMatrixEntry {
+    name: String,
+    support_tier: SupportTier,
+    publish_status: PublishStatus,
+    facade_exposed: bool,
+    semver_expectation: String,
+    msrv_policy: String,
+    intended_audience: IntendedAudience,
+    replacement_path: Option<String>,
+    deprecation_note: Option<String>,
+}
+
 pub fn docs_sync_cmd(check: bool) -> Result<()> {
     run_docs_sync(check)?;
     Ok(())
@@ -85,13 +153,21 @@ pub fn examples_smoke_cmd(run: bool) -> Result<()> {
 fn run_docs_sync(check: bool) -> Result<()> {
     let root = crate::workspace_root_path();
     let metadata = load_metadata(&root)?;
+    validate_crate_support_metadata(&root, &metadata)?;
     let readme_path = root.join("README.md");
+    let support_matrix_path = root.join("docs/reference/support-matrix.md");
     let original = fs::read_to_string(&readme_path).context("failed to read README.md")?;
     let updated = rewrite_document(&original, &metadata)?;
+    let support_matrix = render_support_matrix_doc(&metadata);
 
-    if updated == original {
+    let matrix_needs_update = match fs::read_to_string(&support_matrix_path) {
+        Ok(existing) => existing != support_matrix,
+        Err(_) => true,
+    };
+
+    if updated == original && !matrix_needs_update {
         if check {
-            println!("docs-sync: README.md is already synchronized");
+            println!("docs-sync: docs are already synchronized");
             return Ok(());
         }
         return Ok(());
@@ -99,12 +175,19 @@ fn run_docs_sync(check: bool) -> Result<()> {
 
     if check {
         bail!(
-            "docs-sync check failed: README.md is out of sync with docs/metadata/workspace-docs.json"
+            "docs-sync check failed: generated docs are out of sync with docs/metadata/workspace-docs.json"
         );
     }
 
-    fs::write(&readme_path, updated).context("failed to write README.md")?;
-    println!("docs-sync: updated README.md");
+    if updated != original {
+        fs::write(&readme_path, updated).context("failed to write README.md")?;
+        println!("docs-sync: updated README.md");
+    }
+    if matrix_needs_update {
+        fs::write(&support_matrix_path, support_matrix)
+            .context("failed to write docs/reference/support-matrix.md")?;
+        println!("docs-sync: updated docs/reference/support-matrix.md");
+    }
     Ok(())
 }
 
@@ -125,6 +208,7 @@ fn rewrite_document(input: &str, metadata: &DocsMetadata) -> Result<String> {
     let adapter_crates = render_crate_table("adapter crate", &metadata.adapter_crates);
     let feature_facade = render_facade_feature_matrix(metadata);
     let feature_adapters = render_adapter_feature_matrix(metadata);
+    let support_summary = render_support_summary(metadata);
 
     let mut output = replace_block(input, "dependency-snippets", &dependency_snippets)?;
     output = replace_block(&output, "runnable-examples", &examples)?;
@@ -132,6 +216,7 @@ fn rewrite_document(input: &str, metadata: &DocsMetadata) -> Result<String> {
     output = replace_block(&output, "adapter-crates", &adapter_crates)?;
     output = replace_block(&output, "feature-matrix-facade", &feature_facade)?;
     output = replace_block(&output, "feature-matrix-adapters", &feature_adapters)?;
+    output = replace_block(&output, "support-matrix-summary", &support_summary)?;
     Ok(output)
 }
 
@@ -234,6 +319,70 @@ fn render_adapter_feature_matrix(metadata: &DocsMetadata) -> String {
             } else {
                 format!("`{}`", row.extra_features)
             }
+        );
+    }
+
+    output
+}
+
+fn render_support_summary(metadata: &DocsMetadata) -> String {
+    let mut by_tier = BTreeMap::<&str, usize>::new();
+    let mut by_status = BTreeMap::<&str, usize>::new();
+
+    for row in &metadata.crate_support_matrix {
+        *by_tier.entry(row.support_tier.as_str()).or_default() += 1;
+        *by_status.entry(row.publish_status.as_str()).or_default() += 1;
+    }
+
+    let mut output = String::new();
+    output.push_str("| Contract | Count |\n|----------|------:|\n");
+    for tier in ["stable", "incubating", "experimental"] {
+        let _ = writeln!(
+            output,
+            "| `support_tier={tier}` | {} |",
+            by_tier.get(tier).copied().unwrap_or_default()
+        );
+    }
+    for status in ["published", "internal", "test-only"] {
+        let _ = writeln!(
+            output,
+            "| `publish_status={status}` | {} |",
+            by_status.get(status).copied().unwrap_or_default()
+        );
+    }
+    output.push_str("\nSee [Support matrix](docs/reference/support-matrix.md) for crate-level details.");
+    output
+}
+
+fn render_support_matrix_doc(metadata: &DocsMetadata) -> String {
+    let mut rows = metadata.crate_support_matrix.iter().collect::<Vec<_>>();
+    rows.sort_by(|left, right| left.name.cmp(&right.name));
+
+    let mut output = String::new();
+    output.push_str("# Support Matrix\n\n");
+    output.push_str(
+        "_Generated from `docs/metadata/workspace-docs.json` by `cargo xtask docs-sync`._\n\n",
+    );
+    output.push_str("| Crate | support_tier | publish_status | facade_exposed | intended_audience | semver_expectation | msrv_policy | replacement/deprecation |\n");
+    output.push_str("|-------|--------------|----------------|:--------------:|-------------------|--------------------|-------------|-------------------------|\n");
+
+    for row in rows {
+        let replacement = row
+            .replacement_path
+            .as_deref()
+            .or(row.deprecation_note.as_deref())
+            .unwrap_or("—");
+        let _ = writeln!(
+            output,
+            "| `{}` | `{}` | `{}` | {} | `{}` | {} | {} | {} |",
+            row.name,
+            row.support_tier.as_str(),
+            row.publish_status.as_str(),
+            checkmark(row.facade_exposed),
+            row.intended_audience.as_str(),
+            row.semver_expectation,
+            row.msrv_policy,
+            replacement
         );
     }
 
@@ -371,6 +520,105 @@ fn validate_examples_match_workspace(root: &Path, metadata: &DocsMetadata) -> Re
     Ok(())
 }
 
+fn validate_crate_support_metadata(root: &Path, metadata: &DocsMetadata) -> Result<()> {
+    let workspace_crates = workspace_package_names(root)?;
+    let errors = collect_support_metadata_errors(&workspace_crates, &metadata.crate_support_matrix);
+
+    if !errors.is_empty() {
+        bail!("support metadata drift:\n{}", errors.join("\n"));
+    }
+    Ok(())
+}
+
+fn collect_support_metadata_errors(
+    workspace_crates: &BTreeSet<String>,
+    entries: &[SupportMatrixEntry],
+) -> Vec<String> {
+    let mut seen = BTreeSet::new();
+    let mut errors = Vec::new();
+
+    for entry in entries {
+        if !seen.insert(entry.name.clone()) {
+            errors.push(format!("duplicate support metadata entry for crate '{}'", entry.name));
+        }
+        if entry.publish_status == PublishStatus::TestOnly
+            && (entry.intended_audience == IntendedAudience::MostUsers
+                || entry.intended_audience == IntendedAudience::AdapterUsers)
+        {
+            errors.push(format!(
+                "illegal support metadata combination for '{}': test-only crates cannot target {}",
+                entry.name,
+                entry.intended_audience.as_str()
+            ));
+        }
+    }
+
+    let metadata_crates: BTreeSet<String> = entries.iter().map(|entry| entry.name.clone()).collect();
+    let missing: Vec<String> = workspace_crates
+        .difference(&metadata_crates)
+        .cloned()
+        .collect();
+    let unknown: Vec<String> = metadata_crates
+        .difference(workspace_crates)
+        .cloned()
+        .collect();
+
+    if !missing.is_empty() {
+        errors.push(format!(
+            "workspace crates missing from crate_support_matrix:\n- {}",
+            missing.join("\n- ")
+        ));
+    }
+    if !unknown.is_empty() {
+        errors.push(format!(
+            "crate_support_matrix contains unknown crates:\n- {}",
+            unknown.join("\n- ")
+        ));
+    }
+
+    errors
+}
+
+fn workspace_package_names(root: &Path) -> Result<BTreeSet<String>> {
+    let output = Command::new("cargo")
+        .current_dir(root)
+        .args(["metadata", "--format-version", "1", "--no-deps"])
+        .output()
+        .context("failed to run `cargo metadata` for support matrix validation")?;
+
+    if !output.status.success() {
+        bail!(
+            "`cargo metadata` failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    let meta: serde_json::Value =
+        serde_json::from_slice(&output.stdout).context("failed to parse cargo metadata JSON")?;
+    let workspace_members = meta["workspace_members"]
+        .as_array()
+        .context("missing 'workspace_members' in cargo metadata")?
+        .iter()
+        .filter_map(|item| item.as_str())
+        .collect::<BTreeSet<_>>();
+
+    let mut names = BTreeSet::new();
+    for pkg in meta["packages"]
+        .as_array()
+        .context("missing 'packages' in cargo metadata")?
+    {
+        let Some(id) = pkg["id"].as_str() else {
+            continue;
+        };
+        if workspace_members.contains(id)
+            && let Some(name) = pkg["name"].as_str()
+        {
+            names.insert(name.to_string());
+        }
+    }
+    Ok(names)
+}
+
 fn normalize_path_string(path: &Path) -> String {
     path.iter()
         .map(|part| part.to_string_lossy().to_string())
@@ -384,4 +632,101 @@ fn indent_lines(text: &str, indent: &str) -> String {
         let _ = writeln!(out, "{}{}", indent, line);
     }
     out.trim_end().to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sample_entry(name: &str) -> SupportMatrixEntry {
+        SupportMatrixEntry {
+            name: name.to_string(),
+            support_tier: SupportTier::Stable,
+            publish_status: PublishStatus::Published,
+            facade_exposed: false,
+            semver_expectation: "semver".to_string(),
+            msrv_policy: "msrv".to_string(),
+            intended_audience: IntendedAudience::RepoInternal,
+            replacement_path: None,
+            deprecation_note: None,
+        }
+    }
+
+    #[test]
+    fn support_matrix_snapshot_render() {
+        let metadata = DocsMetadata {
+            workspace_crates: Vec::new(),
+            adapter_crates: Vec::new(),
+            runnable_examples: Vec::new(),
+            facade_feature_matrix: Vec::new(),
+            adapter_feature_matrix: Vec::new(),
+            dependency_snippets: Vec::new(),
+            crate_support_matrix: vec![sample_entry("a-crate"), sample_entry("b-crate")],
+        };
+
+        let rendered = render_support_matrix_doc(&metadata);
+        assert!(rendered.contains("| `a-crate` | `stable` | `published` | — | `repo-internal`"));
+        assert!(rendered.contains("# Support Matrix"));
+    }
+
+    #[test]
+    fn support_summary_counts_by_tier_and_status() {
+        let mut stable = sample_entry("stable");
+        stable.support_tier = SupportTier::Stable;
+        stable.publish_status = PublishStatus::Published;
+        let mut incubating = sample_entry("incubating");
+        incubating.support_tier = SupportTier::Incubating;
+        incubating.publish_status = PublishStatus::Internal;
+        let mut experimental = sample_entry("experimental");
+        experimental.support_tier = SupportTier::Experimental;
+        experimental.publish_status = PublishStatus::TestOnly;
+
+        let metadata = DocsMetadata {
+            workspace_crates: Vec::new(),
+            adapter_crates: Vec::new(),
+            runnable_examples: Vec::new(),
+            facade_feature_matrix: Vec::new(),
+            adapter_feature_matrix: Vec::new(),
+            dependency_snippets: Vec::new(),
+            crate_support_matrix: vec![stable, incubating, experimental],
+        };
+
+        let rendered = render_support_summary(&metadata);
+        assert!(rendered.contains("`support_tier=stable` | 1"));
+        assert!(rendered.contains("`support_tier=incubating` | 1"));
+        assert!(rendered.contains("`support_tier=experimental` | 1"));
+        assert!(rendered.contains("`publish_status=test-only` | 1"));
+    }
+
+    #[test]
+    fn metadata_completeness_validation_reports_missing_and_unknown_crates() {
+        let workspace = BTreeSet::from(["crate-a".to_string(), "crate-b".to_string()]);
+        let entries = vec![sample_entry("crate-a"), sample_entry("crate-c")];
+        let errors = collect_support_metadata_errors(&workspace, &entries);
+
+        assert!(
+            errors.iter().any(|item| item.contains("missing from crate_support_matrix")),
+            "expected missing crate error, got: {errors:#?}"
+        );
+        assert!(
+            errors.iter().any(|item| item.contains("contains unknown crates")),
+            "expected unknown crate error, got: {errors:#?}"
+        );
+    }
+
+    #[test]
+    fn illegal_combination_validation_rejects_test_only_for_most_users() {
+        let workspace = BTreeSet::from(["crate-a".to_string()]);
+        let mut entry = sample_entry("crate-a");
+        entry.publish_status = PublishStatus::TestOnly;
+        entry.intended_audience = IntendedAudience::MostUsers;
+        let errors = collect_support_metadata_errors(&workspace, &[entry]);
+
+        assert!(
+            errors
+                .iter()
+                .any(|item| item.contains("test-only crates cannot target most-users")),
+            "expected illegal-combination error, got: {errors:#?}"
+        );
+    }
 }

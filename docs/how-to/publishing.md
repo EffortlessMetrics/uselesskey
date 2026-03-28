@@ -18,6 +18,7 @@ These are the minimum gates to treat as non-negotiable for a publishable workspa
 - `cargo xtask fmt`
 - `cargo xtask clippy` (with `-D warnings`)
 - `cargo xtask test`
+- `cargo xtask docs-sync --check` (includes support-matrix generation + metadata validation)
 - `cargo xtask feature-matrix` (or your feature sweep)
 - `cargo xtask bdd` (use `--release` if crypto/keygen makes debug too slow)
 - `cargo xtask publish-preflight` (metadata, doc snippet versions, cargo package)
@@ -76,6 +77,8 @@ Each crate should be explicitly one of:
 
 - Publishable (intended for crates.io)
 - Non-publishable (internal tooling/test harnesses)
+
+Use [`docs/reference/support-matrix.md`](../reference/support-matrix.md) as the generated source of truth for this contract (tier, publish status, audience, and semver expectations) rather than maintaining hand-written crate lists.
 
 For non-publish crates:
 

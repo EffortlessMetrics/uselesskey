@@ -473,6 +473,21 @@ Depend on the facade for convenience, or on individual crates to minimize compil
 | [`uselesskey-aws-lc-rs`](https://crates.io/crates/uselesskey-aws-lc-rs) | `aws-lc-rs` native types |
 <!-- docs-sync:adapter-crates-end -->
 
+### Support contract summary
+
+<!-- docs-sync:support-matrix-summary-start -->
+| Contract | Count |
+|----------|------:|
+| `support_tier=stable` | 16 |
+| `support_tier=incubating` | 3 |
+| `support_tier=experimental` | 33 |
+| `publish_status=published` | 48 |
+| `publish_status=internal` | 1 |
+| `publish_status=test-only` | 3 |
+
+See [Support matrix](docs/reference/support-matrix.md) for crate-level details.
+<!-- docs-sync:support-matrix-summary-end -->
+
 ## Feature Flags
 
 The `uselesskey` facade defaults to no features.
@@ -598,4 +613,3 @@ Licensed under either of:
 - MIT license ([LICENSE-MIT](LICENSE-MIT))
 
 at your option.
-
