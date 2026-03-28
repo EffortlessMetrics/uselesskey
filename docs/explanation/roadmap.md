@@ -21,6 +21,7 @@ This roadmap reflects the strategic direction for uselesskey as a **test-fixture
 - [ ] Docs/examples coverage for the remaining negative-fixture surface
 - [ ] Performance benchmarks for key generation paths
 - [ ] Release governance and post-release audit automation
+- [ ] Export-bundle integration (`uselesskey bundle`, k8s/vault payload emitters, and reference manifests)
 
 ## Shipped
 
