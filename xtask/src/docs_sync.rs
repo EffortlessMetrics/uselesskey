@@ -442,7 +442,8 @@ fn validate_support_matrix(root: &Path, metadata: &DocsMetadata) -> Result<()> {
 
     let cargo_meta: CargoMeta = serde_json::from_slice(&output.stdout)
         .context("failed to parse cargo metadata JSON for support matrix validation")?;
-    let workspace_crates: BTreeSet<String> = cargo_meta.packages.into_iter().map(|p| p.name).collect();
+    let workspace_crates: BTreeSet<String> =
+        cargo_meta.packages.into_iter().map(|p| p.name).collect();
     let support_crates: BTreeSet<String> = metadata
         .crate_support_matrix
         .iter()
@@ -451,7 +452,9 @@ fn validate_support_matrix(root: &Path, metadata: &DocsMetadata) -> Result<()> {
 
     let mut errors = Vec::new();
     for missing in workspace_crates.difference(&support_crates) {
-        errors.push(format!("missing support metadata for workspace crate `{missing}`"));
+        errors.push(format!(
+            "missing support metadata for workspace crate `{missing}`"
+        ));
     }
     for extra in support_crates.difference(&workspace_crates) {
         errors.push(format!("support metadata includes unknown crate `{extra}`"));
@@ -563,6 +566,21 @@ fn validate_examples_match_workspace(root: &Path, metadata: &DocsMetadata) -> Re
     Ok(())
 }
 
+fn normalize_path_string(path: &Path) -> String {
+    path.iter()
+        .map(|part| part.to_string_lossy().to_string())
+        .collect::<Vec<_>>()
+        .join("/")
+}
+
+fn indent_lines(text: &str, indent: &str) -> String {
+    let mut out = String::new();
+    for line in text.lines() {
+        let _ = writeln!(out, "{}{}", indent, line);
+    }
+    out.trim_end().to_string()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -596,9 +614,10 @@ mod tests {
         };
 
         let err = validate_support_matrix(Path::new("."), &metadata).expect_err("must fail");
-        assert!(err
-            .to_string()
-            .contains("`test-only` crates must use `repo-internal` audience"));
+        assert!(
+            err.to_string()
+                .contains("`test-only` crates must use `repo-internal` audience")
+        );
     }
 
     #[test]
@@ -610,19 +629,4 @@ mod tests {
         assert!(rendered.contains("| Crate | Support tier | Publish status | Facade exposed |"));
         assert!(rendered.contains("[`uselesskey`](https://crates.io/crates/uselesskey)"));
     }
-}
-
-fn normalize_path_string(path: &Path) -> String {
-    path.iter()
-        .map(|part| part.to_string_lossy().to_string())
-        .collect::<Vec<_>>()
-        .join("/")
-}
-
-fn indent_lines(text: &str, indent: &str) -> String {
-    let mut out = String::new();
-    for line in text.lines() {
-        let _ = writeln!(out, "{}{}", indent, line);
-    }
-    out.trim_end().to_string()
 }
