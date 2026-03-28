@@ -1,0 +1,23 @@
+[package]
+name = "uselesskey-proptest"
+version = "0.5.1"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+categories.workspace = true
+description = "proptest strategy builders for uselesskey fixture structs."
+keywords = ["test", "fixtures", "proptest", "crypto", "x509"]
+
+[dependencies]
+proptest.workspace = true
+serde_json.workspace = true
+uselesskey = { path = "../uselesskey", version = "0.5.1", features = ["full"] }
+
+[dev-dependencies]
+proptest.workspace = true
+
+[features]
+default = []
