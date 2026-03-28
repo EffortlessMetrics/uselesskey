@@ -4723,6 +4723,7 @@ name = "uselesskey-x509"
 version = "0.5.1"
 dependencies = [
  "base64",
+ "blake3",
  "insta",
  "proptest",
  "rand_chacha 0.3.1",
