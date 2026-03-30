@@ -148,10 +148,7 @@ fn build_registration(spec: WebAuthnSpec, seed: [u8; 32]) -> RegistrationFixture
     );
 
     let att_stmt = Value::Map(vec![
-        (
-            Value::Text("alg".to_string()),
-            Value::Integer((-7).into()),
-        ),
+        (Value::Text("alg".to_string()), Value::Integer((-7).into())),
         (
             Value::Text("sig".to_string()),
             Value::Bytes(mock_signature(
@@ -181,8 +178,7 @@ fn build_registration(spec: WebAuthnSpec, seed: [u8; 32]) -> RegistrationFixture
     ]);
 
     let mut attestation_object = Vec::new();
-    into_writer(&root, &mut attestation_object)
-        .expect("serialize attestation object");
+    into_writer(&root, &mut attestation_object).expect("serialize attestation object");
 
     RegistrationFixture {
         spec,
@@ -257,7 +253,7 @@ fn cbor_public_key(seed: &[u8; 32]) -> Vec<u8> {
 
     let map = Value::Map(
         vec![
-            (Value::Integer(1.into()), Value::Integer(2.into())),  // kty: EC2
+            (Value::Integer(1.into()), Value::Integer(2.into())), // kty: EC2
             (Value::Integer(3.into()), Value::Integer((-7).into())), // alg: ES256
             (Value::Integer((-1).into()), Value::Integer(1.into())), // crv: P-256
             (Value::Integer((-2).into()), Value::Bytes(x.to_vec())),
