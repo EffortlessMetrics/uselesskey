@@ -1,0 +1,5 @@
+issuer_pem: ENC[AES256_GCM,data:REDACTED,type:str]
+service_token: ENC[AES256_GCM,data:REDACTED,type:str]
+sops:
+  version: 3.9.0
+  mac: ENC[AES256_GCM,data:REDACTED,type:str]

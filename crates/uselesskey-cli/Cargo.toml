@@ -9,6 +9,11 @@ homepage.workspace = true
 categories.workspace = true
 authors.workspace = true
 publish = false
+description = "Deterministic fixture generation and export helpers for local secret handoff formats."
+keywords = ["cli", "fixtures", "export", "testing", "deterministic"]
+readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
+documentation = "https://docs.rs/uselesskey-cli"
 
 [[bin]]
 name = "uselesskey"
@@ -16,15 +21,19 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow.workspace = true
+base64.workspace = true
 clap.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-base64.workspace = true
+thiserror.workspace = true
 uselesskey = { workspace = true, features = ["full"] }
 
 [dev-dependencies]
 assert_cmd = "2.1.1"
 insta.workspace = true
 predicates = "3.1.3"
-tempfile.workspace = true
 serde_json.workspace = true
+tempfile.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
