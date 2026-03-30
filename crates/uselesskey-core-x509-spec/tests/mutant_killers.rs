@@ -2,6 +2,10 @@
 
 use std::time::Duration;
 use uselesskey_core_x509_spec::{ChainSpec, KeyUsage, NotBeforeOffset, X509Spec};
+use uselesskey_core_x509_spec::{
+    CrlIssuerKind, CrlSpec, OcspCertStatus, OcspNoncePolicy, OcspResponderKind, OcspSpec,
+    RevocationReasonCode, TimeOffsetDays,
+};
 
 // ── KeyUsage ─────────────────────────────────────────────────────
 
@@ -225,4 +229,72 @@ fn chain_spec_some_offset_tag_is_1() {
     // The intermediate is still None (last byte = 0), leaf has Some (tag = 1)
     let len = bytes.len();
     assert_eq!(bytes[len - 1], 0, "intermediate offset None tag must be 0");
+}
+
+// ── Revocation fixtures ──────────────────────────────────────────
+
+#[test]
+fn crl_spec_for_intermediate_sets_expected_defaults() {
+    let spec = CrlSpec::for_intermediate(vec![0x01, 0x02, 0x03]);
+
+    assert_eq!(spec.issuer_kind, CrlIssuerKind::Intermediate);
+    assert_eq!(spec.this_update, TimeOffsetDays::from_base(0));
+    assert_eq!(spec.next_update, TimeOffsetDays::from_base(30));
+    assert_eq!(spec.revoked_serials, vec![vec![0x01, 0x02, 0x03]]);
+    assert_eq!(spec.reason_code, Some(RevocationReasonCode::KeyCompromise));
+    assert_eq!(spec.crl_number, 1);
+}
+
+#[test]
+fn crl_spec_stable_bytes_encode_all_fields() {
+    let spec = CrlSpec {
+        issuer_kind: CrlIssuerKind::Root,
+        this_update: TimeOffsetDays::from_base(-2),
+        next_update: TimeOffsetDays::from_base(5),
+        revoked_serials: vec![vec![0x02], vec![0x01, 0x02], vec![0x02]],
+        reason_code: Some(RevocationReasonCode::AaCompromise),
+        crl_number: 0x0102_0304_0506_0708,
+    };
+
+    assert_eq!(
+        spec.stable_bytes(),
+        vec![
+            1, 1, 0xff, 0xff, 0xff, 0xfe, 0x00, 0x00, 0x00, 0x05, 0x01, 0x02, 0x03, 0x04, 0x05,
+            0x06, 0x07, 0x08, 0x09, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x02, 0x01, 0x02,
+            0x00, 0x00, 0x00, 0x01, 0x02,
+        ]
+    );
+}
+
+#[test]
+fn ocsp_spec_for_issuer_revoked_sets_reason_and_nonce_policy() {
+    let spec = OcspSpec::for_issuer(OcspCertStatus::Revoked);
+
+    assert_eq!(spec.responder_kind, OcspResponderKind::Issuer);
+    assert_eq!(spec.produced_at, TimeOffsetDays::from_base(0));
+    assert_eq!(spec.this_update, TimeOffsetDays::from_base(0));
+    assert_eq!(spec.next_update, Some(TimeOffsetDays::from_base(7)));
+    assert_eq!(spec.cert_status, OcspCertStatus::Revoked);
+    assert_eq!(spec.revocation_reason, Some(RevocationReasonCode::KeyCompromise));
+    assert_eq!(spec.nonce_policy, OcspNoncePolicy::Deterministic);
+}
+
+#[test]
+fn ocsp_spec_stable_bytes_encode_all_fields() {
+    let spec = OcspSpec {
+        responder_kind: OcspResponderKind::Intermediate,
+        produced_at: TimeOffsetDays::from_base(-1),
+        this_update: TimeOffsetDays::from_base(2),
+        next_update: None,
+        cert_status: OcspCertStatus::Unknown,
+        revocation_reason: Some(RevocationReasonCode::AaCompromise),
+        nonce_policy: OcspNoncePolicy::Absent,
+    };
+
+    assert_eq!(
+        spec.stable_bytes(),
+        vec![
+            1, 3, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x02, 0x00, 0x03, 0x09, 0x00,
+        ]
+    );
 }
