@@ -459,6 +459,7 @@ Depend on the facade for convenience, or on individual crates to minimize compil
 | [`uselesskey-jwk`](https://crates.io/crates/uselesskey-jwk) | Typed JWK/JWKS models and builders |
 | [`uselesskey-x509`](https://crates.io/crates/uselesskey-x509) | X.509 self-signed certificates and certificate chains |
 | [`uselesskey-cli`](https://crates.io/crates/uselesskey-cli) | Command-line fixture generation, bundling, and export helpers |
+| [`uselesskey-test-server`](https://crates.io/crates/uselesskey-test-server) | Deterministic OIDC discovery and JWKS HTTP test server fixtures |
 <!-- docs-sync:workspace-crates-end -->
 
 ### Adapter Crates
