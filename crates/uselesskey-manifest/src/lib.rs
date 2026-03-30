@@ -200,7 +200,10 @@ pub fn write_fixture_receipt_json(
 }
 
 /// Write a bundle receipt to disk using canonical ordering.
-pub fn write_bundle_receipt_json(path: impl AsRef<Path>, bundle: &BundleReceipt) -> std::io::Result<()> {
+pub fn write_bundle_receipt_json(
+    path: impl AsRef<Path>,
+    bundle: &BundleReceipt,
+) -> std::io::Result<()> {
     let bytes = bundle_to_canonical_json_bytes(bundle)
         .map_err(|err| std::io::Error::other(format!("serialize bundle receipt: {err}")))?;
     fs::write(path, bytes)
@@ -271,7 +274,13 @@ mod tests {
 
     #[test]
     fn fixture_manifest_round_trip_parse() {
-        let id = ArtifactId::new("token", "audience", b"spec", "default", DerivationVersion::V1);
+        let id = ArtifactId::new(
+            "token",
+            "audience",
+            b"spec",
+            "default",
+            DerivationVersion::V1,
+        );
         let mut receipt = FixtureReceipt::from_artifact_id(&id, GenerationMode::Random);
         receipt.push_file_from_bytes("token", "fixtures/token.txt", "txt", b"abc123");
 
