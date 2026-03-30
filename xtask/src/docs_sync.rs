@@ -836,9 +836,9 @@ fn indent_lines(text: &str, indent: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
-        DependencySnippet, DocsMetadata, ExampleCommand, SnippetDependency, render_minimal_example_commands,
-        render_single_dependency_snippet, render_support_matrix, replace_block,
-        validate_allowed_value,
+        DependencySnippet, DocsMetadata, ExampleCommand, SnippetDependency,
+        render_minimal_example_commands, render_single_dependency_snippet, render_support_matrix,
+        replace_block, validate_allowed_value,
     };
 
     #[test]
