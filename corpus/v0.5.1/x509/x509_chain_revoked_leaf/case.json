@@ -5,23 +5,23 @@
   "files": [
     {
       "path": "x509/x509_chain_revoked_leaf/intermediate_cert.pem",
-      "blake3": "8c3765ab84b355bc4227b39cdd8f672446e5f6462d5338652ee9b2d52bc8e6db",
-      "size_bytes": 1139
+      "blake3": "d1e17d32bfee7e9bb007d54dbb0ee3558aafd5b5da1943d691966fb300fb25de",
+      "size_bytes": 1158
     },
     {
       "path": "x509/x509_chain_revoked_leaf/leaf_cert.pem",
-      "blake3": "69b3ab6e497a4c76d54789391f6e89a7ff7d51b4c8c4f555362aa1bad177551e",
-      "size_bytes": 1143
+      "blake3": "2081ff70211a863a45211056d5e35360399cd8a5ae5b6e741c45a5ac8b789a3e",
+      "size_bytes": 1162
     },
     {
       "path": "x509/x509_chain_revoked_leaf/leaf_revocation.crl.pem",
-      "blake3": "a545ad75919b785fb35c193c7adb78c087e971cb46376a24b8b8f4da04d58105",
-      "size_bytes": 715
+      "blake3": "fd902080df2902efd2b722027163f049d82ac9392112c9195e488f81ac8a0e6d",
+      "size_bytes": 728
     },
     {
       "path": "x509/x509_chain_revoked_leaf/root_cert.pem",
-      "blake3": "ce00d259b25fa0d7353a19274955a3da01c1b133c25564d04a878367d359c9a7",
-      "size_bytes": 1131
+      "blake3": "d4065c83340b48308051be0aaa2c03cdd81a4f432eacd4745ce16273ab49ce3f",
+      "size_bytes": 1150
     }
   ]
 }
