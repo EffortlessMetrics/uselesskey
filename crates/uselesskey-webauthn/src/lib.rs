@@ -5,9 +5,7 @@
 //! This crate provides realistic fixture shapes for registration/assertion
 //! testing. It is not a full WebAuthn server implementation.
 
-use std::collections::BTreeMap;
-
-use serde_cbor::{Value, to_vec};
+use ciborium::{ser::into_writer, value::Value};
 use serde_json::json;
 use sha2::{Digest, Sha256};
 use uselesskey_core::Factory;
@@ -149,43 +147,48 @@ fn build_registration(spec: WebAuthnSpec, seed: [u8; 32]) -> RegistrationFixture
         )),
     );
 
-    let mut att_stmt = BTreeMap::new();
-    att_stmt.insert(Value::Text("alg".to_string()), Value::Integer(-7));
-    att_stmt.insert(
-        Value::Text("sig".to_string()),
-        Value::Bytes(mock_signature(
-            &seed,
-            &[auth_data.as_slice(), client_data_json.as_slice()].concat(),
-            b"attestation",
-        )),
-    );
-
-    let mut root = BTreeMap::new();
-    root.insert(
-        Value::Text("fmt".to_string()),
-        Value::Text(
-            match spec.attestation_mode {
-                AttestationMode::Packed => "packed",
-                AttestationMode::SelfAttestation => "self",
-            }
-            .to_string(),
+    let att_stmt = Value::Map(vec![
+        (
+            Value::Text("alg".to_string()),
+            Value::Integer((-7).into()),
         ),
-    );
-    root.insert(
-        Value::Text("attStmt".to_string()),
-        Value::Map(att_stmt.into_iter().collect()),
-    );
-    root.insert(
-        Value::Text("authData".to_string()),
-        Value::Bytes(auth_data.clone()),
-    );
+        (
+            Value::Text("sig".to_string()),
+            Value::Bytes(mock_signature(
+                &seed,
+                &[auth_data.as_slice(), client_data_json.as_slice()].concat(),
+                b"attestation",
+            )),
+        ),
+    ]);
+
+    let root = Value::Map(vec![
+        (
+            Value::Text("fmt".to_string()),
+            Value::Text(
+                match spec.attestation_mode {
+                    AttestationMode::Packed => "packed",
+                    AttestationMode::SelfAttestation => "self",
+                }
+                .to_string(),
+            ),
+        ),
+        (Value::Text("attStmt".to_string()), att_stmt),
+        (
+            Value::Text("authData".to_string()),
+            Value::Bytes(auth_data.clone()),
+        ),
+    ]);
+
+    let mut attestation_object = Vec::new();
+    into_writer(&root, &mut attestation_object)
+        .expect("serialize attestation object");
 
     RegistrationFixture {
         spec,
         client_data_json,
         authenticator_data: auth_data,
-        attestation_object: to_vec(&Value::Map(root.into_iter().collect()))
-            .expect("serialize attestation object"),
+        attestation_object,
         rp_id_hash,
         sign_count,
         aaguid,
@@ -254,16 +257,18 @@ fn cbor_public_key(seed: &[u8; 32]) -> Vec<u8> {
 
     let map = Value::Map(
         vec![
-            (Value::Integer(1), Value::Integer(2)),  // kty: EC2
-            (Value::Integer(3), Value::Integer(-7)), // alg: ES256
-            (Value::Integer(-1), Value::Integer(1)), // crv: P-256
-            (Value::Integer(-2), Value::Bytes(x.to_vec())),
-            (Value::Integer(-3), Value::Bytes(y.to_vec())),
+            (Value::Integer(1.into()), Value::Integer(2.into())),  // kty: EC2
+            (Value::Integer(3.into()), Value::Integer((-7).into())), // alg: ES256
+            (Value::Integer((-1).into()), Value::Integer(1.into())), // crv: P-256
+            (Value::Integer((-2).into()), Value::Bytes(x.to_vec())),
+            (Value::Integer((-3).into()), Value::Bytes(y.to_vec())),
         ]
         .into_iter()
         .collect(),
     );
-    to_vec(&map).expect("serialize credential public key")
+    let mut out = Vec::new();
+    into_writer(&map, &mut out).expect("serialize credential public key");
+    out
 }
 
 fn deterministic_sign_count(spec: &WebAuthnSpec) -> u32 {
@@ -328,7 +333,7 @@ fn write_field(out: &mut Vec<u8>, name: &str, value: &[u8]) {
 
 #[cfg(test)]
 mod tests {
-    use serde_cbor::Value;
+    use ciborium::{de::from_reader, value::Value};
     use uselesskey_core::Seed;
 
     use super::*;
@@ -352,7 +357,7 @@ mod tests {
             "alice",
             WebAuthnSpec::packed("example.com", b"challenge-cbor"),
         );
-        let v: Value = serde_cbor::from_slice(&reg.attestation_object).expect("parse cbor");
+        let v: Value = from_reader(reg.attestation_object.as_slice()).expect("parse cbor");
         let m = match v {
             Value::Map(entries) => entries,
             _ => panic!("attestation object must be cbor map"),
