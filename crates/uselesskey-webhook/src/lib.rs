@@ -219,7 +219,12 @@ impl WebhookFixture {
     pub fn near_miss_wrong_secret(&self) -> NearMissWebhookFixture {
         let mut wrong_secret = self.secret.clone();
         wrong_secret.push_str("_wrong");
-        let mut f = build_near_miss(self.profile, wrong_secret, self.payload.clone(), self.timestamp);
+        let mut f = build_near_miss(
+            self.profile,
+            wrong_secret,
+            self.payload.clone(),
+            self.timestamp,
+        );
         f.scenario = NearMissScenario::WrongSecret;
         f
     }
@@ -233,7 +238,12 @@ impl WebhookFixture {
     }
 
     fn with_timestamp(&self, timestamp: i64) -> NearMissWebhookFixture {
-        build_near_miss(self.profile, self.secret.clone(), self.payload.clone(), timestamp)
+        build_near_miss(
+            self.profile,
+            self.secret.clone(),
+            self.payload.clone(),
+            timestamp,
+        )
     }
 }
 
@@ -312,13 +322,11 @@ fn canonical_payload(
             }
             WebhookProfile::Stripe => format!(
                 "{{\"id\":\"evt_{:08x}\",\"type\":\"checkout.session.completed\",\"data\":{{\"object\":{{\"metadata\":{{\"label\":\"{}\"}}}}}}}}",
-                nonce,
-                label
+                nonce, label
             ),
             WebhookProfile::Slack => format!(
                 "{{\"type\":\"event_callback\",\"team_id\":\"T{:08x}\",\"event\":{{\"type\":\"app_mention\",\"text\":\"ping {}\"}}}}",
-                nonce,
-                label
+                nonce, label
             ),
         },
     }
@@ -378,7 +386,10 @@ mod tests {
     use uselesskey_core::Seed;
 
     fn verify_github(secret: &str, payload: &str, headers: &BTreeMap<String, String>) -> bool {
-        let expected = format!("sha256={}", hmac_sha256_hex(secret.as_bytes(), payload.as_bytes()));
+        let expected = format!(
+            "sha256={}",
+            hmac_sha256_hex(secret.as_bytes(), payload.as_bytes())
+        );
         headers.get("X-Hub-Signature-256") == Some(&expected)
     }
 
@@ -476,10 +487,11 @@ mod tests {
     fn header_shape_matches_provider_conventions() {
         let fx = Factory::deterministic(Seed::from_env_value("webhook-headers").unwrap());
         let gh = fx.webhook_github("r", WebhookPayloadSpec::Canonical);
-        assert!(gh
-            .headers
-            .get("X-Hub-Signature-256")
-            .is_some_and(|v| v.starts_with("sha256=")));
+        assert!(
+            gh.headers
+                .get("X-Hub-Signature-256")
+                .is_some_and(|v| v.starts_with("sha256="))
+        );
 
         let st = fx.webhook_stripe("r", WebhookPayloadSpec::Canonical);
         let stripe_header = st.headers.get("Stripe-Signature").expect("stripe header");
@@ -488,10 +500,11 @@ mod tests {
 
         let sl = fx.webhook_slack("r", WebhookPayloadSpec::Canonical);
         assert!(sl.headers.contains_key("X-Slack-Request-Timestamp"));
-        assert!(sl
-            .headers
-            .get("X-Slack-Signature")
-            .is_some_and(|v| v.starts_with("v0=")));
+        assert!(
+            sl.headers
+                .get("X-Slack-Signature")
+                .is_some_and(|v| v.starts_with("v0="))
+        );
     }
 
     #[test]
