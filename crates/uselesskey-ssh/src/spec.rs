@@ -71,7 +71,10 @@ pub struct SshCertSpec {
 }
 
 impl SshCertSpec {
-    pub fn user(principals: impl IntoIterator<Item = impl Into<String>>, validity: SshValidity) -> Self {
+    pub fn user(
+        principals: impl IntoIterator<Item = impl Into<String>>,
+        validity: SshValidity,
+    ) -> Self {
         Self {
             principals: principals.into_iter().map(Into::into).collect(),
             validity,
@@ -81,7 +84,10 @@ impl SshCertSpec {
         }
     }
 
-    pub fn host(principals: impl IntoIterator<Item = impl Into<String>>, validity: SshValidity) -> Self {
+    pub fn host(
+        principals: impl IntoIterator<Item = impl Into<String>>,
+        validity: SshValidity,
+    ) -> Self {
         Self {
             principals: principals.into_iter().map(Into::into).collect(),
             validity,
@@ -142,7 +148,10 @@ mod tests {
 
     #[test]
     fn ssh_spec_stable_bytes_are_unique() {
-        assert_ne!(SshSpec::ed25519().stable_bytes(), SshSpec::rsa().stable_bytes());
+        assert_ne!(
+            SshSpec::ed25519().stable_bytes(),
+            SshSpec::rsa().stable_bytes()
+        );
     }
 
     #[test]

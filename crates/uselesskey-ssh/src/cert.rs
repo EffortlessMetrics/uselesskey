@@ -159,12 +159,17 @@ mod tests {
 
         let cert = fx.ssh_cert("deploy-cert", spec).certificate();
 
-        assert_eq!(cert.valid_principals(), ["deploy".to_string(), "ops".to_string()]);
+        assert_eq!(
+            cert.valid_principals(),
+            ["deploy".to_string(), "ops".to_string()]
+        );
         assert_eq!(cert.valid_after(), 1_700_000_000);
         assert_eq!(cert.valid_before(), 1_700_000_600);
         assert_eq!(cert.cert_type(), CertType::User);
         assert_eq!(
-            cert.critical_options().get("force-command").map(String::as_str),
+            cert.critical_options()
+                .get("force-command")
+                .map(String::as_str),
             Some("/usr/bin/true")
         );
         assert!(cert.extensions().contains_key("permit-pty"));

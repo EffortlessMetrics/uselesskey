@@ -35,6 +35,8 @@ pub const UK_FEATURE_ED25519: &str = "uk-ed25519";
 pub const UK_FEATURE_HMAC: &str = "uk-hmac";
 /// BDD tag for PGP fixtures.
 pub const UK_FEATURE_PGP: &str = "uk-pgp";
+/// BDD tag for SSH fixtures.
+pub const UK_FEATURE_SSH: &str = "uk-ssh";
 /// BDD tag for X.509 fixtures.
 pub const UK_FEATURE_X509: &str = "uk-x509";
 /// BDD tag for JWK fixtures.
@@ -78,6 +80,7 @@ pub const UK_FEATURE_SETS: &[&str] = &[
     UK_FEATURE_ED25519,
     UK_FEATURE_HMAC,
     UK_FEATURE_PGP,
+    UK_FEATURE_SSH,
     UK_FEATURE_X509,
     UK_FEATURE_JWK,
     UK_FEATURE_TOKEN,
@@ -110,6 +113,7 @@ pub const CORE_FEATURE_MATRIX: &[FeatureSet] = &[
     FeatureSet::new("hmac", &["--no-default-features", "--features", "hmac"]),
     FeatureSet::new("token", &["--no-default-features", "--features", "token"]),
     FeatureSet::new("pgp", &["--no-default-features", "--features", "pgp"]),
+    FeatureSet::new("ssh", &["--no-default-features", "--features", "ssh"]),
     FeatureSet::new("x509", &["--no-default-features", "--features", "x509"]),
     FeatureSet::new("jwk", &["--no-default-features", "--features", "jwk"]),
     FeatureSet::new(
@@ -403,6 +407,7 @@ mod tests {
             UK_FEATURE_ED25519,
             UK_FEATURE_HMAC,
             UK_FEATURE_PGP,
+            UK_FEATURE_SSH,
             UK_FEATURE_X509,
             UK_FEATURE_JWK,
             UK_FEATURE_TOKEN,
@@ -528,7 +533,7 @@ mod tests {
     #[test]
     fn core_matrix_covers_all_individual_facade_features() {
         let expected_singles = [
-            "rsa", "ecdsa", "ed25519", "hmac", "token", "pgp", "x509", "jwk",
+            "rsa", "ecdsa", "ed25519", "hmac", "token", "pgp", "ssh", "x509", "jwk",
         ];
         let names: Vec<&str> = CORE_FEATURE_MATRIX.iter().map(|e| e.name).collect();
         for feature in expected_singles {
@@ -542,7 +547,7 @@ mod tests {
     #[test]
     fn core_matrix_single_feature_entries_pass_correct_feature() {
         let singles = [
-            "rsa", "ecdsa", "ed25519", "hmac", "token", "pgp", "x509", "jwk",
+            "rsa", "ecdsa", "ed25519", "hmac", "token", "pgp", "ssh", "x509", "jwk",
         ];
         for name in singles {
             let entry = CORE_FEATURE_MATRIX
@@ -626,7 +631,7 @@ mod tests {
     #[test]
     fn core_matrix_combo_entries_reference_valid_features() {
         let known_features = [
-            "rsa", "ecdsa", "ed25519", "hmac", "token", "pgp", "x509", "jwk",
+            "rsa", "ecdsa", "ed25519", "hmac", "token", "pgp", "ssh", "x509", "jwk",
         ];
         for entry in CORE_FEATURE_MATRIX {
             if let Some(feat_idx) = entry.cargo_args.iter().position(|a| *a == "--features") {
