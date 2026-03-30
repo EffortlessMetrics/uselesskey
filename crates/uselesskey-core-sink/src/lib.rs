@@ -135,6 +135,10 @@ impl TempArtifact {
     }
 
     /// Create a new temporary artifact and build a fixture receipt with metadata.
+    ///
+    /// The explicit parameter list keeps this helper aligned with the receipt fields that
+    /// callers already have at hand when exporting a fixture plus its manifest metadata.
+    #[allow(clippy::too_many_arguments)]
     pub fn new_bytes_with_receipt_and_metadata(
         prefix: &str,
         suffix: &str,
