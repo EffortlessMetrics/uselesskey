@@ -193,7 +193,7 @@ impl PqcFactoryExt for Factory {
             label,
             &spec.stable_bytes(),
             "default",
-            |seed| generate_fixture(&seed.bytes(), spec),
+            |seed| generate_fixture(seed.bytes(), spec),
         )
     }
 
@@ -201,7 +201,7 @@ impl PqcFactoryExt for Factory {
         let mut spec_bytes = Vec::from(spec.stable_bytes());
         spec_bytes.extend_from_slice(negative_variant_tag(negative).as_bytes());
         self.get_or_init(DOMAIN_PQC_FIXTURE, label, &spec_bytes, "negative", |seed| {
-            let mut fixture = generate_fixture(&seed.bytes(), spec);
+            let mut fixture = generate_fixture(seed.bytes(), spec);
             apply_negative(&mut fixture, negative);
             fixture
         })

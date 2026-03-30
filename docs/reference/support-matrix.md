@@ -51,6 +51,7 @@
 | `uselesskey-pgp` | `stable` | `published` | ✓ | `most-users` | Normal semver guarantees for public APIs. | Tracks workspace MSRV (Rust 1.92). | — |
 | `uselesskey-pgp-native` | `incubating` | `published` | — | `adapter-users` | Minor releases may refine APIs before 1.0. | Tracks workspace MSRV (Rust 1.92). | — |
 | `uselesskey-pkcs11-mock` | `stable` | `published` | — | `most-users` | Normal semver guarantees for public APIs. | Tracks workspace MSRV (Rust 1.92). | — |
+| `uselesskey-pqc` | `experimental` | `published` | — | `most-users` | Experimental fixture APIs may change between minor releases. | Tracks workspace MSRV (Rust 1.92). | — |
 | `uselesskey-ring` | `stable` | `published` | — | `adapter-users` | Stable adapter API; follows upstream compatibility windows. | Tracks workspace MSRV (Rust 1.92). | — |
 | `uselesskey-rsa` | `stable` | `published` | ✓ | `most-users` | Normal semver guarantees for public APIs. | Tracks workspace MSRV (Rust 1.92). | — |
 | `uselesskey-rustcrypto` | `stable` | `published` | — | `adapter-users` | Stable adapter API; follows upstream compatibility windows. | Tracks workspace MSRV (Rust 1.92). | — |

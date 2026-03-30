@@ -455,6 +455,7 @@ Depend on the facade for convenience, or on individual crates to minimize compil
 | [`uselesskey-hmac`](https://crates.io/crates/uselesskey-hmac) | HMAC HS256/HS384/HS512 secrets |
 | [`uselesskey-ssh`](https://crates.io/crates/uselesskey-ssh) | Deterministic OpenSSH key and certificate fixtures |
 | [`uselesskey-pgp`](https://crates.io/crates/uselesskey-pgp) | OpenPGP key fixtures (armored + binary keyblocks) |
+| [`uselesskey-pqc`](https://crates.io/crates/uselesskey-pqc) | Experimental PQC-shaped test fixtures for parser, size-bound, and TLS-prep testing. |
 | [`uselesskey-token`](https://crates.io/crates/uselesskey-token) | API key, bearer token, and OAuth access-token fixtures |
 | [`uselesskey-webhook`](https://crates.io/crates/uselesskey-webhook) | Deterministic webhook fixtures for GitHub, Stripe, and Slack signature tests |
 | [`uselesskey-jwk`](https://crates.io/crates/uselesskey-jwk) | Typed JWK/JWKS models and builders |
