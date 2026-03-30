@@ -55,6 +55,7 @@ members = [
   "crates/uselesskey-cli",
   "tests",
   "xtask",
+  "crates/uselesskey-bench",
 ]
 exclude = ["fuzz"]
 

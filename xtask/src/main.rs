@@ -29,6 +29,12 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Cmd {
+    /// Run performance harness and optionally compare against checked-in baselines.
+    Perf {
+        /// Compare latest run against docs/metadata/perf-baselines.json budgets.
+        #[arg(long)]
+        compare: bool,
+    },
     /// Run formatter checks.
     Fmt {
         /// Apply formatting changes instead of checking.
@@ -213,6 +219,7 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.cmd {
+        Cmd::Perf { compare } => perf(compare),
         Cmd::Fmt { fix } => fmt(fix),
         Cmd::Clippy => clippy(),
         Cmd::Test => test(),
@@ -773,6 +780,121 @@ fn run_quietly(cmd: &mut Command) -> Result<()> {
         let stderr = String::from_utf8_lossy(&output.stderr);
         bail!("command failed with status {}: {stderr}", output.status);
     }
+    Ok(())
+}
+
+const PERF_BASELINE_PATH: &str = "docs/metadata/perf-baselines.json";
+const PERF_LATEST_PATH: &str = "target/xtask/perf/latest.json";
+
+#[derive(Debug, serde::Deserialize)]
+struct PerfBaselineFile {
+    version: u32,
+    entries: Vec<PerfBudgetEntry>,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct PerfBudgetEntry {
+    id: String,
+    baseline_median_ns: u64,
+    max_regression_pct: f64,
+    enforce_in_ci: bool,
+    #[allow(dead_code)]
+    category: String,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct PerfLatestFile {
+    version: u32,
+    scenarios: Vec<PerfLatestEntry>,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct PerfLatestEntry {
+    id: String,
+    median_ns: u64,
+}
+
+fn perf(compare: bool) -> Result<()> {
+    run(Command::new("cargo").args([
+        "run",
+        "-p",
+        "uselesskey-bench",
+        "--release",
+        "--",
+        "--output",
+        PERF_LATEST_PATH,
+    ]))?;
+
+    if compare {
+        perf_compare()?;
+    }
+    Ok(())
+}
+
+fn perf_compare() -> Result<()> {
+    let baseline_json = fs::read_to_string(PERF_BASELINE_PATH)
+        .with_context(|| format!("failed to read {PERF_BASELINE_PATH}"))?;
+    let latest_json = fs::read_to_string(PERF_LATEST_PATH)
+        .with_context(|| format!("failed to read {PERF_LATEST_PATH}"))?;
+
+    let baseline: PerfBaselineFile =
+        serde_json::from_str(&baseline_json).context("invalid perf baseline JSON schema")?;
+    let latest: PerfLatestFile =
+        serde_json::from_str(&latest_json).context("invalid latest perf JSON schema")?;
+
+    if baseline.version != 1 || latest.version != 1 {
+        bail!(
+            "unsupported perf schema versions baseline={} latest={}",
+            baseline.version,
+            latest.version
+        );
+    }
+
+    let latest_by_id = latest
+        .scenarios
+        .iter()
+        .map(|s| (s.id.as_str(), s))
+        .collect::<BTreeMap<_, _>>();
+    let mut violations = Vec::new();
+
+    for budget in &baseline.entries {
+        let Some(measured) = latest_by_id.get(budget.id.as_str()) else {
+            bail!(
+                "latest perf report missing required benchmark id: {}",
+                budget.id
+            );
+        };
+        let regression_pct = ((measured.median_ns as f64 - budget.baseline_median_ns as f64)
+            / budget.baseline_median_ns as f64)
+            * 100.0;
+        let status = if regression_pct > budget.max_regression_pct {
+            if budget.enforce_in_ci { "FAIL" } else { "WARN" }
+        } else {
+            "OK"
+        };
+        eprintln!(
+            "[perf:{status}] {:32} baseline={}ns latest={}ns regression={:+.2}% threshold={:.2}%",
+            budget.id,
+            budget.baseline_median_ns,
+            measured.median_ns,
+            regression_pct,
+            budget.max_regression_pct
+        );
+        if status == "FAIL" {
+            violations.push(format!(
+                "{} regressed by {:.2}% (threshold {:.2}%)",
+                budget.id, regression_pct, budget.max_regression_pct
+            ));
+        }
+    }
+
+    if !violations.is_empty() {
+        bail!(
+            "performance budget check failed:\n{}",
+            violations.join("\n")
+        );
+    }
+
     Ok(())
 }
 
@@ -2327,6 +2449,19 @@ mod tests {
         let err = contains_pem_markers(&missing).unwrap_err();
         let msg = err.to_string();
         assert!(msg.contains("failed to read"));
+    }
+
+    #[test]
+    fn perf_baseline_schema_is_valid() {
+        let json =
+            fs::read_to_string(workspace_path(PERF_BASELINE_PATH)).expect("read perf baseline");
+        let parsed: PerfBaselineFile = serde_json::from_str(&json).expect("parse perf baseline");
+        assert_eq!(parsed.version, 1);
+        assert!(
+            !parsed.entries.is_empty(),
+            "expected at least one perf budget entry"
+        );
+        assert!(parsed.entries.iter().all(|e| !e.id.is_empty()));
     }
 
     #[test]

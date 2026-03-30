@@ -18,6 +18,26 @@ env:
   CARGO_INCREMENTAL: 0
 
 jobs:
+  perf:
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install NASM (for aws-lc-rs)
+        run: sudo apt-get update && sudo apt-get install -y nasm
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+
+      - name: xtask perf compare
+        run: cargo xtask perf --compare
+
   pr:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
