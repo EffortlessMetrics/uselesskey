@@ -69,6 +69,7 @@ NNNN-short-title.md
 | [0026](0026-empty-default-features.md) | Empty Default Features | Accepted | 2026-03-13 |
 | [0027](0027-adapter-acceptance-criteria.md) | Adapter Acceptance Criteria | Accepted | 2026-03-22 |
 | [0028](0028-workspace-public-surface-policy.md) | Workspace Public Surface Policy | Accepted | 2026-03-22 |
+| [0029](0029-export-bundle-references.md) | Export Bundles as References, Not Secret Custody | Accepted | 2026-03-28 |
 
 ## References
 
