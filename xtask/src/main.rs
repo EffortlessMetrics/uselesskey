@@ -357,6 +357,7 @@ fn run_ci_plan(runner: &mut receipt::Runner) -> Result<()> {
     run_feature_matrix(runner)?;
 
     runner.step("dep-guard", None, dep_guard)?;
+    runner.step("docs-sync", None, || docs_sync::docs_sync_cmd(true))?;
     runner.step("bdd", None, bdd)?;
     let counts = count_bdd_scenarios().unwrap_or_default();
     runner.set_bdd_counts(counts);
@@ -1799,6 +1800,7 @@ fn gate() -> Result<()> {
 
 fn run_gate(runner: &mut receipt::Runner) -> Result<()> {
     runner.step("fmt", None, || fmt(false))?;
+    runner.step("docs-sync", None, || docs_sync::docs_sync_cmd(true))?;
     runner.step("check", None, || {
         run(Command::new("cargo").args(["check", "--workspace", "--all-targets", "--all-features"]))
     })?;

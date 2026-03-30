@@ -100,6 +100,7 @@ uselesskey = { version = "0.5.1", features = ["x509"] }
 Use the facade for convenience. Depend on leaf crates only when compile-time minimization matters enough to justify the sharper API.
 
 If you are unsure which flags to start with, start from [docs/how-to/choose-features.md](docs/how-to/choose-features.md).
+For a crate-by-crate support contract (stable/incubating/experimental, audience, and publish status), see [docs/reference/support-matrix.md](docs/reference/support-matrix.md).
 
 ## Quick start
 
@@ -598,4 +599,3 @@ Licensed under either of:
 - MIT license ([LICENSE-MIT](LICENSE-MIT))
 
 at your option.
-
