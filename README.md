@@ -467,6 +467,7 @@ Depend on the facade for convenience, or on individual crates to minimize compil
 <!-- docs-sync:adapter-crates-start -->
 | Crate | Description |
 |-------|-------------|
+| [`uselesskey-axum`](https://crates.io/crates/uselesskey-axum) | `axum` auth-test helpers with deterministic JWKS/OIDC routes |
 | [`uselesskey-jsonwebtoken`](https://crates.io/crates/uselesskey-jsonwebtoken) | `jsonwebtoken` `EncodingKey` / `DecodingKey` |
 | [`uselesskey-jose-openid`](https://crates.io/crates/uselesskey-jose-openid) | JOSE/OpenID-oriented native `jsonwebtoken` key conversions |
 | [`uselesskey-pgp-native`](https://crates.io/crates/uselesskey-pgp-native) | Native `pgp` `SignedSecretKey` / `SignedPublicKey` adapters |
