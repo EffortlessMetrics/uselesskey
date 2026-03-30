@@ -59,6 +59,10 @@
   ],
   "adapter_crates": [
     {
+      "name": "uselesskey-axum",
+      "description": "`axum` auth-test helpers with deterministic JWKS/OIDC routes"
+    },
+    {
       "name": "uselesskey-jsonwebtoken",
       "description": "`jsonwebtoken` `EncodingKey` / `DecodingKey`"
     },
@@ -103,6 +107,15 @@
     },
     {
       "name": "uselesskey-aws-lc-rs",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Stable adapter API; follows upstream compatibility windows.",
+      "msrv_policy": "Tracks workspace MSRV (Rust 1.92).",
+      "intended_audience": "adapter-users"
+    },
+    {
+      "name": "uselesskey-axum",
       "support_tier": "stable",
       "publish_status": "published",
       "facade_exposed": false,

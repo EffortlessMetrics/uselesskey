@@ -43,6 +43,7 @@ members = [
   "crates/uselesskey-pgp",
   "crates/uselesskey-x509",
   "crates/uselesskey-jsonwebtoken",
+  "crates/uselesskey-axum",
   "crates/uselesskey-rustls",
   "crates/uselesskey-tonic",
   "crates/uselesskey-ring",
