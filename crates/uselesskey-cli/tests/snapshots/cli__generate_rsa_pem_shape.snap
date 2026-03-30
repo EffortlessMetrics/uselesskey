@@ -1,0 +1,8 @@
+---
+source: crates/uselesskey-cli/tests/cli.rs
+expression: "serde_json::json!({\n    \"bytes_len\": output1.len(), \"first_line\":\n    output1.lines().next().expect(\"header\"), \"last_line\":\n    output1.lines().last().expect(\"footer\"), \"line_count\":\n    output1.lines().count(),\n})"
+---
+bytes_len: 1704
+first_line: "-----BEGIN PRIVATE KEY-----"
+last_line: "-----END PRIVATE KEY-----"
+line_count: 28

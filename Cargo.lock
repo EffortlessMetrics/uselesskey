@@ -4169,6 +4169,7 @@ dependencies = [
  "assert_cmd",
  "base64",
  "clap",
+ "insta",
  "predicates",
  "serde",
  "serde_json",

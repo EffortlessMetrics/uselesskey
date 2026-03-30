@@ -147,7 +147,10 @@ fn run_bundle(args: BundleArgs) -> Result<()> {
     let manifest_path = out_dir.join("manifest.json");
     fs::write(&manifest_path, serde_json::to_vec_pretty(&manifest)?)?;
 
-    emit_artifact(&Artifact::Json(json!({"bundle_dir": out_dir, "manifest": manifest})), None)
+    emit_artifact(
+        &Artifact::Json(json!({"bundle_dir": out_dir, "manifest": manifest})),
+        None,
+    )
 }
 
 fn preferred_bundle_format(kind: Kind, requested: Format) -> Format {

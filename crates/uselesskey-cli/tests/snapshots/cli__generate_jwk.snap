@@ -1,0 +1,12 @@
+---
+source: crates/uselesskey-cli/tests/cli.rs
+expression: out
+---
+{
+  "alg": "RS256",
+  "e": "AQAB",
+  "kid": "nK8xRMhOL-2CMayB",
+  "kty": "RSA",
+  "n": "mKWClgKZkzI-TRK-H-EANItrv0APG7apsBb6bHGF2djAIt-vNJG0fwIFyCvDO9TDvdtp-7HX-R-3bXYGMSHYTC89TwgWDHtCHAkbAdfZT5j-Jb-veYE19tNfxDuZG5oFchYec3leiEXOggu9Ci31Mgrp6cOhcuZCTYeGC7pAtdBiiv8lFEOWUacO234Y0AQamod42VNzK_ikoSbHnFmjAgFM8vP2EXtlsesMVQrkKuYValjy-QzQYK5NmNJDvBml0fpGvbX_1KfTlHVUdMcxYnQZow7IyArhXv-_JeX5nx5LoJTXVbhIlTgS9_nmiKdOjit1wO5WWQHH4rZBrRxGtw",
+  "use": "sig"
+}

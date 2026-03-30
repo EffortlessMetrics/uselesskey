@@ -1,6 +1,7 @@
 use std::fs;
 
 use assert_cmd::Command;
+use insta::{assert_snapshot, assert_yaml_snapshot};
 use predicates::prelude::*;
 use serde_json::Value;
 use tempfile::tempdir;
@@ -14,7 +15,13 @@ fn generate_rsa_pem_is_deterministic() {
         "generate", "rsa", "--seed", "det-seed", "--label", "issuer", "--format", "pem",
     ]);
     assert_eq!(output1, output2);
-    assert!(output1.contains("BEGIN PRIVATE KEY"));
+    let shape = serde_json::json!({
+        "bytes_len": output1.len(),
+        "first_line": output1.lines().next().expect("header"),
+        "last_line": output1.lines().last().expect("footer"),
+        "line_count": output1.lines().count(),
+    });
+    assert_yaml_snapshot!("generate_rsa_pem_shape", shape);
 }
 
 #[test]
@@ -24,6 +31,7 @@ fn generate_jwk_outputs_json() {
     ]);
     let value: Value = serde_json::from_str(&out).expect("valid json");
     assert_eq!(value["kty"], "RSA");
+    assert_snapshot!("generate_jwk", out);
 }
 
 #[test]
