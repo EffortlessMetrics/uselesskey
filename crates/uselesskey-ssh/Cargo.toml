@@ -16,8 +16,8 @@ authors.workspace = true
 
 [dependencies]
 uselesskey-core = { path = "../uselesskey-core", version = "0.5.1" }
-ssh-key = { version = "0.7.0-rc.9", default-features = false, features = ["std", "ed25519", "rsa", "rand_core"] }
-rand_chacha10.workspace = true
+ssh-key = { version = "0.6.7", default-features = false, features = ["std", "ed25519", "rsa", "rand_core"] }
+rand_chacha = { version = "0.3.1", default-features = false }
 
 [dev-dependencies]
 proptest.workspace = true
