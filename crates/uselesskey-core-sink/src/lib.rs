@@ -215,9 +215,9 @@ impl TempArtifact {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use uselesskey_core_id::{ArtifactId, DerivationVersion};
     use std::thread;
     use std::time::Duration;
+    use uselesskey_core_id::{ArtifactId, DerivationVersion};
 
     #[test]
     fn new_bytes_round_trip() {
