@@ -8,7 +8,9 @@ use rand_chacha10::ChaCha20Rng;
 use rand_core10::{Rng, SeedableRng};
 use uselesskey_core::Factory;
 use uselesskey_core_kid::kid_from_bytes;
-use uselesskey_core_symmetric_spec::{AadMode, AeadVectorSpec, NoncePolicy, PlaintextMode, SymmetricSpec};
+use uselesskey_core_symmetric_spec::{
+    AadMode, AeadVectorSpec, NoncePolicy, PlaintextMode, SymmetricSpec,
+};
 
 /// Cache domain for symmetric key fixtures.
 pub const DOMAIN_SYMMETRIC_KEY: &str = "uselesskey:symmetric:key";
@@ -202,7 +204,7 @@ fn encrypt_in_place(
     key_bytes: &[u8],
     nonce: &[u8],
     aad: &[u8],
-    payload: &mut Vec<u8>,
+    payload: &mut [u8],
 ) -> Vec<u8> {
     match algorithm {
         SymmetricSpec::Aes128Gcm => {
@@ -281,7 +283,12 @@ mod tests {
 
         let tag = aes_gcm::Tag::from_slice(&ct_plus_tag[ct_plus_tag.len() - 16..]);
         cipher
-            .decrypt_in_place_detached(vector.nonce.as_slice().into(), &vector.aad, &mut detached, tag)
+            .decrypt_in_place_detached(
+                vector.nonce.as_slice().into(),
+                &vector.aad,
+                &mut detached,
+                tag,
+            )
             .expect("decrypt");
 
         assert_eq!(detached, vector.plaintext);

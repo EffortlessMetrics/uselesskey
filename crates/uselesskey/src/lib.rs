@@ -241,8 +241,8 @@
 //! | `pgp` | OpenPGP key fixtures |
 //! | `x509` | X.509 certificate and chain fixtures |
 //! | `jwk` | JWK/JWKS output for all key types |
-//! | `all-keys` | All key types (rsa + ecdsa + ed25519 + hmac + pgp) |
-//! | `full` | Everything: all-keys + token + x509 + jwk |
+//! | `all-keys` | All key types (rsa + ecdsa + ed25519 + hmac + symmetric + pgp + ssh) |
+//! | `full` | Everything: all-keys + token + webhook + x509 + jwk |
 //!
 //! The default feature set is empty; opt into the algorithms or fixture families
 //! your tests actually need.

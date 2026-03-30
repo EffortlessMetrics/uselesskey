@@ -25,6 +25,10 @@
       "description": "HMAC HS256/HS384/HS512 secrets"
     },
     {
+      "name": "uselesskey-symmetric",
+      "description": "Deterministic symmetric-key and AEAD test fixtures"
+    },
+    {
       "name": "uselesskey-ssh",
       "description": "Deterministic OpenSSH key and certificate fixtures"
     },
@@ -349,6 +353,16 @@
       "deprecation_note": "Prefer depending on `uselesskey` or key-type facade crates unless you are extending the workspace."
     },
     {
+      "name": "uselesskey-core-symmetric-spec",
+      "support_tier": "experimental",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Internal building blocks; APIs may change between minor releases.",
+      "msrv_policy": "Tracks workspace MSRV (Rust 1.92).",
+      "intended_audience": "repo-internal",
+      "deprecation_note": "Prefer depending on `uselesskey` or key-type facade crates unless you are extending the workspace."
+    },
+    {
       "name": "uselesskey-core-sink",
       "support_tier": "experimental",
       "publish_status": "published",
@@ -637,6 +651,15 @@
       "intended_audience": "most-users"
     },
     {
+      "name": "uselesskey-symmetric",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Normal semver guarantees for symmetric fixture APIs and AEAD encodings.",
+      "msrv_policy": "Tracks workspace MSRV (Rust 1.92).",
+      "intended_audience": "most-users"
+    },
+    {
       "name": "uselesskey-webauthn",
       "support_tier": "stable",
       "publish_status": "published",
@@ -846,15 +869,33 @@
       "implies": "-"
     },
     {
-      "feature": "pgp",
-      "extension_trait": "PgpFactoryExt",
-      "algorithms": "OpenPGP RSA 2048/3072, Ed25519 \u2014 armored, binary",
+      "feature": "symmetric",
+      "extension_trait": "SymmetricFactoryExt",
+      "algorithms": "AES-128-GCM, AES-256-GCM, and ChaCha20-Poly1305 key + AEAD vector fixtures",
       "implies": "-"
     },
     {
       "feature": "token",
       "extension_trait": "TokenFactoryExt",
       "algorithms": "API key, bearer access token, and OAuth access token",
+      "implies": "-"
+    },
+    {
+      "feature": "ssh",
+      "extension_trait": "SshFactoryExt",
+      "algorithms": "OpenSSH keys and certificates",
+      "implies": "-"
+    },
+    {
+      "feature": "webhook",
+      "extension_trait": "WebhookFactoryExt",
+      "algorithms": "GitHub, Stripe, and Slack webhook signature fixtures",
+      "implies": "-"
+    },
+    {
+      "feature": "pgp",
+      "extension_trait": "PgpFactoryExt",
+      "algorithms": "OpenPGP RSA 2048/3072, Ed25519 \u2014 armored, binary",
       "implies": "-"
     },
     {
@@ -873,13 +914,13 @@
       "feature": "all-keys",
       "extension_trait": "-",
       "algorithms": "(bundle)",
-      "implies": "rsa ecdsa ed25519 hmac pgp"
+      "implies": "rsa ecdsa ed25519 hmac symmetric pgp ssh"
     },
     {
       "feature": "full",
       "extension_trait": "-",
       "algorithms": "(everything)",
-      "implies": "all-keys token x509 jwk"
+      "implies": "all-keys token webhook x509 jwk"
     }
   ],
   "adapter_feature_matrix": [
@@ -1085,8 +1126,11 @@
     "ecdsa",
     "ed25519",
     "hmac",
-    "pgp",
+    "symmetric",
     "token",
+    "ssh",
+    "webhook",
+    "pgp",
     "x509",
     "jwk",
     "all-keys",

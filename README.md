@@ -453,6 +453,7 @@ Depend on the facade for convenience, or on individual crates to minimize compil
 | [`uselesskey-ecdsa`](https://crates.io/crates/uselesskey-ecdsa) | ECDSA P-256 / P-384 keypairs |
 | [`uselesskey-ed25519`](https://crates.io/crates/uselesskey-ed25519) | Ed25519 keypairs |
 | [`uselesskey-hmac`](https://crates.io/crates/uselesskey-hmac) | HMAC HS256/HS384/HS512 secrets |
+| [`uselesskey-symmetric`](https://crates.io/crates/uselesskey-symmetric) | Deterministic symmetric-key and AEAD test fixtures |
 | [`uselesskey-ssh`](https://crates.io/crates/uselesskey-ssh) | Deterministic OpenSSH key and certificate fixtures |
 | [`uselesskey-pgp`](https://crates.io/crates/uselesskey-pgp) | OpenPGP key fixtures (armored + binary keyblocks) |
 | [`uselesskey-token`](https://crates.io/crates/uselesskey-token) | API key, bearer token, and OAuth access-token fixtures |
@@ -505,12 +506,15 @@ For output-family coverage and dependency implications, use the matrix below.
 | `ecdsa` | `EcdsaFactoryExt` | P-256 (ES256), P-384 (ES384) — PKCS#8, SPKI | — |
 | `ed25519` | `Ed25519FactoryExt` | Ed25519 — PKCS#8, SPKI | — |
 | `hmac` | `HmacFactoryExt` | HS256, HS384, HS512 | — |
-| `pgp` | `PgpFactoryExt` | OpenPGP RSA 2048/3072, Ed25519 — armored, binary | — |
+| `symmetric` | `SymmetricFactoryExt` | AES-128-GCM, AES-256-GCM, and ChaCha20-Poly1305 key + AEAD vector fixtures | — |
 | `token` | `TokenFactoryExt` | API key, bearer access token, and OAuth access token | — |
+| `ssh` | `SshFactoryExt` | OpenSSH keys and certificates | — |
+| `webhook` | `WebhookFactoryExt` | GitHub, Stripe, and Slack webhook signature fixtures | — |
+| `pgp` | `PgpFactoryExt` | OpenPGP RSA 2048/3072, Ed25519 — armored, binary | — |
 | `x509` | `X509FactoryExt` | Self-signed certs, cert chains, negative certs | `rsa` |
 | `jwk` | — | JWK/JWKS output for all enabled key types | — |
-| `all-keys` | — | (bundle) | `rsa` `ecdsa` `ed25519` `hmac` `pgp` |
-| `full` | — | (everything) | `all-keys` `token` `x509` `jwk` |
+| `all-keys` | — | (bundle) | `rsa` `ecdsa` `ed25519` `hmac` `symmetric` `pgp` `ssh` |
+| `full` | — | (everything) | `all-keys` `token` `webhook` `x509` `jwk` |
 <!-- docs-sync:feature-matrix-facade-end -->
 
 ### Adapter crate key-type support
