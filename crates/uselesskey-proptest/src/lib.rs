@@ -45,7 +45,7 @@ pub enum JwtFixture {
 
 #[derive(Clone)]
 pub enum JwkFixture {
-    Valid(AnyJwk),
+    Valid(Box<AnyJwk>),
     CorruptJson(String),
 }
 
@@ -213,12 +213,13 @@ pub fn any_x509_chain_negative() -> BoxedStrategy<X509NegativeChainFixture> {
 pub fn valid_or_corrupt_jwk() -> BoxedStrategy<JwkFixture> {
     let valid = prop_oneof![
         valid_rsa_fixture()
-            .prop_map(|fixture| JwkFixture::Valid(AnyJwk::from(fixture.public_jwk()))),
+            .prop_map(|fixture| JwkFixture::Valid(Box::new(AnyJwk::from(fixture.public_jwk())))),
         valid_ecdsa_fixture()
-            .prop_map(|fixture| JwkFixture::Valid(AnyJwk::from(fixture.public_jwk()))),
+            .prop_map(|fixture| JwkFixture::Valid(Box::new(AnyJwk::from(fixture.public_jwk())))),
         valid_ed25519_fixture()
-            .prop_map(|fixture| JwkFixture::Valid(AnyJwk::from(fixture.public_jwk()))),
-        valid_hmac_fixture().prop_map(|fixture| JwkFixture::Valid(AnyJwk::from(fixture.jwk()))),
+            .prop_map(|fixture| JwkFixture::Valid(Box::new(AnyJwk::from(fixture.public_jwk())))),
+        valid_hmac_fixture()
+            .prop_map(|fixture| JwkFixture::Valid(Box::new(AnyJwk::from(fixture.jwk())))),
     ];
 
     let corrupt = valid.clone().prop_map(|item| match item {
