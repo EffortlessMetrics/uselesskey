@@ -100,6 +100,7 @@ uselesskey = { version = "0.5.1", features = ["x509"] }
 Use the facade for convenience. Depend on leaf crates only when compile-time minimization matters enough to justify the sharper API.
 
 If you are unsure which flags to start with, start from [docs/how-to/choose-features.md](docs/how-to/choose-features.md).
+For a crate-by-crate support contract (stable/incubating/experimental, audience, and publish status), see [docs/reference/support-matrix.md](docs/reference/support-matrix.md).
 
 ## Quick start
 
@@ -573,7 +574,6 @@ Reach for:
 ## Community
 
 - [CHANGELOG](CHANGELOG.md) — release history
-- [Support matrix](docs/reference/support-matrix.md) — crate-by-crate stability and audience contract
 - [CONTRIBUTING](CONTRIBUTING.md) — how to build, test, and add new key types
 - [SECURITY](SECURITY.md) — security policy (this is a test-only crate)
 - [CODE_OF_CONDUCT](CODE_OF_CONDUCT.md) — Contributor Covenant

@@ -27,6 +27,9 @@ leaves first:
 Do **not** maintain a separate crate list here — `PUBLISH_CRATES` is the
 single source of truth.
 
+For support expectations and intended audiences, reference the generated
+[support matrix](../reference/support-matrix.md) before changing publish scope.
+
 ## Dry run
 
 ```bash
@@ -38,7 +41,6 @@ Before tagging, make sure the release PR has already:
 
 - bumped publishable crate versions
 - updated `CHANGELOG.md`
-- regenerated docs via `cargo xtask docs-sync` (including `docs/reference/support-matrix.md`)
 - refreshed versioned `uselesskey*` dependency snippets in README/doc examples
 
 ## Publish
