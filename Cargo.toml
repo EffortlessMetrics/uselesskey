@@ -51,6 +51,7 @@ members = [
   "crates/uselesskey-interop-tests",
   "crates/uselesskey-bdd",
   "crates/uselesskey-bdd-steps",
+  "crates/uselesskey-cli",
   "tests",
   "xtask",
 ]
@@ -71,6 +72,7 @@ thiserror = "2.0.18"
 
 uselesskey-test-grid = { path = "crates/uselesskey-test-grid", version = "0.5.1" }
 uselesskey-feature-grid = { path = "crates/uselesskey-feature-grid", version = "0.5.1" }
+uselesskey = { path = "crates/uselesskey", version = "0.5.1", default-features = false }
 uselesskey-core-base62 = { path = "crates/uselesskey-core-base62", version = "0.5.1" }
 uselesskey-core-cache = { path = "crates/uselesskey-core-cache", version = "0.5.1", default-features = false }
 uselesskey-core-factory = { path = "crates/uselesskey-core-factory", version = "0.5.1" }
