@@ -37,6 +37,10 @@
       "description": "API key, bearer token, and OAuth access-token fixtures"
     },
     {
+      "name": "uselesskey-webhook",
+      "description": "Deterministic webhook fixtures for GitHub, Stripe, and Slack signature tests"
+    },
+    {
       "name": "uselesskey-jwk",
       "description": "Typed JWK/JWKS models and builders"
     },
@@ -600,6 +604,15 @@
       "semver_expectation": "Stable adapter API; follows upstream compatibility windows.",
       "msrv_policy": "Tracks workspace MSRV (Rust 1.92).",
       "intended_audience": "adapter-users"
+    },
+    {
+      "name": "uselesskey-webhook",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Normal semver guarantees for deterministic webhook fixture APIs.",
+      "msrv_policy": "Tracks workspace MSRV (Rust 1.92).",
+      "intended_audience": "most-users"
     },
     {
       "name": "uselesskey-x509",

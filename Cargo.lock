@@ -4572,6 +4572,7 @@ dependencies = [
  "uselesskey-rustls",
  "uselesskey-ssh",
  "uselesskey-token",
+ "uselesskey-webhook",
  "uselesskey-x509",
  "x509-parser",
 ]
@@ -5322,6 +5323,20 @@ dependencies = [
  "tonic",
  "uselesskey-core",
  "uselesskey-x509",
+]
+
+[[package]]
+name = "uselesskey-webhook"
+version = "0.5.1"
+dependencies = [
+ "base64",
+ "hex",
+ "hmac 0.13.0-rc.6",
+ "insta",
+ "rand_chacha 0.10.0",
+ "rand_core 0.10.0",
+ "sha2 0.11.0",
+ "uselesskey-core",
 ]
 
 [[package]]
