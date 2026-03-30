@@ -528,6 +528,15 @@
       "intended_audience": "adapter-users"
     },
     {
+      "name": "uselesskey-pkcs11-mock",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Normal semver guarantees for public APIs.",
+      "msrv_policy": "Tracks workspace MSRV (Rust 1.92).",
+      "intended_audience": "most-users"
+    },
+    {
       "name": "uselesskey-ring",
       "support_tier": "stable",
       "publish_status": "published",
@@ -624,6 +633,15 @@
       "publish_status": "published",
       "facade_exposed": false,
       "semver_expectation": "Normal semver guarantees for deterministic webhook fixture APIs.",
+      "msrv_policy": "Tracks workspace MSRV (Rust 1.92).",
+      "intended_audience": "most-users"
+    },
+    {
+      "name": "uselesskey-webauthn",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Normal semver guarantees for public APIs.",
       "msrv_policy": "Tracks workspace MSRV (Rust 1.92).",
       "intended_audience": "most-users"
     },

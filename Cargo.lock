@@ -5198,6 +5198,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "uselesskey-pkcs11-mock"
+version = "0.5.1"
+dependencies = [
+ "sha2 0.10.9",
+ "uselesskey-core",
+]
+
+[[package]]
 name = "uselesskey-ring"
 version = "0.5.1"
 dependencies = [
@@ -5341,6 +5349,16 @@ dependencies = [
  "tonic",
  "uselesskey-core",
  "uselesskey-x509",
+]
+
+[[package]]
+name = "uselesskey-webauthn"
+version = "0.5.1"
+dependencies = [
+ "ciborium",
+ "serde_json",
+ "sha2 0.10.9",
+ "uselesskey-core",
 ]
 
 [[package]]
