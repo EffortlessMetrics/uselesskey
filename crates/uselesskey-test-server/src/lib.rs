@@ -318,7 +318,10 @@ impl OidcTestServer {
         };
 
         let router = Router::new()
-            .route("/.well-known/openid-configuration", get(openid_configuration))
+            .route(
+                "/.well-known/openid-configuration",
+                get(openid_configuration),
+            )
             .route("/jwks.json", get(jwks))
             .with_state(state.clone());
 
@@ -340,7 +343,10 @@ impl OidcTestServer {
     }
 }
 
-fn materialize_phases(factory: &Factory, spec: &OidcServerSpec) -> Result<Vec<PhaseMaterial>, Error> {
+fn materialize_phases(
+    factory: &Factory,
+    spec: &OidcServerSpec,
+) -> Result<Vec<PhaseMaterial>, Error> {
     let phases = match &spec.jwks_rotation {
         JwksRotation::Static(jwks_spec) => vec![JwksPhase::new("static", jwks_spec.clone())],
         JwksRotation::Sequence(phases) => {
@@ -479,8 +485,14 @@ mod tests {
         OidcServerSpec {
             issuer_url_mode: IssuerUrlMode::RandomPortLocalhost,
             jwks_rotation: JwksRotation::Sequence(vec![
-                JwksPhase::new("primary", JwksSpec::single_rsa("issuer-primary", RsaSpec::rs256())),
-                JwksPhase::new("rotated", JwksSpec::single_rsa("issuer-rotated", RsaSpec::rs256())),
+                JwksPhase::new(
+                    "primary",
+                    JwksSpec::single_rsa("issuer-primary", RsaSpec::rs256()),
+                ),
+                JwksPhase::new(
+                    "rotated",
+                    JwksSpec::single_rsa("issuer-rotated", RsaSpec::rs256()),
+                ),
             ]),
             cache_headers: Some(CachePolicySpec {
                 max_age_seconds: 30,
@@ -560,8 +572,12 @@ mod tests {
 
         assert_ne!(jwks_primary, jwks_rotated);
 
-        let kid_primary = jwks_primary["keys"][0]["kid"].as_str().expect("kid primary");
-        let kid_rotated = jwks_rotated["keys"][0]["kid"].as_str().expect("kid rotated");
+        let kid_primary = jwks_primary["keys"][0]["kid"]
+            .as_str()
+            .expect("kid primary");
+        let kid_rotated = jwks_rotated["keys"][0]["kid"]
+            .as_str()
+            .expect("kid rotated");
         assert_ne!(kid_primary, kid_rotated);
 
         server.shutdown().await;
@@ -692,6 +708,9 @@ mod tests {
         server.shutdown().await;
 
         let rebound = TcpListener::bind(addr).await;
-        assert!(rebound.is_ok(), "expected port to be reusable after shutdown");
+        assert!(
+            rebound.is_ok(),
+            "expected port to be reusable after shutdown"
+        );
     }
 }
