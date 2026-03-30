@@ -92,7 +92,7 @@ impl fmt::Debug for WebhookFixture {
 }
 
 /// A near-miss webhook fixture for negative tests.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct NearMissWebhookFixture {
     /// Negative scenario marker.
     pub scenario: NearMissScenario,
@@ -108,6 +108,19 @@ pub struct NearMissWebhookFixture {
     pub timestamp: i64,
     /// Canonical signature input/base string.
     pub signature_input: String,
+}
+
+impl fmt::Debug for NearMissWebhookFixture {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("NearMissWebhookFixture")
+            .field("scenario", &self.scenario)
+            .field("profile", &self.profile)
+            .field("payload", &self.payload)
+            .field("headers", &self.headers)
+            .field("timestamp", &self.timestamp)
+            .field("signature_input", &self.signature_input)
+            .finish_non_exhaustive()
+    }
 }
 
 /// Supported near-miss negative scenarios.
@@ -522,5 +535,10 @@ mod tests {
         let out = format!("{fixture:?}");
         assert!(!out.contains(&fixture.secret));
         assert!(out.contains("WebhookFixture"));
+
+        let near_miss = fixture.near_miss_wrong_secret();
+        let out = format!("{near_miss:?}");
+        assert!(!out.contains(&near_miss.secret));
+        assert!(out.contains("NearMissWebhookFixture"));
     }
 }
