@@ -134,8 +134,8 @@ fn run_docs_sync(check: bool) -> Result<()> {
 
     for target in &metadata.sync_targets {
         let path = root.join(&target.path);
-        let original = fs::read_to_string(&path)
-            .with_context(|| format!("failed to read {}", target.path))?;
+        let original =
+            fs::read_to_string(&path).with_context(|| format!("failed to read {}", target.path))?;
         let (updated, touched_blocks) = rewrite_document(&original, &metadata, &target.blocks)?;
 
         if touched_blocks.is_empty() {
@@ -152,7 +152,8 @@ fn run_docs_sync(check: bool) -> Result<()> {
         }
 
         if updated != original {
-            fs::write(&path, updated).with_context(|| format!("failed to write {}", target.path))?;
+            fs::write(&path, updated)
+                .with_context(|| format!("failed to write {}", target.path))?;
             rewritten_targets.push(target.path.clone());
         }
     }
@@ -190,7 +191,10 @@ fn run_docs_sync(check: bool) -> Result<()> {
         if rewritten_targets.is_empty() {
             println!("docs-sync: all sync targets already up to date");
         } else {
-            println!("docs-sync: updated files:\n- {}", rewritten_targets.join("\n- "));
+            println!(
+                "docs-sync: updated files:\n- {}",
+                rewritten_targets.join("\n- ")
+            );
         }
     }
 
