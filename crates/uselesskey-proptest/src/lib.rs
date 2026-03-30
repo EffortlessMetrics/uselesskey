@@ -3,8 +3,8 @@
 //! `proptest` strategies for generating `uselesskey` fixture structs.
 
 use proptest::prelude::*;
-use uselesskey_core::negative::CorruptPem;
 use uselesskey_core::Factory;
+use uselesskey_core::negative::CorruptPem;
 use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaKeyPair, EcdsaSpec};
 use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519KeyPair, Ed25519Spec};
 use uselesskey_hmac::{HmacFactoryExt, HmacSecret, HmacSpec};
@@ -52,10 +52,7 @@ pub enum JwkFixture {
 impl core::fmt::Debug for JwkFixture {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Self::Valid(jwk) => f
-                .debug_tuple("Valid")
-                .field(&jwk.to_string())
-                .finish(),
+            Self::Valid(jwk) => f.debug_tuple("Valid").field(&jwk.to_string()).finish(),
             Self::CorruptJson(value) => f.debug_tuple("CorruptJson").field(value).finish(),
         }
     }
@@ -72,13 +69,25 @@ fn deterministic_factory(seed: u64) -> Factory {
 }
 
 pub fn valid_rsa_fixture() -> BoxedStrategy<RsaKeyPair> {
-    (any::<u64>(), label_strategy("rsa"), prop_oneof![Just(RsaSpec::rs256()), Just(RsaSpec::new(3072)), Just(RsaSpec::new(4096))])
+    (
+        any::<u64>(),
+        label_strategy("rsa"),
+        prop_oneof![
+            Just(RsaSpec::rs256()),
+            Just(RsaSpec::new(3072)),
+            Just(RsaSpec::new(4096))
+        ],
+    )
         .prop_map(|(seed, label, spec)| deterministic_factory(seed).rsa(label, spec))
         .boxed()
 }
 
 pub fn valid_ecdsa_fixture() -> BoxedStrategy<EcdsaKeyPair> {
-    (any::<u64>(), label_strategy("ecdsa"), prop_oneof![Just(EcdsaSpec::es256()), Just(EcdsaSpec::es384())])
+    (
+        any::<u64>(),
+        label_strategy("ecdsa"),
+        prop_oneof![Just(EcdsaSpec::es256()), Just(EcdsaSpec::es384())],
+    )
         .prop_map(|(seed, label, spec)| deterministic_factory(seed).ecdsa(label, spec))
         .boxed()
 }
@@ -90,13 +99,29 @@ pub fn valid_ed25519_fixture() -> BoxedStrategy<Ed25519KeyPair> {
 }
 
 pub fn valid_hmac_fixture() -> BoxedStrategy<HmacSecret> {
-    (any::<u64>(), label_strategy("hmac"), prop_oneof![Just(HmacSpec::hs256()), Just(HmacSpec::hs384()), Just(HmacSpec::hs512())])
+    (
+        any::<u64>(),
+        label_strategy("hmac"),
+        prop_oneof![
+            Just(HmacSpec::hs256()),
+            Just(HmacSpec::hs384()),
+            Just(HmacSpec::hs512())
+        ],
+    )
         .prop_map(|(seed, label, spec)| deterministic_factory(seed).hmac(label, spec))
         .boxed()
 }
 
 pub fn token_fixture() -> BoxedStrategy<TokenFixture> {
-    (any::<u64>(), label_strategy("token"), prop_oneof![Just(TokenSpec::api_key()), Just(TokenSpec::bearer()), Just(TokenSpec::oauth_access_token())])
+    (
+        any::<u64>(),
+        label_strategy("token"),
+        prop_oneof![
+            Just(TokenSpec::api_key()),
+            Just(TokenSpec::bearer()),
+            Just(TokenSpec::oauth_access_token())
+        ],
+    )
         .prop_map(|(seed, label, spec)| deterministic_factory(seed).token(label, spec))
         .boxed()
 }
@@ -143,24 +168,27 @@ pub fn negative_der_fixture() -> BoxedStrategy<NegativeDerFixture> {
 }
 
 pub fn x509_negative_variants() -> BoxedStrategy<X509NegativeChainFixture> {
-    (x509_chain_fixture(), prop_oneof![
-        Just(ChainNegative::UnknownCa),
-        Just(ChainNegative::ExpiredLeaf),
-        Just(ChainNegative::NotYetValidLeaf),
-        Just(ChainNegative::ExpiredIntermediate),
-        Just(ChainNegative::NotYetValidIntermediate),
-        Just(ChainNegative::IntermediateNotCa),
-        Just(ChainNegative::IntermediateWrongKeyUsage),
-        Just(ChainNegative::RevokedLeaf),
-    ])
-    .prop_map(|(chain, variant)| {
-        let neg_chain = chain.negative(variant.clone());
-        X509NegativeChainFixture {
-            variant,
-            chain: neg_chain,
-        }
-    })
-    .boxed()
+    (
+        x509_chain_fixture(),
+        prop_oneof![
+            Just(ChainNegative::UnknownCa),
+            Just(ChainNegative::ExpiredLeaf),
+            Just(ChainNegative::NotYetValidLeaf),
+            Just(ChainNegative::ExpiredIntermediate),
+            Just(ChainNegative::NotYetValidIntermediate),
+            Just(ChainNegative::IntermediateNotCa),
+            Just(ChainNegative::IntermediateWrongKeyUsage),
+            Just(ChainNegative::RevokedLeaf),
+        ],
+    )
+        .prop_map(|(chain, variant)| {
+            let neg_chain = chain.negative(variant.clone());
+            X509NegativeChainFixture {
+                variant,
+                chain: neg_chain,
+            }
+        })
+        .boxed()
 }
 
 pub fn any_jwt_fixture() -> BoxedStrategy<JwtFixture> {
@@ -169,12 +197,11 @@ pub fn any_jwt_fixture() -> BoxedStrategy<JwtFixture> {
         valid_ecdsa_fixture().prop_map(JwtFixture::Ecdsa),
         valid_ed25519_fixture().prop_map(JwtFixture::Ed25519),
         valid_hmac_fixture().prop_map(JwtFixture::Hmac),
-        (any::<u64>(), label_strategy("oauth-token"))
-            .prop_map(|(seed, label)| {
-                JwtFixture::OAuthToken(
-                    deterministic_factory(seed).token(label, TokenSpec::oauth_access_token()),
-                )
-            }),
+        (any::<u64>(), label_strategy("oauth-token")).prop_map(|(seed, label)| {
+            JwtFixture::OAuthToken(
+                deterministic_factory(seed).token(label, TokenSpec::oauth_access_token()),
+            )
+        }),
     ]
     .boxed()
 }
@@ -185,26 +212,27 @@ pub fn any_x509_chain_negative() -> BoxedStrategy<X509NegativeChainFixture> {
 
 pub fn valid_or_corrupt_jwk() -> BoxedStrategy<JwkFixture> {
     let valid = prop_oneof![
-        valid_rsa_fixture().prop_map(|fixture| JwkFixture::Valid(AnyJwk::from(fixture.public_jwk()))),
-        valid_ecdsa_fixture().prop_map(|fixture| JwkFixture::Valid(AnyJwk::from(fixture.public_jwk()))),
-        valid_ed25519_fixture().prop_map(|fixture| JwkFixture::Valid(AnyJwk::from(fixture.public_jwk()))),
+        valid_rsa_fixture()
+            .prop_map(|fixture| JwkFixture::Valid(AnyJwk::from(fixture.public_jwk()))),
+        valid_ecdsa_fixture()
+            .prop_map(|fixture| JwkFixture::Valid(AnyJwk::from(fixture.public_jwk()))),
+        valid_ed25519_fixture()
+            .prop_map(|fixture| JwkFixture::Valid(AnyJwk::from(fixture.public_jwk()))),
         valid_hmac_fixture().prop_map(|fixture| JwkFixture::Valid(AnyJwk::from(fixture.jwk()))),
     ];
 
-    let corrupt = valid
-        .clone()
-        .prop_map(|item| match item {
-            JwkFixture::Valid(jwk) => {
-                let mut as_json = jwk.to_string();
-                if as_json.len() > 2 {
-                    as_json.replace_range(1..2, "#");
-                } else {
-                    as_json.push('#');
-                }
-                JwkFixture::CorruptJson(as_json)
+    let corrupt = valid.clone().prop_map(|item| match item {
+        JwkFixture::Valid(jwk) => {
+            let mut as_json = jwk.to_string();
+            if as_json.len() > 2 {
+                as_json.replace_range(1..2, "#");
+            } else {
+                as_json.push('#');
             }
-            JwkFixture::CorruptJson(value) => JwkFixture::CorruptJson(value),
-        });
+            JwkFixture::CorruptJson(as_json)
+        }
+        JwkFixture::CorruptJson(value) => JwkFixture::CorruptJson(value),
+    });
 
     prop_oneof![3 => valid, 1 => corrupt].boxed()
 }

@@ -1,8 +1,7 @@
 use proptest::strategy::{Strategy, ValueTree};
 use proptest::test_runner::{Config, RngAlgorithm, TestRng, TestRunner};
 use uselesskey_proptest::{
-    JwkFixture, any_jwt_fixture, any_x509_chain_negative, fuzz_entry_no_panic,
-    valid_or_corrupt_jwk,
+    JwkFixture, any_jwt_fixture, any_x509_chain_negative, fuzz_entry_no_panic, valid_or_corrupt_jwk,
 };
 
 fn runner(seed_byte: u8) -> TestRunner {
