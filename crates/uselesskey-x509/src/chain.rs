@@ -13,11 +13,11 @@ use rcgen::{
     RevocationReason, RevokedCertParams,
 };
 use rustls_pki_types::PrivatePkcs8KeyDer;
-use rsa::pkcs1v15::{Signature as RsaSignature, SigningKey, VerifyingKey};
+use rsa::pkcs1v15::SigningKey;
 use rsa::pkcs8::DecodePrivateKey;
-use rsa::signature::{SignatureEncoding, Signer, Verifier};
+use rsa::signature::{SignatureEncoding, Signer};
 use rsa::sha2::Sha256;
-use rsa::{RsaPrivateKey, RsaPublicKey};
+use rsa::RsaPrivateKey;
 use time::Duration as TimeDuration;
 use time::OffsetDateTime;
 use uselesskey_core::sink::TempArtifact;
@@ -821,6 +821,13 @@ pub(crate) fn verify_ocsp_like_signature(der: &[u8], issuer_public_key: RsaPubli
     verifying.verify(payload, &sig).is_ok()
 }
 
+#[cfg(test)]
+use rsa::pkcs1v15::{Signature as RsaSignature, VerifyingKey};
+#[cfg(test)]
+use rsa::signature::Verifier;
+#[cfg(test)]
+use rsa::RsaPublicKey;
+
 fn apply_not_before(base_time: OffsetDateTime, offset: Option<NotBeforeOffset>) -> OffsetDateTime {
     match offset.unwrap_or(NotBeforeOffset::DaysAgo(1)) {
         NotBeforeOffset::DaysAgo(days) => base_time - TimeDuration::days(days as i64),
@@ -1310,6 +1317,27 @@ mod tests {
     }
 
     #[test]
+    fn test_explicit_crl_intermediate_fixture_contains_intermediate_serial() {
+        let factory = fx();
+        let chain = X509Chain::new(factory, "svc-crl-int", ChainSpec::new("svc.example.com"));
+        let crl = chain.crl_for_intermediate();
+        assert!(!crl.der().is_empty());
+        assert!(crl.pem().is_some());
+
+        let (_, intermediate) =
+            x509_parser::certificate::X509Certificate::from_der(chain.intermediate_cert_der())
+                .expect("intermediate parse");
+        assert_eq!(
+            crl.serial_binding_hex(),
+            hex_encode(intermediate.raw_serial())
+        );
+        assert_eq!(crl.issuer_binding(), chain.spec().root_cn);
+
+        let _ = x509_parser::revocation_list::CertificateRevocationList::from_der(crl.der())
+            .expect("crl parse");
+    }
+
+    #[test]
     fn test_explicit_ocsp_fixture_signature_verifies() {
         let factory = fx();
         let chain = X509Chain::new(factory, "svc-ocsp", ChainSpec::new("svc.example.com"));
@@ -1324,5 +1352,22 @@ mod tests {
         let public_key = RsaPublicKey::from_public_key_der(int_cert.public_key().raw)
             .expect("pubkey parse");
         assert!(verify_ocsp_like_signature(ocsp.der(), public_key));
+    }
+
+    #[test]
+    fn test_explicit_ocsp_intermediate_fixture_signature_verifies() {
+        let factory = fx();
+        let chain = X509Chain::new(factory, "svc-ocsp-int", ChainSpec::new("svc.example.com"));
+        let ocsp = chain.ocsp_for_intermediate(OcspCertStatus::Good);
+        assert!(ocsp.pem().is_none());
+        assert!(!ocsp.base64().is_empty());
+
+        let (_, root_cert) =
+            x509_parser::certificate::X509Certificate::from_der(chain.root_cert_der())
+                .expect("root parse");
+        let public_key = RsaPublicKey::from_public_key_der(root_cert.public_key().raw)
+            .expect("pubkey parse");
+        assert!(verify_ocsp_like_signature(ocsp.der(), public_key));
+        assert_eq!(ocsp.issuer_binding(), root_cert.subject().to_string());
     }
 }
