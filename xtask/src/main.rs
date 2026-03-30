@@ -834,8 +834,8 @@ fn perf(compare: bool) -> Result<()> {
 fn perf_compare() -> Result<()> {
     let baseline_json = fs::read_to_string(PERF_BASELINE_PATH)
         .with_context(|| format!("failed to read {PERF_BASELINE_PATH}"))?;
-    let latest_json =
-        fs::read_to_string(PERF_LATEST_PATH).with_context(|| format!("failed to read {PERF_LATEST_PATH}"))?;
+    let latest_json = fs::read_to_string(PERF_LATEST_PATH)
+        .with_context(|| format!("failed to read {PERF_LATEST_PATH}"))?;
 
     let baseline: PerfBaselineFile =
         serde_json::from_str(&baseline_json).context("invalid perf baseline JSON schema")?;
@@ -859,23 +859,26 @@ fn perf_compare() -> Result<()> {
 
     for budget in &baseline.entries {
         let Some(measured) = latest_by_id.get(budget.id.as_str()) else {
-            bail!("latest perf report missing required benchmark id: {}", budget.id);
+            bail!(
+                "latest perf report missing required benchmark id: {}",
+                budget.id
+            );
         };
-        let regression_pct =
-            ((measured.median_ns as f64 - budget.baseline_median_ns as f64) / budget.baseline_median_ns as f64)
-                * 100.0;
+        let regression_pct = ((measured.median_ns as f64 - budget.baseline_median_ns as f64)
+            / budget.baseline_median_ns as f64)
+            * 100.0;
         let status = if regression_pct > budget.max_regression_pct {
-            if budget.enforce_in_ci {
-                "FAIL"
-            } else {
-                "WARN"
-            }
+            if budget.enforce_in_ci { "FAIL" } else { "WARN" }
         } else {
             "OK"
         };
         eprintln!(
             "[perf:{status}] {:32} baseline={}ns latest={}ns regression={:+.2}% threshold={:.2}%",
-            budget.id, budget.baseline_median_ns, measured.median_ns, regression_pct, budget.max_regression_pct
+            budget.id,
+            budget.baseline_median_ns,
+            measured.median_ns,
+            regression_pct,
+            budget.max_regression_pct
         );
         if status == "FAIL" {
             violations.push(format!(
@@ -886,7 +889,10 @@ fn perf_compare() -> Result<()> {
     }
 
     if !violations.is_empty() {
-        bail!("performance budget check failed:\n{}", violations.join("\n"));
+        bail!(
+            "performance budget check failed:\n{}",
+            violations.join("\n")
+        );
     }
 
     Ok(())
@@ -2447,10 +2453,14 @@ mod tests {
 
     #[test]
     fn perf_baseline_schema_is_valid() {
-        let json = fs::read_to_string(workspace_path(PERF_BASELINE_PATH)).expect("read perf baseline");
+        let json =
+            fs::read_to_string(workspace_path(PERF_BASELINE_PATH)).expect("read perf baseline");
         let parsed: PerfBaselineFile = serde_json::from_str(&json).expect("parse perf baseline");
         assert_eq!(parsed.version, 1);
-        assert!(!parsed.entries.is_empty(), "expected at least one perf budget entry");
+        assert!(
+            !parsed.entries.is_empty(),
+            "expected at least one perf budget entry"
+        );
         assert!(parsed.entries.iter().all(|e| !e.id.is_empty()));
     }
 

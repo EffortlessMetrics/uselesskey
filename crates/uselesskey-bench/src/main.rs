@@ -7,7 +7,10 @@ use clap::Parser;
 use uselesskey_bench::{run_perf_suite, write_summary};
 
 #[derive(Parser, Debug)]
-#[command(name = "uselesskey-bench", about = "Run machine-readable fixture performance benchmarks.")]
+#[command(
+    name = "uselesskey-bench",
+    about = "Run machine-readable fixture performance benchmarks."
+)]
 struct Cli {
     /// Output file for benchmark JSON summary.
     #[arg(long, default_value = "target/xtask/perf/latest.json")]

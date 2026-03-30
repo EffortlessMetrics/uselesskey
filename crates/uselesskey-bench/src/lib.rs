@@ -6,9 +6,9 @@ use std::time::{Duration, Instant};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use uselesskey::{
-    ChainSpec, EcdsaFactoryExt, EcdsaSpec, Ed25519FactoryExt, Ed25519Spec, Factory,
-    HmacFactoryExt, HmacSpec, RsaFactoryExt, RsaSpec, TokenFactoryExt, TokenSpec, X509FactoryExt,
-    X509Spec, negative::CorruptPem,
+    ChainSpec, EcdsaFactoryExt, EcdsaSpec, Ed25519FactoryExt, Ed25519Spec, Factory, HmacFactoryExt,
+    HmacSpec, RsaFactoryExt, RsaSpec, TokenFactoryExt, TokenSpec, X509FactoryExt, X509Spec,
+    negative::CorruptPem,
 };
 
 pub const REQUIRED_SCENARIO_IDS: &[&str] = &[
@@ -72,7 +72,10 @@ pub fn run_perf_suite() -> PerfSummary {
         }),
         benchmark("x509.self_signed", "x509", 15, || {
             let fx = Factory::random();
-            let cert = fx.x509_self_signed("bench-self-signed", X509Spec::self_signed("bench.example.com"));
+            let cert = fx.x509_self_signed(
+                "bench-self-signed",
+                X509Spec::self_signed("bench.example.com"),
+            );
             cert.cert_der().len() + cert.private_key_pkcs8_der().len()
         }),
         benchmark("x509.chain", "x509", 12, || {
@@ -104,7 +107,9 @@ fn benchmark_warm_cache_rsa() -> BenchScenario {
     for _ in 0..500 {
         let started = Instant::now();
         let cached = fx.rsa("bench-rsa-warm", RsaSpec::rs256());
-        std::hint::black_box(cached.private_key_pkcs8_der().len() + cached.public_key_spki_der().len());
+        std::hint::black_box(
+            cached.private_key_pkcs8_der().len() + cached.public_key_spki_der().len(),
+        );
         samples_ns.push(elapsed_ns(started.elapsed()));
     }
     BenchScenario {
@@ -119,7 +124,12 @@ fn benchmark_warm_cache_rsa() -> BenchScenario {
     }
 }
 
-fn benchmark(id: &str, group: &str, iterations: usize, mut f: impl FnMut() -> usize) -> BenchScenario {
+fn benchmark(
+    id: &str,
+    group: &str,
+    iterations: usize,
+    mut f: impl FnMut() -> usize,
+) -> BenchScenario {
     let mut samples_ns = Vec::with_capacity(iterations);
     let mut output_bytes = 0usize;
 
@@ -190,7 +200,10 @@ mod tests {
             .map(|s| s.id.as_str())
             .collect::<BTreeSet<_>>();
         for required in REQUIRED_SCENARIO_IDS {
-            assert!(ids.contains(required), "missing required benchmark: {required}");
+            assert!(
+                ids.contains(required),
+                "missing required benchmark: {required}"
+            );
         }
     }
 
