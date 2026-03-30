@@ -13,6 +13,7 @@ use uselesskey_feature_grid::{BDD_FEATURE_MATRIX, CORE_FEATURE_MATRIX};
 
 mod docs_sync;
 mod plan;
+mod pr_bundles;
 mod receipt;
 
 #[derive(Parser)]
@@ -128,6 +129,12 @@ enum Cmd {
         #[command(subcommand)]
         hook: HookCmd,
     },
+    /// Manage the PR backlog as keeper-based bundles.
+    PrBundles {
+        /// Snapshot / ledger / worktree preparation for PR bundles.
+        #[command(subcommand)]
+        command: PrBundlesCmd,
+    },
 }
 
 #[derive(Subcommand)]
@@ -136,6 +143,70 @@ enum HookCmd {
     PreCommit,
     /// Delegate for `pre-push`.
     PrePush,
+}
+
+#[derive(Subcommand)]
+enum PrBundlesCmd {
+    /// Fetch open PRs and recent closed donors using the REST API.
+    Snapshot {
+        /// Explicit repo in `owner/name` form. Defaults to the current gh repo.
+        #[arg(long)]
+        repo: Option<String>,
+        /// Also collect touched paths for closed PR donor analysis.
+        #[arg(long)]
+        include_closed_paths: bool,
+        /// Output path for the snapshot JSON.
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
+    /// Build keeper-ledger Markdown and companion JSON from a snapshot.
+    Ledger {
+        /// Input snapshot JSON path.
+        #[arg(long)]
+        snapshot: Option<PathBuf>,
+        /// Output path for the structured ledger JSON.
+        #[arg(long)]
+        json_out: Option<PathBuf>,
+        /// Output path for the rendered ledger Markdown.
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
+    /// Create a dedicated worktree from an explicit keeper PR branch.
+    Prepare {
+        /// Bundle id from the generated ledger.
+        #[arg(long)]
+        bundle_id: String,
+        /// Explicit keeper PR number. Required before edits begin.
+        #[arg(long)]
+        keeper: u64,
+        /// Snapshot JSON path. Defaults to `target/xtask/pr-bundles/snapshot.json`.
+        #[arg(long)]
+        snapshot: Option<PathBuf>,
+        /// Base ref to rebase onto after the worktree is created.
+        #[arg(long)]
+        base_ref: Option<String>,
+        /// Explicit worktree path. Defaults to `../uselesskey-bundle-<bundle-id>`.
+        #[arg(long)]
+        worktree_path: Option<PathBuf>,
+        /// Explicit local branch name. Defaults to `work/<bundle-id>-keeper`.
+        #[arg(long)]
+        branch_name: Option<String>,
+    },
+    /// Remove a prepared worktree and optionally force cleanup.
+    Cleanup {
+        /// Bundle id used during `cargo xtask pr-bundles prepare`.
+        #[arg(long)]
+        bundle_id: String,
+        /// Explicit worktree path. Defaults to `../uselesskey-bundle-<bundle-id>`.
+        #[arg(long)]
+        worktree_path: Option<PathBuf>,
+        /// Explicit local branch name. Defaults to `work/<bundle-id>-keeper`.
+        #[arg(long)]
+        branch_name: Option<String>,
+        /// Remove the worktree even if it has local changes.
+        #[arg(long)]
+        force: bool,
+    },
 }
 
 fn main() -> Result<()> {
@@ -171,7 +242,185 @@ fn main() -> Result<()> {
             HookCmd::PreCommit => hook_pre_commit(),
             HookCmd::PrePush => hook_pre_push(),
         },
+        Cmd::PrBundles { command } => match command {
+            PrBundlesCmd::Snapshot {
+                repo,
+                include_closed_paths,
+                output,
+            } => bundle_snapshot(repo, include_closed_paths, output),
+            PrBundlesCmd::Ledger {
+                snapshot,
+                json_out,
+                output,
+            } => bundle_ledger(snapshot, json_out, output),
+            PrBundlesCmd::Prepare {
+                bundle_id,
+                keeper,
+                snapshot,
+                base_ref,
+                worktree_path,
+                branch_name,
+            } => bundle_prepare(
+                &bundle_id,
+                keeper,
+                snapshot,
+                base_ref,
+                worktree_path,
+                branch_name,
+            ),
+            PrBundlesCmd::Cleanup {
+                bundle_id,
+                worktree_path,
+                branch_name,
+                force,
+            } => bundle_cleanup(&bundle_id, worktree_path, branch_name, force),
+        },
     }
+}
+
+fn bundle_snapshot(
+    repo: Option<String>,
+    include_closed_paths: bool,
+    output: Option<PathBuf>,
+) -> Result<()> {
+    let mut cmd = pr_bundles::SnapshotCommand::new(repo);
+    if let Some(path) = output {
+        cmd.output_path = path;
+    }
+    cmd.include_closed_paths = include_closed_paths;
+
+    let snapshot = pr_bundles::snapshot_cmd(&cmd)?;
+
+    println!(
+        "pr-bundles snapshot: wrote {} (open={}, closed={})",
+        cmd.output_path.display(),
+        snapshot.open_pull_requests.len(),
+        snapshot.closed_pull_requests.len()
+    );
+    Ok(())
+}
+
+fn bundle_ledger(
+    snapshot: Option<PathBuf>,
+    json_out: Option<PathBuf>,
+    output: Option<PathBuf>,
+) -> Result<()> {
+    let snapshot_path =
+        snapshot.unwrap_or_else(|| PathBuf::from("target/xtask/pr-bundles/snapshot.json"));
+    let mut cmd = pr_bundles::LedgerCommand::new(&snapshot_path);
+    if let Some(path) = &output {
+        cmd.output_path = Some(path.clone());
+    }
+
+    let report = pr_bundles::ledger_cmd(&cmd)?;
+    let json_path =
+        json_out.unwrap_or_else(|| PathBuf::from("target/xtask/pr-bundles/ledger.json"));
+    write_json_pretty(&json_path, &report.analysis)?;
+    let _ = report.markdown.len();
+
+    let markdown_path = cmd
+        .output_path
+        .clone()
+        .unwrap_or_else(|| PathBuf::from("target/xtask/pr-bundles/ledger.md"));
+    println!(
+        "pr-bundles ledger: wrote {} and {}",
+        json_path.display(),
+        markdown_path.display()
+    );
+    Ok(())
+}
+
+fn bundle_prepare(
+    bundle_id: &str,
+    keeper: u64,
+    snapshot_json: Option<PathBuf>,
+    base_ref: Option<String>,
+    worktree_path: Option<PathBuf>,
+    branch_name: Option<String>,
+) -> Result<()> {
+    let snapshot_path =
+        snapshot_json.unwrap_or_else(|| PathBuf::from("target/xtask/pr-bundles/snapshot.json"));
+    let snapshot: pr_bundles::BundleSnapshot = read_json_file(&snapshot_path)?;
+    let analysis = pr_bundles::analyze_snapshot(&snapshot);
+    let bundle = analysis
+        .bundles
+        .iter()
+        .find(|bundle| bundle.bundle_id == bundle_id)
+        .with_context(|| {
+            format!(
+                "bundle `{bundle_id}` not found in {}",
+                snapshot_path.display()
+            )
+        })?;
+    let keeper_pr = keeper;
+    let prepared = pr_bundles::prepare_cmd(&pr_bundles::PrepareCommand {
+        repo_root: workspace_root_path(),
+        snapshot_path,
+        bundle_id: bundle.bundle_id.clone(),
+        base_ref: base_ref
+            .clone()
+            .unwrap_or_else(|| "origin/main".to_string()),
+        keeper_pr,
+        branch_name,
+        worktree_path,
+    })?;
+    let target_base = base_ref.unwrap_or_else(|| "origin/main".to_string());
+
+    println!("pr-bundles prepare");
+    println!("bundle: {}", bundle.bundle_id);
+    println!("keeper: #{} ({})", keeper_pr, bundle.keeper.title);
+    println!("path: {}", prepared.worktree_path.display());
+    println!("branch: {}", prepared.branch);
+    println!("next:");
+    println!("  cd {}", prepared.worktree_path.display());
+    println!("  git fetch origin");
+    println!("  git rebase {target_base}");
+    Ok(())
+}
+
+fn bundle_cleanup(
+    bundle_id: &str,
+    worktree_path: Option<PathBuf>,
+    branch_name: Option<String>,
+    force: bool,
+) -> Result<()> {
+    let repo_root = workspace_root_path();
+    let target_path =
+        worktree_path.unwrap_or_else(|| pr_bundles::default_worktree_path(&repo_root, bundle_id));
+    let target_branch = branch_name.unwrap_or_else(|| pr_bundles::default_keeper_branch(bundle_id));
+
+    let cmd = pr_bundles::CleanupCommand {
+        repo_root,
+        worktree_path: target_path,
+        base_ref: Some("origin/main".to_string()),
+        branch: Some(target_branch),
+        force,
+        delete_branch: true,
+        prune: true,
+    };
+    let report = pr_bundles::cleanup_cmd(&cmd)?;
+    println!(
+        "pr-bundles cleanup: removed {} (branch_deleted={}, pruned={})",
+        report.worktree_path.display(),
+        report.branch_deleted,
+        report.pruned
+    );
+    Ok(())
+}
+
+fn write_json_pretty(path: &Path, value: &impl serde::Serialize) -> Result<()> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)
+            .with_context(|| format!("failed to create {}", parent.display()))?;
+    }
+    let json = serde_json::to_string_pretty(value).context("failed to serialize JSON")?;
+    fs::write(path, json).with_context(|| format!("failed to write {}", path.display()))
+}
+
+fn read_json_file<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T> {
+    let raw =
+        fs::read_to_string(path).with_context(|| format!("failed to read {}", path.display()))?;
+    serde_json::from_str(&raw).with_context(|| format!("failed to parse {}", path.display()))
 }
 
 fn run(cmd: &mut Command) -> Result<()> {
