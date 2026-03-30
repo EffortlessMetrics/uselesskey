@@ -61,7 +61,8 @@ mod tests {
 
     #[test]
     fn self_signed_native_tls_conversions() {
-        let cert = Factory::random().x509_self_signed("native-tls-cert", X509Spec::self_signed("svc.example.com"));
+        let cert = Factory::random()
+            .x509_self_signed("native-tls-cert", X509Spec::self_signed("svc.example.com"));
         let _identity = cert.identity_native_tls();
         let _cert = cert.certificate_native_tls();
         let _builder = cert.connector_builder_native_tls();
@@ -69,7 +70,8 @@ mod tests {
 
     #[test]
     fn chain_native_tls_conversions() {
-        let chain = Factory::random().x509_chain("native-tls-chain", ChainSpec::new("svc.example.com"));
+        let chain =
+            Factory::random().x509_chain("native-tls-chain", ChainSpec::new("svc.example.com"));
         let _identity = chain.leaf_identity_native_tls();
         let _root = chain.root_certificate_native_tls();
         let _builder = chain.connector_builder_native_tls();

@@ -5273,6 +5273,7 @@ dependencies = [
  "uselesskey-ed25519",
  "uselesskey-hmac",
  "uselesskey-jsonwebtoken",
+ "uselesskey-native-tls",
  "uselesskey-openssl",
  "uselesskey-ring",
  "uselesskey-rsa",

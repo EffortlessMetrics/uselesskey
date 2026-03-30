@@ -24,13 +24,14 @@ pub trait WebPkiChainExt {
             None,
         )?;
 
-        let server_name = ServerName::try_from(server_name)
-            .map_err(|_| webpki::Error::MalformedDnsIdentifier)?;
+        let server_name =
+            ServerName::try_from(server_name).map_err(|_| webpki::Error::MalformedDnsIdentifier)?;
         end_entity.verify_is_valid_for_subject_name(&server_name)
     }
 
     fn verify_leaf_rejected_webpki(&self, server_name: &str) -> bool {
-        self.verify_leaf_for_server_name_webpki(server_name).is_err()
+        self.verify_leaf_for_server_name_webpki(server_name)
+            .is_err()
     }
 
     fn leaf_cert_der(&self) -> &[u8];
@@ -69,13 +70,15 @@ mod tests {
 
     #[test]
     fn webpki_rejects_hostname_mismatch() {
-        let chain = Factory::random().x509_chain("webpki-hostname", ChainSpec::new("svc.example.com"));
+        let chain =
+            Factory::random().x509_chain("webpki-hostname", ChainSpec::new("svc.example.com"));
         assert!(chain.verify_leaf_rejected_webpki("different.example.com"));
     }
 
     #[test]
     fn webpki_rejects_expired_leaf_variant() {
-        let chain = Factory::random().x509_chain("webpki-expired", ChainSpec::new("svc.example.com"));
+        let chain =
+            Factory::random().x509_chain("webpki-expired", ChainSpec::new("svc.example.com"));
         let expired = chain.expired_leaf();
         assert!(expired.verify_leaf_rejected_webpki("svc.example.com"));
     }

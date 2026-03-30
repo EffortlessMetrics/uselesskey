@@ -2,12 +2,11 @@
 
 //! OpenSSL native-type conversions for uselesskey fixtures.
 
-use openssl::pkey::{PKey, Private};
-
-#[cfg(any(feature = "rsa", feature = "ecdsa", feature = "ed25519"))]
-use openssl::pkey::Public;
 #[cfg(any(feature = "rsa", feature = "ecdsa"))]
 use openssl::hash::MessageDigest;
+#[cfg(any(feature = "rsa", feature = "ecdsa", feature = "ed25519"))]
+use openssl::pkey::Public;
+use openssl::pkey::{PKey, Private};
 #[cfg(any(feature = "rsa", feature = "ecdsa", feature = "ed25519"))]
 use openssl::sign::{Signer, Verifier};
 
@@ -149,12 +148,15 @@ impl OpenSslX509ChainExt for uselesskey_x509::X509Chain {
     }
 
     fn leaf_private_key_openssl(&self) -> PKey<Private> {
-        PKey::private_key_from_der(self.leaf_private_key_pkcs8_der()).expect("valid leaf PKCS#8 DER")
+        PKey::private_key_from_der(self.leaf_private_key_pkcs8_der())
+            .expect("valid leaf PKCS#8 DER")
     }
 
     fn cert_chain_stack_openssl(&self) -> openssl::stack::Stack<openssl::x509::X509> {
         let mut stack = openssl::stack::Stack::new().expect("stack");
-        stack.push(self.intermediate_cert_openssl()).expect("push intermediate");
+        stack
+            .push(self.intermediate_cert_openssl())
+            .expect("push intermediate");
         stack.push(self.root_cert_openssl()).expect("push root");
         stack
     }
@@ -206,9 +208,24 @@ mod tests {
         use crate::OpenSslX509ChainExt;
         use uselesskey_x509::{ChainSpec, X509FactoryExt};
 
-        let chain = Factory::random().x509_chain("openssl-chain", ChainSpec::new("svc.example.com"));
-        assert!(chain.leaf_cert_openssl().subject_name().entries().next().is_some());
-        assert!(chain.root_cert_openssl().subject_name().entries().next().is_some());
+        let chain =
+            Factory::random().x509_chain("openssl-chain", ChainSpec::new("svc.example.com"));
+        assert!(
+            chain
+                .leaf_cert_openssl()
+                .subject_name()
+                .entries()
+                .next()
+                .is_some()
+        );
+        assert!(
+            chain
+                .root_cert_openssl()
+                .subject_name()
+                .entries()
+                .next()
+                .is_some()
+        );
         assert!(!chain.cert_chain_stack_openssl().is_empty());
     }
 }
