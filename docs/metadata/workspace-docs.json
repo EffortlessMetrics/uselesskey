@@ -45,6 +45,10 @@
       "description": "X.509 self-signed certificates and certificate chains"
     },
     {
+      "name": "uselesskey-manifest",
+      "description": "Stable fixture manifest and receipt schema for uselesskey outputs"
+    },
+    {
       "name": "uselesskey-cli",
       "description": "Command-line fixture generation, bundling, and export helpers"
     }
@@ -485,6 +489,15 @@
       "publish_status": "published",
       "facade_exposed": true,
       "semver_expectation": "Normal semver guarantees for public APIs.",
+      "msrv_policy": "Tracks workspace MSRV (Rust 1.92).",
+      "intended_audience": "most-users"
+    },
+    {
+      "name": "uselesskey-manifest",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Normal semver guarantees for stable manifest and receipt schemas.",
       "msrv_policy": "Tracks workspace MSRV (Rust 1.92).",
       "intended_audience": "most-users"
     },

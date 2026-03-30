@@ -47,6 +47,7 @@
 | `uselesskey-jose-openid` | `incubating` | `published` | — | `adapter-users` | Minor releases may refine APIs before 1.0. | Tracks workspace MSRV (Rust 1.92). | — |
 | `uselesskey-jsonwebtoken` | `stable` | `published` | — | `adapter-users` | Stable adapter API; follows upstream compatibility windows. | Tracks workspace MSRV (Rust 1.92). | — |
 | `uselesskey-jwk` | `stable` | `published` | ✓ | `most-users` | Normal semver guarantees for public APIs. | Tracks workspace MSRV (Rust 1.92). | — |
+| `uselesskey-manifest` | `stable` | `published` | — | `most-users` | Normal semver guarantees for stable manifest and receipt schemas. | Tracks workspace MSRV (Rust 1.92). | — |
 | `uselesskey-pgp` | `stable` | `published` | ✓ | `most-users` | Normal semver guarantees for public APIs. | Tracks workspace MSRV (Rust 1.92). | — |
 | `uselesskey-pgp-native` | `incubating` | `published` | — | `adapter-users` | Minor releases may refine APIs before 1.0. | Tracks workspace MSRV (Rust 1.92). | — |
 | `uselesskey-ring` | `stable` | `published` | — | `adapter-users` | Stable adapter API; follows upstream compatibility windows. | Tracks workspace MSRV (Rust 1.92). | — |
