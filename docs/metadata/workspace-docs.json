@@ -103,6 +103,15 @@
       "intended_audience": "adapter-users"
     },
     {
+      "name": "uselesskey-bench",
+      "support_tier": "experimental",
+      "publish_status": "test-only",
+      "facade_exposed": false,
+      "semver_expectation": "No public API stability commitments.",
+      "msrv_policy": "Best effort for workspace CI only.",
+      "intended_audience": "repo-internal"
+    },
+    {
       "name": "uselesskey-bdd",
       "support_tier": "experimental",
       "publish_status": "test-only",

@@ -7,6 +7,7 @@
 |-------|--------------|----------------|----------------|-------------------|--------------------|------------|-------|
 | `uselesskey` | `stable` | `published` | — | `most-users` | Normal semver guarantees for public APIs. | Tracks workspace MSRV (Rust 1.92). | — |
 | `uselesskey-aws-lc-rs` | `stable` | `published` | — | `adapter-users` | Stable adapter API; follows upstream compatibility windows. | Tracks workspace MSRV (Rust 1.92). | — |
+| `uselesskey-bench` | `experimental` | `test-only` | — | `repo-internal` | No public API stability commitments. | Best effort for workspace CI only. | — |
 | `uselesskey-bdd` | `experimental` | `test-only` | — | `repo-internal` | No public API stability commitments. | Best effort for workspace CI only. | — |
 | `uselesskey-bdd-steps` | `experimental` | `test-only` | — | `repo-internal` | No public API stability commitments. | Best effort for workspace CI only. | — |
 | `uselesskey-cli` | `incubating` | `internal` | — | `most-users` | Minor releases may refine APIs before 1.0. | Tracks workspace MSRV (Rust 1.92). | — |
