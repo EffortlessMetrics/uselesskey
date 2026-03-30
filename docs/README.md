@@ -46,4 +46,5 @@ Historical planning artifacts (not user-facing).
 - [summary.md](internal/summary.md)
 - [bdd-test-coverage-analysis.md](internal/bdd-test-coverage-analysis.md)
 - [bdd-scenarios-implementation-plan.md](internal/bdd-scenarios-implementation-plan.md)
+- [pr-bundle-reduction.md](internal/pr-bundle-reduction.md)
 - [test-architecture-diagram.md](internal/test-architecture-diagram.md)

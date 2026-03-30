@@ -32,6 +32,7 @@ This repository uses `xtask` for automation. You can run these commands via `car
 ```bash
 cargo xtask ci              # Main CI pipeline: fmt + clippy + tests + matrix + guard + bdd + no-blob + mutants + fuzz
 cargo xtask pr              # PR-scoped tests based on git diff (emits JSON receipt)
+cargo xtask pr-bundles      # Bundle-ledger workflow for large PR queues: snapshot, ledger, prepare, cleanup
 cargo xtask test            # Run all tests with all features
 cargo xtask fmt --fix       # Fix formatting
 cargo xtask clippy          # Run clippy with -D warnings
