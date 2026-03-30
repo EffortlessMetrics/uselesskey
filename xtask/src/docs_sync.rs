@@ -458,7 +458,10 @@ fn validate_support_matrix(root: &Path, metadata: &DocsMetadata) -> Result<()> {
 
     for entry in &metadata.support_matrix {
         if !seen.insert(entry.name.clone()) {
-            errors.push(format!("duplicate support_matrix entry for crate '{}'", entry.name));
+            errors.push(format!(
+                "duplicate support_matrix entry for crate '{}'",
+                entry.name
+            ));
         }
         support_set.insert(entry.name.clone());
 
