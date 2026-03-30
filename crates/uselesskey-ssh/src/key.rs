@@ -1,8 +1,8 @@
 use std::fmt;
 use std::sync::Arc;
 
-use rand_chacha10::ChaCha20Rng;
-use rand_chacha10::rand_core::SeedableRng;
+use rand_chacha::ChaCha20Rng;
+use rand_chacha::rand_core::SeedableRng;
 use ssh_key::{Algorithm, LineEnding, PrivateKey};
 use uselesskey_core::Factory;
 
