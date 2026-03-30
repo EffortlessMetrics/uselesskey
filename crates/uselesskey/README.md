@@ -34,10 +34,60 @@ like `Factory`, `Mode`, and `Seed`; enable only the fixture families you need.
 
 Token-only consumers can stay lightweight:
 
-```toml
-[dev-dependencies]
-uselesskey = { version = "0.5.1", default-features = false, features = ["token"] }
-```
+<!-- docs-sync:dependency-snippets-start -->
+Dependency snippets:
+- **Quick start (RSA)**
+  ```toml
+  [dev-dependencies]
+  uselesskey = { version = "0.5.1", features = ["rsa"] }
+  ```
+
+
+- **Token-only**
+  ```toml
+  [dev-dependencies]
+  uselesskey = { version = "0.5.1", default-features = false, features = ["token"] }
+  ```
+
+
+- **JWT/JWK**
+  ```toml
+  [dev-dependencies]
+  uselesskey = { version = "0.5.1", features = ["rsa", "jwk"] }
+  ```
+
+
+- **X.509 + rustls**
+  ```toml
+  [dev-dependencies]
+  uselesskey = { version = "0.5.1", features = ["x509"] }
+  uselesskey-rustls = { version = "0.5.1", features = ["tls-config", "rustls-ring"] }
+  ```
+
+
+- **jsonwebtoken adapter**
+  ```toml
+  [dev-dependencies]
+  uselesskey = { version = "0.5.1", features = ["rsa", "ecdsa", "ed25519", "hmac"] }
+  uselesskey-jsonwebtoken = { version = "0.5.1" }
+  ```
+
+
+- **JOSE/OpenID adapter**
+  ```toml
+  [dev-dependencies]
+  uselesskey = { version = "0.5.1", features = ["rsa", "ecdsa", "ed25519", "hmac"] }
+  uselesskey-jose-openid = { version = "0.5.1" }
+  ```
+
+
+- **pgp-native adapter**
+  ```toml
+  [dev-dependencies]
+  uselesskey = { version = "0.5.1", features = ["pgp"] }
+  uselesskey-pgp-native = { version = "0.5.1" }
+  ```
+<!-- docs-sync:dependency-snippets-end -->
 
 ```rust
 use uselesskey::{Factory, TokenFactoryExt, TokenSpec};

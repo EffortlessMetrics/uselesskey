@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write;
 use std::fs;
 use std::path::Path;
@@ -13,6 +13,8 @@ const MARKER_PREFIX: &str = "docs-sync:";
 
 #[derive(Debug, Deserialize)]
 struct DocsMetadata {
+    release_version: String,
+    public_features: Vec<String>,
     workspace_crates: Vec<CrateEntry>,
     adapter_crates: Vec<CrateEntry>,
     support_matrix: Vec<SupportEntry>,
@@ -20,6 +22,8 @@ struct DocsMetadata {
     facade_feature_matrix: Vec<FeatureMatrixEntry>,
     adapter_feature_matrix: Vec<AdapterMatrixEntry>,
     dependency_snippets: Vec<DependencySnippet>,
+    minimal_example_commands: Vec<ExampleCommand>,
+    sync_targets: Vec<SyncTarget>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -59,7 +63,28 @@ struct AdapterMatrixEntry {
 #[derive(Debug, Deserialize)]
 struct DependencySnippet {
     name: String,
-    snippet: String,
+    dependencies: Vec<SnippetDependency>,
+    minimal_example_command: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct SnippetDependency {
+    crate_name: String,
+    default_features: Option<bool>,
+    features: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ExampleCommand {
+    name: String,
+    command: String,
+    description: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct SyncTarget {
+    path: String,
+    blocks: Vec<String>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -86,6 +111,7 @@ pub fn examples_smoke_cmd(run: bool) -> Result<()> {
     let root = crate::workspace_root_path();
     let metadata = load_metadata(&root)?;
     validate_examples_match_workspace(&root, &metadata)?;
+    validate_metadata_integrity(&root, &metadata)?;
 
     for example in &metadata.runnable_examples {
         compile_example(&root, example)?;
@@ -101,9 +127,37 @@ fn run_docs_sync(check: bool) -> Result<()> {
     let root = crate::workspace_root_path();
     let metadata = load_metadata(&root)?;
     validate_support_matrix(&root, &metadata)?;
-    let readme_path = root.join("README.md");
-    let original = fs::read_to_string(&readme_path).context("failed to read README.md")?;
-    let updated = rewrite_document(&original, &metadata)?;
+    validate_metadata_integrity(&root, &metadata)?;
+
+    let mut rewritten_targets = Vec::new();
+    let mut inventory = BTreeMap::<String, Vec<String>>::new();
+
+    for target in &metadata.sync_targets {
+        let path = root.join(&target.path);
+        let original =
+            fs::read_to_string(&path).with_context(|| format!("failed to read {}", target.path))?;
+        let (updated, touched_blocks) = rewrite_document(&original, &metadata, &target.blocks)?;
+
+        if touched_blocks.is_empty() {
+            continue;
+        }
+
+        inventory.insert(target.path.clone(), touched_blocks.clone());
+
+        if check {
+            if updated != original {
+                rewritten_targets.push(target.path.clone());
+            }
+            continue;
+        }
+
+        if updated != original {
+            fs::write(&path, updated)
+                .with_context(|| format!("failed to write {}", target.path))?;
+            rewritten_targets.push(target.path.clone());
+        }
+    }
+
     let support_matrix_path = root.join(SUPPORT_MATRIX_PATH);
     let original_support_matrix = match fs::read_to_string(&support_matrix_path) {
         Ok(contents) => contents,
@@ -114,35 +168,36 @@ fn run_docs_sync(check: bool) -> Result<()> {
     };
     let rendered_support_matrix = render_support_matrix(&metadata);
     let support_matrix_changed = original_support_matrix != rendered_support_matrix;
-    if support_matrix_changed && check {
-        bail!(
-            "docs-sync check failed: docs/reference/support-matrix.md is out of sync with docs/metadata/workspace-docs.json"
-        );
-    }
-
-    if updated == original && !support_matrix_changed {
-        if check {
-            println!("docs-sync: README.md and support-matrix.md are already synchronized");
-            return Ok(());
-        }
-        return Ok(());
-    }
-
-    if check && updated != original {
-        bail!(
-            "docs-sync check failed: README.md is out of sync with docs/metadata/workspace-docs.json"
-        );
-    }
-
-    if updated != original {
-        fs::write(&readme_path, updated).context("failed to write README.md")?;
-        println!("docs-sync: updated README.md");
-    }
     if support_matrix_changed {
-        fs::write(&support_matrix_path, rendered_support_matrix)
-            .context("failed to write docs/reference/support-matrix.md")?;
-        println!("docs-sync: updated docs/reference/support-matrix.md");
+        if check {
+            rewritten_targets.push(SUPPORT_MATRIX_PATH.to_string());
+        } else {
+            fs::write(&support_matrix_path, rendered_support_matrix)
+                .context("failed to write docs/reference/support-matrix.md")?;
+            println!("docs-sync: updated docs/reference/support-matrix.md");
+        }
     }
+
+    print_inventory(&inventory);
+
+    if check && !rewritten_targets.is_empty() {
+        bail!(
+            "docs-sync check failed: stale snippets in:\n- {}",
+            rewritten_targets.join("\n- ")
+        );
+    }
+
+    if !check {
+        if rewritten_targets.is_empty() {
+            println!("docs-sync: all sync targets already up to date");
+        } else {
+            println!(
+                "docs-sync: updated files:\n- {}",
+                rewritten_targets.join("\n- ")
+            );
+        }
+    }
+
     Ok(())
 }
 
@@ -156,21 +211,34 @@ fn crate_link(name: &str) -> String {
     format!("[`{}`](https://crates.io/crates/{})", name, name)
 }
 
-fn rewrite_document(input: &str, metadata: &DocsMetadata) -> Result<String> {
-    let dependency_snippets = render_dependency_snippets(metadata);
-    let examples = render_example_table(metadata);
-    let workspace_crates = render_crate_table("workspace crate", &metadata.workspace_crates);
-    let adapter_crates = render_crate_table("adapter crate", &metadata.adapter_crates);
-    let feature_facade = render_facade_feature_matrix(metadata);
-    let feature_adapters = render_adapter_feature_matrix(metadata);
+fn rewrite_document(
+    input: &str,
+    metadata: &DocsMetadata,
+    blocks: &[String],
+) -> Result<(String, Vec<String>)> {
+    let mut output = input.to_string();
+    let mut touched = Vec::new();
 
-    let mut output = replace_block(input, "dependency-snippets", &dependency_snippets)?;
-    output = replace_block(&output, "runnable-examples", &examples)?;
-    output = replace_block(&output, "workspace-crates", &workspace_crates)?;
-    output = replace_block(&output, "adapter-crates", &adapter_crates)?;
-    output = replace_block(&output, "feature-matrix-facade", &feature_facade)?;
-    output = replace_block(&output, "feature-matrix-adapters", &feature_adapters)?;
-    Ok(output)
+    for block in blocks {
+        let replacement = render_block(block, metadata)?;
+        output = replace_block(&output, block, &replacement)?;
+        touched.push(block.clone());
+    }
+
+    Ok((output, touched))
+}
+
+fn render_block(block: &str, metadata: &DocsMetadata) -> Result<String> {
+    match block {
+        "dependency-snippets" => Ok(render_dependency_snippets(metadata)),
+        "runnable-examples" => Ok(render_example_table(metadata)),
+        "workspace-crates" => Ok(render_crate_table(&metadata.workspace_crates)),
+        "adapter-crates" => Ok(render_crate_table(&metadata.adapter_crates)),
+        "feature-matrix-facade" => Ok(render_facade_feature_matrix(metadata)),
+        "feature-matrix-adapters" => Ok(render_adapter_feature_matrix(metadata)),
+        "minimal-example-commands" => Ok(render_minimal_example_commands(metadata)),
+        other => bail!("unknown docs-sync block '{other}'"),
+    }
 }
 
 fn render_support_matrix(metadata: &DocsMetadata) -> String {
@@ -214,14 +282,14 @@ fn render_support_matrix(metadata: &DocsMetadata) -> String {
 
 fn render_dependency_snippets(metadata: &DocsMetadata) -> String {
     let mut output = String::new();
-    output.push_str("Dependency snippets:");
-    output.push('\n');
+    output.push_str("Dependency snippets:\n");
     for item in &metadata.dependency_snippets {
+        let snippet = render_single_dependency_snippet(item, &metadata.release_version);
         writeln!(
             output,
             "- **{}**\n  ```toml\n{}\n  ```\n",
             item.name,
-            indent_lines(&item.snippet, "  ")
+            indent_lines(&snippet, "  ")
         )
         .expect("write to string");
         output.push('\n');
@@ -229,7 +297,28 @@ fn render_dependency_snippets(metadata: &DocsMetadata) -> String {
     output
 }
 
-fn render_crate_table(_kind: &str, entries: &[CrateEntry]) -> String {
+fn render_single_dependency_snippet(item: &DependencySnippet, version: &str) -> String {
+    let mut snippet = String::from("[dev-dependencies]\n");
+    for dep in &item.dependencies {
+        let mut parts = vec![format!("version = \"{version}\"")];
+        if dep.default_features == Some(false) {
+            parts.push("default-features = false".to_string());
+        }
+        if !dep.features.is_empty() {
+            let feature_list = dep
+                .features
+                .iter()
+                .map(|feature| format!("\"{feature}\""))
+                .collect::<Vec<_>>()
+                .join(", ");
+            parts.push(format!("features = [{feature_list}]"));
+        }
+        let _ = writeln!(snippet, "{} = {{ {} }}", dep.crate_name, parts.join(", "));
+    }
+    snippet.trim_end().to_string()
+}
+
+fn render_crate_table(entries: &[CrateEntry]) -> String {
     let mut output = String::new();
     output.push_str("| Crate | Description |\n|-------|-------------|\n");
     for entry in entries {
@@ -314,6 +403,19 @@ fn render_adapter_feature_matrix(metadata: &DocsMetadata) -> String {
         );
     }
 
+    output
+}
+
+fn render_minimal_example_commands(metadata: &DocsMetadata) -> String {
+    let mut output = String::new();
+    output.push_str("| Scenario | Minimal command | Description |\n|----------|------------------|-------------|\n");
+    for command in &metadata.minimal_example_commands {
+        let _ = writeln!(
+            output,
+            "| {} | `{}` | {} |",
+            command.name, command.command, command.description
+        );
+    }
     output
 }
 
@@ -448,6 +550,101 @@ fn validate_examples_match_workspace(root: &Path, metadata: &DocsMetadata) -> Re
     Ok(())
 }
 
+fn validate_metadata_integrity(root: &Path, metadata: &DocsMetadata) -> Result<()> {
+    let facade_features = facade_feature_set(root)?;
+    let declared_public = metadata
+        .public_features
+        .iter()
+        .cloned()
+        .collect::<BTreeSet<_>>();
+
+    let mut errors = Vec::new();
+
+    for feature in &metadata.public_features {
+        if !facade_features.contains(feature) {
+            errors.push(format!(
+                "public feature '{feature}' is missing from crates/uselesskey/Cargo.toml"
+            ));
+        }
+    }
+
+    for entry in &metadata.facade_feature_matrix {
+        if !declared_public.contains(&entry.feature) {
+            errors.push(format!(
+                "facade feature matrix references undeclared feature '{}'",
+                entry.feature
+            ));
+        }
+    }
+
+    for snippet in &metadata.dependency_snippets {
+        if snippet.minimal_example_command.trim().is_empty() {
+            errors.push(format!(
+                "dependency snippet '{}' has an empty minimal_example_command",
+                snippet.name
+            ));
+        }
+        for dep in &snippet.dependencies {
+            if dep.crate_name.trim().is_empty() {
+                errors.push(format!(
+                    "dependency snippet '{}' contains an empty crate_name",
+                    snippet.name
+                ));
+            }
+            if dep.crate_name.starts_with("uselesskey")
+                && dep.features.is_empty()
+                && dep.default_features == Some(false)
+            {
+                errors.push(format!(
+                    "dependency snippet '{}' disables default features for '{}' but enables no features",
+                    snippet.name, dep.crate_name
+                ));
+            }
+            for feature in &dep.features {
+                if dep.crate_name == "uselesskey" && !declared_public.contains(feature) {
+                    errors.push(format!(
+                        "dependency snippet '{}' references unknown facade feature '{}'",
+                        snippet.name, feature
+                    ));
+                }
+            }
+        }
+    }
+
+    for example in &metadata.runnable_examples {
+        for feature in parse_csv_features(&example.feature_set) {
+            if !declared_public.contains(&feature) {
+                errors.push(format!(
+                    "runnable example '{}' references unknown facade feature '{}'",
+                    example.name, feature
+                ));
+            }
+        }
+    }
+
+    for entry in &metadata.minimal_example_commands {
+        if !entry.command.contains("cargo") {
+            errors.push(format!(
+                "minimal example command '{}' must contain a cargo invocation",
+                entry.name
+            ));
+        }
+    }
+
+    for target in &metadata.sync_targets {
+        let path = root.join(&target.path);
+        if !path.exists() {
+            errors.push(format!("sync target path does not exist: {}", target.path));
+        }
+    }
+
+    if !errors.is_empty() {
+        bail!("docs metadata validation failed:\n{}", errors.join("\n"));
+    }
+
+    Ok(())
+}
+
 fn validate_support_matrix(root: &Path, metadata: &DocsMetadata) -> Result<()> {
     let workspace_crates = workspace_package_names(root)?;
     let workspace_set: BTreeSet<String> = workspace_crates.into_iter().collect();
@@ -523,6 +720,58 @@ fn validate_support_matrix(root: &Path, metadata: &DocsMetadata) -> Result<()> {
     Ok(())
 }
 
+fn facade_feature_set(root: &Path) -> Result<BTreeSet<String>> {
+    let output = Command::new("cargo")
+        .current_dir(root)
+        .args(["metadata", "--format-version", "1", "--no-deps"])
+        .output()
+        .context("failed to run `cargo metadata` for feature validation")?;
+
+    if !output.status.success() {
+        bail!(
+            "`cargo metadata` failed while collecting facade features: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    let meta: serde_json::Value =
+        serde_json::from_slice(&output.stdout).context("failed to parse cargo metadata JSON")?;
+
+    let packages = meta["packages"]
+        .as_array()
+        .context("missing 'packages' in cargo metadata")?;
+
+    let uselesskey_pkg = packages
+        .iter()
+        .find(|pkg| pkg["name"].as_str() == Some("uselesskey"))
+        .context("could not find 'uselesskey' package in cargo metadata")?;
+
+    let features_obj = uselesskey_pkg["features"]
+        .as_object()
+        .context("missing 'features' object on uselesskey package")?;
+
+    Ok(features_obj.keys().cloned().collect())
+}
+
+fn parse_csv_features(value: &str) -> Vec<String> {
+    value
+        .split(',')
+        .map(str::trim)
+        .filter(|entry| !entry.is_empty())
+        .map(str::to_string)
+        .collect()
+}
+
+fn print_inventory(inventory: &BTreeMap<String, Vec<String>>) {
+    println!("docs-sync inventory:");
+    for (path, blocks) in inventory {
+        println!("- {path}");
+        for block in blocks {
+            println!("  - {block}");
+        }
+    }
+}
+
 fn validate_allowed_value(
     errors: &mut Vec<String>,
     crate_name: &str,
@@ -586,7 +835,11 @@ fn indent_lines(text: &str, indent: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{DocsMetadata, render_support_matrix, validate_allowed_value};
+    use super::{
+        DependencySnippet, DocsMetadata, ExampleCommand, SnippetDependency,
+        render_minimal_example_commands, render_single_dependency_snippet, render_support_matrix,
+        replace_block, validate_allowed_value,
+    };
 
     #[test]
     fn support_matrix_snapshot_matches_generated_doc() {
@@ -610,5 +863,56 @@ mod tests {
         );
         assert_eq!(errors.len(), 1);
         assert!(errors[0].contains("invalid support_tier"));
+    }
+
+    #[test]
+    fn dependency_snippet_renders_from_single_source_of_truth() {
+        let entry = DependencySnippet {
+            name: "JWT/JWK".to_string(),
+            dependencies: vec![SnippetDependency {
+                crate_name: "uselesskey".to_string(),
+                default_features: None,
+                features: vec!["rsa".to_string(), "jwk".to_string()],
+            }],
+            minimal_example_command: "cargo run -p uselesskey --example jwt_rs256_jwks --no-default-features --features rsa,jwk".to_string(),
+        };
+
+        let rendered = render_single_dependency_snippet(&entry, "9.9.9");
+        assert_eq!(
+            rendered,
+            "[dev-dependencies]\nuselesskey = { version = \"9.9.9\", features = [\"rsa\", \"jwk\"] }"
+        );
+    }
+
+    #[test]
+    fn minimal_example_commands_table_has_expected_shape() {
+        let metadata = DocsMetadata {
+            release_version: "0.0.0".to_string(),
+            public_features: vec![],
+            workspace_crates: vec![],
+            adapter_crates: vec![],
+            support_matrix: vec![],
+            runnable_examples: vec![],
+            facade_feature_matrix: vec![],
+            adapter_feature_matrix: vec![],
+            dependency_snippets: vec![],
+            minimal_example_commands: vec![ExampleCommand {
+                name: "RSA".to_string(),
+                command: "cargo run -p uselesskey --example basic_rsa --no-default-features --features rsa,jwk".to_string(),
+                description: "Generate RSA fixtures".to_string(),
+            }],
+            sync_targets: vec![],
+        };
+
+        let rendered = render_minimal_example_commands(&metadata);
+        assert!(rendered.contains("| RSA | `cargo run -p uselesskey --example basic_rsa --no-default-features --features rsa,jwk` | Generate RSA fixtures |"));
+    }
+
+    #[test]
+    fn replace_block_fails_when_marker_missing() {
+        let err = replace_block("no markers", "dependency-snippets", "test")
+            .expect_err("replace_block should fail without markers");
+        let text = err.to_string();
+        assert!(text.contains("missing start marker"));
     }
 }
