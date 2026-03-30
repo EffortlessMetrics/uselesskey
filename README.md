@@ -471,9 +471,12 @@ Depend on the facade for convenience, or on individual crates to minimize compil
 | [`uselesskey-axum`](https://crates.io/crates/uselesskey-axum) | `axum` auth-test helpers with deterministic JWKS/OIDC routes |
 | [`uselesskey-jsonwebtoken`](https://crates.io/crates/uselesskey-jsonwebtoken) | `jsonwebtoken` `EncodingKey` / `DecodingKey` |
 | [`uselesskey-jose-openid`](https://crates.io/crates/uselesskey-jose-openid) | JOSE/OpenID-oriented native `jsonwebtoken` key conversions |
+| [`uselesskey-native-tls`](https://crates.io/crates/uselesskey-native-tls) | `native-tls` `Identity` / `Certificate` conversions and connector builders |
+| [`uselesskey-openssl`](https://crates.io/crates/uselesskey-openssl) | OpenSSL native types (`PKey`, `X509`) with sign/verify helpers |
 | [`uselesskey-pgp-native`](https://crates.io/crates/uselesskey-pgp-native) | Native `pgp` `SignedSecretKey` / `SignedPublicKey` adapters |
 | [`uselesskey-rustls`](https://crates.io/crates/uselesskey-rustls) | `rustls` `ServerConfig` / `ClientConfig` builders |
 | [`uselesskey-tonic`](https://crates.io/crates/uselesskey-tonic) | `tonic::transport` TLS identity / config for gRPC |
+| [`uselesskey-webpki`](https://crates.io/crates/uselesskey-webpki) | `rustls-webpki` chain verification helpers for X.509 fixtures |
 | [`uselesskey-ring`](https://crates.io/crates/uselesskey-ring) | `ring` 0.17 native signing key types |
 | [`uselesskey-rustcrypto`](https://crates.io/crates/uselesskey-rustcrypto) | RustCrypto native types (`rsa::RsaPrivateKey`, etc.) |
 | [`uselesskey-aws-lc-rs`](https://crates.io/crates/uselesskey-aws-lc-rs) | `aws-lc-rs` native types |
@@ -522,12 +525,15 @@ Each adapter crate has per-algorithm feature flags (`rsa`, `ecdsa`, `ed25519`, `
 |---------|:---:|:-----:|:-------:|:----:|:-----------:|----------------|
 | `uselesskey-jsonwebtoken` | ✓ | ✓ | ✓ | ✓ | — | — |
 | `uselesskey-jose-openid` | ✓ | ✓ | ✓ | ✓ | — | — |
+| `uselesskey-native-tls` | — | — | — | — | ✓ | — |
+| `uselesskey-openssl` | ✓ | ✓ | ✓ | — | ✓ | `x509, all` |
 | `uselesskey-pgp-native` | — | — | — | — | — | — |
 | `uselesskey-ring` | ✓ | ✓ | ✓ | — | — | — |
 | `uselesskey-rustcrypto` | ✓ | ✓ | ✓ | ✓ | — | — |
 | `uselesskey-aws-lc-rs` | ✓ | ✓ | ✓ | — | — | `native (enables aws-lc-rs dep)` |
 | `uselesskey-rustls` | ✓ | ✓ | ✓ | — | ✓ | `tls-config, rustls-ring, rustls-aws-lc-rs` |
 | `uselesskey-tonic` | — | — | — | — | ✓ | — |
+| `uselesskey-webpki` | — | — | — | — | ✓ | — |
 <!-- docs-sync:feature-matrix-adapters-end -->
 
 ## Why this crate

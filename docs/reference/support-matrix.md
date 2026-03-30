@@ -47,6 +47,8 @@
 | `uselesskey-interop-tests` | `experimental` | `test-only` | — | `repo-internal` | No public API stability commitments. | Best effort for workspace CI only. | — |
 | `uselesskey-jose-openid` | `incubating` | `published` | — | `adapter-users` | Minor releases may refine APIs before 1.0. | Tracks workspace MSRV (Rust 1.92). | — |
 | `uselesskey-jsonwebtoken` | `stable` | `published` | — | `adapter-users` | Stable adapter API; follows upstream compatibility windows. | Tracks workspace MSRV (Rust 1.92). | — |
+| `uselesskey-native-tls` | `stable` | `published` | — | `adapter-users` | Stable adapter API; follows upstream compatibility windows. | Tracks workspace MSRV (Rust 1.92). | — |
+| `uselesskey-openssl` | `stable` | `published` | — | `adapter-users` | Stable adapter API; follows upstream compatibility windows. | Tracks workspace MSRV (Rust 1.92). | — |
 | `uselesskey-jwk` | `stable` | `published` | ✓ | `most-users` | Normal semver guarantees for public APIs. | Tracks workspace MSRV (Rust 1.92). | — |
 | `uselesskey-pgp` | `stable` | `published` | ✓ | `most-users` | Normal semver guarantees for public APIs. | Tracks workspace MSRV (Rust 1.92). | — |
 | `uselesskey-pgp-native` | `incubating` | `published` | — | `adapter-users` | Minor releases may refine APIs before 1.0. | Tracks workspace MSRV (Rust 1.92). | — |
@@ -61,5 +63,6 @@
 | `uselesskey-token-spec` | `experimental` | `published` | — | `repo-internal` | Internal building blocks; APIs may change between minor releases. | Tracks workspace MSRV (Rust 1.92). | Prefer depending on `uselesskey` or key-type facade crates unless you are extending the workspace. |
 | `uselesskey-tonic` | `stable` | `published` | — | `adapter-users` | Stable adapter API; follows upstream compatibility windows. | Tracks workspace MSRV (Rust 1.92). | — |
 | `uselesskey-webhook` | `stable` | `published` | — | `most-users` | Normal semver guarantees for deterministic webhook fixture APIs. | Tracks workspace MSRV (Rust 1.92). | — |
+| `uselesskey-webpki` | `stable` | `published` | — | `adapter-users` | Stable adapter API; follows upstream compatibility windows. | Tracks workspace MSRV (Rust 1.92). | — |
 | `uselesskey-x509` | `stable` | `published` | ✓ | `most-users` | Normal semver guarantees for public APIs. | Tracks workspace MSRV (Rust 1.92). | — |
 | `xtask` | `experimental` | `test-only` | — | `repo-internal` | No public API stability commitments. | Best effort for workspace CI only. | — |

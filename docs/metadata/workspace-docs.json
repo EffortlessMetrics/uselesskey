@@ -71,6 +71,14 @@
       "description": "JOSE/OpenID-oriented native `jsonwebtoken` key conversions"
     },
     {
+      "name": "uselesskey-native-tls",
+      "description": "`native-tls` `Identity` / `Certificate` conversions and connector builders"
+    },
+    {
+      "name": "uselesskey-openssl",
+      "description": "OpenSSL native types (`PKey`, `X509`) with sign/verify helpers"
+    },
+    {
       "name": "uselesskey-pgp-native",
       "description": "Native `pgp` `SignedSecretKey` / `SignedPublicKey` adapters"
     },
@@ -81,6 +89,10 @@
     {
       "name": "uselesskey-tonic",
       "description": "`tonic::transport` TLS identity / config for gRPC"
+    },
+    {
+      "name": "uselesskey-webpki",
+      "description": "`rustls-webpki` chain verification helpers for X.509 fixtures"
     },
     {
       "name": "uselesskey-ring",
@@ -501,6 +513,24 @@
       "intended_audience": "adapter-users"
     },
     {
+      "name": "uselesskey-native-tls",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Stable adapter API; follows upstream compatibility windows.",
+      "msrv_policy": "Tracks workspace MSRV (Rust 1.92).",
+      "intended_audience": "adapter-users"
+    },
+    {
+      "name": "uselesskey-openssl",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Stable adapter API; follows upstream compatibility windows.",
+      "msrv_policy": "Tracks workspace MSRV (Rust 1.92).",
+      "intended_audience": "adapter-users"
+    },
+    {
       "name": "uselesskey-jwk",
       "support_tier": "stable",
       "publish_status": "published",
@@ -626,6 +656,15 @@
       "semver_expectation": "Normal semver guarantees for deterministic webhook fixture APIs.",
       "msrv_policy": "Tracks workspace MSRV (Rust 1.92).",
       "intended_audience": "most-users"
+    },
+    {
+      "name": "uselesskey-webpki",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Stable adapter API; follows upstream compatibility windows.",
+      "msrv_policy": "Tracks workspace MSRV (Rust 1.92).",
+      "intended_audience": "adapter-users"
     },
     {
       "name": "uselesskey-x509",
@@ -884,6 +923,24 @@
       "extra_features": ""
     },
     {
+      "adapter": "uselesskey-native-tls",
+      "rsa": false,
+      "ecdsa": false,
+      "ed25519": false,
+      "hmac": false,
+      "x509_tls": true,
+      "extra_features": ""
+    },
+    {
+      "adapter": "uselesskey-openssl",
+      "rsa": true,
+      "ecdsa": true,
+      "ed25519": true,
+      "hmac": false,
+      "x509_tls": true,
+      "extra_features": "x509, all"
+    },
+    {
       "adapter": "uselesskey-pgp-native",
       "rsa": false,
       "ecdsa": false,
@@ -930,6 +987,15 @@
     },
     {
       "adapter": "uselesskey-tonic",
+      "rsa": false,
+      "ecdsa": false,
+      "ed25519": false,
+      "hmac": false,
+      "x509_tls": true,
+      "extra_features": ""
+    },
+    {
+      "adapter": "uselesskey-webpki",
       "rsa": false,
       "ecdsa": false,
       "ed25519": false,
