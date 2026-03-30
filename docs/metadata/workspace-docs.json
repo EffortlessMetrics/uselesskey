@@ -25,6 +25,10 @@
       "description": "HMAC HS256/HS384/HS512 secrets"
     },
     {
+      "name": "uselesskey-ssh",
+      "description": "Deterministic OpenSSH key and certificate fixtures"
+    },
+    {
       "name": "uselesskey-pgp",
       "description": "OpenPGP key fixtures (armored + binary keyblocks)"
     },
@@ -39,6 +43,10 @@
     {
       "name": "uselesskey-x509",
       "description": "X.509 self-signed certificates and certificate chains"
+    },
+    {
+      "name": "uselesskey-cli",
+      "description": "Command-line fixture generation, bundling, and export helpers"
     }
   ],
   "adapter_crates": [
@@ -111,6 +119,15 @@
       "semver_expectation": "No public API stability commitments.",
       "msrv_policy": "Best effort for workspace CI only.",
       "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-cli",
+      "support_tier": "incubating",
+      "publish_status": "internal",
+      "facade_exposed": false,
+      "semver_expectation": "Minor releases may refine APIs before 1.0.",
+      "msrv_policy": "Tracks workspace MSRV (Rust 1.92).",
+      "intended_audience": "most-users"
     },
     {
       "name": "uselesskey-core",
@@ -515,6 +532,15 @@
       "semver_expectation": "Stable adapter API; follows upstream compatibility windows.",
       "msrv_policy": "Tracks workspace MSRV (Rust 1.92).",
       "intended_audience": "adapter-users"
+    },
+    {
+      "name": "uselesskey-ssh",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Normal semver guarantees for fixture APIs and OpenSSH encodings.",
+      "msrv_policy": "Tracks workspace MSRV (Rust 1.92).",
+      "intended_audience": "most-users"
     },
     {
       "name": "uselesskey-test-grid",

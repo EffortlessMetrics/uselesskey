@@ -9,6 +9,7 @@
 | `uselesskey-aws-lc-rs` | `stable` | `published` | — | `adapter-users` | Stable adapter API; follows upstream compatibility windows. | Tracks workspace MSRV (Rust 1.92). | — |
 | `uselesskey-bdd` | `experimental` | `test-only` | — | `repo-internal` | No public API stability commitments. | Best effort for workspace CI only. | — |
 | `uselesskey-bdd-steps` | `experimental` | `test-only` | — | `repo-internal` | No public API stability commitments. | Best effort for workspace CI only. | — |
+| `uselesskey-cli` | `incubating` | `internal` | — | `most-users` | Minor releases may refine APIs before 1.0. | Tracks workspace MSRV (Rust 1.92). | — |
 | `uselesskey-core` | `stable` | `published` | — | `most-users` | Normal semver guarantees for public APIs. | Tracks workspace MSRV (Rust 1.92). | — |
 | `uselesskey-core-base62` | `experimental` | `published` | — | `repo-internal` | Internal building blocks; APIs may change between minor releases. | Tracks workspace MSRV (Rust 1.92). | Prefer depending on `uselesskey` or key-type facade crates unless you are extending the workspace. |
 | `uselesskey-core-cache` | `experimental` | `published` | — | `repo-internal` | Internal building blocks; APIs may change between minor releases. | Tracks workspace MSRV (Rust 1.92). | Prefer depending on `uselesskey` or key-type facade crates unless you are extending the workspace. |
@@ -51,6 +52,7 @@
 | `uselesskey-rsa` | `stable` | `published` | ✓ | `most-users` | Normal semver guarantees for public APIs. | Tracks workspace MSRV (Rust 1.92). | — |
 | `uselesskey-rustcrypto` | `stable` | `published` | — | `adapter-users` | Stable adapter API; follows upstream compatibility windows. | Tracks workspace MSRV (Rust 1.92). | — |
 | `uselesskey-rustls` | `stable` | `published` | — | `adapter-users` | Stable adapter API; follows upstream compatibility windows. | Tracks workspace MSRV (Rust 1.92). | — |
+| `uselesskey-ssh` | `stable` | `published` | — | `most-users` | Normal semver guarantees for fixture APIs and OpenSSH encodings. | Tracks workspace MSRV (Rust 1.92). | — |
 | `uselesskey-test-grid` | `experimental` | `test-only` | — | `repo-internal` | No public API stability commitments. | Best effort for workspace CI only. | — |
 | `uselesskey-token` | `stable` | `published` | ✓ | `most-users` | Normal semver guarantees for public APIs. | Tracks workspace MSRV (Rust 1.92). | — |
 | `uselesskey-token-spec` | `experimental` | `published` | — | `repo-internal` | Internal building blocks; APIs may change between minor releases. | Tracks workspace MSRV (Rust 1.92). | Prefer depending on `uselesskey` or key-type facade crates unless you are extending the workspace. |

@@ -453,10 +453,12 @@ Depend on the facade for convenience, or on individual crates to minimize compil
 | [`uselesskey-ecdsa`](https://crates.io/crates/uselesskey-ecdsa) | ECDSA P-256 / P-384 keypairs |
 | [`uselesskey-ed25519`](https://crates.io/crates/uselesskey-ed25519) | Ed25519 keypairs |
 | [`uselesskey-hmac`](https://crates.io/crates/uselesskey-hmac) | HMAC HS256/HS384/HS512 secrets |
+| [`uselesskey-ssh`](https://crates.io/crates/uselesskey-ssh) | Deterministic OpenSSH key and certificate fixtures |
 | [`uselesskey-pgp`](https://crates.io/crates/uselesskey-pgp) | OpenPGP key fixtures (armored + binary keyblocks) |
 | [`uselesskey-token`](https://crates.io/crates/uselesskey-token) | API key, bearer token, and OAuth access-token fixtures |
 | [`uselesskey-jwk`](https://crates.io/crates/uselesskey-jwk) | Typed JWK/JWKS models and builders |
 | [`uselesskey-x509`](https://crates.io/crates/uselesskey-x509) | X.509 self-signed certificates and certificate chains |
+| [`uselesskey-cli`](https://crates.io/crates/uselesskey-cli) | Command-line fixture generation, bundling, and export helpers |
 <!-- docs-sync:workspace-crates-end -->
 
 ### Adapter Crates
