@@ -5284,6 +5284,8 @@ dependencies = [
  "thiserror",
  "tokio",
  "uselesskey-core",
+ "uselesskey-ecdsa",
+ "uselesskey-ed25519",
  "uselesskey-jwk",
  "uselesskey-rsa",
 ]

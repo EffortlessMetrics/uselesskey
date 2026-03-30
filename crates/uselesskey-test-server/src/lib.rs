@@ -15,6 +15,8 @@ use serde_json::json;
 use tokio::net::TcpListener;
 use tokio::sync::oneshot;
 use uselesskey_core::Factory;
+use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
+use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
 use uselesskey_jwk::JwksBuilder;
 use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 
@@ -89,18 +91,80 @@ impl RsaJwkKeySpec {
     }
 }
 
-/// JWKS generation spec for a phase.
+/// Key fixture choices used to construct a JWKS phase.
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub enum JwkFixtureSpec {
+    /// RSA public key fixture.
+    Rsa { label: String, spec: RsaSpec },
+    /// ECDSA public key fixture.
+    Ecdsa { label: String, spec: EcdsaSpec },
+    /// Ed25519 public key fixture.
+    Ed25519 { label: String, spec: Ed25519Spec },
+}
+
+impl JwkFixtureSpec {
+    /// Convenience constructor for an RSA fixture key.
+    pub fn rsa(label: impl Into<String>, spec: RsaSpec) -> Self {
+        Self::Rsa {
+            label: label.into(),
+            spec,
+        }
+    }
+
+    /// Convenience constructor for an ECDSA fixture key.
+    pub fn ecdsa(label: impl Into<String>, spec: EcdsaSpec) -> Self {
+        Self::Ecdsa {
+            label: label.into(),
+            spec,
+        }
+    }
+
+    /// Convenience constructor for an Ed25519 fixture key.
+    pub fn ed25519(label: impl Into<String>, spec: Ed25519Spec) -> Self {
+        Self::Ed25519 {
+            label: label.into(),
+            spec,
+        }
+    }
+}
+
+impl From<RsaJwkKeySpec> for JwkFixtureSpec {
+    fn from(value: RsaJwkKeySpec) -> Self {
+        Self::rsa(value.label, value.spec)
+    }
+}
+
+/// JWKS generation spec for a phase.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct JwksSpec {
     /// Public keys included in this phase's JWKS document.
-    pub rsa_keys: Vec<RsaJwkKeySpec>,
+    pub keys: Vec<JwkFixtureSpec>,
 }
 
 impl JwksSpec {
+    /// Construct a JWKS spec from explicit key fixture choices.
+    pub fn new(keys: Vec<JwkFixtureSpec>) -> Self {
+        Self { keys }
+    }
+
     /// Construct a single-key JWKS spec.
     pub fn single_rsa(label: impl Into<String>, spec: RsaSpec) -> Self {
         Self {
-            rsa_keys: vec![RsaJwkKeySpec::new(label, spec)],
+            keys: vec![RsaJwkKeySpec::new(label, spec).into()],
+        }
+    }
+
+    /// Construct a single-key JWKS spec for an ECDSA key.
+    pub fn single_ecdsa(label: impl Into<String>, spec: EcdsaSpec) -> Self {
+        Self {
+            keys: vec![JwkFixtureSpec::ecdsa(label, spec)],
+        }
+    }
+
+    /// Construct a single-key JWKS spec for an Ed25519 key.
+    pub fn single_ed25519(label: impl Into<String>, spec: Ed25519Spec) -> Self {
+        Self {
+            keys: vec![JwkFixtureSpec::ed25519(label, spec)],
         }
     }
 }
@@ -291,8 +355,19 @@ fn materialize_phases(factory: &Factory, spec: &OidcServerSpec) -> Result<Vec<Ph
         .into_iter()
         .map(|phase| {
             let mut builder = JwksBuilder::new();
-            for key in phase.jwks_spec.rsa_keys {
-                builder.push_public(factory.rsa(key.label, key.spec).public_jwk());
+            for key in phase.jwks_spec.keys {
+                let jwk = match key {
+                    JwkFixtureSpec::Rsa { label, spec } => {
+                        factory.rsa(label.as_str(), spec).public_jwk()
+                    }
+                    JwkFixtureSpec::Ecdsa { label, spec } => {
+                        factory.ecdsa(label.as_str(), spec).public_jwk()
+                    }
+                    JwkFixtureSpec::Ed25519 { label, spec } => {
+                        factory.ed25519(label.as_str(), spec).public_jwk()
+                    }
+                };
+                builder.push_public(jwk);
             }
             let jwks = builder.build();
             let jwks_json = jwks.to_value();
@@ -392,6 +467,8 @@ mod tests {
     use super::*;
     use std::net::SocketAddr;
     use uselesskey_core::{Factory, Seed};
+    use uselesskey_ecdsa::EcdsaSpec;
+    use uselesskey_ed25519::Ed25519Spec;
 
     fn deterministic_factory() -> Factory {
         let seed = Seed::from_env_value("oidc-server-seed").expect("valid test seed");
@@ -555,6 +632,47 @@ mod tests {
             .expect("rotated etag");
 
         assert_ne!(rotated_etag, first_etag);
+
+        server.shutdown().await;
+    }
+
+    #[tokio::test]
+    async fn jwks_supports_multiple_key_types() {
+        let spec = OidcServerSpec {
+            issuer_url_mode: IssuerUrlMode::RandomPortLocalhost,
+            jwks_rotation: JwksRotation::Static(JwksSpec::new(vec![
+                JwkFixtureSpec::rsa("rsa-mixed", RsaSpec::rs256()),
+                JwkFixtureSpec::ecdsa("ecdsa-mixed", EcdsaSpec::Es256),
+                JwkFixtureSpec::ed25519("ed25519-mixed", Ed25519Spec::new()),
+            ])),
+            cache_headers: None,
+            serve_discovery: true,
+            serve_jwks: true,
+        };
+
+        let server = OidcTestServer::start(deterministic_factory(), spec)
+            .await
+            .expect("start server");
+
+        let jwks: serde_json::Value = http_client()
+            .get(server.jwks_url())
+            .send()
+            .await
+            .expect("send jwks")
+            .json()
+            .await
+            .expect("parse jwks");
+
+        let keys = jwks["keys"].as_array().expect("keys array");
+        assert_eq!(keys.len(), 3);
+
+        let kinds: Vec<&str> = keys
+            .iter()
+            .map(|key| key["kty"].as_str().expect("kty"))
+            .collect();
+        assert!(kinds.contains(&"RSA"));
+        assert!(kinds.contains(&"EC"));
+        assert!(kinds.contains(&"OKP"));
 
         server.shutdown().await;
     }
