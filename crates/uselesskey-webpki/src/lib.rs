@@ -3,8 +3,6 @@
 //! webpki verification helpers for uselesskey X.509 fixtures.
 
 use rustls_pki_types::{CertificateDer, ServerName, UnixTime};
-use webpki;
-
 pub trait WebPkiChainExt {
     fn verify_leaf_for_server_name_webpki(&self, server_name: &str) -> Result<(), webpki::Error> {
         let leaf = CertificateDer::from(self.leaf_cert_der().to_vec());
