@@ -305,8 +305,8 @@ async fn verify_bearer_token(
     }
 
     let mut validation = Validation::new(Algorithm::RS256);
-    validation.set_issuer(&[expected.issuer.clone()]);
-    validation.set_audience(&[expected.audience.clone()]);
+    validation.set_issuer(std::slice::from_ref(&expected.issuer));
+    validation.set_audience(std::slice::from_ref(&expected.audience));
     validation.leeway = 0;
 
     let token = match decode::<Value>(bearer, &state.signer.decoding_key(), &validation) {
