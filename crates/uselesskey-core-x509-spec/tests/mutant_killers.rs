@@ -275,7 +275,10 @@ fn ocsp_spec_for_issuer_revoked_sets_reason_and_nonce_policy() {
     assert_eq!(spec.this_update, TimeOffsetDays::from_base(0));
     assert_eq!(spec.next_update, Some(TimeOffsetDays::from_base(7)));
     assert_eq!(spec.cert_status, OcspCertStatus::Revoked);
-    assert_eq!(spec.revocation_reason, Some(RevocationReasonCode::KeyCompromise));
+    assert_eq!(
+        spec.revocation_reason,
+        Some(RevocationReasonCode::KeyCompromise)
+    );
     assert_eq!(spec.nonce_policy, OcspNoncePolicy::Deterministic);
 }
 
