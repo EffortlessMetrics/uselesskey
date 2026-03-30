@@ -55,7 +55,11 @@ impl WebAuthnSpec {
         write_field(&mut out, "rp_id", self.rp_id.as_bytes());
         write_field(&mut out, "challenge", &self.challenge);
         write_field(&mut out, "credential_id", &self.credential_id);
-        write_field(&mut out, "authenticator_model", self.authenticator_model.as_bytes());
+        write_field(
+            &mut out,
+            "authenticator_model",
+            self.authenticator_model.as_bytes(),
+        );
         write_field(
             &mut out,
             "attestation_mode",
@@ -138,7 +142,11 @@ fn build_registration(spec: WebAuthnSpec, seed: [u8; 32]) -> RegistrationFixture
     let auth_data = build_authenticator_data(
         rp_id_hash,
         sign_count,
-        Some((&aaguid, &spec.credential_id, credential_public_key.as_slice())),
+        Some((
+            &aaguid,
+            &spec.credential_id,
+            credential_public_key.as_slice(),
+        )),
     );
 
     let mut att_stmt = BTreeMap::new();
@@ -155,11 +163,13 @@ fn build_registration(spec: WebAuthnSpec, seed: [u8; 32]) -> RegistrationFixture
     let mut root = BTreeMap::new();
     root.insert(
         Value::Text("fmt".to_string()),
-        Value::Text(match spec.attestation_mode {
-            AttestationMode::Packed => "packed",
-            AttestationMode::SelfAttestation => "self",
-        }
-        .to_string()),
+        Value::Text(
+            match spec.attestation_mode {
+                AttestationMode::Packed => "packed",
+                AttestationMode::SelfAttestation => "self",
+            }
+            .to_string(),
+        ),
     );
     root.insert(
         Value::Text("attStmt".to_string()),
@@ -348,7 +358,10 @@ mod tests {
             _ => panic!("attestation object must be cbor map"),
         };
         assert!(m.iter().any(|(k, _)| *k == Value::Text("fmt".to_string())));
-        assert!(m.iter().any(|(k, _)| *k == Value::Text("authData".to_string())));
+        assert!(
+            m.iter()
+                .any(|(k, _)| *k == Value::Text("authData".to_string()))
+        );
     }
 
     #[test]

@@ -78,11 +78,7 @@ impl Pkcs11MockSpec {
     pub fn stable_bytes(&self) -> Vec<u8> {
         let mut out = Vec::new();
         write_field(&mut out, "token_label", self.token_label.as_bytes());
-        write_field(
-            &mut out,
-            "manufacturer_id",
-            self.manufacturer_id.as_bytes(),
-        );
+        write_field(&mut out, "manufacturer_id", self.manufacturer_id.as_bytes());
         write_field(&mut out, "model", self.model.as_bytes());
         for label in &self.key_labels {
             write_field(&mut out, "key_label", label.as_bytes());

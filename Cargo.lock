@@ -5350,6 +5350,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "uselesskey-webauthn"
+version = "0.5.1"
+dependencies = [
+ "serde_cbor",
+ "serde_json",
+ "sha2 0.10.9",
+ "uselesskey-core",
+]
+
+[[package]]
 name = "uselesskey-webhook"
 version = "0.5.1"
 dependencies = [
@@ -5360,16 +5370,6 @@ dependencies = [
  "rand_chacha 0.10.0",
  "rand_core 0.10.0",
  "sha2 0.11.0",
- "uselesskey-core",
-]
-
-[[package]]
-name = "uselesskey-webauthn"
-version = "0.5.1"
-dependencies = [
- "serde_cbor",
- "serde_json",
- "sha2 0.10.9",
  "uselesskey-core",
 ]
 
