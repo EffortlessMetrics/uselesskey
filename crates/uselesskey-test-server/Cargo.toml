@@ -1,0 +1,33 @@
+[package]
+name = "uselesskey-test-server"
+version = "0.5.1"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "Deterministic OIDC discovery + JWKS HTTP test fixture server for uselesskey."
+categories.workspace = true
+keywords = ["oidc", "jwks", "testing", "fixtures", "http"]
+readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
+homepage.workspace = true
+documentation = "https://docs.rs/uselesskey-test-server"
+authors.workspace = true
+
+[dependencies]
+thiserror.workspace = true
+tokio = { workspace = true, features = ["net", "sync"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+blake3.workspace = true
+axum = { version = "0.8.6", default-features = false, features = ["tokio", "http1", "json"] }
+http = "1.3.1"
+
+uselesskey-core = { path = "../uselesskey-core", version = "0.5.1" }
+uselesskey-jwk = { path = "../uselesskey-jwk", version = "0.5.1" }
+uselesskey-ecdsa = { path = "../uselesskey-ecdsa", version = "0.5.1", features = ["jwk"] }
+uselesskey-ed25519 = { path = "../uselesskey-ed25519", version = "0.5.1", features = ["jwk"] }
+uselesskey-rsa = { path = "../uselesskey-rsa", version = "0.5.1", features = ["jwk"] }
+
+[dev-dependencies]
+reqwest = { version = "0.12.24", default-features = false, features = ["json", "rustls-tls"] }

@@ -47,6 +47,10 @@
     {
       "name": "uselesskey-cli",
       "description": "Command-line fixture generation, bundling, and export helpers"
+    },
+    {
+      "name": "uselesskey-test-server",
+      "description": "Deterministic OIDC discovery and JWKS HTTP test server fixtures"
     }
   ],
   "adapter_crates": [
@@ -559,6 +563,15 @@
       "semver_expectation": "No public API stability commitments.",
       "msrv_policy": "Best effort for workspace CI only.",
       "intended_audience": "repo-internal"
+    },
+    {
+      "name": "uselesskey-test-server",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": false,
+      "semver_expectation": "Normal semver guarantees for HTTP test server fixtures and JWKS encodings.",
+      "msrv_policy": "Tracks workspace MSRV (Rust 1.92).",
+      "intended_audience": "most-users"
     },
     {
       "name": "uselesskey-token",
