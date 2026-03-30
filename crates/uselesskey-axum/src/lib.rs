@@ -8,14 +8,16 @@
 //! - Typed deterministic auth context extraction/injection
 
 use axum::extract::{FromRequestParts, State};
-use axum::http::{header::AUTHORIZATION, request::Parts, Request, StatusCode};
+use axum::http::{Request, StatusCode, header::AUTHORIZATION, request::Parts};
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::{Json, Router};
-use jsonwebtoken::{decode, decode_header, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{
+    Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, decode_header, encode,
+};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::sync::Arc;
 use uselesskey_core::{Factory, Seed};
 use uselesskey_rsa::{RsaFactoryExt, RsaKeyPair, RsaSpec};
@@ -173,10 +175,7 @@ where
 {
     type Rejection = (StatusCode, &'static str);
 
-    async fn from_request_parts(
-        parts: &mut Parts,
-        _state: &S,
-    ) -> Result<Self, Self::Rejection> {
+    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
         parts
             .extensions
             .get::<Self>()
@@ -333,7 +332,11 @@ async fn verify_bearer_token(
         .and_then(Value::as_str)
         .unwrap_or_default()
         .to_owned();
-    let exp = token.claims.get("exp").and_then(Value::as_u64).unwrap_or_default();
+    let exp = token
+        .claims
+        .get("exp")
+        .and_then(Value::as_u64)
+        .unwrap_or_default();
 
     request.extensions_mut().insert(TestAuthContext {
         sub,
@@ -394,13 +397,23 @@ mod tests {
 
         let jwks_res = app
             .clone()
-            .oneshot(Request::builder().uri(DEFAULT_JWKS_PATH).body(Body::empty()).unwrap())
+            .oneshot(
+                Request::builder()
+                    .uri(DEFAULT_JWKS_PATH)
+                    .body(Body::empty())
+                    .unwrap(),
+            )
             .await
             .unwrap();
         assert_eq!(jwks_res.status(), StatusCode::OK);
 
         let oidc_res = app
-            .oneshot(Request::builder().uri(DEFAULT_OIDC_PATH).body(Body::empty()).unwrap())
+            .oneshot(
+                Request::builder()
+                    .uri(DEFAULT_OIDC_PATH)
+                    .body(Body::empty())
+                    .unwrap(),
+            )
             .await
             .unwrap();
         assert_eq!(oidc_res.status(), StatusCode::OK);
@@ -416,16 +429,14 @@ mod tests {
     #[tokio::test]
     async fn verifier_rejects_wrong_audience() {
         let state = MockJwtVerifierState::new(phase(RotationPhase::Primary));
-        let token = state.issue_token(
-            json!({"sub":"alice", "aud":"api://wrong-aud"}),
-            300,
-        );
+        let token = state.issue_token(json!({"sub":"alice", "aud":"api://wrong-aud"}), 300);
 
         let app = mock_jwt_verifier_layer(
-            Router::new()
-            .route(
+            Router::new().route(
                 "/me",
-                get(|auth: TestAuthContext| async move { Json(json!({"sub": auth.sub})).into_response() }),
+                get(|auth: TestAuthContext| async move {
+                    Json(json!({"sub": auth.sub})).into_response()
+                }),
             ),
             state,
         );
@@ -475,8 +486,7 @@ mod tests {
     #[tokio::test]
     async fn deterministic_auth_context_injection_works() {
         let app = inject_auth_context_layer(
-            Router::new()
-            .route(
+            Router::new().route(
                 "/me",
                 get(|auth: TestAuthContext| async move {
                     Json(json!({"sub": auth.sub, "kid": auth.kid})).into_response()
