@@ -313,7 +313,8 @@ fn bundle_ledger(
     }
 
     let report = pr_bundles::ledger_cmd(&cmd)?;
-    let json_path = json_out.unwrap_or_else(|| PathBuf::from("target/xtask/pr-bundles/ledger.json"));
+    let json_path =
+        json_out.unwrap_or_else(|| PathBuf::from("target/xtask/pr-bundles/ledger.json"));
     write_json_pretty(&json_path, &report.analysis)?;
     let _ = report.markdown.len();
 
@@ -345,13 +346,20 @@ fn bundle_prepare(
         .bundles
         .iter()
         .find(|bundle| bundle.bundle_id == bundle_id)
-        .with_context(|| format!("bundle `{bundle_id}` not found in {}", snapshot_path.display()))?;
+        .with_context(|| {
+            format!(
+                "bundle `{bundle_id}` not found in {}",
+                snapshot_path.display()
+            )
+        })?;
     let keeper_pr = keeper;
     let prepared = pr_bundles::prepare_cmd(&pr_bundles::PrepareCommand {
         repo_root: workspace_root_path(),
         snapshot_path,
         bundle_id: bundle.bundle_id.clone(),
-        base_ref: base_ref.clone().unwrap_or_else(|| "origin/main".to_string()),
+        base_ref: base_ref
+            .clone()
+            .unwrap_or_else(|| "origin/main".to_string()),
         keeper_pr,
         branch_name,
         worktree_path,
@@ -377,10 +385,9 @@ fn bundle_cleanup(
     force: bool,
 ) -> Result<()> {
     let repo_root = workspace_root_path();
-    let target_path = worktree_path
-        .unwrap_or_else(|| pr_bundles::default_worktree_path(&repo_root, bundle_id));
-    let target_branch =
-        branch_name.unwrap_or_else(|| pr_bundles::default_keeper_branch(bundle_id));
+    let target_path =
+        worktree_path.unwrap_or_else(|| pr_bundles::default_worktree_path(&repo_root, bundle_id));
+    let target_branch = branch_name.unwrap_or_else(|| pr_bundles::default_keeper_branch(bundle_id));
 
     let cmd = pr_bundles::CleanupCommand {
         repo_root,
@@ -411,7 +418,8 @@ fn write_json_pretty(path: &Path, value: &impl serde::Serialize) -> Result<()> {
 }
 
 fn read_json_file<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T> {
-    let raw = fs::read_to_string(path).with_context(|| format!("failed to read {}", path.display()))?;
+    let raw =
+        fs::read_to_string(path).with_context(|| format!("failed to read {}", path.display()))?;
     serde_json::from_str(&raw).with_context(|| format!("failed to parse {}", path.display()))
 }
 

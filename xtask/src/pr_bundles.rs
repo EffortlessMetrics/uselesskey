@@ -523,13 +523,13 @@ pub fn analyze_snapshot(snapshot: &BundleSnapshot) -> BundleAnalysis {
                 best = Some(i);
             }
         }
-        if let Some(i) = best {
-            if best_score >= ATTACH_THRESHOLD {
-                bundles[i].open_pull_requests.push(tail);
-                bundles[i].touched_paths = union_paths(&bundles[i].open_pull_requests);
-                seed_profiles[i] = bundle_profile(&bundles[i]);
-                continue;
-            }
+        if let Some(i) = best
+            && best_score >= ATTACH_THRESHOLD
+        {
+            bundles[i].open_pull_requests.push(tail);
+            bundles[i].touched_paths = union_paths(&bundles[i].open_pull_requests);
+            seed_profiles[i] = bundle_profile(&bundles[i]);
+            continue;
         }
         tails.push(tail);
     }
@@ -646,9 +646,10 @@ pub fn recommend_keeper(bundle: &BundleCluster) -> KeeperRecommendation {
     let mut best: Option<(KeeperScore, &OpenPullRequestSnapshot)> = None;
     for pr in &bundle.open_pull_requests {
         let score = keeper_score_for_bundle(bundle, pr);
-        if best.as_ref().map_or(true, |(s, b)| {
-            score > *s || (score == *s && pr.pr.number < b.pr.number)
-        }) {
+        if best
+            .as_ref()
+            .is_none_or(|(s, b)| score > *s || (score == *s && pr.pr.number < b.pr.number))
+        {
             best = Some((score, pr));
         }
     }
@@ -788,7 +789,7 @@ fn fetch_prs(repo: &str, state: &str) -> Result<Vec<GhPullList>> {
 fn fetch_pr_detail(repo: &str, number: u64) -> Result<GhPull> {
     let mut cmd = Command::new("gh");
     cmd.args(["api", &format!("repos/{repo}/pulls/{number}")]);
-    Ok(serde_json::from_str(&run_capture(&mut cmd)?).context("failed to parse pull detail")?)
+    serde_json::from_str(&run_capture(&mut cmd)?).context("failed to parse pull detail")
 }
 
 fn fetch_open_pull_request_snapshot(repo: &str, pr: GhPullList) -> Result<OpenPullRequestSnapshot> {
@@ -1410,8 +1411,8 @@ fn write_text(path: &Path, value: &str) -> Result<()> {
 fn read_json<T: for<'de> Deserialize<'de>>(path: &Path) -> Result<T> {
     let text =
         fs::read_to_string(path).with_context(|| format!("failed to read {}", path.display()))?;
-    Ok(serde_json::from_str(&text)
-        .with_context(|| format!("failed to parse JSON from {}", path.display()))?)
+    serde_json::from_str(&text)
+        .with_context(|| format!("failed to parse JSON from {}", path.display()))
 }
 
 fn parse_json_array<T: for<'de> Deserialize<'de>>(text: &str) -> Result<Vec<T>> {
@@ -1419,7 +1420,7 @@ fn parse_json_array<T: for<'de> Deserialize<'de>>(text: &str) -> Result<Vec<T>> 
     if text.is_empty() {
         return Ok(Vec::new());
     }
-    Ok(serde_json::from_str(text).context("failed to parse JSON array")?)
+    serde_json::from_str(text).context("failed to parse JSON array")
 }
 
 fn verify_worktree_is_clean(repo_root: &Path, worktree_path: &Path, force: bool) -> Result<()> {
@@ -1533,6 +1534,7 @@ fn strip_status_prefix(line: &str) -> &str {
 mod tests {
     use super::*;
 
+    #[allow(clippy::too_many_arguments)]
     fn open_pr(
         num: u64,
         title: &str,
