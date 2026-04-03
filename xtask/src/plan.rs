@@ -932,4 +932,323 @@ mod tests {
         assert!(impacted.contains("uselesskey-token"));
         assert!(impacted.contains("uselesskey"));
     }
+
+    #[test]
+    fn test_empty_paths_docs_only() {
+        let paths: Vec<String> = vec![];
+        let plan = build_plan(&paths);
+        assert!(
+            plan.docs_only,
+            "empty paths should produce a docs_only plan"
+        );
+        assert!(!plan.run_fmt);
+        assert!(!plan.run_clippy);
+        assert!(!plan.run_tests);
+        assert!(!plan.run_feature_matrix);
+        assert!(!plan.run_dep_guard);
+        assert!(!plan.run_bdd);
+        assert!(!plan.run_mutants);
+        assert!(!plan.run_fuzz);
+        assert!(!plan.run_no_blob);
+        assert!(!plan.run_coverage);
+        assert!(!plan.run_publish_preflight);
+        assert!(!plan.run_root_tests);
+        assert!(!plan.run_xtask_tests);
+        assert!(plan.impacted_crates.is_empty());
+        assert!(plan.directly_changed_crates.is_empty());
+    }
+
+    #[test]
+    fn test_crate_rust_change() {
+        let paths = vec!["crates/uselesskey-rsa/src/lib.rs".to_string()];
+        let plan = build_plan(&paths);
+        assert!(!plan.docs_only);
+        assert!(plan.run_tests, "crate .rs change should trigger tests");
+        assert!(plan.run_clippy, "crate .rs change should trigger clippy");
+        assert!(plan.run_fmt, "crate .rs change should trigger fmt");
+        assert!(plan.run_bdd, "crate .rs change should trigger bdd");
+        assert!(plan.run_mutants, "crate .rs change should trigger mutants");
+        assert!(plan.run_fuzz, "crate .rs change should trigger fuzz");
+        assert!(
+            plan.run_coverage,
+            "crate .rs change should trigger coverage"
+        );
+        // feature_matrix only triggers for facade crate, .feature files, or Cargo changes
+        assert!(
+            !plan.run_feature_matrix,
+            "non-facade crate .rs change alone should not trigger feature_matrix"
+        );
+        assert!(
+            plan.directly_changed_crates.contains("uselesskey-rsa"),
+            "directly_changed_crates should include uselesskey-rsa"
+        );
+        assert!(
+            plan.impacted_crates.contains("uselesskey-rsa"),
+            "impacted_crates should include uselesskey-rsa"
+        );
+        // Transitive dependents of uselesskey-rsa should also be impacted
+        assert!(
+            plan.impacted_crates.contains("uselesskey-jsonwebtoken"),
+            "jsonwebtoken should be impacted via uselesskey-rsa"
+        );
+        assert!(
+            plan.impacted_crates.contains("uselesskey"),
+            "facade should be impacted via uselesskey-rsa"
+        );
+    }
+
+    #[test]
+    fn test_xtask_change() {
+        let paths = vec!["xtask/src/main.rs".to_string()];
+        let plan = build_plan(&paths);
+        assert!(!plan.docs_only);
+        assert!(
+            plan.run_xtask_tests,
+            "xtask .rs change should trigger xtask_tests"
+        );
+        assert!(plan.run_fmt, "xtask .rs change should trigger fmt");
+        assert!(plan.run_clippy, "xtask .rs change should trigger clippy");
+        assert!(
+            !plan.run_tests,
+            "xtask-only change should not trigger crate tests"
+        );
+        assert!(!plan.run_bdd, "xtask-only change should not trigger bdd");
+        assert!(
+            !plan.run_mutants,
+            "xtask-only change should not trigger mutants"
+        );
+        assert!(
+            !plan.run_coverage,
+            "xtask-only change should not trigger coverage"
+        );
+    }
+
+    #[test]
+    fn test_bdd_feature_change() {
+        let paths = vec!["crates/uselesskey-bdd/features/rsa.feature".to_string()];
+        let plan = build_plan(&paths);
+        assert!(!plan.docs_only);
+        assert!(plan.run_bdd, ".feature file change should trigger bdd");
+        assert!(
+            plan.run_feature_matrix,
+            ".feature file under uselesskey-bdd should trigger feature_matrix"
+        );
+        assert!(
+            !plan.run_mutants,
+            "bdd feature-only change should not trigger mutants"
+        );
+        assert!(
+            !plan.run_fuzz,
+            "bdd feature-only change should not trigger fuzz"
+        );
+        assert!(
+            !plan.run_coverage,
+            "bdd feature-only change should not trigger coverage"
+        );
+    }
+
+    #[test]
+    fn test_cargo_toml_change() {
+        let paths = vec!["Cargo.toml".to_string()];
+        let plan = build_plan(&paths);
+        assert!(!plan.docs_only);
+        assert!(
+            plan.run_dep_guard,
+            "Cargo.toml change should trigger dep_guard"
+        );
+        assert!(plan.run_fmt, "Cargo.toml change should trigger fmt");
+        assert!(plan.run_clippy, "Cargo.toml change should trigger clippy");
+        assert!(
+            plan.run_publish_preflight,
+            "Cargo.toml change should trigger publish_preflight"
+        );
+        assert!(
+            plan.run_feature_matrix,
+            "Cargo.toml change should trigger feature_matrix"
+        );
+        assert!(
+            !plan.run_mutants,
+            "Cargo.toml-only change should not trigger mutants"
+        );
+        assert!(
+            !plan.run_coverage,
+            "Cargo.toml-only change should not trigger coverage"
+        );
+    }
+
+    #[test]
+    fn test_fuzz_change() {
+        let paths = vec!["fuzz/fuzz_targets/pem_corrupt.rs".to_string()];
+        let plan = build_plan(&paths);
+        assert!(!plan.docs_only);
+        assert!(plan.run_fuzz, "fuzz .rs change should trigger fuzz");
+        assert!(plan.run_fmt, "fuzz .rs change should trigger fmt");
+        assert!(plan.run_clippy, "fuzz .rs change should trigger clippy");
+        assert!(
+            !plan.run_mutants,
+            "fuzz-only change should not trigger mutants"
+        );
+        assert!(!plan.run_bdd, "fuzz-only change should not trigger bdd");
+        assert!(
+            !plan.run_coverage,
+            "fuzz-only change should not trigger coverage"
+        );
+        assert!(
+            !plan.run_tests,
+            "fuzz-only change should not trigger crate tests"
+        );
+    }
+
+    #[test]
+    fn test_root_tests_change() {
+        let paths = vec!["tests/governance.rs".to_string()];
+        let plan = build_plan(&paths);
+        assert!(!plan.docs_only);
+        assert!(
+            plan.run_root_tests,
+            "tests/ .rs change should trigger root_tests"
+        );
+        assert!(plan.run_tests, "tests/ .rs change should trigger tests");
+        assert!(plan.run_fmt, "tests/ .rs change should trigger fmt");
+        assert!(plan.run_clippy, "tests/ .rs change should trigger clippy");
+        assert!(plan.run_no_blob, "tests/ path should trigger no_blob");
+        assert!(
+            !plan.run_bdd,
+            "root tests-only change should not trigger bdd"
+        );
+        assert!(
+            !plan.run_mutants,
+            "root tests-only change should not trigger mutants"
+        );
+        assert!(
+            !plan.run_coverage,
+            "root tests-only change should not trigger coverage"
+        );
+    }
+
+    #[test]
+    fn test_no_blob_trigger() {
+        // Various fixture-like paths that should trigger no_blob
+        for path in &[
+            "tests/fixtures/secret.pem",
+            "fixtures/something.json",
+            "testdata/key.der",
+            "crates/uselesskey-rsa/tests/snapshot.rs",
+        ] {
+            let paths = vec![path.to_string()];
+            let plan = build_plan(&paths);
+            assert!(plan.run_no_blob, "path '{}' should trigger no_blob", path);
+        }
+
+        // Paths that should NOT trigger no_blob
+        for path in &[
+            "crates/uselesskey-rsa/src/lib.rs",
+            "xtask/src/main.rs",
+            "README.md",
+        ] {
+            let paths = vec![path.to_string()];
+            let plan = build_plan(&paths);
+            assert!(
+                !plan.run_no_blob,
+                "path '{}' should NOT trigger no_blob",
+                path
+            );
+        }
+    }
+
+    #[test]
+    fn test_multiple_changes() {
+        let paths = vec![
+            "crates/uselesskey-rsa/src/lib.rs".to_string(),
+            "xtask/src/plan.rs".to_string(),
+            "fuzz/fuzz_targets/pem_corrupt.rs".to_string(),
+            "Cargo.toml".to_string(),
+            "tests/governance.rs".to_string(),
+            "crates/uselesskey-bdd/features/rsa.feature".to_string(),
+            "fixtures/something.pem".to_string(),
+        ];
+        let plan = build_plan(&paths);
+        assert!(
+            !plan.docs_only,
+            "multiple real changes should not be docs_only"
+        );
+        // Crate .rs change flags
+        assert!(plan.run_tests);
+        assert!(plan.run_bdd);
+        assert!(plan.run_mutants);
+        assert!(plan.run_coverage);
+        // Fuzz change
+        assert!(plan.run_fuzz);
+        // Xtask change
+        assert!(plan.run_xtask_tests);
+        // Cargo.toml change
+        assert!(plan.run_dep_guard);
+        assert!(plan.run_publish_preflight);
+        assert!(plan.run_feature_matrix);
+        // Root tests change
+        assert!(plan.run_root_tests);
+        // Fixture path
+        assert!(plan.run_no_blob);
+        // Common flags
+        assert!(plan.run_fmt);
+        assert!(plan.run_clippy);
+        // Impacted crates should include uselesskey-rsa and its dependents
+        assert!(plan.impacted_crates.contains("uselesskey-rsa"));
+        assert!(
+            plan.impacted_crates.contains("uselesskey"),
+            "facade should be impacted via uselesskey-rsa"
+        );
+        // directly_changed_crates should only include crates with .rs source changes
+        assert!(plan.directly_changed_crates.contains("uselesskey-rsa"));
+        assert!(
+            !plan.directly_changed_crates.contains("uselesskey"),
+            "facade should NOT be in directly_changed (no direct .rs change)"
+        );
+    }
+
+    #[test]
+    fn test_impacted_crates_includes_dependents() {
+        // Changing uselesskey-core should transitively impact many downstream crates
+        let paths = vec!["crates/uselesskey-core/src/lib.rs".to_string()];
+        let plan = build_plan(&paths);
+        // Direct dependents of uselesskey-core
+        assert!(plan.impacted_crates.contains("uselesskey-core"));
+        assert!(plan.impacted_crates.contains("uselesskey-rsa"));
+        assert!(plan.impacted_crates.contains("uselesskey-ecdsa"));
+        assert!(plan.impacted_crates.contains("uselesskey-ed25519"));
+        assert!(plan.impacted_crates.contains("uselesskey-hmac"));
+        assert!(plan.impacted_crates.contains("uselesskey-token"));
+        assert!(plan.impacted_crates.contains("uselesskey-pgp"));
+        assert!(plan.impacted_crates.contains("uselesskey-x509"));
+        assert!(plan.impacted_crates.contains("uselesskey"));
+        assert!(plan.impacted_crates.contains("uselesskey-bdd"));
+        // Transitive dependents (via uselesskey-rsa -> uselesskey-jsonwebtoken, etc.)
+        assert!(
+            plan.impacted_crates.contains("uselesskey-jsonwebtoken"),
+            "jsonwebtoken should be transitively impacted via uselesskey-rsa"
+        );
+        assert!(
+            plan.impacted_crates.contains("uselesskey-rustls"),
+            "rustls should be transitively impacted via uselesskey-rsa or uselesskey-x509"
+        );
+        assert!(
+            plan.impacted_crates.contains("uselesskey-ring"),
+            "ring should be transitively impacted via uselesskey-rsa"
+        );
+        assert!(
+            plan.impacted_crates.contains("uselesskey-rustcrypto"),
+            "rustcrypto should be transitively impacted via uselesskey-rsa"
+        );
+        assert!(
+            plan.impacted_crates.contains("uselesskey-aws-lc-rs"),
+            "aws-lc-rs should be transitively impacted via uselesskey-rsa"
+        );
+        assert!(
+            plan.impacted_crates.contains("uselesskey-tonic"),
+            "tonic should be transitively impacted via uselesskey-x509"
+        );
+        // directly_changed_crates should only have the core crate
+        assert_eq!(plan.directly_changed_crates.len(), 1);
+        assert!(plan.directly_changed_crates.contains("uselesskey-core"));
+    }
 }
