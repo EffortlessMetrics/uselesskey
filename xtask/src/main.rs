@@ -60,7 +60,11 @@ enum Cmd {
     /// Run the feature matrix checks.
     FeatureMatrix,
     /// Enforce no secret-shaped blobs in test/fixture paths.
-    NoBlob,
+    NoBlob {
+        /// Subcommand: scan (default) or migrate (show replacement recipe).
+        #[command(subcommand)]
+        subcmd: Option<NoBlobCmd>,
+    },
     /// Synchronize docs from metadata source.
     DocsSync {
         /// Verify generated output instead of writing files.
@@ -141,6 +145,14 @@ enum Cmd {
         #[command(subcommand)]
         command: PrBundlesCmd,
     },
+}
+
+#[derive(Subcommand)]
+enum NoBlobCmd {
+    /// Scan for secret-shaped blobs and fail if any found (default).
+    Scan,
+    /// Scan and emit a migration recipe for each detected blob (read-only).
+    Migrate,
 }
 
 #[derive(Subcommand)]
@@ -228,7 +240,10 @@ fn main() -> Result<()> {
         Cmd::Typos { fix } => typos(fix),
         Cmd::Ci => ci(),
         Cmd::FeatureMatrix => feature_matrix_cmd(),
-        Cmd::NoBlob => no_blob_gate(),
+        Cmd::NoBlob { subcmd } => match subcmd.as_ref().unwrap_or(&NoBlobCmd::Scan) {
+            NoBlobCmd::Scan => no_blob_gate(),
+            NoBlobCmd::Migrate => no_blob_migrate(),
+        },
         Cmd::DocsSync { check } => docs_sync::docs_sync_cmd(check),
         Cmd::ExamplesSmoke { run } => docs_sync::examples_smoke_cmd(run),
         Cmd::PublishCheck => publish_check(),
@@ -1875,6 +1890,80 @@ fn no_blob_gate() -> Result<()> {
     }
     let joined = offenders.join(", ");
     bail!("found secret-shaped fixtures: {joined}");
+}
+
+/// Scan for blobs and emit migration recipes (read-only).
+fn no_blob_migrate() -> Result<()> {
+    let offenders = find_secret_blobs()?;
+    if offenders.is_empty() {
+        println!("no-blob: no secret-shaped fixtures found");
+        return Ok(());
+    }
+
+    println!(
+        "no-blob migrate: found {} secret-shaped fixture(s)",
+        offenders.len()
+    );
+    println!();
+    println!("# Migration Recipe");
+    println!();
+    for (i, path) in offenders.iter().enumerate() {
+        let ext = Path::new(path)
+            .extension()
+            .and_then(|s| s.to_str())
+            .unwrap_or("")
+            .to_lowercase();
+
+        let (kind, suggested_usage) = match ext.as_str() {
+            "pem" => ("PEM", "fx.rsa(\"label\", RsaSpec::rs256())"),
+            "der" => ("DER", "fx.rsa(\"label\", RsaSpec::rs256()).to_der()"),
+            "key" => ("private key", "fx.rsa(\"label\", RsaSpec::rs256())"),
+            "crt" | "cer" => (
+                "certificate",
+                "fx.x509_self_signed(\"label\", X509Spec::default())",
+            ),
+            "p12" | "pfx" => ("PKCS#12", "fx.rsa(\"label\", RsaSpec::rs256())"),
+            _ => ("unknown", "// TODO: identify fixture type"),
+        };
+
+        println!("## {}. {}", i + 1, path);
+        println!();
+        println!("  Detected: {}", kind);
+        println!();
+        println!("  Suggested replacement:");
+        println!("  ```rust");
+        println!("  use uselesskey::{{RsaFactoryExt, RsaSpec}};");
+        println!("  // or for different key types:");
+        println!("  // use uselesskey::{{EcdsaFactoryExt, EcdsaSpec}};");
+        println!("  // use uselesskey::{{Ed25519FactoryExt}};");
+        println!("  // use uselesskey::{{HmacFactoryExt, HmacSpec}};");
+        println!("  // use uselesskey::{{X509FactoryExt, X509Spec}};");
+        println!();
+        println!("  let fixture = {}", suggested_usage);
+        println!("  ```");
+        println!();
+        println!("  Alternatively, use the CLI for export:");
+        println!("  ```bash");
+        println!("  cargo run -p uselesskey --example basic_rsa \\");
+        println!("    --no-default-features --features rsa,jwk");
+        println!("  ```");
+        println!();
+        println!("---\n");
+    }
+
+    println!("# Next Steps");
+    println!();
+    println!("1. Identify the fixture type (see suggested replacement above)");
+    println!("2. Replace static file with runtime generation using uselesskey");
+    println!(
+        "3. Remove the static file: `git rm {}`",
+        offenders.join(" ")
+    );
+    println!("4. Re-run `cargo xtask no-blob` to verify");
+    println!();
+    println!("For more details, see: https://docs.rs/uselesskey");
+
+    Ok(())
 }
 
 fn find_secret_blobs() -> Result<Vec<String>> {

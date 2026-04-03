@@ -8,7 +8,16 @@ use serde::Serialize;
 
 #[derive(Debug, Serialize)]
 pub struct Receipt {
+    /// Schema version for downstream compatibility (current: 2).
+    pub schema_version: u32,
+    /// Unix timestamp (milliseconds).
     pub timestamp: u64,
+    /// Git SHA of the commit being tested.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub git_sha: Option<String>,
+    /// Set of crates included in this run.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub crate_set: Option<String>,
     pub steps: Vec<StepReceipt>,
     pub feature_matrix: Vec<FeatureMatrixEntry>,
     pub bdd_matrix: Vec<BddMatrixEntry>,
@@ -54,7 +63,10 @@ impl Runner {
 
         Self {
             receipt: Receipt {
+                schema_version: 2,
                 timestamp: now,
+                git_sha: None,
+                crate_set: None,
                 steps: Vec::new(),
                 feature_matrix: Vec::new(),
                 bdd_matrix: Vec::new(),
@@ -140,6 +152,16 @@ impl Runner {
 
     pub fn set_coverage_percent(&mut self, percent: f64) {
         self.receipt.coverage_percent = Some(percent);
+    }
+
+    #[allow(dead_code)]
+    pub fn set_git_sha(&mut self, sha: String) {
+        self.receipt.git_sha = Some(sha);
+    }
+
+    #[allow(dead_code)]
+    pub fn set_crate_set(&mut self, set: String) {
+        self.receipt.crate_set = Some(set);
     }
 
     pub fn summary(&self) {

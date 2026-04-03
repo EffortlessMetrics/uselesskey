@@ -5367,7 +5367,7 @@ version = "0.5.1"
 dependencies = [
  "base64",
  "hex",
- "hmac 0.13.0-rc.6",
+ "hmac 0.13.0",
  "insta",
  "rand_chacha 0.10.0",
  "rand_core 0.10.0",
