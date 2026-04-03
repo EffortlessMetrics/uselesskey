@@ -598,11 +598,22 @@ pub fn path_similarity(left: &[String], right: &[String]) -> f64 {
     jaccard(&path_fingerprints(left), &path_fingerprints(right))
 }
 
+fn stems_related(a: Option<&str>, b: Option<&str>) -> bool {
+    match (a, b) {
+        (Some(a), Some(b)) if !a.is_empty() && !b.is_empty() => {
+            a == b || a.starts_with(b) || b.starts_with(a)
+        }
+        _ => false,
+    }
+}
+
 fn bundle_similarity(left: &BundleProfile, right: &BundleProfile) -> f64 {
     let title = title_similarity(&left.theme, &right.theme);
     let paths = jaccard(&left.touched_paths, &right.touched_paths);
-    let stem_bonus = if left.canonical_stem.is_some() && left.canonical_stem == right.canonical_stem
-    {
+    let stem_bonus = if stems_related(
+        left.canonical_stem.as_deref(),
+        right.canonical_stem.as_deref(),
+    ) {
         0.15
     } else {
         0.0
@@ -973,14 +984,23 @@ fn make_bundle(
 }
 
 fn closed_similarity(donor: &PullRequestSnapshot, bundle: &BundleProfile) -> f64 {
-    bundle_similarity(
-        &BundleProfile {
-            canonical_stem: Some(canonical_head_ref_stem(&donor.head_ref)),
-            theme: donor.title.clone(),
-            touched_paths: path_fingerprints(&donor.touched_paths),
-        },
-        bundle,
-    )
+    let donor_stem = canonical_head_ref_stem(&donor.head_ref);
+    let donor_profile = BundleProfile {
+        canonical_stem: Some(donor_stem.clone()),
+        theme: donor.title.clone(),
+        touched_paths: path_fingerprints(&donor.touched_paths),
+    };
+    let base = bundle_similarity(&donor_profile, bundle);
+    // Closed donors are primarily identified by branch naming patterns.
+    // Give an extra boost when stems share a prefix (e.g. the donor is
+    // an earlier iteration of the same feature branch).
+    let stem_prefix_boost =
+        if stems_related(Some(donor_stem.as_str()), bundle.canonical_stem.as_deref()) {
+            0.25
+        } else {
+            0.0
+        };
+    (base + stem_prefix_boost).min(1.0)
 }
 
 fn bundle_profile(bundle: &BundleCluster) -> BundleProfile {
@@ -1210,10 +1230,13 @@ fn strip_codex_suffixes(s: &str) -> String {
         let Some((base, suffix)) = cur.rsplit_once('-') else {
             break;
         };
+        // Codex-style suffixes are 6-char hex-like strings (e.g. "ab12cd").
+        // Require at least one digit to avoid stripping English words like "branch".
         if suffix.len() == 6
             && suffix
                 .chars()
                 .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
+            && suffix.chars().any(|c| c.is_ascii_digit())
         {
             cur = base.to_string();
         } else {
@@ -1746,5 +1769,990 @@ mod tests {
         assert!(!analysis.bundles.is_empty());
         assert!(!analysis.singleton_tails.is_empty());
         assert!(render_ledger(&snapshot, &analysis).contains("## Bundle Ledger"));
+    }
+
+    // ---------------------------------------------------------------
+    // Snapshot parsing
+    // ---------------------------------------------------------------
+
+    const SAMPLE_SNAPSHOT_JSON: &str = r#"{
+      "captured_at": "2026-03-28T12:00:00Z",
+      "repository": "EffortlessMetrics/uselesskey",
+      "open_pull_requests": [
+        {
+          "number": 100,
+          "state": "open",
+          "title": "Add RSA adapter",
+          "head_ref": "codex/add-rsa-adapter-ab12cd",
+          "base_ref": "main",
+          "author_login": "codex",
+          "created_at": "2026-03-20T00:00:00Z",
+          "updated_at": "2026-03-28T00:00:00Z",
+          "merged_at": null,
+          "closed_at": null,
+          "draft": false,
+          "mergeable": true,
+          "mergeable_state": "clean",
+          "commits": 1,
+          "changed_files": 2,
+          "additions": 40,
+          "deletions": 5,
+          "labels": ["enhancement"],
+          "touched_paths": ["crates/uselesskey-rsa/src/lib.rs"],
+          "checks": [
+            { "name": "ci", "bucket": "pass", "state": "success" }
+          ],
+          "check_summary": { "pass": 1, "fail": 0, "pending": 0, "skipping": 0, "cancel": 0, "total": 1 }
+        }
+      ],
+      "closed_pull_requests": [
+        {
+          "number": 90,
+          "state": "closed",
+          "title": "Draft RSA adapter",
+          "head_ref": "codex/add-rsa-adapter-old",
+          "base_ref": "main",
+          "author_login": "codex",
+          "created_at": "2026-03-15T00:00:00Z",
+          "updated_at": "2026-03-18T00:00:00Z",
+          "merged_at": null,
+          "closed_at": "2026-03-18T00:00:00Z",
+          "draft": true,
+          "mergeable": null,
+          "mergeable_state": null,
+          "commits": 0,
+          "changed_files": 0,
+          "additions": 0,
+          "deletions": 0,
+          "labels": [],
+          "touched_paths": []
+        }
+      ]
+    }"#;
+
+    #[test]
+    fn snapshot_round_trip_json() {
+        let snapshot: BundleSnapshot =
+            serde_json::from_str(SAMPLE_SNAPSHOT_JSON).expect("deserialize sample snapshot");
+        assert_eq!(snapshot.repository, "EffortlessMetrics/uselesskey");
+        assert_eq!(snapshot.captured_at, "2026-03-28T12:00:00Z");
+        assert_eq!(snapshot.open_pull_requests.len(), 1);
+        assert_eq!(snapshot.closed_pull_requests.len(), 1);
+
+        let open = &snapshot.open_pull_requests[0];
+        assert_eq!(open.pr.number, 100);
+        assert_eq!(open.pr.title, "Add RSA adapter");
+        assert_eq!(open.pr.head_ref, "codex/add-rsa-adapter-ab12cd");
+        assert_eq!(open.pr.mergeable, Some(true));
+        assert_eq!(open.pr.labels, vec!["enhancement"]);
+        assert_eq!(open.check_summary.pass, 1);
+        assert_eq!(open.check_summary.total, 1);
+
+        let closed = &snapshot.closed_pull_requests[0];
+        assert_eq!(closed.pr.number, 90);
+        assert!(closed.pr.draft);
+
+        // Round-trip: serialize then deserialize
+        let json = serde_json::to_string_pretty(&snapshot).unwrap();
+        let round_tripped: BundleSnapshot = serde_json::from_str(&json).unwrap();
+        assert_eq!(round_tripped.repository, snapshot.repository);
+        assert_eq!(
+            round_tripped.open_pull_requests.len(),
+            snapshot.open_pull_requests.len()
+        );
+    }
+
+    #[test]
+    fn snapshot_deserialize_minimal_open_pr() {
+        // Verify nullable fields work
+        let json = r#"{
+          "captured_at": "2026-01-01T00:00:00Z",
+          "repository": "owner/repo",
+          "open_pull_requests": [{
+            "number": 1, "state": "open", "title": "t",
+            "head_ref": "branch", "base_ref": "main",
+            "author_login": null,
+            "created_at": "2026-01-01T00:00:00Z",
+            "updated_at": "2026-01-01T00:00:00Z",
+            "merged_at": null, "closed_at": null,
+            "draft": false, "mergeable": null, "mergeable_state": null,
+            "commits": 0, "changed_files": 0, "additions": 0, "deletions": 0,
+            "labels": [], "touched_paths": [],
+            "checks": [],
+            "check_summary": { "pass": 0, "fail": 0, "pending": 0, "skipping": 0, "cancel": 0, "total": 0 }
+          }],
+          "closed_pull_requests": []
+        }"#;
+        let snap: BundleSnapshot = serde_json::from_str(json).unwrap();
+        assert_eq!(snap.open_pull_requests[0].pr.author_login, None);
+        assert_eq!(snap.open_pull_requests[0].pr.mergeable, None);
+    }
+
+    // ---------------------------------------------------------------
+    // Bundle analysis: grouping by stem
+    // ---------------------------------------------------------------
+
+    /// Build a snapshot with 4 PRs sharing a stem plus 1 unrelated PR.
+    /// The 4 should form a bundle, and the unrelated one becomes a singleton.
+    fn four_stem_snapshot() -> BundleSnapshot {
+        BundleSnapshot {
+            captured_at: "2026-04-01T00:00:00Z".into(),
+            repository: "owner/repo".into(),
+            open_pull_requests: vec![
+                open_pr(
+                    10,
+                    "Add ECDSA P-256 support",
+                    "codex/add-ecdsa-support-aaa111",
+                    &["crates/uselesskey-ecdsa/src/lib.rs"],
+                    1,
+                    0,
+                    Some(true),
+                    3,
+                    80,
+                    10,
+                    1,
+                ),
+                open_pr(
+                    11,
+                    "Add ECDSA P-384 support",
+                    "codex/add-ecdsa-support-bbb222",
+                    &[
+                        "crates/uselesskey-ecdsa/src/lib.rs",
+                        "crates/uselesskey-ecdsa/src/p384.rs",
+                    ],
+                    1,
+                    0,
+                    Some(true),
+                    4,
+                    120,
+                    15,
+                    2,
+                ),
+                open_pr(
+                    12,
+                    "ECDSA factory extension trait",
+                    "codex/add-ecdsa-support-ccc333",
+                    &["crates/uselesskey-ecdsa/src/lib.rs"],
+                    1,
+                    0,
+                    Some(true),
+                    2,
+                    50,
+                    5,
+                    1,
+                ),
+                open_pr(
+                    13,
+                    "ECDSA negative fixtures",
+                    "codex/add-ecdsa-support-ddd444",
+                    &["crates/uselesskey-ecdsa/src/negative.rs"],
+                    0,
+                    1,
+                    Some(false),
+                    5,
+                    200,
+                    30,
+                    3,
+                ),
+                open_pr(
+                    50,
+                    "Improve README badges",
+                    "codex/improve-readme-badges",
+                    &["README.md"],
+                    1,
+                    0,
+                    Some(true),
+                    1,
+                    10,
+                    2,
+                    1,
+                ),
+            ],
+            closed_pull_requests: vec![],
+        }
+    }
+
+    #[test]
+    fn analyze_groups_four_same_stem_prs_into_one_bundle() {
+        let snapshot = four_stem_snapshot();
+        let analysis = analyze_snapshot(&snapshot);
+
+        // Four ECDSA PRs share the canonical stem "codex/add-ecdsa-support"
+        // => PRIMARY_BUNDLE_SIZE = 4 => exactly one bundle.
+        assert_eq!(analysis.bundles.len(), 1);
+        let bundle = &analysis.bundles[0];
+        assert_eq!(bundle.open_pull_requests.len(), 4);
+
+        // All four PR numbers should be present
+        let nums: Vec<u64> = bundle
+            .open_pull_requests
+            .iter()
+            .map(|p| p.pr.number)
+            .collect();
+        assert!(nums.contains(&10));
+        assert!(nums.contains(&11));
+        assert!(nums.contains(&12));
+        assert!(nums.contains(&13));
+
+        // The fifth PR (#50) with a different stem should be a singleton
+        assert_eq!(analysis.singleton_tails.len(), 1);
+        assert_eq!(analysis.singleton_tails[0].pr.number, 50);
+    }
+
+    #[test]
+    fn bundle_id_contains_sanitized_stem() {
+        let snapshot = four_stem_snapshot();
+        let analysis = analyze_snapshot(&snapshot);
+        let bundle = &analysis.bundles[0];
+        // Bundle ID should contain "ecdsa-support" from the stem
+        assert!(
+            bundle.bundle_id.starts_with("bundle-"),
+            "bundle_id should start with 'bundle-': {}",
+            bundle.bundle_id,
+        );
+        assert!(
+            bundle.bundle_id.contains("ecdsa"),
+            "bundle_id should reflect the stem: {}",
+            bundle.bundle_id,
+        );
+    }
+
+    #[test]
+    fn bundle_touched_paths_is_union_of_all_prs() {
+        let snapshot = four_stem_snapshot();
+        let analysis = analyze_snapshot(&snapshot);
+        let bundle = &analysis.bundles[0];
+        // Should contain all paths from the four PRs
+        assert!(
+            bundle
+                .touched_paths
+                .contains(&"crates/uselesskey-ecdsa/src/lib.rs".to_string())
+        );
+        assert!(
+            bundle
+                .touched_paths
+                .contains(&"crates/uselesskey-ecdsa/src/negative.rs".to_string())
+        );
+    }
+
+    #[test]
+    fn analyze_assigns_keeper_with_best_score() {
+        let snapshot = four_stem_snapshot();
+        let analysis = analyze_snapshot(&snapshot);
+        let bundle = &analysis.bundles[0];
+        // PR #12 should be the keeper: passing checks, mergeable, smallest size (2 files, 50+5),
+        // 1 commit, exact stem match, and lower PR number breaks ties.
+        assert_eq!(bundle.keeper.pr_number, 12);
+    }
+
+    #[test]
+    fn analyze_harvest_list_excludes_keeper() {
+        let snapshot = four_stem_snapshot();
+        let analysis = analyze_snapshot(&snapshot);
+        let bundle = &analysis.bundles[0];
+        let keeper = bundle.keeper.pr_number;
+        // Harvest list should not contain the keeper
+        assert!(
+            bundle.harvest_list.iter().all(|h| h.pr_number != keeper),
+            "harvest list should not include the keeper PR",
+        );
+        // But should contain the other 3
+        assert_eq!(bundle.harvest_list.len(), 3);
+    }
+
+    // ---------------------------------------------------------------
+    // Closed donor matching
+    // ---------------------------------------------------------------
+
+    #[test]
+    fn closed_donors_attach_to_matching_bundle() {
+        let snapshot = BundleSnapshot {
+            captured_at: "2026-04-01T00:00:00Z".into(),
+            repository: "owner/repo".into(),
+            open_pull_requests: vec![
+                open_pr(
+                    10,
+                    "Add ECDSA P-256",
+                    "codex/add-ecdsa-support-aaa111",
+                    &["crates/uselesskey-ecdsa/src/lib.rs"],
+                    1,
+                    0,
+                    Some(true),
+                    3,
+                    80,
+                    10,
+                    1,
+                ),
+                open_pr(
+                    11,
+                    "Add ECDSA P-384",
+                    "codex/add-ecdsa-support-bbb222",
+                    &["crates/uselesskey-ecdsa/src/lib.rs"],
+                    1,
+                    0,
+                    Some(true),
+                    4,
+                    120,
+                    15,
+                    2,
+                ),
+                open_pr(
+                    12,
+                    "ECDSA factory trait",
+                    "codex/add-ecdsa-support-ccc333",
+                    &["crates/uselesskey-ecdsa/src/lib.rs"],
+                    1,
+                    0,
+                    Some(true),
+                    2,
+                    50,
+                    5,
+                    1,
+                ),
+                open_pr(
+                    13,
+                    "ECDSA negative",
+                    "codex/add-ecdsa-support-ddd444",
+                    &["crates/uselesskey-ecdsa/src/negative.rs"],
+                    0,
+                    1,
+                    Some(false),
+                    5,
+                    200,
+                    30,
+                    3,
+                ),
+            ],
+            closed_pull_requests: vec![ClosedPullRequestSnapshot {
+                pr: PullRequestSnapshot {
+                    number: 5,
+                    state: "closed".into(),
+                    title: "Draft ECDSA support".into(),
+                    head_ref: "codex/add-ecdsa-support-old".into(),
+                    base_ref: "main".into(),
+                    author_login: Some("codex".into()),
+                    created_at: "2026-03-01T00:00:00Z".into(),
+                    updated_at: "2026-03-05T00:00:00Z".into(),
+                    merged_at: None,
+                    closed_at: Some("2026-03-05T00:00:00Z".into()),
+                    draft: true,
+                    mergeable: None,
+                    mergeable_state: None,
+                    commits: 0,
+                    changed_files: 0,
+                    additions: 0,
+                    deletions: 0,
+                    labels: Vec::new(),
+                    touched_paths: Vec::new(),
+                },
+            }],
+        };
+        let analysis = analyze_snapshot(&snapshot);
+        assert_eq!(analysis.bundles.len(), 1);
+        // The closed donor shares the ECDSA stem so it should be attached to the bundle
+        assert_eq!(analysis.bundles[0].closed_donor_pull_requests.len(), 1);
+        assert_eq!(
+            analysis.bundles[0].closed_donor_pull_requests[0].pr.number,
+            5
+        );
+        assert!(analysis.unmatched_closed_donors.is_empty());
+    }
+
+    // ---------------------------------------------------------------
+    // Default path/branch computation
+    // ---------------------------------------------------------------
+
+    #[test]
+    fn default_worktree_path_sibling_of_repo() {
+        let repo = Path::new("/home/user/code/uselesskey");
+        let path = default_worktree_path(repo, "bundle-ecdsa-01");
+        // Should be alongside the repo directory, not inside it
+        assert_eq!(
+            path,
+            PathBuf::from("/home/user/code/uselesskey-bundle-bundle-ecdsa-01")
+        );
+    }
+
+    #[test]
+    fn default_worktree_path_sanitizes_special_chars() {
+        let repo = Path::new("/repo");
+        let path = default_worktree_path(repo, "bundle foo/bar#1");
+        let name = path.file_name().unwrap().to_string_lossy().to_string();
+        // Special characters get replaced with dashes and deduplicated
+        assert!(!name.contains(' '));
+        assert!(!name.contains('/'));
+        assert!(!name.contains('#'));
+    }
+
+    #[test]
+    fn default_worktree_path_for_root_repo() {
+        // Edge case: repo is at filesystem root
+        let repo = Path::new("/");
+        let path = default_worktree_path(repo, "b-01");
+        // parent of "/" is "/" itself, so path should still work
+        assert!(path.to_string_lossy().contains("uselesskey-bundle"));
+    }
+
+    #[test]
+    fn default_keeper_branch_format() {
+        let branch = default_keeper_branch("bundle-ecdsa-01");
+        assert_eq!(branch, "work/bundle-ecdsa-01-keeper");
+    }
+
+    #[test]
+    fn default_keeper_branch_sanitizes_input() {
+        let branch = default_keeper_branch("bundle foo/bar");
+        assert_eq!(branch, "work/bundle-foo-bar-keeper");
+    }
+
+    // ---------------------------------------------------------------
+    // Ledger rendering
+    // ---------------------------------------------------------------
+
+    #[test]
+    fn ledger_contains_expected_sections() {
+        let snapshot = four_stem_snapshot();
+        let analysis = analyze_snapshot(&snapshot);
+        let md = render_ledger(&snapshot, &analysis);
+
+        assert!(md.starts_with("# PR Bundle Ledger\n"));
+        assert!(md.contains("- Repository: `owner/repo`"));
+        assert!(md.contains("- Captured: `2026-04-01T00:00:00Z`"));
+        assert!(md.contains("- Open PRs: `5`"));
+        assert!(md.contains("## Bundle Ledger"));
+    }
+
+    #[test]
+    fn ledger_renders_bundle_details() {
+        let snapshot = four_stem_snapshot();
+        let analysis = analyze_snapshot(&snapshot);
+        let md = render_ledger(&snapshot, &analysis);
+
+        // Each bundle section includes these fields
+        assert!(md.contains("- Theme:"));
+        assert!(md.contains("- Open PRs:"));
+        assert!(md.contains("- Closed donor PRs:"));
+        assert!(md.contains("- Touched paths:"));
+        assert!(md.contains("- Risk:"));
+        assert!(md.contains("- Recommended keeper:"));
+        assert!(md.contains("- Why this keeper:"));
+        assert!(md.contains("- Harvest list:"));
+        assert!(md.contains("- Validation plan:"));
+        assert!(md.contains("- Merge/closure plan:"));
+        assert!(md.contains("- Cleanup plan:"));
+    }
+
+    #[test]
+    fn ledger_renders_singleton_tails_section() {
+        let snapshot = four_stem_snapshot();
+        let analysis = analyze_snapshot(&snapshot);
+        let md = render_ledger(&snapshot, &analysis);
+
+        // Should have singleton tails section with PR #50
+        assert!(md.contains("## Singleton Tails"));
+        assert!(md.contains("#50"));
+    }
+
+    #[test]
+    fn ledger_omits_singleton_section_when_empty() {
+        // 4 PRs with same stem, no leftover
+        let snapshot = BundleSnapshot {
+            captured_at: "2026-04-01T00:00:00Z".into(),
+            repository: "owner/repo".into(),
+            open_pull_requests: vec![
+                open_pr(
+                    1,
+                    "A fix",
+                    "codex/fix-aaa111",
+                    &["a.rs"],
+                    1,
+                    0,
+                    Some(true),
+                    1,
+                    10,
+                    1,
+                    1,
+                ),
+                open_pr(
+                    2,
+                    "A fix",
+                    "codex/fix-bbb222",
+                    &["a.rs"],
+                    1,
+                    0,
+                    Some(true),
+                    1,
+                    10,
+                    1,
+                    1,
+                ),
+                open_pr(
+                    3,
+                    "A fix",
+                    "codex/fix-ccc333",
+                    &["a.rs"],
+                    1,
+                    0,
+                    Some(true),
+                    1,
+                    10,
+                    1,
+                    1,
+                ),
+                open_pr(
+                    4,
+                    "A fix",
+                    "codex/fix-ddd444",
+                    &["a.rs"],
+                    1,
+                    0,
+                    Some(true),
+                    1,
+                    10,
+                    1,
+                    1,
+                ),
+            ],
+            closed_pull_requests: vec![],
+        };
+        let analysis = analyze_snapshot(&snapshot);
+        let md = render_ledger(&snapshot, &analysis);
+        assert!(!md.contains("## Singleton Tails"));
+    }
+
+    #[test]
+    fn ledger_renders_closed_donors_section() {
+        let snapshot = BundleSnapshot {
+            captured_at: "2026-04-01T00:00:00Z".into(),
+            repository: "owner/repo".into(),
+            open_pull_requests: vec![],
+            closed_pull_requests: vec![ClosedPullRequestSnapshot {
+                pr: PullRequestSnapshot {
+                    number: 99,
+                    state: "closed".into(),
+                    title: "Old draft".into(),
+                    head_ref: "codex/old-draft".into(),
+                    base_ref: "main".into(),
+                    author_login: None,
+                    created_at: "2026-01-01T00:00:00Z".into(),
+                    updated_at: "2026-01-01T00:00:00Z".into(),
+                    merged_at: None,
+                    closed_at: Some("2026-01-02T00:00:00Z".into()),
+                    draft: true,
+                    mergeable: None,
+                    mergeable_state: None,
+                    commits: 0,
+                    changed_files: 0,
+                    additions: 0,
+                    deletions: 0,
+                    labels: Vec::new(),
+                    touched_paths: Vec::new(),
+                },
+            }],
+        };
+        let analysis = analyze_snapshot(&snapshot);
+        let md = render_ledger(&snapshot, &analysis);
+        // No bundles to match against, so closed donor is unmatched
+        assert!(md.contains("## Closed Donors"));
+        assert!(md.contains("#99"));
+    }
+
+    // ---------------------------------------------------------------
+    // Helper function coverage
+    // ---------------------------------------------------------------
+
+    #[test]
+    fn sanitize_replaces_non_alnum_with_dashes() {
+        assert_eq!(sanitize("hello world"), "hello-world");
+        assert_eq!(sanitize("foo/bar#baz"), "foo-bar-baz");
+        assert_eq!(sanitize("---leading---trailing---"), "leading-trailing");
+        assert_eq!(sanitize("UPPER"), "upper");
+        assert_eq!(sanitize(""), "");
+    }
+
+    #[test]
+    fn strip_codex_suffixes_removes_six_char_hex_like_tails() {
+        assert_eq!(
+            strip_codex_suffixes("add-ecdsa-support-ab12cd"),
+            "add-ecdsa-support"
+        );
+        assert_eq!(
+            strip_codex_suffixes("add-ecdsa-support-ab12cd-ef34gh"),
+            "add-ecdsa-support"
+        );
+        assert_eq!(
+            strip_codex_suffixes("add-ecdsa-support"),
+            "add-ecdsa-support"
+        );
+        // Suffix with uppercase or non-alnum is not stripped
+        assert_eq!(
+            strip_codex_suffixes("add-ecdsa-support-AB12CD"),
+            "add-ecdsa-support-AB12CD"
+        );
+        // Shorter than 6 chars is not stripped
+        assert_eq!(
+            strip_codex_suffixes("add-ecdsa-support-abc"),
+            "add-ecdsa-support-abc"
+        );
+        // All-letter suffix (no digits) is not stripped — avoids stripping English words
+        assert_eq!(strip_codex_suffixes("feature-branch"), "feature-branch");
+        assert_eq!(strip_codex_suffixes("add-ecdsa-abcdef"), "add-ecdsa-abcdef");
+    }
+
+    #[test]
+    fn canonical_head_ref_stem_with_refs_heads_prefix() {
+        assert_eq!(
+            canonical_head_ref_stem("refs/heads/codex/something-ab12cd"),
+            "codex/something"
+        );
+    }
+
+    #[test]
+    fn canonical_head_ref_stem_simple_branch() {
+        assert_eq!(canonical_head_ref_stem("main"), "main");
+        assert_eq!(canonical_head_ref_stem("feature-branch"), "feature-branch");
+    }
+
+    #[test]
+    fn tokenize_removes_stop_words() {
+        let tokens = tokenize("Add initial support for the new crate");
+        // "add", "initial", "support", "for", "the", "new", "crate" are all stop words
+        assert!(tokens.is_empty());
+    }
+
+    #[test]
+    fn tokenize_keeps_meaningful_words() {
+        let tokens = tokenize("ECDSA P-256 adapter integration");
+        assert!(tokens.contains("ecdsa"));
+        assert!(tokens.contains("p"));
+        assert!(tokens.contains("256"));
+        assert!(tokens.contains("adapter"));
+        assert!(tokens.contains("integration"));
+    }
+
+    #[test]
+    fn jaccard_identical_sets_is_one() {
+        let a: BTreeSet<String> = ["x", "y"].iter().map(|s| s.to_string()).collect();
+        assert_eq!(jaccard(&a, &a), 1.0);
+    }
+
+    #[test]
+    fn jaccard_disjoint_sets_is_zero() {
+        let a: BTreeSet<String> = ["x"].iter().map(|s| s.to_string()).collect();
+        let b: BTreeSet<String> = ["y"].iter().map(|s| s.to_string()).collect();
+        assert_eq!(jaccard(&a, &b), 0.0);
+    }
+
+    #[test]
+    fn jaccard_both_empty_is_one() {
+        let empty: BTreeSet<String> = BTreeSet::new();
+        assert_eq!(jaccard(&empty, &empty), 1.0);
+    }
+
+    #[test]
+    fn jaccard_partial_overlap() {
+        let a: BTreeSet<String> = ["x", "y", "z"].iter().map(|s| s.to_string()).collect();
+        let b: BTreeSet<String> = ["y", "z", "w"].iter().map(|s| s.to_string()).collect();
+        // intersection = {y, z} = 2, union = {x, y, z, w} = 4
+        assert!((jaccard(&a, &b) - 0.5).abs() < 1e-9);
+    }
+
+    #[test]
+    fn path_fingerprints_includes_components() {
+        let paths = vec!["crates/uselesskey-rsa/src/lib.rs".to_string()];
+        let fps = path_fingerprints(&paths);
+        assert!(fps.contains("crates/uselesskey-rsa/src/lib.rs"));
+        assert!(fps.contains("lib.rs"));
+        assert!(fps.contains("crates"));
+        assert!(fps.contains("uselesskey-rsa"));
+        assert!(fps.contains("src"));
+    }
+
+    #[test]
+    fn summarize_checks_tallies_buckets() {
+        let checks = vec![
+            CheckSnapshot {
+                name: "a".into(),
+                bucket: "pass".into(),
+                state: "s".into(),
+            },
+            CheckSnapshot {
+                name: "b".into(),
+                bucket: "pass".into(),
+                state: "s".into(),
+            },
+            CheckSnapshot {
+                name: "c".into(),
+                bucket: "fail".into(),
+                state: "s".into(),
+            },
+            CheckSnapshot {
+                name: "d".into(),
+                bucket: "pending".into(),
+                state: "s".into(),
+            },
+        ];
+        let summary = summarize_checks(&checks);
+        assert_eq!(
+            summary,
+            CheckSummarySnapshot {
+                pass: 2,
+                fail: 1,
+                pending: 1,
+                skipping: 0,
+                cancel: 0,
+                total: 4,
+            }
+        );
+    }
+
+    #[test]
+    fn make_bundle_id_with_stem() {
+        assert_eq!(
+            make_bundle_id(Some("ecdsa-support"), 1),
+            "bundle-ecdsa-support-01"
+        );
+        assert_eq!(
+            make_bundle_id(Some("ecdsa-support"), 12),
+            "bundle-ecdsa-support-12"
+        );
+    }
+
+    #[test]
+    fn make_bundle_id_without_stem() {
+        assert_eq!(make_bundle_id(None, 1), "bundle-01");
+        assert_eq!(make_bundle_id(Some(""), 3), "bundle-03");
+    }
+
+    #[test]
+    fn risk_level_display() {
+        assert_eq!(format!("{}", RiskLevel::Low), "low");
+        assert_eq!(format!("{}", RiskLevel::Medium), "medium");
+        assert_eq!(format!("{}", RiskLevel::High), "high");
+    }
+
+    #[test]
+    fn harvest_status_display() {
+        assert_eq!(format!("{}", HarvestStatus::KeepVerbatim), "keep verbatim");
+        assert_eq!(format!("{}", HarvestStatus::PortManually), "port manually");
+        assert_eq!(
+            format!("{}", HarvestStatus::AlreadyOnMain),
+            "already on main"
+        );
+        assert_eq!(format!("{}", HarvestStatus::Stale), "stale / superseded");
+        assert_eq!(format!("{}", HarvestStatus::Discard), "discard");
+    }
+
+    #[test]
+    fn render_harvest_empty() {
+        assert_eq!(render_harvest(&[]), "none");
+    }
+
+    #[test]
+    fn render_harvest_formats_items() {
+        let items = vec![
+            HarvestDecision {
+                pr_number: 10,
+                status: HarvestStatus::KeepVerbatim,
+                note: "good".into(),
+            },
+            HarvestDecision {
+                pr_number: 11,
+                status: HarvestStatus::Discard,
+                note: "stale".into(),
+            },
+        ];
+        let rendered = render_harvest(&items);
+        assert_eq!(rendered, "#10: keep verbatim (good); #11: discard (stale)");
+    }
+
+    #[test]
+    fn classify_risk_docs_only_is_low() {
+        let profile = BundleProfile {
+            canonical_stem: None,
+            theme: "docs update".into(),
+            touched_paths: ["docs/guide.md", "README.md"]
+                .iter()
+                .map(|s| s.to_string())
+                .collect(),
+        };
+        assert_eq!(classify_risk(&profile, &[]), RiskLevel::Low);
+    }
+
+    #[test]
+    fn classify_risk_adapter_keyword_is_high() {
+        let profile = BundleProfile {
+            canonical_stem: None,
+            theme: "adapter work".into(),
+            touched_paths: ["crates/uselesskey-rsa/src/lib.rs"]
+                .iter()
+                .map(|s| s.to_string())
+                .collect(),
+        };
+        let prs = vec![open_pr(
+            1,
+            "RSA adapter",
+            "codex/rsa-adapter-ab12cd",
+            &["crates/uselesskey-rsa/src/lib.rs"],
+            1,
+            0,
+            Some(true),
+            1,
+            10,
+            1,
+            1,
+        )];
+        assert_eq!(classify_risk(&profile, &prs), RiskLevel::High);
+    }
+
+    #[test]
+    fn classify_risk_many_paths_is_high() {
+        let paths: BTreeSet<String> = (0..10)
+            .map(|i| format!("crates/crate-{i}/src/lib.rs"))
+            .collect();
+        let profile = BundleProfile {
+            canonical_stem: None,
+            theme: "big change".into(),
+            touched_paths: paths,
+        };
+        assert_eq!(classify_risk(&profile, &[]), RiskLevel::High);
+    }
+
+    #[test]
+    fn classify_risk_normal_code_change_is_medium() {
+        let profile = BundleProfile {
+            canonical_stem: None,
+            theme: "feature".into(),
+            touched_paths: ["crates/uselesskey-core/src/lib.rs"]
+                .iter()
+                .map(|s| s.to_string())
+                .collect(),
+        };
+        assert_eq!(classify_risk(&profile, &[]), RiskLevel::Medium);
+    }
+
+    #[test]
+    fn keeper_score_ordering() {
+        let better = KeeperScore {
+            checks: 24,
+            mergeable: 30,
+            size: -16,
+            commits: -5,
+            stem: 40,
+            pr_number: -10,
+        };
+        let worse = KeeperScore {
+            checks: -90,
+            mergeable: -120,
+            size: -80,
+            commits: -10,
+            stem: 0,
+            pr_number: -20,
+        };
+        assert!(better > worse);
+    }
+
+    #[test]
+    fn score_checks_penalizes_empty() {
+        let summary = CheckSummarySnapshot::default();
+        let score = score_checks(&summary, &[]);
+        assert_eq!(score, -8);
+    }
+
+    #[test]
+    fn score_checks_rewards_passes_penalizes_failures() {
+        let summary = CheckSummarySnapshot {
+            pass: 3,
+            fail: 1,
+            pending: 0,
+            skipping: 0,
+            cancel: 0,
+            total: 4,
+        };
+        let checks = vec![CheckSnapshot {
+            name: "a".into(),
+            bucket: "pass".into(),
+            state: "s".into(),
+        }];
+        let score = score_checks(&summary, &checks);
+        // 3*24 - 1*90 = 72 - 90 = -18
+        assert_eq!(score, -18);
+    }
+
+    #[test]
+    fn humanize_stem_strips_codex_prefix_and_replaces_separators() {
+        assert_eq!(
+            humanize_stem("codex/add-ecdsa-support"),
+            "add ecdsa support"
+        );
+        assert_eq!(humanize_stem("feature_branch"), "feature branch");
+    }
+
+    #[test]
+    fn title_similarity_identical_is_one() {
+        assert_eq!(title_similarity("ECDSA adapter", "ECDSA adapter"), 1.0);
+    }
+
+    #[test]
+    fn title_similarity_completely_different_is_zero() {
+        // Words that are not stop words and share nothing
+        assert_eq!(title_similarity("ECDSA adapter", "HMAC integration"), 0.0);
+    }
+
+    #[test]
+    fn join_paths_empty_returns_none_string() {
+        assert_eq!(join_paths(&[]), "none");
+    }
+
+    #[test]
+    fn join_paths_multiple() {
+        let paths = vec!["a.rs".to_string(), "b.rs".to_string()];
+        assert_eq!(join_paths(&paths), "a.rs, b.rs");
+    }
+
+    // ---------------------------------------------------------------
+    // Snapshot/Ledger command constructors
+    // ---------------------------------------------------------------
+
+    #[test]
+    fn snapshot_command_defaults() {
+        let cmd = SnapshotCommand::new(None);
+        assert_eq!(
+            cmd.output_path,
+            PathBuf::from("target/xtask/pr-bundles/snapshot.json")
+        );
+        assert!(cmd.repository.is_none());
+        assert!(!cmd.include_closed_paths);
+    }
+
+    #[test]
+    fn ledger_command_defaults() {
+        let cmd = LedgerCommand::new("my-snapshot.json");
+        assert_eq!(cmd.snapshot_path, PathBuf::from("my-snapshot.json"));
+        assert_eq!(
+            cmd.output_path,
+            Some(PathBuf::from("target/xtask/pr-bundles/ledger.md"))
+        );
+    }
+
+    // ---------------------------------------------------------------
+    // End-to-end: snapshot JSON -> analysis -> ledger
+    // ---------------------------------------------------------------
+
+    #[test]
+    fn end_to_end_snapshot_to_ledger() {
+        let snapshot: BundleSnapshot =
+            serde_json::from_str(SAMPLE_SNAPSHOT_JSON).expect("parse fixture");
+        let analysis = analyze_snapshot(&snapshot);
+        let md = render_ledger(&snapshot, &analysis);
+
+        // Single PR is a singleton (not enough for a bundle)
+        assert!(analysis.bundles.is_empty());
+        assert_eq!(analysis.singleton_tails.len(), 1);
+        assert_eq!(analysis.singleton_tails[0].pr.number, 100);
+
+        // Ledger still renders the header properly
+        assert!(md.contains("# PR Bundle Ledger"));
+        assert!(md.contains("EffortlessMetrics/uselesskey"));
     }
 }
