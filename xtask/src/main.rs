@@ -1888,8 +1888,20 @@ fn no_blob_gate() -> Result<()> {
     if offenders.is_empty() {
         return Ok(());
     }
-    let joined = offenders.join(", ");
-    bail!("found secret-shaped fixtures: {joined}");
+    let mut msg = String::from("found secret-shaped fixtures:\n");
+    for hit in &offenders {
+        msg.push_str(&format!(
+            "\n  {}\n    kind: {}\n    fix:  {}\n",
+            hit.rel_path, hit.kind, hit.suggestion
+        ));
+    }
+    bail!("{msg}");
+}
+
+struct BlobHit {
+    rel_path: String,
+    kind: &'static str,
+    suggestion: &'static str,
 }
 
 /// Scan for blobs and emit migration recipes (read-only).
@@ -1907,45 +1919,14 @@ fn no_blob_migrate() -> Result<()> {
     println!();
     println!("# Migration Recipe");
     println!();
-    for (i, path) in offenders.iter().enumerate() {
-        let ext = Path::new(path)
-            .extension()
-            .and_then(|s| s.to_str())
-            .unwrap_or("")
-            .to_lowercase();
-
-        let (kind, suggested_usage) = match ext.as_str() {
-            "pem" => ("PEM", "fx.rsa(\"label\", RsaSpec::rs256())"),
-            "der" => ("DER", "fx.rsa(\"label\", RsaSpec::rs256()).to_der()"),
-            "key" => ("private key", "fx.rsa(\"label\", RsaSpec::rs256())"),
-            "crt" | "cer" => (
-                "certificate",
-                "fx.x509_self_signed(\"label\", X509Spec::default())",
-            ),
-            "p12" | "pfx" => ("PKCS#12", "fx.rsa(\"label\", RsaSpec::rs256())"),
-            _ => ("unknown", "// TODO: identify fixture type"),
-        };
-
-        println!("## {}. {}", i + 1, path);
+    for (i, hit) in offenders.iter().enumerate() {
+        println!("## {}. {}", i + 1, hit.rel_path);
         println!();
-        println!("  Detected: {}", kind);
+        println!("  Detected: {}", hit.kind);
         println!();
         println!("  Suggested replacement:");
         println!("  ```rust");
-        println!("  use uselesskey::{{RsaFactoryExt, RsaSpec}};");
-        println!("  // or for different key types:");
-        println!("  // use uselesskey::{{EcdsaFactoryExt, EcdsaSpec}};");
-        println!("  // use uselesskey::{{Ed25519FactoryExt}};");
-        println!("  // use uselesskey::{{HmacFactoryExt, HmacSpec}};");
-        println!("  // use uselesskey::{{X509FactoryExt, X509Spec}};");
-        println!();
-        println!("  let fixture = {}", suggested_usage);
-        println!("  ```");
-        println!();
-        println!("  Alternatively, use the CLI for export:");
-        println!("  ```bash");
-        println!("  cargo run -p uselesskey --example basic_rsa \\");
-        println!("    --no-default-features --features rsa,jwk");
+        println!("  {}", hit.suggestion);
         println!("  ```");
         println!();
         println!("---\n");
@@ -1957,7 +1938,11 @@ fn no_blob_migrate() -> Result<()> {
     println!("2. Replace static file with runtime generation using uselesskey");
     println!(
         "3. Remove the static file: `git rm {}`",
-        offenders.join(" ")
+        offenders
+            .iter()
+            .map(|h| h.rel_path.as_str())
+            .collect::<Vec<_>>()
+            .join(" ")
     );
     println!("4. Re-run `cargo xtask no-blob` to verify");
     println!();
@@ -1966,14 +1951,14 @@ fn no_blob_migrate() -> Result<()> {
     Ok(())
 }
 
-fn find_secret_blobs() -> Result<Vec<String>> {
+fn find_secret_blobs() -> Result<Vec<BlobHit>> {
     let mut offenders = Vec::new();
     let root = Path::new(".");
     walk_for_blobs(root, root, &mut offenders)?;
     Ok(offenders)
 }
 
-fn walk_for_blobs(root: &Path, dir: &Path, offenders: &mut Vec<String>) -> Result<()> {
+fn walk_for_blobs(root: &Path, dir: &Path, offenders: &mut Vec<BlobHit>) -> Result<()> {
     for entry in fs::read_dir(dir).with_context(|| format!("read_dir failed for {dir:?}"))? {
         let entry = entry.context("failed to read dir entry")?;
         let path = entry.path();
@@ -1989,7 +1974,12 @@ fn walk_for_blobs(root: &Path, dir: &Path, offenders: &mut Vec<String>) -> Resul
                 continue;
             }
             if is_secret_extension(&path) || contains_pem_markers(&path)? {
-                offenders.push(rel_str);
+                let (kind, suggestion) = classify_blob(&path);
+                offenders.push(BlobHit {
+                    rel_path: rel_str,
+                    kind,
+                    suggestion,
+                });
             }
         }
     }
@@ -2014,10 +2004,19 @@ fn is_secret_extension(path: &Path) -> bool {
         .and_then(|s| s.to_str())
         .unwrap_or("")
         .to_ascii_lowercase();
-    matches!(
+    if matches!(
         ext.as_str(),
-        "pem" | "der" | "key" | "crt" | "cer" | "p12" | "pfx"
-    )
+        "pem" | "der" | "key" | "crt" | "cer" | "p12" | "pfx" | "pub"
+    ) {
+        return true;
+    }
+    // SSH private key filenames: id_rsa, id_ed25519, id_ecdsa (no extension)
+    let stem = path
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    matches!(stem.as_str(), "id_rsa" | "id_ed25519" | "id_ecdsa")
 }
 
 fn contains_pem_markers(path: &Path) -> Result<bool> {
@@ -2032,7 +2031,179 @@ fn contains_pem_markers(path: &Path) -> Result<bool> {
     }
     let content = fs::read(path).with_context(|| format!("failed to read {path:?}"))?;
     let text = String::from_utf8_lossy(&content);
-    Ok(text.contains("-----BEGIN") && text.contains("-----END"))
+
+    // Standard PEM blocks (RSA, EC, certificates, etc.)
+    if text.contains("-----BEGIN") && text.contains("-----END") {
+        return Ok(true);
+    }
+
+    // SSH public key prefixes
+    for line in text.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("ssh-rsa ")
+            || trimmed.starts_with("ssh-ed25519 ")
+            || trimmed.starts_with("ecdsa-sha2-")
+        {
+            return Ok(true);
+        }
+    }
+
+    Ok(false)
+}
+
+/// Classify a secret-shaped blob by content (first 1024 bytes) then extension.
+fn classify_blob(path: &Path) -> (&'static str, &'static str) {
+    let header = fs::read(path)
+        .ok()
+        .map(|bytes| bytes.into_iter().take(1024).collect::<Vec<u8>>());
+
+    if let Some(ref bytes) = header
+        && let Some(hit) = classify_by_content(bytes)
+    {
+        return hit;
+    }
+
+    classify_by_extension(path)
+}
+
+fn classify_by_content(bytes: &[u8]) -> Option<(&'static str, &'static str)> {
+    let text = String::from_utf8_lossy(bytes);
+
+    // PEM header detection
+    if let Some(pem_start) = text.find("-----BEGIN ") {
+        let after = &text[pem_start + 11..];
+        if let Some(end) = after.find("-----") {
+            let label = after[..end].trim();
+            return Some(classify_pem_label(label));
+        }
+    }
+
+    // SSH public key prefixes
+    if text.starts_with("ssh-rsa ")
+        || text.starts_with("ssh-ed25519 ")
+        || text.starts_with("ssh-dss ")
+        || text.starts_with("ecdsa-sha2-")
+    {
+        return Some((
+            "SSH public key",
+            "fx.token(\"ssh-key\", TokenSpec::opaque()) or uselesskey-ssh (planned)",
+        ));
+    }
+
+    // JWT-shaped: three base64url segments separated by dots
+    let trimmed = text.trim();
+    if looks_like_jwt(trimmed) {
+        return Some(("JWT token", "fx.token(\"auth\", TokenSpec::jwt_shape())"));
+    }
+
+    None
+}
+
+fn classify_pem_label(label: &str) -> (&'static str, &'static str) {
+    match label {
+        "RSA PRIVATE KEY" => (
+            "RSA private key (PKCS#1)",
+            "fx.rsa(\"key\", RsaSpec::rs256()).private_key_pkcs1_pem()",
+        ),
+        "PRIVATE KEY" => (
+            "Private key (PKCS#8)",
+            "fx.rsa(\"key\", RsaSpec::rs256()).private_key_pem()  -- or ecdsa/ed25519 variant",
+        ),
+        "EC PRIVATE KEY" => (
+            "EC private key (SEC1)",
+            "fx.ecdsa(\"key\", EcdsaSpec::es256()).private_key_sec1_pem()",
+        ),
+        "PUBLIC KEY" => (
+            "Public key (SPKI)",
+            "fx.rsa(\"key\", RsaSpec::rs256()).public_key_pem()  -- or ecdsa/ed25519 variant",
+        ),
+        "RSA PUBLIC KEY" => (
+            "RSA public key (PKCS#1)",
+            "fx.rsa(\"key\", RsaSpec::rs256()).public_key_pkcs1_pem()",
+        ),
+        "CERTIFICATE" => (
+            "X.509 certificate",
+            "fx.x509_self_signed(\"ca\", X509Spec::default()).cert_pem()",
+        ),
+        "CERTIFICATE REQUEST" => (
+            "X.509 CSR",
+            "fx.x509_self_signed(\"ca\", X509Spec::default()) -- CSR not yet supported; use cert",
+        ),
+        "ENCRYPTED PRIVATE KEY" => (
+            "Encrypted private key (PKCS#8)",
+            "fx.rsa(\"key\", RsaSpec::rs256()).private_key_pem()  -- uselesskey generates unencrypted keys",
+        ),
+        "OPENSSH PRIVATE KEY" => (
+            "OpenSSH private key",
+            "fx.token(\"ssh-key\", TokenSpec::opaque()) or uselesskey-ssh (planned)",
+        ),
+        "PGP PUBLIC KEY BLOCK" | "PGP PRIVATE KEY BLOCK" => {
+            ("PGP key block", "fx.pgp(\"key\", PgpSpec::rsa()).armored()")
+        }
+        "PGP MESSAGE" => (
+            "PGP message",
+            "fx.pgp(\"key\", PgpSpec::rsa()) -- generate key, then encrypt test data",
+        ),
+        "PGP SIGNATURE" => (
+            "PGP signature",
+            "fx.pgp(\"key\", PgpSpec::rsa()) -- generate key, then sign test data",
+        ),
+        _ => (
+            "Unknown PEM type",
+            "Delete the file and use the appropriate uselesskey fixture API",
+        ),
+    }
+}
+
+fn looks_like_jwt(s: &str) -> bool {
+    let parts: Vec<&str> = s.split('.').collect();
+    if parts.len() != 3 {
+        return false;
+    }
+    parts.iter().all(|p| {
+        !p.is_empty()
+            && p.len() >= 4
+            && p.chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '=')
+    })
+}
+
+fn classify_by_extension(path: &Path) -> (&'static str, &'static str) {
+    let ext = path
+        .extension()
+        .and_then(|s| s.to_str())
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    match ext.as_str() {
+        "pem" => (
+            "PEM file (unknown type)",
+            "Read the PEM header to determine key type, then use the matching uselesskey API",
+        ),
+        "der" => (
+            "DER-encoded file",
+            "fx.rsa(\"key\", RsaSpec::rs256()).private_key_der()  -- or .public_key_der(), .cert_der()",
+        ),
+        "key" => (
+            "Key file",
+            "fx.rsa(\"key\", RsaSpec::rs256()).private_key_pem()  -- or ecdsa/ed25519 variant",
+        ),
+        "crt" | "cer" => (
+            "Certificate file",
+            "fx.x509_self_signed(\"ca\", X509Spec::default()).cert_pem()",
+        ),
+        "p12" | "pfx" => (
+            "PKCS#12 bundle",
+            "fx.x509_self_signed(\"ca\", X509Spec::default()) -- PKCS#12 not yet supported; use PEM/DER",
+        ),
+        "pub" => (
+            "Public key file",
+            "fx.rsa(\"key\", RsaSpec::rs256()).public_key_pem()  -- or ecdsa/ed25519 variant",
+        ),
+        _ => (
+            "Secret-shaped file",
+            "Delete the file and use the appropriate uselesskey fixture API",
+        ),
+    }
 }
 
 fn count_bdd_scenarios() -> Result<BTreeMap<String, usize>> {
@@ -2538,6 +2709,188 @@ mod tests {
         let err = contains_pem_markers(&missing).unwrap_err();
         let msg = err.to_string();
         assert!(msg.contains("failed to read"));
+    }
+
+    // ── no-blob content detection tests ──────────────────────────────
+
+    #[test]
+    fn test_is_secret_extension_ssh_keys() {
+        // SSH key filenames without extension
+        assert!(is_secret_extension(Path::new("id_rsa")));
+        assert!(is_secret_extension(Path::new("id_ed25519")));
+        assert!(is_secret_extension(Path::new("id_ecdsa")));
+        // .pub files
+        assert!(is_secret_extension(Path::new("id_rsa.pub")));
+    }
+
+    #[test]
+    fn test_contains_pem_markers_ssh_public_key() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let ssh_pub = dir.path().join("key.txt");
+        fs::write(&ssh_pub, "ssh-rsa AAAAB3NzaC1yc2EAAA... user@host\n").unwrap();
+        assert!(contains_pem_markers(&ssh_pub).expect("read file"));
+
+        let ssh_ed = dir.path().join("ed.txt");
+        fs::write(
+            &ssh_ed,
+            "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... user@host\n",
+        )
+        .unwrap();
+        assert!(contains_pem_markers(&ssh_ed).expect("read file"));
+    }
+
+    #[test]
+    fn test_classify_blob_pem_content() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let pem_file = dir.path().join("cert.txt");
+        fs::write(
+            &pem_file,
+            "-----BEGIN CERTIFICATE-----\nbase64\n-----END CERTIFICATE-----\n",
+        )
+        .unwrap();
+        let (kind, _) = classify_blob(&pem_file);
+        assert_eq!(kind, "X.509 certificate");
+    }
+
+    #[test]
+    fn test_classify_blob_extension_fallback() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let der_file = dir.path().join("key.der");
+        fs::write(&der_file, &[0x00, 0x01, 0x02]).unwrap();
+        let (kind, _) = classify_blob(&der_file);
+        assert_eq!(kind, "DER-encoded file");
+    }
+
+    #[test]
+    fn test_looks_like_jwt() {
+        assert!(looks_like_jwt(
+            "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signature_here"
+        ));
+        assert!(!looks_like_jwt("not.a.jwt"));
+        assert!(!looks_like_jwt("only-one-segment"));
+        assert!(!looks_like_jwt("two.parts"));
+    }
+
+    #[test]
+    fn test_classify_pem_label_coverage() {
+        assert_eq!(
+            classify_pem_label("RSA PRIVATE KEY").0,
+            "RSA private key (PKCS#1)"
+        );
+        assert_eq!(classify_pem_label("PRIVATE KEY").0, "Private key (PKCS#8)");
+        assert_eq!(
+            classify_pem_label("EC PRIVATE KEY").0,
+            "EC private key (SEC1)"
+        );
+        assert_eq!(classify_pem_label("CERTIFICATE").0, "X.509 certificate");
+        assert_eq!(
+            classify_pem_label("OPENSSH PRIVATE KEY").0,
+            "OpenSSH private key"
+        );
+        assert_eq!(
+            classify_pem_label("PGP PUBLIC KEY BLOCK").0,
+            "PGP key block"
+        );
+        assert_eq!(
+            classify_pem_label("SOMETHING UNKNOWN").0,
+            "Unknown PEM type"
+        );
+    }
+
+    #[test]
+    fn test_find_blobs_in_tempdir() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let root = dir.path();
+
+        // tests/ with .pem (should be found)
+        fs::create_dir_all(root.join("tests")).unwrap();
+        fs::write(root.join("tests/server.pem"), "fake pem content").unwrap();
+
+        // tests/ with .key (should be found)
+        fs::write(root.join("tests/private.key"), "fake key content").unwrap();
+
+        // tests/ with .rs (should NOT be found)
+        fs::write(root.join("tests/helper.rs"), "fn helper() {}").unwrap();
+
+        // fixtures/ with .der (should be found)
+        fs::create_dir_all(root.join("fixtures")).unwrap();
+        fs::write(root.join("fixtures/cert.der"), &[0x30, 0x82, 0x01]).unwrap();
+
+        // fixtures/ with .txt containing PEM markers (should be found)
+        fs::create_dir_all(root.join("fixtures/nested")).unwrap();
+        fs::write(
+            root.join("fixtures/nested/embedded.txt"),
+            "-----BEGIN PRIVATE KEY-----\nbase64\n-----END PRIVATE KEY-----\n",
+        )
+        .unwrap();
+
+        // crates/foo/tests/ with .p12 (should be found)
+        fs::create_dir_all(root.join("crates/foo/tests")).unwrap();
+        fs::write(root.join("crates/foo/tests/store.p12"), "fake p12").unwrap();
+
+        // src/ with .pem (should NOT be found)
+        fs::create_dir_all(root.join("src")).unwrap();
+        fs::write(root.join("src/secret.pem"), "fake pem").unwrap();
+
+        // testdata/ with .crt (should be found)
+        fs::create_dir_all(root.join("testdata")).unwrap();
+        fs::write(root.join("testdata/ca.crt"), "fake cert").unwrap();
+
+        // .git/ should be skipped
+        fs::create_dir_all(root.join("tests/.git")).unwrap();
+        fs::write(root.join("tests/.git/secret.pem"), "git internal").unwrap();
+
+        // target/ should be skipped
+        fs::create_dir_all(root.join("tests/target")).unwrap();
+        fs::write(root.join("tests/target/leaked.key"), "build artifact").unwrap();
+
+        let mut offenders = Vec::new();
+        walk_for_blobs(root, root, &mut offenders).expect("walk_for_blobs");
+        let paths: Vec<&str> = offenders.iter().map(|h| h.rel_path.as_str()).collect();
+
+        assert!(
+            paths.contains(&"tests/server.pem"),
+            "should find .pem: {paths:?}"
+        );
+        assert!(
+            paths.contains(&"tests/private.key"),
+            "should find .key: {paths:?}"
+        );
+        assert!(
+            paths.contains(&"fixtures/cert.der"),
+            "should find .der: {paths:?}"
+        );
+        assert!(
+            paths.contains(&"fixtures/nested/embedded.txt"),
+            "should find PEM in .txt: {paths:?}"
+        );
+        assert!(
+            paths.contains(&"crates/foo/tests/store.p12"),
+            "should find .p12: {paths:?}"
+        );
+        assert!(
+            paths.contains(&"testdata/ca.crt"),
+            "should find .crt: {paths:?}"
+        );
+
+        assert!(
+            !paths.iter().any(|o| o.contains("helper.rs")),
+            "should not flag .rs: {paths:?}"
+        );
+        assert!(
+            !paths.iter().any(|o| o.contains("src/")),
+            "should not scan src/: {paths:?}"
+        );
+        assert!(
+            !paths.iter().any(|o| o.contains(".git/")),
+            "should skip .git/: {paths:?}"
+        );
+        assert!(
+            !paths.iter().any(|o| o.contains("target/")),
+            "should skip target/: {paths:?}"
+        );
+
+        assert_eq!(paths.len(), 6, "expected 6 offenders: {paths:?}");
     }
 
     #[test]
