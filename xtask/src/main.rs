@@ -6,6 +6,8 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use anyhow::{Context, Result, bail};
+use base64::Engine;
+use base64::engine::general_purpose::{URL_SAFE, URL_SAFE_NO_PAD};
 use clap::{Parser, Subcommand};
 use indicatif::{ProgressBar, ProgressStyle};
 use owo_colors::OwoColorize;
@@ -2010,39 +2012,39 @@ fn walk_for_blobs(root: &Path, dir: &Path, offenders: &mut Vec<BlobHit>) -> Resu
 fn detect_and_classify(path: &Path) -> Result<Option<(&'static str, &'static str)>> {
     let ext_hit = is_secret_extension(path);
     let header = read_file_header(path)?;
-    if let Some(ref bytes) = header {
-        if let Some(hit) = classify_by_content(bytes) {
-            return Ok(Some(hit));
-        }
-        if ext_hit || has_secret_markers(bytes) {
-            return Ok(Some(classify_by_extension(path)));
-        }
-        return Ok(None);
+    let allow_secret_markers = !is_source_like_extension(path);
+
+    if let Some(hit) = classify_by_content(&header, allow_secret_markers) {
+        return Ok(Some(hit));
     }
 
     if ext_hit {
         return Ok(Some(classify_by_extension(path)));
     }
 
+    if allow_secret_markers && has_secret_markers(&header) {
+        return Ok(Some(classify_by_extension(path)));
+    }
+
     Ok(None)
 }
 
-/// Read up to 8 KiB of a file for marker detection.
-/// Returns `None` for source code files that might contain PEM strings as literals.
-fn read_file_header(path: &Path) -> Result<Option<Vec<u8>>> {
+/// Read a bounded prefix of a file for marker detection.
+fn read_file_header(path: &Path) -> Result<Vec<u8>> {
+    const HEADER_SIZE: u64 = 64 * 1024;
+    let file = fs::File::open(path).with_context(|| format!("failed to read {path:?}"))?;
+    let mut buf = Vec::new();
+    file.take(HEADER_SIZE).read_to_end(&mut buf)?;
+    Ok(buf)
+}
+
+fn is_source_like_extension(path: &Path) -> bool {
     let ext = path
         .extension()
         .and_then(|s| s.to_str())
         .unwrap_or("")
         .to_ascii_lowercase();
-    if matches!(ext.as_str(), "rs" | "feature" | "md" | "toml" | "snap") {
-        return Ok(None);
-    }
-    const HEADER_SIZE: u64 = 8192;
-    let file = fs::File::open(path).with_context(|| format!("failed to read {path:?}"))?;
-    let mut buf = Vec::new();
-    file.take(HEADER_SIZE).read_to_end(&mut buf)?;
-    Ok(Some(buf))
+    matches!(ext.as_str(), "rs" | "feature" | "md" | "toml" | "snap")
 }
 
 /// Check if a file header contains PEM, SSH, or other secret markers.
@@ -2100,8 +2102,11 @@ fn is_secret_extension(path: &Path) -> bool {
 /// Backward-compatible wrapper used by tests. Delegates to `read_file_header` + `has_secret_markers`.
 #[cfg(test)]
 fn contains_pem_markers(path: &Path) -> Result<bool> {
+    if is_source_like_extension(path) {
+        return Ok(false);
+    }
     let header = read_file_header(path)?;
-    Ok(header.as_deref().is_some_and(has_secret_markers))
+    Ok(has_secret_markers(&header))
 }
 
 /// Classify a secret-shaped blob by content (first 1024 bytes) then extension.
@@ -2112,7 +2117,7 @@ fn classify_blob(path: &Path) -> (&'static str, &'static str) {
         .map(|bytes| bytes.into_iter().take(1024).collect::<Vec<u8>>());
 
     if let Some(ref bytes) = header
-        && let Some(hit) = classify_by_content(bytes)
+        && let Some(hit) = classify_by_content(bytes, !is_source_like_extension(path))
     {
         return hit;
     }
@@ -2120,40 +2125,48 @@ fn classify_blob(path: &Path) -> (&'static str, &'static str) {
     classify_by_extension(path)
 }
 
-fn classify_by_content(bytes: &[u8]) -> Option<(&'static str, &'static str)> {
+fn classify_by_content(
+    bytes: &[u8],
+    allow_secret_markers: bool,
+) -> Option<(&'static str, &'static str)> {
     let text = String::from_utf8_lossy(bytes);
 
-    // PEM header detection
-    if let Some(pem_start) = text.find("-----BEGIN ") {
-        let after = &text[pem_start + 11..];
-        if let Some(end) = after.find("-----") {
-            let label = after[..end].trim();
-            return Some(classify_pem_label(label));
+    if allow_secret_markers {
+        // PEM header detection
+        if let Some(pem_start) = text.find("-----BEGIN ") {
+            let after = &text[pem_start + 11..];
+            if let Some(end) = after.find("-----") {
+                let label = after[..end].trim();
+                return Some(classify_pem_label(label));
+            }
+        }
+
+        // SSH public key prefixes (check per-line, not just file start)
+        for line in text.lines() {
+            let trimmed = line.trim();
+            if trimmed.starts_with("ssh-rsa ")
+                || trimmed.starts_with("ssh-ed25519 ")
+                || trimmed.starts_with("ssh-dss ")
+                || trimmed.starts_with("ecdsa-sha2-")
+            {
+                return Some((
+                    "SSH public key",
+                    "fx.token(\"ssh-key\", TokenSpec::opaque()) or uselesskey-ssh (planned)",
+                ));
+            }
         }
     }
 
-    // SSH public key prefixes (check per-line, not just file start)
-    for line in text.lines() {
-        let trimmed = line.trim();
-        if trimmed.starts_with("ssh-rsa ")
-            || trimmed.starts_with("ssh-ed25519 ")
-            || trimmed.starts_with("ssh-dss ")
-            || trimmed.starts_with("ecdsa-sha2-")
-        {
-            return Some((
-                "SSH public key",
-                "fx.token(\"ssh-key\", TokenSpec::opaque()) or uselesskey-ssh (planned)",
-            ));
-        }
-    }
-
-    // JWT-shaped: three base64url segments separated by dots
-    let trimmed = text.trim();
-    if looks_like_jwt(trimmed) {
+    if find_jwt_candidate(&text).is_some() {
         return Some(("JWT token", "fx.token(\"auth\", TokenSpec::jwt_shape())"));
     }
 
     None
+}
+
+fn find_jwt_candidate(text: &str) -> Option<&str> {
+    text.split(|c: char| !(c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.' | '=')))
+        .find(|candidate| looks_like_jwt(candidate))
 }
 
 fn classify_pem_label(label: &str) -> (&'static str, &'static str) {
@@ -2213,16 +2226,50 @@ fn classify_pem_label(label: &str) -> (&'static str, &'static str) {
 }
 
 fn looks_like_jwt(s: &str) -> bool {
-    let parts: Vec<&str> = s.split('.').collect();
-    if parts.len() != 3 {
+    let mut parts = s.split('.');
+    let (Some(header), Some(payload), Some(signature)) = (parts.next(), parts.next(), parts.next())
+    else {
+        return false;
+    };
+    if parts.next().is_some() {
         return false;
     }
-    parts.iter().all(|p| {
-        !p.is_empty()
-            && p.len() >= 4
-            && p.chars()
-                .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '=')
-    })
+
+    if !is_jwt_signature_segment(signature) {
+        return false;
+    }
+
+    let header = decode_jwt_json_segment(header);
+    let payload = decode_jwt_json_segment(payload);
+    let (Some(header), Some(payload)) = (header, payload) else {
+        return false;
+    };
+
+    header.is_object()
+        && payload.is_object()
+        && header
+            .as_object()
+            .is_some_and(|header| header.contains_key("alg") || header.contains_key("enc"))
+}
+
+fn decode_jwt_json_segment(segment: &str) -> Option<serde_json::Value> {
+    let decoded = decode_jwt_segment(segment)?;
+    serde_json::from_slice(&decoded).ok()
+}
+
+fn decode_jwt_segment(segment: &str) -> Option<Vec<u8>> {
+    URL_SAFE_NO_PAD
+        .decode(segment)
+        .or_else(|_| URL_SAFE.decode(segment))
+        .ok()
+}
+
+fn is_jwt_signature_segment(segment: &str) -> bool {
+    !segment.is_empty()
+        && segment.len() >= 8
+        && segment
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '='))
 }
 
 fn classify_by_extension(path: &Path) -> (&'static str, &'static str) {
@@ -2806,7 +2853,7 @@ mod tests {
         // SSH key on a non-first line should still be classified as SSH, not fall
         // through to extension-based classification.
         let bytes = b"# authorized keys\nssh-rsa AAAAB3NzaC1yc2EAAA... user@host\n";
-        let result = classify_by_content(bytes);
+        let result = classify_by_content(bytes, true);
         assert_eq!(result.unwrap().0, "SSH public key");
     }
 
@@ -2837,9 +2884,23 @@ mod tests {
         assert!(looks_like_jwt(
             "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signature_here"
         ));
+        assert!(looks_like_jwt(
+            "Bearer eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signature_here"
+                .split_whitespace()
+                .nth(1)
+                .expect("jwt token")
+        ));
+        assert!(!looks_like_jwt("abcd.efgh.ijkl"));
         assert!(!looks_like_jwt("not.a.jwt"));
         assert!(!looks_like_jwt("only-one-segment"));
         assert!(!looks_like_jwt("two.parts"));
+    }
+
+    #[test]
+    fn test_classify_by_content_finds_embedded_jwt() {
+        let bytes = br#"{"authorization":"Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY2Nzg5MCJ9.signature_here"}"#;
+        let result = classify_by_content(bytes, false);
+        assert_eq!(result.unwrap().0, "JWT token");
     }
 
     #[test]
@@ -2895,12 +2956,13 @@ mod tests {
         )
         .unwrap();
 
-        // fixtures/ with .txt containing JWT should be found
-        fs::write(
-            root.join("fixtures/token.txt"),
-            "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY2Nzg5MCJ9.signature_here",
-        )
-        .unwrap();
+        // fixtures/ with .txt containing an embedded JWT beyond 8 KiB should be found
+        let jwt = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY2Nzg5MCJ9.signature_here";
+        let mut embedded = "x".repeat(10 * 1024);
+        embedded.push_str("\n{\"token\":\"");
+        embedded.push_str(jwt);
+        embedded.push_str("\"}\n");
+        fs::write(root.join("fixtures/token.txt"), embedded).unwrap();
 
         // crates/foo/tests/ with .p12 (should be found)
         fs::create_dir_all(root.join("crates/foo/tests")).unwrap();
@@ -2978,6 +3040,27 @@ mod tests {
         );
 
         assert_eq!(paths.len(), 7, "expected 7 offenders: {paths:?}");
+    }
+
+    #[test]
+    fn test_walk_for_blobs_finds_jwt_in_source_like_fixture() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let root = dir.path();
+        fs::create_dir_all(root.join("fixtures")).unwrap();
+        fs::write(
+            root.join("fixtures/token.md"),
+            "token = \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY2Nzg5MCJ9.signature_here\"\n",
+        )
+        .unwrap();
+
+        let mut offenders = Vec::new();
+        walk_for_blobs(root, root, &mut offenders).expect("walk_for_blobs");
+
+        let hit = offenders
+            .iter()
+            .find(|h| h.rel_path == "fixtures/token.md")
+            .expect("should report JWT hit");
+        assert_eq!(hit.kind, "JWT token");
     }
 
     #[test]

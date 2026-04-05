@@ -14,6 +14,7 @@ keywords = ["xtask", "build", "automation", "ci", "testing"]
 
 [dependencies]
 anyhow.workspace = true
+base64.workspace = true
 chrono = "0.4"
 clap.workspace = true
 indicatif = "0.18"

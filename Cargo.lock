@@ -5978,6 +5978,7 @@ name = "xtask"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "base64",
  "chrono",
  "clap",
  "indicatif",
