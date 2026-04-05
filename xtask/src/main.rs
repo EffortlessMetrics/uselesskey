@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::env;
 use std::fs;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -2035,13 +2036,11 @@ fn read_file_header(path: &Path) -> Result<Option<Vec<u8>>> {
     if matches!(ext.as_str(), "rs" | "feature" | "md" | "toml" | "snap") {
         return Ok(None);
     }
-    const HEADER_SIZE: usize = 8192;
-    let content = fs::read(path).with_context(|| format!("failed to read {path:?}"))?;
-    if content.len() > HEADER_SIZE {
-        Ok(Some(content[..HEADER_SIZE].to_vec()))
-    } else {
-        Ok(Some(content))
-    }
+    const HEADER_SIZE: u64 = 8192;
+    let file = fs::File::open(path).with_context(|| format!("failed to read {path:?}"))?;
+    let mut buf = Vec::new();
+    file.take(HEADER_SIZE).read_to_end(&mut buf)?;
+    Ok(Some(buf))
 }
 
 /// Check if a file header contains PEM, SSH, or other secret markers.
