@@ -2726,6 +2726,13 @@ mod tests {
         assert!(files.contains(&workspace_root.join("crates/uselesskey/README.md")));
     }
 
+    fn sample_jwt() -> String {
+        let header = URL_SAFE_NO_PAD.encode(br#"{"alg":"HS256","typ":"JWT"}"#);
+        let payload = URL_SAFE_NO_PAD.encode(br#"{"sub":"1234567890"}"#);
+        let signature = URL_SAFE_NO_PAD.encode(b"signature");
+        format!("{header}.{payload}.{signature}")
+    }
+
     #[test]
     fn resolve_base_ref_prefers_xtask_base_ref() {
         let _lock = ENV_LOCK.lock().unwrap();
@@ -2881,11 +2888,10 @@ mod tests {
 
     #[test]
     fn test_looks_like_jwt() {
+        let jwt = sample_jwt();
+        assert!(looks_like_jwt(&jwt));
         assert!(looks_like_jwt(
-            "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signature_here"
-        ));
-        assert!(looks_like_jwt(
-            "Bearer eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signature_here"
+            format!("Bearer {jwt}")
                 .split_whitespace()
                 .nth(1)
                 .expect("jwt token")
@@ -2898,8 +2904,8 @@ mod tests {
 
     #[test]
     fn test_classify_by_content_finds_embedded_jwt() {
-        let bytes = br#"{"authorization":"Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY2Nzg5MCJ9.signature_here"}"#;
-        let result = classify_by_content(bytes, false);
+        let bytes = format!(r#"{{"authorization":"Bearer {}"}}"#, sample_jwt());
+        let result = classify_by_content(bytes.as_bytes(), false);
         assert_eq!(result.unwrap().0, "JWT token");
     }
 
@@ -2957,10 +2963,10 @@ mod tests {
         .unwrap();
 
         // fixtures/ with .txt containing an embedded JWT beyond 8 KiB should be found
-        let jwt = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY2Nzg5MCJ9.signature_here";
+        let jwt = sample_jwt();
         let mut embedded = "x".repeat(10 * 1024);
         embedded.push_str("\n{\"token\":\"");
-        embedded.push_str(jwt);
+        embedded.push_str(&jwt);
         embedded.push_str("\"}\n");
         fs::write(root.join("fixtures/token.txt"), embedded).unwrap();
 
@@ -3049,7 +3055,7 @@ mod tests {
         fs::create_dir_all(root.join("fixtures")).unwrap();
         fs::write(
             root.join("fixtures/token.md"),
-            "token = \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY2Nzg5MCJ9.signature_here\"\n",
+            format!("token = \"{}\"\n", sample_jwt()),
         )
         .unwrap();
 
