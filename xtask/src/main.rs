@@ -604,6 +604,10 @@ fn bdd_matrix() -> Result<()> {
 
 fn ci() -> Result<()> {
     let mut runner = receipt::Runner::new("target/xtask/receipt.json");
+    if let Ok(sha) = git_head_sha() {
+        runner.set_git_sha(sha);
+    }
+    runner.set_crate_set("full".into());
     let result = run_ci_plan(&mut runner);
     runner.summary();
     if let Err(err) = runner.write() {
@@ -1545,6 +1549,10 @@ fn pr() -> Result<()> {
     let plan = plan::build_plan(&changed_files);
 
     let mut runner = receipt::Runner::new("target/xtask/receipt.json");
+    if let Ok(sha) = git_head_sha() {
+        runner.set_git_sha(sha);
+    }
+    runner.set_crate_set(format!("pr:{}", plan.impacted_crates.len()));
 
     let result = run_pr_plan(&base_ref, &changed_files, &plan, &mut runner);
     runner.summary();
@@ -1726,6 +1734,17 @@ fn run_pr_plan(
     }
 
     Ok(())
+}
+
+fn git_head_sha() -> Result<String> {
+    let output = Command::new("git")
+        .args(["rev-parse", "HEAD"])
+        .output()
+        .context("failed to run git rev-parse")?;
+    if !output.status.success() {
+        bail!("git rev-parse HEAD failed");
+    }
+    Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
 }
 
 fn resolve_base_ref() -> String {
@@ -1973,8 +1992,7 @@ fn walk_for_blobs(root: &Path, dir: &Path, offenders: &mut Vec<BlobHit>) -> Resu
             if !should_scan_path(&rel_str) {
                 continue;
             }
-            if is_secret_extension(&path) || contains_pem_markers(&path)? {
-                let (kind, suggestion) = classify_blob(&path);
+            if let Some((kind, suggestion)) = detect_and_classify(&path)? {
                 offenders.push(BlobHit {
                     rel_path: rel_str,
                     kind,
@@ -1984,6 +2002,65 @@ fn walk_for_blobs(root: &Path, dir: &Path, offenders: &mut Vec<BlobHit>) -> Resu
         }
     }
     Ok(())
+}
+
+/// Read the file header once and use it for both detection and classification.
+/// Returns `Some((kind, suggestion))` if the file is a secret-shaped blob.
+fn detect_and_classify(path: &Path) -> Result<Option<(&'static str, &'static str)>> {
+    // Fast path: extension alone is enough to detect.
+    if is_secret_extension(path) {
+        return Ok(Some(classify_blob(path)));
+    }
+    // Content-based detection: read a bounded header and check for markers.
+    let header = read_file_header(path)?;
+    if let Some(ref bytes) = header
+        && has_secret_markers(bytes)
+    {
+        if let Some(hit) = classify_by_content(bytes) {
+            return Ok(Some(hit));
+        }
+        return Ok(Some(classify_by_extension(path)));
+    }
+    Ok(None)
+}
+
+/// Read up to 8 KiB of a file for marker detection.
+/// Returns `None` for source code files that might contain PEM strings as literals.
+fn read_file_header(path: &Path) -> Result<Option<Vec<u8>>> {
+    let ext = path
+        .extension()
+        .and_then(|s| s.to_str())
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    if matches!(ext.as_str(), "rs" | "feature" | "md" | "toml" | "snap") {
+        return Ok(None);
+    }
+    const HEADER_SIZE: usize = 8192;
+    let content = fs::read(path).with_context(|| format!("failed to read {path:?}"))?;
+    if content.len() > HEADER_SIZE {
+        Ok(Some(content[..HEADER_SIZE].to_vec()))
+    } else {
+        Ok(Some(content))
+    }
+}
+
+/// Check if a file header contains PEM, SSH, or other secret markers.
+fn has_secret_markers(bytes: &[u8]) -> bool {
+    let text = String::from_utf8_lossy(bytes);
+    if text.contains("-----BEGIN") && text.contains("-----END") {
+        return true;
+    }
+    for line in text.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("ssh-rsa ")
+            || trimmed.starts_with("ssh-ed25519 ")
+            || trimmed.starts_with("ssh-dss ")
+            || trimmed.starts_with("ecdsa-sha2-")
+        {
+            return true;
+        }
+    }
+    false
 }
 
 fn is_ignored_dir(path: &Path) -> bool {
@@ -2019,36 +2096,11 @@ fn is_secret_extension(path: &Path) -> bool {
     matches!(stem.as_str(), "id_rsa" | "id_ed25519" | "id_ecdsa")
 }
 
+/// Backward-compatible wrapper used by tests. Delegates to `read_file_header` + `has_secret_markers`.
+#[cfg(test)]
 fn contains_pem_markers(path: &Path) -> Result<bool> {
-    // Skip source code files - they may contain PEM markers as strings in tests
-    let ext = path
-        .extension()
-        .and_then(|s| s.to_str())
-        .unwrap_or("")
-        .to_ascii_lowercase();
-    if matches!(ext.as_str(), "rs" | "feature" | "md" | "toml" | "snap") {
-        return Ok(false);
-    }
-    let content = fs::read(path).with_context(|| format!("failed to read {path:?}"))?;
-    let text = String::from_utf8_lossy(&content);
-
-    // Standard PEM blocks (RSA, EC, certificates, etc.)
-    if text.contains("-----BEGIN") && text.contains("-----END") {
-        return Ok(true);
-    }
-
-    // SSH public key prefixes
-    for line in text.lines() {
-        let trimmed = line.trim();
-        if trimmed.starts_with("ssh-rsa ")
-            || trimmed.starts_with("ssh-ed25519 ")
-            || trimmed.starts_with("ecdsa-sha2-")
-        {
-            return Ok(true);
-        }
-    }
-
-    Ok(false)
+    let header = read_file_header(path)?;
+    Ok(header.as_deref().is_some_and(has_secret_markers))
 }
 
 /// Classify a secret-shaped blob by content (first 1024 bytes) then extension.
@@ -2078,16 +2130,19 @@ fn classify_by_content(bytes: &[u8]) -> Option<(&'static str, &'static str)> {
         }
     }
 
-    // SSH public key prefixes
-    if text.starts_with("ssh-rsa ")
-        || text.starts_with("ssh-ed25519 ")
-        || text.starts_with("ssh-dss ")
-        || text.starts_with("ecdsa-sha2-")
-    {
-        return Some((
-            "SSH public key",
-            "fx.token(\"ssh-key\", TokenSpec::opaque()) or uselesskey-ssh (planned)",
-        ));
+    // SSH public key prefixes (check per-line, not just file start)
+    for line in text.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("ssh-rsa ")
+            || trimmed.starts_with("ssh-ed25519 ")
+            || trimmed.starts_with("ssh-dss ")
+            || trimmed.starts_with("ecdsa-sha2-")
+        {
+            return Some((
+                "SSH public key",
+                "fx.token(\"ssh-key\", TokenSpec::opaque()) or uselesskey-ssh (planned)",
+            ));
+        }
     }
 
     // JWT-shaped: three base64url segments separated by dots
@@ -2737,6 +2792,20 @@ mod tests {
         )
         .unwrap();
         assert!(contains_pem_markers(&ssh_ed).expect("read file"));
+
+        // ssh-dss should also be detected
+        let ssh_dss = dir.path().join("dss.txt");
+        fs::write(&ssh_dss, "ssh-dss AAAAB3NzaC1kc3MAAA... user@host\n").unwrap();
+        assert!(contains_pem_markers(&ssh_dss).expect("read file"));
+    }
+
+    #[test]
+    fn test_classify_by_content_ssh_not_on_first_line() {
+        // SSH key on a non-first line should still be classified as SSH, not fall
+        // through to extension-based classification.
+        let bytes = b"# authorized keys\nssh-rsa AAAAB3NzaC1yc2EAAA... user@host\n";
+        let result = classify_by_content(bytes);
+        assert_eq!(result.unwrap().0, "SSH public key");
     }
 
     #[test]

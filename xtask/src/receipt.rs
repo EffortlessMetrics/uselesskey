@@ -329,12 +329,10 @@ impl Runner {
         self.receipt.coverage_percent = Some(percent);
     }
 
-    #[allow(dead_code)]
     pub fn set_git_sha(&mut self, sha: String) {
         self.receipt.git_sha = Some(sha);
     }
 
-    #[allow(dead_code)]
     pub fn set_crate_set(&mut self, set: String) {
         self.receipt.crate_set = Some(set);
     }
