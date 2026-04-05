@@ -2008,20 +2008,22 @@ fn walk_for_blobs(root: &Path, dir: &Path, offenders: &mut Vec<BlobHit>) -> Resu
 /// Read the file header once and use it for both detection and classification.
 /// Returns `Some((kind, suggestion))` if the file is a secret-shaped blob.
 fn detect_and_classify(path: &Path) -> Result<Option<(&'static str, &'static str)>> {
-    // Fast path: extension alone is enough to detect.
-    if is_secret_extension(path) {
-        return Ok(Some(classify_blob(path)));
-    }
-    // Content-based detection: read a bounded header and check for markers.
+    let ext_hit = is_secret_extension(path);
     let header = read_file_header(path)?;
-    if let Some(ref bytes) = header
-        && has_secret_markers(bytes)
-    {
+    if let Some(ref bytes) = header {
         if let Some(hit) = classify_by_content(bytes) {
             return Ok(Some(hit));
         }
+        if ext_hit || has_secret_markers(bytes) {
+            return Ok(Some(classify_by_extension(path)));
+        }
+        return Ok(None);
+    }
+
+    if ext_hit {
         return Ok(Some(classify_by_extension(path)));
     }
+
     Ok(None)
 }
 
@@ -2103,6 +2105,7 @@ fn contains_pem_markers(path: &Path) -> Result<bool> {
 }
 
 /// Classify a secret-shaped blob by content (first 1024 bytes) then extension.
+#[cfg(test)]
 fn classify_blob(path: &Path) -> (&'static str, &'static str) {
     let header = fs::read(path)
         .ok()
@@ -2824,7 +2827,7 @@ mod tests {
     fn test_classify_blob_extension_fallback() {
         let dir = tempfile::tempdir().expect("tempdir");
         let der_file = dir.path().join("key.der");
-        fs::write(&der_file, &[0x00, 0x01, 0x02]).unwrap();
+        fs::write(&der_file, [0x00, 0x01, 0x02]).unwrap();
         let (kind, _) = classify_blob(&der_file);
         assert_eq!(kind, "DER-encoded file");
     }
@@ -2882,13 +2885,20 @@ mod tests {
 
         // fixtures/ with .der (should be found)
         fs::create_dir_all(root.join("fixtures")).unwrap();
-        fs::write(root.join("fixtures/cert.der"), &[0x30, 0x82, 0x01]).unwrap();
+        fs::write(root.join("fixtures/cert.der"), [0x30, 0x82, 0x01]).unwrap();
 
         // fixtures/ with .txt containing PEM markers (should be found)
         fs::create_dir_all(root.join("fixtures/nested")).unwrap();
         fs::write(
             root.join("fixtures/nested/embedded.txt"),
             "-----BEGIN PRIVATE KEY-----\nbase64\n-----END PRIVATE KEY-----\n",
+        )
+        .unwrap();
+
+        // fixtures/ with .txt containing JWT should be found
+        fs::write(
+            root.join("fixtures/token.txt"),
+            "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY2Nzg5MCJ9.signature_here",
         )
         .unwrap();
 
@@ -2933,6 +2943,15 @@ mod tests {
             "should find PEM in .txt: {paths:?}"
         );
         assert!(
+            paths.contains(&"fixtures/token.txt"),
+            "should find JWT in .txt: {paths:?}"
+        );
+        let jwt_hit = offenders
+            .iter()
+            .find(|h| h.rel_path == "fixtures/token.txt")
+            .expect("should report JWT hit");
+        assert_eq!(jwt_hit.kind, "JWT token");
+        assert!(
             paths.contains(&"crates/foo/tests/store.p12"),
             "should find .p12: {paths:?}"
         );
@@ -2958,7 +2977,7 @@ mod tests {
             "should skip target/: {paths:?}"
         );
 
-        assert_eq!(paths.len(), 6, "expected 6 offenders: {paths:?}");
+        assert_eq!(paths.len(), 7, "expected 7 offenders: {paths:?}");
     }
 
     #[test]
