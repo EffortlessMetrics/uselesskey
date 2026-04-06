@@ -543,19 +543,18 @@ pub fn analyze_snapshot(snapshot: &BundleSnapshot) -> BundleAnalysis {
     }
 
     let mut unmatched_closed = snapshot.closed_pull_requests.clone();
-    for bundle in &mut bundles {
-        let profile = bundle_profile(bundle);
-        let mut matched = Vec::new();
-        let mut rest = Vec::new();
-        for donor in unmatched_closed.into_iter() {
-            if closed_similarity(&donor.pr, &profile) >= DONOR_THRESHOLD {
-                matched.push(donor);
-            } else {
-                rest.push(donor);
-            }
+    let bundle_profiles: Vec<BundleProfile> = bundles.iter().map(bundle_profile).collect();
+    let mut assigned = vec![Vec::new(); bundles.len()];
+    let mut unmatched = Vec::new();
+    for donor in unmatched_closed.into_iter() {
+        match pick_best_bundle_for_closed_donor(&donor.pr, &bundle_profiles) {
+            Some((idx, _)) => assigned[idx].push(donor),
+            None => unmatched.push(donor),
         }
+    }
+    unmatched_closed = unmatched;
+    for (bundle, matched) in bundles.iter_mut().zip(assigned.into_iter()) {
         bundle.closed_donor_pull_requests = matched;
-        unmatched_closed = rest;
     }
 
     for bundle in &mut bundles {
@@ -1001,6 +1000,41 @@ fn closed_similarity(donor: &PullRequestSnapshot, bundle: &BundleProfile) -> f64
             0.0
         };
     (base + stem_prefix_boost).min(1.0)
+}
+
+fn pick_best_bundle_for_closed_donor(
+    donor: &PullRequestSnapshot,
+    bundle_profiles: &[BundleProfile],
+) -> Option<(usize, f64)> {
+    let donor_stem = canonical_head_ref_stem(&donor.head_ref);
+    let mut best: Option<(usize, f64, bool)> = None;
+
+    for (idx, profile) in bundle_profiles.iter().enumerate() {
+        let score = closed_similarity(donor, profile);
+        if score < DONOR_THRESHOLD {
+            continue;
+        }
+
+        let is_exact = profile
+            .canonical_stem
+            .as_deref()
+            .is_some_and(|stem| stem == donor_stem.as_str());
+        match best {
+            None => {
+                best = Some((idx, score, is_exact));
+            }
+            Some((best_idx, best_score, best_is_exact))
+                if score > best_score
+                    || (score == best_score && is_exact && !best_is_exact)
+                    || (score == best_score && is_exact == best_is_exact && idx < best_idx) =>
+            {
+                best = Some((idx, score, is_exact));
+            }
+            Some(_) => {}
+        }
+    }
+
+    best.map(|(idx, score, _)| (idx, score))
 }
 
 fn bundle_profile(bundle: &BundleCluster) -> BundleProfile {
@@ -2155,6 +2189,156 @@ mod tests {
             analysis.bundles[0].closed_donor_pull_requests[0].pr.number,
             5
         );
+        assert!(analysis.unmatched_closed_donors.is_empty());
+    }
+
+    #[test]
+    fn closed_donor_uses_best_scoring_bundle_for_prefix_stems() {
+        let snapshot = BundleSnapshot {
+            captured_at: "2026-04-05T00:00:00Z".into(),
+            repository: "owner/repo".into(),
+            open_pull_requests: vec![
+                open_pr(
+                    10,
+                    "Add RSA fixtures",
+                    "codex/add-rsa-aaa111",
+                    &["crates/uselesskey-rsa/src/lib.rs"],
+                    1,
+                    0,
+                    Some(true),
+                    3,
+                    80,
+                    10,
+                    1,
+                ),
+                open_pr(
+                    11,
+                    "Add RSA docs",
+                    "codex/add-rsa-bbb222",
+                    &["crates/uselesskey-rsa/src/lib.rs"],
+                    1,
+                    0,
+                    Some(true),
+                    2,
+                    60,
+                    5,
+                    1,
+                ),
+                open_pr(
+                    12,
+                    "RSA fixtures cleanup",
+                    "codex/add-rsa-ccc333",
+                    &["crates/uselesskey-rsa/src/lib.rs"],
+                    1,
+                    0,
+                    Some(true),
+                    2,
+                    90,
+                    8,
+                    1,
+                ),
+                open_pr(
+                    13,
+                    "RSA fixture docs",
+                    "codex/add-rsa-ddd444",
+                    &["crates/uselesskey-rsa/src/lib.rs"],
+                    1,
+                    0,
+                    Some(true),
+                    4,
+                    40,
+                    12,
+                    1,
+                ),
+                open_pr(
+                    20,
+                    "Add RSA adapter",
+                    "codex/add-rsa-adapter-eee555",
+                    &["crates/uselesskey-rsa-adapter/src/lib.rs"],
+                    1,
+                    0,
+                    Some(true),
+                    3,
+                    80,
+                    10,
+                    1,
+                ),
+                open_pr(
+                    21,
+                    "Adjust RSA adapter API",
+                    "codex/add-rsa-adapter-fff666",
+                    &["crates/uselesskey-rsa-adapter/src/api.rs"],
+                    1,
+                    0,
+                    Some(true),
+                    2,
+                    55,
+                    6,
+                    1,
+                ),
+                open_pr(
+                    22,
+                    "Add RSA adapter coverage",
+                    "codex/add-rsa-adapter-ggg777",
+                    &["crates/uselesskey-rsa-adapter/src/tests.rs"],
+                    1,
+                    0,
+                    Some(true),
+                    2,
+                    70,
+                    7,
+                    1,
+                ),
+                open_pr(
+                    23,
+                    "Fix RSA adapter bug",
+                    "codex/add-rsa-adapter-hhh888",
+                    &["crates/uselesskey-rsa-adapter/src/lib.rs"],
+                    1,
+                    0,
+                    Some(true),
+                    4,
+                    75,
+                    9,
+                    1,
+                ),
+            ],
+            closed_pull_requests: vec![ClosedPullRequestSnapshot {
+                pr: open_pr(
+                    99,
+                    "Add RSA fixture set",
+                    "codex/add-rsa-zzz999",
+                    &["crates/uselesskey-rsa/src/lib.rs"],
+                    1,
+                    0,
+                    Some(true),
+                    3,
+                    80,
+                    10,
+                    1,
+                )
+                .pr,
+            }],
+        };
+
+        let analysis = analyze_snapshot(&snapshot);
+        let exact_match_bundle = analysis
+            .bundles
+            .iter()
+            .find(|bundle| bundle.canonical_stem.as_deref() == Some("codex/add-rsa"))
+            .expect("bundle for codex/add-rsa should exist");
+        let adapter_bundle = analysis
+            .bundles
+            .iter()
+            .find(|bundle| bundle.canonical_stem.as_deref() == Some("codex/add-rsa-adapter"))
+            .expect("bundle for codex/add-rsa-adapter should exist");
+
+        assert_eq!(exact_match_bundle.closed_donor_pull_requests.len(), 1);
+        assert_eq!(
+            exact_match_bundle.closed_donor_pull_requests[0].pr.number,
+            99
+        );
+        assert!(adapter_bundle.closed_donor_pull_requests.is_empty());
         assert!(analysis.unmatched_closed_donors.is_empty());
     }
 
