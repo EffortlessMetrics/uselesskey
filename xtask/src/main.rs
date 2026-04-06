@@ -2151,14 +2151,17 @@ fn classify_by_content(
             {
                 return Some((
                     "SSH public key",
-                    "fx.token(\"ssh-key\", TokenSpec::opaque()) or uselesskey-ssh (planned)",
+                    "fx.ssh_key(\"key\", SshSpec::ed25519()).authorized_key_line()",
                 ));
             }
         }
     }
 
     if find_jwt_candidate(&text).is_some() {
-        return Some(("JWT token", "fx.token(\"auth\", TokenSpec::jwt_shape())"));
+        return Some((
+            "JWT token",
+            "fx.token(\"auth\", TokenSpec::oauth_access_token())",
+        ));
     }
 
     None
@@ -2205,7 +2208,7 @@ fn classify_pem_label(label: &str) -> (&'static str, &'static str) {
         ),
         "OPENSSH PRIVATE KEY" => (
             "OpenSSH private key",
-            "fx.token(\"ssh-key\", TokenSpec::opaque()) or uselesskey-ssh (planned)",
+            "fx.ssh_key(\"key\", SshSpec::ed25519()).private_key_openssh()",
         ),
         "PGP PUBLIC KEY BLOCK" | "PGP PRIVATE KEY BLOCK" => {
             ("PGP key block", "fx.pgp(\"key\", PgpSpec::rsa()).armored()")
@@ -2297,7 +2300,7 @@ fn classify_by_extension(path: &Path) -> (&'static str, &'static str) {
         ),
         "p12" | "pfx" => (
             "PKCS#12 bundle",
-            "fx.x509_self_signed(\"ca\", X509Spec::default()) -- PKCS#12 not yet supported; use PEM/DER",
+            "fx.x509_self_signed(\"ca\", X509Spec::default()) for cert/key material, then build PKCS#12 at runtime",
         ),
         "pub" => (
             "Public key file",
@@ -2860,8 +2863,12 @@ mod tests {
         // SSH key on a non-first line should still be classified as SSH, not fall
         // through to extension-based classification.
         let bytes = b"# authorized keys\nssh-rsa AAAAB3NzaC1yc2EAAA... user@host\n";
-        let result = classify_by_content(bytes, true);
-        assert_eq!(result.unwrap().0, "SSH public key");
+        let (kind, suggestion) = classify_by_content(bytes, true).expect("classify by content");
+        assert_eq!(kind, "SSH public key");
+        assert_eq!(
+            suggestion,
+            "fx.ssh_key(\"key\", SshSpec::ed25519()).authorized_key_line()"
+        );
     }
 
     #[test]
@@ -2905,8 +2912,13 @@ mod tests {
     #[test]
     fn test_classify_by_content_finds_embedded_jwt() {
         let bytes = format!(r#"{{"authorization":"Bearer {}"}}"#, sample_jwt());
-        let result = classify_by_content(bytes.as_bytes(), false);
-        assert_eq!(result.unwrap().0, "JWT token");
+        let (kind, suggestion) =
+            classify_by_content(bytes.as_bytes(), false).expect("should classify jwt content");
+        assert_eq!(kind, "JWT token");
+        assert_eq!(
+            suggestion,
+            "fx.token(\"auth\", TokenSpec::oauth_access_token())"
+        );
     }
 
     #[test]
@@ -2924,6 +2936,14 @@ mod tests {
         assert_eq!(
             classify_pem_label("OPENSSH PRIVATE KEY").0,
             "OpenSSH private key"
+        );
+        assert_eq!(
+            classify_pem_label("OPENSSH PRIVATE KEY").1,
+            "fx.ssh_key(\"key\", SshSpec::ed25519()).private_key_openssh()"
+        );
+        assert_eq!(
+            classify_pem_label("RSA PRIVATE KEY").1,
+            "fx.rsa(\"key\", RsaSpec::rs256()).private_key_pkcs1_pem()"
         );
         assert_eq!(
             classify_pem_label("PGP PUBLIC KEY BLOCK").0,
@@ -3071,6 +3091,11 @@ mod tests {
 
     #[test]
     fn perf_baseline_schema_is_valid() {
+        let _cwd_lock = CWD_LOCK.lock().unwrap();
+        let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .unwrap_or(Path::new(env!("CARGO_MANIFEST_DIR")));
+        let _cwd = CwdGuard::new(workspace_root);
         let json =
             fs::read_to_string(workspace_path(PERF_BASELINE_PATH)).expect("read perf baseline");
         let parsed: PerfBaselineFile = serde_json::from_str(&json).expect("parse perf baseline");
