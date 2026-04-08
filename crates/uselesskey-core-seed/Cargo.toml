@@ -15,7 +15,7 @@ documentation = "https://docs.rs/uselesskey-core-seed"
 authors.workspace = true
 
 [dependencies]
-blake3 = { version = "1.8.3", default-features = false }
+blake3 = { version = "1.8.4", default-features = false }
 rand_chacha10.workspace = true
 rand_core10.workspace = true
 
