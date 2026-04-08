@@ -8,10 +8,16 @@ use anyhow::{Context, Result, anyhow, bail};
 use clap::{Parser, Subcommand, ValueEnum};
 use serde::Serialize;
 use serde_json::json;
-use uselesskey::{
-    EcdsaFactoryExt, EcdsaSpec, Ed25519FactoryExt, Ed25519Spec, Factory, HmacFactoryExt, HmacSpec,
-    RsaFactoryExt, RsaSpec, TokenFactoryExt, TokenSpec, X509FactoryExt, X509Spec,
+use uselesskey_cli::{
+    emit_include_bytes_module, load_materialize_manifest, materialize_manifest_to_dir,
 };
+use uselesskey_core::Factory;
+use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
+use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
+use uselesskey_hmac::{HmacFactoryExt, HmacSpec};
+use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+use uselesskey_token::{TokenFactoryExt, TokenSpec};
+use uselesskey_x509::{X509FactoryExt, X509Spec};
 
 #[derive(Parser, Debug)]
 #[command(name = "uselesskey", about = "Deterministic fixture generation CLI")]
@@ -25,6 +31,8 @@ enum Commands {
     Generate(GenerateArgs),
     Bundle(BundleArgs),
     Inspect(InspectArgs),
+    Materialize(MaterializeArgs),
+    Verify(VerifyArgs),
 }
 
 #[derive(clap::Args, Debug)]
@@ -60,6 +68,26 @@ struct InspectArgs {
     input: Option<PathBuf>,
     #[arg(long)]
     out: Option<PathBuf>,
+}
+
+#[derive(clap::Args, Debug)]
+struct MaterializeArgs {
+    #[arg(long)]
+    manifest: PathBuf,
+    #[arg(long = "out-dir", alias = "out")]
+    out_dir: Option<PathBuf>,
+    #[arg(long)]
+    emit_rs: Option<PathBuf>,
+    #[arg(long, hide = true)]
+    check: bool,
+}
+
+#[derive(clap::Args, Debug)]
+struct VerifyArgs {
+    #[arg(long)]
+    manifest: PathBuf,
+    #[arg(long = "out-dir", alias = "out")]
+    out_dir: Option<PathBuf>,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -99,6 +127,8 @@ fn main() -> Result<()> {
         Commands::Generate(args) => run_generate(args),
         Commands::Bundle(args) => run_bundle(args),
         Commands::Inspect(args) => run_inspect(args),
+        Commands::Materialize(args) => run_materialize(args),
+        Commands::Verify(args) => run_verify(args),
     }
 }
 
@@ -153,17 +183,6 @@ fn run_bundle(args: BundleArgs) -> Result<()> {
     )
 }
 
-fn preferred_bundle_format(kind: Kind, requested: Format) -> Format {
-    match (kind, requested) {
-        (Kind::Token, _) => Format::JsonManifest,
-        (Kind::X509, Format::Jwk | Format::Jwks) => Format::Pem,
-        (Kind::Hmac, Format::Pem) => Format::Der,
-        (Kind::Jwk, _) => Format::Jwk,
-        (Kind::Jwks, _) => Format::Jwks,
-        _ => requested,
-    }
-}
-
 fn run_inspect(args: InspectArgs) -> Result<()> {
     let bytes = read_input(args.input.as_deref())?;
     let text = std::str::from_utf8(&bytes).ok();
@@ -175,6 +194,73 @@ fn run_inspect(args: InspectArgs) -> Result<()> {
         "detected": detected,
     });
     emit_artifact(&Artifact::Json(report), args.out.as_deref())
+}
+
+fn run_materialize(args: MaterializeArgs) -> Result<()> {
+    let manifest = load_materialize_manifest(&args.manifest)
+        .with_context(|| format!("invalid materialize manifest {}", args.manifest.display()))?;
+    let out_dir = args
+        .out_dir
+        .unwrap_or_else(|| PathBuf::from("target/uselesskey-fixtures"));
+    let summary = materialize_manifest_to_dir(&manifest, &out_dir, args.check)
+        .with_context(|| format!("failed to materialize {}", args.manifest.display()))?;
+
+    if let Some(module_path) = args.emit_rs.as_deref() {
+        emit_include_bytes_module(&manifest, &out_dir, module_path).with_context(|| {
+            format!(
+                "failed to emit include_bytes module {}",
+                module_path.display()
+            )
+        })?;
+    }
+
+    let status = if args.check { "ok" } else { "written" };
+    emit_artifact(
+        &Artifact::Json(json!({
+            "materialize": {
+                "status": status,
+                "out": out_dir,
+                "count": summary.count,
+                "files": summary.files.iter().map(|path| path.display().to_string()).collect::<Vec<_>>(),
+                "check": args.check,
+                "emit_rs": args.emit_rs,
+            }
+        })),
+        None,
+    )
+}
+
+fn run_verify(args: VerifyArgs) -> Result<()> {
+    let manifest = load_materialize_manifest(&args.manifest)
+        .with_context(|| format!("invalid materialize manifest {}", args.manifest.display()))?;
+    let out_dir = args
+        .out_dir
+        .unwrap_or_else(|| PathBuf::from("target/uselesskey-fixtures"));
+    let summary = materialize_manifest_to_dir(&manifest, &out_dir, true)
+        .with_context(|| format!("failed to verify {}", args.manifest.display()))?;
+
+    emit_artifact(
+        &Artifact::Json(json!({
+            "verify": {
+                "status": "ok",
+                "out": out_dir,
+                "count": summary.count,
+                "files": summary.files.iter().map(|path| path.display().to_string()).collect::<Vec<_>>(),
+            }
+        })),
+        None,
+    )
+}
+
+fn preferred_bundle_format(kind: Kind, requested: Format) -> Format {
+    match (kind, requested) {
+        (Kind::Token, _) => Format::JsonManifest,
+        (Kind::X509, Format::Jwk | Format::Jwks) => Format::Pem,
+        (Kind::Hmac, Format::Pem) => Format::Der,
+        (Kind::Jwk, _) => Format::Jwk,
+        (Kind::Jwks, _) => Format::Jwks,
+        _ => requested,
+    }
 }
 
 fn generate_artifact(fx: &Factory, kind: Kind, label: &str, format: Format) -> Result<Artifact> {
@@ -281,15 +367,19 @@ fn write_artifact_to_stdout(artifact: &Artifact) -> Result<()> {
     Ok(())
 }
 
+fn artifact_bytes(artifact: &Artifact) -> Result<Vec<u8>> {
+    match artifact {
+        Artifact::Text(t) => Ok(t.as_bytes().to_vec()),
+        Artifact::Binary(b) => Ok(b.clone()),
+        Artifact::Json(v) => Ok(serde_json::to_vec_pretty(v)?),
+    }
+}
+
 fn write_artifact_to_path(artifact: &Artifact, path: &Path) -> Result<()> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?;
     }
-    match artifact {
-        Artifact::Text(t) => fs::write(path, t.as_bytes())?,
-        Artifact::Binary(b) => fs::write(path, b)?,
-        Artifact::Json(v) => fs::write(path, serde_json::to_vec_pretty(v)?)?,
-    }
+    fs::write(path, artifact_bytes(artifact)?)?;
     Ok(())
 }
 

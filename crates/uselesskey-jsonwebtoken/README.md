@@ -24,7 +24,7 @@ Implements `JwtKeyExt` so fixture types return `jsonwebtoken::EncodingKey` and
 
 ```toml
 [dev-dependencies]
-uselesskey-jsonwebtoken = { version = "0.5.1", features = ["rsa"] }
+uselesskey-jsonwebtoken = { version = "0.6.0", features = ["rsa"] }
 jsonwebtoken = { version = "10", features = ["use_pem", "rust_crypto"] }
 ```
 

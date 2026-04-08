@@ -1,6 +1,6 @@
-# Migrating to `uselesskey` 0.5.1: deterministic crypto fixtures without committed blobs
+# Migrating to `uselesskey` 0.6.0: deterministic crypto fixtures without committed blobs
 
-This guide shows how to replace committed PEM/DER/JWK/token blobs with runtime-generated fixtures using `uselesskey` **0.5.1**.
+This guide shows how to replace committed PEM/DER/JWK/token blobs with runtime-generated fixtures using `uselesskey` **0.6.0**.
 
 ## What this repo is for
 
@@ -18,7 +18,7 @@ Use `uselesskey` as a `dev-dependency`, then opt into only the fixture families 
 
 ```toml
 [dev-dependencies]
-uselesskey = { version = "0.5.1", default-features = false, features = ["rsa", "jwk"] }
+uselesskey = { version = "0.6.0", default-features = false, features = ["rsa", "jwk"] }
 ```
 
 ### Minimal feature examples
@@ -26,22 +26,22 @@ uselesskey = { version = "0.5.1", default-features = false, features = ["rsa", "
 ```toml
 # token-only tests
 [dev-dependencies]
-uselesskey = { version = "0.5.1", default-features = false, features = ["token"] }
+uselesskey = { version = "0.6.0", default-features = false, features = ["token"] }
 ```
 
 ```toml
 # TLS chain + rustls adapter
 [dev-dependencies]
-uselesskey = { version = "0.5.1", default-features = false, features = ["x509"] }
-uselesskey-rustls = { version = "0.5.1" }
+uselesskey = { version = "0.6.0", default-features = false, features = ["x509"] }
+uselesskey-rustls = { version = "0.6.0" }
 ```
 
 ```toml
 # JWT + JOSE/OpenID style conversions
 [dev-dependencies]
-uselesskey = { version = "0.5.1", default-features = false, features = ["rsa", "hmac", "jwk"] }
-uselesskey-jsonwebtoken = { version = "0.5.1" }
-uselesskey-jose-openid = { version = "0.5.1" }
+uselesskey = { version = "0.6.0", default-features = false, features = ["rsa", "hmac", "jwk"] }
+uselesskey-jsonwebtoken = { version = "0.6.0" }
+uselesskey-jose-openid = { version = "0.6.0" }
 ```
 
 > Prefer adapter crates (`uselesskey-rustls`, `uselesskey-jsonwebtoken`, etc.) over broad feature bundles to keep compile and dependency surface small.
@@ -173,7 +173,7 @@ Use `Factory::random()` when fixture values should vary across runs (e.g., explo
 
 ## Migration checklist
 
-1. Add `uselesskey` 0.5.1 to `[dev-dependencies]`
+1. Add `uselesskey` 0.6.0 to `[dev-dependencies]`
 2. Enable only needed features (`rsa`, `ecdsa`, `ed25519`, `hmac`, `token`, `x509`, `pgp`, `jwk`)
 3. Replace committed PEM/DER/JWK/token fixtures with `Factory` calls
 4. Centralize seed strategy (`USELESSKEY_SEED` in CI)

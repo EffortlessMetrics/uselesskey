@@ -1,0 +1,26 @@
+version = 1
+
+[[fixture]]
+id = "entropy"
+kind = "entropy.bytes"
+seed = "buildrs-example:entropy"
+len = 64
+out = "entropy.bin"
+
+[[fixture]]
+id = "token"
+kind = "token.jwt_shape"
+seed = "buildrs-example:token"
+out = "token.txt"
+
+[[fixture]]
+id = "rsa_pkcs8_der"
+kind = "rsa.pkcs8_der"
+seed = "buildrs-example:rsa-der"
+out = "private-key.pk8"
+
+[[fixture]]
+id = "rsa_pkcs8_pem"
+kind = "rsa.pkcs8_pem"
+seed = "buildrs-example:rsa-pem"
+out = "private-key.pem"

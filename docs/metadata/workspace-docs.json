@@ -9,6 +9,10 @@
       "description": "Factory, deterministic derivation, caching, and negative-fixture helpers"
     },
     {
+      "name": "uselesskey-entropy",
+      "description": "Deterministic high-entropy byte fixtures for scanner-safe and placeholder tests"
+    },
+    {
       "name": "uselesskey-rsa",
       "description": "RSA 2048/3072/4096 keypairs (PKCS#8, SPKI, PEM, DER)"
     },
@@ -153,11 +157,29 @@
     {
       "name": "uselesskey-cli",
       "support_tier": "incubating",
-      "publish_status": "internal",
+      "publish_status": "published",
       "facade_exposed": false,
       "semver_expectation": "Minor releases may refine APIs before 1.0.",
       "msrv_policy": "Tracks workspace MSRV (Rust 1.92).",
       "intended_audience": "most-users"
+    },
+    {
+      "name": "materialize-buildrs-example",
+      "support_tier": "experimental",
+      "publish_status": "test-only",
+      "facade_exposed": false,
+      "semver_expectation": "No public API stability commitments.",
+      "msrv_policy": "Best effort for workspace CI only.",
+      "intended_audience": "repo-internal"
+    },
+    {
+      "name": "materialize-shape-buildrs-example",
+      "support_tier": "experimental",
+      "publish_status": "test-only",
+      "facade_exposed": false,
+      "semver_expectation": "No public API stability commitments.",
+      "msrv_policy": "Best effort for workspace CI only.",
+      "intended_audience": "repo-internal"
     },
     {
       "name": "uselesskey-core",
@@ -439,6 +461,15 @@
     },
     {
       "name": "uselesskey-ed25519",
+      "support_tier": "stable",
+      "publish_status": "published",
+      "facade_exposed": true,
+      "semver_expectation": "Normal semver guarantees for public APIs.",
+      "msrv_policy": "Tracks workspace MSRV (Rust 1.92).",
+      "intended_audience": "most-users"
+    },
+    {
+      "name": "uselesskey-entropy",
       "support_tier": "stable",
       "publish_status": "published",
       "facade_exposed": true,
@@ -1079,7 +1110,7 @@
       "minimal_example_command": "cargo test -p uselesskey-pgp-native --no-default-features --features rsa"
     }
   ],
-  "release_version": "0.5.1",
+  "release_version": "0.6.0",
   "public_features": [
     "rsa",
     "ecdsa",
@@ -1087,6 +1118,7 @@
     "hmac",
     "pgp",
     "token",
+    "entropy",
     "x509",
     "jwk",
     "all-keys",

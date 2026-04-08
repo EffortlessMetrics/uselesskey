@@ -27,6 +27,17 @@ Secret scanners have changed the game for test fixtures:
 This crate replaces "security policy + docs + exceptions" with one
 `dev-dependency`.
 
+## Pick The Lane First
+
+Start with the cheapest lane that preserves the test's semantics.
+
+| I need | Recommended lane |
+|----------|----------|
+| entropy / scanner-shape only | `features = ["entropy"]` or `uselesskey-entropy` |
+| JWT / bearer / API-token shapes only | `features = ["token"]` or `uselesskey-token` |
+| valid runtime crypto semantics | leaf crates such as `uselesskey-rsa`, `uselesskey-x509`, `uselesskey-ssh` |
+| build-time materialized fixtures | `uselesskey-cli materialize` + `verify` |
+
 ## Feature Selection
 
 The facade default feature set is empty. A bare dependency gives you core types
@@ -39,53 +50,53 @@ Dependency snippets:
 - **Quick start (RSA)**
   ```toml
   [dev-dependencies]
-  uselesskey = { version = "0.5.1", features = ["rsa"] }
+  uselesskey = { version = "0.6.0", features = ["rsa"] }
   ```
 
 
 - **Token-only**
   ```toml
   [dev-dependencies]
-  uselesskey = { version = "0.5.1", default-features = false, features = ["token"] }
+  uselesskey = { version = "0.6.0", default-features = false, features = ["token"] }
   ```
 
 
 - **JWT/JWK**
   ```toml
   [dev-dependencies]
-  uselesskey = { version = "0.5.1", features = ["rsa", "jwk"] }
+  uselesskey = { version = "0.6.0", features = ["rsa", "jwk"] }
   ```
 
 
 - **X.509 + rustls**
   ```toml
   [dev-dependencies]
-  uselesskey = { version = "0.5.1", features = ["x509"] }
-  uselesskey-rustls = { version = "0.5.1", features = ["tls-config", "rustls-ring"] }
+  uselesskey = { version = "0.6.0", features = ["x509"] }
+  uselesskey-rustls = { version = "0.6.0", features = ["tls-config", "rustls-ring"] }
   ```
 
 
 - **jsonwebtoken adapter**
   ```toml
   [dev-dependencies]
-  uselesskey = { version = "0.5.1", features = ["rsa", "ecdsa", "ed25519", "hmac"] }
-  uselesskey-jsonwebtoken = { version = "0.5.1" }
+  uselesskey = { version = "0.6.0", features = ["rsa", "ecdsa", "ed25519", "hmac"] }
+  uselesskey-jsonwebtoken = { version = "0.6.0" }
   ```
 
 
 - **JOSE/OpenID adapter**
   ```toml
   [dev-dependencies]
-  uselesskey = { version = "0.5.1", features = ["rsa", "ecdsa", "ed25519", "hmac"] }
-  uselesskey-jose-openid = { version = "0.5.1" }
+  uselesskey = { version = "0.6.0", features = ["rsa", "ecdsa", "ed25519", "hmac"] }
+  uselesskey-jose-openid = { version = "0.6.0" }
   ```
 
 
 - **pgp-native adapter**
   ```toml
   [dev-dependencies]
-  uselesskey = { version = "0.5.1", features = ["pgp"] }
-  uselesskey-pgp-native = { version = "0.5.1" }
+  uselesskey = { version = "0.6.0", features = ["pgp"] }
+  uselesskey-pgp-native = { version = "0.6.0" }
   ```
 <!-- docs-sync:dependency-snippets-end -->
 
@@ -98,13 +109,33 @@ let token = fx.token("svc-api", TokenSpec::api_key());
 assert!(token.value().starts_with("uk_test_"));
 ```
 
+Entropy-only consumers can stay lighter still:
+
+```toml
+[dev-dependencies]
+uselesskey = { version = "0.6.0", default-features = false, features = ["entropy"] }
+```
+
+```rust
+use uselesskey::{EntropyFactoryExt, Factory};
+
+let fx = Factory::deterministic_from_str("entropy-fixtures");
+let bytes = fx.entropy("scan-fixture").bytes(64);
+
+assert_eq!(bytes.len(), 64);
+```
+
+If a repo wants static-like local fixtures instead of runtime generation, use
+`uselesskey-cli materialize` to generate deterministic outputs into `target/`
+or `OUT_DIR`, then `uselesskey-cli verify` in CI to keep the manifest honest.
+
 ## Quick Start
 
 If you want RSA fixtures, enable `rsa` explicitly:
 
 ```toml
 [dev-dependencies]
-uselesskey = { version = "0.5.1", features = ["rsa"] }
+uselesskey = { version = "0.6.0", features = ["rsa"] }
 ```
 
 ```rust
@@ -146,6 +177,7 @@ let fx = Factory::deterministic_from_env("USELESSKEY_SEED")
 | ECDSA P-256 / P-384 | `ecdsa` | `EcdsaFactoryExt` | `EcdsaSpec::es256()` / `es384()` |
 | Ed25519 | `ed25519` | `Ed25519FactoryExt` | `Ed25519Spec::new()` |
 | HMAC | `hmac` | `HmacFactoryExt` | `HmacSpec::hs256()` / `hs384()` / `hs512()` |
+| Entropy bytes | `entropy` | `EntropyFactoryExt` | `fx.entropy(label).bytes(len)` |
 | OpenPGP | `pgp` | `PgpFactoryExt` | `PgpSpec::rsa_2048()` / `ed25519()` |
 | Tokens | `token` | `TokenFactoryExt` | `TokenSpec::api_key()` / `bearer()` / `oauth_access_token()` |
 | X.509 Certs | `x509` | `X509FactoryExt` | `X509Spec::self_signed(cn)` / `ChainSpec::new(cn)` |
@@ -158,6 +190,7 @@ let fx = Factory::deterministic_from_env("USELESSKEY_SEED")
 | `ecdsa` | ECDSA P-256 / P-384 keypairs |
 | `ed25519` | Ed25519 keypairs |
 | `hmac` | HMAC secrets |
+| `entropy` | Deterministic high-entropy byte fixtures |
 | `pgp` | OpenPGP armored + binary keyblocks |
 | `token` | API key, bearer token, OAuth access token fixtures |
 | `x509` | X.509 self-signed certificates and certificate chains |

@@ -14,7 +14,9 @@ use owo_colors::OwoColorize;
 use regex::Regex;
 use uselesskey_feature_grid::{BDD_FEATURE_MATRIX, CORE_FEATURE_MATRIX};
 
+mod audit_surface;
 mod docs_sync;
+mod economics;
 mod plan;
 mod pr_bundles;
 mod receipt;
@@ -38,6 +40,10 @@ enum Cmd {
         #[arg(long)]
         compare: bool,
     },
+    /// Measure dependency economics for the main fixture lanes.
+    Economics,
+    /// Inspect dependency surface for common lanes and adapter islands.
+    AuditSurface,
     /// Run formatter checks.
     Fmt {
         /// Apply formatting changes instead of checking.
@@ -95,7 +101,11 @@ enum Cmd {
     /// Run code coverage via cargo-llvm-cov (requires `cargo-llvm-cov` installed).
     Coverage,
     /// Validate publish metadata and run `cargo package --no-verify` for all crates.
-    PublishPreflight,
+    PublishPreflight {
+        /// Allow local uncommitted changes while validating packageability.
+        #[arg(long)]
+        allow_dirty: bool,
+    },
     /// Publish all crates to crates.io in dependency order (with retry logic).
     Publish {
         /// Resume from this crate (skip all crates before it in publish order).
@@ -235,6 +245,8 @@ fn main() -> Result<()> {
 
     match cli.cmd {
         Cmd::Perf { compare } => perf(compare),
+        Cmd::Economics => economics::economics_cmd(),
+        Cmd::AuditSurface => audit_surface::audit_surface_cmd(),
         Cmd::Fmt { fix } => fmt(fix),
         Cmd::Clippy => clippy(),
         Cmd::Test => test(),
@@ -255,7 +267,7 @@ fn main() -> Result<()> {
         Cmd::Bdd => bdd(),
         Cmd::BddMatrix => bdd_matrix(),
         Cmd::Coverage => coverage(),
-        Cmd::PublishPreflight => publish_preflight(),
+        Cmd::PublishPreflight { allow_dirty } => publish_preflight(allow_dirty),
         Cmd::Publish { from, resume } => publish(from, resume),
         Cmd::Mutants => run_mutants(PUBLISH_CRATES),
         Cmd::Fuzz { target, args } => fuzz(target.as_deref(), &args),
@@ -654,7 +666,7 @@ fn run_ci_plan(runner: &mut receipt::Runner) -> Result<()> {
         );
     }
 
-    run_publish_preflight(runner)?;
+    run_publish_preflight(runner, false)?;
 
     Ok(())
 }
@@ -707,6 +719,7 @@ const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-core-keypair",
     // Mid-level crates
     "uselesskey-jwk",
+    "uselesskey-entropy",
     "uselesskey-rsa",
     "uselesskey-ecdsa",
     "uselesskey-ed25519",
@@ -714,6 +727,7 @@ const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-token",
     "uselesskey-pgp",
     "uselesskey-x509",
+    "uselesskey-cli",
     // Adapters (depend on key crates, NOT on facade)
     "uselesskey-core-rustls-pki",
     "uselesskey-jsonwebtoken",
@@ -1227,9 +1241,9 @@ fn parse_lcov_coverage(lcov_path: &str) -> Option<f64> {
     }
 }
 
-fn publish_preflight() -> Result<()> {
+fn publish_preflight(allow_dirty: bool) -> Result<()> {
     let mut runner = receipt::Runner::new("target/xtask/receipt.json");
-    let result = run_publish_preflight(&mut runner);
+    let result = run_publish_preflight(&mut runner, allow_dirty);
     runner.summary();
     if let Err(err) = runner.write() {
         eprintln!("failed to write receipt: {err}");
@@ -1240,7 +1254,7 @@ fn publish_preflight() -> Result<()> {
     result
 }
 
-fn run_publish_preflight(runner: &mut receipt::Runner) -> Result<()> {
+fn run_publish_preflight(runner: &mut receipt::Runner, allow_dirty: bool) -> Result<()> {
     runner.step("preflight:metadata", None, check_crate_metadata)?;
     runner.step(
         "preflight:doc-versions",
@@ -1251,10 +1265,12 @@ fn run_publish_preflight(runner: &mut receipt::Runner) -> Result<()> {
     for name in PUBLISH_CRATES {
         let step_name = format!("preflight:package:{name}");
         if let Err(e) = runner.step(&step_name, None, || {
-            let output = Command::new("cargo")
-                .args(["package", "--no-verify", "-p", name])
-                .output()
-                .context("failed to spawn cargo package")?;
+            let mut cmd = Command::new("cargo");
+            cmd.args(["package", "--no-verify", "-p", name]);
+            if allow_dirty {
+                cmd.arg("--allow-dirty");
+            }
+            let output = cmd.output().context("failed to spawn cargo package")?;
             if output.status.success() {
                 return Ok(());
             }
@@ -1724,7 +1740,7 @@ fn run_pr_plan(
     }
 
     if plan.run_publish_preflight {
-        run_publish_preflight(runner)?;
+        run_publish_preflight(runner, false)?;
     } else {
         runner.skip("preflight:metadata", Some("no cargo changes".into()));
         runner.skip("preflight:doc-versions", Some("no cargo changes".into()));
@@ -3255,6 +3271,38 @@ end_of_record
     }
 
     #[test]
+    fn publish_order_includes_entropy_before_facade() {
+        let entropy_idx = PUBLISH_CRATES
+            .iter()
+            .position(|name| *name == "uselesskey-entropy")
+            .expect("entropy crate present");
+        let facade_idx = PUBLISH_CRATES
+            .iter()
+            .position(|name| *name == "uselesskey")
+            .expect("facade crate present");
+        assert!(
+            entropy_idx < facade_idx,
+            "publish order must place uselesskey-entropy before uselesskey"
+        );
+    }
+
+    #[test]
+    fn publish_order_includes_cli_before_facade() {
+        let cli_idx = PUBLISH_CRATES
+            .iter()
+            .position(|name| *name == "uselesskey-cli")
+            .expect("cli crate present");
+        let facade_idx = PUBLISH_CRATES
+            .iter()
+            .position(|name| *name == "uselesskey")
+            .expect("facade crate present");
+        assert!(
+            cli_idx < facade_idx,
+            "publish order must place uselesskey-cli before uselesskey"
+        );
+    }
+
+    #[test]
     fn resolve_start_index_from_last_crate() {
         let idx = resolve_start_index(Some("uselesskey"), false).unwrap();
         assert_eq!(idx, PUBLISH_CRATES.len() - 1);
@@ -3456,5 +3504,57 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
             .iter()
             .position(|c| c.status != "published" && c.status != "already_published");
         assert_eq!(first_pending, Some(2));
+    }
+
+    #[test]
+    fn materialize_shape_example_keeps_shape_only_contract() {
+        let manifest = fs::read_to_string(
+            workspace_root_path().join("crates/materialize-shape-buildrs-example/Cargo.toml"),
+        )
+        .expect("read shape-only materialize example manifest");
+
+        assert!(
+            manifest.contains("default-features = false"),
+            "shape-only materialize example must disable default features:\n{manifest}"
+        );
+        assert!(
+            !manifest.contains("rsa-materialize"),
+            "shape-only materialize example must not opt into rsa-materialize:\n{manifest}"
+        );
+    }
+
+    #[test]
+    fn materialize_rsa_example_requires_explicit_rsa_feature() {
+        let manifest = fs::read_to_string(
+            workspace_root_path().join("crates/materialize-buildrs-example/Cargo.toml"),
+        )
+        .expect("read rsa materialize example manifest");
+
+        assert!(
+            manifest.contains("default-features = false"),
+            "rsa materialize example must disable default features and opt in explicitly:\n{manifest}"
+        );
+        assert!(
+            manifest.contains("features = [\"rsa-materialize\"]"),
+            "rsa materialize example must opt into rsa-materialize explicitly:\n{manifest}"
+        );
+    }
+
+    #[test]
+    fn uselesskey_cli_keeps_rsa_materialize_optional() {
+        let manifest =
+            fs::read_to_string(workspace_root_path().join("crates/uselesskey-cli/Cargo.toml"))
+                .expect("read uselesskey-cli manifest");
+
+        assert!(
+            manifest.contains("rsa-materialize = [\"dep:uselesskey-rsa\"]"),
+            "uselesskey-cli must keep rsa-materialize as an explicit opt-in feature:\n{manifest}"
+        );
+        assert!(
+            manifest.contains(
+                "uselesskey-rsa = { workspace = true, features = [\"jwk\"], optional = true }"
+            ),
+            "uselesskey-cli must keep uselesskey-rsa optional:\n{manifest}"
+        );
     }
 }

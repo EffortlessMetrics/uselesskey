@@ -67,6 +67,21 @@ Without this layer, teams commonly end up with one of these:
 - mismatched keypairs
 - expired / revoked / hostname-mismatch / unknown-CA certificates
 
+## Pick The Lane First
+
+Start with the cheapest lane that preserves the test's semantics.
+
+| I need | Recommended lane | Why |
+|----------|----------|----------|
+| entropy / scanner-shape only | `uselesskey-entropy` or facade `features = ["entropy"]` | deterministic bytes without key-generation baggage |
+| JWT / bearer / API-token shapes only | `uselesskey-token` or facade `features = ["token"]` | token-shaped fixtures without RSA/X.509 pull-in |
+| valid runtime crypto semantics | leaf crates such as `uselesskey-rsa`, `uselesskey-x509`, `uselesskey-ssh` | real PKCS#8/JWK/X.509/SSH fixture behavior |
+| build-time materialized fixtures | `uselesskey-cli materialize` + `verify` | clean shape-only `OUT_DIR` / `include_bytes!` workflow, with RSA materialization as an explicit opt-in |
+
+Start with [docs/how-to/choose-features.md](docs/how-to/choose-features.md) for feature selection.
+Use [docs/how-to/choose-lane.md](docs/how-to/choose-lane.md) when deciding between entropy, token, semantic, and materialized fixture workflows.
+See [docs/reference/dependency-economics.md](docs/reference/dependency-economics.md) and [docs/reference/audit-surface.md](docs/reference/audit-surface.md) for the current local-cost and advisory receipts.
+
 ## Choose the smallest feature set
 
 The `uselesskey` facade has an empty default feature set. Enable only the fixture families you need.
@@ -74,32 +89,59 @@ The `uselesskey` facade has an empty default feature set. Enable only the fixtur
 Common starting points:
 
 ```toml
+# Entropy-only fixtures
+[dev-dependencies]
+uselesskey = { version = "0.6.0", default-features = false, features = ["entropy"] }
+```
+
+```toml
 # RSA fixtures
 [dev-dependencies]
-uselesskey = { version = "0.5.1", features = ["rsa"] }
+uselesskey = { version = "0.6.0", features = ["rsa"] }
 ```
 
 ```toml
 # Token-only fixtures, no RSA/X.509 pull-in
 [dev-dependencies]
-uselesskey = { version = "0.5.1", default-features = false, features = ["token"] }
+uselesskey = { version = "0.6.0", default-features = false, features = ["token"] }
 ```
 
 ```toml
 # RSA + JWK/JWKS
 [dev-dependencies]
-uselesskey = { version = "0.5.1", features = ["rsa", "jwk"] }
+uselesskey = { version = "0.6.0", features = ["rsa", "jwk"] }
 ```
 
 ```toml
 # X.509 fixtures
 [dev-dependencies]
-uselesskey = { version = "0.5.1", features = ["x509"] }
+uselesskey = { version = "0.6.0", features = ["x509"] }
+```
+
+```bash
+# Build-time materialization, shape-only common lane
+cargo run -p uselesskey-cli -- materialize --manifest crates/materialize-shape-buildrs-example/uselesskey-fixtures.toml --out-dir target/tmp-fixtures
+cargo run -p uselesskey-cli -- verify --manifest crates/materialize-shape-buildrs-example/uselesskey-fixtures.toml --out-dir target/tmp-fixtures
+```
+
+For `build.rs` consumers:
+
+```toml
+# Common shape-only build-time path
+[build-dependencies]
+uselesskey-cli = { version = "0.6.0", default-features = false }
+```
+
+```toml
+# Specialized RSA PKCS#8 build-time path
+[build-dependencies]
+uselesskey-cli = { version = "0.6.0", default-features = false, features = ["rsa-materialize"] }
 ```
 
 Use the facade for convenience. Depend on leaf crates only when compile-time minimization matters enough to justify the sharper API.
 
 If you are unsure which flags to start with, start from [docs/how-to/choose-features.md](docs/how-to/choose-features.md).
+For downstream bot/reviewer policy, use [docs/how-to/downstream-fixture-policy.md](docs/how-to/downstream-fixture-policy.md).
 For a crate-by-crate support contract (stable/incubating/experimental, audience, and publish status), see [docs/reference/support-matrix.md](docs/reference/support-matrix.md).
 
 ## Quick start
@@ -146,53 +188,53 @@ Dependency snippets:
 - **Quick start (RSA)**
   ```toml
   [dev-dependencies]
-  uselesskey = { version = "0.5.1", features = ["rsa"] }
+  uselesskey = { version = "0.6.0", features = ["rsa"] }
   ```
 
 
 - **Token-only**
   ```toml
   [dev-dependencies]
-  uselesskey = { version = "0.5.1", default-features = false, features = ["token"] }
+  uselesskey = { version = "0.6.0", default-features = false, features = ["token"] }
   ```
 
 
 - **JWT/JWK**
   ```toml
   [dev-dependencies]
-  uselesskey = { version = "0.5.1", features = ["rsa", "jwk"] }
+  uselesskey = { version = "0.6.0", features = ["rsa", "jwk"] }
   ```
 
 
 - **X.509 + rustls**
   ```toml
   [dev-dependencies]
-  uselesskey = { version = "0.5.1", features = ["x509"] }
-  uselesskey-rustls = { version = "0.5.1", features = ["tls-config", "rustls-ring"] }
+  uselesskey = { version = "0.6.0", features = ["x509"] }
+  uselesskey-rustls = { version = "0.6.0", features = ["tls-config", "rustls-ring"] }
   ```
 
 
 - **jsonwebtoken adapter**
   ```toml
   [dev-dependencies]
-  uselesskey = { version = "0.5.1", features = ["rsa", "ecdsa", "ed25519", "hmac"] }
-  uselesskey-jsonwebtoken = { version = "0.5.1" }
+  uselesskey = { version = "0.6.0", features = ["rsa", "ecdsa", "ed25519", "hmac"] }
+  uselesskey-jsonwebtoken = { version = "0.6.0" }
   ```
 
 
 - **JOSE/OpenID adapter**
   ```toml
   [dev-dependencies]
-  uselesskey = { version = "0.5.1", features = ["rsa", "ecdsa", "ed25519", "hmac"] }
-  uselesskey-jose-openid = { version = "0.5.1" }
+  uselesskey = { version = "0.6.0", features = ["rsa", "ecdsa", "ed25519", "hmac"] }
+  uselesskey-jose-openid = { version = "0.6.0" }
   ```
 
 
 - **pgp-native adapter**
   ```toml
   [dev-dependencies]
-  uselesskey = { version = "0.5.1", features = ["pgp"] }
-  uselesskey-pgp-native = { version = "0.5.1" }
+  uselesskey = { version = "0.6.0", features = ["pgp"] }
+  uselesskey-pgp-native = { version = "0.6.0" }
   ```
 <!-- docs-sync:dependency-snippets-end -->
 
@@ -321,8 +363,8 @@ With the `tls-config` feature, build rustls configs in one step:
 
 ```toml
 [dev-dependencies]
-uselesskey = { version = "0.5.1", features = ["x509"] }
-uselesskey-rustls = { version = "0.5.1", features = ["tls-config", "rustls-ring"] }
+uselesskey = { version = "0.6.0", features = ["x509"] }
+uselesskey-rustls = { version = "0.6.0", features = ["tls-config", "rustls-ring"] }
 ```
 
 ```rust
@@ -340,8 +382,8 @@ let client_config = chain.client_config_rustls();
 
 ```toml
 [dev-dependencies]
-uselesskey = { version = "0.5.1", features = ["rsa"] }
-uselesskey-ring = { version = "0.5.1", features = ["all"] }
+uselesskey = { version = "0.6.0", features = ["rsa"] }
+uselesskey-ring = { version = "0.6.0", features = ["all"] }
 ```
 
 ```rust
@@ -357,8 +399,8 @@ let ring_kp = rsa.rsa_key_pair_ring();
 
 ```toml
 [dev-dependencies]
-uselesskey = { version = "0.5.1", features = ["rsa"] }
-uselesskey-rustcrypto = { version = "0.5.1", features = ["all"] }
+uselesskey = { version = "0.6.0", features = ["rsa"] }
+uselesskey-rustcrypto = { version = "0.6.0", features = ["all"] }
 ```
 
 ```rust
@@ -374,8 +416,8 @@ let rsa_pk = rsa.rsa_private_key();
 
 ```toml
 [dev-dependencies]
-uselesskey = { version = "0.5.1", features = ["rsa"] }
-uselesskey-aws-lc-rs = { version = "0.5.1", features = ["native", "all"] }
+uselesskey = { version = "0.6.0", features = ["rsa"] }
+uselesskey-aws-lc-rs = { version = "0.6.0", features = ["native", "all"] }
 ```
 
 ```rust
@@ -391,8 +433,8 @@ let lc_kp = rsa.rsa_key_pair_aws_lc_rs();
 
 ```toml
 [dev-dependencies]
-uselesskey = { version = "0.5.1", features = ["x509"] }
-uselesskey-tonic = "0.5.1"
+uselesskey = { version = "0.6.0", features = ["x509"] }
+uselesskey-tonic = "0.6.0"
 ```
 
 ```rust
@@ -449,6 +491,7 @@ Depend on the facade for convenience, or on individual crates to minimize compil
 |-------|-------------|
 | [`uselesskey`](https://crates.io/crates/uselesskey) | Public facade — re-exports all key types and traits behind feature flags |
 | [`uselesskey-core`](https://crates.io/crates/uselesskey-core) | Factory, deterministic derivation, caching, and negative-fixture helpers |
+| [`uselesskey-entropy`](https://crates.io/crates/uselesskey-entropy) | Deterministic high-entropy byte fixtures for scanner-safe and placeholder tests |
 | [`uselesskey-rsa`](https://crates.io/crates/uselesskey-rsa) | RSA 2048/3072/4096 keypairs (PKCS#8, SPKI, PEM, DER) |
 | [`uselesskey-ecdsa`](https://crates.io/crates/uselesskey-ecdsa) | ECDSA P-256 / P-384 keypairs |
 | [`uselesskey-ed25519`](https://crates.io/crates/uselesskey-ed25519) | Ed25519 keypairs |
