@@ -262,10 +262,22 @@ fn render_table_markdown(report: &EconomicsReport) -> String {
     out
 }
 
+fn render_docs_table_markdown(report: &EconomicsReport) -> String {
+    let mut out = String::from("| use case | recommended lane | dep count | smoke |\n");
+    out.push_str("| --- | --- | ---: | --- |\n");
+    for entry in &report.entries {
+        out.push_str(&format!(
+            "| {} | {} | {} | {} |\n",
+            entry.use_case, entry.recommended_lane, entry.dependency_count, entry.smoke_status
+        ));
+    }
+    out
+}
+
 fn render_docs_markdown(report: &EconomicsReport) -> String {
     format!(
-        "# Dependency Economics\n\nRegenerate this table with:\n\n```bash\ncargo xtask economics\n```\n\nThe latest generated receipt also lives at `target/xtask/economics/latest.md`.\n\n## Current receipt\n\n{}",
-        render_table_markdown(report)
+        "# Dependency Economics\n\nRegenerate this table with:\n\n```bash\ncargo xtask economics\n```\n\nThe latest generated receipt also lives at `target/xtask/economics/latest.md`.\n\nThe committed table below intentionally omits machine-dependent timing columns so docs stay stable across CI runners and developer machines.\n\n## Current receipt\n\n{}",
+        render_docs_table_markdown(report)
     )
 }
 
@@ -335,5 +347,30 @@ mod tests {
         let markdown = render_docs_markdown(&report);
         assert!(markdown.contains("cargo xtask economics"));
         assert!(markdown.contains("# Dependency Economics"));
+    }
+
+    #[test]
+    fn docs_markdown_omits_timing_columns() {
+        let report = EconomicsReport {
+            schema_version: 1,
+            entries: vec![EconomicsEntry {
+                use_case: "entropy-only".to_string(),
+                recommended_lane: "uselesskey-entropy".to_string(),
+                package: "uselesskey-entropy".to_string(),
+                dependency_count: 4,
+                first_check_ms: 1000,
+                repeat_check_ms: 250,
+                check_status: "ok".to_string(),
+                smoke_status: "ok".to_string(),
+                check_command: "cargo check -p uselesskey-entropy".to_string(),
+                smoke_command: None,
+                details: None,
+            }],
+        };
+
+        let markdown = render_docs_markdown(&report);
+        assert!(markdown.contains("| use case | recommended lane | dep count | smoke |"));
+        assert!(!markdown.contains("first check"));
+        assert!(!markdown.contains("repeat check"));
     }
 }
