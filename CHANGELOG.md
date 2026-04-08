@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-04-08
+
+### Added
+
+- Added `uselesskey-entropy` as a narrow public lane for deterministic
+  high-entropy byte fixtures and scanner-safe placeholder data.
+- Added `uselesskey-cli materialize` / `verify` manifest workflows, including
+  build-time `OUT_DIR` examples for common shape-only fixtures and specialized
+  RSA PKCS#8 materialization.
+- Added `cargo xtask economics` and `cargo xtask audit-surface` so lane cost
+  and advisory-island receipts are generated as first-class repo artifacts.
+
+### Changed
+
+- Reframed the public docs around lane choice first: entropy, token, semantic
+  runtime fixtures, and build-time materialized fixtures.
+- Made `uselesskey-cli` publishable and split the build-time consumer surface so
+  shape-only materialization stays cheap while RSA materialization remains
+  explicit via `rsa-materialize`.
+- Added CI drift checks and receipt artifact uploads for dependency economics
+  and audit-surface reports.
+
 ## [0.5.1] - 2026-03-27
 
 ### Added
@@ -358,7 +380,8 @@ Repository organised into four layers:
 - **Determinism regression** — hardcoded expected-value snapshots ensure
   derivation stability across releases
 
-[Unreleased]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.4.0...v0.4.1

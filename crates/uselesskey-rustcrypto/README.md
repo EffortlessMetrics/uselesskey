@@ -18,7 +18,7 @@ Converts fixture key material into native RustCrypto types (`rsa`, `p256`/`p384`
 
 ```toml
 [dev-dependencies]
-uselesskey-rustcrypto = { version = "0.5.1", features = ["rsa"] }
+uselesskey-rustcrypto = { version = "0.6.0", features = ["rsa"] }
 ```
 
 ```rust

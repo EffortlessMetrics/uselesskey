@@ -18,10 +18,12 @@ Architecture Decision Records (ADRs) capture significant design choices and thei
 
 Task-oriented instructions for common workflows.
 
+- [choose-lane.md](how-to/choose-lane.md) — Pick the cheapest correct lane first
 - [migration.md](how-to/migration.md) — Migrating between uselesskey versions
 - [publishing.md](how-to/publishing.md) — Publishing crates to crates.io
 - [release.md](how-to/release.md) — Cutting a release
 - [choose-features.md](how-to/choose-features.md) — Choosing feature sets by need
+- [downstream-fixture-policy.md](how-to/downstream-fixture-policy.md) — Policy pack for downstream bots and reviewers
 - [adapter-template.md](how-to/adapter-template.md) — Scaffolding and validating new adapter crates
 
 ## Explanation
@@ -36,6 +38,8 @@ Understanding-oriented material on design and direction.
 
 Specifications and formal definitions.
 
+- [dependency-economics.md](reference/dependency-economics.md) — Current lane cost receipts
+- [audit-surface.md](reference/audit-surface.md) — Current audit/island receipts
 - [requirements-v0.3.md](reference/requirements-v0.3.md) — v0.3 acceptance specification
 - [requirements-v0.4.md](reference/requirements-v0.4.md) — v0.4 RNG boundary refactor specification
 

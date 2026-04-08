@@ -84,6 +84,155 @@ fn inspect_reads_stdin_writes_json() {
         .stdout(predicate::str::contains("\"detected\": \"private_key\""));
 }
 
+#[test]
+fn inspect_detects_jwks_json() {
+    let mut cmd = Command::cargo_bin("uselesskey").expect("bin exists");
+    cmd.args(["inspect", "--format", "jwk"])
+        .write_stdin("{\"keys\":[{\"kty\":\"RSA\"}]}")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("\"detected\": \"jwks\""));
+}
+
+#[test]
+fn inspect_detects_jwk_json() {
+    let mut cmd = Command::cargo_bin("uselesskey").expect("bin exists");
+    cmd.args(["inspect", "--format", "jwk"])
+        .write_stdin("{\"kty\":\"RSA\",\"kid\":\"fixture\"}")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("\"detected\": \"jwk\""));
+}
+
+#[test]
+fn inspect_leaves_non_key_json_unknown() {
+    let mut cmd = Command::cargo_bin("uselesskey").expect("bin exists");
+    cmd.args(["inspect", "--format", "jwk"])
+        .write_stdin("{\"hello\":\"world\"}")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("\"detected\": \"unknown\""));
+}
+
+#[test]
+fn materialize_writes_deterministic_fixtures() {
+    let dir = tempdir().expect("tempdir");
+    let out_dir = dir.path().join("materialized");
+    let manifest_path = dir.path().join("materialize.toml");
+    let manifest = r#"
+version = 1
+
+[[fixture]]
+id = "entropy"
+out = "seed.bin"
+kind = "entropy.bytes"
+seed = "materialize-seed"
+len = 16
+
+[[fixture]]
+id = "token"
+out = "session.jwt"
+kind = "token.jwt_shape"
+seed = "materialize-seed"
+label = "svc.jwt"
+"#;
+    fs::write(&manifest_path, manifest).expect("manifest should be written");
+
+    let mut cmd = Command::cargo_bin("uselesskey").expect("bin exists");
+    cmd.args([
+        "materialize",
+        "--manifest",
+        manifest_path.to_str().expect("utf-8"),
+        "--out-dir",
+        out_dir.to_str().expect("utf-8"),
+    ])
+    .assert()
+    .success();
+
+    let entropy = fs::read(out_dir.join("seed.bin")).expect("materialized entropy");
+    let jwt = fs::read_to_string(out_dir.join("session.jwt")).expect("materialized jwt");
+    assert_eq!(entropy.len(), 16);
+    assert_eq!(jwt.split('.').count(), 3);
+}
+
+#[test]
+fn materialize_check_fails_on_mismatch() {
+    let dir = tempdir().expect("tempdir");
+    let out_dir = dir.path().join("materialized");
+    let manifest_path = dir.path().join("materialize.toml");
+    let manifest = r#"
+version = 1
+
+[[fixture]]
+id = "entropy"
+out = "seed.bin"
+seed = "materialize-seed-check"
+kind = "entropy.bytes"
+len = 8
+"#;
+    fs::write(&manifest_path, manifest).expect("manifest should be written");
+
+    let mut write = Command::cargo_bin("uselesskey").expect("bin exists");
+    write.args([
+        "materialize",
+        "--manifest",
+        manifest_path.to_str().expect("utf-8"),
+        "--out-dir",
+        out_dir.to_str().expect("utf-8"),
+    ]);
+    write.assert().success();
+
+    let actual = out_dir.join("seed.bin");
+    fs::write(&actual, b"corrupt").expect("mutate fixture");
+
+    let mut check = Command::cargo_bin("uselesskey").expect("bin exists");
+    check.args([
+        "verify",
+        "--manifest",
+        manifest_path.to_str().expect("utf-8"),
+        "--out-dir",
+        out_dir.to_str().expect("utf-8"),
+    ]);
+    check
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("content mismatch"));
+}
+
+#[test]
+fn materialize_can_emit_include_bytes_module() {
+    let dir = tempdir().expect("tempdir");
+    let out_dir = dir.path().join("materialized");
+    let manifest_path = dir.path().join("materialize.toml");
+    let module_path = dir.path().join("fixtures.rs");
+    let manifest = r#"
+version = 1
+
+[[fixture]]
+id = "entropy"
+kind = "entropy.bytes"
+seed = "materialize-emit-rs"
+len = 4
+out = "seed.bin"
+"#;
+    fs::write(&manifest_path, manifest).expect("manifest should be written");
+
+    let mut cmd = Command::cargo_bin("uselesskey").expect("bin exists");
+    cmd.args([
+        "materialize",
+        "--manifest",
+        manifest_path.to_str().expect("utf-8"),
+        "--out-dir",
+        out_dir.to_str().expect("utf-8"),
+        "--emit-rs",
+        module_path.to_str().expect("utf-8"),
+    ]);
+    cmd.assert().success();
+
+    let emitted = fs::read_to_string(&module_path).expect("emitted module");
+    assert!(emitted.contains("pub const ENTROPY: &[u8] = include_bytes!"));
+}
+
 fn run<I, S>(args: I) -> String
 where
     I: IntoIterator<Item = S>,

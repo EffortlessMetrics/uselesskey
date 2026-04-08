@@ -1,6 +1,6 @@
 [package]
 name = "uselesskey-cli"
-version = "0.5.1"
+version = "0.6.0"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
@@ -8,12 +8,22 @@ repository.workspace = true
 homepage.workspace = true
 categories.workspace = true
 authors.workspace = true
-publish = false
 description = "Deterministic fixture generation and export helpers for local secret handoff formats."
 keywords = ["cli", "fixtures", "export", "testing", "deterministic"]
 readme = "README.md"
 exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
 documentation = "https://docs.rs/uselesskey-cli"
+
+[features]
+default = ["generate", "rsa-materialize"]
+generate = [
+    "dep:uselesskey-rsa",
+    "dep:uselesskey-ecdsa",
+    "dep:uselesskey-ed25519",
+    "dep:uselesskey-hmac",
+    "dep:uselesskey-x509",
+]
+rsa-materialize = ["dep:uselesskey-rsa"]
 
 [[bin]]
 name = "uselesskey"
@@ -23,10 +33,17 @@ path = "src/main.rs"
 anyhow.workspace = true
 base64.workspace = true
 clap.workspace = true
+toml = { workspace = true }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
-uselesskey = { workspace = true, features = ["full"] }
+uselesskey-core.workspace = true
+uselesskey-ecdsa = { workspace = true, features = ["jwk"], optional = true }
+uselesskey-ed25519 = { workspace = true, features = ["jwk"], optional = true }
+uselesskey-hmac = { workspace = true, features = ["jwk"], optional = true }
+uselesskey-rsa = { workspace = true, features = ["jwk"], optional = true }
+uselesskey-token.workspace = true
+uselesskey-x509 = { workspace = true, optional = true }
 
 [dev-dependencies]
 assert_cmd = "2.1.1"

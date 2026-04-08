@@ -1,0 +1,14 @@
+[package]
+name = "materialize-buildrs-example"
+version = "0.0.0"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+description = "Build-time materialization example for uselesskey fixtures."
+
+[build-dependencies]
+uselesskey-cli = { path = "../uselesskey-cli", version = "0.6.0", default-features = false, features = ["rsa-materialize"] }

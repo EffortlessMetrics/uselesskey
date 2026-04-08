@@ -1,0 +1,28 @@
+version = 1
+
+[[fixture]]
+id = "entropy"
+kind = "entropy.bytes"
+seed = "buildrs-shape-example:entropy"
+len = 64
+out = "entropy.bin"
+
+[[fixture]]
+id = "token"
+kind = "token.jwt_shape"
+seed = "buildrs-shape-example:token"
+out = "token.txt"
+
+[[fixture]]
+id = "pem_shape"
+kind = "pem.block_shape"
+seed = "buildrs-shape-example:pem"
+label = "certificate"
+out = "placeholder.pem"
+
+[[fixture]]
+id = "ssh_shape"
+kind = "ssh.public_key_shape"
+seed = "buildrs-shape-example:ssh"
+label = "deploy@example"
+out = "id_ed25519.pub"

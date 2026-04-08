@@ -19,9 +19,9 @@ Converts fixture certs and chains into `tonic::transport` TLS types:
 
 ```toml
 [dev-dependencies]
-uselesskey-tonic = "0.5.1"
-uselesskey-core = "0.5.1"
-uselesskey-x509 = "0.5.1"
+uselesskey-tonic = "0.6.0"
+uselesskey-core = "0.6.0"
+uselesskey-x509 = "0.6.0"
 ```
 
 ```rust

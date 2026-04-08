@@ -1,0 +1,24 @@
+[package]
+name = "uselesskey-entropy"
+version = "0.6.0"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+description = "Deterministic high-entropy byte fixtures for tests."
+categories.workspace = true
+keywords = ["entropy", "fixtures", "testing", "deterministic", "bytes"]
+readme = "README.md"
+exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
+homepage.workspace = true
+documentation = "https://docs.rs/uselesskey-entropy"
+authors.workspace = true
+
+[dependencies]
+uselesskey-core = { path = "../uselesskey-core", version = "0.6.0" }
+
+[dev-dependencies]
+proptest.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true

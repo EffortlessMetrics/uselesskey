@@ -22,7 +22,7 @@
 //!
 //! ```toml
 //! [dev-dependencies]
-//! uselesskey = { version = "0.5.1", default-features = false, features = ["token"] }
+//! uselesskey = { version = "0.6.0", default-features = false, features = ["token"] }
 //! ```
 //!
 //! ```
@@ -35,6 +35,26 @@
 //! assert!(token.value().starts_with("uk_test_"));
 //! # }
 //! # #[cfg(not(feature = "token"))]
+//! # fn main() {}
+//! ```
+//!
+//! Entropy-only consumers can stay even smaller:
+//!
+//! ```toml
+//! [dev-dependencies]
+//! uselesskey = { version = "0.6.0", default-features = false, features = ["entropy"] }
+//! ```
+//!
+//! ```
+//! # #[cfg(feature = "entropy")]
+//! # fn main() {
+//! use uselesskey::{EntropyFactoryExt, Factory};
+//!
+//! let fx = Factory::deterministic_from_str("entropy-fixtures");
+//! let bytes = fx.entropy("scan-fixture").bytes(32);
+//! assert_eq!(bytes.len(), 32);
+//! # }
+//! # #[cfg(not(feature = "entropy"))]
 //! # fn main() {}
 //! ```
 //!
@@ -234,6 +254,7 @@
 //! | `ecdsa` | ECDSA P-256/P-384 key fixtures |
 //! | `ed25519` | Ed25519 key fixtures |
 //! | `hmac` | HMAC secret fixtures |
+//! | `entropy` | Deterministic high-entropy byte fixtures |
 //! | `token` | API key/bearer token fixtures |
 //! | `ssh` | OpenSSH key and cert fixtures |
 //! | `webhook` | Webhook signature fixtures (GitHub/Stripe/Slack) |
@@ -273,6 +294,9 @@ pub mod jwk {
 // ---------------------------------------------------------------------------
 // Key type re-exports (feature-gated)
 // ---------------------------------------------------------------------------
+
+#[cfg(feature = "entropy")]
+pub use uselesskey_entropy::{DOMAIN_ENTROPY_FIXTURE, EntropyFactoryExt, EntropyFixture};
 
 #[cfg(feature = "rsa")]
 pub use uselesskey_rsa::{DOMAIN_RSA_KEYPAIR, RsaFactoryExt, RsaKeyPair, RsaSpec};
@@ -323,6 +347,9 @@ pub use uselesskey_x509::{
 pub mod prelude {
     pub use crate::negative::*;
     pub use crate::{Factory, Mode, Seed, TempArtifact};
+
+    #[cfg(feature = "entropy")]
+    pub use crate::{EntropyFactoryExt, EntropyFixture};
 
     #[cfg(feature = "rsa")]
     pub use crate::{RsaFactoryExt, RsaKeyPair, RsaSpec};
