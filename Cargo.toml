@@ -167,7 +167,7 @@ serde_json = "1.0.149"
 base64 = "0.22.1"
 toml = "1"
 ciborium = "0.2.2"
-sha2 = "0.10.9"
+sha2 = "0.11.0"
 
 # JWT
 jsonwebtoken = { version = "10.3.0", features = ["use_pem", "rust_crypto"] }
