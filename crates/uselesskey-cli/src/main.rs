@@ -426,12 +426,33 @@ fn detect_kind(text: &str) -> &'static str {
         "x509"
     } else if text.contains("BEGIN PRIVATE KEY") {
         "private_key"
-    } else if text.trim_start().starts_with("{") && text.contains("\"keys\"") {
-        "jwks"
-    } else if text.trim_start().starts_with("{") && text.contains("\"kty\"") {
-        "jwk"
     } else {
-        "unknown"
+        detect_json_kind(text).unwrap_or("unknown")
+    }
+}
+
+fn detect_json_kind(text: &str) -> Option<&'static str> {
+    let trimmed = text.trim_start();
+    if !trimmed.starts_with('{') {
+        return None;
+    }
+
+    let value: serde_json::Value = serde_json::from_str(trimmed).ok()?;
+    let object = value.as_object()?;
+    if object
+        .get("keys")
+        .and_then(serde_json::Value::as_array)
+        .is_some()
+    {
+        Some("jwks")
+    } else if object
+        .get("kty")
+        .and_then(serde_json::Value::as_str)
+        .is_some()
+    {
+        Some("jwk")
+    } else {
+        None
     }
 }
 

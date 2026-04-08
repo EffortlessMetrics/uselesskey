@@ -85,6 +85,36 @@ fn inspect_reads_stdin_writes_json() {
 }
 
 #[test]
+fn inspect_detects_jwks_json() {
+    let mut cmd = Command::cargo_bin("uselesskey").expect("bin exists");
+    cmd.args(["inspect", "--format", "jwk"])
+        .write_stdin("{\"keys\":[{\"kty\":\"RSA\"}]}")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("\"detected\": \"jwks\""));
+}
+
+#[test]
+fn inspect_detects_jwk_json() {
+    let mut cmd = Command::cargo_bin("uselesskey").expect("bin exists");
+    cmd.args(["inspect", "--format", "jwk"])
+        .write_stdin("{\"kty\":\"RSA\",\"kid\":\"fixture\"}")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("\"detected\": \"jwk\""));
+}
+
+#[test]
+fn inspect_leaves_non_key_json_unknown() {
+    let mut cmd = Command::cargo_bin("uselesskey").expect("bin exists");
+    cmd.args(["inspect", "--format", "jwk"])
+        .write_stdin("{\"hello\":\"world\"}")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("\"detected\": \"unknown\""));
+}
+
+#[test]
 fn materialize_writes_deterministic_fixtures() {
     let dir = tempdir().expect("tempdir");
     let out_dir = dir.path().join("materialized");

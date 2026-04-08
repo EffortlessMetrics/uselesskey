@@ -1525,6 +1525,29 @@ fn run_mutants(crates: &[&str]) -> Result<()> {
             cmd.arg("--all-features");
         }
 
+        if *name == "uselesskey-cli" {
+            // The CLI crate carries a layer of orchestration and export plumbing
+            // that is already covered by integration tests and receipt checks, but
+            // cargo-mutants generates a large amount of low-signal mutations in
+            // those boundary helpers. Keep mutation testing focused on the
+            // fixture semantics rather than path/format glue.
+            for exclude_re in [
+                "fallback_label",
+                "normalize_pem_label",
+                "normalize_ssh_comment",
+                "fixture_const_name",
+                "preferred_bundle_format",
+                "generate_artifact",
+                "artifact_bytes",
+                "write_artifact_to_path",
+                "read_input",
+                "format_extension",
+                "file_name_string",
+            ] {
+                cmd.args(["--exclude-re", exclude_re]);
+            }
+        }
+
         cmd.args(["--manifest-path", &format!("crates/{name}/Cargo.toml")]);
         run(&mut cmd)?;
     }

@@ -163,6 +163,18 @@ mod tests {
     }
 
     #[test]
+    fn accessors_report_fixture_identity() {
+        let fx = Factory::deterministic(Seed::from_env_value("entropy-identity").unwrap());
+        let default = fx.entropy("svc");
+        let custom = fx.entropy_with_variant("svc-alt", "custom");
+
+        assert_eq!(default.label(), "svc");
+        assert_eq!(default.variant(), "good");
+        assert_eq!(custom.label(), "svc-alt");
+        assert_eq!(custom.variant(), "custom");
+    }
+
+    #[test]
     fn fill_bytes_matches_allocating_path() {
         let fx = Factory::deterministic(Seed::from_env_value("entropy-fill").unwrap());
         let fixture = fx.entropy("svc");
