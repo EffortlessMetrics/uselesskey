@@ -202,10 +202,29 @@ fn render_table_markdown(report: &AuditSurfaceReport) -> String {
     out
 }
 
+fn render_docs_table_markdown(report: &AuditSurfaceReport) -> String {
+    let mut out = format!(
+        "workspace cargo-deny advisories: `{}`\n\n| lane | package | markers | class |\n| --- | --- | --- | --- |\n",
+        report.workspace_deny_status
+    );
+    for entry in &report.entries {
+        let markers = if entry.matched_markers.is_empty() {
+            "none".to_string()
+        } else {
+            entry.matched_markers.join(", ")
+        };
+        out.push_str(&format!(
+            "| {} | {} | {} | {} |\n",
+            entry.lane, entry.package, markers, entry.lane_class
+        ));
+    }
+    out
+}
+
 fn render_docs_markdown(report: &AuditSurfaceReport) -> String {
     format!(
-        "# Audit Surface\n\nRegenerate this table with:\n\n```bash\ncargo xtask audit-surface\n```\n\nThe latest generated receipt also lives at `target/xtask/audit-surface/latest.md`.\n\n## Current receipt\n\n{}",
-        render_table_markdown(report)
+        "# Audit Surface\n\nRegenerate this table with:\n\n```bash\ncargo xtask audit-surface\n```\n\nThe latest generated receipt also lives at `target/xtask/audit-surface/latest.md`.\n\nThe committed table below intentionally omits machine-dependent dependency counts so docs stay stable across CI runners and developer machines.\n\n## Current receipt\n\n{}",
+        render_docs_table_markdown(report)
     )
 }
 
@@ -257,5 +276,24 @@ mod tests {
             classify_lane("jsonwebtoken-adapter", &["jsonwebtoken".to_string()]),
             "adapter-island"
         );
+    }
+
+    #[test]
+    fn docs_markdown_omits_dependency_counts() {
+        let report = AuditSurfaceReport {
+            schema_version: 1,
+            workspace_deny_status: "ok".to_string(),
+            entries: vec![AuditSurfaceEntry {
+                lane: "entropy".to_string(),
+                package: "uselesskey-entropy".to_string(),
+                dependency_count: 59,
+                matched_markers: Vec::new(),
+                lane_class: "common-lane-clean".to_string(),
+            }],
+        };
+
+        let markdown = render_docs_markdown(&report);
+        assert!(markdown.contains("| lane | package | markers | class |"));
+        assert!(!markdown.contains("dep count"));
     }
 }

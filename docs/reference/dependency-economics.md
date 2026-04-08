@@ -12,10 +12,10 @@ The committed table below intentionally omits machine-dependent timing columns s
 
 ## Current receipt
 
-| use case | recommended lane | dep count | smoke |
-| --- | --- | ---: | --- |
-| entropy-only | uselesskey-entropy | 58 | ok |
-| token-shape-only | uselesskey-token | 87 | ok |
-| runtime-rsa | uselesskey-rsa | 127 | ok |
-| build-time-shape-fixtures | uselesskey-cli materialize (shape-only) | 81 | ok |
-| build-time-rsa-fixtures | uselesskey-cli materialize (rsa) | 120 | ok |
+| use case | recommended lane | smoke |
+| --- | --- | --- |
+| entropy-only | uselesskey-entropy | ok |
+| token-shape-only | uselesskey-token | ok |
+| runtime-rsa | uselesskey-rsa | ok |
+| build-time-shape-fixtures | uselesskey-cli materialize (shape-only) | ok |
+| build-time-rsa-fixtures | uselesskey-cli materialize (rsa) | ok |

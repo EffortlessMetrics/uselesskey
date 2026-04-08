@@ -263,12 +263,12 @@ fn render_table_markdown(report: &EconomicsReport) -> String {
 }
 
 fn render_docs_table_markdown(report: &EconomicsReport) -> String {
-    let mut out = String::from("| use case | recommended lane | dep count | smoke |\n");
-    out.push_str("| --- | --- | ---: | --- |\n");
+    let mut out = String::from("| use case | recommended lane | smoke |\n");
+    out.push_str("| --- | --- | --- |\n");
     for entry in &report.entries {
         out.push_str(&format!(
-            "| {} | {} | {} | {} |\n",
-            entry.use_case, entry.recommended_lane, entry.dependency_count, entry.smoke_status
+            "| {} | {} | {} |\n",
+            entry.use_case, entry.recommended_lane, entry.smoke_status
         ));
     }
     out
@@ -369,8 +369,9 @@ mod tests {
         };
 
         let markdown = render_docs_markdown(&report);
-        assert!(markdown.contains("| use case | recommended lane | dep count | smoke |"));
+        assert!(markdown.contains("| use case | recommended lane | smoke |"));
         assert!(!markdown.contains("first check"));
         assert!(!markdown.contains("repeat check"));
+        assert!(!markdown.contains("dep count"));
     }
 }
