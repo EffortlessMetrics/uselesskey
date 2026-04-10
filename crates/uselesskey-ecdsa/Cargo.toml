@@ -21,7 +21,7 @@ uselesskey-core-keypair-material.workspace = true
 # Elliptic curve support from RustCrypto's current RC line
 p256 = { version = "0.14.0-rc.8", features = ["ecdsa", "pkcs8", "pem"] }
 p384 = { version = "0.14.0-rc.8", features = ["ecdsa", "pkcs8", "pem"] }
-elliptic-curve = { version = "0.14.0-rc.29", features = ["pkcs8", "pem", "sec1"] }
+elliptic-curve = { version = "0.14.0-rc.30", features = ["pkcs8", "pem", "sec1"] }
 rand_chacha10.workspace = true
 rand_core10.workspace = true
 
