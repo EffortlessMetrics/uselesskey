@@ -315,21 +315,33 @@ fn canonical_payload(
         WebhookPayloadSpec::Raw(payload) => payload,
         WebhookPayloadSpec::Canonical => match profile {
             WebhookProfile::GitHub => {
+                let repository = json_string(&format!("acme/{label}"));
                 format!(
-                    "{{\"action\":\"opened\",\"repository\":{{\"full_name\":\"acme/{label}\"}},\"number\":{}}}",
+                    "{{\"action\":\"opened\",\"repository\":{{\"full_name\":{repository}}},\"number\":{}}}",
                     (nonce % 9000) + 1000
                 )
             }
-            WebhookProfile::Stripe => format!(
-                "{{\"id\":\"evt_{:08x}\",\"type\":\"checkout.session.completed\",\"data\":{{\"object\":{{\"metadata\":{{\"label\":\"{}\"}}}}}}}}",
-                nonce, label
-            ),
-            WebhookProfile::Slack => format!(
-                "{{\"type\":\"event_callback\",\"team_id\":\"T{:08x}\",\"event\":{{\"type\":\"app_mention\",\"text\":\"ping {}\"}}}}",
-                nonce, label
-            ),
+            WebhookProfile::Stripe => {
+                let label = json_string(label);
+                let mut payload = format!(
+                    "{{\"id\":\"evt_{nonce:08x}\",\"type\":\"checkout.session.completed\",\"data\":{{\"object\":{{\"metadata\":{{\"label\":"
+                );
+                payload.push_str(&label);
+                payload.push_str("}}}}");
+                payload
+            }
+            WebhookProfile::Slack => {
+                let text = json_string(&format!("ping {label}"));
+                format!(
+                    "{{\"type\":\"event_callback\",\"team_id\":\"T{nonce:08x}\",\"event\":{{\"type\":\"app_mention\",\"text\":{text}}}}}"
+                )
+            }
         },
     }
+}
+
+fn json_string(value: &str) -> String {
+    serde_json::to_string(value).expect("serializing a string to JSON cannot fail")
 }
 
 fn sign(
@@ -484,6 +496,65 @@ mod tests {
     }
 
     #[test]
+    fn payload_spec_stable_bytes_are_shape_sensitive() {
+        assert_eq!(WebhookPayloadSpec::Canonical.stable_bytes(), b"canonical");
+        assert_eq!(
+            WebhookPayloadSpec::Raw("one".to_string()).stable_bytes(),
+            b"raw:one"
+        );
+        assert_ne!(
+            WebhookPayloadSpec::Raw("one".to_string()).stable_bytes(),
+            WebhookPayloadSpec::Raw("two".to_string()).stable_bytes()
+        );
+        assert_ne!(
+            stable_spec_bytes(WebhookProfile::GitHub, &WebhookPayloadSpec::Canonical),
+            stable_spec_bytes(WebhookProfile::Stripe, &WebhookPayloadSpec::Canonical)
+        );
+    }
+
+    #[test]
+    fn generated_timestamp_uses_expected_seeded_window() {
+        let seed = [7_u8; 32];
+        let mut rng = ChaCha20Rng::from_seed(seed);
+        let mut secret_bytes = [0_u8; 32];
+        rng.fill_bytes(&mut secret_bytes);
+        let expected = 1_700_000_000_i64 + (rng.next_u32() as i64 % 200_000_000_i64);
+
+        let fixture = build_fixture_from_seed(
+            WebhookProfile::Stripe,
+            "billing",
+            WebhookPayloadSpec::Canonical,
+            &seed,
+        );
+
+        assert_eq!(fixture.timestamp, expected);
+        assert!((1_700_000_000..1_900_000_000).contains(&fixture.timestamp));
+    }
+
+    #[test]
+    fn generated_secrets_match_provider_shapes() {
+        let mut rng = ChaCha20Rng::from_seed([9_u8; 32]);
+        let github = build_secret(WebhookProfile::GitHub, &mut rng);
+        let stripe = build_secret(WebhookProfile::Stripe, &mut rng);
+        let slack = build_secret(WebhookProfile::Slack, &mut rng);
+
+        assert_eq!(github.len(), "ghs_".len() + 43);
+        assert!(github.starts_with("ghs_"));
+        assert!(
+            github["ghs_".len()..]
+                .bytes()
+                .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-' || byte == b'_')
+        );
+
+        assert_eq!(stripe.len(), "whsec_".len() + 64);
+        assert!(stripe.starts_with("whsec_"));
+        assert_lower_hex(&stripe["whsec_".len()..]);
+
+        assert_eq!(slack.len(), 64);
+        assert_lower_hex(&slack);
+    }
+
+    #[test]
     fn header_shape_matches_provider_conventions() {
         let fx = Factory::deterministic(Seed::from_env_value("webhook-headers").unwrap());
         let gh = fx.webhook_github("r", WebhookPayloadSpec::Canonical);
@@ -514,6 +585,11 @@ mod tests {
         let now = st.timestamp;
 
         let stale = st.near_miss_stale_timestamp(300);
+        assert_eq!(stale.timestamp, st.timestamp - 301);
+        assert_eq!(
+            stale.signature_input,
+            format!("{}.{}", stale.timestamp, stale.payload)
+        );
         assert!(!verify_stripe(
             &st.secret,
             &st.payload,
@@ -553,5 +629,66 @@ mod tests {
         let out = format!("{near_miss:?}");
         assert!(!out.contains(&near_miss.secret));
         assert!(out.contains("NearMissWebhookFixture"));
+    }
+
+    #[test]
+    fn canonical_payload_escapes_special_characters_in_label() {
+        let fx = Factory::deterministic(Seed::from_env_value("webhook-label-escape").unwrap());
+        let label = "repo\"line\nbreak\\slash";
+        let fixtures = [
+            fx.webhook_github(label, WebhookPayloadSpec::Canonical),
+            fx.webhook_stripe(label, WebhookPayloadSpec::Canonical),
+            fx.webhook_slack(label, WebhookPayloadSpec::Canonical),
+        ];
+
+        for fixture in fixtures {
+            let parsed: serde_json::Value =
+                serde_json::from_str(&fixture.payload).expect("canonical payload should be valid");
+            let serialized = parsed.to_string();
+            assert!(
+                serialized.contains("repo\\\"line\\nbreak\\\\slash"),
+                "serialized payload should preserve escaped label, got: {serialized}"
+            );
+        }
+    }
+
+    #[test]
+    fn canonical_payload_preserves_plain_label_field_order() {
+        assert_eq!(
+            canonical_payload(
+                WebhookProfile::GitHub,
+                "repo",
+                WebhookPayloadSpec::Canonical,
+                12
+            ),
+            "{\"action\":\"opened\",\"repository\":{\"full_name\":\"acme/repo\"},\"number\":1012}"
+        );
+        assert_eq!(
+            canonical_payload(
+                WebhookProfile::Stripe,
+                "billing",
+                WebhookPayloadSpec::Canonical,
+                0x0f
+            ),
+            "{\"id\":\"evt_0000000f\",\"type\":\"checkout.session.completed\",\"data\":{\"object\":{\"metadata\":{\"label\":\"billing\"}}}}"
+        );
+        assert_eq!(
+            canonical_payload(
+                WebhookProfile::Slack,
+                "alerts",
+                WebhookPayloadSpec::Canonical,
+                0x10
+            ),
+            "{\"type\":\"event_callback\",\"team_id\":\"T00000010\",\"event\":{\"type\":\"app_mention\",\"text\":\"ping alerts\"}}"
+        );
+    }
+
+    fn assert_lower_hex(value: &str) {
+        assert!(
+            value
+                .bytes()
+                .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte)),
+            "expected lowercase hex: {value}"
+        );
     }
 }
