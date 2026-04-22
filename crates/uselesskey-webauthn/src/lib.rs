@@ -323,7 +323,16 @@ fn sha256_arr(bytes: &[u8]) -> [u8; 32] {
 fn write_field(out: &mut Vec<u8>, name: &str, value: &[u8]) {
     out.extend_from_slice(name.as_bytes());
     out.push(0x1f);
-    out.extend_from_slice(&(value.len() as u16).to_be_bytes());
+    let len = value.len();
+    if len <= u16::MAX as usize {
+        out.extend_from_slice(&(len as u16).to_be_bytes());
+    } else {
+        // Backward-compatible extension:
+        // - lengths up to u16::MAX keep the original encoding.
+        // - larger values use an escape length followed by u32 length bytes.
+        out.extend_from_slice(&u16::MAX.to_be_bytes());
+        out.extend_from_slice(&(len as u32).to_be_bytes());
+    }
     out.extend_from_slice(value);
 }
 
@@ -383,5 +392,16 @@ mod tests {
             serde_json::from_slice(&reg.client_data_json).expect("parse clientDataJSON");
         assert_eq!(json["challenge"], base64url(challenge));
         assert_eq!(json["origin"], "https://example.com");
+    }
+
+    #[test]
+    fn stable_bytes_distinguish_long_field_lengths_after_u16_boundary() {
+        let mut a = WebAuthnSpec::packed("example.com", b"challenge");
+        let mut b = a.clone();
+
+        a.challenge = vec![0x41; u16::MAX as usize + 1];
+        b.challenge = vec![0x41; u16::MAX as usize + 2];
+
+        assert_ne!(a.stable_bytes(), b.stable_bytes());
     }
 }
