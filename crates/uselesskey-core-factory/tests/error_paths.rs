@@ -77,7 +77,9 @@ fn extremely_long_spec_bytes_does_not_panic() {
 
 #[test]
 fn type_mismatch_panics_not_silent() {
-    let fx = Factory::random();
+    // Use deterministic mode so this test also runs under `--no-default-features`
+    // where `Mode::Random` is intentionally unavailable.
+    let fx = Factory::deterministic(Seed::new([9u8; 32]));
     let _ = fx.get_or_init("domain:tm", "label", b"spec", "good", |_rng| 42u32);
 
     let result = catch_unwind(AssertUnwindSafe(|| {

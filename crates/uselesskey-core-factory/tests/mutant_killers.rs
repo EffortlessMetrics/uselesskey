@@ -65,7 +65,8 @@ fn deterministic_different_variants_produce_different_values() {
 
 #[test]
 fn clear_cache_allows_regeneration() {
-    let fx = Factory::random();
+    // Deterministic mode keeps this behavior test valid under `--no-default-features`.
+    let fx = Factory::deterministic(Seed::new([7u8; 32]));
 
     let a: Arc<u32> = fx.get_or_init("d", "l", b"s", "v", |_| 1u32);
     assert_eq!(*a, 1);
@@ -98,7 +99,9 @@ fn debug_deterministic_mode() {
 
 #[test]
 fn clone_shares_cache() {
-    let fx = Factory::random();
+    // Deterministic mode keeps this cache-sharing invariant test independent
+    // from `std`-only random seeding.
+    let fx = Factory::deterministic(Seed::new([8u8; 32]));
     let a: Arc<u32> = fx.get_or_init("d", "l", b"s", "v", |_| 42u32);
 
     let fx2 = fx.clone();
