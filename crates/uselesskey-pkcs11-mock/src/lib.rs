@@ -221,7 +221,13 @@ fn mock_certificate_der(
 fn write_field(out: &mut Vec<u8>, name: &str, value: &[u8]) {
     out.extend_from_slice(name.as_bytes());
     out.push(b'=');
-    out.extend_from_slice(&(value.len() as u16).to_be_bytes());
+    if value.len() <= u16::MAX as usize {
+        out.extend_from_slice(&(value.len() as u16).to_be_bytes());
+    } else {
+        // Backward-compatible extension for oversized values.
+        out.extend_from_slice(&u16::MAX.to_be_bytes());
+        out.extend_from_slice(&(value.len() as u32).to_be_bytes());
+    }
     out.extend_from_slice(value);
     out.push(0);
 }
@@ -267,5 +273,15 @@ mod tests {
         let handle = provider.key_handles()[0];
         let der = provider.certificate_der(handle).expect("certificate");
         assert_eq!(&der[0..2], &[0x30, 0x82]);
+    }
+
+    #[test]
+    fn stable_bytes_distinguish_very_long_labels() {
+        let mut spec_a = Pkcs11MockSpec::basic("HSM-A");
+        let mut spec_b = Pkcs11MockSpec::basic("HSM-A");
+        spec_a.key_labels = vec!["a".repeat(65_536)];
+        spec_b.key_labels = vec!["b".repeat(65_536)];
+
+        assert_ne!(spec_a.stable_bytes(), spec_b.stable_bytes());
     }
 }
