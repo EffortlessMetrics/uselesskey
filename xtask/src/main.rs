@@ -1813,25 +1813,47 @@ fn resolve_base_ref() -> String {
 
 fn git_changed_files(base_ref: &str) -> Result<Vec<String>> {
     let revspec = format!("{base_ref}...HEAD");
-    let output = Command::new("git")
-        .args(["diff", "--name-only", &revspec])
-        .output()
-        .context("failed to run git diff")?;
-
-    if !output.status.success() {
-        bail!(
-            "git diff failed with status {}",
-            output.status.code().unwrap_or(-1)
-        );
+    if let Some(files) = git_diff_name_only(&["diff", "--name-only", &revspec])? {
+        return Ok(files);
     }
 
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let files = stdout
+    eprintln!(
+        "warning: `git diff --name-only {revspec}` failed; falling back to local HEAD-based change detection"
+    );
+
+    if let Some(files) = git_diff_name_only(&["diff", "--name-only", "HEAD~1..HEAD"])? {
+        return Ok(files);
+    }
+
+    let mut files = git_diff_name_only(&["diff", "--name-only"])? // unstaged
+        .unwrap_or_default();
+    files.extend(
+        git_diff_name_only(&["diff", "--name-only", "--cached"])?.unwrap_or_default(), // staged
+    );
+    files.sort();
+    files.dedup();
+    Ok(files)
+}
+
+fn git_diff_name_only(args: &[&str]) -> Result<Option<Vec<String>>> {
+    let output = Command::new("git")
+        .args(args)
+        .output()
+        .with_context(|| format!("failed to run git {}", args.join(" ")))?;
+
+    if !output.status.success() {
+        return Ok(None);
+    }
+
+    Ok(Some(parse_name_only_output(&output.stdout)))
+}
+
+fn parse_name_only_output(stdout: &[u8]) -> Vec<String> {
+    String::from_utf8_lossy(stdout)
         .lines()
         .map(|line| line.trim().to_string())
         .filter(|line| !line.is_empty())
-        .collect::<Vec<_>>();
-    Ok(files)
+        .collect::<Vec<_>>()
 }
 
 fn run_impacted_tests(
@@ -2821,6 +2843,19 @@ mod tests {
 
         restore_env("XTASK_BASE_REF", prev_xtask);
         restore_env("GITHUB_BASE_REF", prev_gh);
+    }
+
+    #[test]
+    fn parse_name_only_output_ignores_empty_lines_and_trims() {
+        let stdout = b"crates/uselesskey/src/lib.rs\n\n xtask/src/main.rs \n";
+        let files = parse_name_only_output(stdout);
+        assert_eq!(
+            files,
+            vec![
+                "crates/uselesskey/src/lib.rs".to_string(),
+                "xtask/src/main.rs".to_string()
+            ]
+        );
     }
 
     #[test]
