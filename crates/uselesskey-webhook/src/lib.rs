@@ -13,6 +13,7 @@ use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use hmac::{KeyInit, Mac};
 use rand_chacha10::ChaCha20Rng;
 use rand_core10::{Rng, SeedableRng};
+use serde_json::json;
 use sha2::Sha256;
 use uselesskey_core::Factory;
 
@@ -314,20 +315,35 @@ fn canonical_payload(
     match payload_spec {
         WebhookPayloadSpec::Raw(payload) => payload,
         WebhookPayloadSpec::Canonical => match profile {
-            WebhookProfile::GitHub => {
-                format!(
-                    "{{\"action\":\"opened\",\"repository\":{{\"full_name\":\"acme/{label}\"}},\"number\":{}}}",
-                    (nonce % 9000) + 1000
-                )
-            }
-            WebhookProfile::Stripe => format!(
-                "{{\"id\":\"evt_{:08x}\",\"type\":\"checkout.session.completed\",\"data\":{{\"object\":{{\"metadata\":{{\"label\":\"{}\"}}}}}}}}",
-                nonce, label
-            ),
-            WebhookProfile::Slack => format!(
-                "{{\"type\":\"event_callback\",\"team_id\":\"T{:08x}\",\"event\":{{\"type\":\"app_mention\",\"text\":\"ping {}\"}}}}",
-                nonce, label
-            ),
+            WebhookProfile::GitHub => json!({
+                "action": "opened",
+                "repository": {
+                    "full_name": format!("acme/{label}")
+                },
+                "number": (nonce % 9000) + 1000
+            })
+            .to_string(),
+            WebhookProfile::Stripe => json!({
+                "id": format!("evt_{nonce:08x}"),
+                "type": "checkout.session.completed",
+                "data": {
+                    "object": {
+                        "metadata": {
+                            "label": label
+                        }
+                    }
+                }
+            })
+            .to_string(),
+            WebhookProfile::Slack => json!({
+                "type": "event_callback",
+                "team_id": format!("T{nonce:08x}"),
+                "event": {
+                    "type": "app_mention",
+                    "text": format!("ping {label}")
+                }
+            })
+            .to_string(),
         },
     }
 }
@@ -553,5 +569,26 @@ mod tests {
         let out = format!("{near_miss:?}");
         assert!(!out.contains(&near_miss.secret));
         assert!(out.contains("NearMissWebhookFixture"));
+    }
+
+    #[test]
+    fn canonical_payload_escapes_special_characters_in_label() {
+        let fx = Factory::deterministic(Seed::from_env_value("webhook-label-escape").unwrap());
+        let label = "repo\"line\nbreak\\slash";
+        let fixtures = [
+            fx.webhook_github(label, WebhookPayloadSpec::Canonical),
+            fx.webhook_stripe(label, WebhookPayloadSpec::Canonical),
+            fx.webhook_slack(label, WebhookPayloadSpec::Canonical),
+        ];
+
+        for fixture in fixtures {
+            let parsed: serde_json::Value =
+                serde_json::from_str(&fixture.payload).expect("canonical payload should be valid");
+            let serialized = parsed.to_string();
+            assert!(
+                serialized.contains("repo\\\"line\\nbreak\\\\slash"),
+                "serialized payload should preserve escaped label, got: {serialized}"
+            );
+        }
     }
 }
