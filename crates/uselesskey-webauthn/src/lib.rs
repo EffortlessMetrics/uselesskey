@@ -323,7 +323,15 @@ fn sha256_arr(bytes: &[u8]) -> [u8; 32] {
 fn write_field(out: &mut Vec<u8>, name: &str, value: &[u8]) {
     out.extend_from_slice(name.as_bytes());
     out.push(0x1f);
-    out.extend_from_slice(&(value.len() as u16).to_be_bytes());
+    if let Ok(len16) = u16::try_from(value.len()) {
+        out.extend_from_slice(&len16.to_be_bytes());
+    } else {
+        // Preserve the legacy encoding for values that fit in u16, and extend
+        // only oversized fields so deterministic outputs for common cases stay
+        // stable while avoiding length-truncation collisions.
+        out.extend_from_slice(&u16::MAX.to_be_bytes());
+        out.extend_from_slice(&(value.len() as u32).to_be_bytes());
+    }
     out.extend_from_slice(value);
 }
 
@@ -383,5 +391,15 @@ mod tests {
             serde_json::from_slice(&reg.client_data_json).expect("parse clientDataJSON");
         assert_eq!(json["challenge"], base64url(challenge));
         assert_eq!(json["origin"], "https://example.com");
+    }
+
+    #[test]
+    fn stable_bytes_distinguishes_large_field_lengths() {
+        let mut spec_a = WebAuthnSpec::packed("example.com", vec![b'a'; 65_536]);
+        spec_a.credential_id = b"same-credential".to_vec();
+        let mut spec_b = WebAuthnSpec::packed("example.com", vec![b'a'; 131_072]);
+        spec_b.credential_id = b"same-credential".to_vec();
+
+        assert_ne!(spec_a.stable_bytes(), spec_b.stable_bytes());
     }
 }
