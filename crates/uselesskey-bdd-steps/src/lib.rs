@@ -4,6 +4,10 @@
 //! Implements Given/When/Then steps that exercise the full uselesskey API
 //! across all key types, adapters, and negative fixture scenarios.
 
+#[allow(
+    unused_imports,
+    reason = "step macros are only used when matching BDD feature flags are enabled"
+)]
 use cucumber::{World, given, then, when};
 #[cfg(feature = "uk-jwt")]
 use jsonwebtoken::{Algorithm, Header, Validation, decode, decode_header, encode};
@@ -130,6 +134,10 @@ fn set_private_kid(jwk: &mut uselesskey::jwk::PrivateJwk, kid: &str) {
     }
 }
 
+#[allow(
+    dead_code,
+    reason = "world fields are consumed by feature-gated step modules"
+)]
 #[derive(Default, Debug, World)]
 struct UselessWorld {
     factory: Option<Factory>,
