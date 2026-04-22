@@ -321,9 +321,11 @@ fn sha256_arr(bytes: &[u8]) -> [u8; 32] {
 }
 
 fn write_field(out: &mut Vec<u8>, name: &str, value: &[u8]) {
+    let len = u16::try_from(value.len())
+        .expect("webauthn stable_bytes field length exceeds u16::MAX; would corrupt derivation key");
     out.extend_from_slice(name.as_bytes());
     out.push(0x1f);
-    out.extend_from_slice(&(value.len() as u16).to_be_bytes());
+    out.extend_from_slice(&len.to_be_bytes());
     out.extend_from_slice(value);
 }
 
@@ -333,6 +335,29 @@ mod tests {
     use uselesskey_core::Seed;
 
     use super::*;
+
+
+    #[test]
+    fn stable_bytes_panics_for_oversized_field() {
+        let spec = WebAuthnSpec {
+            rp_id: "example.com".to_string(),
+            challenge: vec![0u8; (u16::MAX as usize) + 1],
+            credential_id: b"uk-credential-id".to_vec(),
+            authenticator_model: "UK-PASSKEY-MOCK".to_string(),
+            attestation_mode: AttestationMode::Packed,
+        };
+
+        let panic = std::panic::catch_unwind(|| spec.stable_bytes())
+            .expect_err("expected stable_bytes to panic for oversized field");
+        let message = if let Some(s) = panic.downcast_ref::<&str>() {
+            s.to_string()
+        } else if let Some(s) = panic.downcast_ref::<String>() {
+            s.clone()
+        } else {
+            String::new()
+        };
+        assert!(message.contains("exceeds u16::MAX"));
+    }
 
     #[test]
     fn registration_is_deterministic() {
