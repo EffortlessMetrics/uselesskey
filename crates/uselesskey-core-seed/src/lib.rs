@@ -52,7 +52,10 @@ impl Seed {
     /// - any other string (hashed with BLAKE3)
     pub fn from_env_value(value: &str) -> Result<Self, String> {
         let v = value.trim();
-        let hex = v.strip_prefix("0x").unwrap_or(v);
+        let hex = v
+            .strip_prefix("0x")
+            .or_else(|| v.strip_prefix("0X"))
+            .unwrap_or(v);
 
         if hex.len() == 64 {
             return parse_hex_32(hex).map(Self);
@@ -134,6 +137,13 @@ mod tests {
         let hex = "F".repeat(64);
         let seed = Seed::from_env_value(&hex).unwrap();
         assert!(seed.bytes().iter().all(|b| *b == 0xFF));
+    }
+
+    #[test]
+    fn seed_from_env_value_parses_hex_with_uppercase_prefix() {
+        let hex = format!("0X{}", "ab".repeat(32));
+        let seed = Seed::from_env_value(&hex).unwrap();
+        assert!(seed.bytes().iter().all(|b| *b == 0xAB));
     }
 
     #[test]
