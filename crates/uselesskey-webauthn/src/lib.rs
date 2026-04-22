@@ -323,7 +323,12 @@ fn sha256_arr(bytes: &[u8]) -> [u8; 32] {
 fn write_field(out: &mut Vec<u8>, name: &str, value: &[u8]) {
     out.extend_from_slice(name.as_bytes());
     out.push(0x1f);
-    out.extend_from_slice(&(value.len() as u16).to_be_bytes());
+    if value.len() <= u16::MAX as usize {
+        out.extend_from_slice(&(value.len() as u16).to_be_bytes());
+    } else {
+        out.extend_from_slice(&u16::MAX.to_be_bytes());
+        out.extend_from_slice(&(value.len() as u32).to_be_bytes());
+    }
     out.extend_from_slice(value);
 }
 
@@ -383,5 +388,43 @@ mod tests {
             serde_json::from_slice(&reg.client_data_json).expect("parse clientDataJSON");
         assert_eq!(json["challenge"], base64url(challenge));
         assert_eq!(json["origin"], "https://example.com");
+    }
+
+    #[test]
+    fn stable_bytes_uses_legacy_u16_length_for_small_fields() {
+        let spec = WebAuthnSpec::packed("example.com", b"small");
+        let bytes = spec.stable_bytes();
+
+        let needle = [
+            b"challenge".as_slice(),
+            &[0x1f],
+            &(b"small".len() as u16).to_be_bytes(),
+            b"small",
+        ]
+        .concat();
+
+        assert!(bytes.windows(needle.len()).any(|w| w == needle.as_slice()));
+    }
+
+    #[test]
+    fn stable_bytes_encodes_large_field_length_without_truncation() {
+        let long = vec![b'a'; (u16::MAX as usize) + 17];
+        let spec = WebAuthnSpec::packed("example.com", &long);
+        let bytes = spec.stable_bytes();
+
+        let prefix = [b"challenge".as_slice(), &[0x1f], &u16::MAX.to_be_bytes()].concat();
+        let start = bytes
+            .windows(prefix.len())
+            .position(|w| w == prefix.as_slice())
+            .expect("challenge field prefix");
+        let len_start = start + prefix.len();
+        let len_end = len_start + 4;
+        let encoded_len = u32::from_be_bytes(
+            bytes[len_start..len_end]
+                .try_into()
+                .expect("extended length bytes"),
+        ) as usize;
+        assert_eq!(encoded_len, long.len());
+        assert_eq!(&bytes[len_end..len_end + long.len()], long.as_slice());
     }
 }
