@@ -323,7 +323,9 @@ fn sha256_arr(bytes: &[u8]) -> [u8; 32] {
 fn write_field(out: &mut Vec<u8>, name: &str, value: &[u8]) {
     out.extend_from_slice(name.as_bytes());
     out.push(0x1f);
-    out.extend_from_slice(&(value.len() as u16).to_be_bytes());
+    let value_len = u16::try_from(value.len())
+        .expect("webauthn stable-bytes field length must fit in u16");
+    out.extend_from_slice(&value_len.to_be_bytes());
     out.extend_from_slice(value);
 }
 
@@ -372,6 +374,24 @@ mod tests {
         let reg = fx.webauthn_registration("alice", spec.clone());
         let assertion = fx.webauthn_assertion("alice", spec);
         assert_eq!(assertion.sign_count, reg.sign_count.saturating_add(1));
+    }
+
+    #[test]
+    fn stable_bytes_rejects_oversized_fields() {
+        let mut spec = WebAuthnSpec::packed("example.com", b"challenge");
+        spec.challenge = vec![b'x'; usize::from(u16::MAX) + 1];
+
+        let panic_payload = std::panic::catch_unwind(|| spec.stable_bytes())
+            .expect_err("oversized challenge should panic");
+        let panic_message = if let Some(msg) = panic_payload.downcast_ref::<&str>() {
+            msg.to_string()
+        } else if let Some(msg) = panic_payload.downcast_ref::<String>() {
+            msg.clone()
+        } else {
+            String::new()
+        };
+
+        assert!(panic_message.contains("must fit in u16"));
     }
 
     #[test]
