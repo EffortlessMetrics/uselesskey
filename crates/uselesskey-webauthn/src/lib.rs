@@ -323,7 +323,15 @@ fn sha256_arr(bytes: &[u8]) -> [u8; 32] {
 fn write_field(out: &mut Vec<u8>, name: &str, value: &[u8]) {
     out.extend_from_slice(name.as_bytes());
     out.push(0x1f);
-    out.extend_from_slice(&(value.len() as u16).to_be_bytes());
+    if let Ok(short_len) = u16::try_from(value.len()) {
+        out.push(0x00);
+        out.extend_from_slice(&short_len.to_be_bytes());
+    } else {
+        // Extended-length marker to avoid truncation collisions for large fields
+        // while preserving existing encoding for <= u16::MAX lengths.
+        out.push(0x01);
+        out.extend_from_slice(&(value.len() as u32).to_be_bytes());
+    }
     out.extend_from_slice(value);
 }
 
@@ -383,5 +391,22 @@ mod tests {
             serde_json::from_slice(&reg.client_data_json).expect("parse clientDataJSON");
         assert_eq!(json["challenge"], base64url(challenge));
         assert_eq!(json["origin"], "https://example.com");
+    }
+
+    #[test]
+    fn write_field_uses_extended_length_for_large_values() {
+        let name = "challenge";
+        let value = vec![b'x'; 65_536];
+        let mut out = Vec::new();
+        write_field(&mut out, name, &value);
+
+        let name_len = name.len();
+        assert_eq!(&out[..name_len], name.as_bytes());
+        assert_eq!(out[name_len], 0x1f);
+        assert_eq!(out[name_len + 1], 0x01);
+        assert_eq!(
+            &out[name_len + 2..name_len + 6],
+            &(value.len() as u32).to_be_bytes()
+        );
     }
 }
