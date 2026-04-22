@@ -80,10 +80,17 @@ impl Pkcs11MockSpec {
         write_field(&mut out, "token_label", self.token_label.as_bytes());
         write_field(&mut out, "manufacturer_id", self.manufacturer_id.as_bytes());
         write_field(&mut out, "model", self.model.as_bytes());
-        for label in &self.key_labels {
+        for label in self.effective_key_labels() {
             write_field(&mut out, "key_label", label.as_bytes());
         }
         out
+    }
+
+    fn effective_key_labels(&self) -> impl Iterator<Item = &str> {
+        self.key_labels
+            .iter()
+            .map(String::as_str)
+            .chain((self.key_labels.is_empty()).then_some("signing-key"))
     }
 }
 
@@ -153,7 +160,8 @@ fn build_provider(spec: Pkcs11MockSpec, seed: [u8; 32]) -> MockPkcs11Provider {
     let mut keys = HashMap::new();
     let mut certs = HashMap::new();
 
-    for (idx, key_label) in spec.key_labels.iter().enumerate() {
+    let key_labels: Vec<&str> = spec.effective_key_labels().collect();
+    for (idx, key_label) in key_labels.iter().enumerate() {
         let mut key_hasher = Sha256::new();
         key_hasher.update(seed);
         key_hasher.update((idx as u32).to_le_bytes());
@@ -175,7 +183,7 @@ fn build_provider(spec: Pkcs11MockSpec, seed: [u8; 32]) -> MockPkcs11Provider {
         keys.insert(
             handle,
             KeyRecord {
-                label: key_label.clone(),
+                label: (*key_label).to_string(),
                 algorithm: "MOCK-SHA256".to_string(),
                 secret,
             },
@@ -261,11 +269,105 @@ mod tests {
     }
 
     #[test]
+    fn sign_count_increments_from_one() {
+        let fx = Factory::random();
+        let provider = fx.pkcs11_mock("count", Pkcs11MockSpec::basic("HSM-COUNT"));
+
+        assert_eq!(provider.next_sign_count(), 1);
+        assert_eq!(provider.next_sign_count(), 2);
+    }
+
+    #[test]
+    fn debug_summary_names_slot_and_key_count() {
+        let fx = Factory::random();
+        let provider = fx.pkcs11_mock("debug", Pkcs11MockSpec::basic("HSM-DEBUG"));
+        let debug = format!("{provider:?}");
+
+        assert!(debug.contains("MockPkcs11Provider"));
+        assert!(debug.contains("slot"));
+        assert!(debug.contains("key_count"));
+    }
+
+    #[test]
+    fn multiple_keys_get_one_based_sequential_handles() {
+        let fx = Factory::deterministic(Seed::from_env_value("pkcs11-handles").unwrap());
+        let mut spec = Pkcs11MockSpec::basic("HSM-HANDLES");
+        spec.key_labels = vec!["signing-key".to_string(), "verification-key".to_string()];
+
+        let provider = fx.pkcs11_mock("handles", spec);
+        let handles = provider.key_handles();
+
+        assert_eq!(handles, vec![KeyHandle(1), KeyHandle(2)]);
+        assert_eq!(provider.key_label(KeyHandle(1)), Some("signing-key"));
+        assert_eq!(provider.key_label(KeyHandle(2)), Some("verification-key"));
+    }
+
+    #[test]
     fn cert_lookup_returns_der_like_bytes() {
         let fx = Factory::random();
         let provider = fx.pkcs11_mock("der", Pkcs11MockSpec::basic("HSM-DER"));
         let handle = provider.key_handles()[0];
         let der = provider.certificate_der(handle).expect("certificate");
         assert_eq!(&der[0..2], &[0x30, 0x82]);
+        let body_len = u16::from_be_bytes(der[2..4].try_into().expect("DER body length"));
+        assert_eq!(usize::from(body_len), der.len() - 4);
+    }
+
+    #[test]
+    fn slot_serial_is_uppercase_hex() {
+        let fx = Factory::deterministic(Seed::from_env_value("pkcs11-serial").unwrap());
+        let provider = fx.pkcs11_mock("serial", Pkcs11MockSpec::basic("HSM-SERIAL"));
+        let serial = provider.slot_info().serial_number;
+
+        assert_eq!(serial.len(), 16);
+        assert!(
+            serial
+                .bytes()
+                .all(|byte| byte.is_ascii_digit() || (b'A'..=b'F').contains(&byte)),
+            "expected uppercase hex serial, got {serial}"
+        );
+    }
+
+    #[test]
+    fn empty_key_labels_falls_back_to_default_key() {
+        let fx = Factory::deterministic(Seed::from_env_value("pkcs11-empty-keys").unwrap());
+        let mut spec = Pkcs11MockSpec::basic("HSM-EMPTY");
+        spec.key_labels.clear();
+
+        let provider = fx.pkcs11_mock("empty", spec);
+        let handles = provider.key_handles();
+        assert_eq!(handles.len(), 1);
+        assert_eq!(provider.key_label(handles[0]), Some("signing-key"));
+    }
+
+    #[test]
+    fn empty_key_labels_and_explicit_default_share_stable_identity() {
+        let mut empty = Pkcs11MockSpec::basic("HSM-EMPTY");
+        empty.key_labels.clear();
+        let explicit = Pkcs11MockSpec::basic("HSM-EMPTY");
+
+        assert_eq!(empty.stable_bytes(), explicit.stable_bytes());
+    }
+
+    #[test]
+    fn key_labels_participate_in_stable_identity() {
+        let explicit = Pkcs11MockSpec::basic("HSM-IDENTITY");
+        let mut alternate = Pkcs11MockSpec::basic("HSM-IDENTITY");
+        alternate.key_labels = vec!["verification-key".to_string()];
+
+        let stable = explicit.stable_bytes();
+        assert_contains_bytes(&stable, b"key_label");
+        assert_contains_bytes(&stable, b"signing-key");
+        assert_ne!(stable, alternate.stable_bytes());
+    }
+
+    fn assert_contains_bytes(haystack: &[u8], needle: &[u8]) {
+        assert!(
+            haystack
+                .windows(needle.len())
+                .any(|window| window == needle),
+            "expected stable identity to contain {}",
+            String::from_utf8_lossy(needle)
+        );
     }
 }
