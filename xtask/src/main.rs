@@ -1812,20 +1812,60 @@ fn resolve_base_ref() -> String {
 }
 
 fn git_changed_files(base_ref: &str) -> Result<Vec<String>> {
-    let revspec = format!("{base_ref}...HEAD");
-    let output = Command::new("git")
-        .args(["diff", "--name-only", &revspec])
-        .output()
-        .context("failed to run git diff")?;
+    let mut attempts = Vec::new();
 
-    if !output.status.success() {
-        bail!(
-            "git diff failed with status {}",
+    for candidate in base_ref_candidates(base_ref) {
+        let revspec = format!("{candidate}...HEAD");
+        let output = Command::new("git")
+            .args(["diff", "--name-only", &revspec])
+            .output()
+            .context("failed to run git diff")?;
+
+        if output.status.success() {
+            return parse_changed_files(&output.stdout);
+        }
+
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        attempts.push(format!(
+            "{revspec} (status {}): {stderr}",
             output.status.code().unwrap_or(-1)
-        );
+        ));
     }
 
-    let stdout = String::from_utf8_lossy(&output.stdout);
+    let output = Command::new("git")
+        .args(["diff", "--name-only", "HEAD~1..HEAD"])
+        .output()
+        .context("failed to run git diff HEAD~1..HEAD")?;
+    if output.status.success() {
+        eprintln!("xtask pr: base ref '{base_ref}' unavailable, falling back to HEAD~1..HEAD");
+        return parse_changed_files(&output.stdout);
+    }
+
+    let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+    attempts.push(format!(
+        "HEAD~1..HEAD (status {}): {stderr}",
+        output.status.code().unwrap_or(-1)
+    ));
+
+    bail!(
+        "git diff failed for all attempted base refs: {}",
+        attempts.join(" | ")
+    )
+}
+
+fn base_ref_candidates(base_ref: &str) -> Vec<String> {
+    let mut refs = vec![base_ref.to_string()];
+    if let Some(local) = base_ref.strip_prefix("origin/")
+        && !local.is_empty()
+    {
+        refs.push(local.to_string());
+    }
+    refs
+}
+
+fn parse_changed_files(stdout: &[u8]) -> Result<Vec<String>> {
+    let stdout =
+        String::from_utf8(stdout.to_vec()).context("git diff output was not valid UTF-8")?;
     let files = stdout
         .lines()
         .map(|line| line.trim().to_string())
@@ -2821,6 +2861,22 @@ mod tests {
 
         restore_env("XTASK_BASE_REF", prev_xtask);
         restore_env("GITHUB_BASE_REF", prev_gh);
+    }
+
+    #[test]
+    fn base_ref_candidates_include_local_branch_for_origin_ref() {
+        assert_eq!(
+            base_ref_candidates("origin/main"),
+            vec!["origin/main".to_string(), "main".to_string()]
+        );
+    }
+
+    #[test]
+    fn base_ref_candidates_keep_non_origin_ref_as_is() {
+        assert_eq!(
+            base_ref_candidates("upstream/trunk"),
+            vec!["upstream/trunk".to_string()]
+        );
     }
 
     #[test]
