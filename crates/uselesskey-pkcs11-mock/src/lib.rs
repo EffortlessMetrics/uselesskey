@@ -80,10 +80,17 @@ impl Pkcs11MockSpec {
         write_field(&mut out, "token_label", self.token_label.as_bytes());
         write_field(&mut out, "manufacturer_id", self.manufacturer_id.as_bytes());
         write_field(&mut out, "model", self.model.as_bytes());
-        for label in &self.key_labels {
+        for label in self.effective_key_labels() {
             write_field(&mut out, "key_label", label.as_bytes());
         }
         out
+    }
+
+    fn effective_key_labels(&self) -> impl Iterator<Item = &str> {
+        self.key_labels
+            .iter()
+            .map(String::as_str)
+            .chain((self.key_labels.is_empty()).then_some("signing-key"))
     }
 }
 
@@ -153,7 +160,8 @@ fn build_provider(spec: Pkcs11MockSpec, seed: [u8; 32]) -> MockPkcs11Provider {
     let mut keys = HashMap::new();
     let mut certs = HashMap::new();
 
-    for (idx, key_label) in spec.key_labels.iter().enumerate() {
+    let key_labels: Vec<&str> = spec.effective_key_labels().collect();
+    for (idx, key_label) in key_labels.iter().enumerate() {
         let mut key_hasher = Sha256::new();
         key_hasher.update(seed);
         key_hasher.update((idx as u32).to_le_bytes());
@@ -175,7 +183,7 @@ fn build_provider(spec: Pkcs11MockSpec, seed: [u8; 32]) -> MockPkcs11Provider {
         keys.insert(
             handle,
             KeyRecord {
-                label: key_label.clone(),
+                label: (*key_label).to_string(),
                 algorithm: "MOCK-SHA256".to_string(),
                 secret,
             },
@@ -267,5 +275,26 @@ mod tests {
         let handle = provider.key_handles()[0];
         let der = provider.certificate_der(handle).expect("certificate");
         assert_eq!(&der[0..2], &[0x30, 0x82]);
+    }
+
+    #[test]
+    fn empty_key_labels_falls_back_to_default_key() {
+        let fx = Factory::deterministic(Seed::from_env_value("pkcs11-empty-keys").unwrap());
+        let mut spec = Pkcs11MockSpec::basic("HSM-EMPTY");
+        spec.key_labels.clear();
+
+        let provider = fx.pkcs11_mock("empty", spec);
+        let handles = provider.key_handles();
+        assert_eq!(handles.len(), 1);
+        assert_eq!(provider.key_label(handles[0]), Some("signing-key"));
+    }
+
+    #[test]
+    fn empty_key_labels_and_explicit_default_share_stable_identity() {
+        let mut empty = Pkcs11MockSpec::basic("HSM-EMPTY");
+        empty.key_labels.clear();
+        let explicit = Pkcs11MockSpec::basic("HSM-EMPTY");
+
+        assert_eq!(empty.stable_bytes(), explicit.stable_bytes());
     }
 }
