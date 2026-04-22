@@ -213,7 +213,7 @@ fn mock_certificate_der(
     write_field(&mut out, "mfr", manufacturer_id.as_bytes());
     write_field(&mut out, "model", model.as_bytes());
     write_field(&mut out, "fingerprint", &Sha256::digest(secret));
-    let body_len = (out.len() - 4) as u16;
+    let body_len = u16_len("certificate_der_body", out.len() - 4);
     out[2..4].copy_from_slice(&body_len.to_be_bytes());
     out
 }
@@ -221,9 +221,18 @@ fn mock_certificate_der(
 fn write_field(out: &mut Vec<u8>, name: &str, value: &[u8]) {
     out.extend_from_slice(name.as_bytes());
     out.push(b'=');
-    out.extend_from_slice(&(value.len() as u16).to_be_bytes());
+    out.extend_from_slice(&u16_len(name, value.len()).to_be_bytes());
     out.extend_from_slice(value);
     out.push(0);
+}
+
+fn u16_len(field_name: &str, len: usize) -> u16 {
+    u16::try_from(len).unwrap_or_else(|_| {
+        panic!(
+            "{field_name} length {len} exceeds u16::MAX; fixture encoding requires <= {} bytes",
+            u16::MAX
+        )
+    })
 }
 
 fn hex8(bytes: &[u8]) -> String {
@@ -267,5 +276,25 @@ mod tests {
         let handle = provider.key_handles()[0];
         let der = provider.certificate_der(handle).expect("certificate");
         assert_eq!(&der[0..2], &[0x30, 0x82]);
+    }
+
+    #[test]
+    #[should_panic(expected = "token_label length")]
+    fn rejects_oversized_field_length() {
+        let fx = Factory::random();
+        let spec = Pkcs11MockSpec::basic("a".repeat((u16::MAX as usize) + 1));
+        let _ = fx.pkcs11_mock("oversized-field", spec);
+    }
+
+    #[test]
+    #[should_panic(expected = "certificate_der_body length")]
+    fn rejects_oversized_der_body() {
+        let fx = Factory::random();
+        let mut spec = Pkcs11MockSpec::basic("token");
+        let long = "z".repeat(22_000);
+        spec.manufacturer_id = long.clone();
+        spec.model = long;
+        spec.key_labels = vec!["k".repeat(22_000)];
+        let _ = fx.pkcs11_mock("oversized-der", spec);
     }
 }
