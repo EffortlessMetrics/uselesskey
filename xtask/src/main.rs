@@ -1812,16 +1812,45 @@ fn resolve_base_ref() -> String {
 }
 
 fn git_changed_files(base_ref: &str) -> Result<Vec<String>> {
-    let revspec = format!("{base_ref}...HEAD");
+    let base_commit_exists = Command::new("git")
+        .args(["rev-parse", "--verify", "--quiet", &format!("{base_ref}^{{commit}}")])
+        .status()
+        .context("failed to run git rev-parse --verify for base ref")?
+        .success();
+
+    let revspec = if base_commit_exists {
+        format!("{base_ref}...HEAD")
+    } else {
+        let head_parent_exists = Command::new("git")
+            .args(["rev-parse", "--verify", "--quiet", "HEAD~1"])
+            .status()
+            .context("failed to run git rev-parse --verify for HEAD~1")?
+            .success();
+
+        if head_parent_exists {
+            eprintln!(
+                "warning: base ref '{base_ref}' is unavailable; using fallback diff range HEAD~1..HEAD"
+            );
+            "HEAD~1..HEAD".to_string()
+        } else {
+            eprintln!(
+                "warning: base ref '{base_ref}' and HEAD~1 are unavailable; treating repository as unchanged"
+            );
+            return Ok(Vec::new());
+        }
+    };
+
     let output = Command::new("git")
         .args(["diff", "--name-only", &revspec])
         .output()
         .context("failed to run git diff")?;
 
     if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
         bail!(
-            "git diff failed with status {}",
-            output.status.code().unwrap_or(-1)
+            "git diff failed for revspec '{revspec}' with status {}: {}",
+            output.status.code().unwrap_or(-1),
+            stderr.trim()
         );
     }
 
@@ -2758,6 +2787,19 @@ mod tests {
         }
     }
 
+    fn run_git<const N: usize>(args: [&str; N]) {
+        let status = Command::new("git")
+            .args(args)
+            .status()
+            .unwrap_or_else(|e| panic!("failed to run git {}: {e}", args.join(" ")));
+        assert!(
+            status.success(),
+            "git {} failed with status {:?}",
+            args.join(" "),
+            status.code()
+        );
+    }
+
     fn assert_versioned_dependency_snippet_files_from_cwd(
         cwd: &std::path::Path,
         workspace_root: &std::path::Path,
@@ -2821,6 +2863,46 @@ mod tests {
 
         restore_env("XTASK_BASE_REF", prev_xtask);
         restore_env("GITHUB_BASE_REF", prev_gh);
+    }
+
+    #[test]
+    fn git_changed_files_falls_back_when_base_ref_missing() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        let dir = tempfile::tempdir().expect("tempdir");
+        let _cwd = CwdGuard::new(dir.path());
+
+        run_git(["init"]);
+        run_git(["config", "user.email", "agent@example.com"]);
+        run_git(["config", "user.name", "Agent"]);
+
+        fs::write("tracked.txt", "v1\n").expect("write tracked.txt v1");
+        run_git(["add", "tracked.txt"]);
+        run_git(["commit", "-m", "initial"]);
+
+        fs::write("tracked.txt", "v2\n").expect("write tracked.txt v2");
+        run_git(["add", "tracked.txt"]);
+        run_git(["commit", "-m", "second"]);
+        let changed = git_changed_files("origin/main").expect("fallback diff should succeed");
+        assert_eq!(changed, vec!["tracked.txt".to_string()]);
+    }
+
+    #[test]
+    fn git_changed_files_returns_empty_without_base_ref_or_parent() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        let dir = tempfile::tempdir().expect("tempdir");
+        let _cwd = CwdGuard::new(dir.path());
+
+        run_git(["init"]);
+        run_git(["config", "user.email", "agent@example.com"]);
+        run_git(["config", "user.name", "Agent"]);
+
+        fs::write("tracked.txt", "v1\n").expect("write tracked.txt");
+        run_git(["add", "tracked.txt"]);
+        run_git(["commit", "-m", "initial"]);
+
+        // HEAD~1 does not exist on first commit, so we should gracefully return no changes.
+        let changed = git_changed_files("origin/main").expect("should gracefully handle missing refs");
+        assert!(changed.is_empty(), "expected no changed files, got: {changed:?}");
     }
 
     #[test]
