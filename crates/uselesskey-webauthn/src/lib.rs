@@ -323,7 +323,15 @@ fn sha256_arr(bytes: &[u8]) -> [u8; 32] {
 fn write_field(out: &mut Vec<u8>, name: &str, value: &[u8]) {
     out.extend_from_slice(name.as_bytes());
     out.push(0x1f);
-    out.extend_from_slice(&(value.len() as u16).to_be_bytes());
+    if let Ok(short_len) = u16::try_from(value.len()) {
+        out.extend_from_slice(&short_len.to_be_bytes());
+    } else {
+        // Backward-compatible extension:
+        // - values <= u16::MAX keep the original encoding
+        // - longer values use 0xffff + u32 length, avoiding truncation collisions
+        out.extend_from_slice(&u16::MAX.to_be_bytes());
+        out.extend_from_slice(&(value.len() as u32).to_be_bytes());
+    }
     out.extend_from_slice(value);
 }
 
@@ -383,5 +391,33 @@ mod tests {
             serde_json::from_slice(&reg.client_data_json).expect("parse clientDataJSON");
         assert_eq!(json["challenge"], base64url(challenge));
         assert_eq!(json["origin"], "https://example.com");
+    }
+
+    #[test]
+    fn stable_bytes_keeps_legacy_short_length_encoding() {
+        let spec = WebAuthnSpec::packed("example.com", b"short-challenge");
+        let bytes = spec.stable_bytes();
+        let marker = b"challenge\x1f";
+        let at = bytes
+            .windows(marker.len())
+            .position(|window| window == marker)
+            .expect("challenge marker present");
+        let len_offset = at + marker.len();
+        assert_eq!(&bytes[len_offset..len_offset + 2], &[0, 15]);
+    }
+
+    #[test]
+    fn stable_bytes_long_challenge_uses_extended_length_prefix() {
+        let long = vec![0xAB; 70_000];
+        let spec = WebAuthnSpec::packed("example.com", &long);
+        let bytes = spec.stable_bytes();
+        let marker = b"challenge\x1f";
+        let at = bytes
+            .windows(marker.len())
+            .position(|window| window == marker)
+            .expect("challenge marker present");
+        let len_offset = at + marker.len();
+        assert_eq!(&bytes[len_offset..len_offset + 2], &[0xFF, 0xFF]);
+        assert_eq!(&bytes[len_offset + 2..len_offset + 6], &(70_000u32).to_be_bytes());
     }
 }
