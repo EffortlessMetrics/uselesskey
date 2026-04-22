@@ -6,7 +6,7 @@
 //! - flip_byte is involutory (applying twice restores original)
 //! - Corruption of every common PEM label type
 //! - Deterministic corruption is isolated per-variant (no cross-talk)
-//! - CorruptPem::Truncate operates on *chars*, not bytes (Unicode safety)
+//! - CorruptPem::Truncate uses a byte budget without splitting UTF-8 characters
 //! - Edge-case interactions (empty + corrupt, single-byte DER, etc.)
 
 use std::collections::HashSet;
@@ -249,16 +249,20 @@ fn deterministic_der_stable_across_1000_calls() {
     }
 }
 
-// ── 7. CorruptPem::Truncate operates on chars, not bytes ─────────────
+// ── 7. CorruptPem::Truncate uses a byte budget safely ────────────────
 
 #[test]
-fn truncate_operates_on_chars_not_bytes() {
+fn truncate_uses_byte_budget_without_breaking_utf8() {
     // Multi-byte chars: each '€' is 3 bytes in UTF-8
     let pem_with_unicode = "-----BEGIN X-----\n€€€€€\n-----END X-----\n";
     let out = corrupt_pem(pem_with_unicode, CorruptPem::Truncate { bytes: 20 });
-    assert_eq!(out.chars().count(), 20, "Truncate counts chars, not bytes");
-    // The byte length will be >= 20 because of multi-byte chars
-    assert!(out.len() >= 20);
+    assert!(out.len() <= 20, "Truncate honors the byte budget");
+    assert!(pem_with_unicode.starts_with(&out));
+    assert_eq!(
+        out.len(),
+        "-----BEGIN X-----\n".len(),
+        "Truncate backs up to the previous UTF-8 boundary"
+    );
 }
 
 // ── 8. BadHeader preserves body, BadFooter preserves body ────────────
@@ -350,20 +354,21 @@ fn pem_truncate_to_zero_is_empty() {
 
 #[test]
 fn pem_truncate_beyond_length_returns_full() {
-    let char_count = VALID_PEM.chars().count();
+    let byte_len = VALID_PEM.len();
     let out = corrupt_pem(
         VALID_PEM,
         CorruptPem::Truncate {
-            bytes: char_count + 100,
+            bytes: byte_len + 100,
         },
     );
-    assert_eq!(out.chars().count(), char_count);
+    assert_eq!(out, VALID_PEM);
+    assert_eq!(out.len(), byte_len);
 }
 
 #[test]
 fn pem_truncate_at_exact_length_returns_full() {
-    let char_count = VALID_PEM.chars().count();
-    let out = corrupt_pem(VALID_PEM, CorruptPem::Truncate { bytes: char_count });
+    let byte_len = VALID_PEM.len();
+    let out = corrupt_pem(VALID_PEM, CorruptPem::Truncate { bytes: byte_len });
     assert_eq!(out, VALID_PEM);
 }
 
