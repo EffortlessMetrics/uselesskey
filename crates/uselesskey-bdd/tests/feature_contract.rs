@@ -22,6 +22,13 @@ fn bdd_feature_contract_and_grid_are_in_sync() {
             "bdd feature matrix references undeclared uk feature '{feature}'"
         );
     }
+
+    for declared_feature in &declared {
+        assert!(
+            declared_feature == "uk-default" || UK_FEATURE_SETS.contains(&declared_feature.as_str()),
+            "bdd manifest declares uk feature not present in grid: '{declared_feature}'"
+        );
+    }
 }
 
 fn declared_bdd_features(manifest: &str) -> BTreeSet<String> {
