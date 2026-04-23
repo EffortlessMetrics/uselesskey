@@ -149,17 +149,37 @@ pub const CORE_FEATURE_MATRIX: &[FeatureSet] = &[
 
 /// BDD matrix consumed by automation and CI receipt generation.
 pub const BDD_FEATURE_MATRIX: &[FeatureSet] = &[
-    FeatureSet::new("all-features", &["--features", UK_FEATURE_ALL]),
-    FeatureSet::new("all-features+rustls", &["--features", "uk-all,uk-rustls"]),
-    FeatureSet::new("all-features+tonic", &["--features", "uk-all,uk-tonic"]),
-    FeatureSet::new("all-features+ring", &["--features", "uk-all,uk-ring"]),
+    FeatureSet::new(
+        "all-features",
+        &["--no-default-features", "--features", UK_FEATURE_ALL],
+    ),
+    FeatureSet::new(
+        "all-features+rustls",
+        &["--no-default-features", "--features", "uk-all,uk-rustls"],
+    ),
+    FeatureSet::new(
+        "all-features+tonic",
+        &["--no-default-features", "--features", "uk-all,uk-tonic"],
+    ),
+    FeatureSet::new(
+        "all-features+ring",
+        &["--no-default-features", "--features", "uk-all,uk-ring"],
+    ),
     FeatureSet::new(
         "all-features+rustcrypto",
-        &["--features", "uk-all,uk-rustcrypto"],
+        &[
+            "--no-default-features",
+            "--features",
+            "uk-all,uk-rustcrypto",
+        ],
     ),
     FeatureSet::new(
         "all-features+aws-lc-rs",
-        &["--features", "uk-all,uk-aws-lc-rs"],
+        &[
+            "--no-default-features",
+            "--features",
+            "uk-all,uk-aws-lc-rs",
+        ],
     ),
 ];
 
@@ -393,6 +413,17 @@ mod tests {
             assert!(
                 entry.cargo_args.contains(&"--features"),
                 "BDD entry '{}' should pass --features",
+                entry.name
+            );
+        }
+    }
+
+    #[test]
+    fn bdd_matrix_all_entries_disable_default_features() {
+        for entry in BDD_FEATURE_MATRIX {
+            assert!(
+                entry.cargo_args.contains(&"--no-default-features"),
+                "BDD entry '{}' should pass --no-default-features",
                 entry.name
             );
         }
