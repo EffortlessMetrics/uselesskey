@@ -3,22 +3,28 @@ use std::collections::BTreeSet;
 use uselesskey_test_grid::{BDD_FEATURE_MATRIX, FeatureSet, UK_FEATURE_SETS};
 
 const BDD_MANIFEST: &str = include_str!("../Cargo.toml");
+const BDD_STEPS_MANIFEST: &str = include_str!("../../uselesskey-bdd-steps/Cargo.toml");
 
 #[test]
 fn bdd_feature_contract_and_grid_are_in_sync() {
-    let declared = declared_bdd_features(BDD_MANIFEST);
+    let bdd_declared = declared_bdd_features(BDD_MANIFEST);
+    let steps_declared = declared_bdd_features(BDD_STEPS_MANIFEST);
 
     for expected in UK_FEATURE_SETS {
         assert!(
-            declared.contains(*expected),
+            bdd_declared.contains(*expected),
             "bdd manifest does not declare uk feature '{expected}'"
+        );
+        assert!(
+            steps_declared.contains(*expected),
+            "bdd-steps manifest does not declare uk feature '{expected}'"
         );
     }
 
     let matrix_features = matrix_feature_tokens(BDD_FEATURE_MATRIX);
     for feature in matrix_features {
         assert!(
-            declared.contains(feature.as_str()),
+            bdd_declared.contains(feature.as_str()),
             "bdd feature matrix references undeclared uk feature '{feature}'"
         );
     }
