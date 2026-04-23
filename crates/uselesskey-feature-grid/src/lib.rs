@@ -148,30 +148,28 @@ pub const CORE_FEATURE_MATRIX: &[FeatureSet] = &[
 ];
 
 /// BDD matrix consumed by automation and CI receipt generation.
-pub const BDD_FEATURE_MATRIX: &[FeatureSet] = &[
-    FeatureSet::new("all-features", &["--features", UK_FEATURE_ALL]),
-    FeatureSet::new("all-features+rustls", &["--features", "uk-all,uk-rustls"]),
-    FeatureSet::new("all-features+tonic", &["--features", "uk-all,uk-tonic"]),
-    FeatureSet::new("all-features+ring", &["--features", "uk-all,uk-ring"]),
-    FeatureSet::new(
-        "all-features+rustcrypto",
-        &["--features", "uk-all,uk-rustcrypto"],
-    ),
-    FeatureSet::new(
-        "all-features+aws-lc-rs",
-        &["--features", "uk-all,uk-aws-lc-rs"],
-    ),
-];
+macro_rules! define_bdd_feature_grid {
+    ($(($name:literal, [$($arg:expr),* $(,)?])),+ $(,)?) => {
+        /// BDD matrix consumed by automation and CI receipt generation.
+        pub const BDD_FEATURE_MATRIX: &[FeatureSet] = &[
+            $(FeatureSet::new($name, &[$($arg),*]),)+
+        ];
 
-/// All entries in `BDD_FEATURE_MATRIX`, for simple iteration in tooling.
-pub const BDD_FEATURE_SETS: &[&str] = &[
-    "all-features",
-    "all-features+rustls",
-    "all-features+tonic",
-    "all-features+ring",
-    "all-features+rustcrypto",
-    "all-features+aws-lc-rs",
-];
+        /// All entries in `BDD_FEATURE_MATRIX`, for simple iteration in tooling.
+        pub const BDD_FEATURE_SETS: &[&str] = &[
+            $($name,)+
+        ];
+    };
+}
+
+define_bdd_feature_grid!(
+    ("all-features", ["--features", UK_FEATURE_ALL]),
+    ("all-features+rustls", ["--features", "uk-all,uk-rustls"]),
+    ("all-features+tonic", ["--features", "uk-all,uk-tonic"]),
+    ("all-features+ring", ["--features", "uk-all,uk-ring"]),
+    ("all-features+rustcrypto", ["--features", "uk-all,uk-rustcrypto"]),
+    ("all-features+aws-lc-rs", ["--features", "uk-all,uk-aws-lc-rs"]),
+);
 
 #[cfg(test)]
 mod tests {
@@ -587,6 +585,13 @@ mod tests {
             for prev in BDD_FEATURE_SETS.iter().take(i) {
                 assert_ne!(name, prev, "duplicate in BDD_FEATURE_SETS");
             }
+        }
+    }
+
+    #[test]
+    fn bdd_feature_sets_preserve_matrix_order() {
+        for (name, matrix_entry) in BDD_FEATURE_SETS.iter().zip(BDD_FEATURE_MATRIX.iter()) {
+            assert_eq!(name, &matrix_entry.name);
         }
     }
 
