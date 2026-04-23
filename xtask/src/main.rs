@@ -570,6 +570,7 @@ fn bdd() -> Result<()> {
         "uselesskey-bdd",
         "--test",
         "bdd",
+        "--no-default-features",
         "--features",
         "uk-all",
         "--release",
