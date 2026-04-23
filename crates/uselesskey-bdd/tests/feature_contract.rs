@@ -22,6 +22,13 @@ fn bdd_feature_contract_and_grid_are_in_sync() {
             "bdd feature matrix references undeclared uk feature '{feature}'"
         );
     }
+
+    let expected: BTreeSet<String> = UK_FEATURE_SETS.iter().map(|f| (*f).to_string()).collect();
+    let unexpected: Vec<String> = declared.difference(&expected).cloned().collect();
+    assert!(
+        unexpected == ["uk-default"],
+        "bdd manifest declares uk features not tracked by UK_FEATURE_SETS: {unexpected:?}"
+    );
 }
 
 fn declared_bdd_features(manifest: &str) -> BTreeSet<String> {
