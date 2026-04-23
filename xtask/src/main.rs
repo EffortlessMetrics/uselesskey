@@ -2378,8 +2378,26 @@ fn count_bdd_scenarios() -> Result<BTreeMap<String, usize>> {
         let content = fs::read_to_string(&path)
             .with_context(|| format!("failed to read feature file {path:?}"))?;
         let mut count = 0usize;
+        let mut docstring_fence: Option<&str> = None;
         for line in content.lines() {
             let trimmed = line.trim_start();
+            if let Some(fence) = docstring_fence {
+                if trimmed.starts_with(fence) {
+                    docstring_fence = None;
+                }
+                continue;
+            }
+            if trimmed.starts_with("\"\"\"") {
+                docstring_fence = Some("\"\"\"");
+                continue;
+            }
+            if trimmed.starts_with("```") {
+                docstring_fence = Some("```");
+                continue;
+            }
+            if trimmed.starts_with('#') {
+                continue;
+            }
             if trimmed.starts_with("Scenario:") || trimmed.starts_with("Scenario Outline:") {
                 count += 1;
             }
@@ -3252,6 +3270,38 @@ end_of_record
         fs::write(
             &feature,
             "Feature: demo\n  Scenario: one\n  Scenario Outline: two\n",
+        )
+        .unwrap();
+
+        let _cwd = CwdGuard::new(root);
+        let counts = count_bdd_scenarios().expect("count scenarios");
+        assert_eq!(counts.get("sample.feature"), Some(&2));
+    }
+
+    #[test]
+    fn count_bdd_scenarios_ignores_comments_and_docstrings() {
+        let _cwd_lock = CWD_LOCK.lock().unwrap();
+        let dir = tempfile::tempdir().expect("tempdir");
+        let root = dir.path();
+        let features_dir = root.join("crates").join("uselesskey-bdd").join("features");
+        fs::create_dir_all(&features_dir).expect("create features dir");
+        let feature = features_dir.join("sample.feature");
+        fs::write(
+            &feature,
+            r#"Feature: demo
+  # Scenario: this should not count
+  Scenario: one
+    Given a docstring contains scenario text
+      """
+      Scenario: not a real scenario
+      Scenario Outline: also not real
+      """
+  Scenario Outline: two
+    Given a fenced block also contains scenario text
+      ```
+      Scenario: not counted
+      ```
+"#,
         )
         .unwrap();
 
