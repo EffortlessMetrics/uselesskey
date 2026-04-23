@@ -568,8 +568,6 @@ fn bdd() -> Result<()> {
         "test",
         "-p",
         "uselesskey-bdd",
-        "--test",
-        "bdd",
         "--features",
         "uk-all",
         "--release",
@@ -594,7 +592,7 @@ fn bdd_matrix() -> Result<()> {
         let step_name = format!("bdd-matrix:{name}");
         let result = runner.step(&step_name, None, || {
             let mut cmd = Command::new("cargo");
-            cmd.args(["test", "-p", "uselesskey-bdd", "--test", "bdd", "--release"]);
+            cmd.args(["test", "-p", "uselesskey-bdd", "--release"]);
             for arg in args {
                 cmd.arg(arg);
             }
