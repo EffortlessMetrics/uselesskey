@@ -20,7 +20,7 @@ tokio = { workspace = true, features = ["net", "sync"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 blake3.workspace = true
-axum = { version = "0.8.6", default-features = false, features = ["tokio", "http1", "json"] }
+axum = { version = "0.8.9", default-features = false, features = ["tokio", "http1", "json"] }
 http = "1.3.1"
 
 uselesskey-core = { path = "../uselesskey-core", version = "0.6.0" }
