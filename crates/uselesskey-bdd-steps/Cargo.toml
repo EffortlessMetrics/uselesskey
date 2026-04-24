@@ -30,7 +30,7 @@ uselesskey-jsonwebtoken = { path = "../uselesskey-jsonwebtoken", default-feature
 rsa = { workspace = true, features = ["sha2"] }
 jsonwebtoken.workspace = true
 ed25519-dalek.workspace = true
-p256 = { version = "0.13.2", features = ["ecdsa", "pkcs8", "pem"] }
+p256 = { version = "0.14.0-rc", features = ["ecdsa", "pkcs8", "pem"] }
 p384 = { version = "0.13.1", features = ["ecdsa", "pkcs8", "pem"] }
 x509-parser = "0.18.1"
 serde_json.workspace = true
