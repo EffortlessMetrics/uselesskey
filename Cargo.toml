@@ -148,7 +148,7 @@ clap = { version = "4.6.0", features = ["derive"] }
 
 # BDD
 cucumber = { version = "0.22.1", features = ["macros"] }
-tokio = { version = "1.50.0", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.52.1", features = ["macros", "rt-multi-thread"] }
 
 # RSA internal path uses rsa 0.10.x.
 # Deterministic V1 RSA fixture bytes are preserved via a local compatibility bridge
