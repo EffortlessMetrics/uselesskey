@@ -41,3 +41,22 @@ The workspace ships both compiled build-time examples:
 
 - `crates/materialize-shape-buildrs-example/` for the common shape-only pattern
 - `crates/materialize-buildrs-example/` for the specialized RSA pattern
+
+## Bundle
+
+Use the bundle workflow when a downstream test suite wants a deterministic
+directory of related fixture artifacts plus a manifest it can verify in CI.
+
+```bash
+cargo run -p uselesskey-cli -- bundle \
+  --seed bundle-seed \
+  --label issuer \
+  --format jwk \
+  --out target/uselesskey-bundle
+
+cargo run -p uselesskey-cli -- verify-bundle \
+  --path target/uselesskey-bundle
+```
+
+`verify-bundle` reloads `manifest.json`, regenerates the expected artifacts from
+the recorded seed/label/format, and fails if any file is missing or changed.

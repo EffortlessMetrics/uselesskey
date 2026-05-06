@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   downstream parser and validator failure-path tests.
 - Added a facade example covering scanner-safe negative JWK/JWKS and token
   shapes for downstream validator tests.
+- Added `uselesskey verify-bundle` to verify deterministic bundle outputs
+  against their recorded `manifest.json`.
 - Added a public-surface map that separates public support promises from
   published internal implementation shards.
 

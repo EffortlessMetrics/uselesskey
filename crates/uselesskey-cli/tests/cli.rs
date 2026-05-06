@@ -75,6 +75,50 @@ fn bundle_writes_manifest_schema() {
 }
 
 #[test]
+fn verify_bundle_accepts_generated_bundle_and_detects_mismatch() {
+    let dir = tempdir().expect("tempdir");
+    let bundle_dir = dir.path().join("bundle");
+
+    let mut bundle = Command::cargo_bin("uselesskey").expect("bin exists");
+    bundle.args([
+        "bundle",
+        "--seed",
+        "det-seed",
+        "--label",
+        "bundle-label",
+        "--format",
+        "jwk",
+        "--out",
+        bundle_dir.to_str().expect("utf-8"),
+    ]);
+    bundle.assert().success();
+
+    let mut verify = Command::cargo_bin("uselesskey").expect("bin exists");
+    verify.args([
+        "verify-bundle",
+        "--path",
+        bundle_dir.to_str().expect("utf-8"),
+    ]);
+    verify
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("\"status\": \"ok\""));
+
+    fs::write(bundle_dir.join("token.json"), "corrupt").expect("mutate token fixture");
+
+    let mut verify_bad = Command::cargo_bin("uselesskey").expect("bin exists");
+    verify_bad.args([
+        "verify-bundle",
+        "--path",
+        bundle_dir.to_str().expect("utf-8"),
+    ]);
+    verify_bad
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("content mismatch"));
+}
+
+#[test]
 fn inspect_reads_stdin_writes_json() {
     let mut cmd = Command::cargo_bin("uselesskey").expect("bin exists");
     cmd.args(["inspect", "--format", "pem"])

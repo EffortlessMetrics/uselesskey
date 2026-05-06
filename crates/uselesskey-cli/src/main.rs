@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, anyhow, bail};
 use clap::{Parser, Subcommand, ValueEnum};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use uselesskey_cli::{
     emit_include_bytes_module, load_materialize_manifest, materialize_manifest_to_dir,
@@ -30,6 +30,7 @@ struct Cli {
 enum Commands {
     Generate(GenerateArgs),
     Bundle(BundleArgs),
+    VerifyBundle(VerifyBundleArgs),
     Inspect(InspectArgs),
     Materialize(MaterializeArgs),
     Verify(VerifyArgs),
@@ -58,6 +59,12 @@ struct BundleArgs {
     format: Format,
     #[arg(long)]
     out: Option<PathBuf>,
+}
+
+#[derive(clap::Args, Debug)]
+struct VerifyBundleArgs {
+    #[arg(long = "bundle-dir", alias = "path")]
+    bundle_dir: PathBuf,
 }
 
 #[derive(clap::Args, Debug)]
@@ -126,6 +133,7 @@ fn main() -> Result<()> {
     match cli.command {
         Commands::Generate(args) => run_generate(args),
         Commands::Bundle(args) => run_bundle(args),
+        Commands::VerifyBundle(args) => run_verify_bundle(args),
         Commands::Inspect(args) => run_inspect(args),
         Commands::Materialize(args) => run_materialize(args),
         Commands::Verify(args) => run_verify(args),
@@ -148,16 +156,7 @@ fn run_bundle(args: BundleArgs) -> Result<()> {
 
     let fx = Factory::deterministic_from_str(&args.seed);
     let mut files = Vec::new();
-    for (name, kind) in [
-        ("rsa", Kind::Rsa),
-        ("ecdsa", Kind::Ecdsa),
-        ("ed25519", Kind::Ed25519),
-        ("hmac", Kind::Hmac),
-        ("token", Kind::Token),
-        ("x509", Kind::X509),
-        ("jwk", Kind::Jwk),
-        ("jwks", Kind::Jwks),
-    ] {
+    for (name, kind) in bundle_entries() {
         let bundle_format = preferred_bundle_format(kind, args.format);
         let artifact = generate_artifact(&fx, kind, &args.label, bundle_format)
             .with_context(|| format!("failed to generate {name}"))?;
@@ -179,6 +178,27 @@ fn run_bundle(args: BundleArgs) -> Result<()> {
 
     emit_artifact(
         &Artifact::Json(json!({"bundle_dir": out_dir, "manifest": manifest})),
+        None,
+    )
+}
+
+fn run_verify_bundle(args: VerifyBundleArgs) -> Result<()> {
+    let manifest_path = args.bundle_dir.join("manifest.json");
+    let manifest = load_bundle_manifest(&manifest_path)
+        .with_context(|| format!("invalid bundle manifest {}", manifest_path.display()))?;
+    let files = verify_bundle_manifest(&args.bundle_dir, &manifest)
+        .with_context(|| format!("failed to verify bundle {}", args.bundle_dir.display()))?;
+
+    emit_artifact(
+        &Artifact::Json(json!({
+            "verify_bundle": {
+                "status": "ok",
+                "bundle_dir": args.bundle_dir,
+                "manifest": manifest_path,
+                "count": files.len(),
+                "files": files,
+            }
+        })),
         None,
     )
 }
@@ -250,6 +270,77 @@ fn run_verify(args: VerifyArgs) -> Result<()> {
         })),
         None,
     )
+}
+
+fn load_bundle_manifest(path: &Path) -> Result<BundleManifest> {
+    let raw =
+        fs::read_to_string(path).with_context(|| format!("failed to read {}", path.display()))?;
+    let manifest: BundleManifest = serde_json::from_str(&raw)
+        .with_context(|| format!("failed to parse {}", path.display()))?;
+    if manifest.version != 1 {
+        bail!("unsupported bundle manifest version {}", manifest.version);
+    }
+    Ok(manifest)
+}
+
+fn verify_bundle_manifest(bundle_dir: &Path, manifest: &BundleManifest) -> Result<Vec<String>> {
+    let format = parse_manifest_format(&manifest.format)?;
+    let fx = Factory::deterministic_from_str(&manifest.seed);
+    let mut expected_files = Vec::new();
+
+    for (name, kind) in bundle_entries() {
+        let bundle_format = preferred_bundle_format(kind, format);
+        let artifact = generate_artifact(&fx, kind, &manifest.label, bundle_format)
+            .with_context(|| format!("failed to regenerate {name}"))?;
+        let ext = format_extension(bundle_format, &artifact);
+        let file_name = format!("{name}.{ext}");
+        let expected = artifact_bytes(&artifact)?;
+        let path = bundle_dir.join(&file_name);
+        let actual =
+            fs::read(&path).with_context(|| format!("failed to read {}", path.display()))?;
+        if actual != expected {
+            bail!(
+                "bundle verification failed: {} content mismatch",
+                path.display()
+            );
+        }
+        expected_files.push(file_name);
+    }
+
+    if manifest.files != expected_files {
+        bail!(
+            "bundle verification failed: manifest file list mismatch; expected {:?}, found {:?}",
+            expected_files,
+            manifest.files
+        );
+    }
+
+    Ok(expected_files)
+}
+
+fn parse_manifest_format(raw: &str) -> Result<Format> {
+    match raw {
+        "pem" => Ok(Format::Pem),
+        "der" => Ok(Format::Der),
+        "jwk" => Ok(Format::Jwk),
+        "jwks" => Ok(Format::Jwks),
+        "json-manifest" | "jsonmanifest" => Ok(Format::JsonManifest),
+        "bundle-dir" | "bundledir" => Ok(Format::BundleDir),
+        other => bail!("unsupported bundle manifest format `{other}`"),
+    }
+}
+
+fn bundle_entries() -> [(&'static str, Kind); 8] {
+    [
+        ("rsa", Kind::Rsa),
+        ("ecdsa", Kind::Ecdsa),
+        ("ed25519", Kind::Ed25519),
+        ("hmac", Kind::Hmac),
+        ("token", Kind::Token),
+        ("x509", Kind::X509),
+        ("jwk", Kind::Jwk),
+        ("jwks", Kind::Jwks),
+    ]
 }
 
 fn preferred_bundle_format(kind: Kind, requested: Format) -> Format {
@@ -456,7 +547,7 @@ fn detect_json_kind(text: &str) -> Option<&'static str> {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 struct BundleManifest {
     version: u32,
     seed: String,
