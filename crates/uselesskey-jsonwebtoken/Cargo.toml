@@ -51,3 +51,6 @@ proptest.workspace = true
 version = "10"
 features = ["use_pem", "rust_crypto"]
 
+
+[lints]
+workspace = true

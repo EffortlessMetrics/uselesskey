@@ -186,3 +186,33 @@ opt-level = 2
 
 [profile.test]
 opt-level = 2
+
+# =============================================================================
+# Lint policy — Stage A enforcement floor
+# =============================================================================
+#
+# See: docs/CLIPPY_POLICY.md, docs/NO_PANIC_POLICY.md, policy/clippy-lints.toml.
+#
+# `cargo xtask clippy` uses `-D warnings`, so any lint at `warn` is effectively
+# a hard error in CI. Stage A therefore enforces ONLY rules the workspace is
+# already clean against:
+#
+#   - panic-family debt is tracked by `cargo xtask check-no-panic-family`
+#     (advisory in Stage A, blocking in Stage B, promoted to clippy `deny`
+#     in Stage C). The semantic checker is the authoritative ledger.
+#   - the warn-stage posture for the rest of the strict block lives in
+#     `policy/clippy-lints.toml` and is staged in as the codebase converges.
+#
+# Member crates inherit via `[lints]\nworkspace = true`.
+
+[workspace.lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+unused_must_use = "deny"
+unexpected_cfgs = "warn"
+
+[workspace.lints.clippy]
+# Panic-family hard bans (zero-debt today; the semantic checker carries the
+# warn-stage families).
+todo = "deny"
+unimplemented = "deny"
+dbg_macro = "deny"

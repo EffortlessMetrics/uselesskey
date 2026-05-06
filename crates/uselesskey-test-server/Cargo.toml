@@ -31,3 +31,6 @@ uselesskey-rsa = { path = "../uselesskey-rsa", version = "0.6.0", features = ["j
 
 [dev-dependencies]
 reqwest = { version = "0.12.24", default-features = false, features = ["json", "rustls-tls"] }
+
+[lints]
+workspace = true

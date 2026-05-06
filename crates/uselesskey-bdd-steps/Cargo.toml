@@ -74,3 +74,6 @@ uk-rustls = ["dep:uselesskey-rustls", "dep:rustls-pki-types", "uk-bdd-keys"]
 uk-tonic = ["dep:uselesskey-tonic"]
 uk-ring = ["dep:uselesskey-ring", "dep:ring", "uk-bdd-keys"]
 uk-rustcrypto = ["dep:uselesskey-rustcrypto", "dep:hmac", "uk-bdd-keys"]
+
+[lints]
+workspace = true

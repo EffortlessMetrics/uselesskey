@@ -29,3 +29,6 @@ pgp-native = ["dep:uselesskey-pgp"]
 uselesskey-pgp = { path = "../uselesskey-pgp", version = "0.6.0" }
 uselesskey-core = { path = "../uselesskey-core", version = "0.6.0" }
 
+
+[lints]
+workspace = true

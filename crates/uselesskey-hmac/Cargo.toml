@@ -38,3 +38,6 @@ serde.workspace = true
 default = []
 jwk = ["dep:uselesskey-jwk", "dep:base64"]
 
+
+[lints]
+workspace = true

@@ -31,3 +31,6 @@ std = ["uselesskey-core-negative-der/std", "uselesskey-core-negative-pem/std"]
 [package.metadata.docs.rs]
 features = ["std"]
 
+
+[lints]
+workspace = true

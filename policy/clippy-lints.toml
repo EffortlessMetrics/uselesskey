@@ -1,0 +1,111 @@
+# Effortless Metrics — Clippy / Rust lint policy for uselesskey
+#
+# This file is the authoritative description of the lint posture. The actual
+# lints are configured in the workspace `[workspace.lints]` block in the root
+# `Cargo.toml`; this file documents intent, MSRV-staged plans, and the rules
+# that `cargo xtask check-lint-policy` enforces.
+#
+# Owner: repo-policy
+# See: docs/CLIPPY_POLICY.md, docs/POLICY_ALLOWLISTS.md
+schema_version = "1.0"
+msrv = "1.92"
+
+[policy]
+# uselesskey is a crypto/security workspace; no production runtime panics.
+panic_free_tests = true
+# No `clippy.toml` test carveouts (`allow-unwrap-in-tests` etc.).
+allow_test_carveouts = false
+# `#[expect(..., reason = "...")]` only — no bare `#[allow(...)]`.
+suppression_style = "expect-with-reason"
+# Do not use `clippy::all`/`pedantic`/`nursery` blanket categories.
+blanket_categories = false
+# Promote panic-family clippy lints to `deny` only when the no-panic
+# allowlist is the authoritative ledger. Currently warn-stage.
+panic_family_level = "warn"
+# `cargo xtask check-no-panic-family` is the authoritative ledger for
+# panic-family exceptions. Clippy is the immediate code-shape detector.
+no_panic_authoritative = "xtask"
+
+# Lints that are planned to flip on once MSRV reaches the indicated version.
+# `cargo xtask check-lint-policy` verifies these are NOT active too early.
+
+[[planned]]
+name = "clippy::same_length_and_capacity"
+level = "deny"
+activate_when_msrv = "1.94"
+reason = "Catch raw-parts reconstruction mistakes in low-level adapters."
+
+[[planned]]
+name = "clippy::manual_ilog2"
+level = "warn"
+activate_when_msrv = "1.94"
+reason = "Prefer standard integer log helper."
+
+[[planned]]
+name = "clippy::decimal_bitwise_operands"
+level = "warn"
+activate_when_msrv = "1.94"
+reason = "Make bit masks visually inspectable."
+
+[[planned]]
+name = "clippy::needless_type_cast"
+level = "warn"
+activate_when_msrv = "1.94"
+reason = "Avoid stale numeric type drift."
+
+[[planned]]
+name = "clippy::disallowed_fields"
+level = "deny"
+activate_when_msrv = "1.95"
+reason = "Ban direct field access across protected seams."
+
+[[planned]]
+name = "clippy::manual_checked_ops"
+level = "warn"
+activate_when_msrv = "1.95"
+reason = "Prefer checked arithmetic over manual divide-by-zero guards."
+
+[[planned]]
+name = "clippy::manual_take"
+level = "warn"
+activate_when_msrv = "1.95"
+reason = "Use standard ownership helper instead of local reimplementation."
+
+[[planned]]
+name = "clippy::manual_pop_if"
+level = "warn"
+activate_when_msrv = "1.95"
+reason = "Use collection APIs that encode predicate-and-pop intent."
+
+[[planned]]
+name = "clippy::duration_suboptimal_units"
+level = "warn"
+activate_when_msrv = "1.95"
+reason = "Make durations legible without mental unit conversion."
+
+[[planned]]
+name = "clippy::unnecessary_trailing_comma"
+level = "warn"
+activate_when_msrv = "1.95"
+reason = "Keep format macro calls clean."
+
+# Forbidden carveouts — `cargo xtask check-lint-policy` fails if any of these
+# appear in `clippy.toml` or in `[workspace.lints.*]`.
+[forbidden_carveouts]
+keys = [
+  "allow-unwrap-in-tests",
+  "allow-expect-in-tests",
+  "allow-panic-in-tests",
+  "allow-indexing-slicing-in-tests",
+  "allow-dbg-in-tests",
+]
+
+# Stage tracking for the panic-family rollout.
+#
+# Stage A (current): warn-level panic-family lints, advisory no-panic checker.
+# Stage B: burn down debt, every remaining exception receipted in
+#          policy/no-panic-allowlist.toml with owner/reason/expiry.
+# Stage C: flip panic-family lints to deny.
+[stage]
+current = "A"
+description = "Warn-stage panic-family lints; semantic no-panic checker advisory."

@@ -19,3 +19,6 @@ documentation = "https://docs.rs/uselesskey-feature-grid"
 [dev-dependencies]
 
 
+
+[lints]
+workspace = true
