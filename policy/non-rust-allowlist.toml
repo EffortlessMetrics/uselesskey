@@ -1,0 +1,3 @@
+schema_version = "1.0"
+
+# Non-Rust programming files must be reviewed policy exceptions with ownership and CI coverage.

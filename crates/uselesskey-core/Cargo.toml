@@ -43,3 +43,5 @@ serde = { workspace = true }
 [package.metadata.docs.rs]
 features = ["std"]
 
+[lints]
+workspace = true

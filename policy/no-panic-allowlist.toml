@@ -1,0 +1,4 @@
+schema_version = "0.3"
+
+# Semantic panic-family exceptions use identity = path + family + selector.
+# last_seen is advisory only and may drift during refactors.

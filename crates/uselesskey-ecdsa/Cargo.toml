@@ -44,3 +44,5 @@ rstest.workspace = true
 serde.workspace = true
 uselesskey-core-kid.workspace = true
 
+[lints]
+workspace = true

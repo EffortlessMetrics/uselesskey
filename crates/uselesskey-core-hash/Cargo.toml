@@ -29,3 +29,5 @@ std = ["blake3/std"]
 [package.metadata.docs.rs]
 features = ["std"]
 
+[lints]
+workspace = true
