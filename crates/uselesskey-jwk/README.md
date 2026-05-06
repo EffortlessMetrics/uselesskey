@@ -21,6 +21,9 @@ builder.push_private(PrivateJwk::Oct(OctJwk {
 
 let jwks = builder.build();
 assert_eq!(jwks.keys.len(), 1);
+
+let duplicate = jwks.negative_value(uselesskey_jwk::NegativeJwks::DuplicateKey);
+assert_eq!(duplicate["keys"].as_array().unwrap().len(), 2);
 ```
 
 ## License

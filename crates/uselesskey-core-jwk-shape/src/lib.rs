@@ -34,8 +34,11 @@
 //! ```
 
 use serde::Serialize;
-use serde_json::Value;
+use serde_json::{Value, json};
 use std::fmt;
+
+const SCANNER_SAFE_INVALID_MATERIAL: &str = "not_base64url!*";
+const SCANNER_SAFE_MISMATCHED_MATERIAL: &str = "AAAA";
 
 /// A JSON Web Key Set containing zero or more JWK entries.
 #[derive(Clone, Serialize)]
@@ -49,6 +52,37 @@ impl Jwks {
     pub fn to_value(&self) -> Value {
         serde_json::to_value(self).expect("serialize JWKS")
     }
+
+    /// Serialize a shape-realistic negative JWKS fixture.
+    pub fn negative_value(&self, variant: NegativeJwks) -> Value {
+        let keys: Vec<Value> = self.keys.iter().map(AnyJwk::to_value).collect();
+        let negative_keys = match variant {
+            NegativeJwks::EmptyKeys => Vec::new(),
+            NegativeJwks::MissingKid => {
+                vec![negative_jwk_value(
+                    first_or_scanner_safe_key(&keys, "missing-kid"),
+                    NegativeJwk::MissingKid,
+                )]
+            }
+            NegativeJwks::DuplicateKid => {
+                let mut first = first_or_scanner_safe_key(&keys, "duplicate-kid");
+                set_string_field(&mut first, "kid", "duplicate-kid");
+                let mut second = first.clone();
+                set_first_material_field(
+                    &mut second,
+                    &["n", "x", "k", "d", "e", "y", "p", "q", "dp", "dq", "qi"],
+                    SCANNER_SAFE_MISMATCHED_MATERIAL,
+                );
+                vec![first, second]
+            }
+            NegativeJwks::DuplicateKey => {
+                let first = first_or_scanner_safe_key(&keys, "duplicate-key");
+                vec![first.clone(), first]
+            }
+        };
+
+        json!({ "keys": negative_keys })
+    }
 }
 
 impl fmt::Display for Jwks {
@@ -56,6 +90,34 @@ impl fmt::Display for Jwks {
         let s = serde_json::to_string(self).expect("serialize JWKS");
         f.write_str(&s)
     }
+}
+
+/// Negative JWK shape variants for downstream parser and validator tests.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum NegativeJwk {
+    /// Remove the `kid` field from an otherwise realistic JWK.
+    MissingKid,
+    /// Replace one material field with scanner-safe invalid base64url text.
+    MalformedField,
+    /// Replace `kty` with a key type that does not match the material fields.
+    WrongKty,
+    /// Replace `alg` with an unsupported algorithm name.
+    UnsupportedAlg,
+    /// Change one material parameter while preserving the metadata shape.
+    MismatchedParameters,
+}
+
+/// Negative JWKS shape variants for downstream key-set tests.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum NegativeJwks {
+    /// Emit an empty `keys` array.
+    EmptyKeys,
+    /// Remove `kid` from a key inside the set.
+    MissingKid,
+    /// Emit two distinct keys with the same `kid`.
+    DuplicateKid,
+    /// Emit the same key twice.
+    DuplicateKey,
 }
 
 /// RSA public key in JWK format (contains `n` and `e`).
@@ -265,6 +327,11 @@ impl PublicJwk {
     pub fn to_value(&self) -> Value {
         serde_json::to_value(self).expect("serialize JWK")
     }
+
+    /// Serialize a shape-realistic negative JWK fixture.
+    pub fn negative_value(&self, variant: NegativeJwk) -> Value {
+        negative_jwk_value(self.to_value(), variant)
+    }
 }
 
 impl fmt::Display for PublicJwk {
@@ -302,6 +369,11 @@ impl PrivateJwk {
     /// Serialize to a [`serde_json::Value`].
     pub fn to_value(&self) -> Value {
         serde_json::to_value(self).expect("serialize JWK")
+    }
+
+    /// Serialize a shape-realistic negative JWK fixture.
+    pub fn negative_value(&self, variant: NegativeJwk) -> Value {
+        negative_jwk_value(self.to_value(), variant)
     }
 }
 
@@ -346,6 +418,11 @@ impl AnyJwk {
     pub fn to_value(&self) -> Value {
         serde_json::to_value(self).expect("serialize JWK")
     }
+
+    /// Serialize a shape-realistic negative JWK fixture.
+    pub fn negative_value(&self, variant: NegativeJwk) -> Value {
+        negative_jwk_value(self.to_value(), variant)
+    }
 }
 
 impl fmt::Display for AnyJwk {
@@ -364,6 +441,78 @@ impl From<PublicJwk> for AnyJwk {
 impl From<PrivateJwk> for AnyJwk {
     fn from(value: PrivateJwk) -> Self {
         AnyJwk::Private(value)
+    }
+}
+
+fn negative_jwk_value(mut value: Value, variant: NegativeJwk) -> Value {
+    match variant {
+        NegativeJwk::MissingKid => {
+            if let Some(obj) = value.as_object_mut() {
+                obj.remove("kid");
+            }
+        }
+        NegativeJwk::MalformedField => {
+            set_first_material_field(
+                &mut value,
+                &["n", "e", "x", "y", "k", "d", "p", "q", "dp", "dq", "qi"],
+                SCANNER_SAFE_INVALID_MATERIAL,
+            );
+        }
+        NegativeJwk::WrongKty => {
+            if let Some(obj) = value.as_object_mut() {
+                let wrong_kty = if obj.get("kty").and_then(Value::as_str) == Some("RSA") {
+                    "EC"
+                } else {
+                    "RSA"
+                };
+                obj.insert("kty".to_string(), Value::String(wrong_kty.to_string()));
+            }
+        }
+        NegativeJwk::UnsupportedAlg => {
+            set_string_field(&mut value, "alg", "UK-UNSUPPORTED");
+        }
+        NegativeJwk::MismatchedParameters => {
+            set_first_material_field(
+                &mut value,
+                &["d", "k", "n", "x", "y", "e", "p", "q", "dp", "dq", "qi"],
+                SCANNER_SAFE_MISMATCHED_MATERIAL,
+            );
+        }
+    }
+    value
+}
+
+fn first_or_scanner_safe_key(keys: &[Value], kid: &str) -> Value {
+    keys.first()
+        .cloned()
+        .unwrap_or_else(|| scanner_safe_rsa_public(kid))
+}
+
+fn scanner_safe_rsa_public(kid: &str) -> Value {
+    json!({
+        "kty": "RSA",
+        "use": "sig",
+        "alg": "RS256",
+        "kid": kid,
+        "n": "AAAA",
+        "e": "AQAB",
+    })
+}
+
+fn set_string_field(value: &mut Value, field: &str, replacement: &str) {
+    if let Some(obj) = value.as_object_mut() {
+        obj.insert(field.to_string(), Value::String(replacement.to_string()));
+    }
+}
+
+fn set_first_material_field(value: &mut Value, fields: &[&str], replacement: &str) {
+    if let Some(obj) = value.as_object_mut() {
+        let field = fields
+            .iter()
+            .find(|field| obj.contains_key(**field))
+            .copied()
+            .unwrap_or("x");
+        obj.insert(field.to_string(), Value::String(replacement.to_string()));
     }
 }
 
