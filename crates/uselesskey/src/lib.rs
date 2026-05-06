@@ -313,7 +313,9 @@ pub use uselesskey_ed25519::{
 pub use uselesskey_hmac::{DOMAIN_HMAC_SECRET, HmacFactoryExt, HmacSecret, HmacSpec};
 
 #[cfg(feature = "token")]
-pub use uselesskey_token::{DOMAIN_TOKEN_FIXTURE, TokenFactoryExt, TokenFixture, TokenSpec};
+pub use uselesskey_token::{
+    DOMAIN_TOKEN_FIXTURE, NegativeToken, TokenFactoryExt, TokenFixture, TokenSpec,
+};
 
 #[cfg(feature = "ssh")]
 pub use uselesskey_ssh::{
@@ -364,7 +366,7 @@ pub mod prelude {
     pub use crate::{HmacFactoryExt, HmacSecret, HmacSpec};
 
     #[cfg(feature = "token")]
-    pub use crate::{TokenFactoryExt, TokenFixture, TokenSpec};
+    pub use crate::{NegativeToken, TokenFactoryExt, TokenFixture, TokenSpec};
 
     #[cfg(feature = "ssh")]
     pub use crate::{

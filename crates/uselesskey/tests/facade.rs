@@ -63,12 +63,17 @@ fn hmac_reexport_works() {
 #[test]
 #[cfg(feature = "token")]
 fn token_reexport_works() {
+    use uselesskey::NegativeToken;
     use uselesskey::TokenFactoryExt;
     use uselesskey::TokenSpec;
 
     let fx = testutil::fx();
     let token = fx.token("issuer", TokenSpec::api_key());
     assert!(token.value().starts_with("uk_test_"));
+
+    let near_miss = token.negative_value(NegativeToken::NearMissApiKey);
+    assert!(near_miss.starts_with("uk_tset_"));
+    assert!(!near_miss.starts_with("uk_test_"));
 }
 
 #[test]

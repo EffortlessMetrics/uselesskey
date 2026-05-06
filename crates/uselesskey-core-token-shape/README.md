@@ -7,6 +7,7 @@ Low-level token shape primitives for `uselesskey`.
 - Generate deterministic and realistic API key shapes.
 - Generate opaque bearer token shapes.
 - Generate OAuth-like JWT-access-token shapes without signing.
+- Generate scanner-safe negative token shapes for downstream validator tests.
 
 This crate intentionally contains only token-shape construction and is used by
 `uselesskey-core-token` and higher-level token fixture crates.

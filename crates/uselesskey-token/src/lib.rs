@@ -12,17 +12,21 @@
 //! - API key style tokens (`uk_test_<base62>`)
 //! - Opaque bearer tokens (base64url)
 //! - OAuth-style JWT access tokens (`header.payload.signature`)
+//! - Scanner-safe negative token shapes for validator error paths
 //!
 //! # Examples
 //!
 //! ```
 //! use uselesskey_core::Factory;
-//! use uselesskey_token::{TokenFactoryExt, TokenSpec};
+//! use uselesskey_token::{NegativeToken, TokenFactoryExt, TokenSpec};
 //!
 //! let fx = Factory::random();
 //! let tok = fx.token("api-key", TokenSpec::api_key());
 //! let value = tok.value();
 //! assert!(!value.is_empty());
+//!
+//! let near_miss = tok.negative_value(NegativeToken::NearMissApiKey);
+//! assert!(!near_miss.starts_with("uk_test_"));
 //! ```
 //!
 //! # Deterministic Mode
@@ -49,4 +53,5 @@
 mod token;
 
 pub use token::{DOMAIN_TOKEN_FIXTURE, TokenFactoryExt, TokenFixture};
+pub use uselesskey_core_token::NegativeToken;
 pub use uselesskey_token_spec::TokenSpec;

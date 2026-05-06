@@ -18,12 +18,13 @@ for minimal compile time.
 - API-key style tokens: `uk_test_<base62>`
 - Opaque bearer tokens: base64url data
 - OAuth access tokens in JWT shape: `header.payload.signature`
+- Scanner-safe negative token shapes for parser and validator error paths
 
 ## Usage
 
 ```rust
 use uselesskey_core::Factory;
-use uselesskey_token::{TokenFactoryExt, TokenSpec};
+use uselesskey_token::{NegativeToken, TokenFactoryExt, TokenSpec};
 
 let fx = Factory::random();
 
@@ -34,6 +35,13 @@ let oauth = fx.token("issuer", TokenSpec::oauth_access_token());
 assert!(api_key.value().starts_with("uk_test_"));
 assert!(bearer.authorization_header().starts_with("Bearer "));
 assert_eq!(oauth.value().split('.').count(), 3);
+
+let expired = oauth.negative_value(NegativeToken::ExpiredClaims);
+let near_miss_api_key = api_key.negative_value(NegativeToken::NearMissApiKey);
+
+assert_eq!(expired.split('.').count(), 3);
+assert!(near_miss_api_key.starts_with("uk_tset_"));
+assert!(!near_miss_api_key.starts_with("uk_test_"));
 ```
 
 ### Deterministic Mode
