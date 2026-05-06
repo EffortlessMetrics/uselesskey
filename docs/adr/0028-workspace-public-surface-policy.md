@@ -15,13 +15,26 @@ Without explicit policy, publishable/crate-intent confusion creates two hazards:
 
 ## Decision
 
-The workspace public surface is deliberately split into two categories:
+The workspace crate policy is deliberately split into three categories:
 
-1. **Intentionally publishable**
-   - Crates explicitly listed in `PUBLISH_CRATES` in `xtask/src/main.rs`.
-   - Intended for external consumers and must remain semver-governed.
+1. **Public support promise**
+   - Crates users are meant to depend on directly.
+   - Includes the facade, fixture-family crates, adapter crates, operator
+     surface, and test-infrastructure surfaces with distinct downstream jobs.
    - Must have complete crates.io and docs.rs metadata and pass preflight checks.
-2. **Internal**
+   - Must remain semver-governed according to the support matrix.
+2. **Published internal**
+   - Crates explicitly listed in `PUBLISH_CRATES` in `xtask/src/main.rs`.
+   - Published for current release-graph or workspace-compatibility reasons, but
+     not recommended as direct user dependencies.
+   - Marked `experimental`, `repo-internal`, or equivalent in
+     `docs/metadata/workspace-docs.json`.
+   - Should point users to `uselesskey`, fixture-family crates, or adapter
+     crates.
+   - Must have complete crates.io and docs.rs metadata and pass preflight checks.
+   - Prefer collapsing into SRP modules under the owning public crate when a
+     release plan can do so without breaking current dependency constraints.
+3. **Workspace-only internal**
    - Crates not in `PUBLISH_CRATES`, including helper/test tooling crates, build infra, and local adapters.
    - Must set `publish = false` in `Cargo.toml`.
 
@@ -34,6 +47,7 @@ Review bar before adding a new publishable crate:
   - version policy in manifest
   - dependency snippets in release-facing docs
   - docs/metadata generated source
+  - `docs/architecture/public-surface.md`
   - smoke/integration coverage
 - run `cargo xtask publish-preflight` and `cargo xtask publish-check` in PR scope
 - add post-release verification for crates.io + docs.rs in the release checklist
@@ -44,6 +58,14 @@ For removing or deprecating a public crate:
 - remove it from `PUBLISH_CRATES`
 - keep internal references updated so dependency edges remain valid
 - record rationale in changelog and ADR history
+
+For demoting a published internal crate into a module:
+
+- choose one owner crate for the behavior
+- preserve deterministic fixture output compatibility
+- keep user-facing re-exports only through supported public surfaces
+- update the support matrix metadata, publish tooling, and public-surface map in
+  the same PR
 
 Release risk control:
 

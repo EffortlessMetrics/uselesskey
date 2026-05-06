@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added scanner-safe JWK/JWKS and token-shape negative fixture helpers for
   downstream parser and validator failure-path tests.
+- Added a public-surface map that separates public support promises from
+  published internal implementation shards.
 
 ## [0.6.0] - 2026-04-08
 

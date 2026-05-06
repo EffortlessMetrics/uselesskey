@@ -37,6 +37,7 @@ Repository operating rules for agents and maintainers.
 Understanding-oriented material on design and direction.
 
 - [architecture.md](explanation/architecture.md) — Workspace structure and crate map
+- [public-surface.md](architecture/public-surface.md) — Supported public crates versus published internal implementation shards
 - [roadmap.md](explanation/roadmap.md) — Future plans and priorities (Now/Next/Later framework)
 - [requirements.md](explanation/requirements.md) — Problem statement and design requirements
 

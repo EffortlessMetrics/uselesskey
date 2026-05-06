@@ -6,6 +6,10 @@ The workspace contains **48 crates** organized in four layers:
 facade → algorithm crates → core microcrates → adapter crates, plus
 testing/tooling crates that live outside the publish graph.
 
+For the support boundary between public promises, published internal shards, and
+workspace-only crates, see
+[`docs/architecture/public-surface.md`](../architecture/public-surface.md).
+
 ### Facade
 
 - `crates/uselesskey` — public facade re-exporting the stable API
