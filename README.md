@@ -472,6 +472,7 @@ The [`crates/uselesskey/examples/`](crates/uselesskey/examples/) directory conta
 | [jwt_rs256_jwks](crates/uselesskey/examples/jwt_rs256_jwks.rs) | `rsa,jwk` | RSA keypairs with JWK/JWKS extraction for JWT verification flows |
 | [jwt_signing](crates/uselesskey/examples/jwt_signing.rs) | `rsa,jwk` | JWT signing with deterministic RSA, ECDSA, and HMAC keys (ECDSA/HMAC optional) |
 | [negative_fixtures](crates/uselesskey/examples/negative_fixtures.rs) | `x509` | Intentionally invalid certificates and keys for error-path testing |
+| [negative_payload_shapes](crates/uselesskey/examples/negative_payload_shapes.rs) | `rsa,jwk,token` | Scanner-safe negative JWK/JWKS and token shapes for validator tests |
 | [tempfile_paths](crates/uselesskey/examples/tempfile_paths.rs) | `rsa,ed25519` | Write key fixtures to temporary files for path-based APIs |
 | [tempfiles](crates/uselesskey/examples/tempfiles.rs) | `x509` | Write X.509 cert, key, and identity PEM to temp files |
 | [tls_server](crates/uselesskey/examples/tls_server.rs) | `x509` | Certificate chain generation for TLS server testing |

@@ -25,7 +25,7 @@ This plan decomposes `roadmap.md` into milestone-aligned execution items.
 
 - [x] JWK/JWKS negative wave 1
 - [x] token-shape negative wave 1
-- [ ] docs/examples coverage for negative fixtures
+- [x] docs/examples coverage for negative fixtures
 
 ## v0.6.1 benchmarks and governance
 
