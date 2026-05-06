@@ -17,6 +17,7 @@ use uselesskey_feature_grid::{BDD_FEATURE_MATRIX, CORE_FEATURE_MATRIX};
 mod audit_surface;
 mod docs_sync;
 mod economics;
+mod lint_policy;
 mod plan;
 mod pr_bundles;
 mod receipt;
@@ -90,6 +91,8 @@ enum Cmd {
     PublishCheck,
     /// Run PR-scoped tests based on git diff.
     Pr,
+    /// Verify Clippy policy manifests, ledgers, and staged ratchets.
+    CheckLintPolicy,
     /// Guard against multiple semver-major versions of pinned deps (e.g. rand_core).
     DepGuard,
     /// Run cucumber BDD features.
@@ -263,6 +266,7 @@ fn main() -> Result<()> {
         Cmd::ExamplesSmoke { run } => docs_sync::examples_smoke_cmd(run),
         Cmd::PublishCheck => publish_check(),
         Cmd::Pr => pr(),
+        Cmd::CheckLintPolicy => lint_policy::check_lint_policy_cmd(),
         Cmd::DepGuard => dep_guard(),
         Cmd::Bdd => bdd(),
         Cmd::BddMatrix => bdd_matrix(),

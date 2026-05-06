@@ -1,0 +1,4 @@
+schema_version = "0.3"
+
+# Semantic panic-family exceptions belong here as temporary reviewed debt.
+# Identity is path + family + selector; last_seen line/column is advisory.

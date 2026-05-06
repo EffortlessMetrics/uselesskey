@@ -1,0 +1,4 @@
+schema = 1
+
+# Debt entries go here while member-level lint inheritance is being rolled out.
+# Every entry must carry `lint`, `path`, `owner`, `reason`, and `expires`.

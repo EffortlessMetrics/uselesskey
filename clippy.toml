@@ -1,2 +1,7 @@
-# Prefer clarity over cleverness.
+# Effortless Metrics Clippy policy configuration.
+#
+# Keep this file for Clippy configuration that cannot be expressed as Cargo
+# lint levels, especially repo-specific disallowed methods/types/macros. Do not
+# add test carveouts such as `allow-unwrap-in-tests`; uselesskey is moving toward
+# a workspace-wide panic-free posture for production and tests.
 msrv = "1.92"

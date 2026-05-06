@@ -1,0 +1,5 @@
+schema_version = "1.0"
+
+# Non-Rust programming surfaces belong here when Rust/xtask is not the right
+# implementation language. Entries require path or glob, kind, owner, reason,
+# surface, classification, covered_by, and optional expires.
