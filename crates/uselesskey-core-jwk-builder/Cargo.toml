@@ -14,6 +14,9 @@ homepage.workspace = true
 documentation = "https://docs.rs/uselesskey-core-jwk-builder"
 authors.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 uselesskey-core-jwk-shape = { path = "../uselesskey-core-jwk-shape", version = "0.6.0" }
 uselesskey-core-jwks-order = { path = "../uselesskey-core-jwks-order", version = "0.6.0" }

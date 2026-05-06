@@ -14,6 +14,9 @@ homepage.workspace = true
 documentation = "https://docs.rs/uselesskey-token"
 authors.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 uselesskey-core = { path = "../uselesskey-core", version = "0.6.0" }
 uselesskey-core-token.workspace = true

@@ -60,6 +60,7 @@ cargo xtask fuzz            # Fuzz testing (requires cargo-fuzz)
 cargo xtask mutants         # Mutation testing (requires cargo-mutants)
 cargo xtask deny            # License/advisory checks (requires cargo-deny)
 cargo xtask feature-matrix  # Run feature matrix checks (default, no-default, each feature, all-features)
+cargo xtask check-lint-policy # Verify Clippy lint policy, debt, and suppression governance
 cargo xtask publish-check   # Run publish dry-runs in dependency order
 cargo xtask publish-preflight # Validate metadata + cargo package --no-verify
 cargo xtask no-blob         # Enforce no secret-shaped blobs in test/fixture paths
@@ -158,7 +159,7 @@ Adapter crates (e.g. `uselesskey-jsonwebtoken`) are separate crates, not feature
 ## Configuration Files
 
 - `rustfmt.toml` - Formatting: Unix newlines, crate-level imports
-- `clippy.toml` - MSRV 1.92
+- `clippy.toml` - MSRV 1.93
 - `deny.toml` - Allowed licenses: MIT, Apache-2.0, BSD-3-Clause, ISC, CC0-1.0
 - `mutants.toml` - Mutation testing exclusions
 

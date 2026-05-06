@@ -17,6 +17,7 @@ use uselesskey_feature_grid::{BDD_FEATURE_MATRIX, CORE_FEATURE_MATRIX};
 mod audit_surface;
 mod docs_sync;
 mod economics;
+mod lint_policy;
 mod plan;
 mod pr_bundles;
 mod receipt;
@@ -68,6 +69,8 @@ enum Cmd {
     Ci,
     /// Run the feature matrix checks.
     FeatureMatrix,
+    /// Verify Clippy lint policy, debt, and suppression governance.
+    CheckLintPolicy,
     /// Enforce no secret-shaped blobs in test/fixture paths.
     NoBlob {
         /// Subcommand: scan (default) or migrate (show replacement recipe).
@@ -255,6 +258,7 @@ fn main() -> Result<()> {
         Cmd::Typos { fix } => typos(fix),
         Cmd::Ci => ci(),
         Cmd::FeatureMatrix => feature_matrix_cmd(),
+        Cmd::CheckLintPolicy => lint_policy::check_lint_policy_cmd(),
         Cmd::NoBlob { subcmd } => match subcmd.as_ref().unwrap_or(&NoBlobCmd::Scan) {
             NoBlobCmd::Scan => no_blob_gate(),
             NoBlobCmd::Migrate => no_blob_migrate(),
@@ -640,6 +644,7 @@ fn ci() -> Result<()> {
 
 fn run_ci_plan(runner: &mut receipt::Runner) -> Result<()> {
     runner.step("fmt", None, || fmt(false))?;
+    runner.step("lint-policy", None, lint_policy::check_lint_policy_cmd)?;
     runner.step("clippy", None, clippy)?;
     runner.step("typos", None, || typos(false))?;
     runner.step("deny", None, deny)?;

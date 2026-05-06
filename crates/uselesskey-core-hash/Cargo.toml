@@ -14,6 +14,9 @@ homepage.workspace = true
 documentation = "https://docs.rs/uselesskey-core-hash"
 authors.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 blake3.workspace = true
 

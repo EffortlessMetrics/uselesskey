@@ -1,0 +1,248 @@
+schema = 1
+
+# Temporary repo-specific lint exceptions live here as expiring reviewed debt.
+# Example:
+# [[debt]]
+# lint = "clippy::indexing_slicing"
+# path = "crates/example/src/parser/table.rs"
+# owner = "parser"
+# reason = "Generated table access; replace with checked table abstraction."
+# expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "crates/uselesskey-aws-lc-rs/src/lib.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "crates/uselesskey-aws-lc-rs/tests/testutil.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "crates/uselesskey-bdd-steps/src/lib.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "crates/uselesskey-core-hmac-spec/tests/integration.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "crates/uselesskey-core-hmac-spec/tests/prop_hmac_spec.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "crates/uselesskey-core-token-shape/tests/snapshots_token_shape.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "crates/uselesskey-ecdsa/src/keypair.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "crates/uselesskey-ecdsa/tests/coverage_gaps.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "crates/uselesskey-ecdsa/tests/ecdsa_prop.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "crates/uselesskey-ecdsa/tests/mutation_hardening.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "crates/uselesskey-ecdsa/tests/negative_validation.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "crates/uselesskey-ed25519/tests/ed25519_prop.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "crates/uselesskey-ed25519/tests/mutation_hardening.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "crates/uselesskey-hmac/src/secret.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "crates/uselesskey-hmac/tests/hmac_prop.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "crates/uselesskey-hmac/tests/mutation_hardening.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "crates/uselesskey-jsonwebtoken/tests/testutil.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "crates/uselesskey-pgp/tests/pgp_prop.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "crates/uselesskey-ring/tests/testutil.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "crates/uselesskey-rsa/tests/mutation_hardening.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "crates/uselesskey-rustcrypto/tests/testutil.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "crates/uselesskey-rustls/tests/testutil.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "crates/uselesskey-token-spec/tests/integration.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "crates/uselesskey-token/src/token.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "crates/uselesskey-token/tests/comprehensive_token_prop.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "crates/uselesskey-token/tests/token_comprehensive.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "crates/uselesskey-token/tests/token_prop.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "crates/uselesskey-tonic/tests/testutil.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "crates/uselesskey-x509/src/cert.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "tests/testutil.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "xtask/src/lint_policy.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "xtask/src/main.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "xtask/src/pr_bundles.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"
+
+[[debt]]
+lint = "rust::allow"
+path = "xtask/src/receipt.rs"
+owner = "quality"
+reason = "Existing allow attribute tracked for migration to #[expect(..., reason = ...)] in the strict lint rollout."
+expires = "2026-07-01"

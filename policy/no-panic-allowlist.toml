@@ -1,0 +1,5 @@
+schema_version = "0.3"
+
+# No active panic-family exceptions. New entries must identify the call site by
+# path + family + selector and include owner, classification, explanation, and
+# optional expiry. last_seen is advisory only.

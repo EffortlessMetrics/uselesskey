@@ -21,6 +21,9 @@ maintenance = { status = "actively-developed" }
 [package.metadata.docs.rs]
 features = ["full"]
 
+[lints]
+workspace = true
+
 [dependencies]
 uselesskey-core = { path = "../uselesskey-core", version = "0.6.0" }
 

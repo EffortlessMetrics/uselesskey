@@ -25,6 +25,9 @@ std = [
     "uselesskey-core-negative/std",
 ]
 
+[lints]
+workspace = true
+
 [dependencies]
 thiserror = { version = "2.0.18", default-features = false }
 uselesskey-core-factory = { path = "../uselesskey-core-factory", version = "0.6.0", default-features = false }

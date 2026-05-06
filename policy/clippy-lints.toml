@@ -1,0 +1,737 @@
+schema = 1
+msrv = "1.93"
+
+[policy]
+panic_free_tests = true
+allow_test_carveouts = false
+suppression_style = "expect-with-reason"
+blanket_categories = false
+
+# Panic-free production and tests.
+[[lint]]
+name = "clippy::dbg_macro"
+level = "deny"
+status = "active"
+class = "panic"
+reason = "Debug macros leak diagnostics and secrets into committed test code."
+
+[[lint]]
+name = "clippy::todo"
+level = "deny"
+status = "active"
+class = "panic"
+reason = "No TODO panic placeholders in production or tests."
+
+[[lint]]
+name = "clippy::unimplemented"
+level = "deny"
+status = "active"
+class = "panic"
+reason = "No unimplemented panic placeholders in production or tests."
+
+[[lint]]
+name = "clippy::panic"
+level = "deny"
+status = "active"
+class = "panic"
+reason = "Workspace code and tests should report errors without direct panic calls."
+
+[[lint]]
+name = "clippy::unreachable"
+level = "deny"
+status = "active"
+class = "panic"
+reason = "Unreachable markers hide malformed states that should be represented explicitly."
+
+[[lint]]
+name = "clippy::unwrap_used"
+level = "deny"
+status = "active"
+class = "panic"
+reason = "No unchecked Result/Option collapse in production or tests."
+
+[[lint]]
+name = "clippy::expect_used"
+level = "deny"
+status = "active"
+class = "panic"
+reason = "Use typed errors or test helpers instead of panic-driven setup."
+
+[[lint]]
+name = "clippy::get_unwrap"
+level = "deny"
+status = "active"
+class = "panic"
+reason = "Checked access should preserve boundary context."
+
+[[lint]]
+name = "clippy::unwrap_in_result"
+level = "deny"
+status = "active"
+class = "panic"
+reason = "Result-returning functions should propagate errors instead of panic."
+
+[[lint]]
+name = "clippy::panic_in_result_fn"
+level = "deny"
+status = "active"
+class = "panic"
+reason = "Result-returning APIs should use their error channel."
+
+# AST / string / indexing safety.
+[[lint]]
+name = "clippy::string_slice"
+level = "deny"
+status = "active"
+class = "utf8-boundary"
+reason = "String byte slicing is a UTF-8 boundary footgun."
+
+[[lint]]
+name = "clippy::indexing_slicing"
+level = "deny"
+status = "active"
+class = "boundary"
+reason = "Unchecked indexing can panic and hides fixture-boundary assumptions."
+
+[[lint]]
+name = "clippy::out_of_bounds_indexing"
+level = "deny"
+status = "active"
+class = "boundary"
+reason = "Out-of-bounds indexing is always a panic bug."
+
+[[lint]]
+name = "clippy::char_indices_as_byte_indices"
+level = "deny"
+status = "active"
+class = "utf8-boundary"
+reason = "Character indices must not be reused as byte offsets."
+
+[[lint]]
+name = "clippy::sliced_string_as_bytes"
+level = "deny"
+status = "active"
+class = "utf8-boundary"
+reason = "Byte conversion after string slicing obscures UTF-8 boundary handling."
+
+[[lint]]
+name = "clippy::index_refutable_slice"
+level = "deny"
+status = "active"
+class = "boundary"
+reason = "Refutable slice access should be encoded in control flow."
+
+# Silent failure.
+[[lint]]
+name = "clippy::let_underscore_future"
+level = "deny"
+status = "active"
+class = "silent-failure"
+reason = "Futures must be awaited, spawned, or explicitly dropped with context."
+
+[[lint]]
+name = "clippy::let_underscore_must_use"
+level = "deny"
+status = "active"
+class = "silent-failure"
+reason = "Must-use results should not be silently discarded."
+
+[[lint]]
+name = "clippy::let_underscore_lock"
+level = "deny"
+status = "active"
+class = "silent-failure"
+reason = "Lock guards should have explicit lifetimes."
+
+[[lint]]
+name = "clippy::unused_result_ok"
+level = "deny"
+status = "active"
+class = "silent-failure"
+reason = "Calling ok() only to discard errors erases failure evidence."
+
+[[lint]]
+name = "clippy::map_err_ignore"
+level = "deny"
+status = "active"
+class = "silent-failure"
+reason = "Error mapping must preserve or explain failure context."
+
+[[lint]]
+name = "clippy::assertions_on_result_states"
+level = "deny"
+status = "active"
+class = "silent-failure"
+reason = "Tests should inspect errors instead of asserting only ok/err state."
+
+[[lint]]
+name = "clippy::lines_filter_map_ok"
+level = "deny"
+status = "active"
+class = "silent-failure"
+reason = "I/O line errors must not become an infinite iterator or disappear."
+
+# Concurrency, unsafe/memory, numeric, file/process, API, taste, and suppression governance.
+[[lint]]
+name = "clippy::unchecked_time_subtraction"
+level = "deny"
+status = "active"
+class = "time"
+reason = "Time arithmetic must not hide underflow."
+
+[[lint]]
+name = "clippy::await_holding_lock"
+level = "deny"
+status = "active"
+class = "concurrency"
+reason = "Do not hold blocking locks across await points."
+
+[[lint]]
+name = "clippy::await_holding_refcell_ref"
+level = "deny"
+status = "active"
+class = "concurrency"
+reason = "Do not hold RefCell borrows across await points."
+
+[[lint]]
+name = "clippy::await_holding_invalid_type"
+level = "deny"
+status = "active"
+class = "concurrency"
+reason = "Configured invalid await-held types should be architectural errors."
+
+[[lint]]
+name = "clippy::future_not_send"
+level = "warn"
+status = "active"
+class = "concurrency"
+reason = "Warn on futures that may not cross executor boundaries cleanly."
+
+[[lint]]
+name = "clippy::large_futures"
+level = "warn"
+status = "active"
+class = "concurrency"
+reason = "Large futures should be reviewed for allocation and state-machine costs."
+
+[[lint]]
+name = "clippy::arc_with_non_send_sync"
+level = "deny"
+status = "active"
+class = "concurrency"
+reason = "Arc around non-Send/Sync values usually signals a broken sharing model."
+
+[[lint]]
+name = "clippy::rc_mutex"
+level = "deny"
+status = "active"
+class = "concurrency"
+reason = "Mutex inside Rc is a misleading synchronization primitive."
+
+[[lint]]
+name = "clippy::mut_mutex_lock"
+level = "deny"
+status = "active"
+class = "concurrency"
+reason = "Mutable access should not lock a mutex unnecessarily."
+
+[[lint]]
+name = "clippy::readonly_write_lock"
+level = "deny"
+status = "active"
+class = "concurrency"
+reason = "Use read locks for read-only access."
+
+[[lint]]
+name = "clippy::mem_forget"
+level = "deny"
+status = "active"
+class = "unsafe-memory"
+reason = "Leaking destructors is not acceptable in fixture generation code."
+
+[[lint]]
+name = "clippy::forget_non_drop"
+level = "deny"
+status = "active"
+class = "unsafe-memory"
+reason = "Forgetting non-Drop values is suspicious and should be removed."
+
+[[lint]]
+name = "clippy::drop_non_drop"
+level = "deny"
+status = "active"
+class = "unsafe-memory"
+reason = "Explicit drop on non-Drop values hides lifetime intent."
+
+[[lint]]
+name = "clippy::undocumented_unsafe_blocks"
+level = "deny"
+status = "active"
+class = "unsafe-memory"
+reason = "Unsafe is forbidden; any accidental unsafe must be documented before removal."
+
+[[lint]]
+name = "clippy::multiple_unsafe_ops_per_block"
+level = "deny"
+status = "active"
+class = "unsafe-memory"
+reason = "If unsafe ever appears, operations must be independently reviewable."
+
+[[lint]]
+name = "clippy::repr_packed_without_abi"
+level = "deny"
+status = "active"
+class = "unsafe-memory"
+reason = "Packed layout must be ABI-explicit."
+
+[[lint]]
+name = "clippy::float_cmp"
+level = "deny"
+status = "active"
+class = "numeric"
+reason = "Float equality needs explicit tolerance."
+
+[[lint]]
+name = "clippy::float_cmp_const"
+level = "deny"
+status = "active"
+class = "numeric"
+reason = "Float comparisons against constants need explicit tolerance."
+
+[[lint]]
+name = "clippy::float_equality_without_abs"
+level = "deny"
+status = "active"
+class = "numeric"
+reason = "Float equality checks should use absolute tolerance."
+
+[[lint]]
+name = "clippy::lossy_float_literal"
+level = "deny"
+status = "active"
+class = "numeric"
+reason = "Lossy literals obscure numeric intent."
+
+[[lint]]
+name = "clippy::cast_sign_loss"
+level = "deny"
+status = "active"
+class = "numeric"
+reason = "Sign-losing casts need explicit checked conversion."
+
+[[lint]]
+name = "clippy::cast_possible_wrap"
+level = "warn"
+status = "active"
+class = "numeric"
+reason = "Potential wrapping casts are reviewed before promotion."
+
+[[lint]]
+name = "clippy::cast_possible_truncation"
+level = "warn"
+status = "active"
+class = "numeric"
+reason = "Potential truncating casts are reviewed before promotion."
+
+[[lint]]
+name = "clippy::cast_precision_loss"
+level = "warn"
+status = "active"
+class = "numeric"
+reason = "Precision loss should be explicit in crypto-shaped fixtures."
+
+[[lint]]
+name = "clippy::invalid_upcast_comparisons"
+level = "deny"
+status = "active"
+class = "numeric"
+reason = "Upcast comparisons that cannot hold are logic bugs."
+
+[[lint]]
+name = "clippy::cast_abs_to_unsigned"
+level = "deny"
+status = "active"
+class = "numeric"
+reason = "Use unsigned_abs or checked conversion."
+
+[[lint]]
+name = "clippy::cast_enum_truncation"
+level = "deny"
+status = "active"
+class = "numeric"
+reason = "Enum discriminant truncation is never implicit."
+
+[[lint]]
+name = "clippy::cast_nan_to_int"
+level = "deny"
+status = "active"
+class = "numeric"
+reason = "NaN-to-int casts must be handled explicitly."
+
+[[lint]]
+name = "clippy::manual_midpoint"
+level = "warn"
+status = "active"
+class = "numeric"
+reason = "Use standard midpoint helpers for overflow-aware intent."
+
+[[lint]]
+name = "clippy::manual_is_multiple_of"
+level = "warn"
+status = "active"
+class = "numeric"
+reason = "Use standard divisibility helpers for clarity."
+
+[[lint]]
+name = "clippy::manual_div_ceil"
+level = "warn"
+status = "active"
+class = "numeric"
+reason = "Use standard div_ceil helpers for clarity."
+
+[[lint]]
+name = "clippy::arithmetic_side_effects"
+level = "warn"
+status = "active"
+class = "numeric"
+reason = "Arithmetic overflow posture should be reviewed before deny-level rollout."
+
+[[lint]]
+name = "clippy::suspicious_open_options"
+level = "deny"
+status = "active"
+class = "file-process"
+reason = "OpenOptions must state truncation/append intent."
+
+[[lint]]
+name = "clippy::nonsensical_open_options"
+level = "deny"
+status = "active"
+class = "file-process"
+reason = "Contradictory OpenOptions are bugs."
+
+[[lint]]
+name = "clippy::ineffective_open_options"
+level = "deny"
+status = "active"
+class = "file-process"
+reason = "Redundant OpenOptions hide write behavior."
+
+[[lint]]
+name = "clippy::path_buf_push_overwrite"
+level = "deny"
+status = "active"
+class = "file-process"
+reason = "Absolute pushes must not silently replace paths."
+
+[[lint]]
+name = "clippy::join_absolute_paths"
+level = "deny"
+status = "active"
+class = "file-process"
+reason = "Absolute joins must not silently replace path prefixes."
+
+[[lint]]
+name = "clippy::read_line_without_trim"
+level = "warn"
+status = "active"
+class = "file-process"
+reason = "Line input usually needs explicit newline handling."
+
+[[lint]]
+name = "clippy::exit"
+level = "deny"
+status = "active"
+class = "file-process"
+reason = "Process exit is only acceptable behind reviewed CLI boundaries."
+
+[[lint]]
+name = "clippy::iter_not_returning_iterator"
+level = "deny"
+status = "active"
+class = "api"
+reason = "Iterator-named APIs should return iterators."
+
+[[lint]]
+name = "clippy::expl_impl_clone_on_copy"
+level = "deny"
+status = "active"
+class = "api"
+reason = "Copy types should not carry hand-written Clone impls."
+
+[[lint]]
+name = "clippy::infallible_try_from"
+level = "deny"
+status = "active"
+class = "api"
+reason = "Use From for infallible conversions."
+
+[[lint]]
+name = "clippy::fallible_impl_from"
+level = "deny"
+status = "active"
+class = "api"
+reason = "Fallible conversions must use TryFrom."
+
+[[lint]]
+name = "clippy::error_impl_error"
+level = "deny"
+status = "active"
+class = "api"
+reason = "Error types should implement std::error::Error correctly."
+
+[[lint]]
+name = "clippy::result_unit_err"
+level = "warn"
+status = "active"
+class = "api"
+reason = "Unit errors lose failure context."
+
+[[lint]]
+name = "clippy::result_large_err"
+level = "warn"
+status = "active"
+class = "api"
+reason = "Large error variants should be reviewed for API and performance."
+
+[[lint]]
+name = "clippy::format_in_format_args"
+level = "deny"
+status = "active"
+class = "reviewability"
+reason = "Nested format calls add allocation and formatting noise."
+
+[[lint]]
+name = "clippy::to_string_in_format_args"
+level = "deny"
+status = "active"
+class = "reviewability"
+reason = "Formatting should avoid unnecessary to_string allocations."
+
+[[lint]]
+name = "clippy::unused_format_specs"
+level = "deny"
+status = "active"
+class = "reviewability"
+reason = "Unused format specs are misleading."
+
+[[lint]]
+name = "clippy::unnecessary_debug_formatting"
+level = "warn"
+status = "active"
+class = "reviewability"
+reason = "Debug formatting in user-facing text should be reviewed."
+
+[[lint]]
+name = "clippy::uninlined_format_args"
+level = "warn"
+status = "active"
+class = "reviewability"
+reason = "Inline format args reduce duplication and review noise."
+
+[[lint]]
+name = "clippy::manual_let_else"
+level = "warn"
+status = "active"
+class = "reviewability"
+reason = "let-else makes early-exit parsing clearer."
+
+[[lint]]
+name = "clippy::manual_ok_or"
+level = "warn"
+status = "active"
+class = "reviewability"
+reason = "Use standard Option-to-Result adapters."
+
+[[lint]]
+name = "clippy::manual_strip"
+level = "warn"
+status = "active"
+class = "reviewability"
+reason = "Use strip_prefix/strip_suffix for checked string boundaries."
+
+[[lint]]
+name = "clippy::manual_split_once"
+level = "warn"
+status = "active"
+class = "reviewability"
+reason = "Use split_once when only one separator is needed."
+
+[[lint]]
+name = "clippy::manual_is_variant_and"
+level = "warn"
+status = "active"
+class = "reviewability"
+reason = "Use is_some_and/is_ok_and style helpers where clearer."
+
+[[lint]]
+name = "clippy::filter_map_next"
+level = "warn"
+status = "active"
+class = "reviewability"
+reason = "Use find_map for search intent."
+
+[[lint]]
+name = "clippy::flat_map_option"
+level = "warn"
+status = "active"
+class = "reviewability"
+reason = "Option flattening should be explicit."
+
+[[lint]]
+name = "clippy::match_result_ok"
+level = "deny"
+status = "active"
+class = "reviewability"
+reason = "Matching on ok() discards error details."
+
+[[lint]]
+name = "clippy::cloned_instead_of_copied"
+level = "warn"
+status = "active"
+class = "reviewability"
+reason = "Prefer copied for Copy values."
+
+[[lint]]
+name = "clippy::iter_cloned_collect"
+level = "warn"
+status = "active"
+class = "reviewability"
+reason = "Use to_vec or other clearer collection helpers."
+
+[[lint]]
+name = "clippy::iter_overeager_cloned"
+level = "warn"
+status = "active"
+class = "reviewability"
+reason = "Clone after filtering when possible."
+
+[[lint]]
+name = "clippy::needless_collect"
+level = "warn"
+status = "active"
+class = "reviewability"
+reason = "Avoid temporary allocations unless they clarify ownership."
+
+[[lint]]
+name = "clippy::redundant_closure"
+level = "warn"
+status = "active"
+class = "reviewability"
+reason = "Remove closures that add no semantic value."
+
+[[lint]]
+name = "clippy::redundant_closure_for_method_calls"
+level = "warn"
+status = "active"
+class = "reviewability"
+reason = "Use direct method references when clearer."
+
+[[lint]]
+name = "clippy::missing_panics_doc"
+level = "deny"
+status = "active"
+class = "api-docs"
+reason = "Any public panic contract must be documented, then removed where possible."
+
+[[lint]]
+name = "clippy::missing_errors_doc"
+level = "warn"
+status = "active"
+class = "api-docs"
+reason = "Public error contracts should describe failure modes."
+
+[[lint]]
+name = "clippy::allow_attributes"
+level = "deny"
+status = "active"
+class = "suppression"
+reason = "Use expect attributes with reasons instead of silent allow attributes."
+
+[[lint]]
+name = "clippy::allow_attributes_without_reason"
+level = "deny"
+status = "active"
+class = "suppression"
+reason = "Any suppression must carry reviewable rationale."
+
+[[lint]]
+name = "clippy::blanket_clippy_restriction_lints"
+level = "deny"
+status = "active"
+class = "suppression"
+reason = "Restriction categories must not be enabled wholesale."
+
+[[lint]]
+name = "clippy::ignore_without_reason"
+level = "deny"
+status = "active"
+class = "suppression"
+reason = "Ignored tests must explain why."
+
+[[lint]]
+name = "clippy::should_panic_without_expect"
+level = "deny"
+status = "active"
+class = "suppression"
+reason = "Expected panics in tests must document the expected failure."
+
+[[planned]]
+name = "clippy::same_length_and_capacity"
+level = "deny"
+activate_when_msrv = "1.94"
+reason = "Catch raw-parts reconstruction mistakes."
+
+[[planned]]
+name = "clippy::manual_ilog2"
+level = "warn"
+activate_when_msrv = "1.94"
+reason = "Prefer the standard integer log helper."
+
+[[planned]]
+name = "clippy::decimal_bitwise_operands"
+level = "warn"
+activate_when_msrv = "1.94"
+reason = "Make bit masks visually inspectable."
+
+[[planned]]
+name = "clippy::needless_type_cast"
+level = "warn"
+activate_when_msrv = "1.94"
+reason = "Avoid stale numeric type drift."
+
+[[planned]]
+name = "clippy::disallowed_fields"
+level = "deny"
+activate_when_msrv = "1.95"
+reason = "Allow architecture policy to ban direct field access across protected seams."
+
+[[planned]]
+name = "clippy::manual_checked_ops"
+level = "warn"
+activate_when_msrv = "1.95"
+reason = "Prefer checked arithmetic over manual divide-by-zero guards."
+
+[[planned]]
+name = "clippy::manual_take"
+level = "warn"
+activate_when_msrv = "1.95"
+reason = "Use standard ownership helper instead of local reimplementation."
+
+[[planned]]
+name = "clippy::manual_pop_if"
+level = "warn"
+activate_when_msrv = "1.95"
+reason = "Use collection APIs that encode predicate-and-pop intent directly."
+
+[[planned]]
+name = "clippy::duration_suboptimal_units"
+level = "warn"
+activate_when_msrv = "1.95"
+reason = "Make durations legible without mental unit conversion."
+
+[[planned]]
+name = "clippy::unnecessary_trailing_comma"
+level = "warn"
+activate_when_msrv = "1.95"
+reason = "Keep generated and hand-written format macro calls clean."

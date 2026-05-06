@@ -14,6 +14,9 @@ homepage.workspace = true
 documentation = "https://docs.rs/uselesskey-test-server"
 authors.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 thiserror.workspace = true
 tokio = { workspace = true, features = ["net", "sync"] }

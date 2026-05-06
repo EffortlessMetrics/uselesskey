@@ -1,0 +1,28 @@
+schema_version = "1.0"
+
+[[allow]]
+glob = ".github/workflows/*.yml"
+kind = "ci_declarative"
+owner = "release/ci"
+reason = "GitHub Actions workflow definitions are platform-required YAML."
+surface = "ci"
+classification = "config"
+covered_by = ["cargo xtask ci"]
+
+[[allow]]
+glob = "docs/**"
+kind = "documentation"
+owner = "docs"
+reason = "Project documentation is authored in Markdown and metadata files."
+surface = "docs"
+classification = "config"
+covered_by = ["cargo xtask docs-sync --check"]
+
+[[allow]]
+glob = "policy/*.toml"
+kind = "policy_data"
+owner = "quality"
+reason = "Machine-readable governance ledgers are TOML by convention."
+surface = "policy"
+classification = "config"
+covered_by = ["cargo xtask check-lint-policy"]

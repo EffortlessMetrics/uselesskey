@@ -14,6 +14,9 @@ homepage.workspace = true
 documentation = "https://docs.rs/uselesskey-rustcrypto"
 authors.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 rsa = { workspace = true, optional = true }
 p256 = { version = "0.13", features = ["ecdsa", "pkcs8"], optional = true }

@@ -14,6 +14,9 @@ homepage.workspace = true
 documentation = "https://docs.rs/uselesskey-rustls"
 authors.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 uselesskey-core-rustls-pki = { path = "../uselesskey-core-rustls-pki", version = "0.6.0", default-features = false }
 rustls = { version = "0.23", default-features = false, features = ["std", "tls12"], optional = true }

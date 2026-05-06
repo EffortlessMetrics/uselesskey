@@ -1,2 +1,11 @@
-# Prefer clarity over cleverness.
-msrv = "1.92"
+# Repo-local Clippy policy configuration.
+msrv = "1.93"
+
+# Do not add test carveouts such as allow-unwrap-in-tests or allow-panic-in-tests.
+# The workspace lint baseline applies to production code and tests.
+
+# Crypto/security overlays live here when they require Clippy configuration rather
+# than manifest lint levels. Keep entries narrow and reasoned.
+disallowed-methods = []
+disallowed-types = []
+disallowed-macros = []

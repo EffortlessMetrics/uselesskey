@@ -12,6 +12,9 @@ description = "Cucumber BDD test runner for uselesskey fixture crates."
 categories.workspace = true
 keywords = ["testing", "bdd", "cucumber", "fixtures", "crypto"]
 
+[lints]
+workspace = true
+
 [dependencies]
 uselesskey-bdd-steps = { path = "../uselesskey-bdd-steps", default-features = false, features = [] }
 tokio.workspace = true

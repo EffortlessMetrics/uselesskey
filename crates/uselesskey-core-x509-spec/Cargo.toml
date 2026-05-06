@@ -14,6 +14,9 @@ homepage.workspace = true
 documentation = "https://docs.rs/uselesskey-core-x509-spec"
 authors.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 
 [dev-dependencies]

@@ -14,6 +14,9 @@ homepage.workspace = true
 documentation = "https://docs.rs/uselesskey-core-factory"
 authors.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 rand10 = { workspace = true }
 uselesskey-core-cache = { path = "../uselesskey-core-cache", version = "0.6.0", default-features = false }

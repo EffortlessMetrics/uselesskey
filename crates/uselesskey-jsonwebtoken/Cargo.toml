@@ -14,6 +14,9 @@ homepage.workspace = true
 documentation = "https://docs.rs/uselesskey-jsonwebtoken"
 authors.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 # Note: We don't enable rust_crypto by default - consumers should choose their preferred
 # crypto provider (rust_crypto or aws_lc_rs). Tests use rust_crypto.

@@ -12,6 +12,9 @@ description = "Cross-adapter interoperability tests for uselesskey fixture crate
 categories.workspace = true
 keywords = ["testing", "interop", "fixtures", "crypto", "adapter"]
 
+[lints]
+workspace = true
+
 [dependencies]
 # Adapter crates — optional, gated behind features
 uselesskey-ring = { path = "../uselesskey-ring", features = ["all"], optional = true }

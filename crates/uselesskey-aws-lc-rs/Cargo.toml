@@ -14,6 +14,9 @@ homepage.workspace = true
 documentation = "https://docs.rs/uselesskey-aws-lc-rs"
 authors.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 aws-lc-rs = { version = "1", optional = true }
 

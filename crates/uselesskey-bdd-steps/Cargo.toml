@@ -12,6 +12,9 @@ description = "Cucumber BDD step definitions for uselesskey fixture crates."
 categories.workspace = true
 keywords = ["testing", "bdd", "cucumber", "fixtures", "crypto"]
 
+[lints]
+workspace = true
+
 [dependencies]
 cucumber.workspace = true
 uselesskey = { path = "../uselesskey", default-features = false, features = [] }

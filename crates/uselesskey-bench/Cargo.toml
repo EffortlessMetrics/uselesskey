@@ -10,6 +10,9 @@ homepage.workspace = true
 authors.workspace = true
 description = "Machine-readable performance harness for uselesskey fixture hot paths."
 
+[lints]
+workspace = true
+
 [dependencies]
 anyhow.workspace = true
 clap.workspace = true
