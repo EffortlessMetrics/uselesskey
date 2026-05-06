@@ -2,28 +2,36 @@
 
 This roadmap reflects the strategic direction for uselesskey as a **test-fixture layer** (not a crypto library).
 
-## Now (v0.5.x)
+## Now (v0.6.x)
 
-*Post-release planning reset for the next cycle*
+*Post-0.6.0 stabilization and release-hardening*
 
-- [x] [Roadmap reset for v0.5.x][roadmap-followups]
-- [x] Create milestones and execution issues from the follow-up plan
-- [x] ADR: adapter acceptance criteria
-- [x] ADR: public surface policy
-- [x] Add docs metadata source and sync enforcement
-- [x] Add examples-smoke validation in the docs/examples path
+- [x] Ship the lane-choice release: entropy, runtime fixtures, and build-time materialization.
+- [x] Add economics and audit-surface receipts as first-class CI artifacts.
+- [x] Refresh advisory-blocked dependency floors so PR checks start from a clean security baseline.
+- [x] Finish PR queue disposition: merge reviewed keepers, close superseded duplicates, and park broken dependency bumps with explicit rationale.
+- [x] Keep mutation-proof coverage aligned with fixture identity and shape contracts for touched crates.
 
-## Next (v0.5.2+)
+## Next (v0.6.1+)
 
-*Under evaluation - Planned follow-up*
+*Planned follow-up*
 
-- [ ] JWK/JWKS and token-shape negative fixture follow-ons
-- [ ] Docs/examples coverage for the remaining negative-fixture surface
-- [ ] Performance benchmarks for key generation paths
-- [ ] Release governance and post-release audit automation
-- [ ] Export-bundle integration (`uselesskey bundle`, k8s/vault payload emitters, and reference manifests)
+- [ ] JWK/JWKS and token-shape negative fixture follow-ons.
+- [ ] Docs/examples coverage for the remaining negative-fixture surface.
+- [ ] Performance benchmarks for key generation and materialization paths.
+- [ ] Release governance and post-release audit automation.
+- [ ] Export-bundle integration (`uselesskey bundle`, k8s/vault payload emitters, and reference manifests).
 
 ## Shipped
+
+### v0.6.0 (2026-04-08)
+
+*Lane-choice, materialization, and release economics*
+
+- Added `uselesskey-entropy` for deterministic high-entropy byte fixtures and scanner-safe placeholder data.
+- Added `uselesskey-cli materialize` / `verify` manifest workflows, including build-time `OUT_DIR` examples for shape-only fixtures and explicit RSA PKCS#8 materialization.
+- Added `cargo xtask economics` and `cargo xtask audit-surface` so lane cost and advisory-island receipts are generated as repo artifacts.
+- Reframed public docs around lane choice first: entropy, token, runtime semantic fixtures, and build-time materialized fixtures.
 
 ### v0.5.1 (2026-03-27)
 
@@ -61,9 +69,9 @@ This roadmap reflects the strategic direction for uselesskey as a **test-fixture
 
 ### v0.3.0 (2026-03)
 
-*Façade ergonomics and lightweight token path*
+*Facade ergonomics and lightweight token path*
 
-- [x] Empty façade defaults (no default features)
+- [x] Empty facade defaults (no default features)
 - [x] Token-only lightweight path
 - [x] `Seed::from_text` for ergonomic seed creation
 - [x] `Factory::deterministic_from_str` convenience method
@@ -97,7 +105,7 @@ This roadmap reflects the strategic direction for uselesskey as a **test-fixture
   - Configurable: CN, SANs, validity period, key usage
   - `X509FactoryExt` trait
 - [x] **X.509 cert chain fixtures** (`uselesskey-x509`)
-  - Root CA → Intermediate → Leaf
+  - Root CA -> Intermediate -> Leaf
   - Deterministic serial numbers and validity periods
   - Chain PEM (leaf + intermediate, no root) for standard TLS server usage
   - Individual cert access (root, intermediate, leaf)
@@ -127,7 +135,7 @@ This roadmap reflects the strategic direction for uselesskey as a **test-fixture
   - `uselesskey-ring`: Native `ring` 0.17 signing key types
   - `uselesskey-aws-lc-rs`: Native `aws-lc-rs` key types with `native` feature for wasm-safe builds
   - `uselesskey-rustcrypto`: RustCrypto native types (`rsa::RsaPrivateKey`, `p256::ecdsa::SigningKey`, etc.)
-- [x] **BDD test suite** (38 feature files, ~150+ scenarios)
+- [x] **BDD test suite** (38 feature files, 150+ scenarios)
   - RSA, ECDSA, Ed25519, HMAC, X.509, JWK, JWKS, chains, cross-key, JWT, TLS, PGP, tokens, negative fixtures, edge cases
 - [x] **Examples** (22 runnable examples)
   - JWT signing, TLS server chains, negative fixtures, tempfiles, JWKS builder, PGP keys, tokens, adapter integration, gRPC TLS
@@ -154,7 +162,7 @@ These are explicitly out of scope:
 - Perfect scanner evasion (if a scanner flags runtime output, that's a downstream issue)
 - Signing/verification APIs (artifacts only)
 
-## Versioning policy
+## Versioning Policy
 
 - **Derivation stability**: Changing the derivation algorithm requires bumping the derivation version field. Existing tests should not break.
 - **Semver**: Breaking API changes bump the minor version until 1.0, then major version.
