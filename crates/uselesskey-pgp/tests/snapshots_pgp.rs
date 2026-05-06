@@ -289,8 +289,8 @@ mod all_specs_snapshots {
         #[derive(Serialize)]
         struct SpecInfo {
             spec_name: &'static str,
-            private_binary_len: usize,
-            public_binary_len: usize,
+            private_binary_present: bool,
+            public_binary_present: bool,
             fingerprint_len: usize,
         }
 
@@ -304,8 +304,8 @@ mod all_specs_snapshots {
             let key = fx.pgp(format!("snapshot-all-{name}"), spec);
             SpecInfo {
                 spec_name: name,
-                private_binary_len: key.private_key_binary().len(),
-                public_binary_len: key.public_key_binary().len(),
+                private_binary_present: !key.private_key_binary().is_empty(),
+                public_binary_present: !key.public_key_binary().is_empty(),
                 fingerprint_len: key.fingerprint().len(),
             }
         })
