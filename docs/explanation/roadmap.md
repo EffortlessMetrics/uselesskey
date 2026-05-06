@@ -16,7 +16,7 @@ This roadmap reflects the strategic direction for uselesskey as a **test-fixture
 
 *Planned follow-up*
 
-- [ ] JWK/JWKS and token-shape negative fixture follow-ons.
+- [x] JWK/JWKS and token-shape negative fixture follow-ons.
 - [ ] Docs/examples coverage for the remaining negative-fixture surface.
 - [ ] Performance benchmarks for key generation and materialization paths.
 - [ ] Release governance and post-release audit automation.

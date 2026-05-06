@@ -2,7 +2,7 @@ use std::fmt;
 use std::sync::Arc;
 
 use uselesskey_core::Factory;
-use uselesskey_core_token::generate_token;
+use uselesskey_core_token::{NegativeToken, generate_negative_token, generate_token};
 
 use crate::TokenSpec;
 
@@ -194,6 +194,27 @@ impl TokenFixture {
         let scheme = self.spec.authorization_scheme();
         format!("{scheme} {}", self.value())
     }
+
+    /// Generate a scanner-safe negative token value for parser and validator tests.
+    ///
+    /// The generated value is cached by `(label, spec, variant)` and is stable in
+    /// deterministic mode without changing the positive token fixture.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use uselesskey_core::{Factory, Seed};
+    /// # use uselesskey_token::{NegativeToken, TokenFactoryExt, TokenSpec};
+    /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
+    /// let oauth = fx.token("issuer", TokenSpec::oauth_access_token());
+    /// let expired = oauth.negative_value(NegativeToken::ExpiredClaims);
+    /// assert_eq!(expired.matches('.').count(), 2);
+    /// ```
+    pub fn negative_value(&self, variant: NegativeToken) -> String {
+        load_negative_inner(&self.factory, &self.label, self.spec, variant)
+            .value
+            .clone()
+    }
 }
 
 fn load_inner(factory: &Factory, label: &str, spec: TokenSpec, variant: &str) -> Arc<Inner> {
@@ -203,6 +224,27 @@ fn load_inner(factory: &Factory, label: &str, spec: TokenSpec, variant: &str) ->
         let value = generate_token(label, spec, seed);
         Inner { value }
     })
+}
+
+fn load_negative_inner(
+    factory: &Factory,
+    label: &str,
+    spec: TokenSpec,
+    variant: NegativeToken,
+) -> Arc<Inner> {
+    let spec_bytes = spec.stable_bytes();
+    let cache_variant = format!("negative:{}", variant.variant_name());
+
+    factory.get_or_init(
+        DOMAIN_TOKEN_FIXTURE,
+        label,
+        &spec_bytes,
+        &cache_variant,
+        |seed| {
+            let value = generate_negative_token(label, spec, seed, variant);
+            Inner { value }
+        },
+    )
 }
 
 #[cfg(test)]
@@ -298,6 +340,32 @@ mod tests {
         let custom = fx.token_with_variant("svc", TokenSpec::api_key(), "custom");
 
         assert_ne!(good.value(), custom.value());
+    }
+
+    #[test]
+    fn negative_value_is_cached_and_stable() {
+        let fx = Factory::deterministic(Seed::from_env_value("token-negative").unwrap());
+        let token = fx.token("issuer", TokenSpec::oauth_access_token());
+
+        let a = token.negative_value(NegativeToken::ExpiredClaims);
+        let b = token.negative_value(NegativeToken::ExpiredClaims);
+
+        assert_eq!(a, b);
+        assert_ne!(a, token.value());
+        assert_eq!(a.matches('.').count(), 2);
+    }
+
+    #[test]
+    fn negative_api_key_near_miss_keeps_positive_fixture_unchanged() {
+        let fx = Factory::deterministic(Seed::from_env_value("token-negative-api").unwrap());
+        let token = fx.token("billing", TokenSpec::api_key());
+
+        let near_miss = token.negative_value(NegativeToken::NearMissApiKey);
+
+        assert!(token.value().starts_with("uk_test_"));
+        assert!(near_miss.starts_with("uk_tset_"));
+        assert!(!near_miss.starts_with("uk_test_"));
+        assert_ne!(near_miss, token.value());
     }
 
     #[test]

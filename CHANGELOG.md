@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added scanner-safe JWK/JWKS and token-shape negative fixture helpers for
+  downstream parser and validator failure-path tests.
+
 ## [0.6.0] - 2026-04-08
 
 ### Added

@@ -23,8 +23,8 @@ This plan decomposes `roadmap.md` into milestone-aligned execution items.
 
 ## v0.6.1 follow-on negatives
 
-- [ ] JWK/JWKS negative wave 1
-- [ ] token-shape negative wave 1
+- [x] JWK/JWKS negative wave 1
+- [x] token-shape negative wave 1
 - [ ] docs/examples coverage for negative fixtures
 
 ## v0.6.1 benchmarks and governance
