@@ -816,6 +816,13 @@
       "run_smoke": true
     },
     {
+      "name": "negative_payload_shapes",
+      "path": "crates/uselesskey/examples/negative_payload_shapes.rs",
+      "feature_set": "rsa,jwk,token",
+      "description": "Scanner-safe negative JWK/JWKS and token shapes for validator tests",
+      "run_smoke": true
+    },
+    {
       "name": "tempfile_paths",
       "path": "crates/uselesskey/examples/tempfile_paths.rs",
       "feature_set": "rsa,ed25519",
