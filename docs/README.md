@@ -26,6 +26,12 @@ Task-oriented instructions for common workflows.
 - [downstream-fixture-policy.md](how-to/downstream-fixture-policy.md) — Policy pack for downstream bots and reviewers
 - [adapter-template.md](how-to/adapter-template.md) — Scaffolding and validating new adapter crates
 
+## Contributing
+
+Repository operating rules for agents and maintainers.
+
+- [pr-disposition.md](contributing/pr-disposition.md) — Reviewing keeper, duplicate, stale, declined, and automation PRs
+
 ## Explanation
 
 Understanding-oriented material on design and direction.
