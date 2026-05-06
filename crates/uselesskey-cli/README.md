@@ -49,9 +49,7 @@ directory of related fixture artifacts plus a manifest it can verify in CI.
 
 ```bash
 cargo run -p uselesskey-cli -- bundle \
-  --seed bundle-seed \
-  --label issuer \
-  --format jwk \
+  --profile scanner-safe \
   --out target/uselesskey-bundle
 
 cargo run -p uselesskey-cli -- verify-bundle \
@@ -59,4 +57,10 @@ cargo run -p uselesskey-cli -- verify-bundle \
 ```
 
 `verify-bundle` reloads `manifest.json`, regenerates the expected artifacts from
-the recorded seed/label/format, and fails if any file is missing or changed.
+the recorded seed/label/format/profile, and fails if any file or manifest
+metadata is missing or changed.
+
+`scanner-safe` is the default bundle profile. It emits public key material,
+public certificate material, scanner-safe symmetric JWK shape data, and
+near-miss token shapes. Use `--profile runtime` when a downstream test really
+needs runtime-generated private or symmetric fixture material in the bundle.

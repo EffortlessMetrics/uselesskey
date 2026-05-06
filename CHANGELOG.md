@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   shapes for downstream validator tests.
 - Added `uselesskey verify-bundle` to verify deterministic bundle outputs
   against their recorded `manifest.json`.
+- Added scanner-safe bundle profiles and per-artifact lane metadata to
+  `uselesskey bundle` manifests.
 - Added a public-surface map that separates public support promises from
   published internal implementation shards.
 

@@ -69,9 +69,117 @@ fn bundle_writes_manifest_schema() {
     let value: Value = serde_json::from_slice(&fs::read(&manifest_path).expect("read manifest"))
         .expect("manifest json");
     assert_eq!(value["version"], 1);
+    assert_eq!(value["profile"], "scanner-safe");
     assert_eq!(value["seed"], "det-seed");
     assert_eq!(value["label"], "bundle-label");
     assert!(value["files"].as_array().expect("array").len() >= 8);
+    let artifacts = value["artifacts"].as_array().expect("artifacts array");
+    assert_eq!(
+        artifacts.len(),
+        value["files"].as_array().expect("array").len()
+    );
+    assert!(
+        artifacts
+            .iter()
+            .all(|artifact| artifact["scanner_safe"] == true)
+    );
+    assert!(artifacts.iter().all(|artifact| {
+        artifact["lanes"]
+            .as_array()
+            .expect("lanes")
+            .iter()
+            .any(|lane| lane.as_str() == Some("runtime"))
+    }));
+    assert!(artifacts.iter().all(|artifact| {
+        artifact["lanes"]
+            .as_array()
+            .expect("lanes")
+            .iter()
+            .any(|lane| lane.as_str() == Some("materialized"))
+    }));
+}
+
+#[test]
+fn bundle_profile_scanner_safe_is_the_default_path() {
+    let dir = tempdir().expect("tempdir");
+    let bundle_dir = dir.path().join("bundle");
+
+    let mut cmd = Command::cargo_bin("uselesskey").expect("bin exists");
+    cmd.args(["bundle", "--out", bundle_dir.to_str().expect("utf-8")]);
+    cmd.assert().success();
+
+    let manifest_path = bundle_dir.join("manifest.json");
+    let value: Value = serde_json::from_slice(&fs::read(&manifest_path).expect("read manifest"))
+        .expect("manifest json");
+    assert_eq!(value["profile"], "scanner-safe");
+    assert_eq!(value["format"], "jwk");
+    assert_eq!(value["seed"], "uselesskey-bundle-seed");
+    assert_eq!(value["label"], "bundle");
+
+    let hmac = fs::read_to_string(bundle_dir.join("hmac.jwk.json")).expect("hmac jwk");
+    assert!(hmac.contains("not_base64url!*"));
+
+    let artifacts = value["artifacts"].as_array().expect("artifacts");
+    let hmac_record = artifacts
+        .iter()
+        .find(|artifact| artifact["kind"].as_str() == Some("hmac"))
+        .expect("hmac artifact record");
+    assert_eq!(
+        hmac_record["description"],
+        "scanner-safe symmetric JWK shape with invalid material"
+    );
+    let token_record = artifacts
+        .iter()
+        .find(|artifact| artifact["kind"].as_str() == Some("token"))
+        .expect("token artifact record");
+    assert_eq!(
+        token_record["description"],
+        "scanner-safe near-miss token shape for parser tests"
+    );
+
+    let token: Value =
+        serde_json::from_slice(&fs::read(bundle_dir.join("token.json")).expect("token json"))
+            .expect("token manifest");
+    let token_value = token["value"].as_str().expect("token value");
+    assert!(token_value.starts_with("uk_tset_"));
+    assert!(!token_value.starts_with("uk_test_"));
+}
+
+#[test]
+fn bundle_profile_runtime_preserves_requested_material_format() {
+    let dir = tempdir().expect("tempdir");
+    let bundle_dir = dir.path().join("bundle");
+
+    let mut cmd = Command::cargo_bin("uselesskey").expect("bin exists");
+    cmd.args([
+        "bundle",
+        "--profile",
+        "runtime",
+        "--format",
+        "pem",
+        "--seed",
+        "det-seed",
+        "--label",
+        "issuer",
+        "--out",
+        bundle_dir.to_str().expect("utf-8"),
+    ]);
+    cmd.assert().success();
+
+    assert!(bundle_dir.join("rsa.pem").exists());
+    let manifest_path = bundle_dir.join("manifest.json");
+    let value: Value = serde_json::from_slice(&fs::read(&manifest_path).expect("read manifest"))
+        .expect("manifest json");
+    assert_eq!(value["profile"], "runtime");
+    assert_eq!(value["format"], "pem");
+    assert!(
+        value["artifacts"]
+            .as_array()
+            .expect("artifacts")
+            .iter()
+            .any(|artifact| artifact["kind"].as_str() == Some("rsa")
+                && artifact["scanner_safe"] == false)
+    );
 }
 
 #[test]
@@ -116,6 +224,95 @@ fn verify_bundle_accepts_generated_bundle_and_detects_mismatch() {
         .assert()
         .failure()
         .stderr(predicate::str::contains("content mismatch"));
+}
+
+#[test]
+fn verify_bundle_rejects_manifest_metadata_drift() {
+    let dir = tempdir().expect("tempdir");
+    let bundle_dir = dir.path().join("bundle");
+
+    let mut bundle = Command::cargo_bin("uselesskey").expect("bin exists");
+    bundle.args([
+        "bundle",
+        "--profile",
+        "scanner-safe",
+        "--out",
+        bundle_dir.to_str().expect("utf-8"),
+    ]);
+    bundle.assert().success();
+
+    let manifest_path = bundle_dir.join("manifest.json");
+    let mut manifest: Value =
+        serde_json::from_slice(&fs::read(&manifest_path).expect("read manifest"))
+            .expect("manifest json");
+    manifest["artifacts"][0]["scanner_safe"] = Value::Bool(false);
+    fs::write(
+        &manifest_path,
+        serde_json::to_vec_pretty(&manifest).expect("serialize manifest"),
+    )
+    .expect("mutate manifest");
+
+    let mut verify = Command::cargo_bin("uselesskey").expect("bin exists");
+    verify.args([
+        "verify-bundle",
+        "--path",
+        bundle_dir.to_str().expect("utf-8"),
+    ]);
+    verify
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("artifact metadata mismatch"));
+}
+
+#[test]
+fn verify_bundle_accepts_legacy_manifest_without_profile_metadata() {
+    let dir = tempdir().expect("tempdir");
+    let bundle_dir = dir.path().join("bundle");
+
+    let mut bundle = Command::cargo_bin("uselesskey").expect("bin exists");
+    bundle.args([
+        "bundle",
+        "--profile",
+        "runtime",
+        "--format",
+        "jwk",
+        "--seed",
+        "legacy-seed",
+        "--label",
+        "legacy",
+        "--out",
+        bundle_dir.to_str().expect("utf-8"),
+    ]);
+    bundle.assert().success();
+
+    let manifest_path = bundle_dir.join("manifest.json");
+    let mut manifest: Value =
+        serde_json::from_slice(&fs::read(&manifest_path).expect("read manifest"))
+            .expect("manifest json");
+    manifest
+        .as_object_mut()
+        .expect("manifest object")
+        .remove("profile");
+    manifest
+        .as_object_mut()
+        .expect("manifest object")
+        .remove("artifacts");
+    fs::write(
+        &manifest_path,
+        serde_json::to_vec_pretty(&manifest).expect("serialize manifest"),
+    )
+    .expect("write legacy manifest");
+
+    let mut verify = Command::cargo_bin("uselesskey").expect("bin exists");
+    verify.args([
+        "verify-bundle",
+        "--path",
+        bundle_dir.to_str().expect("utf-8"),
+    ]);
+    verify
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("\"status\": \"ok\""));
 }
 
 #[test]
