@@ -127,8 +127,8 @@ blake3 = "1.8.3"
 dashmap = "6.1.0"
 
 # RNG — workspace-wide line (all crates except rsa/pgp/x509 blocked islands)
-rand10 = { package = "rand", version = "0.10.0", default-features = false }
-rand_core10 = { package = "rand_core", version = "0.10.0", default-features = false }
+rand10 = { package = "rand", version = "0.10.1", default-features = false }
+rand_core10 = { package = "rand_core", version = "0.10.1", default-features = false }
 rand_chacha10 = { package = "rand_chacha", version = "0.10.0", default-features = false }
 
 # sinks
@@ -173,7 +173,7 @@ sha2 = "0.10.9"
 jsonwebtoken = { version = "10.3.0", features = ["use_pem", "rust_crypto"] }
 
 # TLS
-rustls = { version = "0.23.37", default-features = false, features = ["std", "tls12", "ring"] }
+rustls = { version = "0.23.40", default-features = false, features = ["std", "tls12", "ring"] }
 rustls-pki-types = "1.14.0"
 
 # Crypto backends
