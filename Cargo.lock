@@ -5231,7 +5231,7 @@ dependencies = [
 name = "uselesskey-pkcs11-mock"
 version = "0.6.0"
 dependencies = [
- "sha2 0.10.9",
+ "sha2 0.11.0",
  "uselesskey-core",
 ]
 
@@ -5387,7 +5387,7 @@ version = "0.6.0"
 dependencies = [
  "ciborium",
  "serde_json",
- "sha2 0.10.9",
+ "sha2 0.11.0",
  "uselesskey-core",
 ]
 
