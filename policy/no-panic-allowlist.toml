@@ -1,0 +1,4 @@
+schema_version = "0.3"
+
+# Semantic panic-family exceptions use path + family + selector as identity.
+# last_seen is advisory and should only help humans repair drift.

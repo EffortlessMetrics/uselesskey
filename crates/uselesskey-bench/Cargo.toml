@@ -19,3 +19,6 @@ uselesskey = { path = "../uselesskey", features = ["full"] }
 
 [dev-dependencies]
 serde_json.workspace = true
+
+[lints]
+workspace = true

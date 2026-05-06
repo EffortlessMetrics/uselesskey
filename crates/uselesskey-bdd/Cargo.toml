@@ -50,3 +50,6 @@ uk-rustcrypto = ["uselesskey-bdd-steps/uk-rustcrypto"]
 [[test]]
 name = "bdd"
 harness = false
+
+[lints]
+workspace = true

@@ -30,3 +30,6 @@ std = []
 [package.metadata.docs.rs]
 features = ["std"]
 
+
+[lints]
+workspace = true

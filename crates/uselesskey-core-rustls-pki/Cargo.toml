@@ -43,3 +43,6 @@ uselesskey-ed25519 = { path = "../uselesskey-ed25519", version = "0.6.0" }
 [package.metadata.docs.rs]
 features = ["all"]
 
+
+[lints]
+workspace = true

@@ -40,3 +40,6 @@ rstest.workspace = true
 insta.workspace = true
 serde = { workspace = true, features = ["derive"] }
 
+
+[lints]
+workspace = true

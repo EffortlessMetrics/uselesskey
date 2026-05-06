@@ -31,3 +31,6 @@ std = ["uselesskey-core-hash/std", "uselesskey-core-seed/std"]
 [package.metadata.docs.rs]
 features = ["std"]
 
+
+[lints]
+workspace = true

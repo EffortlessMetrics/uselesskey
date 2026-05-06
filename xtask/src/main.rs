@@ -17,6 +17,7 @@ use uselesskey_feature_grid::{BDD_FEATURE_MATRIX, CORE_FEATURE_MATRIX};
 mod audit_surface;
 mod docs_sync;
 mod economics;
+mod lint_policy;
 mod plan;
 mod pr_bundles;
 mod receipt;
@@ -139,6 +140,14 @@ enum Cmd {
         #[arg(long)]
         check: bool,
     },
+    /// Verify the governed Clippy lint policy and ledgers.
+    CheckLintPolicy,
+    /// Validate the semantic no-panic allowlist schema.
+    CheckNoPanicFamily,
+    /// Validate the non-Rust file policy allowlist schema.
+    CheckFilePolicy,
+    /// Print a concise policy ledger summary.
+    PolicyReport,
     /// Configure git hooks (sets core.hooksPath to .githooks).
     Setup,
     /// Lint commit message (used by git hooks).
@@ -273,6 +282,10 @@ fn main() -> Result<()> {
         Cmd::Fuzz { target, args } => fuzz(target.as_deref(), &args),
         Cmd::LintFix { check, no_clippy } => lint_fix(check, no_clippy),
         Cmd::Gate { check: _ } => gate(),
+        Cmd::CheckLintPolicy => lint_policy::check_lint_policy(),
+        Cmd::CheckNoPanicFamily => lint_policy::check_no_panic_family(),
+        Cmd::CheckFilePolicy => lint_policy::check_file_policy(),
+        Cmd::PolicyReport => lint_policy::policy_report(),
         Cmd::Setup => setup(),
         Cmd::CommitLint { message_file } => commit_lint(&message_file),
         Cmd::Hook { hook } => match hook {

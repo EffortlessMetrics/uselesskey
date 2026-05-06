@@ -1,0 +1,28 @@
+schema_version = "1.0"
+
+[[allow]]
+glob = ".github/workflows/*.yml"
+kind = "ci_declarative"
+owner = "release/ci"
+reason = "GitHub Actions workflow definitions are platform-required YAML."
+surface = "ci"
+classification = "config"
+covered_by = ["cargo xtask check-lint-policy"]
+
+[[allow]]
+glob = "docs/**/*.md"
+kind = "documentation"
+owner = "docs"
+reason = "Repository user guides, design records, and policy documentation are Markdown by design."
+surface = "docs"
+classification = "config"
+covered_by = ["cargo xtask docs-sync --check"]
+
+[[allow]]
+glob = "tests/fixtures/**"
+kind = "fixture_input"
+owner = "test-infra"
+reason = "Fixture workspaces intentionally contain source and metadata files consumed by integration tests."
+surface = "fixtures"
+classification = "test"
+covered_by = ["cargo xtask test"]

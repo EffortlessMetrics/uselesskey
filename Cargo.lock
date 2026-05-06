@@ -6018,6 +6018,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
+ "toml",
  "uselesskey-feature-grid",
 ]
 
