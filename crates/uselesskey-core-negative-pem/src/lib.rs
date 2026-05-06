@@ -51,9 +51,9 @@ pub enum CorruptPem {
     BadFooter,
     /// Inject a non-base64 line into the body so decoders reject the payload.
     BadBase64,
-    /// Keep only the first `bytes` characters of the PEM string.
+    /// Keep at most the first `bytes` bytes of the PEM string.
     Truncate {
-        /// Maximum number of characters to keep.
+        /// Maximum byte budget to keep without splitting a UTF-8 character.
         bytes: usize,
     },
     /// Insert a blank line after the header, breaking strict PEM parsers.
@@ -66,7 +66,7 @@ pub fn corrupt_pem(pem: &str, how: CorruptPem) -> String {
         CorruptPem::BadHeader => replace_first_line(pem, "-----BEGIN CORRUPTED KEY-----"),
         CorruptPem::BadFooter => replace_last_line(pem, "-----END CORRUPTED KEY-----"),
         CorruptPem::BadBase64 => inject_bad_base64_line(pem),
-        CorruptPem::Truncate { bytes } => pem.chars().take(bytes).collect(),
+        CorruptPem::Truncate { bytes } => truncate_utf8_at_byte_boundary(pem, bytes),
         CorruptPem::ExtraBlankLine => inject_blank_line(pem),
     }
 }
@@ -91,13 +91,27 @@ pub fn corrupt_pem_deterministic(pem: &str, variant: &str) -> String {
 }
 
 fn derived_truncate_len(pem: &str, digest: &[u8; 32]) -> usize {
-    let chars = pem.chars().count();
-    if chars <= 1 {
+    let total_bytes = pem.len();
+    if total_bytes <= 1 {
         return 0;
     }
 
-    let span = chars - 1;
+    let span = total_bytes - 1;
     1 + (u16::from_be_bytes([digest[1], digest[2]]) as usize % span)
+}
+
+fn truncate_utf8_at_byte_boundary(input: &str, max_bytes: usize) -> String {
+    if max_bytes >= input.len() {
+        return input.to_string();
+    }
+
+    let end = input
+        .char_indices()
+        .map(|(idx, _)| idx)
+        .take_while(|idx| *idx <= max_bytes)
+        .last()
+        .unwrap_or(0);
+    input[..end].to_string()
 }
 
 fn replace_first_line(pem: &str, replacement: &str) -> String {
@@ -205,6 +219,28 @@ mod tests {
         let pem = "-----BEGIN TEST-----\nAAA=\n-----END TEST-----\n";
         let out = corrupt_pem(pem, CorruptPem::Truncate { bytes: 10 });
         assert_eq!(out.len(), 10);
+    }
+
+    #[test]
+    fn truncate_variant_uses_byte_budget_without_breaking_utf8() {
+        let pem = "🔐KEY";
+        let out = corrupt_pem(pem, CorruptPem::Truncate { bytes: 3 });
+        assert_eq!(out, "");
+
+        let out = corrupt_pem(pem, CorruptPem::Truncate { bytes: 4 });
+        assert_eq!(out, "🔐");
+    }
+
+    #[test]
+    fn deterministic_truncate_never_exceeds_input_byte_length() {
+        let pem = "🔐A";
+        let variant = (0..256)
+            .map(|i| alloc::format!("corrupt:truncate:{i}"))
+            .find(|candidate| hash32(candidate.as_bytes()).as_bytes()[0] % 5 == 4)
+            .expect("a truncate variant should exist");
+        let out = corrupt_pem_deterministic(pem, &variant);
+        assert!(out.len() <= pem.len());
+        assert!(pem.starts_with(&out));
     }
 
     #[test]
@@ -319,7 +355,7 @@ mod tests {
         let mut digest = [0u8; 32];
         digest[1] = 0x0A;
         digest[2] = 0x0B;
-        // chars=10, span=9, u16=0x0A0B=2571, 2571%9=6, result=1+6=7
+        // bytes=10, span=9, u16=0x0A0B=2571, 2571%9=6, result=1+6=7
         assert_eq!(derived_truncate_len("0123456789", &digest), 7);
     }
 
