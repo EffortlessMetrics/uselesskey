@@ -3,6 +3,7 @@
 use std::collections::HashSet;
 
 use proptest::prelude::*;
+use proptest::test_runner::TestCaseError;
 use rstest::rstest;
 use uselesskey_core_x509_negative::{ChainNegative, X509Negative};
 use uselesskey_core_x509_spec::{ChainSpec, KeyUsage, NotBeforeOffset, X509Spec};
@@ -608,7 +609,10 @@ proptest! {
         let base = ChainSpec::new(&leaf);
         let modified = ChainNegative::ExpiredLeaf.apply_to_spec(&base);
 
-        let offset = expect_days_ago(modified.leaf_not_before.unwrap());
+        let leaf_not_before = modified.leaf_not_before.ok_or_else(|| {
+            TestCaseError::fail("ExpiredLeaf must set leaf_not_before")
+        })?;
+        let offset = expect_days_ago(leaf_not_before);
         let validity = modified.leaf_validity_days;
         // not_after = base_time - offset + validity; must be well in the past.
         prop_assert!(offset > validity, "offset({offset}) must exceed validity({validity})");
@@ -619,7 +623,10 @@ proptest! {
         let base = ChainSpec::new(&leaf);
         let modified = ChainNegative::ExpiredIntermediate.apply_to_spec(&base);
 
-        let offset = expect_days_ago(modified.intermediate_not_before.unwrap());
+        let intermediate_not_before = modified.intermediate_not_before.ok_or_else(|| {
+            TestCaseError::fail("ExpiredIntermediate must set intermediate_not_before")
+        })?;
+        let offset = expect_days_ago(intermediate_not_before);
         let validity = modified.intermediate_validity_days;
         prop_assert!(offset > validity, "offset({offset}) must exceed validity({validity})");
     }
