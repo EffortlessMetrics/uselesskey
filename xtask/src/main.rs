@@ -20,6 +20,7 @@ mod economics;
 mod plan;
 mod policy;
 mod pr_bundles;
+mod public_surface;
 mod receipt;
 
 #[derive(Parser)]
@@ -81,6 +82,8 @@ enum Cmd {
         #[arg(long)]
         check: bool,
     },
+    /// Check public-surface metadata and package topology guardrails.
+    PublicSurface,
     /// Compile example list from metadata and optionally run curated examples.
     ExamplesSmoke {
         /// Run curated smoke examples after compile checks.
@@ -289,6 +292,7 @@ fn main() -> Result<()> {
             NoBlobCmd::Migrate => no_blob_migrate(),
         },
         Cmd::DocsSync { check } => docs_sync::docs_sync_cmd(check),
+        Cmd::PublicSurface => public_surface::public_surface_cmd(PUBLISH_CRATES),
         Cmd::ExamplesSmoke { run } => docs_sync::examples_smoke_cmd(run),
         Cmd::PublishCheck => publish_check(),
         Cmd::Pr => pr(),
