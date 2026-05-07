@@ -1,0 +1,31 @@
+coverage:
+  precision: 2
+  round: down
+  range: "50...85"
+
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 5%
+        informational: true
+        flags:
+          - rust-fixtures
+
+    patch:
+      default:
+        target: 70%
+        threshold: 20%
+        informational: true
+        flags:
+          - rust-fixtures
+
+comment: false
+
+github_checks:
+  annotations: false
+
+ignore:
+  - "target/**"
+  - "fuzz/**"
+  - "crates/uselesskey-bench/**"
