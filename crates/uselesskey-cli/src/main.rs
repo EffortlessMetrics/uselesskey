@@ -9,7 +9,9 @@ use clap::{Parser, Subcommand, ValueEnum};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use uselesskey_cli::{
+    ArtifactType as ExportArtifactType, ExportArtifact, ManifestArtifact,
     emit_include_bytes_module, load_materialize_manifest, materialize_manifest_to_dir,
+    render_k8s_secret_yaml, render_vault_kv_json,
 };
 use uselesskey_core::Factory;
 use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
@@ -31,6 +33,7 @@ enum Commands {
     Generate(GenerateArgs),
     Bundle(BundleArgs),
     VerifyBundle(VerifyBundleArgs),
+    Export(ExportArgs),
     Inspect(InspectArgs),
     Materialize(MaterializeArgs),
     Verify(VerifyArgs),
@@ -67,6 +70,38 @@ struct BundleArgs {
 struct VerifyBundleArgs {
     #[arg(long = "bundle-dir", alias = "path")]
     bundle_dir: PathBuf,
+}
+
+#[derive(clap::Args, Debug)]
+struct ExportArgs {
+    #[command(subcommand)]
+    target: ExportTarget,
+}
+
+#[derive(Subcommand, Debug)]
+enum ExportTarget {
+    K8s(ExportK8sArgs),
+    VaultKvJson(ExportVaultKvJsonArgs),
+}
+
+#[derive(clap::Args, Debug)]
+struct ExportK8sArgs {
+    #[arg(long = "bundle-dir", alias = "path")]
+    bundle_dir: PathBuf,
+    #[arg(long)]
+    name: String,
+    #[arg(long)]
+    namespace: Option<String>,
+    #[arg(long)]
+    out: Option<PathBuf>,
+}
+
+#[derive(clap::Args, Debug)]
+struct ExportVaultKvJsonArgs {
+    #[arg(long = "bundle-dir", alias = "path")]
+    bundle_dir: PathBuf,
+    #[arg(long)]
+    out: Option<PathBuf>,
 }
 
 #[derive(clap::Args, Debug)]
@@ -179,6 +214,7 @@ fn main() -> Result<()> {
         Commands::Generate(args) => run_generate(args),
         Commands::Bundle(args) => run_bundle(args),
         Commands::VerifyBundle(args) => run_verify_bundle(args),
+        Commands::Export(args) => run_export(args),
         Commands::Inspect(args) => run_inspect(args),
         Commands::Materialize(args) => run_materialize(args),
         Commands::Verify(args) => run_verify(args),
@@ -257,6 +293,25 @@ fn run_verify_bundle(args: VerifyBundleArgs) -> Result<()> {
         })),
         None,
     )
+}
+
+fn run_export(args: ExportArgs) -> Result<()> {
+    match args.target {
+        ExportTarget::K8s(export) => run_export_k8s(export),
+        ExportTarget::VaultKvJson(export) => run_export_vault_kv_json(export),
+    }
+}
+
+fn run_export_k8s(args: ExportK8sArgs) -> Result<()> {
+    let artifacts = load_bundle_export_artifacts(&args.bundle_dir)?;
+    let payload = render_k8s_secret_yaml(&args.name, args.namespace.as_deref(), &artifacts);
+    emit_artifact(&Artifact::Text(payload), args.out.as_deref())
+}
+
+fn run_export_vault_kv_json(args: ExportVaultKvJsonArgs) -> Result<()> {
+    let artifacts = load_bundle_export_artifacts(&args.bundle_dir)?;
+    let payload = render_vault_kv_json(&artifacts).context("failed to render Vault KV payload")?;
+    emit_artifact(&Artifact::Text(payload), args.out.as_deref())
 }
 
 fn run_inspect(args: InspectArgs) -> Result<()> {
@@ -389,6 +444,49 @@ fn verify_bundle_manifest(bundle_dir: &Path, manifest: &BundleManifest) -> Resul
     }
 
     Ok(expected_files)
+}
+
+fn load_bundle_export_artifacts(bundle_dir: &Path) -> Result<Vec<ExportArtifact>> {
+    let manifest_path = bundle_dir.join("manifest.json");
+    let manifest = load_bundle_manifest(&manifest_path)
+        .with_context(|| format!("invalid bundle manifest {}", manifest_path.display()))?;
+    verify_bundle_manifest(bundle_dir, &manifest)
+        .with_context(|| format!("failed to verify bundle {}", bundle_dir.display()))?;
+
+    if manifest.artifacts.is_empty() {
+        bail!(
+            "bundle manifest {} does not contain artifact metadata; rerun `uselesskey bundle`",
+            manifest_path.display()
+        );
+    }
+
+    let mut artifacts = Vec::with_capacity(manifest.artifacts.len());
+    for record in &manifest.artifacts {
+        let path = bundle_dir.join(&record.path);
+        let bytes =
+            fs::read(&path).with_context(|| format!("failed to read {}", path.display()))?;
+        let value = String::from_utf8(bytes).with_context(|| {
+            format!(
+                "bundle artifact {} is not UTF-8; export payloads require text artifacts",
+                path.display()
+            )
+        })?;
+        artifacts.push(ExportArtifact {
+            key: record.path.clone(),
+            value,
+            manifest: ManifestArtifact {
+                artifact_type: ExportArtifactType::Opaque,
+                source_seed: Some(manifest.seed.clone()),
+                source_label: manifest.label.clone(),
+                output_paths: vec![record.path.clone()],
+                fingerprints: Vec::new(),
+                env_var_names: Vec::new(),
+                external_key_ref: None,
+            },
+        });
+    }
+
+    Ok(artifacts)
 }
 
 fn parse_manifest_format(raw: &str) -> Result<Format> {
