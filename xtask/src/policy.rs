@@ -5,7 +5,7 @@
 
 use std::collections::BTreeMap;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command;
 
 use anyhow::{Context, Result, bail};
@@ -452,13 +452,18 @@ fn scan_panic_findings() -> Result<Vec<PanicFinding>> {
             Ok(s) => s,
             Err(_) => continue,
         };
-        for (idx, line) in content.lines().enumerate() {
+        for (idx, raw_line) in content.lines().enumerate() {
             // Skip pure-comment / doc lines as a fast first pass; this is not perfect
             // (block comments slip through) but is a reasonable signal-to-noise.
-            let trimmed = line.trim_start();
-            if trimmed.starts_with("//") || trimmed.starts_with("///") {
+            let trimmed = raw_line.trim_start();
+            if trimmed.starts_with("//") {
                 continue;
             }
+            // Strip the trailing `// ...` comment (if any) before regex matching, so
+            // that `let x = foo(); // .unwrap()` does not produce a false positive.
+            // This is a naive strip that ignores `//` inside string literals; for
+            // panic-family detection in real code that is acceptable noise.
+            let line = strip_line_comment(raw_line);
 
             // get_unwrap takes precedence over plain unwrap so we don't double-count.
             if let Some(m) = get_unwrap_re.find(line) {
@@ -542,6 +547,14 @@ fn scan_panic_findings() -> Result<Vec<PanicFinding>> {
         }
     }
     Ok(out)
+}
+
+fn strip_line_comment(line: &str) -> &str {
+    if let Some(idx) = line.find("//") {
+        &line[..idx]
+    } else {
+        line
+    }
 }
 
 // =============================================================================
@@ -1155,11 +1168,15 @@ fn scan_bare_allow_in_crates(_members: &[String]) -> Result<Vec<(String, usize)>
 
 pub fn policy_report() -> Result<()> {
     let mut summary: BTreeMap<&'static str, serde_json::Value> = BTreeMap::new();
+    let mut failures: Vec<String> = Vec::new();
     for (name, run) in [
-        ("no-panic", run_capture(check_no_panic_family)),
-        ("file-policy", run_capture(check_file_policy)),
-        ("lint-policy", run_capture(check_lint_policy)),
+        ("no-panic", check_no_panic_family()),
+        ("file-policy", check_file_policy()),
+        ("lint-policy", check_lint_policy()),
     ] {
+        if let Err(e) = &run {
+            failures.push(format!("{name}: {e}"));
+        }
         summary.insert(
             name,
             serde_json::json!({
@@ -1198,17 +1215,11 @@ pub fn policy_report() -> Result<()> {
     fs::write(format!("{TARGET_DIR}/policy-report.md"), md)?;
 
     eprintln!("policy-report: target/policy-report.{{md,json}}");
+    if !failures.is_empty() {
+        bail!("policy-report: {} check(s) failed", failures.len());
+    }
     Ok(())
 }
-
-fn run_capture<F: FnOnce() -> Result<()>>(f: F) -> Result<()> {
-    f()
-}
-
-// Allow integration tests to access PathBuf import without dead-code warnings
-// in case future refactors move helpers into submodules.
-#[allow(dead_code)]
-fn _unused_import_pin(_: PathBuf) {}
 
 // =============================================================================
 // tests
@@ -1257,5 +1268,45 @@ mod tests {
         assert!(has_workspace_lints(cargo));
         let cargo2 = "[lints]\n# no workspace\n";
         assert!(!has_workspace_lints(cargo2));
+    }
+
+    #[test]
+    fn glob_escapes_dots_and_dashes_correctly() {
+        // `.` in glob is a literal dot, not a regex any-char.
+        assert!(!glob_match("foo.yml", "fooXyml"));
+        assert!(glob_match("foo.yml", "foo.yml"));
+    }
+
+    #[test]
+    fn glob_double_star_at_root_matches_anywhere() {
+        assert!(glob_match("**/snapshots/**/*.snap", "x/snapshots/a/b.snap"));
+        assert!(glob_match("**/snapshots/**/*.snap", "snapshots/a.snap"));
+    }
+
+    #[test]
+    fn strip_line_comment_drops_trailing_comment() {
+        assert_eq!(strip_line_comment("let x = 1; // .unwrap()"), "let x = 1; ");
+        assert_eq!(strip_line_comment("plain code"), "plain code");
+        assert_eq!(strip_line_comment("// only a comment"), "");
+    }
+
+    #[test]
+    fn parse_workspace_rust_version_finds_value() {
+        let cargo = "[workspace.package]\nrust-version = \"1.92\"\nedition = \"2024\"\n";
+        assert_eq!(parse_workspace_rust_version(cargo).as_deref(), Some("1.92"));
+    }
+
+    #[test]
+    fn parse_workspace_rust_version_returns_none_when_missing() {
+        let cargo = "[workspace.package]\nedition = \"2024\"\n";
+        assert!(parse_workspace_rust_version(cargo).is_none());
+    }
+
+    #[test]
+    fn parse_active_lints_collects_from_clippy_section() {
+        let cargo = "[workspace.lints.rust]\nfoo = \"deny\"\n\n[workspace.lints.clippy]\ndbg_macro = \"deny\"\n";
+        let active = parse_active_lints(cargo);
+        assert!(active.iter().any(|l| l == "foo"));
+        assert!(active.iter().any(|l| l == "clippy::dbg_macro"));
     }
 }
