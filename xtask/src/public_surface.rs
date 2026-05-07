@@ -312,6 +312,12 @@ fn validate_published_internal(
     support: &SupportEntry,
 ) {
     validate_common_support_fields(errors, package, support);
+    if !package.is_publishable() {
+        errors.push(format!(
+            "published internal crate '{}' is not publishable; update publish_status and PUBLISH_CRATES when demoting it",
+            package.name
+        ));
+    }
     if support.support_tier != "experimental" {
         errors.push(format!(
             "published internal crate '{}' must remain experimental until demoted",
@@ -426,6 +432,31 @@ mod tests {
                 published_internals: 1,
                 workspace_only: 0,
             }
+        );
+    }
+
+    #[test]
+    fn published_internal_must_remain_publishable_until_demoted() {
+        let packages = vec![unpublishable_package(
+            "uselesskey-core-cache",
+            "crates/uselesskey-core-cache/Cargo.toml",
+        )];
+        let metadata = metadata_with(vec![SupportEntry {
+            name: "uselesskey-core-cache".to_string(),
+            support_tier: "experimental".to_string(),
+            publish_status: "published".to_string(),
+            intended_audience: "repo-internal".to_string(),
+            semver_expectation: "No public API stability commitments.".to_string(),
+            msrv_policy: "Tracks workspace MSRV.".to_string(),
+            deprecation_note: Some("Prefer uselesskey-core.".to_string()),
+        }]);
+
+        let err = validate_public_surface(&packages, &metadata, &["uselesskey-core-cache"])
+            .expect_err("must reject stale published metadata");
+
+        assert!(
+            err.to_string()
+                .contains("published internal crate 'uselesskey-core-cache' is not publishable")
         );
     }
 
@@ -550,6 +581,14 @@ mod tests {
             name: name.to_string(),
             manifest_path: PathBuf::from(manifest_path),
             publish: None,
+        }
+    }
+
+    fn unpublishable_package(name: &str, manifest_path: &str) -> CargoPackage {
+        CargoPackage {
+            name: name.to_string(),
+            manifest_path: PathBuf::from(manifest_path),
+            publish: Some(Vec::new()),
         }
     }
 
