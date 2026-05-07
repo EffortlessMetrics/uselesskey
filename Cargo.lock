@@ -4848,6 +4848,7 @@ dependencies = [
  "serde",
  "uselesskey-core-keypair-material",
  "uselesskey-core-negative",
+ "uselesskey-test-support",
 ]
 
 [[package]]

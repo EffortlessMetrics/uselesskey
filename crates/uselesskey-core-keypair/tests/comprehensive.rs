@@ -13,6 +13,7 @@
 use std::sync::Arc;
 use uselesskey_core_keypair::Pkcs8SpkiKeyMaterial;
 use uselesskey_core_negative::CorruptPem;
+use uselesskey_test_support::{TestResult, require_ok};
 
 // ── helpers ──────────────────────────────────────────────────────────
 
@@ -220,41 +221,45 @@ fn different_deterministic_der_variants_produce_different_output() {
 // ── Tempfile content fidelity ────────────────────────────────────────
 
 #[test]
-fn tempfile_private_key_matches_pem_exactly() {
+fn tempfile_private_key_matches_pem_exactly() -> TestResult<()> {
     let m = sample();
-    let tmp = m.write_private_key_pkcs8_pem().expect("write");
-    let content = tmp.read_to_string().expect("read");
+    let tmp = require_ok(m.write_private_key_pkcs8_pem(), "write private pem")?;
+    let content = require_ok(tmp.read_to_string(), "read tempfile")?;
     assert_eq!(content, m.private_key_pkcs8_pem());
+    Ok(())
 }
 
 #[test]
-fn tempfile_public_key_matches_pem_exactly() {
+fn tempfile_public_key_matches_pem_exactly() -> TestResult<()> {
     let m = sample();
-    let tmp = m.write_public_key_spki_pem().expect("write");
-    let content = tmp.read_to_string().expect("read");
+    let tmp = require_ok(m.write_public_key_spki_pem(), "write public pem")?;
+    let content = require_ok(tmp.read_to_string(), "read tempfile")?;
     assert_eq!(content, m.public_key_spki_pem());
+    Ok(())
 }
 
 #[test]
-fn tempfile_private_key_path_has_pem_extension() {
+fn tempfile_private_key_path_has_pem_extension() -> TestResult<()> {
     let m = sample();
-    let tmp = m.write_private_key_pkcs8_pem().expect("write");
+    let tmp = require_ok(m.write_private_key_pkcs8_pem(), "write private pem")?;
     let path_str = tmp.path().to_string_lossy();
     assert!(
         path_str.ends_with(".pkcs8.pem"),
         "expected .pkcs8.pem suffix, got: {path_str}"
     );
+    Ok(())
 }
 
 #[test]
-fn tempfile_public_key_path_has_pem_extension() {
+fn tempfile_public_key_path_has_pem_extension() -> TestResult<()> {
     let m = sample();
-    let tmp = m.write_public_key_spki_pem().expect("write");
+    let tmp = require_ok(m.write_public_key_spki_pem(), "write public pem")?;
     let path_str = tmp.path().to_string_lossy();
     assert!(
         path_str.ends_with(".spki.pem"),
         "expected .spki.pem suffix, got: {path_str}"
     );
+    Ok(())
 }
 
 // ── Clone independence ───────────────────────────────────────────────

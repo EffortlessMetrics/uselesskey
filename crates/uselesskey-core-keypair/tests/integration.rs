@@ -5,6 +5,7 @@
 //! helpers (corrupt PEM/DER), and tempfile writers.
 
 use uselesskey_core_keypair::Pkcs8SpkiKeyMaterial;
+use uselesskey_test_support::{TestResult, require_ok};
 
 // ── helpers ──────────────────────────────────────────────────────────
 
@@ -171,17 +172,19 @@ fn der_corrupt_deterministic_is_stable() {
 // ── tempfile writers ─────────────────────────────────────────────────
 
 #[test]
-fn write_private_key_creates_readable_tempfile() {
+fn write_private_key_creates_readable_tempfile() -> TestResult<()> {
     let m = material_a();
-    let tmp = m.write_private_key_pkcs8_pem().expect("write private pem");
-    let content = tmp.read_to_string().expect("read tempfile");
+    let tmp = require_ok(m.write_private_key_pkcs8_pem(), "write private pem")?;
+    let content = require_ok(tmp.read_to_string(), "read tempfile")?;
     assert!(content.contains("BEGIN PRIVATE KEY"));
+    Ok(())
 }
 
 #[test]
-fn write_public_key_creates_readable_tempfile() {
+fn write_public_key_creates_readable_tempfile() -> TestResult<()> {
     let m = material_a();
-    let tmp = m.write_public_key_spki_pem().expect("write public pem");
-    let content = tmp.read_to_string().expect("read tempfile");
+    let tmp = require_ok(m.write_public_key_spki_pem(), "write public pem")?;
+    let content = require_ok(tmp.read_to_string(), "read tempfile")?;
     assert!(content.contains("BEGIN PUBLIC KEY"));
+    Ok(())
 }

@@ -16,10 +16,10 @@ generated_at = "2026-05-07"
 generated_by = "cargo xtask no-panic baseline"
 
 [summary]
-total = 4265
+total = 4255
 
 [summary.by_family]
-expect = 2255
+expect = 2245
 get_unwrap = 1
 panic_macro = 123
 unreachable = 6
@@ -5199,54 +5199,6 @@ family = "unwrap"
 selector_kind = "method_call"
 selector_callee = "unwrap"
 snippet = "public_temp.read_to_string().unwrap(),"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-keypair/tests/comprehensive.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let content = tmp.read_to_string().expect("    ");'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-keypair/tests/comprehensive.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let tmp = m.write_private_key_pkcs8_pem().expect("     ");'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-keypair/tests/comprehensive.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let tmp = m.write_public_key_spki_pem().expect("     ");'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-keypair/tests/integration.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let content = tmp.read_to_string().expect("             ");'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-keypair/tests/integration.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let tmp = m.write_private_key_pkcs8_pem().expect("                 ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-keypair/tests/integration.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let tmp = m.write_public_key_spki_pem().expect("                ");'
 count = 1
 
 [[entry]]
