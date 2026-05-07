@@ -3,7 +3,7 @@
 //! See `docs/CLIPPY_POLICY.md`, `docs/NO_PANIC_POLICY.md`, `docs/FILE_POLICY.md`,
 //! and `docs/POLICY_ALLOWLISTS.md`.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fs;
 use std::path::Path;
 use std::process::Command;
@@ -14,6 +14,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 const NO_PANIC_TOML: &str = "policy/no-panic-allowlist.toml";
+const NO_PANIC_BASELINE_TOML: &str = "policy/no-panic-baseline.toml";
 const NON_RUST_TOML: &str = "policy/non-rust-allowlist.toml";
 const CLIPPY_LINTS_TOML: &str = "policy/clippy-lints.toml";
 const CLIPPY_DEBT_TOML: &str = "policy/clippy-debt.toml";
@@ -181,6 +182,133 @@ pub struct PanicFinding {
     pub snippet: String,
 }
 
+#[derive(Debug, Deserialize, Serialize, Default)]
+struct NoPanicBaseline {
+    #[serde(default)]
+    schema_version: Option<String>,
+    #[serde(default)]
+    generated_at: Option<String>,
+    #[serde(default)]
+    generated_by: Option<String>,
+    #[serde(default)]
+    summary: BaselineSummary,
+    #[serde(default)]
+    entry: Vec<BaselineEntry>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Default)]
+struct BaselineSummary {
+    #[serde(default)]
+    total: usize,
+    #[serde(default)]
+    by_family: BTreeMap<String, usize>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+struct BaselineKey {
+    path: String,
+    family: String,
+    selector_kind: String,
+    selector_callee: String,
+    snippet: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, Hash)]
+struct BaselineEntry {
+    path: String,
+    family: String,
+    #[serde(default)]
+    selector_kind: String,
+    selector_callee: String,
+    #[serde(default)]
+    snippet: String,
+    #[serde(default = "default_baseline_count")]
+    count: usize,
+}
+
+impl BaselineEntry {
+    fn from_key(key: BaselineKey, count: usize) -> Self {
+        Self {
+            path: key.path,
+            family: key.family,
+            selector_kind: key.selector_kind,
+            selector_callee: key.selector_callee,
+            snippet: key.snippet,
+            count,
+        }
+    }
+}
+
+fn default_baseline_count() -> usize {
+    1
+}
+
+fn baseline_key(f: &PanicFinding) -> BaselineKey {
+    BaselineKey {
+        path: f.path.clone(),
+        family: f.family.clone(),
+        selector_kind: f.selector_kind.clone(),
+        selector_callee: f.selector_callee.clone(),
+        snippet: f.snippet.clone(),
+    }
+}
+
+fn baseline_entry_key(e: &BaselineEntry) -> BaselineKey {
+    BaselineKey {
+        path: e.path.clone(),
+        family: e.family.clone(),
+        selector_kind: e.selector_kind.clone(),
+        selector_callee: e.selector_callee.clone(),
+        snippet: e.snippet.clone(),
+    }
+}
+
+fn baseline_counts(entries: &[BaselineEntry]) -> HashMap<BaselineKey, usize> {
+    let mut counts = HashMap::new();
+    for entry in entries {
+        *counts.entry(baseline_entry_key(entry)).or_default() += entry.count;
+    }
+    counts
+}
+
+fn baseline_entries_from_findings(
+    findings: &[PanicFinding],
+    config: &NoPanicConfig,
+) -> Vec<BaselineEntry> {
+    let mut counts: BTreeMap<BaselineKey, usize> = BTreeMap::new();
+    for finding in findings {
+        if config
+            .allow
+            .iter()
+            .any(|entry| entry_matches(entry, finding))
+        {
+            continue;
+        }
+        *counts.entry(baseline_key(finding)).or_default() += 1;
+    }
+    counts
+        .into_iter()
+        .map(|(key, count)| BaselineEntry::from_key(key, count))
+        .collect()
+}
+
+fn new_baseline_debt<'a>(
+    current_entries: &'a [BaselineEntry],
+    existing_counts: &HashMap<BaselineKey, usize>,
+) -> Vec<(&'a BaselineEntry, usize)> {
+    current_entries
+        .iter()
+        .filter_map(|entry| {
+            let current = entry.count;
+            let existing = existing_counts
+                .get(&baseline_entry_key(entry))
+                .copied()
+                .unwrap_or(0);
+            (current > existing).then_some((entry, current - existing))
+        })
+        .collect()
+}
+
 pub fn check_no_panic_family() -> Result<()> {
     let config: NoPanicConfig = if Path::new(NO_PANIC_TOML).exists() {
         read_toml(NO_PANIC_TOML)?
@@ -188,10 +316,29 @@ pub fn check_no_panic_family() -> Result<()> {
         bail!("missing {NO_PANIC_TOML}");
     };
 
+    let baseline: NoPanicBaseline = if Path::new(NO_PANIC_BASELINE_TOML).exists() {
+        read_toml(NO_PANIC_BASELINE_TOML)?
+    } else {
+        NoPanicBaseline::default()
+    };
+    let baseline_counts = baseline_counts(&baseline.entry);
+
+    match config.policy.mode.as_str() {
+        "advisory" | "no-new-debt" | "blocking" => {}
+        other => bail!(
+            "unknown no-panic policy mode `{other}` (expected advisory, no-new-debt, or blocking)"
+        ),
+    }
+
     let findings = scan_panic_findings()?;
     let mut report = NoPanicReport::default();
     let mut matched = vec![false; config.allow.len()];
     let mut unallowlisted: Vec<&PanicFinding> = Vec::new();
+    let mut new_findings: Vec<&PanicFinding> = Vec::new();
+    let mut baseline_used_counts: HashMap<BaselineKey, usize> = HashMap::new();
+    let mut allowlisted_count = 0usize;
+    let mut baselined_count = 0usize;
+    let baseline_active = config.policy.mode != "blocking";
 
     for finding in &findings {
         let mut matched_one = false;
@@ -202,9 +349,21 @@ pub fn check_no_panic_family() -> Result<()> {
                 break;
             }
         }
-        if !matched_one {
-            unallowlisted.push(finding);
+        if matched_one {
+            allowlisted_count += 1;
+            continue;
         }
+        let key = baseline_key(finding);
+        let used = baseline_used_counts.get(&key).copied().unwrap_or(0);
+        let baseline_limit = baseline_counts.get(&key).copied().unwrap_or(0);
+        if baseline_active && used < baseline_limit {
+            baseline_used_counts.insert(key, used + 1);
+            baselined_count += 1;
+            continue;
+        }
+        // Unallowlisted *and* not in the baseline → genuinely new debt.
+        unallowlisted.push(finding);
+        new_findings.push(finding);
     }
 
     let mut stale: Vec<&NoPanicAllow> = Vec::new();
@@ -227,11 +386,33 @@ pub fn check_no_panic_family() -> Result<()> {
         }
     }
 
+    let stale_baseline_entries: Vec<&BaselineEntry> = if baseline_active {
+        baseline
+            .entry
+            .iter()
+            .filter(|e| {
+                baseline_used_counts
+                    .get(&baseline_entry_key(e))
+                    .copied()
+                    .unwrap_or(0)
+                    < e.count
+            })
+            .collect()
+    } else {
+        Vec::new()
+    };
+
     report.total_findings = findings.len();
-    report.allowlisted = findings.len().saturating_sub(unallowlisted.len());
+    report.allowlisted = allowlisted_count;
+    report.baselined = baselined_count;
     report.unallowlisted = unallowlisted.len();
     report.stale_entries = stale.len();
     report.expired_entries = expired.len();
+    report.baseline_total = baseline.entry.len();
+    report.baseline_finding_total = baseline.entry.iter().map(|entry| entry.count).sum();
+    report.baseline_unique_hit = baseline_used_counts.len();
+    report.baseline_stale = stale_baseline_entries.len();
+    report.new_debt = new_findings.len();
     report.mode = config.policy.mode.clone();
     report.by_family = group_by_family(&findings);
     report.by_crate = group_by_crate(&findings);
@@ -240,25 +421,147 @@ pub fn check_no_panic_family() -> Result<()> {
     write_outputs("no-panic", &serde_json::to_value(&report)?, &markdown)?;
 
     eprintln!(
-        "no-panic: {} finding(s); {} unallowlisted; {} stale; {} expired (mode={})",
+        "no-panic: {} finding(s); {} allowlisted; {} baselined; {} new-debt; {} stale-baseline; {} expired (mode={}; baseline={}/{})",
         report.total_findings,
-        report.unallowlisted,
-        report.stale_entries,
+        report.allowlisted,
+        report.baselined,
+        report.new_debt,
+        report.baseline_stale,
         report.expired_entries,
-        report.mode
+        report.mode,
+        report.baseline_unique_hit,
+        report.baseline_total,
     );
 
-    let blocking = config.policy.mode == "blocking";
-    if blocking
-        && (report.unallowlisted > 0 || report.stale_entries > 0 || report.expired_entries > 0)
-    {
-        bail!(
-            "no-panic policy is blocking and there are {} unallowlisted, {} stale, {} expired",
-            report.unallowlisted,
-            report.stale_entries,
-            report.expired_entries
-        );
+    match config.policy.mode.as_str() {
+        "blocking" => {
+            if report.unallowlisted > 0 || report.stale_entries > 0 || report.expired_entries > 0 {
+                bail!(
+                    "no-panic policy is blocking and there are {} unallowlisted, {} stale, {} expired",
+                    report.unallowlisted,
+                    report.stale_entries,
+                    report.expired_entries
+                );
+            }
+        }
+        "no-new-debt" => {
+            if report.new_debt > 0 || report.stale_entries > 0 || report.expired_entries > 0 {
+                if !new_findings.is_empty() {
+                    eprintln!("no-panic: new debt sites:");
+                    for f in new_findings.iter().take(20) {
+                        eprintln!(
+                            "  {}:{} ({} via {})",
+                            f.path, f.line, f.family, f.selector_callee
+                        );
+                    }
+                }
+                bail!(
+                    "no-panic policy is no-new-debt and there are {} new debt site(s), {} stale allowlist entries, and {} expired allowlist entries",
+                    report.new_debt,
+                    report.stale_entries,
+                    report.expired_entries
+                );
+            }
+        }
+        _ => {}
     }
+    Ok(())
+}
+
+pub fn no_panic_baseline(reset: bool) -> Result<()> {
+    let config: NoPanicConfig = if Path::new(NO_PANIC_TOML).exists() {
+        read_toml(NO_PANIC_TOML)?
+    } else {
+        bail!("missing {NO_PANIC_TOML}");
+    };
+    let findings = scan_panic_findings()?;
+    let current_entries = baseline_entries_from_findings(&findings, &config);
+
+    let entries = if reset {
+        current_entries
+    } else {
+        if !Path::new(NO_PANIC_BASELINE_TOML).exists() {
+            bail!(
+                "missing {NO_PANIC_BASELINE_TOML}; use `cargo xtask no-panic baseline --reset` for an intentional initial baseline"
+            );
+        }
+        let existing: NoPanicBaseline = read_toml(NO_PANIC_BASELINE_TOML)?;
+        let existing_counts = baseline_counts(&existing.entry);
+        let new_debt = new_baseline_debt(&current_entries, &existing_counts);
+        if !new_debt.is_empty() {
+            eprintln!("no-panic baseline: refusing to absorb new debt:");
+            for (entry, added) in new_debt.iter().take(20) {
+                eprintln!(
+                    "  {} ({}, {} via {}, +{}): {}",
+                    entry.path,
+                    entry.family,
+                    entry.selector_kind,
+                    entry.selector_callee,
+                    added,
+                    entry.snippet
+                );
+            }
+            bail!(
+                "no-panic baseline refresh would add {} new baseline entry/count change(s); remove or allowlist the new debt, or use --reset only for an intentional baseline reset",
+                new_debt.len()
+            );
+        }
+
+        current_entries
+            .into_iter()
+            .filter_map(|mut entry| {
+                let key = baseline_entry_key(&entry);
+                let existing_count = existing_counts.get(&key).copied()?;
+                entry.count = entry.count.min(existing_count);
+                (entry.count > 0).then_some(entry)
+            })
+            .collect()
+    };
+
+    let mut by_family: BTreeMap<String, usize> = BTreeMap::new();
+    for f in &findings {
+        *by_family.entry(f.family.clone()).or_default() += 1;
+    }
+
+    let baseline = NoPanicBaseline {
+        schema_version: Some("1.0".into()),
+        generated_at: Some(today().format("%Y-%m-%d").to_string()),
+        generated_by: Some(if reset {
+            "cargo xtask no-panic baseline --reset".into()
+        } else {
+            "cargo xtask no-panic baseline".into()
+        }),
+        summary: BaselineSummary {
+            total: findings.len(),
+            by_family,
+        },
+        entry: entries,
+    };
+
+    let mut buf = String::new();
+    buf.push_str("# Effortless Metrics — no-panic baseline snapshot\n");
+    buf.push_str("#\n");
+    buf.push_str("# This file pins the panic-family findings present at the time of\n");
+    buf.push_str("# generation. New findings outside this baseline are blocked when the\n");
+    buf.push_str("# no-panic checker is in `mode = \"no-new-debt\"`. Move entries into\n");
+    buf.push_str("# `policy/no-panic-allowlist.toml` (with owner/reason/expiry) as they\n");
+    buf.push_str("# are reviewed; entries that disappear naturally are dropped on next\n");
+    buf.push_str("# refresh. Normal refreshes refuse to add new entries; use --reset\n");
+    buf.push_str("# only for an intentional baseline reset.\n");
+    buf.push_str("#\n");
+    buf.push_str("# Refresh: `cargo xtask no-panic baseline`\n");
+    buf.push_str("# Reset:   `cargo xtask no-panic baseline --reset`\n\n");
+    buf.push_str(&toml::to_string(&baseline).context("serialize baseline")?);
+
+    fs::write(NO_PANIC_BASELINE_TOML, buf)
+        .with_context(|| format!("write {NO_PANIC_BASELINE_TOML}"))?;
+    eprintln!(
+        "no-panic baseline: wrote {} ({} unique entries from {} findings; reset={})",
+        NO_PANIC_BASELINE_TOML,
+        baseline.entry.len(),
+        findings.len(),
+        reset,
+    );
     Ok(())
 }
 
@@ -323,10 +626,24 @@ fn entry_matches(entry: &NoPanicAllow, finding: &PanicFinding) -> bool {
 #[derive(Debug, Default, Serialize)]
 struct NoPanicReport {
     total_findings: usize,
+    /// Findings matched by an entry in `policy/no-panic-allowlist.toml`.
     allowlisted: usize,
+    /// Findings absorbed by `policy/no-panic-baseline.toml`.
+    baselined: usize,
+    /// Findings matched neither by the allowlist nor by the baseline.
     unallowlisted: usize,
     stale_entries: usize,
     expired_entries: usize,
+    /// Number of entries in the baseline file.
+    baseline_total: usize,
+    /// Total finding count represented by all baseline entries.
+    baseline_finding_total: usize,
+    /// Number of distinct baseline entries hit at least once during the scan.
+    baseline_unique_hit: usize,
+    /// Baseline entries with no matching finding (candidate for removal).
+    baseline_stale: usize,
+    /// Findings that are not in the allowlist *and* not in the baseline.
+    new_debt: usize,
     mode: String,
     by_family: BTreeMap<String, usize>,
     by_crate: BTreeMap<String, usize>,
@@ -363,10 +680,25 @@ fn render_no_panic_md(
         report.total_findings
     ));
     s.push_str(&format!("- Allowlisted: {}\n", report.allowlisted));
-    s.push_str(&format!("- Unallowlisted: **{}**\n", report.unallowlisted));
-    s.push_str(&format!("- Stale entries: {}\n", report.stale_entries));
     s.push_str(&format!(
-        "- Expired entries: {}\n\n",
+        "- Baselined: {} (across {}/{} baseline entries; {} total baseline finding slots; {} stale)\n",
+        report.baselined,
+        report.baseline_unique_hit,
+        report.baseline_total,
+        report.baseline_finding_total,
+        report.baseline_stale,
+    ));
+    s.push_str(&format!("- New debt: **{}**\n", report.new_debt));
+    s.push_str(&format!(
+        "- Unallowlisted (allowlist + baseline gap): **{}**\n",
+        report.unallowlisted
+    ));
+    s.push_str(&format!(
+        "- Stale allowlist entries: {}\n",
+        report.stale_entries
+    ));
+    s.push_str(&format!(
+        "- Expired allowlist entries: {}\n\n",
         report.expired_entries
     ));
 
@@ -463,7 +795,12 @@ fn scan_panic_findings() -> Result<Vec<PanicFinding>> {
             // that `let x = foo(); // .unwrap()` does not produce a false positive.
             // This is a naive strip that ignores `//` inside string literals; for
             // panic-family detection in real code that is acceptable noise.
-            let line = strip_line_comment(raw_line);
+            let stripped = strip_line_comment(raw_line);
+            // Replace same-line string bodies with whitespace so panic-family
+            // names embedded inside string literals (e.g. `"use .unwrap()"`) are
+            // not flagged. Multi-line string contents are not handled here.
+            let stripped_owned = blank_string_literals_on_line(stripped);
+            let line = stripped_owned.as_str();
 
             // get_unwrap takes precedence over plain unwrap so we don't double-count.
             if let Some(m) = get_unwrap_re.find(line) {
@@ -555,6 +892,40 @@ fn strip_line_comment(line: &str) -> &str {
     } else {
         line
     }
+}
+
+/// Replace the body of every same-line `"..."` string literal with spaces so
+/// regex-based scanners don't pick up panic-family names embedded inside
+/// strings. Escaped quotes and raw-string literals are not handled (the
+/// false-positive surface they introduce is small in practice).
+fn blank_string_literals_on_line(line: &str) -> String {
+    let bytes = line.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut in_string = false;
+    let mut escape = false;
+    for &b in bytes {
+        if in_string {
+            out.push(b' ');
+            if escape {
+                escape = false;
+            } else if b == b'\\' {
+                escape = true;
+            } else if b == b'"' {
+                in_string = false;
+                // overwrite the closing quote we just blanked with the actual quote
+                let last = out.len() - 1;
+                out[last] = b'"';
+            }
+        } else {
+            out.push(b);
+            if b == b'"' {
+                in_string = true;
+            }
+        }
+    }
+    // SAFETY: input was UTF-8 and we only replaced characters with ASCII spaces
+    // or kept them; the result is still valid UTF-8.
+    String::from_utf8(out).unwrap_or_else(|_| line.to_string())
 }
 
 // =============================================================================
@@ -1579,5 +1950,96 @@ const RAW: &str = r#"#[allow(dead_code)]"#;
 const BYTES: &[u8] = b"#[allow(dead_code)]";
 "##;
         assert_eq!(count_bare_allow_attributes(source), 0);
+    }
+
+    #[test]
+    fn baseline_key_uses_path_family_callee_and_snippet() {
+        let f = PanicFinding {
+            path: "crates/x/src/lib.rs".into(),
+            family: "unwrap".into(),
+            line: 42,
+            column: 10,
+            selector_kind: "method_call".into(),
+            selector_callee: "unwrap".into(),
+            snippet: ".unwrap()".into(),
+        };
+        let key = baseline_key(&f);
+        assert_eq!(
+            key,
+            BaselineKey {
+                path: "crates/x/src/lib.rs".into(),
+                family: "unwrap".into(),
+                selector_kind: "method_call".into(),
+                selector_callee: "unwrap".into(),
+                snippet: ".unwrap()".into(),
+            }
+        );
+
+        let entry = BaselineEntry::from_key(key.clone(), 1);
+        assert_eq!(baseline_entry_key(&entry), key);
+    }
+
+    #[test]
+    fn blank_string_literals_replaces_string_body_with_spaces() {
+        let line = r#"let s = "use .unwrap()"; let other = ".expect()";"#;
+        let blanked = blank_string_literals_on_line(line);
+        // The string bodies are blanked (replaced with spaces) but the quotes
+        // remain so the regex panic-family matchers don't fire.
+        assert!(!blanked.contains(".unwrap()"));
+        assert!(!blanked.contains(".expect()"));
+        assert!(blanked.contains("let s = "));
+    }
+
+    #[test]
+    fn baseline_entries_count_duplicate_finding_shapes() {
+        let config = NoPanicConfig {
+            schema_version: None,
+            policy: NoPanicPolicy::default(),
+            allow: Vec::new(),
+        };
+        let findings = [
+            PanicFinding {
+                path: "a.rs".into(),
+                family: "unwrap".into(),
+                line: 1,
+                column: 1,
+                selector_kind: "method_call".into(),
+                selector_callee: "unwrap".into(),
+                snippet: ".unwrap()".into(),
+            },
+            PanicFinding {
+                path: "a.rs".into(),
+                family: "unwrap".into(),
+                line: 99,
+                column: 1,
+                selector_kind: "method_call".into(),
+                selector_callee: "unwrap".into(),
+                snippet: ".unwrap()".into(),
+            },
+        ];
+        let entries = baseline_entries_from_findings(&findings, &config);
+        assert_eq!(
+            entries.len(),
+            1,
+            "two findings with same key collapse to one baseline entry",
+        );
+        assert_eq!(entries[0].count, 2);
+    }
+
+    #[test]
+    fn new_baseline_debt_detects_count_increase() {
+        let key = BaselineKey {
+            path: "a.rs".into(),
+            family: "unwrap".into(),
+            selector_kind: "method_call".into(),
+            selector_callee: "unwrap".into(),
+            snippet: ".unwrap()".into(),
+        };
+        let existing = vec![BaselineEntry::from_key(key.clone(), 1)];
+        let current = vec![BaselineEntry::from_key(key, 2)];
+        let existing_counts = baseline_counts(&existing);
+        let new = new_baseline_debt(&current, &existing_counts);
+        assert_eq!(new.len(), 1);
+        assert_eq!(new[0].1, 1);
     }
 }

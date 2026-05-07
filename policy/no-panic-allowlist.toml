@@ -7,10 +7,10 @@
 # Owner: repo-policy
 # See: docs/NO_PANIC_POLICY.md, docs/POLICY_ALLOWLISTS.md
 #
-# This baseline file starts empty. Stage A keeps the no-panic checker advisory
-# (it reports findings but does not block CI). Once a baseline is generated
-# via `cargo xtask no-panic propose` and reviewed, entries are moved into this
-# file with owner/reason/expiry, and the checker is promoted to blocking.
+# The checker currently runs in no-new-debt mode: existing findings are covered
+# by `policy/no-panic-baseline.toml`, while new findings must be removed or
+# deliberately moved here with owner/reason/expiry. Once reviewed debt has moved
+# out of the baseline, this policy can advance to `mode = "blocking"`.
 schema_version = "0.3"
 
 [policy]
@@ -27,8 +27,13 @@ families = [
   "get_unwrap",
   "unchecked_time_subtraction",
 ]
-# Stage A: advisory only. The checker reports but does not fail.
-mode = "advisory"
+# Modes:
+#   - `advisory`: report findings, never fail.
+#   - `no-new-debt`: fail when a finding is *not* covered by either this
+#     allowlist or `policy/no-panic-baseline.toml`. New panic-family debt
+#     introduced by a PR fails CI; existing baselined debt does not.
+#   - `blocking`: fail on any finding not in the allowlist (ignores baseline).
+mode = "no-new-debt"
 
 # Each [[allow]] looks like:
 #

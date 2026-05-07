@@ -74,7 +74,9 @@ cargo xtask typos --fix     # Auto-fix typos
 cargo xtask bdd-matrix      # BDD matrix with feature sets
 cargo xtask publish         # Publish all crates in dependency order
 cargo xtask setup           # Configure git hooks (sets core.hooksPath to .githooks)
-cargo xtask check-no-panic-family  # Semantic panic-family ledger (advisory in Stage A)
+cargo xtask check-no-panic-family  # Semantic panic-family ledger (advisory / no-new-debt / blocking)
+cargo xtask no-panic baseline      # Refresh policy/no-panic-baseline.toml without absorbing new debt
+cargo xtask no-panic baseline --reset # Explicitly reset the no-panic baseline snapshot
 cargo xtask no-panic propose       # Emit candidate no-panic allowlist under target/policy-proposed/
 cargo xtask check-file-policy      # Validate non-Rust file allowlist
 cargo xtask check-lint-policy      # Validate MSRV / [lints] inheritance / debt expiry
@@ -175,7 +177,11 @@ documented under `docs/`:
 - `policy/clippy-debt.toml` — receipted Clippy warn-stage debt with expiry.
 - `policy/no-panic-allowlist.toml` — semantic panic-family allowlist
   (path + family + selector identity); enforced by
-  `cargo xtask check-no-panic-family` (advisory in Stage A).
+  `cargo xtask check-no-panic-family`.
+- `policy/no-panic-baseline.toml` — auto-generated snapshot of existing
+  panic-family findings; absorbs pre-existing debt while `mode =
+  "no-new-debt"`. Refresh with `cargo xtask no-panic baseline`; use
+  `--reset` only for an intentional repo-policy reset.
 - `policy/non-rust-allowlist.toml` — owner/surface/classification ledger for
   every tracked non-Rust file; enforced by `cargo xtask check-file-policy`.
 

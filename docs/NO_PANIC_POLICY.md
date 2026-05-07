@@ -65,37 +65,56 @@ column = 14
 
 ## Stages
 
-- **Stage A (current)** — Clippy panic-family at `warn`. `cargo xtask
-  check-no-panic-family` runs advisory-only, reporting findings.
-- **Stage B** — debt is moved into `policy/no-panic-allowlist.toml` with
-  owner/reason/expiry; the checker becomes blocking; new findings outside the
-  allowlist fail CI.
-- **Stage C** — Clippy panic-family lints flip to `deny`. The allowlist is the
-  only legitimate route to a panic-family call site.
+- **Stage A** — Clippy panic-family at `warn`. The checker runs advisory.
+- **Stage A.5 (current)** — `mode = "no-new-debt"`: the checker now blocks
+  any panic-family finding *not* in either `policy/no-panic-allowlist.toml`
+  or `policy/no-panic-baseline.toml`. Existing baselined debt does not need
+  manual classification; new debt fails CI.
+- **Stage B** — debt is moved out of the baseline and into the allowlist
+  with owner/reason/expiry; the baseline shrinks toward empty; the checker
+  flips to `mode = "blocking"`.
+- **Stage C** — Clippy panic-family lints flip to `deny`. The allowlist is
+  the only legitimate route to a panic-family call site.
 
 ## Workflow
 
 ```bash
-# 1. Find new findings.
+# 1. Run the checker.
 cargo xtask check-no-panic-family
 
-# 2. Generate a candidate allowlist file (stays under target/).
+# 2a. Refresh the existing baseline after a deliberate burndown PR. This drops
+#     entries/counts that disappeared and refuses to add new debt.
+cargo xtask no-panic baseline
+
+# 2b. Reset the baseline only for the initial snapshot or an explicit
+#     repo-policy reset PR.
+cargo xtask no-panic baseline --reset
+
+# 2c. Generate a candidate allowlist file (stays under target/) for entries
+#     ready to graduate from the baseline into the receipted allowlist.
 cargo xtask no-panic propose
-
-# 3. Review proposed entries; copy reviewed ones into
-#    policy/no-panic-allowlist.toml with owner, reason, classification,
-#    and expiry. Re-run.
-
-cargo xtask check-no-panic-family
 ```
+
+## Modes
+
+| Mode           | When the checker fails                                                              |
+|----------------|--------------------------------------------------------------------------------------|
+| `advisory`     | Never. Only writes the report.                                                       |
+| `no-new-debt`  | Findings outside both `no-panic-allowlist.toml` and `no-panic-baseline.toml`.        |
+| `blocking`     | Any finding outside `no-panic-allowlist.toml` (the baseline is ignored).             |
+
+The `expired` and `stale` allowlist signals fail in both `no-new-debt` and
+`blocking`.
 
 ## What `check-no-panic-family` enforces
 
 - Detect panic-family calls in workspace Rust sources.
-- Match each finding to an allowlist entry by `path + family + selector`.
-- In `mode = "blocking"`, fail on unallowlisted findings.
+- Match each finding against `policy/no-panic-allowlist.toml`
+  (`path + family + selector`) and `policy/no-panic-baseline.toml`
+  (`path + family + selector + snippet`, with occurrence counts).
+- In `mode = "no-new-debt"`, fail on findings not in either set.
+- In `mode = "blocking"`, fail on unallowlisted findings (baseline ignored).
 - Fail on **expired** allowlist entries.
-- Fail on **stale** entries (entry exists but no matching finding).
-- Warn on `last_seen` drift (line/column moved more than the configured
-  tolerance).
+- Fail on **stale** allowlist entries (entry exists but no matching finding).
+- Surface **stale baseline** entries (candidate for removal on next regenerate).
 - Write `target/no-panic.md` and `target/no-panic.json` reports.
