@@ -89,6 +89,7 @@ jobs:
             --locked \
             --all-features \
             --exclude uselesskey-bench \
+            --exclude uselesskey-bdd \
             --no-report \
             -- --test-threads=2
 
