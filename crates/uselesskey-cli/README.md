@@ -68,7 +68,9 @@ cargo run -p uselesskey-cli -- export vault-kv-json \
 
 `verify-bundle` reloads `manifest.json`, regenerates the expected artifacts from
 the recorded seed/label/format/profile, and fails if any file or manifest
-metadata is missing or changed.
+metadata is missing or changed. Bundles also include deterministic
+`receipts/materialization.json` and `receipts/audit-surface.json` metadata files;
+`verify-bundle` regenerates those receipts and fails on drift.
 
 The `export` subcommands verify the bundle first, then render handoff payloads
 for downstream tools. They write local files only; they do not call Kubernetes,

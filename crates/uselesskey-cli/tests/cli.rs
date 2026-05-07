@@ -73,11 +73,37 @@ fn bundle_writes_manifest_schema() {
     assert_eq!(value["seed"], "det-seed");
     assert_eq!(value["label"], "bundle-label");
     assert!(value["files"].as_array().expect("array").len() >= 8);
+    assert!(bundle_dir.join("receipts/materialization.json").exists());
+    assert!(bundle_dir.join("receipts/audit-surface.json").exists());
+    assert!(
+        value["files"]
+            .as_array()
+            .expect("array")
+            .iter()
+            .any(|file| file.as_str() == Some("receipts/materialization.json"))
+    );
+    assert!(
+        value["files"]
+            .as_array()
+            .expect("array")
+            .iter()
+            .any(|file| file.as_str() == Some("receipts/audit-surface.json"))
+    );
     let artifacts = value["artifacts"].as_array().expect("artifacts array");
     assert_eq!(
         artifacts.len(),
-        value["files"].as_array().expect("array").len()
+        value["files"].as_array().expect("array").len() - 2
     );
+    let receipts = value["receipts"].as_array().expect("receipts array");
+    assert_eq!(receipts.len(), 2);
+    assert!(receipts.iter().any(|receipt| {
+        receipt["path"].as_str() == Some("receipts/materialization.json")
+            && receipt["kind"].as_str() == Some("materialization")
+    }));
+    assert!(receipts.iter().any(|receipt| {
+        receipt["path"].as_str() == Some("receipts/audit-surface.json")
+            && receipt["kind"].as_str() == Some("audit-surface")
+    }));
     assert!(
         artifacts
             .iter()
@@ -143,6 +169,33 @@ fn bundle_profile_scanner_safe_is_the_default_path() {
     let token_value = token["value"].as_str().expect("token value");
     assert!(token_value.starts_with("uk_tset_"));
     assert!(!token_value.starts_with("uk_test_"));
+
+    let materialization: Value = serde_json::from_slice(
+        &fs::read(bundle_dir.join("receipts/materialization.json"))
+            .expect("materialization receipt"),
+    )
+    .expect("materialization receipt json");
+    assert_eq!(materialization["receipt"], "materialization");
+    assert_eq!(materialization["profile"], "scanner-safe");
+    assert_eq!(
+        materialization["artifact_count"].as_u64(),
+        Some(artifacts.len() as u64)
+    );
+    assert!(
+        materialization["lanes"]
+            .as_array()
+            .expect("lanes")
+            .iter()
+            .any(|lane| lane.as_str() == Some("runtime"))
+    );
+
+    let audit: Value = serde_json::from_slice(
+        &fs::read(bundle_dir.join("receipts/audit-surface.json")).expect("audit receipt"),
+    )
+    .expect("audit receipt json");
+    assert_eq!(audit["receipt"], "audit-surface");
+    assert_eq!(audit["scanner_safe"], true);
+    assert_eq!(audit["runtime_material_count"], 0);
 }
 
 #[test]
@@ -265,6 +318,120 @@ fn verify_bundle_rejects_manifest_metadata_drift() {
 }
 
 #[test]
+fn verify_bundle_rejects_receipt_drift() {
+    let dir = tempdir().expect("tempdir");
+    let bundle_dir = dir.path().join("bundle");
+
+    let mut bundle = Command::cargo_bin("uselesskey").expect("bin exists");
+    bundle.args([
+        "bundle",
+        "--profile",
+        "scanner-safe",
+        "--out",
+        bundle_dir.to_str().expect("utf-8"),
+    ]);
+    bundle.assert().success();
+
+    fs::write(
+        bundle_dir.join("receipts/materialization.json"),
+        "{\"receipt\":\"materialization\",\"mutated\":true}\n",
+    )
+    .expect("mutate receipt");
+
+    let mut verify = Command::cargo_bin("uselesskey").expect("bin exists");
+    verify.args([
+        "verify-bundle",
+        "--path",
+        bundle_dir.to_str().expect("utf-8"),
+    ]);
+    verify
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("receipt mismatch"));
+}
+
+#[test]
+fn verify_bundle_rejects_receipt_metadata_drift() {
+    let dir = tempdir().expect("tempdir");
+    let bundle_dir = dir.path().join("bundle");
+
+    let mut bundle = Command::cargo_bin("uselesskey").expect("bin exists");
+    bundle.args([
+        "bundle",
+        "--profile",
+        "scanner-safe",
+        "--out",
+        bundle_dir.to_str().expect("utf-8"),
+    ]);
+    bundle.assert().success();
+
+    let manifest_path = bundle_dir.join("manifest.json");
+    let mut manifest: Value =
+        serde_json::from_slice(&fs::read(&manifest_path).expect("read manifest"))
+            .expect("manifest json");
+    manifest["receipts"][0]["description"] = Value::String("mutated receipt".to_string());
+    fs::write(
+        &manifest_path,
+        serde_json::to_vec_pretty(&manifest).expect("serialize manifest"),
+    )
+    .expect("mutate manifest");
+
+    let mut verify = Command::cargo_bin("uselesskey").expect("bin exists");
+    verify.args([
+        "verify-bundle",
+        "--path",
+        bundle_dir.to_str().expect("utf-8"),
+    ]);
+    verify
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("receipt metadata mismatch"));
+}
+
+#[test]
+fn verify_bundle_rejects_missing_receipt_metadata_on_current_manifest() {
+    let dir = tempdir().expect("tempdir");
+    let bundle_dir = dir.path().join("bundle");
+
+    let mut bundle = Command::cargo_bin("uselesskey").expect("bin exists");
+    bundle.args([
+        "bundle",
+        "--profile",
+        "scanner-safe",
+        "--out",
+        bundle_dir.to_str().expect("utf-8"),
+    ]);
+    bundle.assert().success();
+
+    let manifest_path = bundle_dir.join("manifest.json");
+    let mut manifest: Value =
+        serde_json::from_slice(&fs::read(&manifest_path).expect("read manifest"))
+            .expect("manifest json");
+    manifest
+        .as_object_mut()
+        .expect("manifest object")
+        .remove("receipts");
+    let files = manifest["files"].as_array_mut().expect("files array");
+    files.retain(|file| !file.as_str().expect("file string").starts_with("receipts/"));
+    fs::write(
+        &manifest_path,
+        serde_json::to_vec_pretty(&manifest).expect("serialize manifest"),
+    )
+    .expect("write manifest");
+
+    let mut verify = Command::cargo_bin("uselesskey").expect("bin exists");
+    verify.args([
+        "verify-bundle",
+        "--path",
+        bundle_dir.to_str().expect("utf-8"),
+    ]);
+    verify
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("receipt metadata missing"));
+}
+
+#[test]
 fn verify_bundle_accepts_legacy_manifest_without_profile_metadata() {
     let dir = tempdir().expect("tempdir");
     let bundle_dir = dir.path().join("bundle");
@@ -297,6 +464,12 @@ fn verify_bundle_accepts_legacy_manifest_without_profile_metadata() {
         .as_object_mut()
         .expect("manifest object")
         .remove("artifacts");
+    manifest
+        .as_object_mut()
+        .expect("manifest object")
+        .remove("receipts");
+    let files = manifest["files"].as_array_mut().expect("files array");
+    files.retain(|file| !file.as_str().expect("file string").starts_with("receipts/"));
     fs::write(
         &manifest_path,
         serde_json::to_vec_pretty(&manifest).expect("serialize manifest"),

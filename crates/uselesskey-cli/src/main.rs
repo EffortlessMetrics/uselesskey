@@ -255,6 +255,22 @@ fn run_bundle(args: BundleArgs) -> Result<()> {
             args.profile,
         ));
     }
+    let fixture_files = files.clone();
+    let receipts = bundle_receipt_records(args.profile);
+    for receipt in &receipts {
+        let receipt_artifact = generate_bundle_receipt_artifact(
+            &receipt.kind,
+            &args.seed,
+            &args.label,
+            args.format,
+            args.profile,
+            &fixture_files,
+            &artifacts,
+        )?;
+        let file = out_dir.join(&receipt.path);
+        write_artifact_to_path(&receipt_artifact, &file)?;
+        files.push(receipt.path.clone());
+    }
 
     let manifest = BundleManifest {
         version: 1,
@@ -264,6 +280,7 @@ fn run_bundle(args: BundleArgs) -> Result<()> {
         format: args.format.manifest_name().to_string(),
         files,
         artifacts,
+        receipts,
     };
     let manifest_path = out_dir.join("manifest.json");
     fs::write(&manifest_path, serde_json::to_vec_pretty(&manifest)?)?;
@@ -426,6 +443,32 @@ fn verify_bundle_manifest(bundle_dir: &Path, manifest: &BundleManifest) -> Resul
             profile,
         ));
     }
+    let fixture_files = expected_files.clone();
+    let mut expected_receipts = Vec::new();
+    if !manifest.receipts.is_empty() {
+        expected_receipts = bundle_receipt_records(profile);
+        for receipt in &expected_receipts {
+            let expected = artifact_bytes(&generate_bundle_receipt_artifact(
+                &receipt.kind,
+                &manifest.seed,
+                &manifest.label,
+                format,
+                profile,
+                &fixture_files,
+                &expected_artifacts,
+            )?)?;
+            let path = bundle_dir.join(&receipt.path);
+            let actual =
+                fs::read(&path).with_context(|| format!("failed to read {}", path.display()))?;
+            if actual != expected {
+                bail!(
+                    "bundle verification failed: {} receipt mismatch",
+                    path.display()
+                );
+            }
+            expected_files.push(receipt.path.clone());
+        }
+    }
 
     if manifest.files != expected_files {
         bail!(
@@ -440,6 +483,18 @@ fn verify_bundle_manifest(bundle_dir: &Path, manifest: &BundleManifest) -> Resul
             "bundle verification failed: artifact metadata mismatch; expected {:?}, found {:?}",
             expected_artifacts,
             manifest.artifacts
+        );
+    }
+
+    if !manifest.artifacts.is_empty() && manifest.receipts.is_empty() {
+        bail!("bundle verification failed: receipt metadata missing");
+    }
+
+    if !manifest.receipts.is_empty() && manifest.receipts != expected_receipts {
+        bail!(
+            "bundle verification failed: receipt metadata mismatch; expected {:?}, found {:?}",
+            expected_receipts,
+            manifest.receipts
         );
     }
 
@@ -561,6 +616,86 @@ fn bundle_artifact_description(kind: Kind, profile: BundleProfile) -> &'static s
         }
         (BundleProfile::Runtime, _) => "runtime-generated fixture material",
     }
+}
+
+fn bundle_receipt_records(profile: BundleProfile) -> Vec<BundleReceiptRecord> {
+    vec![
+        BundleReceiptRecord {
+            path: "receipts/materialization.json".to_string(),
+            kind: "materialization".to_string(),
+            profile: profile.manifest_name().to_string(),
+            description: "deterministic bundle materialization receipt".to_string(),
+        },
+        BundleReceiptRecord {
+            path: "receipts/audit-surface.json".to_string(),
+            kind: "audit-surface".to_string(),
+            profile: profile.manifest_name().to_string(),
+            description: "scanner-safety and lane metadata receipt".to_string(),
+        },
+    ]
+}
+
+fn generate_bundle_receipt_artifact(
+    kind: &str,
+    seed: &str,
+    label: &str,
+    format: Format,
+    profile: BundleProfile,
+    fixture_files: &[String],
+    artifacts: &[BundleArtifactRecord],
+) -> Result<Artifact> {
+    match kind {
+        "materialization" => Ok(Artifact::Json(json!({
+            "receipt": "materialization",
+            "version": 1,
+            "profile": profile.manifest_name(),
+            "seed": seed,
+            "label": label,
+            "format": format.manifest_name(),
+            "artifact_count": artifacts.len(),
+            "files": fixture_files,
+            "lanes": bundle_lanes(artifacts),
+            "artifacts": artifacts,
+        }))),
+        "audit-surface" => {
+            let scanner_safe_count = artifacts
+                .iter()
+                .filter(|artifact| artifact.scanner_safe)
+                .count();
+            Ok(Artifact::Json(json!({
+                "receipt": "audit-surface",
+                "version": 1,
+                "profile": profile.manifest_name(),
+                "scanner_safe": scanner_safe_count == artifacts.len(),
+                "artifact_count": artifacts.len(),
+                "scanner_safe_count": scanner_safe_count,
+                "runtime_material_count": artifacts.len() - scanner_safe_count,
+                "lanes": bundle_lanes(artifacts),
+                "artifacts": artifacts.iter().map(|artifact| {
+                    json!({
+                        "path": artifact.path,
+                        "kind": artifact.kind,
+                        "format": artifact.format,
+                        "scanner_safe": artifact.scanner_safe,
+                        "description": artifact.description,
+                    })
+                }).collect::<Vec<_>>(),
+            })))
+        }
+        other => bail!("unsupported bundle receipt `{other}`"),
+    }
+}
+
+fn bundle_lanes(artifacts: &[BundleArtifactRecord]) -> Vec<String> {
+    let mut lanes = Vec::new();
+    for artifact in artifacts {
+        for lane in &artifact.lanes {
+            if !lanes.contains(lane) {
+                lanes.push(lane.clone());
+            }
+        }
+    }
+    lanes
 }
 
 fn preferred_bundle_format(kind: Kind, requested: Format, profile: BundleProfile) -> Format {
@@ -833,6 +968,8 @@ struct BundleManifest {
     files: Vec<String>,
     #[serde(default)]
     artifacts: Vec<BundleArtifactRecord>,
+    #[serde(default)]
+    receipts: Vec<BundleReceiptRecord>,
 }
 
 #[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -843,6 +980,14 @@ struct BundleArtifactRecord {
     profile: String,
     lanes: Vec<String>,
     scanner_safe: bool,
+    description: String,
+}
+
+#[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
+struct BundleReceiptRecord {
+    path: String,
+    kind: String,
+    profile: String,
     description: String,
 }
 

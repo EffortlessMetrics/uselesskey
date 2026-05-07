@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `uselesskey bundle` manifests.
 - Added `uselesskey export k8s` and `uselesskey export vault-kv-json` payload
   renderers for verified bundle directories.
+- Added deterministic bundle receipt files under `receipts/` and verification
+  coverage for receipt drift.
 - Added a public-surface map that separates public support promises from
   published internal implementation shards.
 
