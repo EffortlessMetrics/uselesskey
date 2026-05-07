@@ -17,6 +17,7 @@ documentation = "https://docs.rs/uselesskey-feature-grid"
 [dependencies]
 
 [dev-dependencies]
+uselesskey-test-support = { workspace = true }
 
 
 
