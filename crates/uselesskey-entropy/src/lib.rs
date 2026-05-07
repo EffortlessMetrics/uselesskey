@@ -128,13 +128,18 @@ mod tests {
     use super::*;
     use proptest::prop_assert_eq;
     use uselesskey_core::Seed;
+    use uselesskey_test_support::{TestResult, require_ok};
 
     #[test]
-    fn deterministic_entropy_is_stable() {
-        let fx = Factory::deterministic(Seed::from_env_value("entropy-det").unwrap());
+    fn deterministic_entropy_is_stable() -> TestResult<()> {
+        let fx = Factory::deterministic(require_ok(
+            Seed::from_env_value("entropy-det"),
+            "entropy-det must parse as a deterministic seed",
+        )?);
         let a = fx.entropy("svc").bytes(32);
         let b = fx.entropy("svc").bytes(32);
         assert_eq!(a, b);
+        Ok(())
     }
 
     #[test]
@@ -146,25 +151,36 @@ mod tests {
     }
 
     #[test]
-    fn different_labels_produce_different_bytes() {
-        let fx = Factory::deterministic(Seed::from_env_value("entropy-labels").unwrap());
+    fn different_labels_produce_different_bytes() -> TestResult<()> {
+        let fx = Factory::deterministic(require_ok(
+            Seed::from_env_value("entropy-labels"),
+            "entropy-labels must parse as a deterministic seed",
+        )?);
         let a = fx.entropy("a").bytes(32);
         let b = fx.entropy("b").bytes(32);
         assert_ne!(a, b);
+        Ok(())
     }
 
     #[test]
-    fn different_variants_produce_different_bytes() {
-        let fx = Factory::deterministic(Seed::from_env_value("entropy-variants").unwrap());
+    fn different_variants_produce_different_bytes() -> TestResult<()> {
+        let fx = Factory::deterministic(require_ok(
+            Seed::from_env_value("entropy-variants"),
+            "entropy-variants must parse as a deterministic seed",
+        )?);
         let fixture = fx.entropy("svc");
         let good = fixture.bytes(32);
         let alt = fixture.bytes_with_variant(32, "alt");
         assert_ne!(good, alt);
+        Ok(())
     }
 
     #[test]
-    fn accessors_report_fixture_identity() {
-        let fx = Factory::deterministic(Seed::from_env_value("entropy-identity").unwrap());
+    fn accessors_report_fixture_identity() -> TestResult<()> {
+        let fx = Factory::deterministic(require_ok(
+            Seed::from_env_value("entropy-identity"),
+            "entropy-identity must parse as a deterministic seed",
+        )?);
         let default = fx.entropy("svc");
         let custom = fx.entropy_with_variant("svc-alt", "custom");
 
@@ -172,11 +188,15 @@ mod tests {
         assert_eq!(default.variant(), "good");
         assert_eq!(custom.label(), "svc-alt");
         assert_eq!(custom.variant(), "custom");
+        Ok(())
     }
 
     #[test]
-    fn fill_bytes_matches_allocating_path() {
-        let fx = Factory::deterministic(Seed::from_env_value("entropy-fill").unwrap());
+    fn fill_bytes_matches_allocating_path() -> TestResult<()> {
+        let fx = Factory::deterministic(require_ok(
+            Seed::from_env_value("entropy-fill"),
+            "entropy-fill must parse as a deterministic seed",
+        )?);
         let fixture = fx.entropy("svc");
 
         let expected = fixture.bytes(24);
@@ -184,17 +204,22 @@ mod tests {
         fixture.fill_bytes(&mut actual);
 
         assert_eq!(expected, actual);
+        Ok(())
     }
 
     #[test]
-    fn debug_does_not_include_bytes() {
-        let fx = Factory::deterministic(Seed::from_env_value("entropy-debug").unwrap());
+    fn debug_does_not_include_bytes() -> TestResult<()> {
+        let fx = Factory::deterministic(require_ok(
+            Seed::from_env_value("entropy-debug"),
+            "entropy-debug must parse as a deterministic seed",
+        )?);
         let fixture = fx.entropy("svc");
         let dbg = format!("{fixture:?}");
 
         assert!(dbg.contains("EntropyFixture"));
         assert!(dbg.contains("svc"));
         assert!(!dbg.contains("["));
+        Ok(())
     }
 
     proptest::proptest! {

@@ -16,14 +16,14 @@ generated_at = "2026-05-07"
 generated_by = "cargo xtask no-panic baseline"
 
 [summary]
-total = 4271
+total = 4265
 
 [summary.by_family]
 expect = 2255
 get_unwrap = 1
 panic_macro = 123
 unreachable = 6
-unwrap = 1886
+unwrap = 1880
 
 [[entry]]
 path = "crates/materialize-buildrs-example/build.rs"
@@ -8823,46 +8823,6 @@ family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
 snippet = '.expect("                             ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-entropy/src/lib.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let fx = Factory::deterministic(Seed::from_env_value("                ").unwrap());'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-entropy/src/lib.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let fx = Factory::deterministic(Seed::from_env_value("              ").unwrap());'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-entropy/src/lib.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let fx = Factory::deterministic(Seed::from_env_value("             ").unwrap());'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-entropy/src/lib.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let fx = Factory::deterministic(Seed::from_env_value("            ").unwrap());'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-entropy/src/lib.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let fx = Factory::deterministic(Seed::from_env_value("           ").unwrap());'
 count = 1
 
 [[entry]]
