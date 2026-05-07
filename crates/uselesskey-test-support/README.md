@@ -16,10 +16,10 @@ This crate is a workspace dev-dependency only; it is not published.
 ## Pattern
 
 ```rust
-use uselesskey_test_support::{ensure_eq, require_ok};
+use uselesskey_test_support::{ensure_eq, require_ok, TestResult};
 
 #[test]
-fn my_fallible_test() -> Result<(), Box<dyn std::error::Error>> {
+fn my_fallible_test() -> TestResult<()> {
     let value = require_ok(parse_thing(input), "parse_thing should accept input")?;
     ensure_eq!(value.kind(), Kind::Expected);
     Ok(())
