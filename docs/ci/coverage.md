@@ -26,6 +26,10 @@ The Coverage workflow runs on:
 - `workflow_dispatch` (manual trigger),
 - `pull_request` with labels `coverage` or `full-ci`.
 
+The workflow excludes the Cucumber BDD runner crate. BDD scenarios remain owned
+by `cargo xtask bdd`, because that binary is not a libtest harness and does not
+accept the `--test-threads` flag used to keep coverage runs bounded.
+
 ## Artifacts
 
 Durable receipts are:
