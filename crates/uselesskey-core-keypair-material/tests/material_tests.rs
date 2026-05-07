@@ -1,5 +1,6 @@
 use uselesskey_core::negative::CorruptPem;
 use uselesskey_core_keypair_material::Pkcs8SpkiKeyMaterial;
+use uselesskey_test_support::{TestResult, require_ok};
 
 // ── helpers ──────────────────────────────────────────────────────────────
 
@@ -413,19 +414,21 @@ fn kid_is_non_empty_for_all_key_types() {
 // ── Temp file round-trip ─────────────────────────────────────────────────
 
 #[test]
-fn tempfile_private_key_round_trip() {
+fn tempfile_private_key_round_trip() -> TestResult<()> {
     let m = rsa_like_material();
-    let tmp = m.write_private_key_pkcs8_pem().expect("write private");
-    let content = tmp.read_to_string().expect("read");
+    let tmp = require_ok(m.write_private_key_pkcs8_pem(), "write private")?;
+    let content = require_ok(tmp.read_to_string(), "read")?;
     assert_eq!(content, m.private_key_pkcs8_pem());
+    Ok(())
 }
 
 #[test]
-fn tempfile_public_key_round_trip() {
+fn tempfile_public_key_round_trip() -> TestResult<()> {
     let m = rsa_like_material();
-    let tmp = m.write_public_key_spki_pem().expect("write public");
-    let content = tmp.read_to_string().expect("read");
+    let tmp = require_ok(m.write_public_key_spki_pem(), "write public")?;
+    let content = require_ok(tmp.read_to_string(), "read")?;
     assert_eq!(content, m.public_key_spki_pem());
+    Ok(())
 }
 
 // ── Property-based tests ─────────────────────────────────────────────────

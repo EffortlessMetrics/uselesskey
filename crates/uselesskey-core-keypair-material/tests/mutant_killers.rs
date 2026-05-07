@@ -2,6 +2,7 @@
 
 use uselesskey_core::negative::CorruptPem;
 use uselesskey_core_keypair_material::Pkcs8SpkiKeyMaterial;
+use uselesskey_test_support::{TestResult, require_ok};
 
 fn sample() -> Pkcs8SpkiKeyMaterial {
     Pkcs8SpkiKeyMaterial::new(
@@ -137,14 +138,15 @@ fn deterministic_der_corruption_stable_and_non_trivial() {
 }
 
 #[test]
-fn write_tempfiles_round_trip() {
+fn write_tempfiles_round_trip() -> TestResult<()> {
     let m = sample();
-    let priv_temp = m.write_private_key_pkcs8_pem().unwrap();
-    let pub_temp = m.write_public_key_spki_pem().unwrap();
+    let priv_temp = require_ok(m.write_private_key_pkcs8_pem(), "write private pem")?;
+    let pub_temp = require_ok(m.write_public_key_spki_pem(), "write public pem")?;
 
-    let priv_content = priv_temp.read_to_string().unwrap();
-    let pub_content = pub_temp.read_to_string().unwrap();
+    let priv_content = require_ok(priv_temp.read_to_string(), "read private")?;
+    let pub_content = require_ok(pub_temp.read_to_string(), "read public")?;
 
     assert_eq!(priv_content, m.private_key_pkcs8_pem());
     assert_eq!(pub_content, m.public_key_spki_pem());
+    Ok(())
 }

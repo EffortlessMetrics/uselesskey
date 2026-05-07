@@ -16,14 +16,14 @@ generated_at = "2026-05-07"
 generated_by = "cargo xtask no-panic baseline"
 
 [summary]
-total = 4255
+total = 4231
 
 [summary.by_family]
-expect = 2245
+expect = 2233
 get_unwrap = 1
 panic_macro = 123
 unreachable = 6
-unwrap = 1880
+unwrap = 1868
 
 [[entry]]
 path = "crates/materialize-buildrs-example/build.rs"
@@ -5023,182 +5023,6 @@ family = "unwrap"
 selector_kind = "method_call"
 selector_callee = "unwrap"
 snippet = "let v = serde_json::to_value(&jwk).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-keypair-material/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("             ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-keypair-material/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let private_text = private.read_to_string().expect("            ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-keypair-material/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let public = material.write_public_key_spki_pem().expect("            ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-keypair-material/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let public_text = public.read_to_string().expect("           ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-keypair-material/tests/material_integration.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                               ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-keypair-material/tests/material_integration.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                              ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-keypair-material/tests/material_integration.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("            ")'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-keypair-material/tests/material_integration.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("           ")'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-keypair-material/tests/material_tests.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let content = tmp.read_to_string().expect("    ");'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-keypair-material/tests/material_tests.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let tmp = m.write_private_key_pkcs8_pem().expect("             ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-keypair-material/tests/material_tests.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let tmp = m.write_public_key_spki_pem().expect("            ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-keypair-material/tests/mutant_killers.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let priv_content = priv_temp.read_to_string().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-keypair-material/tests/mutant_killers.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let priv_temp = m.write_private_key_pkcs8_pem().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-keypair-material/tests/mutant_killers.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let pub_content = pub_temp.read_to_string().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-keypair-material/tests/mutant_killers.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let pub_temp = m.write_public_key_spki_pem().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-keypair-material/tests/negative_fixtures.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let ext = temp.path().extension().unwrap().to_str().unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-keypair-material/tests/negative_fixtures.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let private_temp = m.write_private_key_pkcs8_pem().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-keypair-material/tests/negative_fixtures.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let public_temp = m.write_public_key_spki_pem().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-keypair-material/tests/negative_fixtures.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let temp = m.write_private_key_pkcs8_pem().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-keypair-material/tests/negative_fixtures.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let temp = m.write_public_key_spki_pem().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-keypair-material/tests/negative_fixtures.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "private_temp.read_to_string().unwrap(),"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-keypair-material/tests/negative_fixtures.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "public_temp.read_to_string().unwrap(),"
 count = 1
 
 [[entry]]
