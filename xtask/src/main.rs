@@ -186,6 +186,15 @@ enum NoBlobCmd {
 enum NoPanicCmd {
     /// Generate a candidate allowlist file under target/policy-proposed/.
     Propose,
+    /// Regenerate `policy/no-panic-baseline.toml` from current findings.
+    Baseline {
+        /// Replace the baseline with all current findings.
+        ///
+        /// Without this flag, regeneration only drops disappeared baseline
+        /// entries and refuses to absorb new panic-family debt.
+        #[arg(long)]
+        reset: bool,
+    },
 }
 
 #[derive(Subcommand)]
@@ -302,6 +311,7 @@ fn main() -> Result<()> {
         Cmd::CheckNoPanicFamily => policy::check_no_panic_family(),
         Cmd::NoPanic { action } => match action {
             NoPanicCmd::Propose => policy::no_panic_propose(),
+            NoPanicCmd::Baseline { reset } => policy::no_panic_baseline(reset),
         },
         Cmd::CheckFilePolicy => policy::check_file_policy(),
         Cmd::CheckLintPolicy => policy::check_lint_policy(),
