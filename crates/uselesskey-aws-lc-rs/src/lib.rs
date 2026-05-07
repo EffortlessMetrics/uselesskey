@@ -119,10 +119,16 @@ mod tests {
     use std::sync::OnceLock;
     use uselesskey_core::{Factory, Seed};
 
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "shared inline-test factory; only consumed when test cfg-guards are active"
+    )]
     static FX: OnceLock<Factory> = OnceLock::new();
 
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "shared inline-test factory; only consumed when test cfg-guards are active"
+    )]
     fn fx() -> Factory {
         FX.get_or_init(|| {
             let seed = Seed::from_env_value("uselesskey-aws-lc-rs-inline-test-seed-v1")

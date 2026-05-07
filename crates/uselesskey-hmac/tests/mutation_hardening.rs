@@ -4,7 +4,10 @@
 //! Each test asserts concrete field values so that replacing the return with
 //! `Default::default()`, `String::new()`, or `"xyzzy"` will fail.
 
-#[allow(dead_code)]
+#[allow(
+    dead_code,
+    reason = "shared test-util module; only a subset is used per test file"
+)]
 mod testutil;
 
 #[cfg(feature = "jwk")]

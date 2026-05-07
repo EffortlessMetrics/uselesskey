@@ -129,7 +129,7 @@ impl Receipt {
     /// Failed steps become results with level `"error"`, skipped steps become
     /// results with level `"note"`. Failed feature-matrix and BDD-matrix
     /// entries are also emitted as `"error"` results.
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "SARIF emitter prepared ahead of CI wiring")]
     pub fn to_sarif(&self) -> String {
         let mut results: Vec<serde_json::Value> = Vec::new();
         let mut rules: Vec<serde_json::Value> = Vec::new();
@@ -366,7 +366,7 @@ impl Runner {
     }
 
     /// Write a SARIF 2.1.0 file from the current receipt state.
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "SARIF emitter prepared ahead of CI wiring")]
     pub fn write_sarif(&self, path: impl AsRef<Path>) -> Result<()> {
         let path = path.as_ref();
         if let Some(parent) = path.parent() {

@@ -106,6 +106,10 @@ keys = [
 # Stage B: burn down debt, every remaining exception receipted in
 #          policy/no-panic-allowlist.toml with owner/reason/expiry.
 # Stage C: flip panic-family lints to deny.
+#
+# Bare-allow rollout:
+#   - bare `#[allow(...)]` is a hard error today (every suppression must carry
+#     `reason = "..."`); the workspace is at zero bare allows.
 [stage]
 current = "A"
-description = "Warn-stage panic-family lints; semantic no-panic checker advisory."
+description = "Warn-stage panic-family lints; semantic no-panic checker advisory; bare-allow blocking."

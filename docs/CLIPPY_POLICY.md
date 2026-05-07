@@ -56,6 +56,7 @@ their target MSRV.
 - Workspace MSRV matches `policy/clippy-lints.toml`.
 - Every member crate has `[lints]\nworkspace = true`.
 - No `clippy.toml` test carveouts.
-- No bare `#[allow(...)]` in crate sources (use `#[expect(..., reason = ...)]`).
+- **No bare `#[allow(...)]`** in crate sources — every suppression must carry a
+  `reason = "..."` clause (or use `#[expect(..., reason = ...)]`).
 - All `clippy-debt.toml` entries have owner, reason, and a non-expired date.
 - Planned MSRV-staged lints are not activated too early.

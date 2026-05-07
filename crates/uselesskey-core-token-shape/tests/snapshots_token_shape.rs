@@ -11,7 +11,10 @@ use uselesskey_core_token_shape::{
 };
 
 #[derive(Serialize)]
-#[allow(dead_code)]
+#[allow(
+    dead_code,
+    reason = "fields are read by serde Serialize but not via Rust paths"
+)]
 struct TokenShapeSnapshot {
     kind: &'static str,
     total_len: usize,

@@ -4,7 +4,10 @@
 //! P-256 and P-384, corrupt DER fails parsing, mismatched keys fail
 //! signature verification, and negative fixtures are deterministic.
 
-#[allow(dead_code)]
+#[allow(
+    dead_code,
+    reason = "shared test-util module; only a subset is used per test file"
+)]
 mod testutil;
 
 use p256::ecdsa::{

@@ -80,7 +80,10 @@ fn stable_bytes_known_values() {
 #[test]
 fn clone_and_copy() {
     let spec = HmacSpec::Hs256;
-    #[allow(clippy::clone_on_copy)]
+    #[allow(
+        clippy::clone_on_copy,
+        reason = "explicit clone exercises the Clone impl under test"
+    )]
     let cloned = spec.clone();
     let copied = spec;
     assert_eq!(spec, cloned);

@@ -40,7 +40,7 @@ proptest! {
 
     #[test]
     fn clone_preserves_equality(spec in arb_hmac_spec()) {
-        #[allow(clippy::clone_on_copy)]
+        #[allow(clippy::clone_on_copy, reason = "explicit clone exercises the Clone impl under test")]
         let cloned = spec.clone();
         prop_assert_eq!(spec, cloned);
         prop_assert_eq!(spec.alg_name(), cloned.alg_name());

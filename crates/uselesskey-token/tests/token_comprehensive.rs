@@ -391,7 +391,10 @@ fn token_spec_copy_semantics() {
 #[test]
 fn token_spec_clone_semantics() {
     let s1 = TokenSpec::bearer();
-    #[allow(clippy::clone_on_copy)]
+    #[allow(
+        clippy::clone_on_copy,
+        reason = "explicit clone exercises the Clone impl under test"
+    )]
     let s2 = s1.clone();
     assert_eq!(s1, s2);
 }

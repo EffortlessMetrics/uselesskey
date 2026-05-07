@@ -53,7 +53,7 @@ pub struct EcdsaKeyPair {
 /// Inner storage for computed key material.
 struct Inner {
     /// Kept for potential use; not currently read outside JWK feature.
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "consumed only when the `jwk` feature is enabled")]
     spec: EcdsaSpec,
     material: Pkcs8SpkiKeyMaterial,
     /// Raw public key bytes (uncompressed point, for JWK).

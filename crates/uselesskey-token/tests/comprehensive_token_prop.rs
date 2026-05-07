@@ -3,7 +3,10 @@
 //! Covers format invariants, character set compliance, authorization headers,
 //! and variant isolation across all token specs with random seeds.
 
-#[allow(dead_code)]
+#[allow(
+    dead_code,
+    reason = "shared test-util module; only a subset is used per test file"
+)]
 mod testutil;
 
 use base64::Engine as _;

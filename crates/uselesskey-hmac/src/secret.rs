@@ -92,7 +92,10 @@ impl HmacSecret {
         }
     }
 
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "reserved for future variant-based negative fixtures"
+    )]
     fn load_variant(&self, variant: &str) -> Arc<Inner> {
         load_inner(&self.factory, &self.label, self.spec, variant)
     }

@@ -113,7 +113,10 @@ impl LedgerCommand {
     }
 }
 
-#[allow(dead_code)]
+#[allow(
+    dead_code,
+    reason = "preserved for upcoming PR-bundle prepare/cleanup commands"
+)]
 #[derive(Debug, Clone)]
 pub struct PrepareCommand {
     pub repo_root: PathBuf,
@@ -254,7 +257,10 @@ pub struct LedgerReport {
     pub analysis: BundleAnalysis,
 }
 
-#[allow(dead_code)]
+#[allow(
+    dead_code,
+    reason = "preserved for upcoming PR-bundle prepare/cleanup commands"
+)]
 #[derive(Debug, Clone)]
 pub struct WorktreePrepared {
     pub worktree_path: PathBuf,
@@ -382,7 +388,10 @@ pub fn ledger_cmd(cmd: &LedgerCommand) -> Result<LedgerReport> {
     Ok(LedgerReport { markdown, analysis })
 }
 
-#[allow(dead_code)]
+#[allow(
+    dead_code,
+    reason = "preserved for upcoming PR-bundle prepare/cleanup commands"
+)]
 pub fn prepare_cmd(cmd: &PrepareCommand) -> Result<WorktreePrepared> {
     let snapshot = read_json::<BundleSnapshot>(&cmd.snapshot_path)?;
     let analysis = analyze_snapshot(&snapshot);
@@ -592,7 +601,7 @@ pub fn title_similarity(left: &str, right: &str) -> f64 {
     jaccard(&tokenize(left), &tokenize(right))
 }
 
-#[allow(dead_code)]
+#[allow(dead_code, reason = "preserved for ledger refinement scoring")]
 pub fn path_similarity(left: &[String], right: &[String]) -> f64 {
     jaccard(&path_fingerprints(left), &path_fingerprints(right))
 }
@@ -1591,7 +1600,10 @@ fn strip_status_prefix(line: &str) -> &str {
 mod tests {
     use super::*;
 
-    #[allow(clippy::too_many_arguments)]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "test fixture builder with one parameter per PR field"
+    )]
     fn open_pr(
         num: u64,
         title: &str,

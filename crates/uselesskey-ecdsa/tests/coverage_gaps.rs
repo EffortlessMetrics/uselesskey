@@ -8,7 +8,10 @@
 //! - Corrupt PEM variants beyond BadBase64
 //! - P-384 JWK private key d field length
 
-#[allow(dead_code)]
+#[allow(
+    dead_code,
+    reason = "shared test-util module; only a subset is used per test file"
+)]
 mod testutil;
 
 use uselesskey_core::negative::CorruptPem;

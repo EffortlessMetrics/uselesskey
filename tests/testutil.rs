@@ -12,7 +12,10 @@ static FX: OnceLock<Factory> = OnceLock::new();
 ///
 /// Required when `--all-features` enables both `ring` and `aws-lc-rs`
 /// on rustls, preventing auto-detection. Safe to call multiple times.
-#[allow(dead_code)]
+#[allow(
+    dead_code,
+    reason = "feature-gated helper; not used by every feature combo"
+)]
 #[cfg(any(feature = "tls", feature = "e2e", feature = "key-rotation"))]
 pub(crate) fn install_rustls_ring_provider() {
     use std::sync::Once;

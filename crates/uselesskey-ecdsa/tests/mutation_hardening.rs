@@ -4,7 +4,10 @@
 //! `public_jwk()`, `private_key_jwk()`, `public_jwks()`, JSON helpers,
 //! and arithmetic mutations in EC coordinate slicing.
 
-#[allow(dead_code)]
+#[allow(
+    dead_code,
+    reason = "shared test-util module; only a subset is used per test file"
+)]
 mod testutil;
 
 #[cfg(feature = "jwk")]

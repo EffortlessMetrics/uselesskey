@@ -960,12 +960,23 @@ pub fn check_lint_policy() -> Result<()> {
         }
     }
 
-    // 6. Bare `#[allow(...)]` debt is advisory in Stage A; surfaced in the
-    //    report and slated to flip to error once Clippy
-    //    `allow_attributes_without_reason` is promoted. The
-    //    `policy/clippy-lints.toml` `[stage].current` field tracks this.
+    // 6. Bare `#[allow(...)]` is a hard error: every suppression must carry
+    //    `reason = "..."`. This matches the shape Clippy
+    //    `allow_attributes_without_reason` will flag once it is promoted to
+    //    `deny` in Stage C.
     let bare_allow = scan_bare_allow_in_crates(&members)?;
     let bare_allow_total: usize = bare_allow.iter().map(|(_, n)| *n).sum();
+    for (file, count) in bare_allow.iter().take(20) {
+        errors.push(format!(
+            "{file}: {count} bare `#[allow(...)]` attribute(s); use `#[allow(..., reason = \"...\")]` (or `#[expect]`)"
+        ));
+    }
+    if bare_allow.len() > 20 {
+        errors.push(format!(
+            "... and {} more files with bare `#[allow]`",
+            bare_allow.len() - 20
+        ));
+    }
 
     let report = LintPolicyReport {
         msrv: lp.msrv.clone(),
@@ -973,6 +984,13 @@ pub fn check_lint_policy() -> Result<()> {
         errors: errors.clone(),
         bare_allow_files: bare_allow.len(),
         bare_allow_total,
+        bare_allow_hits: bare_allow
+            .iter()
+            .map(|(f, n)| BareAllowHit {
+                file: f.clone(),
+                count: *n,
+            })
+            .collect(),
     };
     let md = render_lint_policy_md(&report);
     write_outputs("lint-policy", &serde_json::to_value(&report)?, &md)?;
@@ -1000,6 +1018,13 @@ struct LintPolicyReport {
     errors: Vec<String>,
     bare_allow_files: usize,
     bare_allow_total: usize,
+    bare_allow_hits: Vec<BareAllowHit>,
+}
+
+#[derive(Debug, Serialize)]
+struct BareAllowHit {
+    file: String,
+    count: usize,
 }
 
 fn render_lint_policy_md(report: &LintPolicyReport) -> String {
@@ -1009,13 +1034,20 @@ fn render_lint_policy_md(report: &LintPolicyReport) -> String {
     s.push_str(&format!("- Workspace members: {}\n", report.members));
     s.push_str(&format!("- Errors: **{}**\n", report.errors.len()));
     s.push_str(&format!(
-        "- Bare `#[allow(...)]` (advisory in Stage A): {} attribute(s) across {} file(s)\n\n",
+        "- Bare `#[allow(...)]` (blocking): {} attribute(s) across {} file(s)\n\n",
         report.bare_allow_total, report.bare_allow_files,
     ));
     if !report.errors.is_empty() {
         s.push_str("## Errors\n\n");
         for e in &report.errors {
             s.push_str(&format!("- {e}\n"));
+        }
+        s.push('\n');
+    }
+    if !report.bare_allow_hits.is_empty() {
+        s.push_str("## Bare-allow sites\n\n");
+        for hit in &report.bare_allow_hits {
+            s.push_str(&format!("- `{}`: {}\n", hit.file, hit.count));
         }
     }
     s
@@ -1132,9 +1164,9 @@ fn msrv_reached(current: &str, target: &str) -> bool {
 
 fn scan_bare_allow_in_crates(_members: &[String]) -> Result<Vec<(String, usize)>> {
     let files = git_ls_files()?;
-    // Match `#[allow(...)]` not preceded by `expect_` and not followed by quotes
-    // implying a `reason = ...`. Bare allow on its own line is the common case.
-    let bare = Regex::new(r#"#\[allow\([^)]*\)\]"#).unwrap();
+    // A bare `#[allow(...)]` is one with no `reason = "..."` clause. Suppressions
+    // with a `reason` are policy-compliant (matches the shape
+    // `clippy::allow_attributes_without_reason` flags).
     let mut hits: Vec<(String, usize)> = Vec::new();
     for f in files {
         if !f.ends_with(".rs") {
@@ -1144,21 +1176,208 @@ fn scan_bare_allow_in_crates(_members: &[String]) -> Result<Vec<(String, usize)>
             Ok(c) => c,
             Err(_) => continue,
         };
-        let mut count = 0;
-        for line in s.lines() {
-            let trimmed = line.trim_start();
-            if trimmed.starts_with("//") {
-                continue;
-            }
-            if bare.is_match(line) {
-                count += 1;
-            }
-        }
+        let count = count_bare_allow_attributes(&s);
         if count > 0 {
             hits.push((f, count));
         }
     }
     Ok(hits)
+}
+
+fn count_bare_allow_attributes(source: &str) -> usize {
+    let bytes = source.as_bytes();
+    let mut count = 0usize;
+    let mut i = 0usize;
+
+    while i < bytes.len() {
+        if starts_with(bytes, i, b"//") {
+            i = skip_line_comment(bytes, i);
+            continue;
+        }
+        if starts_with(bytes, i, b"/*") {
+            i = skip_block_comment(bytes, i);
+            continue;
+        }
+        if let Some(next) = skip_raw_string(bytes, i) {
+            i = next;
+            continue;
+        }
+        if let Some(next) = skip_quoted_string(bytes, i) {
+            i = next;
+            continue;
+        }
+        if let Some((body_start, body_end, attr_end)) = parse_allow_attribute(bytes, i) {
+            if !allow_body_has_reason(&bytes[body_start..body_end]) {
+                count += 1;
+            }
+            i = attr_end;
+            continue;
+        }
+        i += 1;
+    }
+
+    count
+}
+
+fn parse_allow_attribute(bytes: &[u8], i: usize) -> Option<(usize, usize, usize)> {
+    if !starts_with(bytes, i, b"#[allow") {
+        return None;
+    }
+    let mut j = i + b"#[allow".len();
+    j = skip_ascii_ws(bytes, j);
+    if bytes.get(j) != Some(&b'(') {
+        return None;
+    }
+
+    let body_start = j + 1;
+    let mut depth = 1usize;
+    let mut k = body_start;
+    while k < bytes.len() {
+        if starts_with(bytes, k, b"//") {
+            k = skip_line_comment(bytes, k);
+            continue;
+        }
+        if starts_with(bytes, k, b"/*") {
+            k = skip_block_comment(bytes, k);
+            continue;
+        }
+        if let Some(next) = skip_raw_string(bytes, k) {
+            k = next;
+            continue;
+        }
+        if let Some(next) = skip_quoted_string(bytes, k) {
+            k = next;
+            continue;
+        }
+
+        match bytes[k] {
+            b'(' => depth += 1,
+            b')' => {
+                depth -= 1;
+                if depth == 0 {
+                    let attr_end = skip_ascii_ws(bytes, k + 1);
+                    return (bytes.get(attr_end) == Some(&b']')).then_some((
+                        body_start,
+                        k,
+                        attr_end + 1,
+                    ));
+                }
+            }
+            _ => {}
+        }
+        k += 1;
+    }
+    None
+}
+
+fn allow_body_has_reason(body: &[u8]) -> bool {
+    body.windows(b"reason".len()).enumerate().any(|(idx, w)| {
+        let after_reason = idx + b"reason".len();
+        w == b"reason"
+            && idx
+                .checked_sub(1)
+                .and_then(|before| body.get(before))
+                .is_none_or(|b| !is_ident_byte(*b))
+            && body.get(after_reason).is_none_or(|b| !is_ident_byte(*b))
+            && body.get(skip_ascii_ws(body, after_reason)) == Some(&b'=')
+    })
+}
+
+fn is_ident_byte(b: u8) -> bool {
+    b.is_ascii_alphanumeric() || b == b'_'
+}
+
+fn starts_with(bytes: &[u8], i: usize, needle: &[u8]) -> bool {
+    bytes.get(i..i.saturating_add(needle.len())) == Some(needle)
+}
+
+fn skip_ascii_ws(bytes: &[u8], mut i: usize) -> usize {
+    while bytes.get(i).is_some_and(u8::is_ascii_whitespace) {
+        i += 1;
+    }
+    i
+}
+
+fn skip_line_comment(bytes: &[u8], mut i: usize) -> usize {
+    while i < bytes.len() && bytes[i] != b'\n' {
+        i += 1;
+    }
+    i
+}
+
+fn skip_block_comment(bytes: &[u8], mut i: usize) -> usize {
+    let mut depth = 0usize;
+    while i < bytes.len() {
+        if starts_with(bytes, i, b"/*") {
+            depth += 1;
+            i += 2;
+            continue;
+        }
+        if starts_with(bytes, i, b"*/") {
+            depth = depth.saturating_sub(1);
+            i += 2;
+            if depth == 0 {
+                break;
+            }
+            continue;
+        }
+        i += 1;
+    }
+    i
+}
+
+fn skip_quoted_string(bytes: &[u8], i: usize) -> Option<usize> {
+    let quote = match bytes.get(i) {
+        Some(b'"') => i,
+        Some(b'b' | b'c') if bytes.get(i + 1) == Some(&b'"') => i + 1,
+        _ => return None,
+    };
+
+    let mut j = quote + 1;
+    let mut escaped = false;
+    while j < bytes.len() {
+        if escaped {
+            escaped = false;
+        } else if bytes[j] == b'\\' {
+            escaped = true;
+        } else if bytes[j] == b'"' {
+            return Some(j + 1);
+        }
+        j += 1;
+    }
+    Some(bytes.len())
+}
+
+fn skip_raw_string(bytes: &[u8], i: usize) -> Option<usize> {
+    let mut r = i;
+    if bytes.get(r) == Some(&b'b') {
+        r += 1;
+    }
+    if bytes.get(r) != Some(&b'r') {
+        return None;
+    }
+
+    let mut hash_count = 0usize;
+    let mut quote = r + 1;
+    while bytes.get(quote) == Some(&b'#') {
+        hash_count += 1;
+        quote += 1;
+    }
+    if bytes.get(quote) != Some(&b'"') {
+        return None;
+    }
+
+    let mut j = quote + 1;
+    while j < bytes.len() {
+        if bytes[j] == b'"'
+            && j + 1 + hash_count <= bytes.len()
+            && bytes[j + 1..j + 1 + hash_count].iter().all(|b| *b == b'#')
+        {
+            return Some(j + 1 + hash_count);
+        }
+        j += 1;
+    }
+    Some(bytes.len())
 }
 
 // =============================================================================
@@ -1307,5 +1526,58 @@ mod tests {
         let active = parse_active_lints(cargo);
         assert!(active.iter().any(|l| l == "foo"));
         assert!(active.iter().any(|l| l == "clippy::dbg_macro"));
+    }
+
+    #[test]
+    fn bare_allow_counter_detects_single_line_and_multiline() {
+        let source = r#"
+#[allow(dead_code)]
+fn single_line() {}
+
+#[allow(
+    dead_code
+)]
+fn multi_line() {}
+"#;
+        assert_eq!(count_bare_allow_attributes(source), 2);
+    }
+
+    #[test]
+    fn bare_allow_counter_accepts_reasoned_suppressions() {
+        let source = r#"
+#[allow(dead_code, reason = "documented exception")]
+fn single_line() {}
+
+#[allow(
+    dead_code,
+    reason = "documented exception"
+)]
+fn multi_line() {}
+"#;
+        assert_eq!(count_bare_allow_attributes(source), 0);
+    }
+
+    #[test]
+    fn bare_allow_counter_requires_reason_clause() {
+        let source = r#"
+#[allow(dead_code_reason)]
+fn lint_name_contains_reason() {}
+
+#[allow(dead_code /* reason */)]
+fn comment_mentions_reason() {}
+"#;
+        assert_eq!(count_bare_allow_attributes(source), 2);
+    }
+
+    #[test]
+    fn bare_allow_counter_ignores_comments_and_strings() {
+        let source = r##"
+// #[allow(dead_code)]
+/* #[allow(dead_code)] */
+const TEXT: &str = "- Bare `#[allow(...)]`";
+const RAW: &str = r#"#[allow(dead_code)]"#;
+const BYTES: &[u8] = b"#[allow(dead_code)]";
+"##;
+        assert_eq!(count_bare_allow_attributes(source), 0);
     }
 }

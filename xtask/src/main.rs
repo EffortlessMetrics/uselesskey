@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::env;
 use std::fs;
 use std::io::Read;
@@ -868,7 +868,7 @@ struct PerfBudgetEntry {
     baseline_median_ns: u64,
     max_regression_pct: f64,
     enforce_in_ci: bool,
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "schema field surfaced in baseline JSON only")]
     category: String,
 }
 
@@ -1726,19 +1726,16 @@ fn run_pr_plan(
     }
 
     if plan.run_mutants {
-        let pr_crates: Vec<&str> = plan
-            .directly_changed_crates
-            .iter()
-            .filter(|name| PUBLISH_CRATES.contains(&name.as_str()))
-            .map(|s| s.as_str())
-            .collect();
+        let pr_crates =
+            mutation_target_crates(base_ref, changed_files, &plan.directly_changed_crates)?;
         if pr_crates.is_empty() {
             runner.skip(
                 "mutants",
-                Some("no mutant-eligible crates directly changed".into()),
+                Some("no mutant-eligible behavior changes".into()),
             );
         } else {
-            runner.step("mutants", None, || run_mutants(&pr_crates))?;
+            let pr_crate_refs = pr_crates.iter().map(String::as_str).collect::<Vec<_>>();
+            runner.step("mutants", None, || run_mutants(&pr_crate_refs))?;
         }
     } else {
         runner.skip("mutants", Some("no crate source changes".to_string()));
@@ -1920,6 +1917,157 @@ fn parse_changed_files(stdout: &[u8]) -> Result<Vec<String>> {
         .filter(|line| !line.is_empty())
         .collect::<Vec<_>>();
     Ok(files)
+}
+
+fn mutation_target_crates(
+    base_ref: &str,
+    changed_files: &[String],
+    directly_changed_crates: &BTreeSet<String>,
+) -> Result<Vec<String>> {
+    let mut targets = Vec::new();
+    for name in directly_changed_crates {
+        if !PUBLISH_CRATES.contains(&name.as_str()) {
+            continue;
+        }
+
+        let prefix = format!("crates/{name}/");
+        let rust_paths = changed_files
+            .iter()
+            .map(|path| path.replace('\\', "/"))
+            .filter(|path| path.starts_with(&prefix) && path.ends_with(".rs"))
+            .collect::<Vec<_>>();
+        if rust_paths.is_empty() {
+            targets.push(name.clone());
+            continue;
+        }
+
+        let diff = git_diff_for_paths(base_ref, &rust_paths)?;
+        if diff_is_lint_allow_reason_only(&diff) {
+            eprintln!(
+                "xtask pr: skipping mutants for {name}: only lint allow reason metadata changed"
+            );
+            continue;
+        }
+
+        targets.push(name.clone());
+    }
+    Ok(targets)
+}
+
+fn git_diff_for_paths(base_ref: &str, paths: &[String]) -> Result<String> {
+    let mut attempts = Vec::new();
+    for candidate in base_ref_candidates(base_ref) {
+        let revspec = format!("{candidate}...HEAD");
+        let mut cmd = Command::new("git");
+        cmd.args(["diff", "--unified=0", "--no-ext-diff", &revspec, "--"]);
+        for path in paths {
+            cmd.arg(path);
+        }
+        let output = cmd.output().context("failed to run git diff")?;
+        if output.status.success() {
+            return String::from_utf8(output.stdout).context("git diff output was not valid UTF-8");
+        }
+
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        attempts.push(format!(
+            "{revspec} (status {}): {stderr}",
+            output.status.code().unwrap_or(-1)
+        ));
+    }
+
+    bail!(
+        "git diff failed for mutation target paths: {}",
+        attempts.join("; ")
+    )
+}
+
+fn diff_is_lint_allow_reason_only(diff: &str) -> bool {
+    let mut saw_changed_line = false;
+    let mut saw_changed_hunk = false;
+    let mut hunk_lines = Vec::new();
+
+    for line in diff.lines() {
+        if line.starts_with("@@") {
+            if !hunk_lines.is_empty() {
+                saw_changed_hunk = true;
+                if !lint_allow_reason_hunk_only(&hunk_lines) {
+                    return false;
+                }
+                hunk_lines.clear();
+            }
+            continue;
+        }
+
+        if line.starts_with("diff --git ")
+            || line.starts_with("index ")
+            || line.starts_with("new file mode ")
+            || line.starts_with("deleted file mode ")
+            || line.starts_with("similarity index ")
+            || line.starts_with("rename from ")
+            || line.starts_with("rename to ")
+            || line.starts_with("--- ")
+            || line.starts_with("+++ ")
+        {
+            continue;
+        }
+
+        if let Some(rest) = line.strip_prefix('+') {
+            saw_changed_line = true;
+            hunk_lines.push(rest);
+        } else if let Some(rest) = line.strip_prefix('-') {
+            saw_changed_line = true;
+            hunk_lines.push(rest);
+        }
+    }
+
+    if !hunk_lines.is_empty() {
+        saw_changed_hunk = true;
+        if !lint_allow_reason_hunk_only(&hunk_lines) {
+            return false;
+        }
+    }
+
+    saw_changed_line && saw_changed_hunk
+}
+
+fn lint_allow_reason_hunk_only(lines: &[&str]) -> bool {
+    let mut saw_allow = false;
+    let mut saw_reason = false;
+
+    for line in lines {
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            return false;
+        }
+        if trimmed.starts_with("#[allow(") || trimmed.starts_with("#![allow(") {
+            saw_allow = true;
+            if trimmed.contains("reason") {
+                saw_reason = true;
+            }
+            continue;
+        }
+        if trimmed.starts_with("reason = ") {
+            saw_reason = true;
+            continue;
+        }
+        if trimmed == ")]" {
+            continue;
+        }
+        if lint_name_fragment(trimmed) {
+            continue;
+        }
+        return false;
+    }
+
+    saw_allow && saw_reason
+}
+
+fn lint_name_fragment(line: &str) -> bool {
+    let lint = line.trim_end_matches(',');
+    lint == "dead_code"
+        || lint == "unused"
+        || lint.starts_with("unused_")
+        || lint.starts_with("clippy::")
 }
 
 fn run_impacted_tests(
@@ -3000,6 +3148,75 @@ mod tests {
 
         let changed = git_changed_files("origin/main").expect("missing refs should not fail");
         assert!(changed.is_empty(), "expected no changes, got {changed:?}");
+    }
+
+    #[test]
+    fn diff_is_lint_allow_reason_only_accepts_multiline_reason() {
+        let diff = "\
+diff --git a/crates/example/src/lib.rs b/crates/example/src/lib.rs
+index 1111111..2222222 100644
+--- a/crates/example/src/lib.rs
++++ b/crates/example/src/lib.rs
+@@ -1 +1,4 @@
+-#[allow(dead_code)]
++#[allow(
++    dead_code,
++    reason = \"reserved for a feature-gated fixture path\"
++)]
+";
+
+        assert!(diff_is_lint_allow_reason_only(diff));
+    }
+
+    #[test]
+    fn diff_is_lint_allow_reason_only_accepts_single_line_reason() {
+        let diff = "\
+diff --git a/crates/example/src/lib.rs b/crates/example/src/lib.rs
+index 1111111..2222222 100644
+--- a/crates/example/src/lib.rs
++++ b/crates/example/src/lib.rs
+@@ -1 +1 @@
+-#[allow(clippy::clone_on_copy)]
++#[allow(clippy::clone_on_copy, reason = \"explicit clone is under test\")]
+";
+
+        assert!(diff_is_lint_allow_reason_only(diff));
+    }
+
+    #[test]
+    fn diff_is_lint_allow_reason_only_rejects_bare_allow_change() {
+        let diff = "\
+diff --git a/crates/example/src/lib.rs b/crates/example/src/lib.rs
+index 1111111..2222222 100644
+--- a/crates/example/src/lib.rs
++++ b/crates/example/src/lib.rs
+@@ -1 +1 @@
+-#[allow(dead_code)]
++#[allow(dead_code)]
+";
+
+        assert!(!diff_is_lint_allow_reason_only(diff));
+    }
+
+    #[test]
+    fn diff_is_lint_allow_reason_only_rejects_behavior_change() {
+        let diff = "\
+diff --git a/crates/example/src/lib.rs b/crates/example/src/lib.rs
+index 1111111..2222222 100644
+--- a/crates/example/src/lib.rs
++++ b/crates/example/src/lib.rs
+@@ -1 +1,4 @@
+-#[allow(dead_code)]
++#[allow(
++    dead_code,
++    reason = \"reserved for a feature-gated fixture path\"
++)]
+@@ -10 +13 @@
+-let timeout = 20;
++let timeout = 40;
+";
+
+        assert!(!diff_is_lint_allow_reason_only(diff));
     }
 
     #[test]
