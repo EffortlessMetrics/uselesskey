@@ -4987,6 +4987,7 @@ dependencies = [
  "uselesskey-core-x509-derive",
  "uselesskey-core-x509-negative",
  "uselesskey-core-x509-spec",
+ "uselesskey-test-support",
 ]
 
 [[package]]

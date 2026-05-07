@@ -25,6 +25,7 @@ proptest.workspace = true
 rstest.workspace = true
 serde = { workspace = true, features = ["derive"] }
 uselesskey-core-seed.workspace = true
+uselesskey-test-support = { workspace = true }
 
 [package.metadata.docs.rs]
 all-features = true
