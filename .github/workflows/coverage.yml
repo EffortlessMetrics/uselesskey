@@ -1,0 +1,136 @@
+name: Coverage
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "crates/**"
+      - "tests/**"
+      - "xtask/**"
+      - ".github/workflows/coverage.yml"
+      - "codecov.yml"
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+    branches: [main]
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "crates/**"
+      - "tests/**"
+      - "xtask/**"
+      - ".github/workflows/coverage.yml"
+      - "codecov.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: coverage-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+  CARGO_BUILD_JOBS: "4"
+  RUST_TEST_THREADS: "2"
+  RUSTFLAGS: "-C debuginfo=0"
+
+jobs:
+  coverage:
+    name: Codecov Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    if: >-
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.pull_request.labels.*.name, 'coverage') ||
+      contains(github.event.pull_request.labels.*.name, 'full-ci')
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.92"
+          components: llvm-tools-preview
+
+      - name: Install NASM for aws-lc-rs
+        run: sudo apt-get update && sudo apt-get install -y nasm
+
+      - name: Use larger target dir
+        run: echo "CARGO_TARGET_DIR=${RUNNER_TEMP}/target" >> "$GITHUB_ENV"
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+          cache-directories: ${{ runner.temp }}/target
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-llvm-cov
+
+      - name: Generate coverage
+        env:
+          CI: true
+        run: |
+          set -euo pipefail
+          cargo llvm-cov clean --workspace
+
+          cargo llvm-cov test \
+            --workspace \
+            --locked \
+            --all-features \
+            --exclude uselesskey-bench \
+            --no-report \
+            -- --test-threads=2
+
+          cargo llvm-cov report --json --output-path coverage.json
+          cargo llvm-cov report --lcov --output-path lcov.info
+          cargo llvm-cov report --text | tee coverage.txt
+
+      - name: Validate coverage output
+        run: |
+          set -euo pipefail
+          test -s coverage.json
+          test -s lcov.info
+          test -s coverage.txt
+
+      - name: Detect Codecov token
+        id: codecov-token
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        run: |
+          if [ -n "${CODECOV_TOKEN:-}" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload coverage to Codecov
+        if: ${{ steps.codecov-token.outputs.present == 'true' }}
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: lcov.info
+          flags: rust-fixtures
+          name: uselesskey-rust-fixtures
+          fail_ci_if_error: ${{ github.event_name == 'push' }}
+
+      - name: Upload coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report
+          path: |
+            coverage.json
+            coverage.txt
+            lcov.info
+          retention-days: 14
