@@ -5080,6 +5080,7 @@ version = "0.6.0"
 dependencies = [
  "proptest",
  "uselesskey-core",
+ "uselesskey-test-support",
 ]
 
 [[package]]

@@ -19,6 +19,7 @@ uselesskey-core = { path = "../uselesskey-core", version = "0.6.0" }
 
 [dev-dependencies]
 proptest.workspace = true
+uselesskey-test-support = { workspace = true }
 
 [package.metadata.docs.rs]
 all-features = true
