@@ -46,6 +46,15 @@ reason = "GitHub repo metadata: settings, dependabot, funding, release notes."
 covered_by = ["GitHub schema validation"]
 
 [[allow]]
+glob = "codecov.yml"
+kind = "ci_coverage_policy"
+owner = "release/ci"
+surface = "ci"
+classification = "config"
+reason = "Codecov status and reporting configuration for cargo-llvm-cov coverage uploads."
+covered_by = ["cargo xtask check-file-policy"]
+
+[[allow]]
 glob = "lefthook.yml"
 kind = "git_hooks_config"
 owner = "repo-policy"
