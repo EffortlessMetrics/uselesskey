@@ -2,10 +2,14 @@
 
 use uselesskey_core_id::{ArtifactId, DerivationVersion, Seed as ReexportedSeed, derive_seed};
 use uselesskey_core_seed::Seed;
+use uselesskey_test_support::{TestResult, require_ok};
 
 #[test]
-fn seed_from_core_seed_drives_core_id_derivation() {
-    let master = Seed::from_env_value("core-seed-integration").unwrap();
+fn seed_from_core_seed_drives_core_id_derivation() -> TestResult<()> {
+    let master = require_ok(
+        Seed::from_env_value("core-seed-integration"),
+        "core-seed-integration must parse as a deterministic seed",
+    )?;
     let id = ArtifactId::new(
         "uselesskey:test",
         "entity",
@@ -17,6 +21,7 @@ fn seed_from_core_seed_drives_core_id_derivation() {
     let first = derive_seed(&master, &id);
     let second = derive_seed(&master, &id);
     assert_eq!(first.bytes(), second.bytes());
+    Ok(())
 }
 
 #[test]

@@ -4793,6 +4793,7 @@ dependencies = [
  "serde",
  "uselesskey-core-hash",
  "uselesskey-core-seed",
+ "uselesskey-test-support",
 ]
 
 [[package]]
