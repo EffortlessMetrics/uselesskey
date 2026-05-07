@@ -54,11 +54,25 @@ cargo run -p uselesskey-cli -- bundle \
 
 cargo run -p uselesskey-cli -- verify-bundle \
   --path target/uselesskey-bundle
+
+cargo run -p uselesskey-cli -- export k8s \
+  --bundle-dir target/uselesskey-bundle \
+  --name uselesskey-fixtures \
+  --namespace tests \
+  --out target/uselesskey-bundle/secret.yaml
+
+cargo run -p uselesskey-cli -- export vault-kv-json \
+  --bundle-dir target/uselesskey-bundle \
+  --out target/uselesskey-bundle/kv-v2.json
 ```
 
 `verify-bundle` reloads `manifest.json`, regenerates the expected artifacts from
 the recorded seed/label/format/profile, and fails if any file or manifest
 metadata is missing or changed.
+
+The `export` subcommands verify the bundle first, then render handoff payloads
+for downstream tools. They write local files only; they do not call Kubernetes,
+Vault, cloud APIs, or long-running secret stores.
 
 `scanner-safe` is the default bundle profile. It emits public key material,
 public certificate material, scanner-safe symmetric JWK shape data, and

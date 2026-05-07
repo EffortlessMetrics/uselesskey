@@ -316,6 +316,67 @@ fn verify_bundle_accepts_legacy_manifest_without_profile_metadata() {
 }
 
 #[test]
+fn export_k8s_and_vault_payloads_from_scanner_safe_bundle() {
+    let dir = tempdir().expect("tempdir");
+    let bundle_dir = dir.path().join("bundle");
+    let k8s_path = dir.path().join("secret.yaml");
+    let vault_path = dir.path().join("kv-v2.json");
+
+    let mut bundle = Command::cargo_bin("uselesskey").expect("bin exists");
+    bundle.args([
+        "bundle",
+        "--profile",
+        "scanner-safe",
+        "--out",
+        bundle_dir.to_str().expect("utf-8"),
+    ]);
+    bundle.assert().success();
+
+    let mut k8s = Command::cargo_bin("uselesskey").expect("bin exists");
+    k8s.args([
+        "export",
+        "k8s",
+        "--bundle-dir",
+        bundle_dir.to_str().expect("utf-8"),
+        "--name",
+        "uselesskey-fixtures",
+        "--namespace",
+        "tests",
+        "--out",
+        k8s_path.to_str().expect("utf-8"),
+    ]);
+    k8s.assert().success();
+
+    let rendered_k8s = fs::read_to_string(&k8s_path).expect("k8s payload");
+    assert!(rendered_k8s.contains("kind: Secret"));
+    assert!(rendered_k8s.contains("  name: uselesskey-fixtures"));
+    assert!(rendered_k8s.contains("  namespace: tests"));
+    assert!(rendered_k8s.contains("  token.json: "));
+
+    let mut vault = Command::cargo_bin("uselesskey").expect("bin exists");
+    vault.args([
+        "export",
+        "vault-kv-json",
+        "--bundle-dir",
+        bundle_dir.to_str().expect("utf-8"),
+        "--out",
+        vault_path.to_str().expect("utf-8"),
+    ]);
+    vault.assert().success();
+
+    let vault_json: Value =
+        serde_json::from_slice(&fs::read(&vault_path).expect("vault payload")).expect("vault json");
+    assert_eq!(vault_json["metadata"]["source"], "uselesskey-cli");
+    assert_eq!(vault_json["metadata"]["mode"], "one_shot_export");
+    assert!(
+        vault_json["data"]["token.json"]
+            .as_str()
+            .expect("token payload")
+            .contains("uk_tset_")
+    );
+}
+
+#[test]
 fn inspect_reads_stdin_writes_json() {
     let mut cmd = Command::cargo_bin("uselesskey").expect("bin exists");
     cmd.args(["inspect", "--format", "pem"])
