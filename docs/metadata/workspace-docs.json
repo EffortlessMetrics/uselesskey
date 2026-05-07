@@ -622,6 +622,15 @@
       "intended_audience": "repo-internal"
     },
     {
+      "name": "uselesskey-test-support",
+      "support_tier": "experimental",
+      "publish_status": "test-only",
+      "facade_exposed": false,
+      "semver_expectation": "No public API stability commitments; helper macros and fns may evolve.",
+      "msrv_policy": "Tracks workspace MSRV (Rust 1.92).",
+      "intended_audience": "repo-internal"
+    },
+    {
       "name": "uselesskey-test-server",
       "support_tier": "stable",
       "publish_status": "published",
