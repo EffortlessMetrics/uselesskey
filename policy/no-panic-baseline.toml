@@ -16,14 +16,14 @@ generated_at = "2026-05-07"
 generated_by = "cargo xtask no-panic baseline"
 
 [summary]
-total = 4275
+total = 4271
 
 [summary.by_family]
 expect = 2255
 get_unwrap = 1
 panic_macro = 123
 unreachable = 6
-unwrap = 1890
+unwrap = 1886
 
 [[entry]]
 path = "crates/materialize-buildrs-example/build.rs"
@@ -3839,38 +3839,6 @@ family = "panic_macro"
 selector_kind = "macro"
 selector_callee = "panic"
 snippet = 'other => panic!("                       "),'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-id/src/lib.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let expected = uselesskey_core_seed::Seed::from_env_value("            ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-id/src/lib.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let seed = Seed::from_env_value("            ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-id/tests/seed_integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let master = Seed::from_env_value("                     ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-id/tests/snapshots_id.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let master = Seed::from_env_value("               ").unwrap();'
 count = 1
 
 [[entry]]

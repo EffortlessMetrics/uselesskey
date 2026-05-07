@@ -93,6 +93,7 @@ fn derive_seed_v1(master: &Seed, id: &ArtifactId) -> Seed {
 #[cfg(test)]
 mod tests {
     use super::{ArtifactId, DerivationVersion, Seed, derive_seed, hash32};
+    use uselesskey_test_support::{TestResult, require_ok};
 
     #[test]
     fn artifact_id_fingerprints_spec_bytes() {
@@ -165,10 +166,17 @@ mod tests {
     }
 
     #[test]
-    fn seed_reexport_matches_core_seed() {
-        let seed = Seed::from_env_value("core-id-seed").unwrap();
-        let expected = uselesskey_core_seed::Seed::from_env_value("core-id-seed").unwrap();
+    fn seed_reexport_matches_core_seed() -> TestResult<()> {
+        let seed = require_ok(
+            Seed::from_env_value("core-id-seed"),
+            "core-id-seed must parse via the re-export",
+        )?;
+        let expected = require_ok(
+            uselesskey_core_seed::Seed::from_env_value("core-id-seed"),
+            "core-id-seed must parse via the underlying core-seed crate",
+        )?;
         assert_eq!(seed.bytes(), expected.bytes());
+        Ok(())
     }
 
     #[test]

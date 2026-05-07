@@ -5,6 +5,7 @@
 
 use serde::Serialize;
 use uselesskey_core_id::{ArtifactId, DerivationVersion, Seed, derive_seed};
+use uselesskey_test_support::{TestResult, require_ok};
 
 #[test]
 fn snapshot_artifact_id_debug_format() {
@@ -71,7 +72,7 @@ fn snapshot_artifact_id_field_preservation() {
 }
 
 #[test]
-fn snapshot_derive_seed_properties() {
+fn snapshot_derive_seed_properties() -> TestResult<()> {
     #[derive(Serialize)]
     struct DeriveSeedCheck {
         same_inputs_match: bool,
@@ -80,7 +81,10 @@ fn snapshot_derive_seed_properties() {
         derived_seed_byte_count: usize,
     }
 
-    let master = Seed::from_env_value("snapshot-master").unwrap();
+    let master = require_ok(
+        Seed::from_env_value("snapshot-master"),
+        "snapshot-master must parse as a deterministic seed",
+    )?;
 
     let id_a = ArtifactId::new("d", "label-a", b"spec", "v", DerivationVersion::V1);
     let id_b = ArtifactId::new("d", "label-b", b"spec", "v", DerivationVersion::V1);
@@ -99,6 +103,7 @@ fn snapshot_derive_seed_properties() {
     };
 
     insta::assert_yaml_snapshot!("derive_seed_properties", result);
+    Ok(())
 }
 
 #[test]
