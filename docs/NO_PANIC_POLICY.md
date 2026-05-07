@@ -22,9 +22,22 @@ The panic family includes:
 - `Result`-returning bodies that `unwrap()` internally
 
 Test assertion macros (`assert!`, `assert_eq!`, `assert_ne!`) are still test
-oracles and are NOT panic-family. A future migration may introduce fallible
-assertion helpers (`ensure_eq`, `require_some`); that is a separate policy
-decision.
+oracles and are NOT panic-family. The `uselesskey-test-support` crate
+provides fallible alternatives (`ensure!`, `ensure_eq!`, `require_some`,
+`require_ok`) that compose with `Result<()>`-returning tests for migrations
+that want to remove `unwrap`/`expect` from setup code while keeping
+panicking assertion macros for the actual oracle.
+
+```rust
+use uselesskey_test_support::{ensure_eq, require_ok, TestResult};
+
+#[test]
+fn parses_round_trip() -> TestResult<()> {
+    let parsed = require_ok("42".parse::<i32>(), "parse 42")?;
+    ensure_eq!(parsed, 42);
+    Ok(())
+}
+```
 
 ## Identity
 

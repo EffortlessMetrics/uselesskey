@@ -5352,6 +5352,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "uselesskey-test-support"
+version = "0.6.0"
+
+[[package]]
 name = "uselesskey-token"
 version = "0.6.0"
 dependencies = [

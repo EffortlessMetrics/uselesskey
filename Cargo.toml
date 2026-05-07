@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
   "crates/uselesskey-test-grid",
+  "crates/uselesskey-test-support",
   "crates/uselesskey-feature-grid",
   "crates/uselesskey",
   "crates/uselesskey-core",
@@ -81,6 +82,7 @@ authors = ["Effortless Metrics <opensource@effortlessmetrics.com>"]
 thiserror = "2.0.18"
 
 uselesskey-test-grid = { path = "crates/uselesskey-test-grid", version = "0.6.0" }
+uselesskey-test-support = { path = "crates/uselesskey-test-support", version = "0.6.0" }
 uselesskey-feature-grid = { path = "crates/uselesskey-feature-grid", version = "0.6.0" }
 uselesskey = { path = "crates/uselesskey", version = "0.6.0", default-features = false }
 uselesskey-cli = { path = "crates/uselesskey-cli", version = "0.6.0" }
