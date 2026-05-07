@@ -1,6 +1,7 @@
 # uselesskey
 
 [![CI](https://github.com/EffortlessMetrics/uselesskey/actions/workflows/ci.yml/badge.svg)](https://github.com/EffortlessMetrics/uselesskey/actions/workflows/ci.yml)
+[![Codecov](https://codecov.io/gh/EffortlessMetrics/uselesskey/graph/badge.svg?branch=main)](https://codecov.io/gh/EffortlessMetrics/uselesskey)
 [![Crates.io](https://img.shields.io/crates/v/uselesskey.svg)](https://crates.io/crates/uselesskey)
 [![docs.rs](https://docs.rs/uselesskey/badge.svg)](https://docs.rs/uselesskey)
 [![MSRV](https://img.shields.io/badge/MSRV-1.92-blue.svg)](https://doc.rust-lang.org/cargo/reference/manifest.html#the-rust-version-field)
