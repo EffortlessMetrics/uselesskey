@@ -111,6 +111,7 @@ impl Pkcs8SpkiKeyMaterial {
 mod tests {
     use super::Pkcs8SpkiKeyMaterial;
     use uselesskey_core::negative::CorruptPem;
+    use uselesskey_test_support::{TestResult, require_ok};
 
     fn sample_material() -> Pkcs8SpkiKeyMaterial {
         Pkcs8SpkiKeyMaterial::new(
@@ -204,19 +205,18 @@ mod tests {
     }
 
     #[test]
-    fn tempfile_writers_round_trip_content() {
+    fn tempfile_writers_round_trip_content() -> TestResult<()> {
         let material = sample_material();
 
-        let private = material
-            .write_private_key_pkcs8_pem()
-            .expect("write private");
-        let public = material.write_public_key_spki_pem().expect("write public");
+        let private = require_ok(material.write_private_key_pkcs8_pem(), "write private")?;
+        let public = require_ok(material.write_public_key_spki_pem(), "write public")?;
 
-        let private_text = private.read_to_string().expect("read private");
-        let public_text = public.read_to_string().expect("read public");
+        let private_text = require_ok(private.read_to_string(), "read private")?;
+        let public_text = require_ok(public.read_to_string(), "read public")?;
 
         assert!(private_text.contains("BEGIN PRIVATE KEY"));
         assert!(public_text.contains("BEGIN PUBLIC KEY"));
+        Ok(())
     }
 
     mod property {

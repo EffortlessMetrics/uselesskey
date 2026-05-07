@@ -1,6 +1,7 @@
 //! Integration tests for negative fixture support in Pkcs8SpkiKeyMaterial.
 
 use uselesskey_core_keypair_material::Pkcs8SpkiKeyMaterial;
+use uselesskey_test_support::{TestResult, require_ok, require_some};
 
 fn sample() -> Pkcs8SpkiKeyMaterial {
     Pkcs8SpkiKeyMaterial::new(
@@ -124,32 +125,37 @@ fn clone_preserves_all_accessors() {
 // ── tempfile round trips ─────────────────────────────────────────────
 
 #[test]
-fn write_private_key_tempfile_has_pem_extension() {
+fn write_private_key_tempfile_has_pem_extension() -> TestResult<()> {
     let m = sample();
-    let temp = m.write_private_key_pkcs8_pem().unwrap();
-    let ext = temp.path().extension().unwrap().to_str().unwrap();
+    let temp = require_ok(m.write_private_key_pkcs8_pem(), "write private pem")?;
+    let ext_os = require_some(temp.path().extension(), "tempfile path missing extension")?;
+    let ext = require_some(ext_os.to_str(), "tempfile extension is not utf-8")?;
     assert_eq!(ext, "pem");
+    Ok(())
 }
 
 #[test]
-fn write_public_key_tempfile_has_pem_extension() {
+fn write_public_key_tempfile_has_pem_extension() -> TestResult<()> {
     let m = sample();
-    let temp = m.write_public_key_spki_pem().unwrap();
-    let ext = temp.path().extension().unwrap().to_str().unwrap();
+    let temp = require_ok(m.write_public_key_spki_pem(), "write public pem")?;
+    let ext_os = require_some(temp.path().extension(), "tempfile path missing extension")?;
+    let ext = require_some(ext_os.to_str(), "tempfile extension is not utf-8")?;
     assert_eq!(ext, "pem");
+    Ok(())
 }
 
 #[test]
-fn tempfile_round_trip_preserves_content() {
+fn tempfile_round_trip_preserves_content() -> TestResult<()> {
     let m = sample();
-    let private_temp = m.write_private_key_pkcs8_pem().unwrap();
-    let public_temp = m.write_public_key_spki_pem().unwrap();
+    let private_temp = require_ok(m.write_private_key_pkcs8_pem(), "write private pem")?;
+    let public_temp = require_ok(m.write_public_key_spki_pem(), "write public pem")?;
     assert_eq!(
-        private_temp.read_to_string().unwrap(),
+        require_ok(private_temp.read_to_string(), "read private")?,
         m.private_key_pkcs8_pem()
     );
     assert_eq!(
-        public_temp.read_to_string().unwrap(),
+        require_ok(public_temp.read_to_string(), "read public")?,
         m.public_key_spki_pem()
     );
+    Ok(())
 }
