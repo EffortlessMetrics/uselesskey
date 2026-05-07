@@ -855,12 +855,11 @@ struct LintPolicySettings {
 }
 
 #[derive(Debug, Deserialize)]
+#[expect(dead_code, reason = "schema validation; surfaced in reports later")]
 struct PlannedLint {
     name: String,
-    #[allow(dead_code)]
     level: String,
     activate_when_msrv: String,
-    #[allow(dead_code)]
     reason: String,
 }
 
@@ -872,22 +871,22 @@ struct ForbiddenCarveouts {
 
 #[derive(Debug, Deserialize)]
 struct ClippyDebt {
-    #[allow(dead_code)]
+    #[expect(
+        dead_code,
+        reason = "schema validation; surfaced in policy reports later"
+    )]
     schema_version: Option<String>,
     #[serde(default)]
     debt: Vec<DebtEntry>,
 }
 
 #[derive(Debug, Deserialize)]
+#[expect(dead_code, reason = "schema fields surfaced in policy reports later")]
 struct DebtEntry {
     id: String,
-    #[allow(dead_code)]
     lint: String,
-    #[allow(dead_code)]
     scope: String,
-    #[allow(dead_code)]
     owner: String,
-    #[allow(dead_code)]
     reason: String,
     expires: String,
 }
