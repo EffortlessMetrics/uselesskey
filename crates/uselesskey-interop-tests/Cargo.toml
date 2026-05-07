@@ -53,3 +53,6 @@ cross-tls = ["dep:uselesskey-x509", "dep:uselesskey-rustls"]
 jwt-interop = ["dep:uselesskey-jsonwebtoken"]
 aws-lc-rs-interop = ["dep:uselesskey-aws-lc-rs", "dep:aws-lc-rs", "uselesskey-rustls?/rustls-aws-lc-rs"]
 all = ["cross-signing", "cross-tls", "jwt-interop", "aws-lc-rs-interop"]
+
+[lints]
+workspace = true

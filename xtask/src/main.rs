@@ -18,6 +18,7 @@ mod audit_surface;
 mod docs_sync;
 mod economics;
 mod plan;
+mod policy;
 mod pr_bundles;
 mod receipt;
 
@@ -158,6 +159,19 @@ enum Cmd {
         #[command(subcommand)]
         command: PrBundlesCmd,
     },
+    /// Check the semantic no-panic allowlist (panic-family ledger).
+    CheckNoPanicFamily,
+    /// Emit a proposed no-panic allowlist under target/policy-proposed/.
+    NoPanic {
+        #[command(subcommand)]
+        action: NoPanicCmd,
+    },
+    /// Check the non-Rust file allowlist.
+    CheckFilePolicy,
+    /// Check the lint-policy invariants (MSRV, [lints] inheritance, debt expiry).
+    CheckLintPolicy,
+    /// Aggregate policy report across no-panic, file-policy, and lint-policy.
+    PolicyReport,
 }
 
 #[derive(Subcommand)]
@@ -166,6 +180,12 @@ enum NoBlobCmd {
     Scan,
     /// Scan and emit a migration recipe for each detected blob (read-only).
     Migrate,
+}
+
+#[derive(Subcommand)]
+enum NoPanicCmd {
+    /// Generate a candidate allowlist file under target/policy-proposed/.
+    Propose,
 }
 
 #[derive(Subcommand)]
@@ -279,6 +299,13 @@ fn main() -> Result<()> {
             HookCmd::PreCommit => hook_pre_commit(),
             HookCmd::PrePush => hook_pre_push(),
         },
+        Cmd::CheckNoPanicFamily => policy::check_no_panic_family(),
+        Cmd::NoPanic { action } => match action {
+            NoPanicCmd::Propose => policy::no_panic_propose(),
+        },
+        Cmd::CheckFilePolicy => policy::check_file_policy(),
+        Cmd::CheckLintPolicy => policy::check_lint_policy(),
+        Cmd::PolicyReport => policy::policy_report(),
         Cmd::PrBundles { command } => match command {
             PrBundlesCmd::Snapshot {
                 repo,

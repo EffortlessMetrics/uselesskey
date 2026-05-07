@@ -74,6 +74,11 @@ cargo xtask typos --fix     # Auto-fix typos
 cargo xtask bdd-matrix      # BDD matrix with feature sets
 cargo xtask publish         # Publish all crates in dependency order
 cargo xtask setup           # Configure git hooks (sets core.hooksPath to .githooks)
+cargo xtask check-no-panic-family  # Semantic panic-family ledger (advisory in Stage A)
+cargo xtask no-panic propose       # Emit candidate no-panic allowlist under target/policy-proposed/
+cargo xtask check-file-policy      # Validate non-Rust file allowlist
+cargo xtask check-lint-policy      # Validate MSRV / [lints] inheritance / debt expiry
+cargo xtask policy-report          # Aggregate report across no-panic + file + lint policy
 ```
 
 Run a single test:
@@ -160,6 +165,22 @@ Adapter crates (e.g. `uselesskey-jsonwebtoken`) are separate crates, not feature
 - `clippy.toml` - MSRV 1.92
 - `deny.toml` - Allowed licenses: MIT, Apache-2.0, BSD-3-Clause, ISC, CC0-1.0
 - `mutants.toml` - Mutation testing exclusions
+
+## Policy stack
+
+Lint, panic-family, and non-Rust file policy is encoded under `policy/` and
+documented under `docs/`:
+
+- `policy/clippy-lints.toml` — MSRV, planned lint flips, suppression rules.
+- `policy/clippy-debt.toml` — receipted Clippy warn-stage debt with expiry.
+- `policy/no-panic-allowlist.toml` — semantic panic-family allowlist
+  (path + family + selector identity); enforced by
+  `cargo xtask check-no-panic-family` (advisory in Stage A).
+- `policy/non-rust-allowlist.toml` — owner/surface/classification ledger for
+  every tracked non-Rust file; enforced by `cargo xtask check-file-policy`.
+
+See `docs/CLIPPY_POLICY.md`, `docs/NO_PANIC_POLICY.md`, `docs/FILE_POLICY.md`,
+and `docs/POLICY_ALLOWLISTS.md` for the design.
 
 ## Git Hooks
 

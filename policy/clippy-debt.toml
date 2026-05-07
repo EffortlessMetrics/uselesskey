@@ -1,0 +1,24 @@
+# Effortless Metrics — Clippy debt ledger
+#
+# Use this file to receipt intentional warn-stage Clippy debt that is currently
+# being tolerated but tracked. Only entries that survive `cargo xtask
+# check-lint-policy` are valid.
+#
+# Owner: repo-policy
+# See: docs/CLIPPY_POLICY.md
+schema_version = "1.0"
+
+# Each entry must specify owner, reason, and an expiry date. After the expiry,
+# the entry is rejected unless extended.
+#
+# Example:
+#
+# [[debt]]
+# id = "clippy-0001"
+# lint = "clippy::missing_panics_doc"
+# scope = "crates/uselesskey-core"
+# owner = "core"
+# reason = "Doc-coverage backfill scheduled with public-surface review."
+# expires = "2026-09-01"
+#
+# (No active debt entries at this time.)

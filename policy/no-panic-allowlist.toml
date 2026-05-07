@@ -1,0 +1,54 @@
+# Effortless Metrics — semantic no-panic allowlist
+#
+# Authoritative ledger of receipted panic-family debt. Each `[[allow]]` entry
+# is identified by `path + family + selector`; line/column are advisory
+# `last_seen` hints only.
+#
+# Owner: repo-policy
+# See: docs/NO_PANIC_POLICY.md, docs/POLICY_ALLOWLISTS.md
+#
+# This baseline file starts empty. Stage A keeps the no-panic checker advisory
+# (it reports findings but does not block CI). Once a baseline is generated
+# via `cargo xtask no-panic propose` and reviewed, entries are moved into this
+# file with owner/reason/expiry, and the checker is promoted to blocking.
+schema_version = "0.3"
+
+[policy]
+# Families enforced by `cargo xtask check-no-panic-family`.
+families = [
+  "unwrap",
+  "expect",
+  "panic_macro",
+  "todo",
+  "unimplemented",
+  "unreachable",
+  "indexing",
+  "string_slice",
+  "get_unwrap",
+  "unchecked_time_subtraction",
+]
+# Stage A: advisory only. The checker reports but does not fail.
+mode = "advisory"
+
+# Each [[allow]] looks like:
+#
+# [[allow]]
+# id = "panic-0001"
+# path = "crates/example/src/parser.rs"
+# family = "unwrap"
+# classification = "test_helper"   # one of: production, test_helper, fixture, infallible_invariant, build_script
+# owner = "core"
+# explanation = "Fixture builder; migrate to fallible API in next minor."
+# expires = "2026-09-01"
+#
+# [allow.selector]
+# kind = "method_call"
+# container = "load_fixture"
+# callee = "unwrap"
+# receiver_fingerprint = "std::fs::read_to_string(path)"
+#
+# [allow.last_seen]
+# line = 42
+# column = 17
+#
+# (No receipted entries yet.)

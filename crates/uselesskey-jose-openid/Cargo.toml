@@ -43,3 +43,6 @@ uselesskey-ecdsa = { path = "../uselesskey-ecdsa", version = "0.6.0" }
 uselesskey-ed25519 = { path = "../uselesskey-ed25519", version = "0.6.0" }
 uselesskey-hmac = { path = "../uselesskey-hmac", version = "0.6.0" }
 
+
+[lints]
+workspace = true

@@ -85,3 +85,6 @@ rustls-pki-types.workspace = true
 name = "keygen"
 harness = false
 required-features = ["full"]
+
+[lints]
+workspace = true
