@@ -110,29 +110,41 @@ fn not_yet_valid_spec_not_before_is_30_days_future() {
 }
 
 #[test]
-fn expired_chain_leaf_offset_exceeds_validity() {
+fn expired_chain_leaf_offset_exceeds_validity() -> uselesskey_test_support::TestResult<()> {
+    use uselesskey_test_support::require_some;
     let base = ChainSpec::new("chain-expired.example.com");
     let modified = ChainNegative::ExpiredLeaf.apply_to_spec(&base);
 
-    let offset = expect_days_ago(modified.leaf_not_before.unwrap());
+    let leaf_not_before = require_some(
+        modified.leaf_not_before,
+        "ExpiredLeaf must set leaf_not_before",
+    )?;
+    let offset = expect_days_ago(leaf_not_before);
     let validity = modified.leaf_validity_days;
     assert!(
         offset > validity,
         "offset ({offset}) must exceed validity ({validity}) for the cert to be expired"
     );
+    Ok(())
 }
 
 #[test]
-fn expired_chain_intermediate_offset_exceeds_validity() {
+fn expired_chain_intermediate_offset_exceeds_validity() -> uselesskey_test_support::TestResult<()> {
+    use uselesskey_test_support::require_some;
     let base = ChainSpec::new("chain-expired.example.com");
     let modified = ChainNegative::ExpiredIntermediate.apply_to_spec(&base);
 
-    let offset = expect_days_ago(modified.intermediate_not_before.unwrap());
+    let intermediate_not_before = require_some(
+        modified.intermediate_not_before,
+        "ExpiredIntermediate must set intermediate_not_before",
+    )?;
+    let offset = expect_days_ago(intermediate_not_before);
     let validity = modified.intermediate_validity_days;
     assert!(
         offset > validity,
         "offset ({offset}) must exceed validity ({validity}) for the cert to be expired"
     );
+    Ok(())
 }
 
 // =========================================================================

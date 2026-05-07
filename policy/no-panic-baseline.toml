@@ -16,14 +16,14 @@ generated_at = "2026-05-07"
 generated_by = "cargo xtask no-panic baseline"
 
 [summary]
-total = 4226
+total = 4224
 
 [summary.by_family]
 expect = 2228
 get_unwrap = 1
 panic_macro = 123
 unreachable = 6
-unwrap = 1868
+unwrap = 1866
 
 [[entry]]
 path = "crates/materialize-buildrs-example/build.rs"
@@ -7495,22 +7495,6 @@ family = "panic_macro"
 selector_kind = "macro"
 selector_callee = "panic"
 snippet = 'other => panic!("                               "),'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-x509/tests/negative_policy_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let offset = expect_days_ago(modified.intermediate_not_before.unwrap());"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-x509/tests/negative_policy_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let offset = expect_days_ago(modified.leaf_not_before.unwrap());"
 count = 1
 
 [[entry]]
