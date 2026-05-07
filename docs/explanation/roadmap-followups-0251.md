@@ -29,10 +29,10 @@ This plan decomposes `roadmap.md` into milestone-aligned execution items.
 
 ## v0.6.1 benchmarks and governance
 
-- [ ] Criterion harness
-- [ ] Baseline performance report
+- [x] Criterion harness
+- [x] Baseline performance report
 - [ ] Scheduled/manual perf workflow
-- [ ] CI threshold policy for benchmark trends
+- [x] CI threshold policy for benchmark trends
 - [ ] Release category notes + post-release audit
 - [x] Public surface promise map
 

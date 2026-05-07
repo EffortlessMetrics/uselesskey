@@ -2,6 +2,13 @@
   "version": 1,
   "entries": [
     {
+      "id": "seed.derivation.v1",
+      "category": "watch",
+      "baseline_median_ns": 2000,
+      "max_regression_pct": 20.0,
+      "enforce_in_ci": false
+    },
+    {
       "id": "rsa.fixture.cold",
       "category": "hot",
       "baseline_median_ns": 507650184,
@@ -28,6 +35,13 @@
       "baseline_median_ns": 56580,
       "max_regression_pct": 10.0,
       "enforce_in_ci": true
+    },
+    {
+      "id": "jwk.jwks.emit",
+      "category": "watch",
+      "baseline_median_ns": 10000,
+      "max_regression_pct": 20.0,
+      "enforce_in_ci": false
     },
     {
       "id": "hmac.fixture.hs256",
@@ -61,6 +75,27 @@
       "id": "negative.fixture.corrupt_pem",
       "category": "rare-heavy",
       "baseline_median_ns": 396004200,
+      "max_regression_pct": 20.0,
+      "enforce_in_ci": false
+    },
+    {
+      "id": "webauthn.fixture.ceremony",
+      "category": "watch",
+      "baseline_median_ns": 10000,
+      "max_regression_pct": 20.0,
+      "enforce_in_ci": false
+    },
+    {
+      "id": "pkcs11.provider.construct",
+      "category": "watch",
+      "baseline_median_ns": 10000,
+      "max_regression_pct": 20.0,
+      "enforce_in_ci": false
+    },
+    {
+      "id": "cli.materialize_verify.shape",
+      "category": "watch",
+      "baseline_median_ns": 5000000,
       "max_regression_pct": 20.0,
       "enforce_in_ci": false
     }

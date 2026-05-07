@@ -4679,7 +4679,11 @@ dependencies = [
  "clap",
  "serde",
  "serde_json",
+ "tempfile",
  "uselesskey",
+ "uselesskey-cli",
+ "uselesskey-pkcs11-mock",
+ "uselesskey-webauthn",
 ]
 
 [[package]]

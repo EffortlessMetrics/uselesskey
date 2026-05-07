@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   coverage for receipt drift.
 - Added a public-surface map that separates public support promises from
   published internal implementation shards.
+- Added perf receipt coverage for seed derivation, JWK/JWKS emission,
+  WebAuthn, PKCS#11 mocks, and scanner-safe materialize/verify paths.
 
 ## [0.6.0] - 2026-04-08
 

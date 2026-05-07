@@ -19,7 +19,7 @@ struct Cli {
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
-    let summary = run_perf_suite();
+    let summary = run_perf_suite()?;
     write_summary(&cli.output, &summary)?;
     eprintln!("wrote perf summary: {}", cli.output.display());
     Ok(())
