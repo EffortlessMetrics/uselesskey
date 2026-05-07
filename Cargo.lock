@@ -5088,6 +5088,9 @@ dependencies = [
 [[package]]
 name = "uselesskey-feature-grid"
 version = "0.6.0"
+dependencies = [
+ "uselesskey-test-support",
+]
 
 [[package]]
 name = "uselesskey-hmac"

@@ -192,6 +192,7 @@ pub const BDD_FEATURE_SETS: &[&str] = &[
 #[cfg(test)]
 mod tests {
     use super::*;
+    use uselesskey_test_support::{TestResult, require_some};
 
     #[test]
     fn core_matrix_has_unique_names() {
@@ -266,27 +267,29 @@ mod tests {
     }
 
     #[test]
-    fn core_matrix_no_default_has_flag() {
-        let no_default = CORE_FEATURE_MATRIX
-            .iter()
-            .find(|e| e.name == "no-default")
-            .expect("matrix must include 'no-default'");
+    fn core_matrix_no_default_has_flag() -> TestResult<()> {
+        let no_default = require_some(
+            CORE_FEATURE_MATRIX.iter().find(|e| e.name == "no-default"),
+            "matrix must include 'no-default'",
+        )?;
         assert!(
             no_default.cargo_args.contains(&"--no-default-features"),
             "no-default entry must pass --no-default-features"
         );
+        Ok(())
     }
 
     #[test]
-    fn core_matrix_default_has_no_args() {
-        let default = CORE_FEATURE_MATRIX
-            .iter()
-            .find(|e| e.name == "default")
-            .expect("matrix must include 'default'");
+    fn core_matrix_default_has_no_args() -> TestResult<()> {
+        let default = require_some(
+            CORE_FEATURE_MATRIX.iter().find(|e| e.name == "default"),
+            "matrix must include 'default'",
+        )?;
         assert!(
             default.cargo_args.is_empty(),
             "default entry must have no extra cargo args"
         );
+        Ok(())
     }
 
     #[test]
@@ -351,15 +354,18 @@ mod tests {
     // --- Wave 81: additional coverage ---
 
     #[test]
-    fn core_matrix_all_features_has_flag() {
-        let all = CORE_FEATURE_MATRIX
-            .iter()
-            .find(|e| e.name == "all-features")
-            .expect("matrix must include 'all-features'");
+    fn core_matrix_all_features_has_flag() -> TestResult<()> {
+        let all = require_some(
+            CORE_FEATURE_MATRIX
+                .iter()
+                .find(|e| e.name == "all-features"),
+            "matrix must include 'all-features'",
+        )?;
         assert!(
             all.cargo_args.contains(&"--all-features"),
             "all-features entry must pass --all-features"
         );
+        Ok(())
     }
 
     #[test]
@@ -538,14 +544,12 @@ mod tests {
     }
 
     #[test]
-    fn bdd_matrix_feature_values_are_valid_uk_tags() {
+    fn bdd_matrix_feature_values_are_valid_uk_tags() -> TestResult<()> {
         for entry in BDD_FEATURE_MATRIX {
-            // Find the value after "--features"
-            let feature_idx = entry
-                .cargo_args
-                .iter()
-                .position(|a| *a == "--features")
-                .expect("BDD entry must have --features");
+            let feature_idx = require_some(
+                entry.cargo_args.iter().position(|a| *a == "--features"),
+                "BDD entry must have --features",
+            )?;
             let features_csv = entry.cargo_args[feature_idx + 1];
             for tag in features_csv.split(',') {
                 assert!(
@@ -555,6 +559,7 @@ mod tests {
                 );
             }
         }
+        Ok(())
     }
 
     #[test]
@@ -628,13 +633,12 @@ mod tests {
     }
 
     #[test]
-    fn bdd_matrix_every_entry_references_uk_all() {
+    fn bdd_matrix_every_entry_references_uk_all() -> TestResult<()> {
         for entry in BDD_FEATURE_MATRIX {
-            let feat_idx = entry
-                .cargo_args
-                .iter()
-                .position(|a| *a == "--features")
-                .expect("BDD entry must have --features");
+            let feat_idx = require_some(
+                entry.cargo_args.iter().position(|a| *a == "--features"),
+                "BDD entry must have --features",
+            )?;
             let features_csv = entry.cargo_args[feat_idx + 1];
             let tags: Vec<&str> = features_csv.split(',').collect();
             assert!(
@@ -643,6 +647,7 @@ mod tests {
                 entry.name
             );
         }
+        Ok(())
     }
 
     #[test]

@@ -16,10 +16,10 @@ generated_at = "2026-05-07"
 generated_by = "cargo xtask no-panic baseline"
 
 [summary]
-total = 4231
+total = 4226
 
 [summary.by_family]
-expect = 2233
+expect = 2228
 get_unwrap = 1
 panic_macro = 123
 unreachable = 6
@@ -8595,38 +8595,6 @@ count = 1
 
 [[entry]]
 path = "crates/uselesskey-ed25519/tests/testutil.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                             ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-feature-grid/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                                  ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-feature-grid/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                                ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-feature-grid/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                              ");'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-feature-grid/src/lib.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
