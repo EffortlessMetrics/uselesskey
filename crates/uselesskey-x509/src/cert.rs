@@ -22,7 +22,9 @@ use crate::negative::{
     corrupt_cert_der_deterministic, corrupt_cert_pem, corrupt_cert_pem_deterministic,
     truncate_cert_der,
 };
-use crate::srp::derive::deterministic_base_time_from_parts;
+use crate::srp::derive::{
+    deterministic_base_time_from_parts, deterministic_serial_number_with_rng,
+};
 use crate::srp::negative::X509Negative;
 use crate::srp::spec::{ChainSpec, NotBeforeOffset, X509Spec};
 
@@ -521,7 +523,9 @@ fn load_inner_with_spec(
 
         params.not_before = not_before;
         params.not_after = not_after;
-        params.serial_number = Some(next_serial_number(&mut rng));
+        params.serial_number = Some(deterministic_serial_number_with_rng(|bytes| {
+            rng.fill_bytes(bytes);
+        }));
 
         // Set CA status
         if spec.is_ca {
@@ -580,13 +584,6 @@ fn load_inner_with_spec(
             private_key_pkcs8_pem,
         }
     })
-}
-
-fn next_serial_number(rng: &mut impl RngCore) -> rcgen::SerialNumber {
-    let mut bytes = [0u8; 16];
-    rng.fill_bytes(&mut bytes);
-    bytes[0] &= 0x7F;
-    rcgen::SerialNumber::from_slice(&bytes)
 }
 
 #[cfg(test)]

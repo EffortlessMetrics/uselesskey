@@ -167,7 +167,7 @@ impl X509Spec {
 
     /// Stable encoding for cache keys / deterministic derivation.
     ///
-    /// If you change this, bump the derivation version in `uselesskey-core`.
+    /// If you change this, bump this X.509 stable-bytes version prefix.
     pub fn stable_bytes(&self) -> Vec<u8> {
         let mut out = Vec::new();
 

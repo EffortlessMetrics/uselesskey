@@ -18,7 +18,9 @@ use uselesskey_core::sink::TempArtifact;
 use uselesskey_core::{Error, Factory};
 use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 
-use crate::srp::derive::deterministic_base_time_from_parts;
+use crate::srp::derive::{
+    deterministic_base_time_from_parts, deterministic_serial_number_with_rng,
+};
 use crate::srp::spec::{ChainSpec, KeyUsage, NotBeforeOffset};
 
 /// Cache domain for X.509 certificate chain fixtures.
@@ -633,7 +635,9 @@ fn load_chain_inner(
         root_params.not_before = base_time - TimeDuration::days(1);
         root_params.not_after =
             root_params.not_before + TimeDuration::days(spec.root_validity_days as i64);
-        root_params.serial_number = Some(next_serial_number(&mut rng));
+        root_params.serial_number = Some(deterministic_serial_number_with_rng(|bytes| {
+            rng.fill_bytes(bytes);
+        }));
 
         let root_cert = root_params.self_signed(&root_kp).expect("root cert gen");
 
@@ -653,7 +657,9 @@ fn load_chain_inner(
         int_params.not_before = apply_not_before(base_time, spec.intermediate_not_before);
         int_params.not_after =
             int_params.not_before + TimeDuration::days(spec.intermediate_validity_days as i64);
-        int_params.serial_number = Some(next_serial_number(&mut rng));
+        int_params.serial_number = Some(deterministic_serial_number_with_rng(|bytes| {
+            rng.fill_bytes(bytes);
+        }));
 
         let root_issuer = Issuer::from_params(&root_params, &root_kp);
         let int_cert = int_params
@@ -688,7 +694,9 @@ fn load_chain_inner(
         leaf_params.not_before = apply_not_before(base_time, spec.leaf_not_before);
         leaf_params.not_after =
             leaf_params.not_before + TimeDuration::days(spec.leaf_validity_days as i64);
-        leaf_params.serial_number = Some(next_serial_number(&mut rng));
+        leaf_params.serial_number = Some(deterministic_serial_number_with_rng(|bytes| {
+            rng.fill_bytes(bytes);
+        }));
 
         let leaf_serial = leaf_params
             .serial_number
@@ -702,7 +710,9 @@ fn load_chain_inner(
 
         // --- CRL (only for revoked_leaf variant) ---
         let (crl_der, crl_pem) = if variant == "revoked_leaf" {
-            let crl_number = next_serial_number(&mut rng);
+            let crl_number = deterministic_serial_number_with_rng(|bytes| {
+                rng.fill_bytes(bytes);
+            });
 
             let revoked = RevokedCertParams {
                 serial_number: leaf_serial,
@@ -751,13 +761,6 @@ fn load_chain_inner(
             crl_pem,
         }
     })
-}
-
-fn next_serial_number(rng: &mut impl RngCore) -> rcgen::SerialNumber {
-    let mut bytes = [0u8; 16];
-    rng.fill_bytes(&mut bytes);
-    bytes[0] &= 0x7F;
-    rcgen::SerialNumber::from_slice(&bytes)
 }
 
 #[cfg(test)]

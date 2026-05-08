@@ -81,12 +81,14 @@ pub fn deterministic_base_time(hasher: Hasher) -> OffsetDateTime {
 /// Produces a 16-byte positive serial number (high bit cleared).
 pub fn deterministic_serial_number(seed: Seed) -> SerialNumber {
     let mut rng = ChaCha20Rng::from_seed(*seed.bytes());
-    deterministic_serial_number_with_rng(&mut rng)
+    deterministic_serial_number_with_rng(|bytes| rng.fill_bytes(bytes))
 }
 
-fn deterministic_serial_number_with_rng(rng: &mut impl Rng) -> SerialNumber {
+pub(crate) fn deterministic_serial_number_with_rng(
+    mut fill_bytes: impl FnMut(&mut [u8]),
+) -> SerialNumber {
     let mut bytes = [0u8; SERIAL_NUMBER_BYTES];
-    rng.fill_bytes(&mut bytes);
+    fill_bytes(&mut bytes);
     bytes[0] &= 0x7F;
     SerialNumber::from_slice(&bytes)
 }
