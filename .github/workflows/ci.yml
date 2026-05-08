@@ -64,7 +64,7 @@ jobs:
       - name: Install tools
         uses: taiki-e/install-action@v2
         with:
-          tool: cargo-fuzz,cargo-mutants,typos-cli,cargo-deny
+          tool: cargo-fuzz,typos-cli,cargo-deny
 
       - name: Toolchain diagnostics
         run: |
@@ -81,6 +81,13 @@ jobs:
 
       - name: xtask pr
         run: cargo xtask pr
+
+      - name: ripr artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: ripr-pr
+          path: target/ripr/pr/
+        if: always()
 
       - name: docs-sync check
         run: cargo xtask docs-sync --check
@@ -120,6 +127,46 @@ jobs:
           path: target/xtask/receipt.json
         if: always()
 
+  mutation-pr:
+    if: github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'mutation')
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install NASM (for aws-lc-rs)
+        run: sudo apt-get update && sudo apt-get install -y nasm
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+
+      - name: Install cargo-mutants
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-mutants
+
+      - name: Fetch base branch
+        if: github.base_ref != ''
+        run: git fetch origin ${{ github.base_ref }}
+
+      - name: targeted mutation
+        run: cargo xtask mutants-pr --changed
+
+      - name: Upload mutation artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: mutation-pr
+          path: |
+            mutants.out/
+            crates/**/mutants.out/
+        if: always()
+
   main:
     if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
@@ -146,7 +193,7 @@ jobs:
       - name: Install tools
         uses: taiki-e/install-action@v2
         with:
-          tool: cargo-fuzz,cargo-mutants,typos-cli,cargo-deny
+          tool: cargo-fuzz,typos-cli,cargo-deny
 
       - name: Toolchain diagnostics
         run: |

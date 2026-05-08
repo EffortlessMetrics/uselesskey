@@ -30,15 +30,17 @@ Both hooks now delegate to `xtask`:
 This repository uses `xtask` for automation. You can run these commands via `cargo xtask <cmd>`.
 
 ```bash
-cargo xtask ci              # Main CI pipeline: fmt + clippy + tests + matrix + guard + bdd + no-blob + mutants + fuzz
-cargo xtask pr              # PR-scoped tests based on git diff (emits JSON receipt)
+cargo xtask ci              # Main CI pipeline: fmt + clippy + tests + matrix + guard + bdd + no-blob + ripr + fuzz
+cargo xtask pr              # PR-scoped tests plus ripr based on git diff (emits JSON receipt)
 cargo xtask pr-bundles      # Bundle-ledger workflow for large PR queues: snapshot, ledger, prepare, cleanup
 cargo xtask test            # Run all tests with all features
 cargo xtask fmt --fix       # Fix formatting
 cargo xtask clippy          # Run clippy with -D warnings
 cargo xtask bdd             # Run Cucumber BDD tests
 cargo xtask fuzz            # Fuzz testing (requires cargo-fuzz)
-cargo xtask mutants         # Mutation testing (requires cargo-mutants)
+cargo xtask mutants         # Manual mutation testing subset (requires cargo-mutants)
+cargo xtask mutants-pr --changed # Targeted PR mutation testing for changed crates
+cargo xtask mutants-nightly --scope public # Nightly/manual mutation lane
 cargo xtask deny            # License/advisory checks (requires cargo-deny)
 cargo xtask feature-matrix  # Run feature matrix checks (default, no-default, each feature, all-features)
 cargo xtask publish-check   # Run publish dry-runs in dependency order

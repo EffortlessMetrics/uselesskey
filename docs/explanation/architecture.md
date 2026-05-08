@@ -230,6 +230,7 @@ uselesskey-aws-lc-rs     → aws-lc-rs native key types
 
 ## CI scoping
 
-Pull requests run `cargo xtask pr`, which scopes tests based on `git diff` and runs
-the full suites relevant to changed areas. Pushes to `main` run the full `cargo xtask ci`
-pipeline.
+Pull requests run `cargo xtask pr`, which scopes tests based on `git diff`, runs
+RIPR oracle-exposure review, and leaves mutation to explicit targeted PR, nightly,
+or release-preflight lanes. Pushes to `main` run the non-exhaustive `cargo xtask ci`
+pipeline; see [`docs/ci/test-evidence-lanes.md`](../ci/test-evidence-lanes.md).

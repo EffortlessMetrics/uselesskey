@@ -1,0 +1,69 @@
+name: Mutation
+
+on:
+  schedule:
+    - cron: "17 7 * * *"
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: "mutation scope"
+        default: "public"
+        type: choice
+        options:
+          - public
+          - adapters
+          - all
+          - crate
+      crate:
+        description: "crate name when scope=crate"
+        required: false
+
+concurrency:
+  group: mutation-${{ github.event_name == 'workflow_dispatch' && github.run_id || github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  nightly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Install NASM (for aws-lc-rs)
+        run: sudo apt-get update && sudo apt-get install -y nasm
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+
+      - name: Install cargo-mutants
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-mutants
+
+      - name: Run mutation scope
+        run: |
+          if [ "${{ github.event.inputs.scope || 'public' }}" = "crate" ]; then
+            cargo xtask mutants-nightly --scope crate --crate-name "${{ github.event.inputs.crate }}"
+          else
+            cargo xtask mutants-nightly --scope "${{ github.event.inputs.scope || 'public' }}"
+          fi
+
+      - name: Upload mutation artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: mutation-${{ github.event.inputs.scope || 'public' }}
+          path: |
+            target/mutation/
+            mutants.out/
+            crates/**/mutants.out/
+        if: always()

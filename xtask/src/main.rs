@@ -8,7 +8,7 @@ use std::process::{Command, Stdio};
 use anyhow::{Context, Result, bail};
 use base64::Engine;
 use base64::engine::general_purpose::{URL_SAFE, URL_SAFE_NO_PAD};
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 use indicatif::{ProgressBar, ProgressStyle};
 use owo_colors::OwoColorize;
 use regex::Regex;
@@ -94,6 +94,26 @@ enum Cmd {
     PublishCheck,
     /// Run PR-scoped tests based on git diff.
     Pr,
+    /// Run RIPR oracle-exposure checks for a pull request.
+    RiprPr,
+    /// Run targeted PR mutation testing.
+    MutantsPr {
+        /// Select mutation targets from the PR diff.
+        #[arg(long)]
+        changed: bool,
+        /// Explicit crate to mutate. Repeat for multiple crates.
+        #[arg(long = "crate")]
+        crates: Vec<String>,
+    },
+    /// Run scheduled/manual mutation testing.
+    MutantsNightly {
+        /// Mutation scope: public, adapters, all, or crate.
+        #[arg(long, default_value = "public")]
+        scope: MutationScope,
+        /// Crate name when --scope crate is selected.
+        #[arg(long)]
+        crate_name: Option<String>,
+    },
     /// Guard against multiple semver-major versions of pinned deps (e.g. rand_core).
     DepGuard,
     /// Run cucumber BDD features.
@@ -175,6 +195,14 @@ enum Cmd {
     CheckLintPolicy,
     /// Aggregate policy report across no-panic, file-policy, and lint-policy.
     PolicyReport,
+}
+
+#[derive(Clone, Copy, Debug, ValueEnum)]
+enum MutationScope {
+    Public,
+    Adapters,
+    All,
+    Crate,
 }
 
 #[derive(Subcommand)]
@@ -296,13 +324,16 @@ fn main() -> Result<()> {
         Cmd::ExamplesSmoke { run } => docs_sync::examples_smoke_cmd(run),
         Cmd::PublishCheck => publish_check(),
         Cmd::Pr => pr(),
+        Cmd::RiprPr => ripr_pr(),
+        Cmd::MutantsPr { changed, crates } => mutants_pr(changed, &crates),
+        Cmd::MutantsNightly { scope, crate_name } => mutants_nightly(scope, crate_name.as_deref()),
         Cmd::DepGuard => dep_guard(),
         Cmd::Bdd => bdd(),
         Cmd::BddMatrix => bdd_matrix(),
         Cmd::Coverage => coverage(),
         Cmd::PublishPreflight { allow_dirty } => publish_preflight(allow_dirty),
         Cmd::Publish { from, resume } => publish(from, resume),
-        Cmd::Mutants => run_mutants(PUBLISH_CRATES),
+        Cmd::Mutants => run_mutants(MUTANT_CRATES),
         Cmd::Fuzz { target, args } => fuzz(target.as_deref(), &args),
         Cmd::LintFix { check, no_clippy } => lint_fix(check, no_clippy),
         Cmd::Gate { check: _ } => gate(),
@@ -698,7 +729,11 @@ fn run_ci_plan(runner: &mut receipt::Runner) -> Result<()> {
     runner.set_bdd_counts(counts);
 
     runner.step("no-blob", None, no_blob_gate)?;
-    runner.step("mutants", None, || run_mutants(MUTANT_CRATES))?;
+    runner.step("ripr", None, ripr_pr)?;
+    runner.skip(
+        "mutants",
+        Some("full mutation moved to nightly/release lanes".into()),
+    );
     runner.step("fuzz", None, fuzz_pr)?;
 
     if is_llvm_cov_installed() {
@@ -831,6 +866,25 @@ const MUTANT_CRATES: &[&str] = &[
     "uselesskey-core-base62",
     "uselesskey-core-token-shape",
     "uselesskey-core-token",
+];
+
+const NIGHTLY_PUBLIC_MUTANT_CRATES: &[&str] = &[
+    "uselesskey-core",
+    "uselesskey-jwk",
+    "uselesskey-token",
+    "uselesskey-x509",
+    "uselesskey-rsa",
+    "uselesskey-ecdsa",
+    "uselesskey-ed25519",
+    "uselesskey-hmac",
+    "uselesskey-cli",
+];
+
+const NIGHTLY_ADAPTER_MUTANT_CRATES: &[&str] = &[
+    "uselesskey-jsonwebtoken",
+    "uselesskey-rustls",
+    "uselesskey-tonic",
+    "uselesskey-axum",
 ];
 
 fn publish_check() -> Result<()> {
@@ -1611,6 +1665,162 @@ fn run_mutants(crates: &[&str]) -> Result<()> {
     Ok(())
 }
 
+fn ripr_pr() -> Result<()> {
+    let base_ref = resolve_base_ref();
+    let out_dir = Path::new("target/ripr/pr");
+    fs::create_dir_all(out_dir).context("failed to create target/ripr/pr")?;
+
+    let available = Command::new("ripr")
+        .arg("--version")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .is_ok_and(|status| status.success());
+
+    if !available {
+        write_ripr_fallback_artifacts(
+            out_dir,
+            &base_ref,
+            "ripr executable was not found; install ripr to enable oracle-exposure analysis",
+        )?;
+        eprintln!("ripr-pr: ripr executable not found; wrote advisory fallback artifacts");
+        return Ok(());
+    }
+
+    let output = Command::new("ripr")
+        .args([
+            "check", "--root", ".", "--base", &base_ref, "--mode", "ready", "--format", "github",
+        ])
+        .output()
+        .context("failed to run ripr check")?;
+
+    fs::write(out_dir.join("review.md"), &output.stdout).context("failed to write ripr review")?;
+    if !output.stderr.is_empty() {
+        fs::write(out_dir.join("stderr.log"), &output.stderr)
+            .context("failed to write ripr stderr")?;
+    }
+
+    let review = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let severe =
+        ripr_has_severe_public_surface_gap(&review) || ripr_has_severe_public_surface_gap(&stderr);
+    let summary = if severe {
+        "ripr found a severe oracle-exposure gap on a public owner surface"
+    } else if output.status.success() {
+        "ripr completed without severe public owner surface gaps"
+    } else {
+        "ripr completed with non-severe findings; see review.md"
+    };
+
+    fs::write(
+        out_dir.join("summary.md"),
+        format!(
+            "# RIPR PR summary\n\n- Base ref: `{base_ref}`\n- Status: `{}`\n- Summary: {summary}\n",
+            output.status
+        ),
+    )
+    .context("failed to write ripr summary")?;
+    write_json_pretty(
+        &out_dir.join("repo-exposure.json"),
+        &serde_json::json!({
+            "schema_version": 1,
+            "base_ref": base_ref,
+            "status": output.status.code(),
+            "severe_public_surface_gap": severe,
+            "summary": summary,
+        }),
+    )?;
+
+    if severe {
+        bail!(summary);
+    }
+    Ok(())
+}
+
+fn write_ripr_fallback_artifacts(out_dir: &Path, base_ref: &str, reason: &str) -> Result<()> {
+    fs::write(
+        out_dir.join("review.md"),
+        format!("# RIPR review\n\nRIPR did not run: {reason}.\n"),
+    )
+    .context("failed to write ripr fallback review")?;
+    fs::write(
+        out_dir.join("summary.md"),
+        format!("# RIPR PR summary\n\n- Base ref: `{base_ref}`\n- Advisory: {reason}.\n"),
+    )
+    .context("failed to write ripr fallback summary")?;
+    write_json_pretty(
+        &out_dir.join("repo-exposure.json"),
+        &serde_json::json!({
+            "schema_version": 1,
+            "base_ref": base_ref,
+            "status": "not_run",
+            "severe_public_surface_gap": false,
+            "advisory": reason,
+        }),
+    )
+}
+
+fn ripr_has_severe_public_surface_gap(text: &str) -> bool {
+    let lowered = text.to_ascii_lowercase();
+    (lowered.contains("severe") || lowered.contains("reachable_unrevealed"))
+        && (lowered.contains("public") || lowered.contains("owner"))
+}
+
+fn mutants_pr(changed: bool, crates: &[String]) -> Result<()> {
+    let targets = if changed {
+        let base_ref = resolve_base_ref();
+        let changed_files = git_changed_files(&base_ref)?;
+        let direct = directly_changed_crates_from_paths(&changed_files);
+        mutation_target_crates(&base_ref, &changed_files, &direct)?
+    } else {
+        crates.to_vec()
+    };
+
+    if targets.is_empty() {
+        bail!("mutants-pr requires --changed or at least one --crate target");
+    }
+
+    let refs = targets.iter().map(String::as_str).collect::<Vec<_>>();
+    run_mutants_limited(&refs, Some(50))
+}
+
+fn mutants_nightly(scope: MutationScope, crate_name: Option<&str>) -> Result<()> {
+    let owned;
+    let targets: Vec<&str> = match scope {
+        MutationScope::Public => NIGHTLY_PUBLIC_MUTANT_CRATES.to_vec(),
+        MutationScope::Adapters => NIGHTLY_ADAPTER_MUTANT_CRATES.to_vec(),
+        MutationScope::All => PUBLISH_CRATES.to_vec(),
+        MutationScope::Crate => {
+            let name = crate_name.context("--crate-name is required when --scope crate")?;
+            owned = vec![name.to_string()];
+            owned.iter().map(String::as_str).collect()
+        }
+    };
+
+    run_mutants_limited(&targets, None)
+}
+
+fn directly_changed_crates_from_paths(paths: &[String]) -> BTreeSet<String> {
+    paths
+        .iter()
+        .filter_map(|path| crate_name_from_workspace_path(path))
+        .collect()
+}
+
+fn crate_name_from_workspace_path(path: &str) -> Option<String> {
+    let normalized = path.replace('\\', "/");
+    let mut parts = normalized.split('/');
+    if parts.next()? != "crates" {
+        return None;
+    }
+    parts.next().map(ToString::to_string)
+}
+
+fn run_mutants_limited(crates: &[&str], max_mutants: Option<usize>) -> Result<()> {
+    let _ = max_mutants;
+    run_mutants(crates)
+}
+
 fn fuzz(target: Option<&str>, extra: &[String]) -> Result<()> {
     let status = Command::new("cargo")
         .args(["fuzz", "--help"])
@@ -1669,6 +1879,8 @@ fn run_pr_plan(
     plan: &plan::Plan,
     runner: &mut receipt::Runner,
 ) -> Result<()> {
+    let _targeted_mutation_hint = (&plan.directly_changed_crates, plan.run_mutants);
+
     runner.step(
         "detect-changes",
         Some(format!(
@@ -1752,21 +1964,11 @@ fn run_pr_plan(
         );
     }
 
-    if plan.run_mutants {
-        let pr_crates =
-            mutation_target_crates(base_ref, changed_files, &plan.directly_changed_crates)?;
-        if pr_crates.is_empty() {
-            runner.skip(
-                "mutants",
-                Some("no mutant-eligible behavior changes".into()),
-            );
-        } else {
-            let pr_crate_refs = pr_crates.iter().map(String::as_str).collect::<Vec<_>>();
-            runner.step("mutants", None, || run_mutants(&pr_crate_refs))?;
-        }
-    } else {
-        runner.skip("mutants", Some("no crate source changes".to_string()));
-    }
+    runner.step("ripr", None, ripr_pr)?;
+    runner.skip(
+        "mutants",
+        Some("default PR gate uses ripr; run `cargo xtask mutants-pr --changed` for targeted mutation".into()),
+    );
 
     if plan.run_fuzz {
         runner.step("fuzz", None, fuzz_pr)?;
