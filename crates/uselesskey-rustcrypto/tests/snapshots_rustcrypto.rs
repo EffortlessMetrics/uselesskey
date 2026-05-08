@@ -39,7 +39,7 @@ mod rsa_snapshots {
 
         let result = RsaInfo {
             algorithm: "RSA-2048",
-            modulus_bits: modulus_bits as u32,
+            modulus_bits,
             e_hex: format!("{:x}", public_key.e()),
         };
 
@@ -65,7 +65,7 @@ mod rsa_snapshots {
                 RsaSizeInfo {
                     label,
                     bits,
-                    modulus_bits: public_key.n().bits() as u32,
+                    modulus_bits: public_key.n().bits(),
                 }
             })
             .collect();
@@ -90,7 +90,7 @@ mod rsa_snapshots {
 
         let result = RsaInfo {
             algorithm: "RSA-4096",
-            modulus_bits: modulus_bits as u32,
+            modulus_bits,
             e_hex: format!("{:x}", public_key.e()),
         };
 
