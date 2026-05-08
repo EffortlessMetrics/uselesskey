@@ -19,8 +19,11 @@ This roadmap reflects the strategic direction for uselesskey as a **test-fixture
 - [x] JWK/JWKS and token-shape negative fixture follow-ons.
 - [x] Docs/examples coverage for the remaining negative-fixture surface.
 - [x] Performance benchmarks for key generation and materialization paths.
+- [x] Export-bundle CLI integration: `uselesskey bundle`, `verify-bundle`,
+  scanner-safe profile metadata, deterministic receipts, and Kubernetes/Vault
+  payload emitters.
 - [ ] Release governance and post-release audit automation.
-- [ ] Export-bundle integration (`uselesskey bundle`, k8s/vault payload emitters, and reference manifests).
+- [ ] Release-facing reference bundle manifests and downstream fixture recipes.
 
 ## Shipped
 

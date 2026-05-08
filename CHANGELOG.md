@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Reconciled the v0.6.1 roadmap status with the landed bundle, verification,
+  Kubernetes/Vault export, scanner-safe profile, and receipt workflows.
 - Moved JWK/JWKS shape, builder, ordering, and deterministic `kid` internals
   under `uselesskey-jwk::srp::*`, retaining the former `uselesskey-core-jwk*`,
   `uselesskey-core-jwks-order`, and `uselesskey-core-kid` crates as

@@ -38,10 +38,14 @@ This plan decomposes `roadmap.md` into milestone-aligned execution items.
 
 ## v0.6.1 export bundles
 
-- [ ] `uselesskey bundle` command design
-- [ ] Kubernetes secret payload emitter
-- [ ] Vault payload emitter
+- [x] `uselesskey bundle` command design
+- [x] `uselesskey verify-bundle` deterministic manifest verifier
+- [x] scanner-safe bundle profile with per-artifact lane metadata
+- [x] deterministic bundle receipts under `receipts/materialization.json` and `receipts/audit-surface.json`
+- [x] Kubernetes secret payload emitter
+- [x] Vault payload emitter
 - [ ] Reference manifests for scanner-safe fixture bundles
+- [ ] Release-facing downstream bundle recipes
 
 ## Governance
 
