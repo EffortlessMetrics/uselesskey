@@ -32,6 +32,13 @@ Repository operating rules for agents and maintainers.
 
 - [pr-disposition.md](contributing/pr-disposition.md) — Reviewing keeper, duplicate, stale, declined, and automation PRs
 
+## CI and Evidence
+
+Validation lanes and the claim boundaries behind them.
+
+- [coverage.md](ci/coverage.md) — Coverage workflow scope, artifacts, and advisory status
+- [test-evidence-lanes.md](ci/test-evidence-lanes.md) — PR, targeted mutation, nightly mutation, and release evidence model
+
 ## Explanation
 
 Understanding-oriented material on design and direction.
