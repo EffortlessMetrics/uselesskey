@@ -145,6 +145,8 @@ enum Cmd {
     },
     /// Configure git hooks (sets core.hooksPath to .githooks).
     Setup,
+    /// Bootstrap Claude agent swarm slash-command templates.
+    AgentSwarmSetup,
     /// Lint commit message (used by git hooks).
     CommitLint {
         /// Path to the commit message file.
@@ -307,6 +309,7 @@ fn main() -> Result<()> {
         Cmd::LintFix { check, no_clippy } => lint_fix(check, no_clippy),
         Cmd::Gate { check: _ } => gate(),
         Cmd::Setup => setup(),
+        Cmd::AgentSwarmSetup => agent_swarm_setup(),
         Cmd::CommitLint { message_file } => commit_lint(&message_file),
         Cmd::Hook { hook } => match hook {
             HookCmd::PreCommit => hook_pre_commit(),
@@ -2919,6 +2922,104 @@ fn setup() -> Result<()> {
         " DONE ".on_bright_green().black().bold()
     );
     Ok(())
+}
+
+fn agent_swarm_setup() -> Result<()> {
+    let post_edit_check = env::var("POST_EDIT_CHECK").unwrap_or_else(|_| {
+        "cargo check --quiet --message-format=short 2>&1 | head -20 || true".to_string()
+    });
+    let repo_root = repo_root()?;
+    let slash_cmd_src = repo_root.join(".claude/agent-swarm-workflow/slash-commands");
+    let claude_dir = repo_root.join(".claude");
+    let cmd_dir = claude_dir.join("commands");
+    let settings = claude_dir.join("settings.json");
+
+    if !slash_cmd_src.is_dir() {
+        bail!(
+            "cannot find slash-commands directory at {}",
+            slash_cmd_src.display()
+        );
+    }
+
+    eprintln!("Creating .claude/commands/ ...");
+    fs::create_dir_all(&cmd_dir).context("failed to create .claude/commands")?;
+
+    eprintln!("Copying slash command templates ...");
+    let mut sources = fs::read_dir(&slash_cmd_src)
+        .with_context(|| format!("failed to read {}", slash_cmd_src.display()))?
+        .collect::<std::io::Result<Vec<_>>>()?;
+    sources.sort_by_key(|entry| entry.file_name());
+
+    for entry in sources {
+        let src_file = entry.path();
+        if !src_file.is_file() || src_file.extension().and_then(|ext| ext.to_str()) != Some("md") {
+            continue;
+        }
+        let filename = entry.file_name();
+        let dest = cmd_dir.join(&filename);
+        let filename = filename.to_string_lossy();
+        if dest.exists() {
+            eprintln!("  SKIP: {filename} (already exists, not overwriting)");
+        } else {
+            fs::copy(&src_file, &dest).with_context(|| {
+                format!(
+                    "failed to copy {} to {}",
+                    src_file.display(),
+                    dest.display()
+                )
+            })?;
+            eprintln!("  COPY: {filename}");
+        }
+    }
+
+    if settings.exists() {
+        eprintln!(
+            "\nSKIP: .claude/settings.json already exists.\n      Review it manually and add PostToolUse hooks if needed.\n      Recommended hook command: {post_edit_check}"
+        );
+    } else {
+        eprintln!("\nCreating .claude/settings.json ...");
+        let settings_json = serde_json::json!({
+            "hooks": {
+                "PostToolUse": [
+                    {
+                        "matcher": "Edit|Write|NotebookEdit",
+                        "hooks": [
+                            {
+                                "type": "command",
+                                "command": post_edit_check.clone(),
+                            }
+                        ]
+                    }
+                ]
+            }
+        });
+        fs::write(
+            &settings,
+            serde_json::to_string_pretty(&settings_json)? + "\n",
+        )
+        .context("failed to write .claude/settings.json")?;
+        eprintln!("  Created with PostToolUse hook: {post_edit_check}");
+    }
+
+    eprintln!(
+        "\n========================================================================\n Agent Swarm Workflow -- Setup Complete\n========================================================================\n\n Files created in: {}/\n\n Next steps:\n\n   1. Edit the slash commands in .claude/commands/ to replace\n      placeholder variables with your project's commands:\n\n        $TEST_CMD   -- your test runner       (e.g., cargo test, pytest)\n        $LINT_CMD   -- your linter             (e.g., cargo clippy, ruff)\n        $FMT_CMD    -- your formatter           (e.g., cargo fmt, prettier)\n        $BUILD_CMD  -- your build command       (e.g., cargo build, npm build)\n        $CHECK_CMD  -- fast type/compile check  (e.g., cargo check, tsc)\n        $GATE_CMD   -- full CI gate command     (e.g., just ci-gate, make ci)\n\n   2. Review .claude/settings.json and adjust the PostToolUse hook\n      command if needed.\n\n   3. Start Claude Code and try:\n        /wave test-coverage     -- launch a test coverage wave\n        /tdd-fix <bug>          -- fix a bug with TDD\n        /bulk-pr                -- PR all worktrees at once\n\n   4. (Optional) Add .claude/ to .gitignore if you do not want\n      to check in agent configuration, or commit it to share\n      with your team.\n\n   5. Read .claude/agent-swarm-workflow/agent-patterns.md\n      for tips on effective agent dispatch.\n\n========================================================================",
+        cmd_dir.display()
+    );
+
+    Ok(())
+}
+
+fn repo_root() -> Result<PathBuf> {
+    let output = Command::new("git")
+        .args(["rev-parse", "--show-toplevel"])
+        .output();
+    if let Ok(output) = output
+        && output.status.success()
+    {
+        let root = String::from_utf8(output.stdout).context("git returned non-UTF-8 path")?;
+        return Ok(PathBuf::from(root.trim_end()));
+    }
+    env::current_dir().context("failed to resolve current directory")
 }
 
 fn commit_lint(message_file: &Path) -> Result<()> {
