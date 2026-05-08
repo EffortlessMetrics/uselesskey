@@ -20,6 +20,7 @@ mod economics;
 mod plan;
 mod policy;
 mod pr_bundles;
+mod public_surface;
 mod receipt;
 
 #[derive(Parser)]
@@ -81,6 +82,8 @@ enum Cmd {
         #[arg(long)]
         check: bool,
     },
+    /// Check public-surface metadata and package topology guardrails.
+    PublicSurface,
     /// Compile example list from metadata and optionally run curated examples.
     ExamplesSmoke {
         /// Run curated smoke examples after compile checks.
@@ -289,6 +292,7 @@ fn main() -> Result<()> {
             NoBlobCmd::Migrate => no_blob_migrate(),
         },
         Cmd::DocsSync { check } => docs_sync::docs_sync_cmd(check),
+        Cmd::PublicSurface => public_surface::public_surface_cmd(PUBLISH_CRATES),
         Cmd::ExamplesSmoke { run } => docs_sync::examples_smoke_cmd(run),
         Cmd::PublishCheck => publish_check(),
         Cmd::Pr => pr(),
@@ -686,6 +690,9 @@ fn run_ci_plan(runner: &mut receipt::Runner) -> Result<()> {
 
     runner.step("dep-guard", None, dep_guard)?;
     runner.step("docs-sync", None, || docs_sync::docs_sync_cmd(true))?;
+    runner.step("public-surface", None, || {
+        public_surface::public_surface_cmd(PUBLISH_CRATES)
+    })?;
     runner.step("bdd", None, bdd)?;
     let counts = count_bdd_scenarios().unwrap_or_default();
     runner.set_bdd_counts(counts);
@@ -1305,6 +1312,9 @@ fn run_publish_preflight(runner: &mut receipt::Runner, allow_dirty: bool) -> Res
         None,
         check_doc_dependency_versions,
     )?;
+    runner.step("preflight:public-surface", None, || {
+        public_surface::public_surface_cmd(PUBLISH_CRATES)
+    })?;
     let mut first_err: Option<anyhow::Error> = None;
     for name in PUBLISH_CRATES {
         let step_name = format!("preflight:package:{name}");
@@ -1666,6 +1676,10 @@ fn run_pr_plan(
         || Ok(()),
     )?;
 
+    runner.step("public-surface", None, || {
+        public_surface::public_surface_cmd(PUBLISH_CRATES)
+    })?;
+
     if plan.docs_only {
         let reason = Some("docs-only".to_string());
         runner.skip("fmt", reason.clone());
@@ -1684,6 +1698,7 @@ fn run_pr_plan(
         runner.skip("xtask-tests", reason.clone());
         runner.skip("preflight:metadata", reason.clone());
         runner.skip("preflight:doc-versions", reason.clone());
+        runner.skip("preflight:public-surface", reason.clone());
         for name in PUBLISH_CRATES {
             runner.skip(&format!("preflight:package:{name}"), reason.clone());
         }
@@ -1808,6 +1823,7 @@ fn run_pr_plan(
     } else {
         runner.skip("preflight:metadata", Some("no cargo changes".into()));
         runner.skip("preflight:doc-versions", Some("no cargo changes".into()));
+        runner.skip("preflight:public-surface", Some("no cargo changes".into()));
         for name in PUBLISH_CRATES {
             runner.skip(
                 &format!("preflight:package:{name}"),
@@ -2848,6 +2864,9 @@ fn gate() -> Result<()> {
 fn run_gate(runner: &mut receipt::Runner) -> Result<()> {
     runner.step("fmt", None, || fmt(false))?;
     runner.step("docs-sync", None, || docs_sync::docs_sync_cmd(true))?;
+    runner.step("public-surface", None, || {
+        public_surface::public_surface_cmd(PUBLISH_CRATES)
+    })?;
     runner.step("check", None, || {
         run(Command::new("cargo").args(["check", "--workspace", "--all-targets", "--all-features"]))
     })?;

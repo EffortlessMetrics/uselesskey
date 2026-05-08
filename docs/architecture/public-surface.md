@@ -13,6 +13,11 @@ publish status, audience, and semver wording. This document is the human-facing
 architecture policy for deciding whether a crate is a product surface or an
 implementation boundary.
 
+Run `cargo xtask public-surface` when changing workspace crates, publish
+metadata, adapter stories, or public-support classification. The guard keeps
+this policy, `docs/metadata/workspace-docs.json`, and the Cargo package graph in
+sync before demicrocrate work lands.
+
 The rule is:
 
 ```text
@@ -136,6 +141,8 @@ For each demotion:
 - record deprecation/removal rationale in the changelog and release notes
 - update `docs/metadata/workspace-docs.json`, the generated support matrix, and
   publish preflight expectations in the same PR
+- run `cargo xtask public-surface` so the support metadata and package graph
+  agree
 
 Do not add new public crates for internal SRP boundaries. Add modules inside the
 owning public crate instead.

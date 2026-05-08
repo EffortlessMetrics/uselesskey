@@ -59,6 +59,14 @@
     {
       "name": "uselesskey-test-server",
       "description": "Deterministic OIDC discovery and JWKS HTTP test server fixtures"
+    },
+    {
+      "name": "uselesskey-pkcs11-mock",
+      "description": "PKCS#11 mock provider fixtures for HSM/provider integration tests"
+    },
+    {
+      "name": "uselesskey-webauthn",
+      "description": "WebAuthn credential and assertion fixtures for passkey tests"
     }
   ],
   "adapter_crates": [
