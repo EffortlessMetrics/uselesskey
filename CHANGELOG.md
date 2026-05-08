@@ -38,6 +38,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `uselesskey-token::srp::*`, retaining the former `uselesskey-token-spec`,
   `uselesskey-core-base62`, `uselesskey-core-token-shape`, and
   `uselesskey-core-token` crates as published-internal compatibility shims.
+- Moved core cache, factory, hash, identity, seed, sink, keypair material, and
+  generic negative-fixture internals under `uselesskey-core::srp::*`, retaining
+  the former `uselesskey-core-*` implementation crates as published-internal
+  compatibility shims.
 
 ## [0.6.0] - 2026-04-08
 

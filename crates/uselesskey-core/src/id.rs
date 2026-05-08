@@ -1,1 +1,1 @@
-pub use uselesskey_core_id::{ArtifactDomain, ArtifactId, DerivationVersion, Seed};
+pub use crate::srp::identity::{ArtifactDomain, ArtifactId, DerivationVersion, Seed};

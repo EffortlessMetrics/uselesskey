@@ -15,6 +15,7 @@ documentation = "https://docs.rs/uselesskey-core-id"
 authors.workspace = true
 
 [dependencies]
+uselesskey-core = { path = "../uselesskey-core", version = "0.6.0", default-features = false }
 uselesskey-core-hash = { workspace = true }
 uselesskey-core-seed = { path = "../uselesskey-core-seed", version = "0.6.0", default-features = false }
 
@@ -27,7 +28,7 @@ uselesskey-test-support = { workspace = true }
 
 [features]
 default = ["std"]
-std = ["uselesskey-core-hash/std", "uselesskey-core-seed/std"]
+std = ["uselesskey-core/std", "uselesskey-core-hash/std", "uselesskey-core-seed/std"]
 
 [package.metadata.docs.rs]
 features = ["std"]

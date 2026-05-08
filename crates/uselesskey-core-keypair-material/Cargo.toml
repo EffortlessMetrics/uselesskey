@@ -16,7 +16,6 @@ authors.workspace = true
 
 [dependencies]
 uselesskey-core = { path = "../uselesskey-core", version = "0.6.0" }
-uselesskey-jwk = { path = "../uselesskey-jwk", version = "0.6.0", default-features = false }
 
 [dev-dependencies]
 insta.workspace = true

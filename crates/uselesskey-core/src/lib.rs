@@ -38,9 +38,13 @@ mod id;
 pub mod negative;
 #[cfg(feature = "std")]
 pub mod sink;
+#[doc(hidden)]
+pub mod srp;
 
 pub use crate::error::Error;
 pub use crate::factory::{Factory, Mode};
 pub use crate::id::{ArtifactDomain, ArtifactId, DerivationVersion, Seed};
+#[cfg(feature = "std")]
+pub use crate::sink::TempArtifact;
 
 extern crate alloc;
