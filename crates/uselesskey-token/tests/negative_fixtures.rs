@@ -10,6 +10,10 @@ fn decode_payload(token: &str) -> Value {
     serde_json::from_slice(&bytes).expect("parse payload")
 }
 
+fn jwt_segment_count(token: &str) -> usize {
+    token.split('.').count()
+}
+
 #[test]
 fn token_fixture_emits_expired_oauth_negative_value() {
     let fx = Factory::deterministic(Seed::from_env_value("token-negative-it").unwrap());
@@ -17,9 +21,43 @@ fn token_fixture_emits_expired_oauth_negative_value() {
 
     let expired = token.negative_value(NegativeToken::ExpiredClaims);
 
-    assert_eq!(expired.matches('.').count(), 2);
+    assert_eq!(jwt_segment_count(&expired), 3);
     assert_eq!(decode_payload(&expired)["exp"], 1);
     assert_ne!(expired, token.value());
+}
+
+#[test]
+fn token_fixture_emits_bad_issuer_negative_value() {
+    let fx = Factory::deterministic(Seed::from_env_value("token-negative-issuer").unwrap());
+    let token = fx.token("issuer", TokenSpec::oauth_access_token());
+
+    let bad_issuer = token.negative_value(NegativeToken::BadIssuer);
+    let original_payload = decode_payload(token.value());
+    let negative_payload = decode_payload(&bad_issuer);
+
+    assert_eq!(jwt_segment_count(&bad_issuer), 3);
+    assert_eq!(negative_payload["iss"], "wrong-issuer");
+    assert_eq!(negative_payload["aud"], original_payload["aud"]);
+    assert_eq!(negative_payload["sub"], original_payload["sub"]);
+    assert_eq!(negative_payload["exp"], original_payload["exp"]);
+    assert_ne!(bad_issuer, token.value());
+}
+
+#[test]
+fn token_fixture_emits_bad_audience_negative_value() {
+    let fx = Factory::deterministic(Seed::from_env_value("token-negative-audience").unwrap());
+    let token = fx.token("issuer", TokenSpec::oauth_access_token());
+
+    let bad_audience = token.negative_value(NegativeToken::BadAudience);
+    let original_payload = decode_payload(token.value());
+    let negative_payload = decode_payload(&bad_audience);
+
+    assert_eq!(jwt_segment_count(&bad_audience), 3);
+    assert_eq!(negative_payload["iss"], original_payload["iss"]);
+    assert_eq!(negative_payload["aud"], "wrong-audience");
+    assert_eq!(negative_payload["sub"], original_payload["sub"]);
+    assert_eq!(negative_payload["exp"], original_payload["exp"]);
+    assert_ne!(bad_audience, token.value());
 }
 
 #[test]
