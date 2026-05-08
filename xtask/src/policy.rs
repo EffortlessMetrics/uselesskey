@@ -434,35 +434,39 @@ pub fn check_no_panic_family() -> Result<()> {
     );
 
     match config.policy.mode.as_str() {
-        "blocking" => {
-            if report.unallowlisted > 0 || report.stale_entries > 0 || report.expired_entries > 0 {
-                bail!(
-                    "no-panic policy is blocking and there are {} unallowlisted, {} stale, {} expired",
-                    report.unallowlisted,
-                    report.stale_entries,
-                    report.expired_entries
-                );
-            }
+        "blocking"
+            if (report.unallowlisted > 0
+                || report.stale_entries > 0
+                || report.expired_entries > 0) =>
+        {
+            bail!(
+                "no-panic policy is blocking and there are {} unallowlisted, {} stale, {} expired",
+                report.unallowlisted,
+                report.stale_entries,
+                report.expired_entries
+            );
         }
-        "no-new-debt" => {
-            if report.new_debt > 0 || report.stale_entries > 0 || report.expired_entries > 0 {
-                if !new_findings.is_empty() {
-                    eprintln!("no-panic: new debt sites:");
-                    for f in new_findings.iter().take(20) {
-                        eprintln!(
-                            "  {}:{} ({} via {})",
-                            f.path, f.line, f.family, f.selector_callee
-                        );
-                    }
+        "blocking" => {}
+        "no-new-debt"
+            if (report.new_debt > 0 || report.stale_entries > 0 || report.expired_entries > 0) =>
+        {
+            if !new_findings.is_empty() {
+                eprintln!("no-panic: new debt sites:");
+                for f in new_findings.iter().take(20) {
+                    eprintln!(
+                        "  {}:{} ({} via {})",
+                        f.path, f.line, f.family, f.selector_callee
+                    );
                 }
-                bail!(
-                    "no-panic policy is no-new-debt and there are {} new debt site(s), {} stale allowlist entries, and {} expired allowlist entries",
-                    report.new_debt,
-                    report.stale_entries,
-                    report.expired_entries
-                );
             }
+            bail!(
+                "no-panic policy is no-new-debt and there are {} new debt site(s), {} stale allowlist entries, and {} expired allowlist entries",
+                report.new_debt,
+                report.stale_entries,
+                report.expired_entries
+            );
         }
+        "no-new-debt" => {}
         _ => {}
     }
     Ok(())

@@ -64,7 +64,7 @@ impl Receipt {
             .iter()
             .map(|s| (s.name.as_str(), s.duration_ms))
             .collect();
-        entries.sort_by(|a, b| b.1.cmp(&a.1));
+        entries.sort_by_key(|b| std::cmp::Reverse(b.1));
 
         let total_ms: u64 = entries.iter().map(|(_, ms)| *ms).sum();
 

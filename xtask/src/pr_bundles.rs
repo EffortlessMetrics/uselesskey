@@ -562,7 +562,7 @@ pub fn analyze_snapshot(snapshot: &BundleSnapshot) -> BundleAnalysis {
         }
     }
     unmatched_closed = unmatched;
-    for (bundle, matched) in bundles.iter_mut().zip(assigned.into_iter()) {
+    for (bundle, matched) in bundles.iter_mut().zip(assigned) {
         bundle.closed_donor_pull_requests = matched;
     }
 
@@ -1269,10 +1269,7 @@ fn join_paths(paths: &[String]) -> String {
 
 fn strip_codex_suffixes(s: &str) -> String {
     let mut cur = s.to_string();
-    loop {
-        let Some((base, suffix)) = cur.rsplit_once('-') else {
-            break;
-        };
+    while let Some((base, suffix)) = cur.rsplit_once('-') {
         // Codex-style suffixes are 6-char hex-like strings (e.g. "ab12cd").
         // Require at least one digit to avoid stripping English words like "branch".
         if suffix.len() == 6
