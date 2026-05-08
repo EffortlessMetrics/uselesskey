@@ -2,9 +2,9 @@ use std::fmt;
 use std::sync::Arc;
 
 use uselesskey_core::Factory;
-use uselesskey_core_token::{NegativeToken, generate_negative_token, generate_token};
 
 use crate::TokenSpec;
+use crate::srp::shape::{NegativeToken, generate_negative_token, generate_token};
 
 /// Cache domain for token fixtures.
 ///

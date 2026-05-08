@@ -37,8 +37,9 @@ Each adds a `*FactoryExt` trait to `Factory`:
 
 - `crates/uselesskey-jwk` — typed JWK/JWKS models, builders, ordering,
   and negative fixtures
-- `crates/uselesskey-token-spec` — stable token specification enum
-  (ApiKey, Bearer, OAuthAccessToken)
+- `crates/uselesskey-token` — token fixture owner, including token specs,
+  base62 helpers, token-shape construction, and negative fixtures under
+  `uselesskey_token::srp::*`
 
 ### Core microcrates
 
@@ -55,7 +56,8 @@ set of focused microcrates that each own a single concern:
   deterministic derivation
 - `uselesskey-core-kid` — compatibility shim for deterministic key-ID
   (kid) generation now owned by `uselesskey-jwk`
-- `uselesskey-core-base62` — bias-free base62 generation primitives
+- `uselesskey-core-base62` — compatibility shim for base62 helpers now owned
+  by `uselesskey-token`
 
 **Factory & caching**
 
@@ -84,10 +86,10 @@ set of focused microcrates that each own a single concern:
 
 **Token**
 
-- `uselesskey-core-token` — compatibility facade for token shape
-  primitives
-- `uselesskey-core-token-shape` — token generation primitives (API keys,
-  bearer tokens, OAuth)
+- `uselesskey-token-spec` — compatibility shim for `TokenSpec`
+- `uselesskey-core-token` — compatibility shim for token shape primitives
+- `uselesskey-core-token-shape` — compatibility shim for token generation
+  primitives (API keys, bearer tokens, OAuth)
 
 **Negative fixtures**
 

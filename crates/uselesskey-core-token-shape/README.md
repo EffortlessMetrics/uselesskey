@@ -1,13 +1,13 @@
 # uselesskey-core-token-shape
 
-Low-level token shape primitives for `uselesskey`.
+Deprecated compatibility shim.
 
-## Purpose
+Token-shape implementation ownership moved into `uselesskey-token`. Existing
+imports from this crate remain available during the compatibility-shim period:
 
-- Generate deterministic and realistic API key shapes.
-- Generate opaque bearer token shapes.
-- Generate OAuth-like JWT-access-token shapes without signing.
-- Generate scanner-safe negative token shapes for downstream validator tests.
+```rust
+use uselesskey_core_token_shape::{generate_token, NegativeToken, TokenKind};
+```
 
-This crate intentionally contains only token-shape construction and is used by
-`uselesskey-core-token` and higher-level token fixture crates.
+Prefer `uselesskey-token` or the `uselesskey` facade for supported token
+fixture APIs.

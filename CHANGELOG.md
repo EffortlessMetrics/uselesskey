@@ -32,6 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   under `uselesskey-jwk::srp::*`, retaining the former `uselesskey-core-jwk*`,
   `uselesskey-core-jwks-order`, and `uselesskey-core-kid` crates as
   published-internal compatibility shims.
+- Moved token spec, base62, token-shape, and negative-token internals under
+  `uselesskey-token::srp::*`, retaining the former `uselesskey-token-spec`,
+  `uselesskey-core-base62`, `uselesskey-core-token-shape`, and
+  `uselesskey-core-token` crates as published-internal compatibility shims.
 
 ## [0.6.0] - 2026-04-08
 

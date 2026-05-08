@@ -1,11 +1,13 @@
 # uselesskey-core-token
 
-Deterministic token-shape generation helpers for `uselesskey` fixture crates.
+Deprecated compatibility shim.
 
-## Purpose
+Token-shape implementation ownership moved into `uselesskey-token`. Existing
+imports from this crate remain available during the compatibility-shim period:
 
-- Generate realistic API key, bearer token, and OAuth access-token shapes.
-- Keep token formatting logic independent from factory/cache wiring.
-- Provide stable helper APIs that adapter crates can reuse.
+```rust
+use uselesskey_core_token::generate_token;
+```
 
-This microcrate only models token **shape**; it does not sign or validate tokens.
+Prefer `uselesskey-token` or the `uselesskey` facade for supported token
+fixture APIs.

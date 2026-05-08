@@ -4732,11 +4732,10 @@ version = "0.6.0"
 dependencies = [
  "insta",
  "proptest",
- "rand_chacha 0.10.0",
- "rand_core 0.10.1",
  "rstest",
  "serde",
  "uselesskey-core-seed",
+ "uselesskey-token",
 ]
 
 [[package]]
@@ -4958,7 +4957,7 @@ dependencies = [
  "serde",
  "serde_json",
  "uselesskey-core-seed",
- "uselesskey-core-token-shape",
+ "uselesskey-token",
 ]
 
 [[package]]
@@ -4968,13 +4967,10 @@ dependencies = [
  "base64",
  "insta",
  "proptest",
- "rand_chacha 0.10.0",
- "rand_core 0.10.1",
  "serde",
  "serde_json",
- "uselesskey-core-base62",
  "uselesskey-core-seed",
- "uselesskey-token-spec",
+ "uselesskey-token",
 ]
 
 [[package]]
@@ -5370,11 +5366,11 @@ dependencies = [
  "base64",
  "insta",
  "proptest",
+ "rand_chacha 0.10.0",
+ "rand_core 0.10.1",
  "serde",
  "serde_json",
  "uselesskey-core",
- "uselesskey-core-token",
- "uselesskey-token-spec",
 ]
 
 [[package]]
@@ -5383,6 +5379,7 @@ version = "0.6.0"
 dependencies = [
  "insta",
  "serde",
+ "uselesskey-token",
 ]
 
 [[package]]

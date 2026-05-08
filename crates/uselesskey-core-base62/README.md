@@ -1,6 +1,13 @@
 # uselesskey-core-base62
 
-Base62 generation helpers for uselesskey fixture crates.
+Deprecated compatibility shim.
 
-This crate contains deterministic, RNG-driven `random_base62` generation used
-by higher-level token fixtures.
+Base62 implementation ownership moved into `uselesskey-token`. Existing imports
+from this crate remain available during the compatibility-shim period:
+
+```rust
+use uselesskey_core_base62::random_base62;
+```
+
+Prefer `uselesskey-token` or the `uselesskey` facade for supported token
+fixture APIs.

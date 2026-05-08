@@ -15,7 +15,7 @@ documentation = "https://docs.rs/uselesskey-core-token"
 authors.workspace = true
 
 [dependencies]
-uselesskey-core-token-shape.workspace = true
+uselesskey-token.workspace = true
 
 [dev-dependencies]
 insta.workspace = true

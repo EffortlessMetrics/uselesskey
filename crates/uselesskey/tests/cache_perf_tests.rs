@@ -1,6 +1,8 @@
 //! Cache correctness and performance sanity tests for the Factory's
 //! DashMap-based caching layer.
 
+#![cfg(all(feature = "rsa", feature = "ecdsa"))]
+
 use std::sync::Arc;
 use std::time::Instant;
 

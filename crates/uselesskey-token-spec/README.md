@@ -1,6 +1,12 @@
 # uselesskey-token-spec
 
-Stable token fixture specification used by token-generation crates.
+Deprecated compatibility shim.
 
-This crate contains the `TokenSpec` enum and its stable encoding for cache keys
-and deterministic derivation.
+The canonical `TokenSpec` type now lives under `uselesskey-token`:
+
+```rust
+use uselesskey_token::TokenSpec;
+```
+
+Prefer `uselesskey-token` or the `uselesskey` facade for supported token
+fixture APIs.

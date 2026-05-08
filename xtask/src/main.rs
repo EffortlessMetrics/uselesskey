@@ -732,7 +732,6 @@ fn feature_matrix_cmd() -> Result<()> {
 const PUBLISH_CRATES: &[&str] = &[
     // Leaf crates (no workspace deps)
     "uselesskey-core-seed",
-    "uselesskey-core-base62",
     "uselesskey-core-hash",
     "uselesskey-core-hmac-spec",
     "uselesskey-core-id",
@@ -741,15 +740,12 @@ const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-jwk",
     // JWK compatibility shims
     "uselesskey-core-kid",
-    "uselesskey-token-spec",
     // Negative fixture crates
     "uselesskey-core-negative-der",
     "uselesskey-core-negative-pem",
     "uselesskey-core-negative",
     // Sinks and shapes
     "uselesskey-core-sink",
-    "uselesskey-core-token-shape",
-    "uselesskey-core-token",
     "uselesskey-core-jwk-shape",
     "uselesskey-core-jwks-order",
     "uselesskey-core-jwk-builder",
@@ -771,6 +767,11 @@ const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-ed25519",
     "uselesskey-hmac",
     "uselesskey-token",
+    // Token compatibility shims
+    "uselesskey-token-spec",
+    "uselesskey-core-base62",
+    "uselesskey-core-token-shape",
+    "uselesskey-core-token",
     "uselesskey-webhook",
     "uselesskey-pkcs11-mock",
     "uselesskey-webauthn",
@@ -801,7 +802,6 @@ const PUBLISH_CRATES: &[&str] = &[
 /// mutant-tested when directly impacted in PR-scoped runs.
 const MUTANT_CRATES: &[&str] = &[
     "uselesskey-core-seed",
-    "uselesskey-core-base62",
     "uselesskey-core-hash",
     "uselesskey-core-hmac-spec",
     "uselesskey-core-id",
@@ -813,8 +813,6 @@ const MUTANT_CRATES: &[&str] = &[
     "uselesskey-core-negative-pem",
     "uselesskey-core-negative",
     "uselesskey-core-sink",
-    "uselesskey-core-token-shape",
-    "uselesskey-core-token",
     "uselesskey-core-jwk-shape",
     "uselesskey-core-jwks-order",
     "uselesskey-core-jwk-builder",
@@ -830,6 +828,9 @@ const MUTANT_CRATES: &[&str] = &[
     "uselesskey-hmac",
     "uselesskey-token",
     "uselesskey-token-spec",
+    "uselesskey-core-base62",
+    "uselesskey-core-token-shape",
+    "uselesskey-core-token",
 ];
 
 fn publish_check() -> Result<()> {
@@ -3742,18 +3743,26 @@ end_of_record
     }
 
     #[test]
-    fn publish_order_keeps_core_seed_before_base62() {
-        let seed_idx = PUBLISH_CRATES
+    fn publish_order_keeps_token_before_token_shims() {
+        let token_idx = PUBLISH_CRATES
             .iter()
-            .position(|name| *name == "uselesskey-core-seed")
-            .expect("seed crate present");
+            .position(|name| *name == "uselesskey-token")
+            .expect("token crate present");
         let base62_idx = PUBLISH_CRATES
             .iter()
             .position(|name| *name == "uselesskey-core-base62")
             .expect("base62 crate present");
+        let shape_idx = PUBLISH_CRATES
+            .iter()
+            .position(|name| *name == "uselesskey-core-token-shape")
+            .expect("token shape crate present");
+        let token_spec_idx = PUBLISH_CRATES
+            .iter()
+            .position(|name| *name == "uselesskey-token-spec")
+            .expect("token spec crate present");
         assert!(
-            seed_idx < base62_idx,
-            "publish order must place uselesskey-core-seed before uselesskey-core-base62"
+            token_idx < base62_idx && token_idx < shape_idx && token_idx < token_spec_idx,
+            "publish order must place uselesskey-token before token compatibility shims"
         );
     }
 

@@ -50,8 +50,10 @@
 //! assert_ne!(t1.value(), t3.value());
 //! ```
 
+#[doc(hidden)]
+pub mod srp;
 mod token;
 
+pub use srp::shape::NegativeToken;
+pub use srp::spec::TokenSpec;
 pub use token::{DOMAIN_TOKEN_FIXTURE, TokenFactoryExt, TokenFixture};
-pub use uselesskey_core_token::NegativeToken;
-pub use uselesskey_token_spec::TokenSpec;

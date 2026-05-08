@@ -15,15 +15,14 @@ documentation = "https://docs.rs/uselesskey-core-base62"
 authors.workspace = true
 
 [dependencies]
-rand_chacha10.workspace = true
-rand_core10.workspace = true
-uselesskey-core-seed.workspace = true
+uselesskey-token.workspace = true
 
 [dev-dependencies]
 insta.workspace = true
 proptest.workspace = true
 rstest.workspace = true
 serde.workspace = true
+uselesskey-core-seed.workspace = true
 
 [package.metadata.docs.rs]
 all-features = true
