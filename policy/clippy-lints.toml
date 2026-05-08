@@ -26,6 +26,45 @@ panic_family_level = "warn"
 # panic-family exceptions. Clippy is the immediate code-shape detector.
 no_panic_authoritative = "xtask"
 
+# Rustc lint floor — lints active in [workspace.lints.rust] as of this MSRV.
+# These document intent alongside the Cargo.toml configuration.
+
+[[active_rust]]
+name = "rust::unsafe_op_in_unsafe_fn"
+level = "deny"
+activated_at_msrv = "1.52"
+reason = "Require explicit unsafe blocks inside unsafe fns."
+
+[[active_rust]]
+name = "rust::unused_must_use"
+level = "deny"
+activated_at_msrv = "1.57"
+reason = "Ensure Results and other must-use types are consumed."
+
+[[active_rust]]
+name = "rust::unexpected_cfgs"
+level = "warn"
+activated_at_msrv = "1.78"
+reason = "Catch misspelled or unknown cfg keys at compile time."
+
+[[active_rust]]
+name = "rust::const_item_interior_mutations"
+level = "deny"
+activated_at_msrv = "1.95"
+reason = "Catch UB-prone interior mutation of consts (e.g. Cell/Mutex in const)."
+
+[[active_rust]]
+name = "rust::function_casts_as_integer"
+level = "deny"
+activated_at_msrv = "1.95"
+reason = "Prevent function pointer casts to integer (platform-unsafe and rarely intentional)."
+
+[[active_rust]]
+name = "rust::unused_visibilities"
+level = "warn"
+activated_at_msrv = "1.95"
+reason = "Surface over-public items; warn not deny to allow gradual cleanup."
+
 # Lints that are planned to flip on once MSRV reaches the indicated version.
 # `cargo xtask check-lint-policy` verifies these are NOT active too early.
 
