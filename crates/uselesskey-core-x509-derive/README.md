@@ -1,12 +1,9 @@
 # uselesskey-core-x509-derive
 
-Deterministic X.509 derivation helpers shared across `uselesskey` fixture crates.
+Published-internal compatibility shim for deterministic X.509 derivation
+helpers.
 
-## Purpose
-
-- Compute deterministic base times from stable identity parts.
-- Generate deterministic positive serial numbers for certificates and CRLs.
-- Provide length-prefixed hashing helpers to avoid input-boundary collisions.
-
-This microcrate is intentionally focused on derivation mechanics, not X.509
-spec/negative policy modeling or certificate parsing/validation.
+Prefer `uselesskey-x509`; deterministic X.509 base-time, serial-number, and
+length-prefixed hashing helpers are now owned by `uselesskey_x509::srp::derive`.
+This crate is retained for migration only and should not be used as a new direct
+dependency.

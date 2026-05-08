@@ -1,11 +1,8 @@
 # uselesskey-core-x509-spec
 
-X.509 fixture spec models and stable encoding helpers shared by `uselesskey` fixture crates.
+Published-internal compatibility shim for X.509 fixture spec models.
 
-## Purpose
-
-- Keep `X509Spec`, `ChainSpec`, `KeyUsage`, and `NotBeforeOffset` in one place.
-- Provide stable byte encodings used for cache keys and deterministic derivation inputs.
-- Keep spec modeling independent from certificate generation and parsing.
-
-This microcrate is intentionally focused on X.509 spec modeling and encoding only.
+Prefer `uselesskey-x509`; `X509Spec`, `ChainSpec`, `KeyUsage`, and
+`NotBeforeOffset` are now owned by `uselesskey_x509::srp::spec` and re-exported
+from the `uselesskey-x509` public root. This crate is retained for migration
+only and should not be used as a new direct dependency.
