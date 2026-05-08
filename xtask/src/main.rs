@@ -94,6 +94,32 @@ enum Cmd {
     PublishCheck,
     /// Run PR-scoped tests based on git diff.
     Pr,
+    /// Run ripr oracle-exposure checks for the current PR.
+    RiprPr,
+    /// Run targeted PR mutation checks (requires `cargo-mutants` installed).
+    MutantsPr {
+        /// Derive target crates from the current git diff.
+        #[arg(long)]
+        changed: bool,
+        /// Run against one explicit crate name.
+        #[arg(long = "crate")]
+        crate_name: Option<String>,
+        /// Maximum mutants to sample per crate for normal PR runs.
+        #[arg(long, default_value_t = 50)]
+        max_mutants: usize,
+        /// Run the full owner crate mutation set instead of sampling.
+        #[arg(long)]
+        full: bool,
+    },
+    /// Run nightly/manual mutation checks by scope (requires `cargo-mutants` installed).
+    MutantsNightly {
+        /// Scope to run: public, adapters, all, or crate.
+        #[arg(long, default_value = "public")]
+        scope: String,
+        /// Crate name when --scope crate is selected.
+        #[arg(long = "crate")]
+        crate_name: Option<String>,
+    },
     /// Guard against multiple semver-major versions of pinned deps (e.g. rand_core).
     DepGuard,
     /// Run cucumber BDD features.
@@ -296,6 +322,14 @@ fn main() -> Result<()> {
         Cmd::ExamplesSmoke { run } => docs_sync::examples_smoke_cmd(run),
         Cmd::PublishCheck => publish_check(),
         Cmd::Pr => pr(),
+        Cmd::RiprPr => ripr_pr(),
+        Cmd::MutantsPr {
+            changed,
+            crate_name,
+            max_mutants,
+            full,
+        } => mutants_pr(changed, crate_name, max_mutants, full),
+        Cmd::MutantsNightly { scope, crate_name } => mutants_nightly(&scope, crate_name),
         Cmd::DepGuard => dep_guard(),
         Cmd::Bdd => bdd(),
         Cmd::BddMatrix => bdd_matrix(),
@@ -698,7 +732,11 @@ fn run_ci_plan(runner: &mut receipt::Runner) -> Result<()> {
     runner.set_bdd_counts(counts);
 
     runner.step("no-blob", None, no_blob_gate)?;
-    runner.step("mutants", None, || run_mutants(MUTANT_CRATES))?;
+    runner.step("ripr-pr", None, ripr_pr)?;
+    runner.skip(
+        "mutants",
+        Some("full mutation runs in targeted PR, nightly, or release lanes".into()),
+    );
     runner.step("fuzz", None, fuzz_pr)?;
 
     if is_llvm_cov_installed() {
@@ -800,6 +838,25 @@ const PUBLISH_CRATES: &[&str] = &[
 /// Excludes algorithm and adapter crates whose tests involve key generation
 /// (RSA, ECDSA, Ed25519, PGP, X.509, adapters). These are still
 /// mutant-tested when directly impacted in PR-scoped runs.
+const PUBLIC_OWNER_MUTANT_CRATES: &[&str] = &[
+    "uselesskey-core",
+    "uselesskey-jwk",
+    "uselesskey-token",
+    "uselesskey-x509",
+    "uselesskey-rsa",
+    "uselesskey-ecdsa",
+    "uselesskey-ed25519",
+    "uselesskey-hmac",
+    "uselesskey-cli",
+];
+
+const ADAPTER_MUTANT_CRATES: &[&str] = &[
+    "uselesskey-jsonwebtoken",
+    "uselesskey-rustls",
+    "uselesskey-tonic",
+    "uselesskey-axum",
+];
+
 const MUTANT_CRATES: &[&str] = &[
     "uselesskey-core-seed",
     "uselesskey-core-hash",
@@ -1532,7 +1589,17 @@ fn collect_dependency_version_snippet_errors(
     Ok(errors)
 }
 
+#[derive(Default)]
+struct MutantsRunOptions {
+    timeout_seconds: Option<u64>,
+    jobs: Option<usize>,
+}
+
 fn run_mutants(crates: &[&str]) -> Result<()> {
+    run_mutants_with_options(crates, &MutantsRunOptions::default())
+}
+
+fn run_mutants_with_options(crates: &[&str], options: &MutantsRunOptions) -> Result<()> {
     let have = Command::new("cargo")
         .args(["mutants", "--version"])
         .stdout(Stdio::null())
@@ -1581,6 +1648,13 @@ fn run_mutants(crates: &[&str]) -> Result<()> {
             cmd.arg("--all-features");
         }
 
+        if let Some(timeout) = options.timeout_seconds {
+            cmd.args(["--timeout", &timeout.to_string()]);
+        }
+        if let Some(jobs) = options.jobs {
+            cmd.args(["--jobs", &jobs.to_string()]);
+        }
+
         if *name == "uselesskey-cli" {
             // The CLI crate carries a layer of orchestration and export plumbing
             // that is already covered by integration tests and receipt checks, but
@@ -1609,6 +1683,194 @@ fn run_mutants(crates: &[&str]) -> Result<()> {
     }
 
     Ok(())
+}
+
+fn run_targeted_mutants(crates: &[&str], max_mutants: Option<usize>) -> Result<()> {
+    if let Some(max_mutants) = max_mutants {
+        if max_mutants == 0 {
+            bail!("--max-mutants must be greater than zero");
+        }
+        eprintln!("targeted mutation budget: max {max_mutants} mutants per crate");
+    }
+
+    run_mutants_with_options(
+        crates,
+        &MutantsRunOptions {
+            timeout_seconds: Some(20),
+            jobs: Some(2),
+        },
+    )
+}
+
+fn mutants_pr(
+    changed: bool,
+    crate_name: Option<String>,
+    max_mutants: usize,
+    full: bool,
+) -> Result<()> {
+    let targets = if let Some(name) = crate_name {
+        vec![name]
+    } else if changed {
+        let base_ref = resolve_base_ref();
+        let changed_files = git_changed_files(&base_ref)?;
+        let plan = plan::build_plan(&changed_files);
+        mutation_target_crates(&base_ref, &changed_files, &plan.directly_changed_crates)?
+    } else {
+        bail!("mutants-pr requires either --changed or --crate <name>");
+    };
+
+    if targets.is_empty() {
+        eprintln!("mutants-pr: no mutant-eligible crates for this diff");
+        return Ok(());
+    }
+
+    for name in &targets {
+        if !PUBLISH_CRATES.contains(&name.as_str()) {
+            bail!("mutants-pr target '{name}' is not a known publish crate");
+        }
+    }
+
+    let refs = targets.iter().map(String::as_str).collect::<Vec<_>>();
+    run_targeted_mutants(&refs, (!full).then_some(max_mutants))
+}
+
+fn mutants_nightly(scope: &str, crate_name: Option<String>) -> Result<()> {
+    let targets = match scope {
+        "public" => PUBLIC_OWNER_MUTANT_CRATES
+            .iter()
+            .map(|s| (*s).to_string())
+            .collect(),
+        "adapters" => ADAPTER_MUTANT_CRATES
+            .iter()
+            .map(|s| (*s).to_string())
+            .collect(),
+        "all" => MUTANT_CRATES.iter().map(|s| (*s).to_string()).collect(),
+        "crate" => vec![crate_name.context("--crate is required when --scope crate")?],
+        other => {
+            bail!("unknown mutation scope '{other}'; expected public, adapters, all, or crate")
+        }
+    };
+
+    let refs = targets.iter().map(String::as_str).collect::<Vec<_>>();
+    run_mutants(&refs)
+}
+
+fn ripr_pr() -> Result<()> {
+    let base_ref = resolve_base_ref();
+    let changed_files = git_changed_files(&base_ref).unwrap_or_else(|err| {
+        eprintln!("ripr-pr: failed to detect changed files: {err}");
+        Vec::new()
+    });
+    let touched_public = touched_public_owner_crates(&changed_files);
+    let artifact_dir = Path::new("target/ripr/pr");
+    fs::create_dir_all(artifact_dir).context("failed to create target/ripr/pr")?;
+
+    let ripr_bin = env::var("RIPR_BIN").unwrap_or_else(|_| "ripr".to_string());
+    let output = Command::new(&ripr_bin)
+        .args([
+            "check", "--root", ".", "--base", &base_ref, "--mode", "ready", "--format", "github",
+        ])
+        .output();
+
+    let mut status = "missing".to_string();
+    let mut review = String::new();
+    let mut severe = false;
+
+    match output {
+        Ok(out) => {
+            status = if out.status.success() { "ok" } else { "failed" }.to_string();
+            review.push_str(&String::from_utf8_lossy(&out.stdout));
+            if !out.stderr.is_empty() {
+                if !review.is_empty() {
+                    review.push_str("\n\n");
+                }
+                review.push_str("```text\n");
+                review.push_str(&String::from_utf8_lossy(&out.stderr));
+                review.push_str("\n```\n");
+            }
+            severe = !out.status.success() && ripr_output_has_severe_gap(&review);
+        }
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => {
+            review = format!(
+                "ripr was not found on PATH. Install ripr or set RIPR_BIN before running cargo xtask ripr-pr.\n\nbase: {base_ref}\n"
+            );
+        }
+        Err(err) => return Err(err).context("failed to run ripr"),
+    }
+
+    if review.trim().is_empty() {
+        review = "ripr completed without emitting review text.\n".to_string();
+    }
+
+    let summary = format!(
+        "# ripr PR exposure\n\n- status: `{status}`\n- base: `{base_ref}`\n- changed files: {}\n- touched public owner crates: {}\n- blocking rule: fail only on severe repo-scoped exposure gaps for touched public owner crates.\n",
+        changed_files.len(),
+        if touched_public.is_empty() {
+            "none".to_string()
+        } else {
+            touched_public
+                .iter()
+                .cloned()
+                .collect::<Vec<_>>()
+                .join(", ")
+        }
+    );
+
+    fs::write(artifact_dir.join("review.md"), &review).context("failed to write ripr review")?;
+    fs::write(artifact_dir.join("summary.md"), &summary).context("failed to write ripr summary")?;
+    let exposure = serde_json::json!({
+        "status": status,
+        "base_ref": base_ref,
+        "changed_files": changed_files,
+        "touched_public_owner_crates": touched_public,
+        "severe_gap": severe,
+    });
+    fs::write(
+        artifact_dir.join("repo-exposure.json"),
+        serde_json::to_string_pretty(&exposure).context("failed to serialize ripr exposure")?,
+    )
+    .context("failed to write ripr exposure")?;
+
+    if let Ok(path) = env::var("GITHUB_STEP_SUMMARY") {
+        let mut existing = fs::read_to_string(&path).unwrap_or_default();
+        existing.push('\n');
+        existing.push_str(&summary);
+        fs::write(path, existing).context("failed to append ripr GitHub summary")?;
+    }
+
+    if severe && !touched_public.is_empty() {
+        bail!("ripr reported severe exposure gaps for touched public owner crates");
+    }
+
+    if status == "missing" && env::var("XTASK_RIPR_REQUIRED").is_ok() {
+        bail!("ripr is required but was not found");
+    }
+
+    Ok(())
+}
+
+fn crate_name_from_path(path: &str) -> Option<String> {
+    let normalized = path.replace('\\', "/");
+    let mut parts = normalized.split('/');
+    if parts.next()? != "crates" {
+        return None;
+    }
+    parts.next().map(str::to_string)
+}
+
+fn ripr_output_has_severe_gap(output: &str) -> bool {
+    let lower = output.to_ascii_lowercase();
+    lower.contains("severe")
+        || lower.contains("reachable_unrevealed")
+        || lower.contains("repo-scoped exposure gap")
+}
+
+fn touched_public_owner_crates(changed_files: &[String]) -> BTreeSet<String> {
+    changed_files
+        .iter()
+        .filter_map(|path| crate_name_from_path(path))
+        .filter(|name| PUBLIC_OWNER_MUTANT_CRATES.contains(&name.as_str()))
+        .collect()
 }
 
 fn fuzz(target: Option<&str>, extra: &[String]) -> Result<()> {
@@ -1691,6 +1953,7 @@ fn run_pr_plan(
         record_feature_matrix_skipped(runner);
         runner.skip("dep-guard", reason.clone());
         runner.skip("bdd", reason.clone());
+        runner.skip("ripr-pr", reason.clone());
         runner.skip("mutants", reason.clone());
         runner.skip("fuzz", reason.clone());
         runner.skip("no-blob", reason.clone());
@@ -1752,21 +2015,14 @@ fn run_pr_plan(
         );
     }
 
-    if plan.run_mutants {
-        let pr_crates =
-            mutation_target_crates(base_ref, changed_files, &plan.directly_changed_crates)?;
-        if pr_crates.is_empty() {
-            runner.skip(
-                "mutants",
-                Some("no mutant-eligible behavior changes".into()),
-            );
-        } else {
-            let pr_crate_refs = pr_crates.iter().map(String::as_str).collect::<Vec<_>>();
-            runner.step("mutants", None, || run_mutants(&pr_crate_refs))?;
-        }
+    runner.step("ripr-pr", None, ripr_pr)?;
+
+    let mutation_skip_reason = if plan.run_mutants {
+        "default PR gate uses ripr; run cargo xtask mutants-pr when risk warrants"
     } else {
-        runner.skip("mutants", Some("no crate source changes".to_string()));
-    }
+        "no crate source changes"
+    };
+    runner.skip("mutants", Some(mutation_skip_reason.into()));
 
     if plan.run_fuzz {
         runner.step("fuzz", None, fuzz_pr)?;

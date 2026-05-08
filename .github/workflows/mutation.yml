@@ -1,0 +1,92 @@
+name: Mutation
+
+on:
+  schedule:
+    - cron: "17 7 * * *"
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: "mutation scope"
+        default: "public"
+        type: choice
+        options:
+          - public
+          - adapters
+          - all
+          - crate
+      crate:
+        description: "crate name when scope=crate"
+        required: false
+        type: string
+
+concurrency:
+  group: mutation-${{ github.event_name == 'workflow_dispatch' && github.run_id || github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  mutation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install NASM (for aws-lc-rs)
+        run: sudo apt-get update && sudo apt-get install -y nasm
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+
+      - name: Install cargo-mutants
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-mutants
+
+      - name: Nightly mutation
+        run: |
+          SCOPE="${{ inputs.scope || 'public' }}"
+          CRATE="${{ inputs.crate || '' }}"
+          if [ "$SCOPE" = "crate" ]; then
+            cargo xtask mutants-nightly --scope crate --crate "$CRATE"
+          else
+            cargo xtask mutants-nightly --scope "$SCOPE"
+          fi
+
+      - name: Prepare mutation receipt
+        if: always()
+        run: |
+          mkdir -p target/mutation
+          {
+            echo "# Mutation summary"
+            echo
+            echo "- scope: ${{ inputs.scope || 'public' }}"
+            echo "- workflow run: ${{ github.run_id }}"
+            echo
+            if [ -d mutants.out ]; then
+              echo "mutants.out was produced by cargo-mutants."
+            else
+              echo "No mutants.out directory was produced."
+            fi
+          } > target/mutation/nightly-summary.md
+          printf '{"scope":"%s","run_id":"%s"}\n' "${{ inputs.scope || 'public' }}" "${{ github.run_id }}" > target/mutation/nightly-summary.json
+          if [ -f mutants.out/outcomes.json ]; then
+            cp mutants.out/outcomes.json target/mutation/outcomes.json
+          fi
+
+      - name: Upload mutation artifacts
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: mutation-${{ inputs.scope || 'public' }}
+          path: |
+            mutants.out/**
+            target/mutation/**
