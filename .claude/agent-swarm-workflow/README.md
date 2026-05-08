@@ -71,7 +71,7 @@ Orchestrator (main thread)
 | `README.md` | This overview |
 | `agent-patterns.md` | Patterns and anti-patterns for agent dispatch |
 | `example-prompts.md` | Copy-paste agent prompts for common tasks |
-| `setup-script.sh` | Bootstrap script for a new repository |
+| `cargo xtask agent-swarm-setup` | Rust bootstrap command for a new repository |
 | `slash-commands/` | Portable slash command templates |
 
 ## Slash commands
@@ -86,7 +86,7 @@ Orchestrator (main thread)
 
 ## Getting started
 
-1. Run `setup-script.sh` in your repository root
+1. Run `cargo xtask agent-swarm-setup` in your repository root
 2. Customize the placeholders (`$TEST_CMD`, `$LINT_CMD`, etc.) in the copied
    slash commands
 3. Start Claude Code and use `/wave` to launch your first swarm

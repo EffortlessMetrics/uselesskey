@@ -83,14 +83,6 @@ classification = "tooling"
 reason = "Repo-managed pre-push hook script."
 covered_by = ["cargo xtask gate"]
 
-[[allow]]
-glob = ".claude/agent-swarm-workflow/*.sh"
-kind = "automation_script"
-owner = "repo-policy"
-surface = "tooling"
-classification = "tooling"
-reason = "Internal Claude agent automation helpers."
-covered_by = ["manual review"]
 
 # === Cargo / lock / manifests ==============================================
 

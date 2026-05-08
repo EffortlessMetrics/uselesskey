@@ -145,6 +145,8 @@ enum Cmd {
     },
     /// Configure git hooks (sets core.hooksPath to .githooks).
     Setup,
+    /// Bootstrap Claude agent swarm slash commands.
+    AgentSwarmSetup,
     /// Lint commit message (used by git hooks).
     CommitLint {
         /// Path to the commit message file.
@@ -307,6 +309,7 @@ fn main() -> Result<()> {
         Cmd::LintFix { check, no_clippy } => lint_fix(check, no_clippy),
         Cmd::Gate { check: _ } => gate(),
         Cmd::Setup => setup(),
+        Cmd::AgentSwarmSetup => agent_swarm_setup(),
         Cmd::CommitLint { message_file } => commit_lint(&message_file),
         Cmd::Hook { hook } => match hook {
             HookCmd::PreCommit => hook_pre_commit(),
@@ -2918,6 +2921,127 @@ fn setup() -> Result<()> {
         "{} setup complete!",
         " DONE ".on_bright_green().black().bold()
     );
+    Ok(())
+}
+
+fn agent_swarm_setup() -> Result<()> {
+    const DEFAULT_POST_EDIT_CHECK: &str =
+        "cargo check --quiet --message-format=short 2>&1 | head -20 || true";
+
+    let post_edit_check =
+        env::var("POST_EDIT_CHECK").unwrap_or_else(|_| DEFAULT_POST_EDIT_CHECK.to_string());
+    let repo_root = workspace_root_path();
+    let workflow_dir = repo_root.join(".claude/agent-swarm-workflow");
+    let slash_cmd_src = workflow_dir.join("slash-commands");
+    let claude_dir = repo_root.join(".claude");
+    let cmd_dir = claude_dir.join("commands");
+    let settings_path = claude_dir.join("settings.json");
+
+    if !slash_cmd_src.is_dir() {
+        bail!(
+            "cannot find slash-commands directory at {}; run this command from the repository root",
+            slash_cmd_src.display()
+        );
+    }
+
+    println!("Creating {} ...", cmd_dir.display());
+    fs::create_dir_all(&cmd_dir)
+        .with_context(|| format!("failed to create {}", cmd_dir.display()))?;
+
+    println!("Copying slash command templates ...");
+    let mut slash_commands = fs::read_dir(&slash_cmd_src)
+        .with_context(|| format!("failed to read {}", slash_cmd_src.display()))?
+        .collect::<std::io::Result<Vec<_>>>()?;
+    slash_commands.sort_by_key(|entry| entry.path());
+
+    for entry in slash_commands {
+        let src_path = entry.path();
+        if src_path.extension().and_then(|ext| ext.to_str()) != Some("md") {
+            continue;
+        }
+
+        let file_name = src_path
+            .file_name()
+            .context("slash command template path had no filename")?;
+        let dest_path = cmd_dir.join(file_name);
+        let display_name = file_name.to_string_lossy();
+
+        if dest_path.exists() {
+            println!("  SKIP: {display_name} (already exists, not overwriting)");
+        } else {
+            fs::copy(&src_path, &dest_path).with_context(|| {
+                format!(
+                    "failed to copy {} to {}",
+                    src_path.display(),
+                    dest_path.display()
+                )
+            })?;
+            println!("  COPY: {display_name}");
+        }
+    }
+
+    if settings_path.exists() {
+        println!();
+        println!("SKIP: .claude/settings.json already exists.");
+        println!("      Review it manually and add PostToolUse hooks if needed.");
+        println!("      Recommended hook command: {post_edit_check}");
+    } else {
+        println!();
+        println!("Creating .claude/settings.json ...");
+        let settings = serde_json::json!({
+            "hooks": {
+                "PostToolUse": [
+                    {
+                        "matcher": "Edit|Write|NotebookEdit",
+                        "hooks": [
+                            {
+                                "type": "command",
+                                "command": post_edit_check,
+                            }
+                        ]
+                    }
+                ]
+            }
+        });
+        write_json_pretty(&settings_path, &settings)?;
+        println!("  Created with PostToolUse hook: {post_edit_check}");
+    }
+
+    println!();
+    println!("========================================================================");
+    println!(" Agent Swarm Workflow -- Setup Complete");
+    println!("========================================================================");
+    println!();
+    println!(" Files created in: {}", cmd_dir.display());
+    println!();
+    println!(" Next steps:");
+    println!();
+    println!("   1. Edit the slash commands in .claude/commands/ to replace");
+    println!("      placeholder variables with your project's commands:");
+    println!();
+    println!("        $TEST_CMD   -- your test runner       (e.g., cargo test, pytest)");
+    println!("        $LINT_CMD   -- your linter             (e.g., cargo clippy, ruff)");
+    println!("        $FMT_CMD    -- your formatter           (e.g., cargo fmt, prettier)");
+    println!("        $BUILD_CMD  -- your build command       (e.g., cargo build, npm build)");
+    println!("        $CHECK_CMD  -- fast type/compile check  (e.g., cargo check, tsc)");
+    println!("        $GATE_CMD   -- full CI gate command     (e.g., just ci-gate, make ci)");
+    println!();
+    println!("   2. Review .claude/settings.json and adjust the PostToolUse hook");
+    println!("      command if needed.");
+    println!();
+    println!("   3. Start Claude Code and try:");
+    println!("        /wave test-coverage     -- launch a test coverage wave");
+    println!("        /tdd-fix <bug>          -- fix a bug with TDD");
+    println!("        /bulk-pr                -- PR all worktrees at once");
+    println!();
+    println!("   4. (Optional) Add .claude/ to .gitignore if you do not want");
+    println!("      to check in agent configuration, or commit it to share");
+    println!("      with your team.");
+    println!();
+    println!("   5. Read .claude/agent-swarm-workflow/agent-patterns.md");
+    println!("      for tips on effective agent dispatch.");
+    println!();
+    println!("========================================================================");
     Ok(())
 }
 
