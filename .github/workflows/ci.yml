@@ -64,13 +64,17 @@ jobs:
       - name: Install tools
         uses: taiki-e/install-action@v2
         with:
-          tool: cargo-fuzz,cargo-mutants,typos-cli,cargo-deny
+          tool: cargo-fuzz,typos-cli,cargo-deny
+
+      - name: Install ripr
+        run: cargo install ripr --locked
 
       - name: Toolchain diagnostics
         run: |
           rustc -vV
           cargo +nightly -vV
           cargo fuzz --version || true
+          ripr --version || true
 
       - name: Fetch base branch
         if: github.base_ref != ''
@@ -81,6 +85,9 @@ jobs:
 
       - name: xtask pr
         run: cargo xtask pr
+
+      - name: ripr PR artifacts
+        run: cargo xtask ripr-pr
 
       - name: docs-sync check
         run: cargo xtask docs-sync --check
@@ -109,6 +116,9 @@ jobs:
             target/xtask/economics/latest.md
             target/xtask/audit-surface/latest.json
             target/xtask/audit-surface/latest.md
+            target/ripr/pr/repo-exposure.json
+            target/ripr/pr/summary.md
+            target/ripr/pr/review.md
             docs/reference/dependency-economics.md
             docs/reference/audit-surface.md
         if: always()
@@ -146,7 +156,7 @@ jobs:
       - name: Install tools
         uses: taiki-e/install-action@v2
         with:
-          tool: cargo-fuzz,cargo-mutants,typos-cli,cargo-deny
+          tool: cargo-fuzz,typos-cli,cargo-deny
 
       - name: Toolchain diagnostics
         run: |

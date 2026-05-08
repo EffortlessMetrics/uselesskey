@@ -94,6 +94,29 @@ enum Cmd {
     PublishCheck,
     /// Run PR-scoped tests based on git diff.
     Pr,
+    /// Run ripr PR oracle-exposure analysis and write target/ripr/pr artifacts.
+    RiprPr,
+    /// Run targeted PR mutation testing (requires `cargo-mutants` installed).
+    MutantsPr {
+        /// Select crates from the current diff.
+        #[arg(long)]
+        changed: bool,
+        /// Explicit crate name to mutate. Can be repeated.
+        #[arg(long = "crate")]
+        crates: Vec<String>,
+        /// Run a full owner slice instead of the normal targeted cap.
+        #[arg(long)]
+        full: bool,
+    },
+    /// Run scheduled mutation testing by scope.
+    MutantsNightly {
+        /// Mutation scope: public, adapters, all, or crate.
+        #[arg(long, default_value = "public")]
+        scope: String,
+        /// Crate name when --scope crate.
+        #[arg(long = "crate")]
+        crate_name: Option<String>,
+    },
     /// Guard against multiple semver-major versions of pinned deps (e.g. rand_core).
     DepGuard,
     /// Run cucumber BDD features.
@@ -296,6 +319,13 @@ fn main() -> Result<()> {
         Cmd::ExamplesSmoke { run } => docs_sync::examples_smoke_cmd(run),
         Cmd::PublishCheck => publish_check(),
         Cmd::Pr => pr(),
+        Cmd::RiprPr => ripr_pr(),
+        Cmd::MutantsPr {
+            changed,
+            crates,
+            full,
+        } => mutants_pr(changed, &crates, full),
+        Cmd::MutantsNightly { scope, crate_name } => mutants_nightly(&scope, crate_name.as_deref()),
         Cmd::DepGuard => dep_guard(),
         Cmd::Bdd => bdd(),
         Cmd::BddMatrix => bdd_matrix(),
@@ -698,7 +728,11 @@ fn run_ci_plan(runner: &mut receipt::Runner) -> Result<()> {
     runner.set_bdd_counts(counts);
 
     runner.step("no-blob", None, no_blob_gate)?;
-    runner.step("mutants", None, || run_mutants(MUTANT_CRATES))?;
+    runner.step("ripr", None, ripr_pr)?;
+    runner.skip(
+        "mutants",
+        Some("full mutation moved to targeted PR/nightly/release lanes".into()),
+    );
     runner.step("fuzz", None, fuzz_pr)?;
 
     if is_llvm_cov_installed() {
@@ -795,42 +829,23 @@ const PUBLISH_CRATES: &[&str] = &[
     "uselesskey",
 ];
 
-/// Subset of `PUBLISH_CRATES` for CI-wide mutation testing.
-///
-/// Excludes algorithm and adapter crates whose tests involve key generation
-/// (RSA, ECDSA, Ed25519, PGP, X.509, adapters). These are still
-/// mutant-tested when directly impacted in PR-scoped runs.
-const MUTANT_CRATES: &[&str] = &[
-    "uselesskey-core-seed",
-    "uselesskey-core-hash",
-    "uselesskey-core-hmac-spec",
-    "uselesskey-core-id",
-    "uselesskey-core-cache",
-    "uselesskey-core-factory",
-    "uselesskey-jwk",
-    "uselesskey-core-kid",
-    "uselesskey-core-negative-der",
-    "uselesskey-core-negative-pem",
-    "uselesskey-core-negative",
-    "uselesskey-core-sink",
-    "uselesskey-core-jwk-shape",
-    "uselesskey-core-jwks-order",
-    "uselesskey-core-jwk-builder",
-    "uselesskey-core-jwk",
-    "uselesskey-core-x509-spec",
-    "uselesskey-core-x509-derive",
-    "uselesskey-core-x509-chain-negative",
-    "uselesskey-core-x509-negative",
-    "uselesskey-core-x509",
+const PUBLIC_MUTATION_CRATES: &[&str] = &[
     "uselesskey-core",
-    "uselesskey-core-keypair-material",
-    "uselesskey-core-keypair",
-    "uselesskey-hmac",
+    "uselesskey-jwk",
     "uselesskey-token",
-    "uselesskey-token-spec",
-    "uselesskey-core-base62",
-    "uselesskey-core-token-shape",
-    "uselesskey-core-token",
+    "uselesskey-x509",
+    "uselesskey-rsa",
+    "uselesskey-ecdsa",
+    "uselesskey-ed25519",
+    "uselesskey-hmac",
+    "uselesskey-cli",
+];
+
+const ADAPTER_MUTATION_CRATES: &[&str] = &[
+    "uselesskey-jsonwebtoken",
+    "uselesskey-rustls",
+    "uselesskey-tonic",
+    "uselesskey-axum",
 ];
 
 fn publish_check() -> Result<()> {
@@ -1532,6 +1547,264 @@ fn collect_dependency_version_snippet_errors(
     Ok(errors)
 }
 
+fn ripr_pr() -> Result<()> {
+    let out_dir = Path::new("target/ripr/pr");
+    fs::create_dir_all(out_dir).context("failed to create target/ripr/pr")?;
+
+    let base_ref = resolve_base_ref();
+    let diff_path = out_dir.join("pr.diff");
+    write_pr_diff(&base_ref, &diff_path)?;
+
+    if !command_available("ripr", &["--version"]) {
+        if env::var("CI").is_ok() && env::var("XTASK_RIPR_NO_INSTALL").is_err() {
+            let mut install = Command::new("cargo");
+            install.args(["install", "ripr", "--locked"]);
+            run(&mut install).context("failed to install ripr")?;
+        } else {
+            write_missing_ripr_artifacts(out_dir)?;
+            eprintln!(
+                "ripr is not installed; wrote advisory placeholder artifacts under {}",
+                out_dir.display()
+            );
+            return Ok(());
+        }
+    }
+
+    let json_path = out_dir.join("repo-exposure.json");
+    run_capture(
+        Command::new("ripr").args([
+            "check",
+            "--root",
+            ".",
+            "--mode",
+            "ready",
+            "--format",
+            "repo-exposure-json",
+        ]),
+        &json_path,
+    )?;
+
+    let summary_path = out_dir.join("summary.md");
+    run_capture(
+        Command::new("ripr").args([
+            "check",
+            "--root",
+            ".",
+            "--mode",
+            "ready",
+            "--format",
+            "repo-exposure-md",
+        ]),
+        &summary_path,
+    )?;
+
+    let review_path = out_dir.join("review.md");
+    run_capture(
+        Command::new("ripr").args([
+            "check",
+            "--root",
+            ".",
+            "--diff",
+            diff_path.to_str().unwrap_or("target/ripr/pr/pr.diff"),
+            "--mode",
+            "ready",
+            "--format",
+            "github",
+        ]),
+        &review_path,
+    )?;
+
+    let changed_files = git_changed_files(&base_ref).unwrap_or_default();
+    let severe = ripr_severe_touched_public_gaps(&json_path, &changed_files)?;
+    if !severe.is_empty() {
+        bail!(
+            "ripr found severe oracle-exposure gaps on touched public owner surfaces: {}",
+            severe.join(", ")
+        );
+    }
+
+    append_github_summary(&summary_path)?;
+    Ok(())
+}
+
+fn write_pr_diff(base_ref: &str, diff_path: &Path) -> Result<()> {
+    let mut attempts = Vec::new();
+    for candidate in base_ref_candidates(base_ref) {
+        let revspec = format!("{candidate}...HEAD");
+        let output = Command::new("git")
+            .args(["diff", "--binary", &revspec])
+            .output()
+            .context("failed to run git diff for ripr")?;
+        if output.status.success() {
+            fs::write(diff_path, output.stdout)
+                .with_context(|| format!("failed to write {}", diff_path.display()))?;
+            return Ok(());
+        }
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        attempts.push(format!("{revspec}: {stderr}"));
+    }
+    fs::write(diff_path, "").with_context(|| format!("failed to write {}", diff_path.display()))?;
+    eprintln!(
+        "ripr-pr: base diff unavailable ({}); wrote empty diff",
+        attempts.join(" | ")
+    );
+    Ok(())
+}
+
+fn command_available(program: &str, args: &[&str]) -> bool {
+    Command::new(program)
+        .args(args)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .is_ok_and(|status| status.success())
+}
+
+fn run_capture(cmd: &mut Command, output_path: &Path) -> Result<()> {
+    eprintln!("+ {:?} > {}", cmd, output_path.display());
+    let output = cmd.output().context("failed to run command")?;
+    if let Some(parent) = output_path.parent() {
+        fs::create_dir_all(parent)
+            .with_context(|| format!("failed to create {}", parent.display()))?;
+    }
+    fs::write(output_path, &output.stdout)
+        .with_context(|| format!("failed to write {}", output_path.display()))?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        bail!("command failed with status {}: {stderr}", output.status);
+    }
+    Ok(())
+}
+
+fn write_missing_ripr_artifacts(out_dir: &Path) -> Result<()> {
+    fs::create_dir_all(out_dir).context("failed to create ripr output dir")?;
+    fs::write(
+        out_dir.join("repo-exposure.json"),
+        "{\n  \"schema_version\": \"missing-ripr\",\n  \"scope\": \"repo\",\n  \"metrics\": {},\n  \"seams\": []\n}\n",
+    )?;
+    fs::write(
+        out_dir.join("summary.md"),
+        "# ripr PR report\n\n`ripr` was not installed; no static oracle-exposure analysis was run.\n",
+    )?;
+    fs::write(
+        out_dir.join("review.md"),
+        "`ripr` was not installed; no GitHub annotation report was produced.\n",
+    )?;
+    Ok(())
+}
+
+fn ripr_severe_touched_public_gaps(json_path: &Path, changed_files: &[String]) -> Result<Vec<String>> {
+    let text = fs::read_to_string(json_path)
+        .with_context(|| format!("failed to read {}", json_path.display()))?;
+    let value: serde_json::Value = serde_json::from_str(&text)
+        .with_context(|| format!("failed to parse {}", json_path.display()))?;
+    let Some(seams) = value.get("seams").and_then(|v| v.as_array()) else {
+        return Ok(Vec::new());
+    };
+
+    let severe_classes = ["ungripped", "reachable_unrevealed"];
+    let mut severe = Vec::new();
+    for seam in seams {
+        let grip = seam.get("grip_class").and_then(|v| v.as_str()).unwrap_or("");
+        if !severe_classes.contains(&grip) {
+            continue;
+        }
+        let file = seam.get("file").and_then(|v| v.as_str()).unwrap_or("");
+        if !is_touched_public_owner_path(file, changed_files) {
+            continue;
+        }
+        let seam_id = seam
+            .get("seam_id")
+            .and_then(|v| v.as_str())
+            .unwrap_or("unknown-seam");
+        severe.push(format!("{seam_id} ({grip})"));
+    }
+    Ok(severe)
+}
+
+fn is_touched_public_owner_path(file: &str, changed_files: &[String]) -> bool {
+    let Some(owner) = public_owner_crate_for_path(file) else {
+        return false;
+    };
+
+    changed_files.iter().any(|path| {
+        let normalized = path.replace('\\', "/");
+        normalized.starts_with(&format!("crates/{owner}/src/"))
+            || normalized.starts_with(&format!("crates/{owner}/tests/"))
+    })
+}
+
+fn public_owner_crate_for_path(path: &str) -> Option<&'static str> {
+    let normalized = path.replace('\\', "/");
+    PUBLIC_MUTATION_CRATES.iter().copied().find(|name| {
+        normalized == format!("crates/{name}/src/lib.rs")
+            || normalized.starts_with(&format!("crates/{name}/src/"))
+            || normalized.starts_with(&format!("crates/{name}/tests/"))
+    })
+}
+
+fn append_github_summary(summary_path: &Path) -> Result<()> {
+    let Ok(summary_env) = env::var("GITHUB_STEP_SUMMARY") else {
+        return Ok(());
+    };
+    let summary = fs::read_to_string(summary_path)
+        .with_context(|| format!("failed to read {}", summary_path.display()))?;
+    let mut existing = fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&summary_env)
+        .with_context(|| format!("failed to open {summary_env}"))?;
+    use std::io::Write;
+    writeln!(existing, "\n{summary}")?;
+    Ok(())
+}
+
+fn mutants_pr(changed: bool, crates: &[String], full: bool) -> Result<()> {
+    let targets = if changed {
+        let base_ref = resolve_base_ref();
+        let changed_files = git_changed_files(&base_ref)?;
+        let plan = plan::build_plan(&changed_files);
+        mutation_target_crates(&base_ref, &changed_files, &plan.directly_changed_crates)?
+    } else if crates.is_empty() {
+        bail!("mutants-pr requires --changed or at least one --crate <name>");
+    } else {
+        crates.to_vec()
+    };
+
+    let filtered = targets
+        .into_iter()
+        .filter(|name| PUBLISH_CRATES.contains(&name.as_str()))
+        .collect::<Vec<_>>();
+    if filtered.is_empty() {
+        eprintln!("mutants-pr: no eligible crates selected");
+        return Ok(());
+    }
+
+    eprintln!(
+        "mutants-pr targets: {:?}{}",
+        filtered,
+        if full { " (full owner slice)" } else { "" }
+    );
+    let refs = filtered.iter().map(String::as_str).collect::<Vec<_>>();
+    run_mutants(&refs)
+}
+
+fn mutants_nightly(scope: &str, crate_name: Option<&str>) -> Result<()> {
+    match scope {
+        "public" => run_mutants(PUBLIC_MUTATION_CRATES),
+        "adapters" => run_mutants(ADAPTER_MUTATION_CRATES),
+        "all" => run_mutants(PUBLISH_CRATES),
+        "crate" => {
+            let name = crate_name.context("--scope crate requires --crate <name>")?;
+            if !PUBLISH_CRATES.contains(&name) {
+                bail!("unknown publish crate for mutation scope: {name}");
+            }
+            run_mutants(&[name])
+        }
+        other => bail!("unknown mutation scope {other:?}; expected public, adapters, all, or crate"),
+    }
+}
+
 fn run_mutants(crates: &[&str]) -> Result<()> {
     let have = Command::new("cargo")
         .args(["mutants", "--version"])
@@ -1691,6 +1964,7 @@ fn run_pr_plan(
         record_feature_matrix_skipped(runner);
         runner.skip("dep-guard", reason.clone());
         runner.skip("bdd", reason.clone());
+        runner.skip("ripr", reason.clone());
         runner.skip("mutants", reason.clone());
         runner.skip("fuzz", reason.clone());
         runner.skip("no-blob", reason.clone());
@@ -1753,18 +2027,13 @@ fn run_pr_plan(
     }
 
     if plan.run_mutants {
-        let pr_crates =
-            mutation_target_crates(base_ref, changed_files, &plan.directly_changed_crates)?;
-        if pr_crates.is_empty() {
-            runner.skip(
-                "mutants",
-                Some("no mutant-eligible behavior changes".into()),
-            );
-        } else {
-            let pr_crate_refs = pr_crates.iter().map(String::as_str).collect::<Vec<_>>();
-            runner.step("mutants", None, || run_mutants(&pr_crate_refs))?;
-        }
+        runner.step("ripr", None, ripr_pr)?;
+        runner.skip(
+            "mutants",
+            Some("default PR lane uses ripr; run cargo xtask mutants-pr --changed for targeted mutation".to_string()),
+        );
     } else {
+        runner.skip("ripr", Some("no crate source changes".to_string()));
         runner.skip("mutants", Some("no crate source changes".to_string()));
     }
 

@@ -1,0 +1,111 @@
+name: Mutation
+
+on:
+  schedule:
+    - cron: "17 7 * * *"
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: "mutation scope"
+        default: "public"
+        type: choice
+        options:
+          - public
+          - adapters
+          - all
+          - crate
+      crate:
+        description: "crate name when scope=crate"
+        required: false
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+
+concurrency:
+  group: mutation-${{ github.event_name == 'pull_request' && github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  targeted-pr:
+    if: github.event_name == 'pull_request' && (contains(github.event.pull_request.labels.*.name, 'mutation') || contains(github.event.pull_request.labels.*.name, 'mutation/full'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install NASM (for aws-lc-rs)
+        run: sudo apt-get update && sudo apt-get install -y nasm
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+
+      - name: Install cargo-mutants
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-mutants
+
+      - name: Fetch base branch
+        if: github.base_ref != ''
+        run: git fetch origin ${{ github.base_ref }}
+
+      - name: Targeted PR mutation
+        run: cargo xtask mutants-pr --changed ${{ contains(github.event.pull_request.labels.*.name, 'mutation/full') && '--full' || '' }}
+
+      - name: Upload targeted mutation output
+        uses: actions/upload-artifact@v7
+        with:
+          name: mutation-pr
+          path: target/mutants
+        if: always()
+
+  nightly:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install NASM (for aws-lc-rs)
+        run: sudo apt-get update && sudo apt-get install -y nasm
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+
+      - name: Install cargo-mutants
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-mutants
+
+      - name: Nightly mutation
+        run: |
+          scope="${{ inputs.scope || 'public' }}"
+          crate="${{ inputs.crate || '' }}"
+          if [ "$scope" = "crate" ]; then
+            cargo xtask mutants-nightly --scope crate --crate "$crate"
+          else
+            cargo xtask mutants-nightly --scope "$scope"
+          fi
+
+      - name: Upload nightly mutation output
+        uses: actions/upload-artifact@v7
+        with:
+          name: mutation-nightly-${{ inputs.scope || 'public' }}
+          path: |
+            target/mutants
+            target/mutation
+        if: always()
