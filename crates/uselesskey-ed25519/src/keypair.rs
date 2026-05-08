@@ -5,8 +5,8 @@ use ed25519_dalek::{SigningKey, VerifyingKey, pkcs8::EncodePrivateKey, pkcs8::En
 use pkcs8::LineEnding;
 use uselesskey_core::negative::CorruptPem;
 use uselesskey_core::sink::TempArtifact;
-use uselesskey_core::srp::keypair_material::Pkcs8SpkiKeyMaterial;
 use uselesskey_core::{Error, Factory};
+use uselesskey_core_keypair_material::Pkcs8SpkiKeyMaterial;
 
 use crate::Ed25519Spec;
 

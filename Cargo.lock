@@ -5064,6 +5064,7 @@ dependencies = [
  "serde",
  "serde_json",
  "uselesskey-core",
+ "uselesskey-core-keypair-material",
  "uselesskey-jwk",
 ]
 
@@ -5080,6 +5081,7 @@ dependencies = [
  "serde",
  "serde_json",
  "uselesskey-core",
+ "uselesskey-core-keypair-material",
  "uselesskey-jwk",
 ]
 
@@ -5285,6 +5287,7 @@ dependencies = [
  "serde",
  "serde_json",
  "uselesskey-core",
+ "uselesskey-core-keypair-material",
  "uselesskey-jwk",
 ]
 
