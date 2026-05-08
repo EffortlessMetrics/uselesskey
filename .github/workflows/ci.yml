@@ -79,6 +79,9 @@ jobs:
       - name: cargo deny advisories
         run: cargo deny check advisories
 
+      - name: ripr PR evidence
+        run: cargo xtask ripr-pr
+
       - name: xtask pr
         run: cargo xtask pr
 
@@ -111,6 +114,14 @@ jobs:
             target/xtask/audit-surface/latest.md
             docs/reference/dependency-economics.md
             docs/reference/audit-surface.md
+        if: always()
+
+      - name: Upload ripr PR evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: ripr-pr
+          path: target/ripr/pr
+          if-no-files-found: warn
         if: always()
 
       - name: Upload receipt

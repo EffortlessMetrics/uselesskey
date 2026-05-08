@@ -178,6 +178,8 @@ artifacts under `target/ripr/pr/`:
 - `summary.md`;
 - `review.md`.
 
+Pull request CI uploads that directory as the `ripr-pr` artifact.
+
 If `ripr` is not installed, the command writes skipped artifacts with a clear
 reason and exits successfully. Other `ripr` runtime failures should fail the
 command so the tool integration does not silently mask bad evidence.
