@@ -145,6 +145,12 @@ enum Cmd {
     },
     /// Configure git hooks (sets core.hooksPath to .githooks).
     Setup,
+    /// Bootstrap Claude agent-swarm commands using native Rust automation.
+    AgentSwarmSetup {
+        /// Command written to the PostToolUse hook in .claude/settings.json.
+        #[arg(long)]
+        post_edit_check: Option<String>,
+    },
     /// Lint commit message (used by git hooks).
     CommitLint {
         /// Path to the commit message file.
@@ -307,6 +313,7 @@ fn main() -> Result<()> {
         Cmd::LintFix { check, no_clippy } => lint_fix(check, no_clippy),
         Cmd::Gate { check: _ } => gate(),
         Cmd::Setup => setup(),
+        Cmd::AgentSwarmSetup { post_edit_check } => agent_swarm_setup(post_edit_check),
         Cmd::CommitLint { message_file } => commit_lint(&message_file),
         Cmd::Hook { hook } => match hook {
             HookCmd::PreCommit => hook_pre_commit(),
@@ -2921,6 +2928,151 @@ fn setup() -> Result<()> {
     Ok(())
 }
 
+const DEFAULT_POST_EDIT_CHECK: &str =
+    "cargo check --quiet --message-format=short 2>&1 | head -20 || true";
+
+fn agent_swarm_setup(post_edit_check: Option<String>) -> Result<()> {
+    let source_dir = workspace_root_path()
+        .join(".claude")
+        .join("agent-swarm-workflow")
+        .join("slash-commands");
+    let repo_root = env::current_dir().context("failed to resolve current directory")?;
+    agent_swarm_setup_at(&source_dir, &repo_root, post_edit_check)
+}
+
+fn agent_swarm_setup_at(
+    slash_command_source: &Path,
+    repo_root: &Path,
+    post_edit_check: Option<String>,
+) -> Result<()> {
+    if !slash_command_source.is_dir() {
+        bail!(
+            "cannot find slash-commands directory at {}",
+            slash_command_source.display()
+        );
+    }
+
+    let claude_dir = repo_root.join(".claude");
+    let command_dir = claude_dir.join("commands");
+    let settings_path = claude_dir.join("settings.json");
+    let post_edit_check = post_edit_check
+        .or_else(|| env::var("POST_EDIT_CHECK").ok())
+        .unwrap_or_else(|| DEFAULT_POST_EDIT_CHECK.to_string());
+
+    println!("Creating .claude/commands/ ...");
+    fs::create_dir_all(&command_dir)
+        .with_context(|| format!("failed to create {}", command_dir.display()))?;
+
+    println!("Copying slash command templates ...");
+    let mut copied_any = false;
+    let mut templates = fs::read_dir(slash_command_source)
+        .with_context(|| format!("failed to read {}", slash_command_source.display()))?
+        .map(|entry| {
+            entry.map(|entry| entry.path()).with_context(|| {
+                format!(
+                    "failed to read entry from {}",
+                    slash_command_source.display()
+                )
+            })
+        })
+        .collect::<Result<Vec<_>>>()?;
+    templates.retain(|path| path.extension().and_then(|ext| ext.to_str()) == Some("md"));
+    templates.sort();
+
+    for source_path in templates {
+        let file_name = source_path
+            .file_name()
+            .context("slash command template missing file name")?;
+        let display_name = file_name.to_string_lossy();
+        let destination = command_dir.join(file_name);
+        if destination.exists() {
+            println!("  SKIP: {display_name} (already exists, not overwriting)");
+        } else {
+            fs::copy(&source_path, &destination).with_context(|| {
+                format!(
+                    "failed to copy {} to {}",
+                    source_path.display(),
+                    destination.display()
+                )
+            })?;
+            println!("  COPY: {display_name}");
+            copied_any = true;
+        }
+    }
+
+    if !copied_any {
+        println!("  No new slash command templates copied.");
+    }
+
+    if settings_path.exists() {
+        println!();
+        println!("SKIP: .claude/settings.json already exists.");
+        println!("      Review it manually and add PostToolUse hooks if needed.");
+        println!("      Recommended hook command: {post_edit_check}");
+    } else {
+        println!();
+        println!("Creating .claude/settings.json ...");
+        let settings = serde_json::json!({
+            "hooks": {
+                "PostToolUse": [
+                    {
+                        "matcher": "Edit|Write|NotebookEdit",
+                        "hooks": [
+                            {
+                                "type": "command",
+                                "command": post_edit_check.clone(),
+                            }
+                        ]
+                    }
+                ]
+            }
+        });
+        write_json_pretty(&settings_path, &settings)?;
+        println!("  Created with PostToolUse hook: {post_edit_check}");
+    }
+
+    print_agent_swarm_next_steps(&command_dir);
+    Ok(())
+}
+
+fn print_agent_swarm_next_steps(command_dir: &Path) {
+    println!();
+    println!("========================================================================");
+    println!(" Agent Swarm Workflow -- Setup Complete");
+    println!("========================================================================");
+    println!();
+    println!(" Files created in: {}/", command_dir.display());
+    println!();
+    println!(" Next steps:");
+    println!();
+    println!("   1. Edit the slash commands in .claude/commands/ to replace");
+    println!("      placeholder variables with your project's commands:");
+    println!();
+    println!("        $TEST_CMD   -- your test runner       (e.g., cargo test, pytest)");
+    println!("        $LINT_CMD   -- your linter             (e.g., cargo clippy, ruff)");
+    println!("        $FMT_CMD    -- your formatter           (e.g., cargo fmt, prettier)");
+    println!("        $BUILD_CMD  -- your build command       (e.g., cargo build, npm build)");
+    println!("        $CHECK_CMD  -- fast type/compile check  (e.g., cargo check, tsc)");
+    println!("        $GATE_CMD   -- full CI gate command     (e.g., just ci-gate, make ci)");
+    println!();
+    println!("   2. Review .claude/settings.json and adjust the PostToolUse hook");
+    println!("      command if needed.");
+    println!();
+    println!("   3. Start Claude Code and try:");
+    println!("        /wave test-coverage     -- launch a test coverage wave");
+    println!("        /tdd-fix <bug>          -- fix a bug with TDD");
+    println!("        /bulk-pr                -- PR all worktrees at once");
+    println!();
+    println!("   4. (Optional) Add .claude/ to .gitignore if you do not want");
+    println!("      to check in agent configuration, or commit it to share");
+    println!("      with your team.");
+    println!();
+    println!("   5. Read .claude/agent-swarm-workflow/agent-patterns.md");
+    println!("      for tips on effective agent dispatch.");
+    println!();
+    println!("========================================================================");
+}
+
 fn commit_lint(message_file: &Path) -> Result<()> {
     let content = fs::read_to_string(message_file).context("failed to read commit message")?;
     let first_line = content.lines().next().unwrap_or("");
@@ -3072,6 +3224,33 @@ mod tests {
         let payload = URL_SAFE_NO_PAD.encode(br#"{"sub":"1234567890"}"#);
         let signature = URL_SAFE_NO_PAD.encode(b"signature");
         format!("{header}.{payload}.{signature}")
+    }
+
+    #[test]
+    fn agent_swarm_setup_copies_templates_and_writes_settings() {
+        let source = tempfile::tempdir().expect("source tempdir");
+        let repo = tempfile::tempdir().expect("repo tempdir");
+        fs::write(source.path().join("wave.md"), "# Wave\n").expect("write template");
+        fs::write(source.path().join("ignored.txt"), "ignore\n").expect("write non-template");
+
+        agent_swarm_setup_at(
+            source.path(),
+            repo.path(),
+            Some("cargo check --quiet".to_string()),
+        )
+        .expect("agent swarm setup should succeed");
+
+        assert_eq!(
+            fs::read_to_string(repo.path().join(".claude/commands/wave.md"))
+                .expect("read copied template"),
+            "# Wave\n"
+        );
+        assert!(!repo.path().join(".claude/commands/ignored.txt").exists());
+
+        let settings =
+            fs::read_to_string(repo.path().join(".claude/settings.json")).expect("read settings");
+        assert!(settings.contains("PostToolUse"));
+        assert!(settings.contains("cargo check --quiet"));
     }
 
     #[test]
