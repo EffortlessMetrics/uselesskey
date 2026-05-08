@@ -165,4 +165,47 @@ mod tests {
             "expected all 'H' from fallback, got {out}"
         );
     }
+
+    #[test]
+    fn acceptance_boundary_rejects_248_and_keeps_batch_semantics() {
+        struct BoundaryRng {
+            fills: usize,
+        }
+
+        impl TryRng for BoundaryRng {
+            type Error = Infallible;
+
+            fn try_next_u32(&mut self) -> Result<u32, Self::Error> {
+                Ok(0)
+            }
+
+            fn try_next_u64(&mut self) -> Result<u64, Self::Error> {
+                Ok(0)
+            }
+
+            fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Self::Error> {
+                self.fill_bytes(dest);
+                Ok(())
+            }
+        }
+
+        impl BoundaryRng {
+            fn fill_bytes(&mut self, dest: &mut [u8]) {
+                dest.fill(255);
+                if self.fills == 0 {
+                    dest[0] = 0;
+                    dest[1] = 247;
+                    dest[2] = 248;
+                } else {
+                    dest[0] = 1;
+                }
+                self.fills += 1;
+            }
+        }
+
+        let mut rng = BoundaryRng { fills: 0 };
+        let out = random_base62_with_rng(&mut rng, 3);
+
+        assert_eq!(out, "A9B");
+    }
 }

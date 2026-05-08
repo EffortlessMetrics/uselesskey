@@ -469,6 +469,148 @@ mod tests {
     }
 
     #[test]
+    fn negative_jwt_segment_count_keeps_two_decodable_segments() {
+        let value = generate_negative_token(
+            "svc",
+            TokenKind::OAuthAccessToken,
+            Seed::new([31u8; 32]),
+            NegativeToken::MalformedJwtSegmentCount,
+        );
+        let parts = jwt_parts(&value);
+
+        assert_eq!(parts.len(), 2);
+        assert_eq!(decode_object_segment(parts[0])["alg"], "RS256");
+        assert_eq!(decode_object_segment(parts[0])["typ"], "JWT");
+        assert_eq!(decode_object_segment(parts[1])["sub"], "svc");
+    }
+
+    #[test]
+    fn negative_bad_base64url_replaces_payload_only() {
+        let value = generate_negative_token(
+            "svc",
+            TokenKind::OAuthAccessToken,
+            Seed::new([32u8; 32]),
+            NegativeToken::BadBase64UrlSegment,
+        );
+        let parts = jwt_parts(&value);
+
+        assert_eq!(parts.len(), 3);
+        assert_eq!(decode_object_segment(parts[0])["alg"], "RS256");
+        assert_eq!(parts[1], SCANNER_SAFE_INVALID_TOKEN_SEGMENT);
+        assert!(URL_SAFE_NO_PAD.decode(parts[1]).is_err());
+        assert!(!parts[2].is_empty());
+    }
+
+    #[test]
+    fn negative_invalid_header_shape_keeps_payload_and_signature() {
+        let value = generate_negative_token(
+            "svc",
+            TokenKind::OAuthAccessToken,
+            Seed::new([33u8; 32]),
+            NegativeToken::InvalidJwtHeaderShape,
+        );
+        let parts = jwt_parts(&value);
+
+        assert_eq!(parts.len(), 3);
+        assert_eq!(
+            decode_json_segment(parts[0]),
+            serde_json::json!(["not-a-header"])
+        );
+        assert_eq!(decode_object_segment(parts[1])["sub"], "svc");
+        assert!(!parts[2].is_empty());
+    }
+
+    #[test]
+    fn negative_missing_alg_keeps_typ_and_claims() {
+        let value = generate_negative_token(
+            "svc",
+            TokenKind::OAuthAccessToken,
+            Seed::new([34u8; 32]),
+            NegativeToken::MissingAlg,
+        );
+        let parts = jwt_parts(&value);
+        let header = decode_object_segment(parts[0]);
+
+        assert_eq!(parts.len(), 3);
+        assert!(!header.contains_key("alg"));
+        assert_eq!(header["typ"], "JWT");
+        assert_eq!(decode_object_segment(parts[1])["sub"], "svc");
+    }
+
+    #[test]
+    fn negative_alg_none_changes_alg_only() {
+        let value = generate_negative_token(
+            "svc",
+            TokenKind::OAuthAccessToken,
+            Seed::new([35u8; 32]),
+            NegativeToken::AlgNone,
+        );
+        let parts = jwt_parts(&value);
+        let header = decode_object_segment(parts[0]);
+
+        assert_eq!(parts.len(), 3);
+        assert_eq!(header["alg"], "none");
+        assert_eq!(header["typ"], "JWT");
+        assert_eq!(decode_object_segment(parts[1])["sub"], "svc");
+    }
+
+    #[test]
+    fn negative_mismatched_kid_keeps_header_and_payload_context() {
+        let value = generate_negative_token(
+            "svc",
+            TokenKind::OAuthAccessToken,
+            Seed::new([36u8; 32]),
+            NegativeToken::MismatchedKid,
+        );
+        let parts = jwt_parts(&value);
+        let header = decode_object_segment(parts[0]);
+        let payload = decode_object_segment(parts[1]);
+
+        assert_eq!(parts.len(), 3);
+        assert_eq!(header["alg"], "RS256");
+        assert_eq!(header["typ"], "JWT");
+        assert_eq!(header["kid"], "unknown-kid");
+        assert_eq!(payload["sub"], "svc");
+        assert_eq!(payload["kid"], "expected-kid");
+        assert_ne!(header["kid"], payload["kid"]);
+    }
+
+    #[test]
+    fn negative_not_yet_valid_keeps_future_window_and_subject() {
+        let value = generate_negative_token(
+            "svc",
+            TokenKind::OAuthAccessToken,
+            Seed::new([37u8; 32]),
+            NegativeToken::NotYetValidClaims,
+        );
+        let parts = jwt_parts(&value);
+        let header = decode_object_segment(parts[0]);
+        let payload = decode_object_segment(parts[1]);
+
+        assert_eq!(parts.len(), 3);
+        assert_eq!(header["alg"], "RS256");
+        assert_eq!(payload["sub"], "svc");
+        assert_eq!(payload["nbf"], 4_000_000_000u64);
+        assert_eq!(payload["exp"], 4_100_000_000u64);
+    }
+
+    fn jwt_parts(value: &str) -> Vec<&str> {
+        value.split('.').collect()
+    }
+
+    fn decode_object_segment(segment: &str) -> serde_json::Map<String, serde_json::Value> {
+        decode_json_segment(segment)
+            .as_object()
+            .expect("JWT segment should decode to an object")
+            .clone()
+    }
+
+    fn decode_json_segment(segment: &str) -> serde_json::Value {
+        let bytes = URL_SAFE_NO_PAD.decode(segment).expect("decode JWT segment");
+        serde_json::from_slice(&bytes).expect("parse JWT segment JSON")
+    }
+
+    #[test]
     fn random_base62_length_and_charset() {
         let value = random_base62(Seed::new([17u8; 32]), 64);
         assert_eq!(value.len(), 64);
