@@ -1,13 +1,13 @@
 # uselesskey-core-negative-der
 
-DER-specific negative fixture builders for deterministic corruption used by
-`uselesskey` test utilities.
+Published-internal compatibility shim.
 
-## Purpose
+DER negative helper ownership moved into `uselesskey-core`. Existing imports
+from this crate remain available during the compatibility-shim period:
 
-- Truncate DER vectors and flip bytes at deterministic offsets.
-- Provide deterministic DER mutation helpers used for parser-failure fixtures.
-- Keep DER behavior isolated as a small SRP microcrate.
+```rust
+use uselesskey_core_negative_der::{corrupt_der_deterministic, truncate_der};
+```
 
-This crate intentionally only manipulates byte shape and does not parse or
-validate cryptographic semantics.
+Prefer `uselesskey-core` for supported extension work. The canonical DER helper
+implementation now lives at `uselesskey_core::srp::negative::der`.

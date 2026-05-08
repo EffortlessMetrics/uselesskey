@@ -1,9 +1,14 @@
 # uselesskey-core-seed
 
-Seed parsing and redaction primitives shared across `uselesskey` crates.
+Published-internal compatibility shim.
 
-## Purpose
+Seed implementation ownership moved into `uselesskey-core`. Existing imports
+from this crate remain available during the compatibility-shim period:
 
-- Parse user-provided seed inputs (`hex` or free-form string) into 32 bytes.
-- Keep `Debug` output redacted so logs cannot leak seed material.
-- Provide a small, reusable seed type for deterministic fixture systems.
+```rust
+use uselesskey_core_seed::Seed;
+```
+
+Prefer `uselesskey-core` for supported extension work, or the `uselesskey`
+facade for normal fixture usage. The canonical seed implementation now lives at
+`uselesskey_core::srp::seed`.

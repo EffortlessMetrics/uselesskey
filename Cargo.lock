@@ -4714,16 +4714,20 @@ dependencies = [
 name = "uselesskey-core"
 version = "0.6.0"
 dependencies = [
+ "base64",
+ "blake3",
+ "dashmap",
  "insta",
  "proptest",
+ "rand 0.10.1",
+ "rand_chacha 0.10.0",
+ "rand_core 0.10.1",
  "rstest",
  "serde",
+ "spin 0.10.0",
+ "tempfile",
  "thiserror",
- "uselesskey-core-cache",
- "uselesskey-core-factory",
- "uselesskey-core-id",
- "uselesskey-core-negative",
- "uselesskey-core-sink",
+ "uselesskey-test-support",
 ]
 
 [[package]]
@@ -4742,12 +4746,11 @@ dependencies = [
 name = "uselesskey-core-cache"
 version = "0.6.0"
 dependencies = [
- "dashmap",
  "insta",
  "proptest",
  "rstest",
  "serde",
- "spin 0.10.0",
+ "uselesskey-core",
  "uselesskey-core-id",
 ]
 
@@ -4757,9 +4760,8 @@ version = "0.6.0"
 dependencies = [
  "insta",
  "proptest",
- "rand 0.10.1",
  "serde",
- "uselesskey-core-cache",
+ "uselesskey-core",
  "uselesskey-core-id",
 ]
 
@@ -4771,6 +4773,7 @@ dependencies = [
  "insta",
  "proptest",
  "serde",
+ "uselesskey-core",
 ]
 
 [[package]]
@@ -4790,7 +4793,7 @@ dependencies = [
  "proptest",
  "rstest",
  "serde",
- "uselesskey-core-hash",
+ "uselesskey-core",
  "uselesskey-core-seed",
  "uselesskey-test-support",
 ]
@@ -4846,7 +4849,7 @@ dependencies = [
  "insta",
  "proptest",
  "serde",
- "uselesskey-core-keypair-material",
+ "uselesskey-core",
  "uselesskey-core-negative",
  "uselesskey-test-support",
 ]
@@ -4859,7 +4862,6 @@ dependencies = [
  "proptest",
  "serde",
  "uselesskey-core",
- "uselesskey-jwk",
  "uselesskey-test-support",
 ]
 
@@ -4884,8 +4886,7 @@ dependencies = [
  "proptest",
  "rstest",
  "serde",
- "uselesskey-core-negative-der",
- "uselesskey-core-negative-pem",
+ "uselesskey-core",
 ]
 
 [[package]]
@@ -4896,7 +4897,7 @@ dependencies = [
  "proptest",
  "rstest",
  "serde",
- "uselesskey-core-hash",
+ "uselesskey-core",
 ]
 
 [[package]]
@@ -4906,6 +4907,7 @@ dependencies = [
  "insta",
  "proptest",
  "serde",
+ "uselesskey-core",
  "uselesskey-core-hash",
 ]
 
@@ -4930,10 +4932,9 @@ dependencies = [
  "blake3",
  "insta",
  "proptest",
- "rand_chacha 0.10.0",
- "rand_core 0.10.1",
  "rstest",
  "serde",
+ "uselesskey-core",
 ]
 
 [[package]]
@@ -4945,6 +4946,7 @@ dependencies = [
  "rstest",
  "serde",
  "tempfile",
+ "uselesskey-core",
 ]
 
 [[package]]

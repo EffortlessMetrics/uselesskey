@@ -1,15 +1,16 @@
 # uselesskey-core-cache
 
-Identity-keyed typed cache primitives shared by `uselesskey` fixture factories.
+Published-internal compatibility shim.
 
-## Purpose
+Cache implementation ownership moved into `uselesskey-core`. Existing imports
+from this crate remain available during the compatibility-shim period:
 
-- Provide a process-local cache keyed by `ArtifactId`.
-- Store generated fixtures as `Arc<dyn Any + Send + Sync>`.
-- Preserve typed retrieval guarantees with explicit panic on type mismatch.
-- Keep `std`/`no_std` behavior aligned with `uselesskey-core`.
+```rust
+use uselesskey_core_cache::ArtifactCache;
+```
 
-This microcrate is intentionally focused on cache mechanics, not derivation or key generation.
+Prefer `uselesskey-core` for supported extension work. The canonical cache
+implementation now lives at `uselesskey_core::srp::cache`.
 
 ## Features
 

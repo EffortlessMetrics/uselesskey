@@ -1,11 +1,14 @@
 # uselesskey-core-factory
 
-This crate owns the `Factory` type for `uselesskey` and is focused on:
+Published-internal compatibility shim.
 
-- random vs deterministic modes
-- deterministic, thread-safe per-factory cache lookup
-- id-driven RNG initialization
-- deterministic fixture reuse across repeated lookups
+Factory implementation ownership moved into `uselesskey-core`. Existing imports
+from this crate remain available during the compatibility-shim period:
 
-The `uselesskey-core` crate re-exports this crate so downstream users keep using the same
-public API while preserving a cleaner separation of concerns internally.
+```rust
+use uselesskey_core_factory::{Factory, Mode};
+```
+
+Prefer `uselesskey-core` for supported extension work, or the `uselesskey`
+facade for normal fixture usage. The canonical factory implementation now lives
+at `uselesskey_core::srp::factory`.

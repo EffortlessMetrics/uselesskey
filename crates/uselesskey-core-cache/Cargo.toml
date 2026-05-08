@@ -15,19 +15,18 @@ documentation = "https://docs.rs/uselesskey-core-cache"
 authors.workspace = true
 
 [dependencies]
-dashmap = { workspace = true, optional = true }
-spin = { version = "0.10.0", default-features = false, features = ["mutex", "spin_mutex"] }
-uselesskey-core-id = { path = "../uselesskey-core-id", version = "0.6.0", default-features = false }
+uselesskey-core = { path = "../uselesskey-core", version = "0.6.0", default-features = false }
 
 [dev-dependencies]
 insta.workspace = true
 proptest.workspace = true
 rstest.workspace = true
 serde.workspace = true
+uselesskey-core-id = { workspace = true }
 
 [features]
 default = ["std"]
-std = ["dep:dashmap", "uselesskey-core-id/std"]
+std = ["uselesskey-core/std"]
 
 [package.metadata.docs.rs]
 features = ["std"]

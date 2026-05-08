@@ -1,9 +1,13 @@
 # uselesskey-core-hash
 
-Deterministic hashing primitives shared by fixture derivation codepaths.
+Published-internal compatibility shim.
 
-## Purpose
+Hashing implementation ownership moved into `uselesskey-core`. Existing imports
+from this crate remain available during the compatibility-shim period:
 
-- Compute BLAKE3 digests for deterministic seed/fixture derivation helpers.
-- Write length-prefixed byte slices for unambiguous tuple hashing.
-- Keep the implementation isolated so derived-seed behavior is reusable across microcrates.
+```rust
+use uselesskey_core_hash::{hash32, write_len_prefixed};
+```
+
+Prefer `uselesskey-core` for supported extension work. The canonical hashing
+implementation now lives at `uselesskey_core::srp::hash`.

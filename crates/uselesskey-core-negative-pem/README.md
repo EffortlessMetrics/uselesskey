@@ -1,15 +1,13 @@
 # uselesskey-core-negative-pem
 
-PEM-corruption helpers for deterministic and deterministic-shape negative fixtures.
+Published-internal compatibility shim.
 
-## Responsibilities
+PEM negative helper ownership moved into `uselesskey-core`. Existing imports
+from this crate remain available during the compatibility-shim period:
 
-- Corrupt PEM-like strings with a small, explicit set of mutation modes.
-- Provide deterministic corruption selection from a variant label.
-- Keep implementation `no_std`-compatible and focused on shape-only text mutation.
+```rust
+use uselesskey_core_negative_pem::{CorruptPem, corrupt_pem, corrupt_pem_deterministic};
+```
 
-## Public API
-
-- `CorruptPem`
-- `corrupt_pem`
-- `corrupt_pem_deterministic`
+Prefer `uselesskey-core` for supported extension work. The canonical PEM helper
+implementation now lives at `uselesskey_core::srp::negative::pem`.

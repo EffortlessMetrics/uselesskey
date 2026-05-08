@@ -1,13 +1,16 @@
 # uselesskey-core-keypair-material
 
-Reusable PKCS#8/SPKI key-material helpers for `uselesskey` fixture crates.
+Published-internal compatibility shim.
 
-This microcrate owns the shared helper surface used by RSA/ECDSA/Ed25519
-fixture generation:
+Shared PKCS#8/SPKI material helper ownership moved into `uselesskey-core`.
+Existing imports from this crate remain available during the compatibility-shim
+period:
 
-- PKCS#8 and SPKI accessors
-- tempfile sinks for PEM outputs
-- deterministic negative fixture helpers
-- stable `kid` derivation from SPKI bytes
+```rust
+use uselesskey_core_keypair_material::Pkcs8SpkiKeyMaterial;
+```
 
-It is intentionally small and narrowly scoped for SRP.
+Prefer the fixture-family crates (`uselesskey-rsa`, `uselesskey-ecdsa`,
+`uselesskey-ed25519`) or the `uselesskey` facade for normal usage. The
+canonical helper implementation now lives at
+`uselesskey_core::srp::keypair_material`.

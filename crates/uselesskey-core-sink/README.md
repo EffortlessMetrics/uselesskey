@@ -1,12 +1,14 @@
 # uselesskey-core-sink
 
-Test fixture tempfile sinks for `uselesskey`.
+Published-internal compatibility shim.
 
-## Purpose
+Tempfile sink ownership moved into `uselesskey-core`. Existing imports from this
+crate remain available during the compatibility-shim period:
 
-- Keep file-path-oriented artifact outputs isolated from the core factory crate.
-- Expose deterministic-friendly helpers for writing artifacts to secure tempfiles.
-- Preserve cleanup behavior by deleting files when handles drop.
+```rust
+use uselesskey_core_sink::TempArtifact;
+```
 
-This microcrate is intentionally focused: it has no domain-specific crypto knowledge and
-only models output sinks.
+Prefer `uselesskey-core` for supported extension work. The canonical raw sink
+implementation now lives at `uselesskey_core::srp::sink`; the supported
+error-converting wrapper remains available as `uselesskey_core::TempArtifact`.

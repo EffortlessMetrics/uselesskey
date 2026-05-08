@@ -2,7 +2,7 @@ use std::fmt;
 use std::path::Path;
 
 use crate::Error;
-use uselesskey_core_sink::TempArtifact as RawTempArtifact;
+use crate::srp::sink::TempArtifact as RawTempArtifact;
 
 pub struct TempArtifact {
     inner: RawTempArtifact,
