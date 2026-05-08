@@ -44,7 +44,7 @@ Typical signals:
 - `cargo xtask publish-preflight --allow-dirty` when package metadata changes;
 - `cargo xtask examples-smoke` when examples or user recipes change;
 - `cargo xtask no-blob` when fixture, docs, bundle, or example outputs change;
-- `ripr` PR evidence once the dedicated command exists;
+- `cargo xtask ripr-pr` for advisory `ripr` PR exposure evidence;
 - `git diff --check`.
 
 Blocking posture:
@@ -159,19 +159,25 @@ linked from release notes.
 For an ordinary PR:
 
 1. Run the fast local gates for the touched surface.
-2. Read the `ripr` summary when available.
+2. Run `cargo xtask ripr-pr` and read `target/ripr/pr/summary.md`.
 3. Add focused tests when changed behavior is weakly exposed.
 4. Use targeted mutation only when the routing rules call for it.
 
 For a high-risk PR:
 
 1. Run the fast local gates.
-2. Run `ripr` to find missing or weak test oracles.
+2. Run `cargo xtask ripr-pr` to find missing or weak test oracles.
 3. Add focused tests for severe exposure gaps.
 4. Run targeted mutation for the owner crate.
 5. Record the exact mutation command and result in the PR body.
 
-Until dedicated `xtask` commands exist for this lane, use equivalent direct
-commands and include the evidence in the PR body. Future automation should make
-the same routing decision executable rather than changing these proof
-boundaries.
+`cargo xtask ripr-pr` treats `ripr` as an external tool and writes advisory
+artifacts under `target/ripr/pr/`:
+
+- `repo-exposure.json`;
+- `summary.md`;
+- `review.md`.
+
+If `ripr` is not installed, the command writes skipped artifacts with a clear
+reason and exits successfully. Other `ripr` runtime failures should fail the
+command so the tool integration does not silently mask bad evidence.
