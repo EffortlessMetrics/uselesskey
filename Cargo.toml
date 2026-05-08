@@ -71,7 +71,7 @@ exclude = ["fuzz"]
 [workspace.package]
 edition = "2024"
 license = "MIT OR Apache-2.0"
-rust-version = "1.92"
+rust-version = "1.95"
 repository = "https://github.com/EffortlessMetrics/uselesskey"
 homepage = "https://github.com/EffortlessMetrics/uselesskey"
 categories = ["development-tools::testing", "cryptography"]

@@ -4,7 +4,7 @@
 [![Codecov](https://codecov.io/gh/EffortlessMetrics/uselesskey/graph/badge.svg?branch=main)](https://codecov.io/gh/EffortlessMetrics/uselesskey)
 [![Crates.io](https://img.shields.io/crates/v/uselesskey.svg)](https://crates.io/crates/uselesskey)
 [![docs.rs](https://docs.rs/uselesskey/badge.svg)](https://docs.rs/uselesskey)
-[![MSRV](https://img.shields.io/badge/MSRV-1.92-blue.svg)](https://doc.rust-lang.org/cargo/reference/manifest.html#the-rust-version-field)
+[![MSRV](https://img.shields.io/badge/MSRV-1.95-blue.svg)](https://doc.rust-lang.org/cargo/reference/manifest.html#the-rust-version-field)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 
 *Deterministic cryptographic test fixtures for Rust.*
@@ -641,7 +641,7 @@ If derivation logic changes, a new derivation version is introduced instead of m
 Breaking API changes bump the minor version until `1.0`, then the major version.
 
 **MSRV**
-The minimum supported Rust version is **1.92** (edition 2024).
+The minimum supported Rust version is **1.95** (edition 2024).
 
 ## License
 

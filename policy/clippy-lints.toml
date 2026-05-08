@@ -8,7 +8,7 @@
 # Owner: repo-policy
 # See: docs/CLIPPY_POLICY.md, docs/POLICY_ALLOWLISTS.md
 schema_version = "1.0"
-msrv = "1.92"
+msrv = "1.95"
 
 [policy]
 # uselesskey is a crypto/security workspace; no production runtime panics.
