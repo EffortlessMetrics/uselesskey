@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::env;
 use std::fs;
-use std::io::Read;
+use std::io::{ErrorKind, Read};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -94,6 +94,8 @@ enum Cmd {
     PublishCheck,
     /// Run PR-scoped tests based on git diff.
     Pr,
+    /// Run advisory ripr PR exposure evidence (requires external `ripr`).
+    RiprPr,
     /// Guard against multiple semver-major versions of pinned deps (e.g. rand_core).
     DepGuard,
     /// Run cucumber BDD features.
@@ -302,6 +304,7 @@ fn main() -> Result<()> {
         Cmd::ExamplesSmoke { run } => docs_sync::examples_smoke_cmd(run),
         Cmd::PublishCheck => publish_check(),
         Cmd::Pr => pr(),
+        Cmd::RiprPr => ripr_pr(),
         Cmd::DepGuard => dep_guard(),
         Cmd::Bdd => bdd(),
         Cmd::BddMatrix => bdd_matrix(),
@@ -1871,6 +1874,217 @@ fn resolve_base_ref() -> String {
     "origin/main".to_string()
 }
 
+const RIPR_PR_DIR: &str = "target/ripr/pr";
+
+const RIPR_CLAIM_BOUNDARY: &[&str] = &[
+    "ripr is static oracle-exposure evidence for changed behavior",
+    "ripr does not run mutants and does not replace mutation testing",
+    "advisory PR evidence should route targeted mutation, not suppress it",
+];
+
+fn ripr_pr() -> Result<()> {
+    let base_ref = resolve_base_ref();
+    let out_dir = PathBuf::from(RIPR_PR_DIR);
+    fs::create_dir_all(&out_dir)
+        .with_context(|| format!("failed to create {}", out_dir.display()))?;
+
+    let output = match Command::new("ripr")
+        .args(["check", "--base", &base_ref, "--format", "json"])
+        .output()
+    {
+        Ok(output) => output,
+        Err(err) if err.kind() == ErrorKind::NotFound => {
+            let reason = "ripr is not installed or not on PATH";
+            write_ripr_skipped_artifacts(&out_dir, &base_ref, reason)?;
+            println!("ripr-pr: skipped ({reason})");
+            println!(
+                "ripr-pr: wrote {}, {}, and {}",
+                out_dir.join("repo-exposure.json").display(),
+                out_dir.join("summary.md").display(),
+                out_dir.join("review.md").display()
+            );
+            return Ok(());
+        }
+        Err(err) => return Err(err).context("failed to spawn ripr"),
+    };
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        bail!(
+            "ripr check failed with status {}: {}",
+            output.status,
+            stderr
+        );
+    }
+
+    let raw = String::from_utf8(output.stdout).context("ripr emitted non-UTF-8 JSON")?;
+    let json: serde_json::Value =
+        serde_json::from_str(&raw).context("failed to parse ripr JSON output")?;
+
+    let json_path = out_dir.join("repo-exposure.json");
+    fs::write(&json_path, serde_json::to_string_pretty(&json)?)
+        .with_context(|| format!("failed to write {}", json_path.display()))?;
+
+    let markdown = render_ripr_markdown(&base_ref, &json);
+    let summary_path = out_dir.join("summary.md");
+    fs::write(&summary_path, &markdown)
+        .with_context(|| format!("failed to write {}", summary_path.display()))?;
+    let review_path = out_dir.join("review.md");
+    fs::write(&review_path, &markdown)
+        .with_context(|| format!("failed to write {}", review_path.display()))?;
+
+    let summary = json.get("summary").unwrap_or(&serde_json::Value::Null);
+    println!(
+        "ripr-pr: findings={} exposed={} weakly_exposed={}",
+        json_u64(summary, "findings"),
+        json_u64(summary, "exposed"),
+        json_u64(summary, "weakly_exposed")
+    );
+    println!(
+        "ripr-pr: wrote {}, {}, and {}",
+        json_path.display(),
+        summary_path.display(),
+        review_path.display()
+    );
+    Ok(())
+}
+
+fn write_ripr_skipped_artifacts(out_dir: &Path, base_ref: &str, reason: &str) -> Result<()> {
+    let json = serde_json::json!({
+        "schema_version": 1,
+        "tool": "ripr",
+        "lane": "pr",
+        "status": "skipped",
+        "base": base_ref,
+        "reason": reason,
+        "artifacts": [
+            "target/ripr/pr/repo-exposure.json",
+            "target/ripr/pr/summary.md",
+            "target/ripr/pr/review.md"
+        ],
+        "claim_boundary": RIPR_CLAIM_BOUNDARY,
+    });
+    write_json_pretty(&out_dir.join("repo-exposure.json"), &json)?;
+
+    let markdown = render_ripr_skipped_markdown(base_ref, reason);
+    fs::write(out_dir.join("summary.md"), &markdown)
+        .with_context(|| format!("failed to write {}", out_dir.join("summary.md").display()))?;
+    fs::write(out_dir.join("review.md"), &markdown)
+        .with_context(|| format!("failed to write {}", out_dir.join("review.md").display()))?;
+    Ok(())
+}
+
+fn render_ripr_skipped_markdown(base_ref: &str, reason: &str) -> String {
+    format!(
+        "\
+# RIPR PR Evidence
+
+Status: skipped
+
+Base: `{base_ref}`
+
+Reason: {reason}.
+
+Install `ripr` and rerun `cargo xtask ripr-pr` to generate advisory PR exposure evidence.
+
+## Claim Boundary
+
+{}
+",
+        render_claim_boundary()
+    )
+}
+
+fn render_ripr_markdown(base_ref: &str, json: &serde_json::Value) -> String {
+    let summary = json.get("summary").unwrap_or(&serde_json::Value::Null);
+    let findings = json
+        .get("findings")
+        .and_then(serde_json::Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+
+    let mut md = String::new();
+    md.push_str("# RIPR PR Evidence\n\n");
+    md.push_str("Status: advisory\n\n");
+    md.push_str(&format!("Base: `{base_ref}`\n\n"));
+    md.push_str("`ripr` estimates whether changed Rust behavior appears to reach a meaningful test oracle. It does not run mutants.\n\n");
+    md.push_str("## Summary\n\n");
+    md.push_str("| Metric | Count |\n");
+    md.push_str("| --- | ---: |\n");
+    for key in [
+        "changed_rust_files",
+        "probes",
+        "findings",
+        "exposed",
+        "weakly_exposed",
+        "reachable_unrevealed",
+        "no_static_path",
+        "infection_unknown",
+        "propagation_unknown",
+        "static_unknown",
+    ] {
+        md.push_str(&format!(
+            "| {} | {} |\n",
+            key.replace('_', " "),
+            json_u64(summary, key)
+        ));
+    }
+
+    md.push_str("\n## Findings\n\n");
+    if findings.is_empty() {
+        md.push_str("No findings reported.\n");
+    } else {
+        for finding in findings.iter().take(20) {
+            md.push_str(&format!("- {}\n", render_ripr_finding(finding)));
+        }
+        if findings.len() > 20 {
+            md.push_str(&format!(
+                "- ... {} additional findings omitted from summary.\n",
+                findings.len() - 20
+            ));
+        }
+    }
+
+    md.push_str("\n## Claim Boundary\n\n");
+    md.push_str(&render_claim_boundary());
+    md
+}
+
+fn render_ripr_finding(finding: &serde_json::Value) -> String {
+    let id = json_str(finding, "id").unwrap_or("unidentified");
+    let file = json_str(finding, "file").unwrap_or("unknown file");
+    let line = finding
+        .get("line")
+        .and_then(serde_json::Value::as_u64)
+        .map(|line| line.to_string())
+        .unwrap_or_else(|| "?".to_string());
+    let status = json_str(finding, "status")
+        .or_else(|| json_str(finding, "classification"))
+        .unwrap_or("unknown");
+    let message = json_str(finding, "message")
+        .or_else(|| json_str(finding, "summary"))
+        .unwrap_or("no message");
+    format!("`{id}` at `{file}:{line}`: {status} - {message}")
+}
+
+fn render_claim_boundary() -> String {
+    RIPR_CLAIM_BOUNDARY
+        .iter()
+        .map(|claim| format!("- {claim}\n"))
+        .collect::<String>()
+}
+
+fn json_u64(value: &serde_json::Value, key: &str) -> u64 {
+    value
+        .get(key)
+        .and_then(serde_json::Value::as_u64)
+        .unwrap_or(0)
+}
+
+fn json_str<'a>(value: &'a serde_json::Value, key: &str) -> Option<&'a str> {
+    value.get(key).and_then(serde_json::Value::as_str)
+}
+
 fn git_changed_files(base_ref: &str) -> Result<Vec<String>> {
     let mut attempts = Vec::new();
 
@@ -3293,6 +3507,58 @@ mod tests {
 
         restore_env("XTASK_BASE_REF", prev_xtask);
         restore_env("GITHUB_BASE_REF", prev_gh);
+    }
+
+    #[test]
+    fn ripr_markdown_summarizes_counts_and_claim_boundary() {
+        let json = serde_json::json!({
+            "summary": {
+                "changed_rust_files": 1,
+                "probes": 2,
+                "findings": 1,
+                "exposed": 1,
+                "weakly_exposed": 0,
+                "reachable_unrevealed": 0,
+                "no_static_path": 0,
+                "infection_unknown": 0,
+                "propagation_unknown": 0,
+                "static_unknown": 0
+            },
+            "findings": [{
+                "id": "finding-1",
+                "file": "crates/example/src/lib.rs",
+                "line": 42,
+                "status": "exposed",
+                "message": "assertion appears to reveal changed behavior"
+            }]
+        });
+
+        let rendered = render_ripr_markdown("origin/main", &json);
+
+        assert!(rendered.contains("Status: advisory"));
+        assert!(rendered.contains("| changed rust files | 1 |"));
+        assert!(rendered.contains("`finding-1` at `crates/example/src/lib.rs:42`"));
+        assert!(rendered.contains("ripr does not run mutants"));
+    }
+
+    #[test]
+    fn ripr_skipped_artifacts_record_reason() {
+        let dir = tempfile::tempdir().expect("tempdir");
+
+        write_ripr_skipped_artifacts(dir.path(), "origin/main", "ripr missing")
+            .expect("write skipped artifacts");
+
+        let json: serde_json::Value =
+            read_json_file(&dir.path().join("repo-exposure.json")).expect("read skip json");
+        assert_eq!(json["status"], "skipped");
+        assert_eq!(json["base"], "origin/main");
+        assert_eq!(json["reason"], "ripr missing");
+
+        let summary =
+            fs::read_to_string(dir.path().join("summary.md")).expect("read summary markdown");
+        assert!(summary.contains("Status: skipped"));
+        assert!(summary.contains("ripr missing"));
+        assert!(dir.path().join("review.md").exists());
     }
 
     #[test]
