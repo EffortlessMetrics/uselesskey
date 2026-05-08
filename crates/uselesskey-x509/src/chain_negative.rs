@@ -1,6 +1,6 @@
 //! Negative fixtures for X.509 certificate chains.
 
-use uselesskey_core_x509::ChainNegative;
+use crate::srp::chain_negative::ChainNegative;
 
 use crate::chain::X509Chain;
 
@@ -14,7 +14,7 @@ impl X509Chain {
     /// ```no_run
     /// # use uselesskey_core::{Factory, Seed};
     /// # use uselesskey_x509::{X509FactoryExt, ChainSpec};
-    /// use uselesskey_core_x509::ChainNegative;
+    /// use uselesskey_x509::ChainNegative;
     ///
     /// let fx = Factory::deterministic(Seed::from_env_value("test-seed").unwrap());
     /// let chain = fx.x509_chain("svc", ChainSpec::new("svc.example.com"));
@@ -144,9 +144,9 @@ impl X509Chain {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ChainSpec;
     use crate::testutil::fx;
     use uselesskey_core::Factory;
-    use uselesskey_core_x509::ChainSpec;
 
     #[test]
     fn test_hostname_mismatch() {

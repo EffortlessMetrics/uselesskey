@@ -102,16 +102,18 @@ set of focused microcrates that each own a single concern:
 
 **X.509**
 
-- `uselesskey-core-x509-spec` — X.509 spec models and stable encoders
-  for certificates and chains
-- `uselesskey-core-x509-derive` — deterministic X.509 helpers for time,
-  serial numbers, and identity
-- `uselesskey-core-x509` — X.509 policy helpers and negative-policy types
-- `uselesskey-core-x509-negative` — X.509 negative-fixture policy
-  helpers (expired, wrong-usage)
-- `uselesskey-core-x509-chain-negative` — chain-level negative policies
-  (hostname mismatch, unknown CA, expired/not-yet-valid leaf and
-  intermediate, intermediate CA/key-usage violations, revoked leaf)
+- `uselesskey-core-x509-spec` — compatibility shim for X.509 spec models
+  now owned by `uselesskey-x509`
+- `uselesskey-core-x509-derive` — compatibility shim for deterministic
+  X.509 helpers now owned by `uselesskey-x509`
+- `uselesskey-core-x509` — compatibility shim for X.509 policy helpers
+  and negative-policy types
+- `uselesskey-core-x509-negative` — compatibility shim for certificate
+  negative policies (expired, wrong-usage)
+- `uselesskey-core-x509-chain-negative` — compatibility shim for
+  chain-level negative policies (hostname mismatch, unknown CA,
+  expired/not-yet-valid leaf and intermediate, intermediate CA/key-usage
+  violations, revoked leaf)
 
 **Adapter bridge**
 

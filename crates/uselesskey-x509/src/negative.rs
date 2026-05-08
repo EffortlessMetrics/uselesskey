@@ -1,9 +1,9 @@
 //! X.509 negative-fixture helpers.
 //!
-//! Policy enums and spec mutations are defined in `uselesskey-core-x509`
-//! and re-exported by this crate.
+//! Policy enums and spec mutations are owned by this crate under
+//! `uselesskey_x509::srp::negative` and re-exported from the public root.
 
-pub use uselesskey_core_x509::X509Negative;
+pub use crate::srp::negative::X509Negative;
 
 /// Corrupt a PEM-encoded certificate.
 ///
@@ -77,7 +77,7 @@ pub fn corrupt_cert_der_deterministic(der: &[u8], variant: &str) -> Vec<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use uselesskey_core_x509::{KeyUsage, NotBeforeOffset, X509Spec};
+    use crate::{KeyUsage, NotBeforeOffset, X509Spec};
 
     #[test]
     fn test_expired_exact_values() {

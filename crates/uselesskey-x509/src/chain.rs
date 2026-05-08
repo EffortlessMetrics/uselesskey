@@ -16,10 +16,10 @@ use time::Duration as TimeDuration;
 use time::OffsetDateTime;
 use uselesskey_core::sink::TempArtifact;
 use uselesskey_core::{Error, Factory};
-use uselesskey_core_x509::{
-    ChainSpec, KeyUsage, NotBeforeOffset, deterministic_base_time_from_parts,
-};
 use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+
+use crate::srp::derive::deterministic_base_time_from_parts;
+use crate::srp::spec::{ChainSpec, KeyUsage, NotBeforeOffset};
 
 /// Cache domain for X.509 certificate chain fixtures.
 ///
@@ -864,7 +864,7 @@ mod tests {
         let factory = Factory::deterministic(seed);
 
         // Generate a self-signed cert first
-        let self_signed_spec = uselesskey_core_x509::X509Spec::self_signed("test.example.com");
+        let self_signed_spec = crate::X509Spec::self_signed("test.example.com");
         let self_signed = factory.x509_self_signed("test", self_signed_spec.clone());
         let self_signed_pem = self_signed.cert_pem().to_string();
 

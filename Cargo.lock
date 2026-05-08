@@ -4984,10 +4984,8 @@ dependencies = [
  "rstest",
  "serde",
  "uselesskey-core-seed",
- "uselesskey-core-x509-derive",
- "uselesskey-core-x509-negative",
- "uselesskey-core-x509-spec",
  "uselesskey-test-support",
+ "uselesskey-x509",
 ]
 
 [[package]]
@@ -4999,6 +4997,7 @@ dependencies = [
  "rstest",
  "serde",
  "uselesskey-core-x509-spec",
+ "uselesskey-x509",
 ]
 
 [[package]]
@@ -5007,13 +5006,12 @@ version = "0.6.0"
 dependencies = [
  "insta",
  "proptest",
- "rand_chacha 0.10.0",
- "rand_core 0.10.1",
  "rcgen",
  "serde",
  "time",
  "uselesskey-core-hash",
  "uselesskey-core-seed",
+ "uselesskey-x509",
 ]
 
 [[package]]
@@ -5026,6 +5024,7 @@ dependencies = [
  "serde",
  "uselesskey-core-x509-chain-negative",
  "uselesskey-core-x509-spec",
+ "uselesskey-x509",
 ]
 
 [[package]]
@@ -5036,6 +5035,7 @@ dependencies = [
  "proptest",
  "rstest",
  "serde",
+ "uselesskey-x509",
 ]
 
 [[package]]
@@ -5428,7 +5428,9 @@ dependencies = [
  "base64",
  "insta",
  "proptest",
+ "rand_chacha 0.10.0",
  "rand_chacha 0.3.1",
+ "rand_core 0.10.1",
  "rand_core 0.6.4",
  "rcgen",
  "rsa 0.10.0-rc.17",
@@ -5437,7 +5439,6 @@ dependencies = [
  "serde",
  "time",
  "uselesskey-core",
- "uselesskey-core-x509",
  "uselesskey-jwk",
  "uselesskey-rsa",
  "x509-parser",

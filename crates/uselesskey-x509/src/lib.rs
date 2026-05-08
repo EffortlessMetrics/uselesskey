@@ -72,11 +72,13 @@ mod cert;
 mod chain;
 mod chain_negative;
 pub mod negative;
+#[doc(hidden)]
+pub mod srp;
 #[cfg(test)]
 mod testutil;
 
 pub use cert::{DOMAIN_X509_CERT, X509Cert, X509FactoryExt};
 pub use chain::{DOMAIN_X509_CHAIN, X509Chain};
-pub use uselesskey_core_x509::{
-    ChainNegative, ChainSpec, KeyUsage, NotBeforeOffset, X509Negative, X509Spec,
-};
+pub use srp::chain_negative::ChainNegative;
+pub use srp::negative::X509Negative;
+pub use srp::spec::{ChainSpec, KeyUsage, NotBeforeOffset, X509Spec};

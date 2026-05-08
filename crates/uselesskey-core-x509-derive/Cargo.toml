@@ -15,18 +15,16 @@ documentation = "https://docs.rs/uselesskey-core-x509-derive"
 authors.workspace = true
 
 [dependencies]
-uselesskey-core-hash = { workspace = true }
-rand_chacha10.workspace = true
-rand_core10.workspace = true
-rcgen = "0.14.7"
-time = "0.3"
-uselesskey-core-seed.workspace = true
+uselesskey-x509 = { path = "../uselesskey-x509", version = "0.6.0" }
 
 [dev-dependencies]
 insta.workspace = true
 proptest.workspace = true
 serde = { workspace = true, features = ["derive"] }
+rcgen = "0.14.7"
+time = "0.3"
 uselesskey-core-hash = { workspace = true }
+uselesskey-core-seed.workspace = true
 
 [package.metadata.docs.rs]
 all-features = true
