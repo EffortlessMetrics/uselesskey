@@ -42,7 +42,6 @@ insta.workspace = true
 proptest.workspace = true
 rstest.workspace = true
 serde.workspace = true
-uselesskey-core-kid.workspace = true
 
 
 [lints]

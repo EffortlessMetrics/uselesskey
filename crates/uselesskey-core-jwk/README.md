@@ -1,9 +1,10 @@
 # uselesskey-core-jwk
 
-Compatibility façade for JWK/JWKS model types in `uselesskey-core-jwk-shape`.
+Deprecated compatibility shim for JWK/JWKS model types now owned by
+`uselesskey-jwk`.
 
 ## Purpose
 
-- Re-export typed JWK/JWKS model types (`PublicJwk`, `PrivateJwk`, `AnyJwk`, `Jwks`).
-- Preserve the existing crate-level API path used by downstream fixture crates.
-- Keep the shape definitions in `uselesskey-core-jwk-shape` for focused reuse.
+- Preserve the previous crate-level API path for published-internal consumers.
+- Re-export typed JWK/JWKS model types and `JwksBuilder` from `uselesskey-jwk`.
+- Prefer `uselesskey-jwk` for new code.

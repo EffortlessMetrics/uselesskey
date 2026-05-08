@@ -1,10 +1,11 @@
 # uselesskey-core-jwk-shape
 
-Core typed JWK and JWKS model definitions for `uselesskey` fixture crates.
+Deprecated compatibility shim for typed JWK and JWKS model definitions now owned
+by `uselesskey-jwk`.
 
 ## Purpose
 
-- Provide stable JWK shape structures (`PublicJwk`, `PrivateJwk`, `AnyJwk`, and `Jwks`).
-- Provide scanner-safe negative JWK/JWKS shapes for downstream parser tests.
-- Keep shape modeling separate from ordering/building behavior.
-- Re-exported through `uselesskey-core-jwk` for compatibility.
+- Preserve the previous crate-level API path for published-internal consumers.
+- Re-export stable JWK shape structures and scanner-safe negative shapes from
+  `uselesskey-jwk`.
+- Prefer `uselesskey-jwk` for new code.

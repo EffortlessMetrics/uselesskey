@@ -1,10 +1,10 @@
 #![forbid(unsafe_code)]
 
-//! Compatibility facade for typed JWK/JWKS helpers.
+//! Typed JWK/JWKS helpers for uselesskey fixture crates.
 //!
-//! The canonical implementation lives in `uselesskey-core-jwk`.
-//! This crate preserves the stable public crate name used by fixture crates
-//! and external consumers.
+//! This crate is the canonical public owner for JWK and JWKS shape types,
+//! deterministic JWKS ordering, key identifiers, and shape-realistic negative
+//! JWK fixtures.
 //!
 //! # Examples
 //!
@@ -43,5 +43,13 @@
 //! assert_eq!(jwk.kid(), "key-1");
 //! ```
 
-pub use uselesskey_core_jwk::*;
-pub use uselesskey_core_jwk_builder::JwksBuilder;
+#[doc(hidden)]
+pub mod srp;
+
+#[cfg(feature = "json")]
+pub use srp::builder::JwksBuilder;
+#[cfg(feature = "json")]
+pub use srp::shape::{
+    AnyJwk, EcPrivateJwk, EcPublicJwk, Jwks, NegativeJwk, NegativeJwks, OctJwk, OkpPrivateJwk,
+    OkpPublicJwk, PrivateJwk, PublicJwk, RsaPrivateJwk, RsaPublicJwk,
+};

@@ -10,7 +10,7 @@ mod jwk_private_tests {
     }
 
     fn expected_kid(spki_der: &[u8]) -> String {
-        uselesskey_core_kid::kid_from_bytes(spki_der)
+        uselesskey_jwk::srp::kid::kid_from_bytes(spki_der)
     }
 
     #[test]
