@@ -9,6 +9,11 @@ Token-shaped fixtures for tests, built on `uselesskey-core`.
 Generates deterministic or random token strings so authorization code paths can
 be tested without committing secret-looking blobs.
 
+Token specification, base62, shape, and negative-token internals are owned by
+this crate under `uselesskey_token::srp::*`; users should normally import
+`TokenSpec`, `NegativeToken`, `TokenFactoryExt`, and `TokenFixture` from the
+crate root or from the `uselesskey` facade.
+
 Part of the [`uselesskey`](https://crates.io/crates/uselesskey) workspace. Use
 the facade crate for the simplest experience, or depend on this crate directly
 for minimal compile time.

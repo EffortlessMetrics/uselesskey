@@ -215,7 +215,7 @@ fn dependents(crate_name: &str) -> &'static [&'static str] {
             "uselesskey-ed25519",
         ],
         "uselesskey-core-keypair" => &[],
-        "uselesskey-core-base62" => &["uselesskey-core-token-shape"],
+        "uselesskey-core-base62" => &[],
         "uselesskey-core-factory" => &["uselesskey-core"],
         "uselesskey-core-hmac-spec" => &["uselesskey-hmac"],
         "uselesskey-core-negative-der" => &["uselesskey-core-negative"],
@@ -234,8 +234,8 @@ fn dependents(crate_name: &str) -> &'static [&'static str] {
         "uselesskey-core-cache" => &["uselesskey-core"],
         "uselesskey-core-negative" => &["uselesskey-core"],
         "uselesskey-core-sink" => &["uselesskey-core"],
-        "uselesskey-core-token" => &["uselesskey-token"],
-        "uselesskey-core-token-shape" => &["uselesskey-core-token"],
+        "uselesskey-core-token" => &[],
+        "uselesskey-core-token-shape" => &[],
         "uselesskey-core-jwk-shape" => &[],
         "uselesskey-core-jwk" => &[],
         "uselesskey-core-x509-spec" => &["uselesskey-core-x509"],
@@ -296,7 +296,13 @@ fn dependents(crate_name: &str) -> &'static [&'static str] {
             "uselesskey-jsonwebtoken",
             "uselesskey-rustcrypto",
         ],
-        "uselesskey-token" => &["uselesskey"],
+        "uselesskey-token" => &[
+            "uselesskey-token-spec",
+            "uselesskey-core-base62",
+            "uselesskey-core-token-shape",
+            "uselesskey-core-token",
+            "uselesskey",
+        ],
         "uselesskey-pgp" => &["uselesskey"],
         "uselesskey" => &[],
         "uselesskey-jsonwebtoken" => &[],
@@ -310,7 +316,7 @@ fn dependents(crate_name: &str) -> &'static [&'static str] {
         "uselesskey-feature-grid" => &["uselesskey-test-grid"],
         "uselesskey-interop-tests" => &[],
         "uselesskey-test-grid" => &["uselesskey-bdd"],
-        "uselesskey-token-spec" => &["uselesskey-core-token-shape", "uselesskey-token"],
+        "uselesskey-token-spec" => &[],
         _ => &[],
     }
 }
@@ -453,24 +459,24 @@ mod tests {
     }
 
     #[test]
-    fn core_token_change_expands_to_token_and_facade() {
+    fn core_token_shim_change_stays_on_shim() {
         let paths = vec!["crates/uselesskey-core-token/src/lib.rs".to_string()];
         let plan = build_plan(&paths);
         let impacted = plan.impacted_crates;
         assert!(impacted.contains("uselesskey-core-token"));
-        assert!(impacted.contains("uselesskey-token"));
-        assert!(impacted.contains("uselesskey"));
+        assert!(!impacted.contains("uselesskey-token"));
+        assert!(!impacted.contains("uselesskey"));
     }
 
     #[test]
-    fn core_token_shape_change_expands_to_token_and_token_facade() {
+    fn core_token_shape_shim_change_stays_on_shim() {
         let paths = vec!["crates/uselesskey-core-token-shape/src/lib.rs".to_string()];
         let plan = build_plan(&paths);
         let impacted = plan.impacted_crates;
         assert!(impacted.contains("uselesskey-core-token-shape"));
-        assert!(impacted.contains("uselesskey-core-token"));
-        assert!(impacted.contains("uselesskey-token"));
-        assert!(impacted.contains("uselesskey"));
+        assert!(!impacted.contains("uselesskey-core-token"));
+        assert!(!impacted.contains("uselesskey-token"));
+        assert!(!impacted.contains("uselesskey"));
     }
 
     #[test]
@@ -707,6 +713,10 @@ mod tests {
         let plan = build_plan(&paths);
         let impacted = &plan.impacted_crates;
         assert!(impacted.contains("uselesskey-token"));
+        assert!(impacted.contains("uselesskey-token-spec"));
+        assert!(impacted.contains("uselesskey-core-base62"));
+        assert!(impacted.contains("uselesskey-core-token-shape"));
+        assert!(impacted.contains("uselesskey-core-token"));
         assert!(impacted.contains("uselesskey"));
     }
 
@@ -851,15 +861,15 @@ mod tests {
     }
 
     #[test]
-    fn core_base62_change_expands_to_token_shape() {
+    fn core_base62_shim_change_stays_on_shim() {
         let paths = vec!["crates/uselesskey-core-base62/src/lib.rs".to_string()];
         let plan = build_plan(&paths);
         let impacted = &plan.impacted_crates;
         assert!(impacted.contains("uselesskey-core-base62"));
-        assert!(impacted.contains("uselesskey-core-token-shape"));
-        assert!(impacted.contains("uselesskey-core-token"));
-        assert!(impacted.contains("uselesskey-token"));
-        assert!(impacted.contains("uselesskey"));
+        assert!(!impacted.contains("uselesskey-core-token-shape"));
+        assert!(!impacted.contains("uselesskey-core-token"));
+        assert!(!impacted.contains("uselesskey-token"));
+        assert!(!impacted.contains("uselesskey"));
     }
 
     #[test]
@@ -922,15 +932,15 @@ mod tests {
     }
 
     #[test]
-    fn token_spec_change_expands_to_token_shape_and_token() {
+    fn token_spec_shim_change_stays_on_shim() {
         let paths = vec!["crates/uselesskey-token-spec/src/lib.rs".to_string()];
         let plan = build_plan(&paths);
         let impacted = &plan.impacted_crates;
         assert!(impacted.contains("uselesskey-token-spec"));
-        assert!(impacted.contains("uselesskey-core-token-shape"));
-        assert!(impacted.contains("uselesskey-core-token"));
-        assert!(impacted.contains("uselesskey-token"));
-        assert!(impacted.contains("uselesskey"));
+        assert!(!impacted.contains("uselesskey-core-token-shape"));
+        assert!(!impacted.contains("uselesskey-core-token"));
+        assert!(!impacted.contains("uselesskey-token"));
+        assert!(!impacted.contains("uselesskey"));
     }
 
     #[test]

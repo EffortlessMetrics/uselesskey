@@ -15,18 +15,15 @@ documentation = "https://docs.rs/uselesskey-core-token-shape"
 authors.workspace = true
 
 [dependencies]
-base64.workspace = true
-rand_chacha10.workspace = true
-rand_core10.workspace = true
-uselesskey-core-base62.workspace = true
-uselesskey-core-seed.workspace = true
-serde_json.workspace = true
-uselesskey-token-spec.workspace = true
+uselesskey-token.workspace = true
 
 [dev-dependencies]
+base64.workspace = true
 insta.workspace = true
 proptest.workspace = true
 serde.workspace = true
+serde_json.workspace = true
+uselesskey-core-seed.workspace = true
 
 [package.metadata.docs.rs]
 all-features = true

@@ -206,7 +206,7 @@
       "semver_expectation": "Internal building blocks; APIs may change between minor releases.",
       "msrv_policy": "Tracks workspace MSRV (Rust 1.92).",
       "intended_audience": "repo-internal",
-      "deprecation_note": "Prefer depending on `uselesskey` or key-type facade crates unless you are extending the workspace."
+      "deprecation_note": "Compatibility shim; base62 implementation ownership moved into `uselesskey-token`."
     },
     {
       "name": "uselesskey-core-cache",
@@ -396,7 +396,7 @@
       "semver_expectation": "Internal building blocks; APIs may change between minor releases.",
       "msrv_policy": "Tracks workspace MSRV (Rust 1.92).",
       "intended_audience": "repo-internal",
-      "deprecation_note": "Prefer depending on `uselesskey` or key-type facade crates unless you are extending the workspace."
+      "deprecation_note": "Compatibility shim; supported token fixture APIs now live under `uselesskey-token`."
     },
     {
       "name": "uselesskey-core-token-shape",
@@ -406,7 +406,7 @@
       "semver_expectation": "Internal building blocks; APIs may change between minor releases.",
       "msrv_policy": "Tracks workspace MSRV (Rust 1.92).",
       "intended_audience": "repo-internal",
-      "deprecation_note": "Prefer depending on `uselesskey` or key-type facade crates unless you are extending the workspace."
+      "deprecation_note": "Compatibility shim; token-shape implementation ownership moved into `uselesskey-token`."
     },
     {
       "name": "uselesskey-core-x509",
@@ -664,7 +664,7 @@
       "semver_expectation": "Internal building blocks; APIs may change between minor releases.",
       "msrv_policy": "Tracks workspace MSRV (Rust 1.92).",
       "intended_audience": "repo-internal",
-      "deprecation_note": "Prefer depending on `uselesskey` or key-type facade crates unless you are extending the workspace."
+      "deprecation_note": "Compatibility shim; canonical `TokenSpec` now lives under `uselesskey-token`."
     },
     {
       "name": "uselesskey-tonic",
