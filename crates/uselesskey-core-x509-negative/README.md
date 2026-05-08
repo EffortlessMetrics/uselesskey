@@ -1,18 +1,9 @@
 # uselesskey-core-x509-negative
 
-Policy-only X.509 certificate negative-fixture helpers.
+Published-internal compatibility shim for X.509 certificate negative-policy
+helpers.
 
-## Purpose
-
-- Keep certificate-level X.509 negative fixture policies in one crate (`X509Negative`).
-- Provide deterministic, stable helpers for negative-variant mutation and metadata.
-- Re-export `ChainNegative` from `uselesskey-core-x509-chain-negative` for compatibility.
-- Stay intentionally free of encoding/parsing/serialization logic.
-
-## Responsibilities
-
-- `X509Negative`:
-  - expired cert fixtures
-  - not-yet-valid cert fixtures
-  - wrong key usage policy variants
-  - CA-policy mismatch variants
+Prefer `uselesskey-x509`; `X509Negative` is now owned by
+`uselesskey_x509::srp::negative` and re-exported from the `uselesskey-x509`
+public root. This crate is retained for migration only and should not be used as
+a new direct dependency.

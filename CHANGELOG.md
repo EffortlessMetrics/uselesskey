@@ -42,6 +42,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   generic negative-fixture internals under `uselesskey-core::srp::*`, retaining
   the former `uselesskey-core-*` implementation crates as published-internal
   compatibility shims.
+- Moved X.509 spec, deterministic derive, and negative-policy internals under
+  `uselesskey-x509::srp::*`, retaining the former `uselesskey-core-x509*`
+  crates as published-internal compatibility shims.
 
 ## [0.6.0] - 2026-04-08
 

@@ -1,17 +1,8 @@
 # uselesskey-core-x509-chain-negative
 
-Policy-only X.509 chain negative-fixture helpers.
+Published-internal compatibility shim for X.509 chain negative-policy helpers.
 
-## Purpose
-
-- Keep chain-level X.509 negative fixture policies in a focused crate (`ChainNegative`).
-- Provide deterministic, stable helpers for negative-variant mutation and metadata.
-- Stay intentionally free of encoding/parsing/serialization logic.
-
-## Responsibilities
-
-- `ChainNegative`:
-  - chain-level hostname mismatch
-  - unknown root CA identity
-  - expired leaf/intermediate cert variants
-  - revoked leaf variant metadata hooks
+Prefer `uselesskey-x509`; `ChainNegative` is now owned by
+`uselesskey_x509::srp::chain_negative` and re-exported from the
+`uselesskey-x509` public root. This crate is retained for migration only and
+should not be used as a new direct dependency.
