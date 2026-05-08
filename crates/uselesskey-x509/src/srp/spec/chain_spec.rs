@@ -461,6 +461,38 @@ mod tests {
     }
 
     #[test]
+    fn test_stable_bytes_v3_encodes_not_before_offsets() {
+        let base = ChainSpec::new("test.example.com").with_intermediate_is_ca(false);
+        let base_bytes = base.stable_bytes();
+
+        let leaf_future = base
+            .clone()
+            .with_leaf_not_before(NotBeforeOffset::DaysFromNow(7));
+        assert_ne!(
+            leaf_future.stable_bytes(),
+            base_bytes,
+            "v3 leaf not_before offset must affect stable_bytes"
+        );
+
+        let leaf_past = base
+            .clone()
+            .with_leaf_not_before(NotBeforeOffset::DaysAgo(7));
+        assert_ne!(
+            leaf_future.stable_bytes(),
+            leaf_past.stable_bytes(),
+            "v3 leaf days-from-now and days-ago offsets must differ"
+        );
+
+        let intermediate_future =
+            base.with_intermediate_not_before(NotBeforeOffset::DaysFromNow(7));
+        assert_ne!(
+            intermediate_future.stable_bytes(),
+            base_bytes,
+            "v3 intermediate not_before offset must affect stable_bytes"
+        );
+    }
+
+    #[test]
     fn test_stable_bytes_default_uses_v2_compat_prefix() {
         let spec = ChainSpec::new("compat.example.com");
         assert_eq!(spec.stable_bytes()[0], 2);
