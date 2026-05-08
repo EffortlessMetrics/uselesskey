@@ -738,6 +738,8 @@ const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-core-id",
     "uselesskey-core-cache",
     "uselesskey-core-factory",
+    "uselesskey-jwk",
+    // JWK compatibility shims
     "uselesskey-core-kid",
     "uselesskey-token-spec",
     // Negative fixture crates
@@ -763,7 +765,6 @@ const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-core-keypair-material",
     "uselesskey-core-keypair",
     // Mid-level crates
-    "uselesskey-jwk",
     "uselesskey-entropy",
     "uselesskey-rsa",
     "uselesskey-ecdsa",
@@ -806,6 +807,7 @@ const MUTANT_CRATES: &[&str] = &[
     "uselesskey-core-id",
     "uselesskey-core-cache",
     "uselesskey-core-factory",
+    "uselesskey-jwk",
     "uselesskey-core-kid",
     "uselesskey-core-negative-der",
     "uselesskey-core-negative-pem",
@@ -825,7 +827,6 @@ const MUTANT_CRATES: &[&str] = &[
     "uselesskey-core",
     "uselesskey-core-keypair-material",
     "uselesskey-core-keypair",
-    "uselesskey-jwk",
     "uselesskey-hmac",
     "uselesskey-token",
     "uselesskey-token-spec",

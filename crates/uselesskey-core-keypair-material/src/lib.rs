@@ -13,7 +13,7 @@ use uselesskey_core::negative::{
     CorruptPem, corrupt_der_deterministic, corrupt_pem, corrupt_pem_deterministic, truncate_der,
 };
 use uselesskey_core::sink::TempArtifact;
-use uselesskey_core_kid::kid_from_bytes;
+use uselesskey_jwk::srp::kid::kid_from_bytes;
 
 /// Common PKCS#8/SPKI key material shared by multiple fixture crates.
 #[derive(Clone)]

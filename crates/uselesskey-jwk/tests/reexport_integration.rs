@@ -1,8 +1,7 @@
-use uselesskey_core_jwk as core;
-use uselesskey_jwk as facade;
+use uselesskey_jwk as jwk;
 
-fn sample_rsa_public(kid: &str) -> core::PublicJwk {
-    core::PublicJwk::Rsa(core::RsaPublicJwk {
+fn sample_rsa_public(kid: &str) -> jwk::PublicJwk {
+    jwk::PublicJwk::Rsa(jwk::RsaPublicJwk {
         kty: "RSA",
         use_: "sig",
         alg: "RS256",
@@ -13,19 +12,19 @@ fn sample_rsa_public(kid: &str) -> core::PublicJwk {
 }
 
 #[test]
-fn facade_and_core_public_types_are_compatible() {
-    fn accepts_facade_type(_: facade::PublicJwk) {}
+fn public_root_exposes_jwk_shapes() {
+    fn accepts_public_type(_: jwk::PublicJwk) {}
 
-    let core_jwk = sample_rsa_public("kid-core");
-    accepts_facade_type(core_jwk.clone());
+    let public_jwk = sample_rsa_public("kid-public");
+    accepts_public_type(public_jwk.clone());
 
-    let any: facade::AnyJwk = facade::AnyJwk::from(core_jwk);
-    assert_eq!(any.kid(), "kid-core");
+    let any: jwk::AnyJwk = jwk::AnyJwk::from(public_jwk);
+    assert_eq!(any.kid(), "kid-public");
 }
 
 #[test]
-fn facade_builder_accepts_core_values() {
-    let jwks = facade::JwksBuilder::new()
+fn public_builder_accepts_public_values() {
+    let jwks = jwk::JwksBuilder::new()
         .add_public(sample_rsa_public("kid-b"))
         .add_public(sample_rsa_public("kid-a"))
         .build();

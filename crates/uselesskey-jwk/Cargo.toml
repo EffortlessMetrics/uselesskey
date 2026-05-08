@@ -5,7 +5,7 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "Compatibility facade re-exporting typed JWK/JWKS models and builders."
+description = "Typed JWK/JWKS models, builders, ordering, and negative fixtures."
 categories.workspace = true
 keywords = ["jwk", "jwks", "jwt", "fixtures", "testing"]
 readme = "README.md"
@@ -15,13 +15,18 @@ documentation = "https://docs.rs/uselesskey-jwk"
 authors.workspace = true
 
 [dependencies]
-uselesskey-core-jwk = { path = "../uselesskey-core-jwk", version = "0.6.0" }
-uselesskey-core-jwk-builder = { path = "../uselesskey-core-jwk-builder", version = "0.6.0" }
+base64.workspace = true
+blake3.workspace = true
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+
+[features]
+default = ["json"]
+json = ["dep:serde", "dep:serde_json"]
 
 [dev-dependencies]
 insta.workspace = true
-serde.workspace = true
-serde_json.workspace = true
+proptest.workspace = true
 
 [package.metadata.docs.rs]
 all-features = true

@@ -1,9 +1,11 @@
 # uselesskey-jwk
 
-Compatibility facade for typed JWK/JWKS models used by `uselesskey` fixture crates.
+Typed JWK/JWKS models, deterministic JWKS builders, ordering helpers, and
+scanner-safe negative JWK fixtures used by `uselesskey` fixture crates.
 
-The canonical implementation lives in `uselesskey-core-jwk`; this crate re-exports
-that API to preserve the stable `uselesskey-jwk` crate name.
+This is the canonical public JWK/JWKS crate. The former `uselesskey-core-jwk*`
+implementation crates are compatibility shims; new downstream code should import
+JWK types and `JwksBuilder` from `uselesskey-jwk`.
 
 ## Example
 

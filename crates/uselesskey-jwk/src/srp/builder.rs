@@ -1,0 +1,190 @@
+#![forbid(unsafe_code)]
+
+//! JWKS composition with deterministic ordering semantics.
+//!
+//! This crate centralizes JWKS assembly behavior that is shared across JWK-producing
+//! key fixtures. Entries are sorted by `kid` and preserve insertion order for duplicate
+//! `kid` values.
+
+use crate::srp::ordering::{HasKid, KidSorted};
+use crate::srp::shape::{AnyJwk, Jwks, PrivateJwk, PublicJwk};
+
+/// Incrementally assembles a [`Jwks`] set with deterministic `kid`-based ordering.
+///
+/// Keys are sorted lexicographically by `kid`; duplicate `kid` values
+/// preserve insertion order.
+#[derive(Clone, Default)]
+pub struct JwksBuilder {
+    entries: KidSorted<OrderedJwk>,
+}
+
+#[derive(Clone)]
+struct OrderedJwk(AnyJwk);
+
+impl HasKid for OrderedJwk {
+    fn kid(&self) -> &str {
+        self.0.kid()
+    }
+}
+
+impl JwksBuilder {
+    /// Create an empty builder.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Append a public JWK and return `self` for chaining.
+    pub fn add_public(mut self, jwk: PublicJwk) -> Self {
+        self.push_public(jwk);
+        self
+    }
+
+    /// Append a private JWK and return `self` for chaining.
+    pub fn add_private(mut self, jwk: PrivateJwk) -> Self {
+        self.push_private(jwk);
+        self
+    }
+
+    /// Append any JWK variant and return `self` for chaining.
+    pub fn add_any(mut self, jwk: AnyJwk) -> Self {
+        self.push_any(jwk);
+        self
+    }
+
+    /// Append a public JWK by mutable reference.
+    pub fn push_public(&mut self, jwk: PublicJwk) -> &mut Self {
+        self.push_any(AnyJwk::from(jwk))
+    }
+
+    /// Append a private JWK by mutable reference.
+    pub fn push_private(&mut self, jwk: PrivateJwk) -> &mut Self {
+        self.push_any(AnyJwk::from(jwk))
+    }
+
+    /// Append any JWK variant by mutable reference.
+    pub fn push_any(&mut self, jwk: AnyJwk) -> &mut Self {
+        self.entries.push(OrderedJwk(jwk));
+        self
+    }
+
+    /// Consume the builder and return the sorted [`Jwks`] set.
+    pub fn build(self) -> Jwks {
+        Jwks {
+            keys: self.entries.build().into_iter().map(|jwk| jwk.0).collect(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sample_rsa_public(kid: &str, n: &str) -> PublicJwk {
+        PublicJwk::Rsa(crate::srp::shape::RsaPublicJwk {
+            kty: "RSA",
+            use_: "sig",
+            alg: "RS256",
+            kid: kid.to_string(),
+            n: n.to_string(),
+            e: "AQAB".to_string(),
+        })
+    }
+
+    fn sample_oct_private(kid: &str, k: &str) -> PrivateJwk {
+        PrivateJwk::Oct(crate::srp::shape::OctJwk {
+            kty: "oct",
+            use_: "sig",
+            alg: "HS256",
+            kid: kid.to_string(),
+            k: k.to_string(),
+        })
+    }
+
+    #[test]
+    fn jwks_builder_orders_by_kid() {
+        let jwk1 = PublicJwk::Rsa(crate::srp::shape::RsaPublicJwk {
+            kty: "RSA",
+            use_: "sig",
+            alg: "RS256",
+            kid: "b".to_string(),
+            n: "n".to_string(),
+            e: "e".to_string(),
+        });
+        let jwk2 = PublicJwk::Ec(crate::srp::shape::EcPublicJwk {
+            kty: "EC",
+            use_: "sig",
+            alg: "ES256",
+            crv: "P-256",
+            kid: "a".to_string(),
+            x: "x".to_string(),
+            y: "y".to_string(),
+        });
+
+        let jwks = JwksBuilder::new().add_public(jwk1).add_public(jwk2).build();
+
+        assert_eq!(jwks.keys.len(), 2);
+        assert_eq!(jwks.keys[0].kid(), "a");
+        assert_eq!(jwks.keys[1].kid(), "b");
+    }
+
+    #[test]
+    fn jwks_builder_stable_for_same_kid() {
+        let jwk1 = PublicJwk::Rsa(crate::srp::shape::RsaPublicJwk {
+            kty: "RSA",
+            use_: "sig",
+            alg: "RS256",
+            kid: "same".to_string(),
+            n: "n1".to_string(),
+            e: "e1".to_string(),
+        });
+        let jwk2 = PublicJwk::Rsa(crate::srp::shape::RsaPublicJwk {
+            kty: "RSA",
+            use_: "sig",
+            alg: "RS256",
+            kid: "same".to_string(),
+            n: "n2".to_string(),
+            e: "e2".to_string(),
+        });
+
+        let jwks = JwksBuilder::new().add_public(jwk1).add_public(jwk2).build();
+
+        assert_eq!(jwks.keys[0].kid(), "same");
+        assert_eq!(jwks.keys[1].kid(), "same");
+        let first = jwks.keys[0].to_value();
+        let second = jwks.keys[1].to_value();
+        assert_eq!(first["n"], "n1");
+        assert_eq!(second["n"], "n2");
+    }
+
+    #[test]
+    fn jwks_builder_push_methods_and_display() {
+        let jwk_pub = sample_rsa_public("kid-b", "nb");
+        let jwk_priv = sample_oct_private("kid-a", "ka");
+
+        let mut builder = JwksBuilder::new();
+        builder.push_public(jwk_pub.clone());
+        builder.push_private(jwk_priv.clone());
+        builder.push_any(AnyJwk::from(jwk_pub.clone()));
+
+        let jwks = builder.build();
+        let json = jwks.to_string();
+        let v: serde_json::Value = serde_json::from_str(&json).expect("valid JSON");
+
+        let keys = v["keys"].as_array().expect("keys array");
+        assert_eq!(keys.len(), 3);
+        assert_eq!(jwks.keys.len(), 3);
+    }
+
+    #[test]
+    fn jwks_builder_add_methods_work() {
+        let jwk_priv = sample_oct_private("kid-a", "ka");
+        let jwk_any = AnyJwk::from(sample_rsa_public("kid-b", "nb"));
+
+        let jwks = JwksBuilder::new()
+            .add_private(jwk_priv)
+            .add_any(jwk_any)
+            .build();
+
+        assert_eq!(jwks.keys.len(), 2);
+    }
+}

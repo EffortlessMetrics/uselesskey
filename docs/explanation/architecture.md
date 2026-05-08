@@ -35,8 +35,8 @@ Each adds a `*FactoryExt` trait to `Factory`:
 
 ### Shared spec/model crates
 
-- `crates/uselesskey-jwk` — compatibility facade re-exporting
-  `uselesskey-core-jwk`
+- `crates/uselesskey-jwk` — typed JWK/JWKS models, builders, ordering,
+  and negative fixtures
 - `crates/uselesskey-token-spec` — stable token specification enum
   (ApiKey, Bearer, OAuthAccessToken)
 
@@ -53,8 +53,8 @@ set of focused microcrates that each own a single concern:
   entropy
 - `uselesskey-core-hash` — length-prefixed BLAKE3 hashing for
   deterministic derivation
-- `uselesskey-core-kid` — deterministic key-ID (kid) generation via
-  base64url BLAKE3
+- `uselesskey-core-kid` — compatibility shim for deterministic key-ID
+  (kid) generation now owned by `uselesskey-jwk`
 - `uselesskey-core-base62` — bias-free base62 generation primitives
 
 **Factory & caching**
@@ -75,12 +75,12 @@ set of focused microcrates that each own a single concern:
 
 **JWK**
 
-- `uselesskey-core-jwk` — typed JWK/JWKS models
-- `uselesskey-core-jwk-builder` — JWKS builder with deterministic
-  kid-based ordering
-- `uselesskey-core-jwk-shape` — structured JWK types and JWKS collection
-  serialization
-- `uselesskey-core-jwks-order` — stable kid-sorted ordering helper
+- `uselesskey-core-jwk` — compatibility shim for typed JWK/JWKS models
+- `uselesskey-core-jwk-builder` — compatibility shim for `JwksBuilder`
+- `uselesskey-core-jwk-shape` — compatibility shim for structured JWK
+  types and JWKS collection serialization
+- `uselesskey-core-jwks-order` — compatibility shim for stable
+  kid-sorted ordering helper
 
 **Token**
 

@@ -4804,8 +4804,7 @@ dependencies = [
  "proptest",
  "serde",
  "serde_json",
- "uselesskey-core-jwk-builder",
- "uselesskey-core-jwk-shape",
+ "uselesskey-jwk",
 ]
 
 [[package]]
@@ -4817,7 +4816,7 @@ dependencies = [
  "serde",
  "serde_json",
  "uselesskey-core-jwk-shape",
- "uselesskey-core-jwks-order",
+ "uselesskey-jwk",
 ]
 
 [[package]]
@@ -4828,6 +4827,7 @@ dependencies = [
  "proptest",
  "serde",
  "serde_json",
+ "uselesskey-jwk",
 ]
 
 [[package]]
@@ -4837,6 +4837,7 @@ dependencies = [
  "insta",
  "proptest",
  "serde",
+ "uselesskey-jwk",
 ]
 
 [[package]]
@@ -4859,7 +4860,7 @@ dependencies = [
  "proptest",
  "serde",
  "uselesskey-core",
- "uselesskey-core-kid",
+ "uselesskey-jwk",
  "uselesskey-test-support",
 ]
 
@@ -4873,6 +4874,7 @@ dependencies = [
  "proptest",
  "rstest",
  "serde",
+ "uselesskey-jwk",
 ]
 
 [[package]]
@@ -5055,7 +5057,6 @@ dependencies = [
  "serde_json",
  "uselesskey-core",
  "uselesskey-core-keypair-material",
- "uselesskey-core-kid",
  "uselesskey-jwk",
 ]
 
@@ -5073,7 +5074,6 @@ dependencies = [
  "serde_json",
  "uselesskey-core",
  "uselesskey-core-keypair-material",
- "uselesskey-core-kid",
  "uselesskey-jwk",
 ]
 
@@ -5105,7 +5105,6 @@ dependencies = [
  "serde",
  "uselesskey-core",
  "uselesskey-core-hmac-spec",
- "uselesskey-core-kid",
  "uselesskey-jwk",
 ]
 
@@ -5210,11 +5209,12 @@ dependencies = [
 name = "uselesskey-jwk"
 version = "0.6.0"
 dependencies = [
+ "base64",
+ "blake3",
  "insta",
+ "proptest",
  "serde",
  "serde_json",
- "uselesskey-core-jwk",
- "uselesskey-core-jwk-builder",
 ]
 
 [[package]]

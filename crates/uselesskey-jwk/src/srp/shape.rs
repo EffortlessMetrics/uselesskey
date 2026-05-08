@@ -1,0 +1,898 @@
+#![forbid(unsafe_code)]
+
+//! Typed JWK and JWKS helpers for uselesskey test fixtures.
+//!
+//! Provides structured JWK types ([`RsaPublicJwk`], [`EcPublicJwk`], [`OkpPublicJwk`], etc.)
+//! and [`Jwks`] for serializing collections of JWK values.
+//!
+//! # Examples
+//!
+//! Build an Ed25519 public JWK and serialize it to JSON:
+//!
+//! ```
+//! use uselesskey_jwk::{OkpPublicJwk, PublicJwk, Jwks, AnyJwk};
+//!
+//! let jwk = OkpPublicJwk {
+//!     kty: "OKP",
+//!     use_: "sig",
+//!     alg: "EdDSA",
+//!     crv: "Ed25519",
+//!     kid: "my-key-1".to_string(),
+//!     x: "dGVzdC1wdWJsaWMta2V5".to_string(),
+//! };
+//!
+//! // Wrap in the enum and convert to a JSON value
+//! let public = PublicJwk::Okp(jwk);
+//! let value = public.to_value();
+//! assert_eq!(value["kty"], "OKP");
+//! assert_eq!(value["kid"], "my-key-1");
+//!
+//! // Collect into a JWKS
+//! let jwks = Jwks { keys: vec![AnyJwk::Public(public)] };
+//! let json = jwks.to_value();
+//! assert_eq!(json["keys"].as_array().unwrap().len(), 1);
+//! ```
+
+use serde::Serialize;
+use serde_json::{Value, json};
+use std::fmt;
+
+const SCANNER_SAFE_INVALID_MATERIAL: &str = "not_base64url!*";
+const SCANNER_SAFE_MISMATCHED_MATERIAL: &str = "AAAA";
+
+/// A JSON Web Key Set containing zero or more JWK entries.
+#[derive(Clone, Serialize)]
+pub struct Jwks {
+    /// The `"keys"` array of the JWKS.
+    pub keys: Vec<AnyJwk>,
+}
+
+impl Jwks {
+    /// Serialize to a [`serde_json::Value`].
+    pub fn to_value(&self) -> Value {
+        serde_json::to_value(self).expect("serialize JWKS")
+    }
+
+    /// Serialize a shape-realistic negative JWKS fixture.
+    pub fn negative_value(&self, variant: NegativeJwks) -> Value {
+        let keys: Vec<Value> = self.keys.iter().map(AnyJwk::to_value).collect();
+        let negative_keys = match variant {
+            NegativeJwks::EmptyKeys => Vec::new(),
+            NegativeJwks::MissingKid => {
+                vec![negative_jwk_value(
+                    first_or_scanner_safe_key(&keys, "missing-kid"),
+                    NegativeJwk::MissingKid,
+                )]
+            }
+            NegativeJwks::DuplicateKid => {
+                let mut first = first_or_scanner_safe_key(&keys, "duplicate-kid");
+                set_string_field(&mut first, "kid", "duplicate-kid");
+                let mut second = first.clone();
+                set_first_material_field(
+                    &mut second,
+                    &["n", "x", "k", "d", "e", "y", "p", "q", "dp", "dq", "qi"],
+                    SCANNER_SAFE_MISMATCHED_MATERIAL,
+                );
+                vec![first, second]
+            }
+            NegativeJwks::DuplicateKey => {
+                let first = first_or_scanner_safe_key(&keys, "duplicate-key");
+                vec![first.clone(), first]
+            }
+        };
+
+        json!({ "keys": negative_keys })
+    }
+}
+
+impl fmt::Display for Jwks {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = serde_json::to_string(self).expect("serialize JWKS");
+        f.write_str(&s)
+    }
+}
+
+/// Negative JWK shape variants for downstream parser and validator tests.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum NegativeJwk {
+    /// Remove the `kid` field from an otherwise realistic JWK.
+    MissingKid,
+    /// Replace one material field with scanner-safe invalid base64url text.
+    MalformedField,
+    /// Replace `kty` with a key type that does not match the material fields.
+    WrongKty,
+    /// Replace `alg` with an unsupported algorithm name.
+    UnsupportedAlg,
+    /// Change one material parameter while preserving the metadata shape.
+    MismatchedParameters,
+}
+
+/// Negative JWKS shape variants for downstream key-set tests.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum NegativeJwks {
+    /// Emit an empty `keys` array.
+    EmptyKeys,
+    /// Remove `kid` from a key inside the set.
+    MissingKid,
+    /// Emit two distinct keys with the same `kid`.
+    DuplicateKid,
+    /// Emit the same key twice.
+    DuplicateKey,
+}
+
+/// RSA public key in JWK format (contains `n` and `e`).
+#[derive(Clone, Serialize)]
+pub struct RsaPublicJwk {
+    pub kty: &'static str,
+    #[serde(rename = "use")]
+    pub use_: &'static str,
+    pub alg: &'static str,
+    pub kid: String,
+    pub n: String,
+    pub e: String,
+}
+
+impl RsaPublicJwk {
+    /// Return the key identifier.
+    pub fn kid(&self) -> &str {
+        &self.kid
+    }
+}
+
+/// RSA private key in JWK format (includes CRT parameters `p`, `q`, `dp`, `dq`, `qi`).
+#[derive(Clone, Serialize)]
+pub struct RsaPrivateJwk {
+    pub kty: &'static str,
+    #[serde(rename = "use")]
+    pub use_: &'static str,
+    pub alg: &'static str,
+    pub kid: String,
+    pub n: String,
+    pub e: String,
+    pub d: String,
+    pub p: String,
+    pub q: String,
+    pub dp: String,
+    pub dq: String,
+    #[serde(rename = "qi")]
+    pub qi: String,
+}
+
+impl RsaPrivateJwk {
+    /// Return the key identifier.
+    pub fn kid(&self) -> &str {
+        &self.kid
+    }
+}
+
+impl fmt::Debug for RsaPrivateJwk {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("RsaPrivateJwk")
+            .field("kid", &self.kid)
+            .field("alg", &self.alg)
+            .finish_non_exhaustive()
+    }
+}
+
+/// Elliptic-curve public key in JWK format (P-256 / P-384).
+#[derive(Clone, Serialize)]
+pub struct EcPublicJwk {
+    pub kty: &'static str,
+    #[serde(rename = "use")]
+    pub use_: &'static str,
+    pub alg: &'static str,
+    pub crv: &'static str,
+    pub kid: String,
+    pub x: String,
+    pub y: String,
+}
+
+impl EcPublicJwk {
+    /// Return the key identifier.
+    pub fn kid(&self) -> &str {
+        &self.kid
+    }
+}
+
+/// Elliptic-curve private key in JWK format (P-256 / P-384, includes `d`).
+#[derive(Clone, Serialize)]
+pub struct EcPrivateJwk {
+    pub kty: &'static str,
+    #[serde(rename = "use")]
+    pub use_: &'static str,
+    pub alg: &'static str,
+    pub crv: &'static str,
+    pub kid: String,
+    pub x: String,
+    pub y: String,
+    pub d: String,
+}
+
+impl EcPrivateJwk {
+    /// Return the key identifier.
+    pub fn kid(&self) -> &str {
+        &self.kid
+    }
+}
+
+impl fmt::Debug for EcPrivateJwk {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("EcPrivateJwk")
+            .field("kid", &self.kid)
+            .field("alg", &self.alg)
+            .field("crv", &self.crv)
+            .finish_non_exhaustive()
+    }
+}
+
+/// OKP (Octet Key Pair) public key in JWK format (Ed25519).
+#[derive(Clone, Serialize)]
+pub struct OkpPublicJwk {
+    pub kty: &'static str,
+    #[serde(rename = "use")]
+    pub use_: &'static str,
+    pub alg: &'static str,
+    pub crv: &'static str,
+    pub kid: String,
+    pub x: String,
+}
+
+impl OkpPublicJwk {
+    /// Return the key identifier.
+    pub fn kid(&self) -> &str {
+        &self.kid
+    }
+}
+
+/// OKP (Octet Key Pair) private key in JWK format (Ed25519, includes `d`).
+#[derive(Clone, Serialize)]
+pub struct OkpPrivateJwk {
+    pub kty: &'static str,
+    #[serde(rename = "use")]
+    pub use_: &'static str,
+    pub alg: &'static str,
+    pub crv: &'static str,
+    pub kid: String,
+    pub x: String,
+    pub d: String,
+}
+
+impl OkpPrivateJwk {
+    /// Return the key identifier.
+    pub fn kid(&self) -> &str {
+        &self.kid
+    }
+}
+
+impl fmt::Debug for OkpPrivateJwk {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("OkpPrivateJwk")
+            .field("kid", &self.kid)
+            .field("alg", &self.alg)
+            .field("crv", &self.crv)
+            .finish_non_exhaustive()
+    }
+}
+
+/// Symmetric (octet) key in JWK format (HMAC `HS256`/`HS384`/`HS512`).
+#[derive(Clone, Serialize)]
+pub struct OctJwk {
+    pub kty: &'static str,
+    #[serde(rename = "use")]
+    pub use_: &'static str,
+    pub alg: &'static str,
+    pub kid: String,
+    pub k: String,
+}
+
+impl OctJwk {
+    /// Return the key identifier.
+    pub fn kid(&self) -> &str {
+        &self.kid
+    }
+}
+
+impl fmt::Debug for OctJwk {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("OctJwk")
+            .field("kid", &self.kid)
+            .field("alg", &self.alg)
+            .finish_non_exhaustive()
+    }
+}
+
+/// A public JWK of any supported key type.
+#[derive(Clone, Serialize)]
+#[serde(untagged)]
+pub enum PublicJwk {
+    /// RSA public key.
+    Rsa(RsaPublicJwk),
+    /// Elliptic-curve public key.
+    Ec(EcPublicJwk),
+    /// OKP (Ed25519) public key.
+    Okp(OkpPublicJwk),
+}
+
+impl PublicJwk {
+    /// Return the key identifier.
+    pub fn kid(&self) -> &str {
+        match self {
+            PublicJwk::Rsa(jwk) => jwk.kid(),
+            PublicJwk::Ec(jwk) => jwk.kid(),
+            PublicJwk::Okp(jwk) => jwk.kid(),
+        }
+    }
+
+    /// Serialize to a [`serde_json::Value`].
+    pub fn to_value(&self) -> Value {
+        serde_json::to_value(self).expect("serialize JWK")
+    }
+
+    /// Serialize a shape-realistic negative JWK fixture.
+    pub fn negative_value(&self, variant: NegativeJwk) -> Value {
+        negative_jwk_value(self.to_value(), variant)
+    }
+}
+
+impl fmt::Display for PublicJwk {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = serde_json::to_string(self).expect("serialize JWK");
+        f.write_str(&s)
+    }
+}
+
+/// A private (or symmetric) JWK of any supported key type.
+#[derive(Clone, Serialize)]
+#[serde(untagged)]
+pub enum PrivateJwk {
+    /// RSA private key.
+    Rsa(RsaPrivateJwk),
+    /// Elliptic-curve private key.
+    Ec(EcPrivateJwk),
+    /// OKP (Ed25519) private key.
+    Okp(OkpPrivateJwk),
+    /// Symmetric (HMAC) key.
+    Oct(OctJwk),
+}
+
+impl PrivateJwk {
+    /// Return the key identifier.
+    pub fn kid(&self) -> &str {
+        match self {
+            PrivateJwk::Rsa(jwk) => jwk.kid(),
+            PrivateJwk::Ec(jwk) => jwk.kid(),
+            PrivateJwk::Okp(jwk) => jwk.kid(),
+            PrivateJwk::Oct(jwk) => jwk.kid(),
+        }
+    }
+
+    /// Serialize to a [`serde_json::Value`].
+    pub fn to_value(&self) -> Value {
+        serde_json::to_value(self).expect("serialize JWK")
+    }
+
+    /// Serialize a shape-realistic negative JWK fixture.
+    pub fn negative_value(&self, variant: NegativeJwk) -> Value {
+        negative_jwk_value(self.to_value(), variant)
+    }
+}
+
+impl fmt::Display for PrivateJwk {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = serde_json::to_string(self).expect("serialize JWK");
+        f.write_str(&s)
+    }
+}
+
+impl fmt::Debug for PrivateJwk {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            PrivateJwk::Rsa(jwk) => jwk.fmt(f),
+            PrivateJwk::Ec(jwk) => jwk.fmt(f),
+            PrivateJwk::Okp(jwk) => jwk.fmt(f),
+            PrivateJwk::Oct(jwk) => jwk.fmt(f),
+        }
+    }
+}
+
+/// Either a public or private JWK.
+#[derive(Clone, Serialize)]
+#[serde(untagged)]
+pub enum AnyJwk {
+    /// A public-only JWK.
+    Public(PublicJwk),
+    /// A private (or symmetric) JWK.
+    Private(PrivateJwk),
+}
+
+impl AnyJwk {
+    /// Return the key identifier.
+    pub fn kid(&self) -> &str {
+        match self {
+            AnyJwk::Public(jwk) => jwk.kid(),
+            AnyJwk::Private(jwk) => jwk.kid(),
+        }
+    }
+
+    /// Serialize to a [`serde_json::Value`].
+    pub fn to_value(&self) -> Value {
+        serde_json::to_value(self).expect("serialize JWK")
+    }
+
+    /// Serialize a shape-realistic negative JWK fixture.
+    pub fn negative_value(&self, variant: NegativeJwk) -> Value {
+        negative_jwk_value(self.to_value(), variant)
+    }
+}
+
+impl fmt::Display for AnyJwk {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = serde_json::to_string(self).expect("serialize JWK");
+        f.write_str(&s)
+    }
+}
+
+impl From<PublicJwk> for AnyJwk {
+    fn from(value: PublicJwk) -> Self {
+        AnyJwk::Public(value)
+    }
+}
+
+impl From<PrivateJwk> for AnyJwk {
+    fn from(value: PrivateJwk) -> Self {
+        AnyJwk::Private(value)
+    }
+}
+
+fn negative_jwk_value(mut value: Value, variant: NegativeJwk) -> Value {
+    match variant {
+        NegativeJwk::MissingKid => {
+            if let Some(obj) = value.as_object_mut() {
+                obj.remove("kid");
+            }
+        }
+        NegativeJwk::MalformedField => {
+            set_first_material_field(
+                &mut value,
+                &["n", "e", "x", "y", "k", "d", "p", "q", "dp", "dq", "qi"],
+                SCANNER_SAFE_INVALID_MATERIAL,
+            );
+        }
+        NegativeJwk::WrongKty => {
+            if let Some(obj) = value.as_object_mut() {
+                let wrong_kty = if obj.get("kty").and_then(Value::as_str) == Some("RSA") {
+                    "EC"
+                } else {
+                    "RSA"
+                };
+                obj.insert("kty".to_string(), Value::String(wrong_kty.to_string()));
+            }
+        }
+        NegativeJwk::UnsupportedAlg => {
+            set_string_field(&mut value, "alg", "UK-UNSUPPORTED");
+        }
+        NegativeJwk::MismatchedParameters => {
+            set_first_material_field(
+                &mut value,
+                &["d", "k", "n", "x", "y", "e", "p", "q", "dp", "dq", "qi"],
+                SCANNER_SAFE_MISMATCHED_MATERIAL,
+            );
+        }
+    }
+    value
+}
+
+fn first_or_scanner_safe_key(keys: &[Value], kid: &str) -> Value {
+    keys.first()
+        .cloned()
+        .unwrap_or_else(|| scanner_safe_rsa_public(kid))
+}
+
+fn scanner_safe_rsa_public(kid: &str) -> Value {
+    json!({
+        "kty": "RSA",
+        "use": "sig",
+        "alg": "RS256",
+        "kid": kid,
+        "n": "AAAA",
+        "e": "AQAB",
+    })
+}
+
+fn set_string_field(value: &mut Value, field: &str, replacement: &str) {
+    if let Some(obj) = value.as_object_mut() {
+        obj.insert(field.to_string(), Value::String(replacement.to_string()));
+    }
+}
+
+fn set_first_material_field(value: &mut Value, fields: &[&str], replacement: &str) {
+    if let Some(obj) = value.as_object_mut() {
+        let field = fields
+            .iter()
+            .find(|field| obj.contains_key(**field))
+            .copied()
+            .unwrap_or("x");
+        obj.insert(field.to_string(), Value::String(replacement.to_string()));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sample_rsa_public(kid: &str, n: &str) -> PublicJwk {
+        PublicJwk::Rsa(RsaPublicJwk {
+            kty: "RSA",
+            use_: "sig",
+            alg: "RS256",
+            kid: kid.to_string(),
+            n: n.to_string(),
+            e: "AQAB".to_string(),
+        })
+    }
+
+    fn sample_oct_private(kid: &str, k: &str) -> PrivateJwk {
+        PrivateJwk::Oct(OctJwk {
+            kty: "oct",
+            use_: "sig",
+            alg: "HS256",
+            kid: kid.to_string(),
+            k: k.to_string(),
+        })
+    }
+
+    fn sample_rsa_private(kid: &str, d: &str) -> RsaPrivateJwk {
+        RsaPrivateJwk {
+            kty: "RSA",
+            use_: "sig",
+            alg: "RS256",
+            kid: kid.to_string(),
+            n: "n".to_string(),
+            e: "e".to_string(),
+            d: d.to_string(),
+            p: "p".to_string(),
+            q: "q".to_string(),
+            dp: "dp".to_string(),
+            dq: "dq".to_string(),
+            qi: "qi".to_string(),
+        }
+    }
+
+    fn sample_ec_private(kid: &str, d: &str) -> EcPrivateJwk {
+        EcPrivateJwk {
+            kty: "EC",
+            use_: "sig",
+            alg: "ES256",
+            crv: "P-256",
+            kid: kid.to_string(),
+            x: "x".to_string(),
+            y: "y".to_string(),
+            d: d.to_string(),
+        }
+    }
+
+    fn sample_okp_public(kid: &str, x: &str) -> OkpPublicJwk {
+        OkpPublicJwk {
+            kty: "OKP",
+            use_: "sig",
+            alg: "EdDSA",
+            crv: "Ed25519",
+            kid: kid.to_string(),
+            x: x.to_string(),
+        }
+    }
+
+    fn sample_okp_private(kid: &str, d: &str) -> OkpPrivateJwk {
+        OkpPrivateJwk {
+            kty: "OKP",
+            use_: "sig",
+            alg: "EdDSA",
+            crv: "Ed25519",
+            kid: kid.to_string(),
+            x: "x".to_string(),
+            d: d.to_string(),
+        }
+    }
+
+    #[test]
+    fn display_outputs_json() {
+        let jwk = sample_rsa_public("kid-1", "n1");
+        let json = jwk.to_string();
+        let v: Value = serde_json::from_str(&json).expect("valid JSON");
+        assert_eq!(v["kty"], "RSA");
+
+        let private = sample_oct_private("kid-2", "secret");
+        let json = private.to_string();
+        let v: Value = serde_json::from_str(&json).expect("valid JSON");
+        assert_eq!(v["kty"], "oct");
+    }
+
+    #[test]
+    fn debug_omits_private_material() {
+        let secret = "super-secret-value";
+        let jwk = sample_oct_private("kid-3", secret);
+        let dbg = format!("{:?}", jwk);
+        assert!(dbg.contains("OctJwk"));
+        assert!(!dbg.contains(secret));
+    }
+
+    #[test]
+    fn any_jwk_from_conversions_work() {
+        let pub_jwk = sample_rsa_public("kid-4", "n4");
+        let any_pub = AnyJwk::from(pub_jwk.clone());
+        assert_eq!(any_pub.kid(), pub_jwk.kid());
+
+        let priv_jwk = sample_oct_private("kid-5", "k5");
+        let any_priv = AnyJwk::from(priv_jwk.clone());
+        assert_eq!(any_priv.kid(), priv_jwk.kid());
+    }
+
+    #[test]
+    fn kid_helpers_return_expected_kid() {
+        let rsa = sample_rsa_private("kid-rsa", "d-rsa");
+        assert_eq!(rsa.kid(), "kid-rsa");
+
+        let ec = sample_ec_private("kid-ec", "d-ec");
+        assert_eq!(ec.kid(), "kid-ec");
+
+        let okp_pub = sample_okp_public("kid-okp", "x-okp");
+        assert_eq!(okp_pub.kid(), "kid-okp");
+
+        let okp_priv = sample_okp_private("kid-okp-priv", "d-okp");
+        assert_eq!(okp_priv.kid(), "kid-okp-priv");
+
+        let oct = OctJwk {
+            kty: "oct",
+            use_: "sig",
+            alg: "HS256",
+            kid: "kid-oct".to_string(),
+            k: "secret".to_string(),
+        };
+        assert_eq!(oct.kid(), "kid-oct");
+    }
+
+    #[test]
+    fn enum_kid_and_to_value_cover_all_variants() {
+        let okp_pub = PublicJwk::Okp(sample_okp_public("kid-okp", "x-okp"));
+        assert_eq!(okp_pub.kid(), "kid-okp");
+        assert_eq!(okp_pub.to_value()["kty"], "OKP");
+
+        let okp_priv = PrivateJwk::Okp(sample_okp_private("kid-okp-priv", "d-okp"));
+        assert_eq!(okp_priv.kid(), "kid-okp-priv");
+        assert_eq!(okp_priv.to_value()["kty"], "OKP");
+
+        let oct = PrivateJwk::Oct(OctJwk {
+            kty: "oct",
+            use_: "sig",
+            alg: "HS256",
+            kid: "kid-oct".to_string(),
+            k: "secret".to_string(),
+        });
+        assert_eq!(oct.kid(), "kid-oct");
+        assert_eq!(oct.to_value()["kty"], "oct");
+    }
+
+    #[test]
+    fn enum_kid_covers_all_variants() {
+        let rsa_pub = PublicJwk::Rsa(RsaPublicJwk {
+            kty: "RSA",
+            use_: "sig",
+            alg: "RS256",
+            kid: "kid-rsa".to_string(),
+            n: "n".to_string(),
+            e: "e".to_string(),
+        });
+        assert_eq!(rsa_pub.kid(), "kid-rsa");
+
+        let ec_pub = PublicJwk::Ec(EcPublicJwk {
+            kty: "EC",
+            use_: "sig",
+            alg: "ES256",
+            crv: "P-256",
+            kid: "kid-ec".to_string(),
+            x: "x".to_string(),
+            y: "y".to_string(),
+        });
+        assert_eq!(ec_pub.kid(), "kid-ec");
+
+        let okp_pub = PublicJwk::Okp(sample_okp_public("kid-okp", "x-okp"));
+        assert_eq!(okp_pub.kid(), "kid-okp");
+
+        let rsa_priv = PrivateJwk::Rsa(sample_rsa_private("kid-rsa-priv", "d"));
+        assert_eq!(rsa_priv.kid(), "kid-rsa-priv");
+
+        let ec_priv = PrivateJwk::Ec(sample_ec_private("kid-ec-priv", "d"));
+        assert_eq!(ec_priv.kid(), "kid-ec-priv");
+
+        let okp_priv = PrivateJwk::Okp(sample_okp_private("kid-okp-priv", "d"));
+        assert_eq!(okp_priv.kid(), "kid-okp-priv");
+
+        let oct = PrivateJwk::Oct(OctJwk {
+            kty: "oct",
+            use_: "sig",
+            alg: "HS256",
+            kid: "kid-oct".to_string(),
+            k: "secret".to_string(),
+        });
+        assert_eq!(oct.kid(), "kid-oct");
+    }
+
+    #[test]
+    fn any_jwk_to_value_round_trips() {
+        let pub_any = AnyJwk::from(sample_rsa_public("kid-a", "n"));
+        assert_eq!(pub_any.to_value()["kid"], "kid-a");
+
+        let priv_any = AnyJwk::from(sample_oct_private("kid-b", "secret"));
+        assert_eq!(priv_any.to_value()["kid"], "kid-b");
+    }
+
+    #[test]
+    fn any_jwk_display_round_trips() {
+        let pub_any = AnyJwk::from(sample_rsa_public("kid-a", "n"));
+        let json = pub_any.to_string();
+        let v: Value = serde_json::from_str(&json).expect("valid JSON");
+        assert_eq!(v["kid"], "kid-a");
+
+        let priv_any = AnyJwk::from(sample_oct_private("kid-b", "secret"));
+        let json = priv_any.to_string();
+        let v: Value = serde_json::from_str(&json).expect("valid JSON");
+        assert_eq!(v["kid"], "kid-b");
+    }
+
+    #[test]
+    fn private_jwk_negative_value_preserves_shape_and_changes_material() {
+        let private = sample_oct_private("private-negative", "original-k");
+
+        let missing = private.negative_value(NegativeJwk::MissingKid);
+        assert_eq!(missing["kty"], "oct");
+        assert!(missing.get("kid").is_none());
+        assert_eq!(missing["k"], "original-k");
+
+        let malformed = private.negative_value(NegativeJwk::MalformedField);
+        assert_eq!(malformed["kid"], "private-negative");
+        assert_eq!(malformed["k"], SCANNER_SAFE_INVALID_MATERIAL);
+
+        let mismatched = private.negative_value(NegativeJwk::MismatchedParameters);
+        assert_eq!(mismatched["kid"], "private-negative");
+        assert_eq!(mismatched["k"], SCANNER_SAFE_MISMATCHED_MATERIAL);
+    }
+
+    #[test]
+    fn any_jwk_negative_value_delegates_public_and_private_shapes() {
+        let public_any = AnyJwk::from(sample_rsa_public("any-public", "rsa-n"));
+        let public_negative = public_any.negative_value(NegativeJwk::UnsupportedAlg);
+        assert_eq!(public_negative["kid"], "any-public");
+        assert_eq!(public_negative["kty"], "RSA");
+        assert_eq!(public_negative["alg"], "UK-UNSUPPORTED");
+        assert_eq!(public_negative["n"], "rsa-n");
+
+        let private_any = AnyJwk::from(sample_oct_private("any-private", "oct-k"));
+        let private_negative = private_any.negative_value(NegativeJwk::MismatchedParameters);
+        assert_eq!(private_negative["kid"], "any-private");
+        assert_eq!(private_negative["kty"], "oct");
+        assert_eq!(private_negative["k"], SCANNER_SAFE_MISMATCHED_MATERIAL);
+    }
+
+    #[test]
+    fn wrong_kty_switches_rsa_to_ec_and_non_rsa_to_rsa() {
+        let rsa = sample_rsa_public("rsa-kty", "rsa-n").negative_value(NegativeJwk::WrongKty);
+        assert_eq!(rsa["kid"], "rsa-kty");
+        assert_eq!(rsa["kty"], "EC");
+        assert_eq!(rsa["n"], "rsa-n");
+
+        let ec = PublicJwk::Ec(EcPublicJwk {
+            kty: "EC",
+            use_: "sig",
+            alg: "ES256",
+            crv: "P-256",
+            kid: "ec-kty".to_string(),
+            x: "x".to_string(),
+            y: "y".to_string(),
+        })
+        .negative_value(NegativeJwk::WrongKty);
+        assert_eq!(ec["kid"], "ec-kty");
+        assert_eq!(ec["kty"], "RSA");
+        assert_eq!(ec["x"], "x");
+    }
+
+    #[test]
+    fn empty_jwks_negative_uses_scanner_safe_key_shape() {
+        let jwks = Jwks { keys: Vec::new() };
+
+        let value = jwks.negative_value(NegativeJwks::MissingKid);
+        let keys = value["keys"].as_array().expect("keys array");
+        assert_eq!(keys.len(), 1);
+        assert_eq!(keys[0]["kty"], "RSA");
+        assert_eq!(keys[0]["use"], "sig");
+        assert_eq!(keys[0]["alg"], "RS256");
+        assert_eq!(keys[0]["n"], "AAAA");
+        assert_eq!(keys[0]["e"], "AQAB");
+        assert!(keys[0].get("kid").is_none());
+    }
+
+    #[test]
+    fn private_jwk_enum_debug_uses_inner_formatters() {
+        let rsa = PrivateJwk::Rsa(sample_rsa_private("kid-rsa", "secret"));
+        let dbg = format!("{:?}", rsa);
+        assert!(dbg.contains("RsaPrivateJwk"));
+
+        let ec = PrivateJwk::Ec(sample_ec_private("kid-ec", "secret"));
+        let dbg = format!("{:?}", ec);
+        assert!(dbg.contains("EcPrivateJwk"));
+
+        let okp = PrivateJwk::Okp(sample_okp_private("kid-okp", "secret"));
+        let dbg = format!("{:?}", okp);
+        assert!(dbg.contains("OkpPrivateJwk"));
+
+        let oct = PrivateJwk::Oct(OctJwk {
+            kty: "oct",
+            use_: "sig",
+            alg: "HS256",
+            kid: "kid-oct".to_string(),
+            k: "secret".to_string(),
+        });
+        let dbg = format!("{:?}", oct);
+        assert!(dbg.contains("OctJwk"));
+    }
+
+    #[test]
+    fn private_jwk_debug_omits_private_material() {
+        let secret = "super-secret";
+
+        let rsa = sample_rsa_private("kid-rsa", secret);
+        let dbg = format!("{:?}", rsa);
+        assert!(dbg.contains("RsaPrivateJwk"));
+        assert!(!dbg.contains(secret));
+
+        let ec = sample_ec_private("kid-ec", secret);
+        let dbg = format!("{:?}", ec);
+        assert!(dbg.contains("EcPrivateJwk"));
+        assert!(!dbg.contains(secret));
+
+        let okp = sample_okp_private("kid-okp", secret);
+        let dbg = format!("{:?}", okp);
+        assert!(dbg.contains("OkpPrivateJwk"));
+        assert!(!dbg.contains(secret));
+    }
+
+    proptest::proptest! {
+        #[test]
+        fn to_string_and_to_value_are_idempotent(
+            kid in "[a-zA-Z0-9._-]{1,24}",
+            n in "[A-Za-z0-9+/]{1,64}",
+            e in "[A-Za-z0-9+/]{1,64}",
+        ) {
+            let pub_jwk = PublicJwk::Rsa(RsaPublicJwk {
+                kty: "RSA",
+                use_: "sig",
+                alg: "RS256",
+                kid: kid.to_string(),
+                n: n.to_string(),
+                e: e.to_string(),
+            });
+
+            let pub_value = pub_jwk.to_value();
+            let pub_text = pub_jwk.to_string();
+            let pub_round_trip: Value = serde_json::from_str(&pub_text).expect("pub JWK should be JSON");
+
+            assert_eq!(pub_value["kid"], pub_round_trip["kid"]);
+            assert_eq!(pub_value["n"], pub_round_trip["n"]);
+
+            let private = PrivateJwk::Oct(OctJwk {
+                kty: "oct",
+                use_: "sig",
+                alg: "HS256",
+                kid: kid.to_string(),
+                k: n,
+            });
+
+            let private_value = private.to_value();
+            let private_text = private.to_string();
+            let private_round_trip: Value =
+                serde_json::from_str(&private_text).expect("private JWK should be JSON");
+
+            assert_eq!(private_value["kid"], private_round_trip["kid"]);
+            assert_eq!(private_value["k"], private_round_trip["k"]);
+        }
+    }
+}

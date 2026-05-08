@@ -5,7 +5,7 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "Compatibility façade for typed JWK/JWKS models used by uselesskey fixture crates."
+description = "Deprecated compatibility shim for JWK/JWKS models; prefer uselesskey-jwk."
 categories.workspace = true
 keywords = ["jwk", "jwks", "jwt", "fixtures", "testing"]
 readme = "README.md"
@@ -15,8 +15,7 @@ documentation = "https://docs.rs/uselesskey-core-jwk"
 authors.workspace = true
 
 [dependencies]
-uselesskey-core-jwk-shape = { path = "../uselesskey-core-jwk-shape", version = "0.6.0" }
-uselesskey-core-jwk-builder = { path = "../uselesskey-core-jwk-builder", version = "0.6.0" }
+uselesskey-jwk = { path = "../uselesskey-jwk", version = "0.6.0" }
 
 [dev-dependencies]
 insta.workspace = true
