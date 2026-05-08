@@ -176,10 +176,7 @@ fn stable_bytes_not_before_variants_differ() {
 #[test]
 fn not_before_duration_days_ago() {
     let spec = X509Spec::self_signed("test").with_not_before(NotBeforeOffset::DaysAgo(3));
-    assert_eq!(
-        spec.not_before_duration(),
-        Duration::from_secs(3 * 24 * 60 * 60)
-    );
+    assert_eq!(spec.not_before_duration(), Duration::from_hours(72));
 }
 
 #[test]
@@ -193,10 +190,7 @@ fn not_after_duration_days_ago() {
     let spec = X509Spec::self_signed("test")
         .with_not_before(NotBeforeOffset::DaysAgo(1))
         .with_validity_days(30);
-    assert_eq!(
-        spec.not_after_duration(),
-        Duration::from_secs(30 * 24 * 60 * 60)
-    );
+    assert_eq!(spec.not_after_duration(), Duration::from_hours(720));
 }
 
 #[test]
@@ -204,10 +198,7 @@ fn not_after_duration_days_from_now() {
     let spec = X509Spec::self_signed("test")
         .with_not_before(NotBeforeOffset::DaysFromNow(5))
         .with_validity_days(30);
-    assert_eq!(
-        spec.not_after_duration(),
-        Duration::from_secs((5 + 30) * 24 * 60 * 60)
-    );
+    assert_eq!(spec.not_after_duration(), Duration::from_hours(840));
 }
 
 // ---------------------------------------------------------------------------

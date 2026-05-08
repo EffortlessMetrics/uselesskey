@@ -417,7 +417,7 @@ fn x509_spec_zero_validity_days_from_now() {
         .with_validity_days(0);
     assert_eq!(
         spec.not_after_duration(),
-        Duration::from_secs(5 * 86400),
+        Duration::from_hours(120),
         "not_after should be offset only when validity is 0"
     );
 }

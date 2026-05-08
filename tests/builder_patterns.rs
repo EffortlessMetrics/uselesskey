@@ -571,7 +571,7 @@ fn x509_spec_stable_bytes_deduplicates_sans() {
 #[test]
 fn x509_spec_not_before_duration_days_ago() {
     let spec = X509Spec::self_signed("test").with_not_before(NotBeforeOffset::DaysAgo(3));
-    let expected = std::time::Duration::from_secs(3 * 24 * 60 * 60);
+    let expected = std::time::Duration::from_hours(72);
     assert_eq!(spec.not_before_duration(), expected);
 }
 
@@ -584,7 +584,7 @@ fn x509_spec_not_before_duration_days_from_now() {
 #[test]
 fn x509_spec_not_after_duration() {
     let spec = X509Spec::self_signed("test").with_validity_days(30);
-    let expected = std::time::Duration::from_secs(30 * 24 * 60 * 60);
+    let expected = std::time::Duration::from_hours(720);
     assert_eq!(spec.not_after_duration(), expected);
 }
 
@@ -594,6 +594,6 @@ fn x509_spec_not_after_with_future_offset() {
         .with_not_before(NotBeforeOffset::DaysFromNow(10))
         .with_validity_days(20);
     // not_after = offset_duration + validity_duration
-    let expected = std::time::Duration::from_secs((10 + 20) * 24 * 60 * 60);
+    let expected = std::time::Duration::from_hours(720);
     assert_eq!(spec.not_after_duration(), expected);
 }

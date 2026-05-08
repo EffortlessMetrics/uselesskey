@@ -1572,7 +1572,7 @@ fn publish(from: Option<String>, resume: bool) -> Result<()> {
         } else {
             state.crates[i].status = "published".to_string();
             pb.set_message(format!("published {name}, waiting for indexing"));
-            std::thread::sleep(std::time::Duration::from_secs(60));
+            std::thread::sleep(std::time::Duration::from_mins(1));
         }
         let _ = write_publish_state(&state);
         pb.inc(1);
