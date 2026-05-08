@@ -1,12 +1,15 @@
 # uselesskey-core-negative
 
-Compatibility façade for negative fixture builders.
+Published-internal compatibility shim.
 
-## Purpose
+Generic negative fixture helper ownership moved into `uselesskey-core`.
+Existing imports from this crate remain available during the compatibility-shim
+period:
 
-- Preserve the existing `uselesskey_core_negative` import path.
-- Re-export DER helpers from `uselesskey-core-negative-der`.
-- Re-export PEM helpers from `uselesskey-core-negative-pem`.
+```rust
+use uselesskey_core_negative::{CorruptPem, corrupt_pem, truncate_der};
+```
 
-This crate intentionally contains no fixture-generation logic directly; logic
-lives in focused SRP microcrates.
+Prefer `uselesskey-core` for supported extension work, or the fixture-family
+crates for normal negative fixture usage. The canonical generic helper
+implementation now lives at `uselesskey_core::srp::negative`.

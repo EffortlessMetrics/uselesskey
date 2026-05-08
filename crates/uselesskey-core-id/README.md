@@ -1,12 +1,14 @@
 # uselesskey-core-id
 
-Core identity primitives shared by microcrate-facing and top-level `uselesskey` APIs.
+Published-internal compatibility shim.
 
-## Purpose
+Identity and derivation implementation ownership moved into `uselesskey-core`.
+Existing imports from this crate remain available during the compatibility-shim
+period:
 
-- Model derivation identities (`ArtifactId`) used for cache keying.
-- Derive per-artifact seeds from `(master seed, artifact id)`.
-- Re-export [`Seed`] from `uselesskey-core-seed` for convenience.
+```rust
+use uselesskey_core_id::{ArtifactId, DerivationVersion, Seed};
+```
 
-This crate is intentionally small so it can be composed by multiple producers while
-keeping determinism behavior stable across crate boundaries.
+Prefer `uselesskey-core` for supported extension work. The canonical identity
+implementation now lives at `uselesskey_core::srp::identity`.

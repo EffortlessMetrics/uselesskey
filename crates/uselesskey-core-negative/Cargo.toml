@@ -15,8 +15,7 @@ documentation = "https://docs.rs/uselesskey-core-negative"
 authors.workspace = true
 
 [dependencies]
-uselesskey-core-negative-der = { workspace = true }
-uselesskey-core-negative-pem = { workspace = true }
+uselesskey-core = { path = "../uselesskey-core", version = "0.6.0", default-features = false }
 
 [dev-dependencies]
 insta.workspace = true
@@ -26,7 +25,7 @@ serde.workspace = true
 
 [features]
 default = ["std"]
-std = ["uselesskey-core-negative-der/std", "uselesskey-core-negative-pem/std"]
+std = ["uselesskey-core/std"]
 
 [package.metadata.docs.rs]
 features = ["std"]

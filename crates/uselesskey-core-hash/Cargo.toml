@@ -15,16 +15,17 @@ documentation = "https://docs.rs/uselesskey-core-hash"
 authors.workspace = true
 
 [dependencies]
-blake3.workspace = true
+uselesskey-core = { path = "../uselesskey-core", version = "0.6.0", default-features = false }
 
 [dev-dependencies]
+blake3.workspace = true
 insta.workspace = true
 proptest.workspace = true
 serde.workspace = true
 
 [features]
 default = ["std"]
-std = ["blake3/std"]
+std = ["uselesskey-core/std"]
 
 [package.metadata.docs.rs]
 features = ["std"]
