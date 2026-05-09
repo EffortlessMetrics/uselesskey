@@ -133,6 +133,18 @@ enum Cmd {
         #[arg(long)]
         base: Option<String>,
     },
+    /// Run or plan release-candidate evidence gates and write release evidence artifacts.
+    ReleaseEvidence {
+        /// Release version being proven, for example `0.7.0`.
+        #[arg(long)]
+        version: String,
+        /// Output directory for release evidence artifacts.
+        #[arg(long, default_value = "target/release-evidence")]
+        out: PathBuf,
+        /// Write planned artifacts without running the release gates.
+        #[arg(long)]
+        dry_run: bool,
+    },
     /// Guard against multiple semver-major versions of pinned deps (e.g. rand_core).
     DepGuard,
     /// Run cucumber BDD features.
@@ -374,6 +386,11 @@ fn main() -> Result<()> {
             dry_run,
         } => mutants_nightly(scope, crate_name, dry_run),
         Cmd::ImpactedEvidence { base } => impacted_evidence(base),
+        Cmd::ReleaseEvidence {
+            version,
+            out,
+            dry_run,
+        } => release_evidence(&version, &out, dry_run),
         Cmd::DepGuard => dep_guard(),
         Cmd::Bdd => bdd(),
         Cmd::BddMatrix => bdd_matrix(),
@@ -2467,6 +2484,289 @@ struct ImpactedEvidenceRule {
     owner_crate: String,
     reason: &'static str,
     requires_targeted_mutation: bool,
+}
+
+#[derive(Debug, Clone)]
+struct ReleaseEvidenceStep {
+    name: &'static str,
+    command: &'static [&'static str],
+    artifacts: &'static [&'static str],
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+struct ReleaseEvidenceCommandReceipt {
+    name: String,
+    command: Vec<String>,
+    status: String,
+    artifacts: Vec<String>,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+struct ReleaseEvidenceReceipt {
+    schema_version: u32,
+    lane: String,
+    version: String,
+    dry_run: bool,
+    generated_at: String,
+    git_sha: Option<String>,
+    commands: Vec<ReleaseEvidenceCommandReceipt>,
+    artifacts: Vec<String>,
+    claim_boundary: Vec<&'static str>,
+}
+
+const RELEASE_EVIDENCE_CLAIM_BOUNDARY: &[&str] = &[
+    "release evidence proves fixture-platform readiness for a candidate, not cryptographic correctness",
+    "release evidence does not make uselesskey production key management",
+    "ripr and mutation evidence are lane-scoped and complement deterministic regression tests",
+    "scanner-safe evidence covers checked profiles and committed artifacts, not scanner evasion",
+];
+
+fn release_evidence_steps() -> Vec<ReleaseEvidenceStep> {
+    vec![
+        ReleaseEvidenceStep {
+            name: "public-surface",
+            command: &["cargo", "xtask", "public-surface"],
+            artifacts: &[],
+        },
+        ReleaseEvidenceStep {
+            name: "docs-sync",
+            command: &["cargo", "xtask", "docs-sync", "--check"],
+            artifacts: &[],
+        },
+        ReleaseEvidenceStep {
+            name: "publish-preflight",
+            command: &["cargo", "xtask", "publish-preflight"],
+            artifacts: &["target/xtask/receipt.json"],
+        },
+        ReleaseEvidenceStep {
+            name: "publish-check",
+            command: &["cargo", "xtask", "publish-check"],
+            artifacts: &[],
+        },
+        ReleaseEvidenceStep {
+            name: "pr",
+            command: &["cargo", "xtask", "pr"],
+            artifacts: &["target/xtask/receipt.json"],
+        },
+        ReleaseEvidenceStep {
+            name: "ripr-pr",
+            command: &["cargo", "xtask", "ripr-pr"],
+            artifacts: &[
+                "target/ripr/pr/repo-exposure.json",
+                "target/ripr/pr/summary.md",
+                "target/ripr/pr/review.md",
+            ],
+        },
+        ReleaseEvidenceStep {
+            name: "impacted-evidence",
+            command: &[
+                "cargo",
+                "xtask",
+                "impacted-evidence",
+                "--base",
+                "origin/main",
+            ],
+            artifacts: &["target/xtask/impacted-evidence/latest.json"],
+        },
+        ReleaseEvidenceStep {
+            name: "no-blob",
+            command: &["cargo", "xtask", "no-blob"],
+            artifacts: &[],
+        },
+        ReleaseEvidenceStep {
+            name: "examples-smoke",
+            command: &["cargo", "xtask", "examples-smoke"],
+            artifacts: &[],
+        },
+        ReleaseEvidenceStep {
+            name: "economics",
+            command: &["cargo", "xtask", "economics"],
+            artifacts: &[
+                "target/xtask/economics/latest.json",
+                "target/xtask/economics/latest.md",
+            ],
+        },
+        ReleaseEvidenceStep {
+            name: "audit-surface",
+            command: &["cargo", "xtask", "audit-surface"],
+            artifacts: &[
+                "target/xtask/audit-surface/latest.json",
+                "target/xtask/audit-surface/latest.md",
+            ],
+        },
+        ReleaseEvidenceStep {
+            name: "perf",
+            command: &["cargo", "xtask", "perf", "--compare"],
+            artifacts: &["target/xtask/perf/latest.json"],
+        },
+        ReleaseEvidenceStep {
+            name: "mutants-nightly-public",
+            command: &["cargo", "xtask", "mutants-nightly", "--scope", "public"],
+            artifacts: &[
+                "target/mutation/nightly-summary.json",
+                "target/mutation/nightly-summary.md",
+                "target/mutation/nightly-receipt.json",
+                "target/mutation/nightly-receipt.md",
+                "target/mutation/survivors.json",
+                "target/mutation/survivors.md",
+            ],
+        },
+    ]
+}
+
+fn release_evidence(version: &str, out_dir: &Path, dry_run: bool) -> Result<()> {
+    if version.trim().is_empty() {
+        bail!("--version must not be empty");
+    }
+
+    let steps = release_evidence_steps();
+    let mut receipt = release_evidence_receipt(version, dry_run, &steps);
+
+    if dry_run {
+        write_release_evidence_artifacts(out_dir, &receipt)?;
+        println!(
+            "release-evidence: planned {} commands for v{}",
+            receipt.commands.len(),
+            receipt.version
+        );
+        println!(
+            "release-evidence: wrote {} and {}",
+            out_dir.join("release-evidence.json").display(),
+            out_dir.join("release-evidence.md").display()
+        );
+        return Ok(());
+    }
+
+    for (idx, step) in steps.iter().enumerate() {
+        receipt.commands[idx].status = "running".to_string();
+        match run_release_evidence_step(step) {
+            Ok(()) => receipt.commands[idx].status = "ok".to_string(),
+            Err(err) => {
+                receipt.commands[idx].status = "failed".to_string();
+                write_release_evidence_artifacts(out_dir, &receipt)?;
+                return Err(err)
+                    .with_context(|| format!("release evidence step failed: {}", step.name));
+            }
+        }
+    }
+
+    write_release_evidence_artifacts(out_dir, &receipt)?;
+    println!(
+        "release-evidence: wrote {} and {}",
+        out_dir.join("release-evidence.json").display(),
+        out_dir.join("release-evidence.md").display()
+    );
+    Ok(())
+}
+
+fn release_evidence_receipt(
+    version: &str,
+    dry_run: bool,
+    steps: &[ReleaseEvidenceStep],
+) -> ReleaseEvidenceReceipt {
+    let artifacts = steps
+        .iter()
+        .flat_map(|step| step.artifacts.iter().copied())
+        .map(str::to_string)
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect::<Vec<_>>();
+
+    ReleaseEvidenceReceipt {
+        schema_version: 1,
+        lane: "release-evidence".to_string(),
+        version: version.trim().to_string(),
+        dry_run,
+        generated_at: chrono::Utc::now().to_rfc3339(),
+        git_sha: git_head_sha().ok(),
+        commands: steps
+            .iter()
+            .map(|step| ReleaseEvidenceCommandReceipt {
+                name: step.name.to_string(),
+                command: step
+                    .command
+                    .iter()
+                    .map(|part| (*part).to_string())
+                    .collect(),
+                status: if dry_run { "planned" } else { "pending" }.to_string(),
+                artifacts: step
+                    .artifacts
+                    .iter()
+                    .map(|artifact| (*artifact).to_string())
+                    .collect(),
+            })
+            .collect(),
+        artifacts,
+        claim_boundary: RELEASE_EVIDENCE_CLAIM_BOUNDARY.to_vec(),
+    }
+}
+
+fn run_release_evidence_step(step: &ReleaseEvidenceStep) -> Result<()> {
+    let Some((program, args)) = step.command.split_first() else {
+        bail!("release evidence step {} has no command", step.name);
+    };
+    let mut cmd = Command::new(program);
+    cmd.args(args);
+    run(&mut cmd)
+}
+
+fn write_release_evidence_artifacts(
+    out_dir: &Path,
+    receipt: &ReleaseEvidenceReceipt,
+) -> Result<()> {
+    fs::create_dir_all(out_dir)
+        .with_context(|| format!("failed to create {}", out_dir.display()))?;
+    write_json_pretty(&out_dir.join("release-evidence.json"), receipt)?;
+    fs::write(
+        out_dir.join("release-evidence.md"),
+        render_release_evidence_markdown(receipt),
+    )
+    .with_context(|| {
+        format!(
+            "failed to write {}",
+            out_dir.join("release-evidence.md").display()
+        )
+    })?;
+    Ok(())
+}
+
+fn render_release_evidence_markdown(receipt: &ReleaseEvidenceReceipt) -> String {
+    let mut md = String::new();
+    md.push_str("# Release Evidence\n\n");
+    md.push_str(&format!("- Lane: `{}`\n", receipt.lane));
+    md.push_str(&format!("- Version: `{}`\n", receipt.version));
+    md.push_str(&format!("- Dry run: `{}`\n", receipt.dry_run));
+    if let Some(sha) = &receipt.git_sha {
+        md.push_str(&format!("- Git SHA: `{sha}`\n"));
+    }
+    md.push_str(&format!("- Generated at: `{}`\n", receipt.generated_at));
+    md.push_str("\n## Commands\n\n");
+    md.push_str("| Step | Status | Command | Artifacts |\n");
+    md.push_str("| --- | --- | --- | --- |\n");
+    for command in &receipt.commands {
+        let artifacts = if command.artifacts.is_empty() {
+            "-".to_string()
+        } else {
+            command
+                .artifacts
+                .iter()
+                .map(|artifact| format!("`{artifact}`"))
+                .collect::<Vec<_>>()
+                .join("<br>")
+        };
+        md.push_str(&format!(
+            "| `{}` | `{}` | `{}` | {} |\n",
+            command.name,
+            command.status,
+            command.command.join(" "),
+            artifacts
+        ));
+    }
+    md.push_str("\n## Claim Boundary\n\n");
+    for claim in &receipt.claim_boundary {
+        md.push_str(&format!("- {claim}\n"));
+    }
+    md
 }
 
 fn impacted_evidence(base: Option<String>) -> Result<()> {
@@ -5576,6 +5876,59 @@ index 1111111..2222222 100644
             "expected at least one perf budget entry"
         );
         assert!(parsed.entries.iter().all(|e| !e.id.is_empty()));
+    }
+
+    #[test]
+    fn release_evidence_dry_run_plans_release_gates() {
+        let steps = release_evidence_steps();
+        let names = steps.iter().map(|step| step.name).collect::<BTreeSet<_>>();
+
+        for expected in [
+            "public-surface",
+            "docs-sync",
+            "publish-preflight",
+            "publish-check",
+            "pr",
+            "ripr-pr",
+            "impacted-evidence",
+            "no-blob",
+            "examples-smoke",
+            "economics",
+            "audit-surface",
+            "perf",
+            "mutants-nightly-public",
+        ] {
+            assert!(names.contains(expected), "missing release gate {expected}");
+        }
+
+        let receipt = release_evidence_receipt("0.7.0", true, &steps);
+        assert_eq!(receipt.version, "0.7.0");
+        assert!(receipt.dry_run);
+        assert!(receipt.commands.iter().all(|cmd| cmd.status == "planned"));
+        assert!(
+            receipt
+                .artifacts
+                .contains(&"target/ripr/pr/summary.md".to_string())
+        );
+        assert!(
+            receipt
+                .artifacts
+                .contains(&"target/mutation/nightly-receipt.md".to_string())
+        );
+    }
+
+    #[test]
+    fn release_evidence_markdown_summarizes_commands_and_boundaries() {
+        let steps = release_evidence_steps();
+        let receipt = release_evidence_receipt("0.7.0", true, &steps);
+        let markdown = render_release_evidence_markdown(&receipt);
+
+        assert!(markdown.contains("Version: `0.7.0`"));
+        assert!(markdown.contains("cargo xtask mutants-nightly --scope public"));
+        assert!(
+            markdown
+                .contains("release evidence does not make uselesskey production key management")
+        );
     }
 
     #[test]
