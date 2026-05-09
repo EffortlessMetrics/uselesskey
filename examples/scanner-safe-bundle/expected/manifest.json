@@ -1,0 +1,131 @@
+{
+  "version": 1,
+  "profile": "scanner-safe",
+  "seed": "uselesskey-bundle-seed",
+  "label": "bundle",
+  "format": "jwk",
+  "files": [
+    "rsa.jwk.json",
+    "ecdsa.jwk.json",
+    "ed25519.jwk.json",
+    "hmac.jwk.json",
+    "token.json",
+    "x509.pem",
+    "jwk.jwk.json",
+    "jwks.jwks.json",
+    "receipts/materialization.json",
+    "receipts/audit-surface.json"
+  ],
+  "artifacts": [
+    {
+      "path": "rsa.jwk.json",
+      "kind": "rsa",
+      "format": "jwk",
+      "profile": "scanner-safe",
+      "lanes": [
+        "runtime",
+        "materialized"
+      ],
+      "scanner_safe": true,
+      "description": "public fixture material"
+    },
+    {
+      "path": "ecdsa.jwk.json",
+      "kind": "ecdsa",
+      "format": "jwk",
+      "profile": "scanner-safe",
+      "lanes": [
+        "runtime",
+        "materialized"
+      ],
+      "scanner_safe": true,
+      "description": "public fixture material"
+    },
+    {
+      "path": "ed25519.jwk.json",
+      "kind": "ed25519",
+      "format": "jwk",
+      "profile": "scanner-safe",
+      "lanes": [
+        "runtime",
+        "materialized"
+      ],
+      "scanner_safe": true,
+      "description": "public fixture material"
+    },
+    {
+      "path": "hmac.jwk.json",
+      "kind": "hmac",
+      "format": "jwk",
+      "profile": "scanner-safe",
+      "lanes": [
+        "runtime",
+        "materialized"
+      ],
+      "scanner_safe": true,
+      "description": "scanner-safe symmetric JWK shape with invalid material"
+    },
+    {
+      "path": "token.json",
+      "kind": "token",
+      "format": "json-manifest",
+      "profile": "scanner-safe",
+      "lanes": [
+        "runtime",
+        "materialized"
+      ],
+      "scanner_safe": true,
+      "description": "scanner-safe near-miss token shape for parser tests"
+    },
+    {
+      "path": "x509.pem",
+      "kind": "x509",
+      "format": "pem",
+      "profile": "scanner-safe",
+      "lanes": [
+        "runtime",
+        "materialized"
+      ],
+      "scanner_safe": true,
+      "description": "public certificate fixture"
+    },
+    {
+      "path": "jwk.jwk.json",
+      "kind": "jwk",
+      "format": "jwk",
+      "profile": "scanner-safe",
+      "lanes": [
+        "runtime",
+        "materialized"
+      ],
+      "scanner_safe": true,
+      "description": "public fixture material"
+    },
+    {
+      "path": "jwks.jwks.json",
+      "kind": "jwks",
+      "format": "jwks",
+      "profile": "scanner-safe",
+      "lanes": [
+        "runtime",
+        "materialized"
+      ],
+      "scanner_safe": true,
+      "description": "public fixture material"
+    }
+  ],
+  "receipts": [
+    {
+      "path": "receipts/materialization.json",
+      "kind": "materialization",
+      "profile": "scanner-safe",
+      "description": "deterministic bundle materialization receipt"
+    },
+    {
+      "path": "receipts/audit-surface.json",
+      "kind": "audit-surface",
+      "profile": "scanner-safe",
+      "description": "scanner-safety and lane metadata receipt"
+    }
+  ]
+}

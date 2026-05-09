@@ -1,0 +1,16 @@
+{
+  "data": {
+    "rsa.jwk.json": "<generated-artifact-text>",
+    "ecdsa.jwk.json": "<generated-artifact-text>",
+    "ed25519.jwk.json": "<generated-artifact-text>",
+    "hmac.jwk.json": "<generated-artifact-text>",
+    "token.json": "<generated-artifact-text>",
+    "x509.pem": "<generated-artifact-text>",
+    "jwk.jwk.json": "<generated-artifact-text>",
+    "jwks.jwks.json": "<generated-artifact-text>"
+  },
+  "metadata": {
+    "mode": "one_shot_export",
+    "source": "uselesskey-cli"
+  }
+}

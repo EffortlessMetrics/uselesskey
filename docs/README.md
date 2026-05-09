@@ -44,6 +44,7 @@ Validation lanes and the claim boundaries behind them.
 Release-candidate proof and public promise evidence.
 
 - [evidence-matrix-v0.6.1.md](release/evidence-matrix-v0.6.1.md) — v0.6.1 public fixture promise evidence matrix
+- [scanner-safe-bundle](../examples/scanner-safe-bundle/README.md) — Reference manifest, receipts, and Kubernetes/Vault payload shapes for the default bundle lane
 
 ## Explanation
 

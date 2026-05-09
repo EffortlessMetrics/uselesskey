@@ -23,7 +23,7 @@ This roadmap reflects the strategic direction for uselesskey as a **test-fixture
   scanner-safe profile metadata, deterministic receipts, and Kubernetes/Vault
   payload emitters.
 - [ ] Release governance and post-release audit automation.
-- [ ] Release-facing reference bundle manifests and downstream fixture recipes.
+- [x] Release-facing reference bundle manifests and downstream fixture recipes.
 
 ## Shipped
 
