@@ -59,16 +59,14 @@ The v0.7.0 release candidate must attach or link a generated scanner-safe bundle
 proof:
 
 ```bash
-cargo run -p uselesskey-cli -- bundle --profile scanner-safe --out target/uselesskey-bundle
-cargo run -p uselesskey-cli -- verify-bundle --path target/uselesskey-bundle
-cargo run -p uselesskey-cli -- export k8s --bundle-dir target/uselesskey-bundle --name uselesskey-fixtures --namespace tests --out target/uselesskey-bundle/secret.yaml
-cargo run -p uselesskey-cli -- export vault-kv-json --bundle-dir target/uselesskey-bundle --out target/uselesskey-bundle/kv-v2.json
-cargo xtask no-blob
+cargo xtask bundle-proof --profile scanner-safe --out target/release-evidence/scanner-safe
 ```
 
-Record the generated `manifest.json`, `receipts/materialization.json`,
-`receipts/audit-surface.json`, Kubernetes payload, Vault payload, verifier
-result, and no-blob result in the release PR or release notes.
+Record `scanner-safe-bundle-proof.json`,
+`scanner-safe-bundle-proof.md`, the generated `manifest.json`,
+`receipts/materialization.json`, `receipts/audit-surface.json`, Kubernetes
+payload, Vault payload, verifier result, inspection summary, and no-blob result
+in the release PR or release notes.
 
 ## Claim Boundaries
 

@@ -45,6 +45,8 @@ Before tagging, make sure the release PR has already:
 - updated `CHANGELOG.md`
 - refreshed versioned `uselesskey*` dependency snippets in README/doc examples
 - refreshed receipt docs via `cargo xtask economics` and `cargo xtask audit-surface`
+- generated scanner-safe bundle proof with
+  `cargo xtask bundle-proof --profile scanner-safe --out target/release-evidence/scanner-safe`
 - generated release evidence with
   `cargo xtask release-evidence --version 0.7.0 --out target/release-evidence`
 - mapped release checklist lines in
