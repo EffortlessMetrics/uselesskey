@@ -45,6 +45,10 @@ Before tagging, make sure the release PR has already:
 - updated `CHANGELOG.md`
 - refreshed versioned `uselesskey*` dependency snippets in README/doc examples
 - refreshed receipt docs via `cargo xtask economics` and `cargo xtask audit-surface`
+- reviewed the release category notes in
+  [`docs/release/v0.6.1-category-notes.md`](../release/v0.6.1-category-notes.md)
+- prepared the post-release audit checklist in
+  [`docs/release/post-release-audit.md`](../release/post-release-audit.md)
 
 ## Publish
 
@@ -59,3 +63,10 @@ This command handles crates.io indexing lag automatically. Current behavior:
 - backs off on rate limits (`429` / `too many requests`) with `120 s * attempt`
 - treats "already uploaded" / "already exists" as success for reruns
 - waits 30 s after each successful publish for indexing
+
+## Post-release audit
+
+After publishing, run the
+[post-release audit](../release/post-release-audit.md) before broad
+announcement. The audit verifies GitHub release visibility, crates.io/docs.rs
+state, scanner-safe bundle verification, and evidence artifact links.

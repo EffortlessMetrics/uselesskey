@@ -33,7 +33,7 @@ This plan decomposes `roadmap.md` into milestone-aligned execution items.
 - [x] Baseline performance report
 - [x] Scheduled/manual perf workflow
 - [x] CI threshold policy for benchmark trends
-- [ ] Release category notes + post-release audit
+- [x] Release category notes + post-release audit
 - [x] Public surface promise map
 
 ## v0.6.1 export bundles
