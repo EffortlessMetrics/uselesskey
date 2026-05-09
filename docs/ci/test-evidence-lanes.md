@@ -133,6 +133,11 @@ plus `target/mutation/survivors.json`; expired classifications are reported
 there until the later receipt lane can compare new cargo-mutants output against
 the ledger.
 
+The nightly lane also writes `target/mutation/nightly-receipt.json` and
+`target/mutation/nightly-receipt.md`. Dry runs mark crates as `planned`; actual
+scheduled/manual runs parse cargo-mutants `outcomes.json` files into found,
+caught, survived, unviable, timeout, and other counts.
+
 ## Lane 4: Release Evidence
 
 Runs for release branches, release candidates, or tag candidates.

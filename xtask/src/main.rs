@@ -1643,6 +1643,44 @@ fn collect_dependency_version_snippet_errors(
 }
 
 fn run_mutants(crates: &[&str]) -> Result<()> {
+    ensure_cargo_mutants_installed()?;
+
+    eprintln!("mutants targets: {crates:?}");
+
+    let tool_env = MutationToolEnv::detect();
+
+    for name in crates {
+        let Some(mut cmd) = mutation_command_for_crate(name, None, &tool_env)? else {
+            continue;
+        };
+        run(&mut cmd)?;
+    }
+
+    Ok(())
+}
+
+struct MutationToolEnv {
+    all_features_requested: bool,
+    nasm_available: bool,
+}
+
+impl MutationToolEnv {
+    fn detect() -> Self {
+        Self {
+            all_features_requested: env::var("CI").is_ok()
+                || env::var("XTASK_MUTANTS_ALL_FEATURES").is_ok(),
+            nasm_available: !cfg!(windows)
+                || Command::new("nasm")
+                    .arg("-v")
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null())
+                    .status()
+                    .is_ok_and(|s| s.success()),
+        }
+    }
+}
+
+fn ensure_cargo_mutants_installed() -> Result<()> {
     let have = Command::new("cargo")
         .args(["mutants", "--version"])
         .stdout(Stdio::null())
@@ -1654,71 +1692,65 @@ fn run_mutants(crates: &[&str]) -> Result<()> {
         bail!("cargo-mutants is not installed. Install with: cargo install cargo-mutants");
     }
 
-    eprintln!("mutants targets: {crates:?}");
+    Ok(())
+}
 
-    let all_features_requested =
-        env::var("CI").is_ok() || env::var("XTASK_MUTANTS_ALL_FEATURES").is_ok();
-    let nasm_available = !cfg!(windows)
-        || Command::new("nasm")
-            .arg("-v")
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status()
-            .is_ok_and(|s| s.success());
+fn mutation_command_for_crate(
+    name: &str,
+    output_dir: Option<&Path>,
+    tool_env: &MutationToolEnv,
+) -> Result<Option<Command>> {
+    let mut cmd = Command::new("cargo");
+    cmd.arg("mutants");
 
-    for name in crates {
-        let mut cmd = Command::new("cargo");
-        cmd.arg("mutants");
+    let needs_aws_lc_features = name == "uselesskey-aws-lc-rs";
+    let use_all_features = if needs_aws_lc_features {
+        tool_env.all_features_requested || tool_env.nasm_available
+    } else {
+        true
+    };
 
-        let needs_aws_lc_features = *name == "uselesskey-aws-lc-rs";
-        let use_all_features = if needs_aws_lc_features {
-            all_features_requested || nasm_available
-        } else {
-            true
-        };
-
-        // For aws-lc-rs specifically, all-features on Windows requires NASM.
-        // For all other crates, run with all features to avoid false misses
-        // from feature-gated APIs (e.g. JWK helpers).
-        if needs_aws_lc_features && !use_all_features {
-            eprintln!(
-                "skipping mutants for {name}: set XTASK_MUTANTS_ALL_FEATURES=1 or install NASM"
-            );
-            continue;
-        }
-
-        if use_all_features {
-            cmd.arg("--all-features");
-        }
-
-        if *name == "uselesskey-cli" {
-            // The CLI crate carries a layer of orchestration and export plumbing
-            // that is already covered by integration tests and receipt checks, but
-            // cargo-mutants generates a large amount of low-signal mutations in
-            // those boundary helpers. Keep mutation testing focused on the
-            // fixture semantics rather than path/format glue.
-            for exclude_re in [
-                "fallback_label",
-                "normalize_pem_label",
-                "normalize_ssh_comment",
-                "fixture_const_name",
-                "preferred_bundle_format",
-                "generate_artifact",
-                "artifact_bytes",
-                "write_artifact_to_path",
-                "read_input",
-                "format_extension",
-                "file_name_string",
-            ] {
-                cmd.args(["--exclude-re", exclude_re]);
-            }
-        }
-
-        cmd.args(["--manifest-path", &format!("crates/{name}/Cargo.toml")]);
-        run(&mut cmd)?;
+    // For aws-lc-rs specifically, all-features on Windows requires NASM.
+    // For all other crates, run with all features to avoid false misses from
+    // feature-gated APIs (e.g. JWK helpers).
+    if needs_aws_lc_features && !use_all_features {
+        eprintln!("skipping mutants for {name}: set XTASK_MUTANTS_ALL_FEATURES=1 or install NASM");
+        return Ok(None);
     }
 
-    Ok(())
+    if use_all_features {
+        cmd.arg("--all-features");
+    }
+
+    if name == "uselesskey-cli" {
+        // The CLI crate carries a layer of orchestration and export plumbing
+        // that is already covered by integration tests and receipt checks, but
+        // cargo-mutants generates a large amount of low-signal mutations in
+        // those boundary helpers. Keep mutation testing focused on the
+        // fixture semantics rather than path/format glue.
+        for exclude_re in [
+            "fallback_label",
+            "normalize_pem_label",
+            "normalize_ssh_comment",
+            "fixture_const_name",
+            "preferred_bundle_format",
+            "generate_artifact",
+            "artifact_bytes",
+            "write_artifact_to_path",
+            "read_input",
+            "format_extension",
+            "file_name_string",
+        ] {
+            cmd.args(["--exclude-re", exclude_re]);
+        }
+    }
+
+    if let Some(output_dir) = output_dir {
+        cmd.args(["--output", &output_dir.display().to_string()]);
+    }
+
+    cmd.args(["--manifest-path", &format!("crates/{name}/Cargo.toml")]);
+    Ok(Some(cmd))
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -1730,6 +1762,32 @@ struct MutationNightlySummary {
     crates: Vec<String>,
     survivor_ledger: MutationSurvivorLedgerSummary,
     claim_boundary: Vec<&'static str>,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+struct MutationEvidenceReceipt {
+    schema_version: u32,
+    lane: &'static str,
+    scope: MutationNightlyScope,
+    dry_run: bool,
+    crate_results: Vec<MutationEvidenceCrateResult>,
+    survivor_ledger: MutationSurvivorLedgerSummary,
+    claim_boundary: Vec<&'static str>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+struct MutationEvidenceCrateResult {
+    #[serde(rename = "crate")]
+    crate_name: String,
+    status: String,
+    mutants_found: usize,
+    caught: usize,
+    survived: usize,
+    unviable: usize,
+    timeouts: usize,
+    other: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    outcomes_path: Option<String>,
 }
 
 #[derive(Debug, Default, serde::Deserialize)]
@@ -1778,7 +1836,12 @@ fn mutants_nightly(
     dry_run: bool,
 ) -> Result<()> {
     let crates = mutation_nightly_crates(scope, crate_name.as_deref())?;
-    write_mutation_nightly_artifacts(scope, dry_run, &crates)?;
+    let survivor_report = mutation_survivor_report(
+        Path::new(MUTATION_SURVIVOR_LEDGER_PATH),
+        chrono::Utc::now().date_naive(),
+    )?;
+    let planned_results = planned_mutation_results(&crates);
+    write_mutation_nightly_artifacts(scope, dry_run, &crates, &survivor_report, &planned_results)?;
 
     println!(
         "mutants-nightly: scope={}, crates={}, dry_run={dry_run}",
@@ -1791,7 +1854,22 @@ fn mutants_nightly(
     }
 
     let crate_refs = crates.iter().map(String::as_str).collect::<Vec<_>>();
-    run_mutants(&crate_refs)
+    let mutation_run = run_mutants_with_outputs(&crate_refs, Path::new("target/mutation/runs"))?;
+    write_mutation_evidence_receipt(
+        Path::new("target/mutation"),
+        scope,
+        false,
+        &mutation_run.crate_results,
+        &survivor_report,
+    )?;
+    if !mutation_run.failed_crates.is_empty() {
+        bail!(
+            "mutation evidence failed for crates: {}",
+            mutation_run.failed_crates.join(", ")
+        );
+    }
+
+    Ok(())
 }
 
 fn mutation_nightly_crates(
@@ -1829,14 +1907,12 @@ fn write_mutation_nightly_artifacts(
     scope: MutationNightlyScope,
     dry_run: bool,
     crates: &[String],
+    survivor_report: &MutationSurvivorLedgerReport,
+    crate_results: &[MutationEvidenceCrateResult],
 ) -> Result<()> {
     let out_dir = Path::new("target/mutation");
     fs::create_dir_all(out_dir)
         .with_context(|| format!("failed to create {}", out_dir.display()))?;
-    let survivor_report = mutation_survivor_report(
-        Path::new(MUTATION_SURVIVOR_LEDGER_PATH),
-        chrono::Utc::now().date_naive(),
-    )?;
 
     let summary = MutationNightlySummary {
         schema_version: 1,
@@ -1850,6 +1926,7 @@ fn write_mutation_nightly_artifacts(
 
     write_json_pretty(&out_dir.join("nightly-summary.json"), &summary)?;
     write_json_pretty(&out_dir.join("survivors.json"), &survivor_report)?;
+    write_mutation_evidence_receipt(out_dir, scope, dry_run, crate_results, survivor_report)?;
     fs::write(
         out_dir.join("nightly-summary.md"),
         render_mutation_nightly_markdown(&summary),
@@ -1862,7 +1939,7 @@ fn write_mutation_nightly_artifacts(
     })?;
     fs::write(
         out_dir.join("survivors.md"),
-        render_mutation_survivors_markdown(&survivor_report),
+        render_mutation_survivors_markdown(survivor_report),
     )
     .with_context(|| format!("failed to write {}", out_dir.join("survivors.md").display()))?;
 
@@ -1889,6 +1966,227 @@ fn render_mutation_nightly_markdown(summary: &MutationNightlySummary) -> String 
     }
     md.push_str("\n## Claim Boundary\n\n");
     for claim in &summary.claim_boundary {
+        md.push_str(&format!("- {claim}\n"));
+    }
+    md
+}
+
+fn planned_mutation_results(crates: &[String]) -> Vec<MutationEvidenceCrateResult> {
+    crates
+        .iter()
+        .map(|crate_name| MutationEvidenceCrateResult {
+            crate_name: crate_name.clone(),
+            status: "planned".to_string(),
+            mutants_found: 0,
+            caught: 0,
+            survived: 0,
+            unviable: 0,
+            timeouts: 0,
+            other: 0,
+            outcomes_path: None,
+        })
+        .collect()
+}
+
+struct MutationRunEvidence {
+    crate_results: Vec<MutationEvidenceCrateResult>,
+    failed_crates: Vec<String>,
+}
+
+fn run_mutants_with_outputs(crates: &[&str], output_root: &Path) -> Result<MutationRunEvidence> {
+    ensure_cargo_mutants_installed()?;
+    fs::create_dir_all(output_root)
+        .with_context(|| format!("failed to create {}", output_root.display()))?;
+
+    let tool_env = MutationToolEnv::detect();
+    let mut results = Vec::new();
+    let mut failed_crates = Vec::new();
+
+    for name in crates {
+        let output_dir = output_root.join(name);
+        if output_dir.exists() {
+            fs::remove_dir_all(&output_dir)
+                .with_context(|| format!("failed to remove {}", output_dir.display()))?;
+        }
+
+        let Some(mut cmd) = mutation_command_for_crate(name, Some(&output_dir), &tool_env)? else {
+            results.push(MutationEvidenceCrateResult {
+                crate_name: (*name).to_string(),
+                status: "skipped".to_string(),
+                mutants_found: 0,
+                caught: 0,
+                survived: 0,
+                unviable: 0,
+                timeouts: 0,
+                other: 0,
+                outcomes_path: None,
+            });
+            continue;
+        };
+
+        eprintln!("{} {:?}", " RUN ".on_blue().black().bold(), cmd);
+        let status = cmd
+            .status()
+            .with_context(|| format!("failed to run cargo-mutants for {name}"))?;
+        let mut result = match read_mutation_evidence_result(name, &output_dir) {
+            Ok(result) => result,
+            Err(err) if status.success() => return Err(err),
+            Err(_) => MutationEvidenceCrateResult {
+                crate_name: (*name).to_string(),
+                status: "failed-no-outcomes".to_string(),
+                mutants_found: 0,
+                caught: 0,
+                survived: 0,
+                unviable: 0,
+                timeouts: 0,
+                other: 0,
+                outcomes_path: None,
+            },
+        };
+        if !status.success() {
+            result.status = "failed".to_string();
+            failed_crates.push((*name).to_string());
+        }
+        results.push(result);
+    }
+
+    Ok(MutationRunEvidence {
+        crate_results: results,
+        failed_crates,
+    })
+}
+
+fn read_mutation_evidence_result(
+    crate_name: &str,
+    output_dir: &Path,
+) -> Result<MutationEvidenceCrateResult> {
+    let outcomes_path = mutation_outcomes_path(output_dir);
+    let raw = fs::read_to_string(&outcomes_path)
+        .with_context(|| format!("failed to read {}", outcomes_path.display()))?;
+    let outcomes: CargoMutantsOutcomes = serde_json::from_str(&raw)
+        .with_context(|| format!("failed to parse {}", outcomes_path.display()))?;
+    Ok(mutation_evidence_result_from_outcomes(
+        crate_name,
+        Some(outcomes_path.display().to_string()),
+        &outcomes,
+    ))
+}
+
+fn mutation_outcomes_path(output_dir: &Path) -> PathBuf {
+    let nested = output_dir.join("mutants.out/outcomes.json");
+    if nested.is_file() {
+        nested
+    } else {
+        output_dir.join("outcomes.json")
+    }
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct CargoMutantsOutcomes {
+    #[serde(default)]
+    outcomes: Vec<CargoMutantsOutcome>,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct CargoMutantsOutcome {
+    scenario: serde_json::Value,
+    summary: String,
+}
+
+fn mutation_evidence_result_from_outcomes(
+    crate_name: &str,
+    outcomes_path: Option<String>,
+    outcomes: &CargoMutantsOutcomes,
+) -> MutationEvidenceCrateResult {
+    let mut result = MutationEvidenceCrateResult {
+        crate_name: crate_name.to_string(),
+        status: "completed".to_string(),
+        mutants_found: 0,
+        caught: 0,
+        survived: 0,
+        unviable: 0,
+        timeouts: 0,
+        other: 0,
+        outcomes_path,
+    };
+
+    for outcome in &outcomes.outcomes {
+        if outcome.scenario.get("Mutant").is_none() {
+            continue;
+        }
+
+        result.mutants_found += 1;
+        match outcome.summary.as_str() {
+            "CaughtMutant" => result.caught += 1,
+            "MissedMutant" => result.survived += 1,
+            "Unviable" => result.unviable += 1,
+            summary if summary.contains("Timeout") => result.timeouts += 1,
+            _ => result.other += 1,
+        }
+    }
+
+    result
+}
+
+fn write_mutation_evidence_receipt(
+    out_dir: &Path,
+    scope: MutationNightlyScope,
+    dry_run: bool,
+    crate_results: &[MutationEvidenceCrateResult],
+    survivor_report: &MutationSurvivorLedgerReport,
+) -> Result<()> {
+    let receipt = MutationEvidenceReceipt {
+        schema_version: 1,
+        lane: "mutation-nightly",
+        scope,
+        dry_run,
+        crate_results: crate_results.to_vec(),
+        survivor_ledger: survivor_report.summary.clone(),
+        claim_boundary: MUTATION_EVIDENCE_CLAIM_BOUNDARY.to_vec(),
+    };
+
+    write_json_pretty(&out_dir.join("nightly-receipt.json"), &receipt)?;
+    fs::write(
+        out_dir.join("nightly-receipt.md"),
+        render_mutation_evidence_receipt_markdown(&receipt),
+    )
+    .with_context(|| {
+        format!(
+            "failed to write {}",
+            out_dir.join("nightly-receipt.md").display()
+        )
+    })?;
+    Ok(())
+}
+
+fn render_mutation_evidence_receipt_markdown(receipt: &MutationEvidenceReceipt) -> String {
+    let mut md = String::new();
+    md.push_str("# Mutation Evidence Receipt\n\n");
+    md.push_str(&format!("- Lane: `{}`\n", receipt.lane));
+    md.push_str(&format!("- Scope: `{}`\n", receipt.scope.as_str()));
+    md.push_str(&format!("- Dry run: `{}`\n", receipt.dry_run));
+    md.push_str(&format!(
+        "- Known survivor classifications: `{}`\n",
+        receipt.survivor_ledger.known_survivors
+    ));
+    md.push_str("\n## Crate Results\n\n");
+    md.push_str("| Crate | Status | Found | Caught | Survived | Unviable | Timeouts | Other |\n");
+    md.push_str("| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |\n");
+    for result in &receipt.crate_results {
+        md.push_str(&format!(
+            "| `{}` | `{}` | {} | {} | {} | {} | {} | {} |\n",
+            result.crate_name,
+            result.status,
+            result.mutants_found,
+            result.caught,
+            result.survived,
+            result.unviable,
+            result.timeouts,
+            result.other
+        ));
+    }
+    md.push_str("\n## Claim Boundary\n\n");
+    for claim in &receipt.claim_boundary {
         md.push_str(&format!("- {claim}\n"));
     }
     md
@@ -4520,6 +4818,65 @@ expires = "2026-12-01"
             )
             .is_err()
         );
+    }
+
+    #[test]
+    fn mutation_evidence_counts_cargo_mutants_outcomes() {
+        let outcomes: CargoMutantsOutcomes = serde_json::from_str(
+            r#"
+{
+  "outcomes": [
+    { "scenario": "Baseline", "summary": "Success" },
+    {
+      "scenario": { "Mutant": { "name": "caught" } },
+      "summary": "CaughtMutant"
+    },
+    {
+      "scenario": { "Mutant": { "name": "missed" } },
+      "summary": "MissedMutant"
+    },
+    {
+      "scenario": { "Mutant": { "name": "unviable" } },
+      "summary": "Unviable"
+    },
+    {
+      "scenario": { "Mutant": { "name": "timeout" } },
+      "summary": "Timeout"
+    },
+    {
+      "scenario": { "Mutant": { "name": "unknown" } },
+      "summary": "Unknown"
+    }
+  ]
+}
+"#,
+        )
+        .unwrap();
+        let result = mutation_evidence_result_from_outcomes(
+            "uselesskey-token",
+            Some("target/mutation/runs/uselesskey-token/outcomes.json".to_string()),
+            &outcomes,
+        );
+
+        assert_eq!(result.mutants_found, 5);
+        assert_eq!(result.caught, 1);
+        assert_eq!(result.survived, 1);
+        assert_eq!(result.unviable, 1);
+        assert_eq!(result.timeouts, 1);
+        assert_eq!(result.other, 1);
+        assert_eq!(result.status, "completed");
+    }
+
+    #[test]
+    fn planned_mutation_results_mark_crates_as_planned() {
+        let results = planned_mutation_results(&[
+            "uselesskey-core".to_string(),
+            "uselesskey-token".to_string(),
+        ]);
+
+        assert_eq!(results.len(), 2);
+        assert!(results.iter().all(|result| result.status == "planned"));
+        assert!(results.iter().all(|result| result.mutants_found == 0));
     }
 
     #[test]

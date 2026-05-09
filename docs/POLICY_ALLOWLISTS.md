@@ -37,6 +37,7 @@ target/file-policy.md         target/file-policy.json
 target/lint-policy.md         target/lint-policy.json
 target/policy-report.md       target/policy-report.json
 target/mutation/survivors.md  target/mutation/survivors.json
+target/mutation/nightly-receipt.md target/mutation/nightly-receipt.json
 ```
 
 `cargo xtask policy-report` aggregates all four into a single review surface.
