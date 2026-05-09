@@ -212,7 +212,11 @@ command so the tool integration does not silently mask bad evidence.
 `cargo xtask impacted-evidence --base origin/main` writes
 `target/xtask/impacted-evidence/latest.json` and prints the same JSON summary to
 stdout. The summary maps changed paths to public owner crates, explains why a
-path is high risk, and says whether targeted mutation is required.
+path is high risk, and says whether targeted mutation is required. When
+`target/ripr/pr/repo-exposure.json` exists, the same report includes a `ripr`
+routing section that classifies severe exposure gaps, maps them to public owner
+crate surfaces where possible, and lists the focused-test or targeted-mutation
+actions expected from the PR author.
 
 `cargo xtask mutants-pr --changed` uses the same impacted-evidence owner map.
 When no high-risk owner surface changed, it exits successfully without running

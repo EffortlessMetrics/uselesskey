@@ -2449,6 +2449,17 @@ struct ImpactedEvidenceReport {
     owner_crates: Vec<String>,
     requires_targeted_mutation: bool,
     reasons: Vec<String>,
+    ripr: RiprEvidenceRouting,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+struct RiprEvidenceRouting {
+    status: String,
+    requires_targeted_evidence: bool,
+    severe_gap_count: usize,
+    owner_crates: Vec<String>,
+    reasons: Vec<String>,
+    suggested_actions: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -2461,7 +2472,8 @@ struct ImpactedEvidenceRule {
 fn impacted_evidence(base: Option<String>) -> Result<()> {
     let base_ref = base.unwrap_or_else(resolve_base_ref);
     let changed_paths = git_changed_files(&base_ref)?;
-    let report = impacted_evidence_report(&base_ref, &changed_paths);
+    let ripr_json = read_optional_ripr_pr_json(&Path::new(RIPR_PR_DIR).join("repo-exposure.json"))?;
+    let report = impacted_evidence_report_with_ripr(&base_ref, &changed_paths, ripr_json.as_ref());
     let artifact_path = Path::new("target/xtask/impacted-evidence/latest.json");
     write_json_pretty(artifact_path, &report)?;
     println!(
@@ -2473,6 +2485,14 @@ fn impacted_evidence(base: Option<String>) -> Result<()> {
 }
 
 fn impacted_evidence_report(base_ref: &str, changed_paths: &[String]) -> ImpactedEvidenceReport {
+    impacted_evidence_report_with_ripr(base_ref, changed_paths, None)
+}
+
+fn impacted_evidence_report_with_ripr(
+    base_ref: &str,
+    changed_paths: &[String],
+    ripr_json: Option<&serde_json::Value>,
+) -> ImpactedEvidenceReport {
     let mut owner_crates = BTreeSet::new();
     let mut reasons = BTreeSet::new();
     let mut requires_targeted_mutation = false;
@@ -2492,10 +2512,152 @@ fn impacted_evidence_report(base_ref: &str, changed_paths: &[String]) -> Impacte
     ImpactedEvidenceReport {
         schema_version: 1,
         base: base_ref.to_string(),
+        ripr: ripr_evidence_routing(&changed_paths, ripr_json),
         changed_paths,
         owner_crates: owner_crates.into_iter().collect(),
         requires_targeted_mutation,
         reasons: reasons.into_iter().collect(),
+    }
+}
+
+fn read_optional_ripr_pr_json(path: &Path) -> Result<Option<serde_json::Value>> {
+    if !path.is_file() {
+        return Ok(None);
+    }
+
+    let raw =
+        fs::read_to_string(path).with_context(|| format!("failed to read {}", path.display()))?;
+    let json = serde_json::from_str(&raw)
+        .with_context(|| format!("failed to parse {}", path.display()))?;
+    Ok(Some(json))
+}
+
+fn ripr_evidence_routing(
+    changed_paths: &[String],
+    ripr_json: Option<&serde_json::Value>,
+) -> RiprEvidenceRouting {
+    let Some(json) = ripr_json else {
+        return RiprEvidenceRouting {
+            status: "missing".to_string(),
+            requires_targeted_evidence: false,
+            severe_gap_count: 0,
+            owner_crates: Vec::new(),
+            reasons: Vec::new(),
+            suggested_actions: Vec::new(),
+        };
+    };
+
+    if json_str(json, "status") == Some("skipped") {
+        return RiprEvidenceRouting {
+            status: "skipped".to_string(),
+            requires_targeted_evidence: false,
+            severe_gap_count: 0,
+            owner_crates: Vec::new(),
+            reasons: vec!["ripr-skipped".to_string()],
+            suggested_actions: vec![
+                "Install ripr and rerun cargo xtask ripr-pr for oracle-exposure evidence"
+                    .to_string(),
+            ],
+        };
+    }
+
+    let summary = json.get("summary").unwrap_or(&serde_json::Value::Null);
+    let reachable_unrevealed = json_u64(summary, "reachable_unrevealed") as usize;
+    let no_static_path = json_u64(summary, "no_static_path") as usize;
+    let mut reasons = BTreeSet::new();
+    let mut owner_crates = BTreeSet::new();
+
+    if reachable_unrevealed > 0 {
+        reasons.insert("reachable-unrevealed".to_string());
+    }
+    if no_static_path > 0 {
+        reasons.insert("no-static-path".to_string());
+    }
+
+    let findings = json
+        .get("findings")
+        .and_then(serde_json::Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let mut severe_finding_count = 0usize;
+    for finding in findings
+        .iter()
+        .filter(|finding| ripr_finding_is_severe(finding))
+    {
+        severe_finding_count += 1;
+        reasons.insert("severe-finding".to_string());
+        if let Some(owner) = ripr_public_owner_for_finding(finding) {
+            owner_crates.insert(owner);
+        }
+    }
+
+    if reachable_unrevealed + no_static_path > 0 {
+        for owner in ripr_changed_public_owners(changed_paths) {
+            owner_crates.insert(owner);
+        }
+    }
+
+    let severe_gap_count = reachable_unrevealed + no_static_path + severe_finding_count;
+    let owner_crates = owner_crates.into_iter().collect::<Vec<_>>();
+    let requires_targeted_evidence = severe_gap_count > 0 && !owner_crates.is_empty();
+    let mut suggested_actions = Vec::new();
+    if requires_targeted_evidence {
+        suggested_actions.push("Add focused tests for severe ripr exposure gaps".to_string());
+        suggested_actions.push("Run cargo xtask mutants-pr --changed".to_string());
+        for owner in &owner_crates {
+            suggested_actions.push(format!("Run cargo xtask mutants-pr --crate {owner}"));
+        }
+    }
+
+    RiprEvidenceRouting {
+        status: "available".to_string(),
+        requires_targeted_evidence,
+        severe_gap_count,
+        owner_crates,
+        reasons: reasons.into_iter().collect(),
+        suggested_actions,
+    }
+}
+
+fn ripr_finding_is_severe(finding: &serde_json::Value) -> bool {
+    for key in ["severity", "status", "classification"] {
+        let Some(value) = json_str(finding, key) else {
+            continue;
+        };
+        if matches!(
+            value.to_ascii_lowercase().as_str(),
+            "high" | "severe" | "critical" | "reachable_unrevealed" | "no_static_path"
+        ) {
+            return true;
+        }
+    }
+    false
+}
+
+fn ripr_public_owner_for_finding(finding: &serde_json::Value) -> Option<String> {
+    let file = json_str(finding, "file")
+        .or_else(|| json_str(finding, "path"))
+        .or_else(|| json_str(finding, "changed_file"))?;
+    ripr_public_owner_for_path(file)
+}
+
+fn ripr_changed_public_owners(changed_paths: &[String]) -> Vec<String> {
+    let mut owners = BTreeSet::new();
+    for path in changed_paths {
+        if let Some(owner) = ripr_public_owner_for_path(path) {
+            owners.insert(owner);
+        }
+    }
+    owners.into_iter().collect()
+}
+
+fn ripr_public_owner_for_path(path: &str) -> Option<String> {
+    let normalized = path.replace('\\', "/");
+    let rule = impacted_evidence_rule(&normalized)?;
+    if PUBLISH_CRATES.contains(&rule.owner_crate.as_str()) {
+        Some(rule.owner_crate)
+    } else {
+        None
     }
 }
 
@@ -4598,6 +4760,80 @@ mod tests {
         assert!(summary.contains("Status: skipped"));
         assert!(summary.contains("ripr missing"));
         assert!(dir.path().join("review.md").exists());
+    }
+
+    #[test]
+    fn impacted_evidence_routes_ripr_summary_gap_to_changed_owner() {
+        let paths = vec!["crates/uselesskey-token/src/srp/shape.rs".to_string()];
+        let ripr = serde_json::json!({
+            "summary": {
+                "reachable_unrevealed": 1,
+                "no_static_path": 0
+            },
+            "findings": []
+        });
+
+        let report = impacted_evidence_report_with_ripr("origin/main", &paths, Some(&ripr));
+
+        assert!(report.ripr.requires_targeted_evidence);
+        assert_eq!(report.ripr.severe_gap_count, 1);
+        assert_eq!(
+            report.ripr.owner_crates,
+            vec!["uselesskey-token".to_string()]
+        );
+        assert_eq!(
+            report.ripr.reasons,
+            vec!["reachable-unrevealed".to_string()]
+        );
+        assert!(
+            report
+                .ripr
+                .suggested_actions
+                .contains(&"Run cargo xtask mutants-pr --changed".to_string())
+        );
+    }
+
+    #[test]
+    fn impacted_evidence_routes_ripr_severe_finding_to_public_owner() {
+        let paths = vec!["docs/ci/test-evidence-lanes.md".to_string()];
+        let ripr = serde_json::json!({
+            "summary": {
+                "reachable_unrevealed": 0,
+                "no_static_path": 0
+            },
+            "findings": [{
+                "id": "finding-1",
+                "file": "crates/uselesskey-cli/src/bundle.rs",
+                "severity": "critical",
+                "message": "bundle metadata has weak revealability"
+            }]
+        });
+
+        let report = impacted_evidence_report_with_ripr("origin/main", &paths, Some(&ripr));
+
+        assert!(report.ripr.requires_targeted_evidence);
+        assert_eq!(report.ripr.severe_gap_count, 1);
+        assert_eq!(report.ripr.owner_crates, vec!["uselesskey-cli".to_string()]);
+        assert_eq!(report.ripr.reasons, vec!["severe-finding".to_string()]);
+    }
+
+    #[test]
+    fn impacted_evidence_keeps_ripr_severe_docs_gap_advisory_without_owner() {
+        let paths = vec!["docs/ci/test-evidence-lanes.md".to_string()];
+        let ripr = serde_json::json!({
+            "summary": {
+                "reachable_unrevealed": 1,
+                "no_static_path": 0
+            },
+            "findings": []
+        });
+
+        let report = impacted_evidence_report_with_ripr("origin/main", &paths, Some(&ripr));
+
+        assert!(!report.ripr.requires_targeted_evidence);
+        assert_eq!(report.ripr.severe_gap_count, 1);
+        assert!(report.ripr.owner_crates.is_empty());
+        assert!(report.ripr.suggested_actions.is_empty());
     }
 
     #[test]

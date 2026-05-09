@@ -92,27 +92,10 @@ jobs:
           from pathlib import Path
 
           impacted = json.loads(Path("target/xtask/impacted-evidence/latest.json").read_text())
-          ripr_path = Path("target/ripr/pr/repo-exposure.json")
-          ripr = json.loads(ripr_path.read_text()) if ripr_path.exists() else {}
-          summary = ripr.get("summary") or {}
-          findings = ripr.get("findings") or []
-
-          def as_int(value):
-              try:
-                  return int(value)
-              except (TypeError, ValueError):
-                  return 0
-
-          severe_gap = as_int(summary.get("reachable_unrevealed")) > 0
-          severe_gap = severe_gap or as_int(summary.get("no_static_path")) > 0
-          severe_gap = severe_gap or any(
-              str(finding.get("severity", "")).lower() in {"high", "severe", "critical"}
-              for finding in findings
-              if isinstance(finding, dict)
-          )
+          ripr = impacted.get("ripr") or {}
 
           print(f"requires_targeted_mutation={str(bool(impacted.get('requires_targeted_mutation'))).lower()}")
-          print(f"ripr_severe_gap={str(severe_gap).lower()}")
+          print(f"ripr_severe_gap={str(bool(ripr.get('requires_targeted_evidence'))).lower()}")
           PY
 
       - name: xtask pr
