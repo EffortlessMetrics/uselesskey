@@ -168,10 +168,12 @@ For a high-risk PR:
 
 1. Run the fast local gates.
 2. Run `cargo xtask ripr-pr` to find missing or weak test oracles.
-3. Add focused tests for severe exposure gaps.
-4. Run `cargo xtask mutants-pr --changed` or
+3. Run `cargo xtask impacted-evidence --base origin/main` to identify the
+   evidence owner crates and whether targeted mutation is required.
+4. Add focused tests for severe exposure gaps.
+5. Run `cargo xtask mutants-pr --changed` or
    `cargo xtask mutants-pr --crate <crate> --full-owner` for the owner crate.
-5. Record the exact mutation command and result in the PR body.
+6. Record the exact mutation command and result in the PR body.
 
 `cargo xtask ripr-pr` treats `ripr` as an external tool and writes advisory
 artifacts under `target/ripr/pr/`:
@@ -185,3 +187,8 @@ Pull request CI uploads that directory as the `ripr-pr` artifact.
 If `ripr` is not installed, the command writes skipped artifacts with a clear
 reason and exits successfully. Other `ripr` runtime failures should fail the
 command so the tool integration does not silently mask bad evidence.
+
+`cargo xtask impacted-evidence --base origin/main` writes
+`target/xtask/impacted-evidence/latest.json` and prints the same JSON summary to
+stdout. The summary maps changed paths to public owner crates, explains why a
+path is high risk, and says whether targeted mutation is required.
