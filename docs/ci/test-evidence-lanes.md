@@ -233,3 +233,9 @@ Pull request CI runs `cargo xtask impacted-evidence` after `ripr-pr`, uploads
 - the PR has a `release-risk` label;
 - impacted evidence marks the diff as requiring targeted mutation;
 - `ripr` reports a severe exposure gap on the changed surface.
+
+The PR workflow also writes a GitHub step summary after the evidence-producing
+steps. The summary lists fast-gate statuses, RIPR counts and severe-gap routing,
+targeted mutation routing, impacted owner crates, suggested actions, and the
+uploaded artifact names. It is a review aid; the underlying gates and artifacts
+remain the source of truth.
