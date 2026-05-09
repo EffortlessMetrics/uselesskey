@@ -175,7 +175,8 @@ Signals:
 - repository-level `ripr` exposure summary;
 - `cargo xtask public-surface`;
 - package proof and publish dry-runs;
-- bundle generation and `verify-bundle`;
+- `cargo xtask bundle-proof --profile scanner-safe` for bundle generation,
+  `verify-bundle`, `inspect-bundle`, export handoff, and no-blob proof;
 - scanner-safe `no-blob` proof;
 - docs/examples smoke;
 - adapter matrix checks;
