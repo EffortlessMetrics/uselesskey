@@ -1,0 +1,111 @@
+name: Performance Evidence
+
+on:
+  schedule:
+    - cron: "37 8 * * 1"
+  workflow_dispatch:
+    inputs:
+      compare:
+        description: Compare latest measurements against docs/metadata/perf-baselines.json.
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  perf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      # actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name: Install Rust toolchain
+        run: rustup toolchain install stable --profile minimal
+
+      - name: Install NASM
+        run: sudo apt-get update && sudo apt-get install -y nasm
+
+      - name: Run performance evidence
+        shell: bash
+        run: |
+          compare="${{ inputs.compare }}"
+
+          args=()
+          if [[ -z "$compare" || "$compare" == "true" ]]; then
+            args+=(--compare)
+          fi
+
+          cargo xtask perf "${args[@]}"
+
+      - name: Write performance receipt summary
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          out_dir = Path("target/xtask/perf")
+          out_dir.mkdir(parents=True, exist_ok=True)
+          latest_path = out_dir / "latest.json"
+          markdown_path = out_dir / "latest.md"
+
+          lines = ["# Performance Evidence", ""]
+
+          if latest_path.exists():
+              latest = json.loads(latest_path.read_text(encoding="utf-8"))
+              scenarios = latest.get("scenarios") or []
+              lines.append(f"- Schema version: `{latest.get('version', 'unknown')}`")
+              lines.append(f"- Generated at unix: `{latest.get('generated_at_unix', 'unknown')}`")
+              lines.append(f"- Scenarios: `{len(scenarios)}`")
+              lines.append("")
+              lines.append("| Scenario | Group | Iterations | Median ns | Mean ns | Output bytes |")
+              lines.append("| --- | --- | ---: | ---: | ---: | ---: |")
+              for scenario in scenarios:
+                  lines.append(
+                      "| `{id}` | `{group}` | {iterations} | {median_ns} | {mean_ns} | {output_bytes} |".format(
+                          id=scenario.get("id", ""),
+                          group=scenario.get("group", ""),
+                          iterations=scenario.get("iterations", 0),
+                          median_ns=scenario.get("median_ns", 0),
+                          mean_ns=scenario.get("mean_ns", 0),
+                          output_bytes=scenario.get("output_bytes", 0),
+                      )
+                  )
+          else:
+              lines.append("- Status: `missing latest.json`")
+              lines.append("- The benchmark command failed before writing a report.")
+
+          lines.append("")
+          lines.append("## Claim Boundary")
+          lines.append("")
+          lines.append("- Performance evidence is host- and runner-sensitive.")
+          lines.append("- It guards fixture-generation cost trends, not cryptographic correctness.")
+          lines.append("- Baseline comparison only blocks entries with `enforce_in_ci = true`.")
+
+          text = "\n".join(lines) + "\n"
+          markdown_path.write_text(text, encoding="utf-8")
+
+          summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary_path:
+              with open(summary_path, "a", encoding="utf-8") as fh:
+                  fh.write(text)
+          else:
+              print(text)
+          PY
+
+      # actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: performance-evidence
+          path: target/xtask/perf
+          if-no-files-found: warn

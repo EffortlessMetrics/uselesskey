@@ -138,6 +138,27 @@ The nightly lane also writes `target/mutation/nightly-receipt.json` and
 scheduled/manual runs parse cargo-mutants `outcomes.json` files into found,
 caught, survived, unviable, timeout, and other counts.
 
+## Performance Evidence
+
+Performance evidence runs in the PR/main CI perf job and in the dedicated
+scheduled/manual workflow at `.github/workflows/performance.yml`.
+
+Run the local performance evidence command with:
+
+```bash
+cargo xtask perf --compare
+```
+
+`cargo xtask perf` writes the machine-readable benchmark report to
+`target/xtask/perf/latest.json`. The scheduled/manual workflow also writes a
+human-readable `target/xtask/perf/latest.md` summary, uploads
+`target/xtask/perf/` as the `performance-evidence` artifact, and compares the
+latest report against `docs/metadata/perf-baselines.json` by default.
+
+This lane is evidence for fixture-generation cost trends. It is runner-sensitive
+and does not prove cryptographic correctness, scanner safety, or deterministic
+identity by itself.
+
 ## Lane 4: Release Evidence
 
 Runs for release branches, release candidates, or tag candidates.
@@ -159,6 +180,7 @@ Signals:
 - docs/examples smoke;
 - adapter matrix checks;
 - receipt drift checks.
+- scheduled/manual performance evidence.
 
 Release evidence should produce durable Markdown and JSON artifacts that can be
 linked from release notes.

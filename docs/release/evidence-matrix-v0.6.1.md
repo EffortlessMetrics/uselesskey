@@ -25,6 +25,7 @@ tool.
 | RIPR exposure | `cargo xtask ripr-pr` / `target/ripr/pr/*` | Changed release-candidate behavior has oracle-exposure evidence. | Pending RC run |
 | Public mutation scope | `cargo xtask mutants-nightly --scope public` / `target/mutation/*` | Public fixture owners have survivor-regression evidence. | Pending RC run |
 | Survivor ledger | `policy/mutation-survivors.toml` / `target/mutation/survivors.*` | Mutation survivors are classified instead of rediscovered. | Pending RC run |
+| Performance evidence | `cargo xtask perf --compare` / `target/xtask/perf/*` / `.github/workflows/performance.yml` | Fixture-generation and materialization cost trends stay inside enforced budgets or produce a release-visible regression. | Pending RC run |
 | Receipt drift | `cargo xtask economics` and `cargo xtask audit-surface` | Cost and audit-surface receipts are current. | Pending RC run |
 | Scanner guard | `cargo xtask no-blob` | Docs/examples/fixtures do not introduce committed secret-shaped blobs. | Pending RC run |
 | Examples smoke | `cargo xtask examples-smoke` | User-facing examples compile or run according to the curated list. | Pending RC run |
