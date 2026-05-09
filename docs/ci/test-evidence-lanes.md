@@ -163,6 +163,9 @@ Signals:
 Release evidence should produce durable Markdown and JSON artifacts that can be
 linked from release notes.
 
+The v0.6.1 release-candidate checklist starts in
+[`docs/release/evidence-matrix-v0.6.1.md`](../release/evidence-matrix-v0.6.1.md).
+
 ## Change-Type Routing
 
 | Change type | Fast PR evidence | Targeted mutation | Nightly/release role |

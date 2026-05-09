@@ -39,6 +39,12 @@ Validation lanes and the claim boundaries behind them.
 - [coverage.md](ci/coverage.md) — Coverage workflow scope, artifacts, and advisory status
 - [test-evidence-lanes.md](ci/test-evidence-lanes.md) — PR, targeted mutation, nightly mutation, and release evidence model
 
+## Release
+
+Release-candidate proof and public promise evidence.
+
+- [evidence-matrix-v0.6.1.md](release/evidence-matrix-v0.6.1.md) — v0.6.1 public fixture promise evidence matrix
+
 ## Explanation
 
 Understanding-oriented material on design and direction.
