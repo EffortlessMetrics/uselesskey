@@ -1726,9 +1726,7 @@ fn mutants_pr(changed: bool, crates: Vec<String>, all: bool, full_owner: bool) -
 
     let base_ref = resolve_base_ref();
     let changed_files = git_changed_files(&base_ref)?;
-    let plan = plan::build_plan(&changed_files);
-    let pr_crates =
-        mutation_target_crates(&base_ref, &changed_files, &plan.directly_changed_crates)?;
+    let pr_crates = mutation_target_crates(&base_ref, &changed_files)?;
 
     if pr_crates.is_empty() {
         println!("mutants-pr: no mutant-eligible behavior changes");
@@ -1983,8 +1981,10 @@ fn run_pr_plan(
     runner.step(
         "detect-changes",
         Some(format!(
-            "base_ref={base_ref}, files={}",
-            changed_files.len()
+            "base_ref={base_ref}, files={}, direct_crates={}, impacted_crates={}",
+            changed_files.len(),
+            plan.directly_changed_crates.len(),
+            plan.impacted_crates.len()
         )),
         || Ok(()),
     )?;
@@ -2064,8 +2064,7 @@ fn run_pr_plan(
     }
 
     if plan.run_mutants && with_mutants {
-        let pr_crates =
-            mutation_target_crates(base_ref, changed_files, &plan.directly_changed_crates)?;
+        let pr_crates = mutation_target_crates(base_ref, changed_files)?;
         if pr_crates.is_empty() {
             runner.skip(
                 "mutants",
@@ -2474,22 +2473,27 @@ fn parse_changed_files(stdout: &[u8]) -> Result<Vec<String>> {
     Ok(files)
 }
 
-fn mutation_target_crates(
-    base_ref: &str,
-    changed_files: &[String],
-    directly_changed_crates: &BTreeSet<String>,
-) -> Result<Vec<String>> {
-    let mut targets = Vec::new();
-    for name in directly_changed_crates {
-        if !PUBLISH_CRATES.contains(&name.as_str()) {
-            continue;
+fn mutation_target_crates(base_ref: &str, changed_files: &[String]) -> Result<Vec<String>> {
+    let report = impacted_evidence_report(base_ref, changed_files);
+    if !report.requires_targeted_mutation {
+        if report.reasons.is_empty() {
+            println!("mutants-pr: targeted mutation not required by impacted evidence");
+        } else {
+            println!(
+                "mutants-pr: targeted mutation not required by impacted evidence ({})",
+                report.reasons.join(", ")
+            );
         }
+        return Ok(Vec::new());
+    }
 
-        let prefix = format!("crates/{name}/");
-        let rust_paths = changed_files
+    let mut targets = Vec::new();
+    for name in mutation_target_owners(changed_files) {
+        let owner_paths = mutation_target_paths_for_owner(&name, changed_files);
+        let rust_paths = owner_paths
             .iter()
-            .map(|path| path.replace('\\', "/"))
-            .filter(|path| path.starts_with(&prefix) && path.ends_with(".rs"))
+            .filter(|path| path.ends_with(".rs"))
+            .cloned()
             .collect::<Vec<_>>();
         if rust_paths.is_empty() {
             targets.push(name.clone());
@@ -2507,6 +2511,31 @@ fn mutation_target_crates(
         targets.push(name.clone());
     }
     Ok(targets)
+}
+
+fn mutation_target_owners(changed_files: &[String]) -> Vec<String> {
+    let mut owners = BTreeSet::new();
+    for path in changed_files {
+        let normalized = path.replace('\\', "/");
+        let Some(rule) = impacted_evidence_rule(&normalized) else {
+            continue;
+        };
+        if rule.requires_targeted_mutation && PUBLISH_CRATES.contains(&rule.owner_crate.as_str()) {
+            owners.insert(rule.owner_crate);
+        }
+    }
+    owners.into_iter().collect()
+}
+
+fn mutation_target_paths_for_owner(owner: &str, changed_files: &[String]) -> Vec<String> {
+    changed_files
+        .iter()
+        .map(|path| path.replace('\\', "/"))
+        .filter(|path| {
+            impacted_evidence_rule(path)
+                .is_some_and(|rule| rule.requires_targeted_mutation && rule.owner_crate == owner)
+        })
+        .collect()
 }
 
 fn git_diff_for_paths(base_ref: &str, paths: &[String]) -> Result<String> {
@@ -3936,6 +3965,48 @@ mod tests {
         assert_eq!(report.owner_crates, vec!["uselesskey-token".to_string()]);
         assert!(report.requires_targeted_mutation);
         assert_eq!(report.reasons, vec!["token-owner-internal".to_string()]);
+    }
+
+    #[test]
+    fn mutation_target_owners_use_impacted_evidence() {
+        let paths = vec![
+            "crates/uselesskey-token/src/srp/shape.rs".to_string(),
+            "crates/uselesskey-core-token/src/lib.rs".to_string(),
+            "docs/ci/test-evidence-lanes.md".to_string(),
+        ];
+
+        assert_eq!(
+            mutation_target_owners(&paths),
+            vec!["uselesskey-token".to_string()]
+        );
+    }
+
+    #[test]
+    fn mutation_target_owners_skip_docs_and_shims() {
+        let paths = vec![
+            "crates/uselesskey-core-jwk/src/lib.rs".to_string(),
+            "docs/ci/test-evidence-lanes.md".to_string(),
+        ];
+
+        assert!(mutation_target_owners(&paths).is_empty());
+    }
+
+    #[test]
+    fn mutation_target_paths_follow_owner_mapping() {
+        let paths = vec![
+            "crates/uselesskey-rustls/src/config.rs".to_string(),
+            "crates/uselesskey-core-rustls-pki/src/lib.rs".to_string(),
+            "crates/uselesskey-x509/src/srp/spec/chain_spec.rs".to_string(),
+        ];
+
+        assert_eq!(
+            mutation_target_paths_for_owner("uselesskey-rustls", &paths),
+            vec!["crates/uselesskey-rustls/src/config.rs".to_string()]
+        );
+        assert_eq!(
+            mutation_target_paths_for_owner("uselesskey-x509", &paths),
+            vec!["crates/uselesskey-x509/src/srp/spec/chain_spec.rs".to_string()]
+        );
     }
 
     #[test]

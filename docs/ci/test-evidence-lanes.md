@@ -193,6 +193,11 @@ command so the tool integration does not silently mask bad evidence.
 stdout. The summary maps changed paths to public owner crates, explains why a
 path is high risk, and says whether targeted mutation is required.
 
+`cargo xtask mutants-pr --changed` uses the same impacted-evidence owner map.
+When no high-risk owner surface changed, it exits successfully without running
+mutation and prints that targeted mutation was not required. When a high-risk
+surface changed, it runs mutation for the mapped owner crate(s).
+
 Pull request CI runs `cargo xtask impacted-evidence` after `ripr-pr`, uploads
 `target/xtask/impacted-evidence/` as the `impacted-evidence` artifact, and runs
 `cargo xtask mutants-pr --changed` when any of these are true:
