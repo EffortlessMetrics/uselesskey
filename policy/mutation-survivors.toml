@@ -1,0 +1,27 @@
+# Effortless Metrics - mutation survivor ledger
+#
+# Authoritative ledger for reviewed cargo-mutants survivors. This file starts
+# empty while nightly mutation remains advisory. When a survivor is accepted or
+# deferred, classify it here with an owner, reason, expiry, and issue link.
+#
+# Classifications:
+#   - equivalent: the mutant does not represent an observable behavior change
+#   - accepted-risk: behavior is understood and intentionally deferred
+#   - pending-test: real gap accepted temporarily while a follow-up test lands
+#
+# The nightly mutation lane reads this ledger and reports expired entries in
+# target/mutation/survivors.md and target/mutation/survivors.json.
+schema_version = "0.1"
+
+# Each [[survivor]] entry looks like:
+#
+# [[survivor]]
+# crate = "uselesskey-x509"
+# function = "encode_optional_not_before"
+# classification = "pending-test"
+# owner = "fixtures/x509"
+# reason = "Mutation survivor needs a focused stable-bytes assertion."
+# expires = "2026-08-01"
+# issue = "https://github.com/EffortlessMetrics/uselesskey/issues/..."
+#
+# No reviewed mutation survivors are currently classified.

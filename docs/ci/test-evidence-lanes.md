@@ -127,6 +127,12 @@ The scheduled/manual workflow lives at `.github/workflows/mutation.yml`. It runs
 `cargo xtask mutants-nightly`, defaults scheduled runs to `--scope public`, and
 uploads `target/mutation/` as the `mutation-nightly` artifact.
 
+Reviewed survivors are classified in `policy/mutation-survivors.toml`. The
+nightly planner validates that ledger and writes `target/mutation/survivors.md`
+plus `target/mutation/survivors.json`; expired classifications are reported
+there until the later receipt lane can compare new cargo-mutants output against
+the ledger.
+
 ## Lane 4: Release Evidence
 
 Runs for release branches, release candidates, or tag candidates.
