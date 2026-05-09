@@ -1,4 +1,4 @@
-# Roadmap Follow-ups (v0.6.x)
+# Roadmap Follow-ups (v0.7.0)
 
 This plan decomposes `roadmap.md` into milestone-aligned execution items.
 
@@ -13,7 +13,7 @@ This plan decomposes `roadmap.md` into milestone-aligned execution items.
 - [x] `cargo xtask audit-surface` receipt
 - [x] v0.6.0 release prep
 
-## v0.6.x stabilization
+## v0.7.0 stabilization
 
 - [x] Refresh advisory-blocked dependency floors
 - [x] Finish open PR queue disposition
@@ -21,13 +21,13 @@ This plan decomposes `roadmap.md` into milestone-aligned execution items.
 - [x] Keep mutation-proof tests aligned with touched fixture identity and shape contracts
 - [x] Review dependency bumps after code keeper branches are settled
 
-## v0.6.1 follow-on negatives
+## v0.7.0 follow-on negatives
 
 - [x] JWK/JWKS negative wave 1
 - [x] token-shape negative wave 1
 - [x] docs/examples coverage for negative fixtures
 
-## v0.6.1 benchmarks and governance
+## v0.7.0 benchmarks and governance
 
 - [x] Criterion harness
 - [x] Baseline performance report
@@ -36,7 +36,7 @@ This plan decomposes `roadmap.md` into milestone-aligned execution items.
 - [x] Release category notes + post-release audit
 - [x] Public surface promise map
 
-## v0.6.1 export bundles
+## v0.7.0 export bundles
 
 - [x] `uselesskey bundle` command design
 - [x] `uselesskey verify-bundle` deterministic manifest verifier

@@ -9,16 +9,16 @@ The audit is for release confidence, not production cryptographic assurance.
 
 ## Inputs
 
-- Release tag, for example `v0.6.1`.
-- Published crate version, for example `0.6.1`.
+- Release tag, for example `v0.7.0`.
+- Published crate version, for example `0.7.0`.
 - Release evidence matrix for the candidate commit.
 - Release notes generated from `.github/release.yml`.
 
 Set local variables before running commands:
 
 ```bash
-TAG=v0.6.1
-VERSION=0.6.1
+TAG=v0.7.0
+VERSION=0.7.0
 ```
 
 ## Immediate Checks
@@ -77,7 +77,7 @@ Record the audit in the release issue or post-release tracking issue with this
 shape:
 
 ```markdown
-## Post-release audit for v0.6.1
+## Post-release audit for v0.7.0
 
 - Release visible: pass/fail, link
 - Crates.io facade visible: pass/fail, link

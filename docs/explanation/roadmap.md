@@ -2,9 +2,9 @@
 
 This roadmap reflects the strategic direction for uselesskey as a **test-fixture layer** (not a crypto library).
 
-## Now (v0.6.x)
+## Now (v0.7.0)
 
-*Post-0.6.0 stabilization and release-hardening*
+*Rust 1.95 scanner-safe fixture platform release hardening*
 
 - [x] Ship the lane-choice release: entropy, runtime fixtures, and build-time materialization.
 - [x] Add economics and audit-surface receipts as first-class CI artifacts.
@@ -12,7 +12,7 @@ This roadmap reflects the strategic direction for uselesskey as a **test-fixture
 - [x] Finish PR queue disposition: merge reviewed keepers, close superseded duplicates, and park broken dependency bumps with explicit rationale.
 - [x] Keep mutation-proof coverage aligned with fixture identity and shape contracts for touched crates.
 
-## Next (v0.6.1+)
+## Next (after v0.7.0)
 
 *Planned follow-up*
 
@@ -22,7 +22,7 @@ This roadmap reflects the strategic direction for uselesskey as a **test-fixture
 - [x] Export-bundle CLI integration: `uselesskey bundle`, `verify-bundle`,
   scanner-safe profile metadata, deterministic receipts, and Kubernetes/Vault
   payload emitters.
-- [ ] Release governance and post-release audit automation.
+- [x] Release governance and post-release audit automation.
 - [x] Release-facing reference bundle manifests and downstream fixture recipes.
 
 ## Shipped

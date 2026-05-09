@@ -29,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Raised MSRV from Rust 1.92 to Rust 1.95.
-- Reconciled the v0.6.1 roadmap status with the landed bundle, verification,
+- Reconciled the v0.7.0 roadmap status with the landed bundle, verification,
   Kubernetes/Vault export, scanner-safe profile, and receipt workflows.
 - Moved JWK/JWKS shape, builder, ordering, and deterministic `kid` internals
   under `uselesskey-jwk::srp::*`, retaining the former `uselesskey-core-jwk*`,

@@ -46,9 +46,9 @@ Before tagging, make sure the release PR has already:
 - refreshed versioned `uselesskey*` dependency snippets in README/doc examples
 - refreshed receipt docs via `cargo xtask economics` and `cargo xtask audit-surface`
 - mapped release checklist lines in
-  [`docs/release/v0.6.1-checklist.md`](../release/v0.6.1-checklist.md)
+  [`docs/release/v0.7.0-checklist.md`](../release/v0.7.0-checklist.md)
 - reviewed the release category notes in
-  [`docs/release/v0.6.1-category-notes.md`](../release/v0.6.1-category-notes.md)
+  [`docs/release/v0.7.0-category-notes.md`](../release/v0.7.0-category-notes.md)
 - prepared the post-release audit checklist in
   [`docs/release/post-release-audit.md`](../release/post-release-audit.md)
 
