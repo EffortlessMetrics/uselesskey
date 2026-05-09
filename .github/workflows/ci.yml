@@ -82,8 +82,49 @@ jobs:
       - name: ripr PR evidence
         run: cargo xtask ripr-pr
 
+      - name: impacted evidence
+        id: impacted_evidence
+        shell: bash
+        run: |
+          cargo xtask impacted-evidence
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+
+          impacted = json.loads(Path("target/xtask/impacted-evidence/latest.json").read_text())
+          ripr_path = Path("target/ripr/pr/repo-exposure.json")
+          ripr = json.loads(ripr_path.read_text()) if ripr_path.exists() else {}
+          summary = ripr.get("summary") or {}
+          findings = ripr.get("findings") or []
+
+          def as_int(value):
+              try:
+                  return int(value)
+              except (TypeError, ValueError):
+                  return 0
+
+          severe_gap = as_int(summary.get("reachable_unrevealed")) > 0
+          severe_gap = severe_gap or as_int(summary.get("no_static_path")) > 0
+          severe_gap = severe_gap or any(
+              str(finding.get("severity", "")).lower() in {"high", "severe", "critical"}
+              for finding in findings
+              if isinstance(finding, dict)
+          )
+
+          print(f"requires_targeted_mutation={str(bool(impacted.get('requires_targeted_mutation'))).lower()}")
+          print(f"ripr_severe_gap={str(severe_gap).lower()}")
+          PY
+
       - name: xtask pr
         run: cargo xtask pr
+
+      - name: targeted full-owner mutation
+        if: ${{ contains(github.event.pull_request.labels.*.name, 'mutation/full-owner') }}
+        run: cargo xtask mutants-pr --changed --full-owner
+
+      - name: targeted mutation
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'mutation/full-owner') && (contains(github.event.pull_request.labels.*.name, 'mutation') || contains(github.event.pull_request.labels.*.name, 'release-risk') || steps.impacted_evidence.outputs.requires_targeted_mutation == 'true' || steps.impacted_evidence.outputs.ripr_severe_gap == 'true') }}
+        run: cargo xtask mutants-pr --changed
 
       - name: docs-sync check
         run: cargo xtask docs-sync --check
@@ -121,6 +162,14 @@ jobs:
         with:
           name: ripr-pr
           path: target/ripr/pr
+          if-no-files-found: warn
+        if: always()
+
+      - name: Upload impacted evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: impacted-evidence
+          path: target/xtask/impacted-evidence
           if-no-files-found: warn
         if: always()
 

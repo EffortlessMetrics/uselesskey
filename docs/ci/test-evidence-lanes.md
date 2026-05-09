@@ -192,3 +192,14 @@ command so the tool integration does not silently mask bad evidence.
 `target/xtask/impacted-evidence/latest.json` and prints the same JSON summary to
 stdout. The summary maps changed paths to public owner crates, explains why a
 path is high risk, and says whether targeted mutation is required.
+
+Pull request CI runs `cargo xtask impacted-evidence` after `ripr-pr`, uploads
+`target/xtask/impacted-evidence/` as the `impacted-evidence` artifact, and runs
+`cargo xtask mutants-pr --changed` when any of these are true:
+
+- the PR has a `mutation` label;
+- the PR has a `mutation/full-owner` label, which runs
+  `cargo xtask mutants-pr --changed --full-owner`;
+- the PR has a `release-risk` label;
+- impacted evidence marks the diff as requiring targeted mutation;
+- `ripr` reports a severe exposure gap on the changed surface.
