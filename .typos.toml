@@ -3,6 +3,7 @@ extend-exclude = [
     ".git/",
     "target/",
     "Cargo.lock",
+    "examples/scanner-safe-bundle/expected/",
     "mutants.out/",
     "node_modules/",
 ]
