@@ -44,8 +44,8 @@ This plan decomposes `roadmap.md` into milestone-aligned execution items.
 - [x] deterministic bundle receipts under `receipts/materialization.json` and `receipts/audit-surface.json`
 - [x] Kubernetes secret payload emitter
 - [x] Vault payload emitter
-- [ ] Reference manifests for scanner-safe fixture bundles
-- [ ] Release-facing downstream bundle recipes
+- [x] Reference manifests for scanner-safe fixture bundles
+- [x] Release-facing downstream bundle recipes
 
 ## Governance
 

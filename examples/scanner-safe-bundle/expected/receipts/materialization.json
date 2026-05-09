@@ -1,0 +1,121 @@
+{
+  "artifact_count": 8,
+  "artifacts": [
+    {
+      "description": "public fixture material",
+      "format": "jwk",
+      "kind": "rsa",
+      "lanes": [
+        "runtime",
+        "materialized"
+      ],
+      "path": "rsa.jwk.json",
+      "profile": "scanner-safe",
+      "scanner_safe": true
+    },
+    {
+      "description": "public fixture material",
+      "format": "jwk",
+      "kind": "ecdsa",
+      "lanes": [
+        "runtime",
+        "materialized"
+      ],
+      "path": "ecdsa.jwk.json",
+      "profile": "scanner-safe",
+      "scanner_safe": true
+    },
+    {
+      "description": "public fixture material",
+      "format": "jwk",
+      "kind": "ed25519",
+      "lanes": [
+        "runtime",
+        "materialized"
+      ],
+      "path": "ed25519.jwk.json",
+      "profile": "scanner-safe",
+      "scanner_safe": true
+    },
+    {
+      "description": "scanner-safe symmetric JWK shape with invalid material",
+      "format": "jwk",
+      "kind": "hmac",
+      "lanes": [
+        "runtime",
+        "materialized"
+      ],
+      "path": "hmac.jwk.json",
+      "profile": "scanner-safe",
+      "scanner_safe": true
+    },
+    {
+      "description": "scanner-safe near-miss token shape for parser tests",
+      "format": "json-manifest",
+      "kind": "token",
+      "lanes": [
+        "runtime",
+        "materialized"
+      ],
+      "path": "token.json",
+      "profile": "scanner-safe",
+      "scanner_safe": true
+    },
+    {
+      "description": "public certificate fixture",
+      "format": "pem",
+      "kind": "x509",
+      "lanes": [
+        "runtime",
+        "materialized"
+      ],
+      "path": "x509.pem",
+      "profile": "scanner-safe",
+      "scanner_safe": true
+    },
+    {
+      "description": "public fixture material",
+      "format": "jwk",
+      "kind": "jwk",
+      "lanes": [
+        "runtime",
+        "materialized"
+      ],
+      "path": "jwk.jwk.json",
+      "profile": "scanner-safe",
+      "scanner_safe": true
+    },
+    {
+      "description": "public fixture material",
+      "format": "jwks",
+      "kind": "jwks",
+      "lanes": [
+        "runtime",
+        "materialized"
+      ],
+      "path": "jwks.jwks.json",
+      "profile": "scanner-safe",
+      "scanner_safe": true
+    }
+  ],
+  "files": [
+    "rsa.jwk.json",
+    "ecdsa.jwk.json",
+    "ed25519.jwk.json",
+    "hmac.jwk.json",
+    "token.json",
+    "x509.pem",
+    "jwk.jwk.json",
+    "jwks.jwks.json"
+  ],
+  "format": "jwk",
+  "label": "bundle",
+  "lanes": [
+    "runtime",
+    "materialized"
+  ],
+  "profile": "scanner-safe",
+  "receipt": "materialization",
+  "seed": "uselesskey-bundle-seed",
+  "version": 1
+}

@@ -1,0 +1,71 @@
+{
+  "artifact_count": 8,
+  "artifacts": [
+    {
+      "description": "public fixture material",
+      "format": "jwk",
+      "kind": "rsa",
+      "path": "rsa.jwk.json",
+      "scanner_safe": true
+    },
+    {
+      "description": "public fixture material",
+      "format": "jwk",
+      "kind": "ecdsa",
+      "path": "ecdsa.jwk.json",
+      "scanner_safe": true
+    },
+    {
+      "description": "public fixture material",
+      "format": "jwk",
+      "kind": "ed25519",
+      "path": "ed25519.jwk.json",
+      "scanner_safe": true
+    },
+    {
+      "description": "scanner-safe symmetric JWK shape with invalid material",
+      "format": "jwk",
+      "kind": "hmac",
+      "path": "hmac.jwk.json",
+      "scanner_safe": true
+    },
+    {
+      "description": "scanner-safe near-miss token shape for parser tests",
+      "format": "json-manifest",
+      "kind": "token",
+      "path": "token.json",
+      "scanner_safe": true
+    },
+    {
+      "description": "public certificate fixture",
+      "format": "pem",
+      "kind": "x509",
+      "path": "x509.pem",
+      "scanner_safe": true
+    },
+    {
+      "description": "public fixture material",
+      "format": "jwk",
+      "kind": "jwk",
+      "path": "jwk.jwk.json",
+      "scanner_safe": true
+    },
+    {
+      "description": "public fixture material",
+      "format": "jwks",
+      "kind": "jwks",
+      "path": "jwks.jwks.json",
+      "scanner_safe": true
+    }
+  ],
+  "lanes": [
+    "runtime",
+    "materialized"
+  ],
+  "profile": "scanner-safe",
+  "receipt": "audit-surface",
+  "runtime_material_count": 0,
+  "scanner_safe": true,
+  "scanner_safe_count": 8,
+  "version": 1
+}
