@@ -115,6 +115,12 @@ enum Cmd {
         #[arg(long)]
         full_owner: bool,
     },
+    /// Report changed-path evidence owners and targeted mutation routing.
+    ImpactedEvidence {
+        /// Base ref to compare against. Defaults to XTASK_BASE_REF, GITHUB_BASE_REF, or origin/main.
+        #[arg(long)]
+        base: Option<String>,
+    },
     /// Guard against multiple semver-major versions of pinned deps (e.g. rand_core).
     DepGuard,
     /// Run cucumber BDD features.
@@ -330,6 +336,7 @@ fn main() -> Result<()> {
             all,
             full_owner,
         } => mutants_pr(changed, crates, all, full_owner),
+        Cmd::ImpactedEvidence { base } => impacted_evidence(base),
         Cmd::DepGuard => dep_guard(),
         Cmd::Bdd => bdd(),
         Cmd::BddMatrix => bdd_matrix(),
@@ -1730,6 +1737,240 @@ fn mutants_pr(changed: bool, crates: Vec<String>, all: bool, full_owner: bool) -
 
     let pr_crate_refs = pr_crates.iter().map(String::as_str).collect::<Vec<_>>();
     run_mutants(&pr_crate_refs)
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+struct ImpactedEvidenceReport {
+    schema_version: u32,
+    base: String,
+    changed_paths: Vec<String>,
+    owner_crates: Vec<String>,
+    requires_targeted_mutation: bool,
+    reasons: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+struct ImpactedEvidenceRule {
+    owner_crate: String,
+    reason: &'static str,
+    requires_targeted_mutation: bool,
+}
+
+fn impacted_evidence(base: Option<String>) -> Result<()> {
+    let base_ref = base.unwrap_or_else(resolve_base_ref);
+    let changed_paths = git_changed_files(&base_ref)?;
+    let report = impacted_evidence_report(&base_ref, &changed_paths);
+    let artifact_path = Path::new("target/xtask/impacted-evidence/latest.json");
+    write_json_pretty(artifact_path, &report)?;
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&report).context("failed to render impacted evidence JSON")?
+    );
+    eprintln!("impacted-evidence: wrote {}", artifact_path.display());
+    Ok(())
+}
+
+fn impacted_evidence_report(base_ref: &str, changed_paths: &[String]) -> ImpactedEvidenceReport {
+    let mut owner_crates = BTreeSet::new();
+    let mut reasons = BTreeSet::new();
+    let mut requires_targeted_mutation = false;
+    let changed_paths = changed_paths
+        .iter()
+        .map(|path| path.replace('\\', "/"))
+        .collect::<Vec<_>>();
+
+    for path in &changed_paths {
+        if let Some(rule) = impacted_evidence_rule(path) {
+            owner_crates.insert(rule.owner_crate.to_string());
+            reasons.insert(rule.reason.to_string());
+            requires_targeted_mutation |= rule.requires_targeted_mutation;
+        }
+    }
+
+    ImpactedEvidenceReport {
+        schema_version: 1,
+        base: base_ref.to_string(),
+        changed_paths,
+        owner_crates: owner_crates.into_iter().collect(),
+        requires_targeted_mutation,
+        reasons: reasons.into_iter().collect(),
+    }
+}
+
+fn impacted_evidence_rule(path: &str) -> Option<ImpactedEvidenceRule> {
+    let path = path.replace('\\', "/");
+    let path = path.as_str();
+
+    if path.starts_with("crates/uselesskey-core/src/srp/hash")
+        || path.starts_with("crates/uselesskey-core/src/srp/identity")
+        || path.starts_with("crates/uselesskey-core/src/srp/seed")
+    {
+        return Some(ImpactedEvidenceRule {
+            owner_crate: "uselesskey-core".to_string(),
+            reason: "core-derivation",
+            requires_targeted_mutation: true,
+        });
+    }
+
+    if path.starts_with("crates/uselesskey-core/src/srp/cache") {
+        return Some(ImpactedEvidenceRule {
+            owner_crate: "uselesskey-core".to_string(),
+            reason: "core-cache",
+            requires_targeted_mutation: true,
+        });
+    }
+
+    if path.starts_with("crates/uselesskey-core/src/srp/sink") {
+        return Some(ImpactedEvidenceRule {
+            owner_crate: "uselesskey-core".to_string(),
+            reason: "core-sink",
+            requires_targeted_mutation: true,
+        });
+    }
+
+    if path.starts_with("crates/uselesskey-core/src/srp/keypair")
+        || path.starts_with("crates/uselesskey-core/src/srp/keypair_material")
+    {
+        return Some(ImpactedEvidenceRule {
+            owner_crate: "uselesskey-core".to_string(),
+            reason: "core-key-material",
+            requires_targeted_mutation: true,
+        });
+    }
+
+    if path.starts_with("crates/uselesskey-core/src/srp/negative")
+        || path.starts_with("crates/uselesskey-core/src/negative")
+    {
+        return Some(ImpactedEvidenceRule {
+            owner_crate: "uselesskey-core".to_string(),
+            reason: "negative-helper",
+            requires_targeted_mutation: true,
+        });
+    }
+
+    if path.starts_with("crates/uselesskey-core/src/") {
+        return Some(ImpactedEvidenceRule {
+            owner_crate: "uselesskey-core".to_string(),
+            reason: "core-foundation",
+            requires_targeted_mutation: true,
+        });
+    }
+
+    for (prefix, owner, reason) in [
+        (
+            "crates/uselesskey-jwk/src/srp/",
+            "uselesskey-jwk",
+            "jwk-owner-internal",
+        ),
+        (
+            "crates/uselesskey-token/src/srp/",
+            "uselesskey-token",
+            "token-owner-internal",
+        ),
+        (
+            "crates/uselesskey-x509/src/srp/",
+            "uselesskey-x509",
+            "x509-owner-internal",
+        ),
+        (
+            "crates/uselesskey-hmac/src/srp/",
+            "uselesskey-hmac",
+            "hmac-owner-internal",
+        ),
+        (
+            "crates/uselesskey-rustls/src/srp/",
+            "uselesskey-rustls",
+            "adapter-conversion",
+        ),
+    ] {
+        if path.starts_with(prefix) {
+            return Some(ImpactedEvidenceRule {
+                owner_crate: owner.to_string(),
+                reason,
+                requires_targeted_mutation: true,
+            });
+        }
+    }
+
+    if path.starts_with("crates/uselesskey-cli/src/") {
+        return Some(ImpactedEvidenceRule {
+            owner_crate: "uselesskey-cli".to_string(),
+            reason: "cli-bundle-or-receipt",
+            requires_targeted_mutation: true,
+        });
+    }
+
+    if let Some(owner) = compatibility_shim_owner(path) {
+        return Some(ImpactedEvidenceRule {
+            owner_crate: owner.to_string(),
+            reason: "compatibility-shim",
+            requires_targeted_mutation: false,
+        });
+    }
+
+    if let Some(crate_name) = path
+        .strip_prefix("crates/")
+        .and_then(|rest| rest.split('/').next())
+        && path.starts_with(&format!("crates/{crate_name}/src/"))
+        && PUBLISH_CRATES.contains(&crate_name)
+    {
+        let reason = if is_adapter_crate(crate_name) {
+            "adapter-conversion"
+        } else {
+            "public-owner-crate"
+        };
+        return Some(ImpactedEvidenceRule {
+            owner_crate: crate_name.to_string(),
+            reason,
+            requires_targeted_mutation: true,
+        });
+    }
+
+    None
+}
+
+fn compatibility_shim_owner(path: &str) -> Option<&'static str> {
+    for (prefix, owner) in [
+        ("crates/uselesskey-core-jwk/", "uselesskey-jwk"),
+        ("crates/uselesskey-core-jwk-shape/", "uselesskey-jwk"),
+        ("crates/uselesskey-core-jwk-builder/", "uselesskey-jwk"),
+        ("crates/uselesskey-core-jwks-order/", "uselesskey-jwk"),
+        ("crates/uselesskey-core-kid/", "uselesskey-jwk"),
+        ("crates/uselesskey-core-token/", "uselesskey-token"),
+        ("crates/uselesskey-core-token-shape/", "uselesskey-token"),
+        ("crates/uselesskey-core-base62/", "uselesskey-token"),
+        ("crates/uselesskey-token-spec/", "uselesskey-token"),
+        ("crates/uselesskey-core-x509/", "uselesskey-x509"),
+        ("crates/uselesskey-core-x509-spec/", "uselesskey-x509"),
+        ("crates/uselesskey-core-x509-derive/", "uselesskey-x509"),
+        ("crates/uselesskey-core-x509-negative/", "uselesskey-x509"),
+        (
+            "crates/uselesskey-core-x509-chain-negative/",
+            "uselesskey-x509",
+        ),
+        ("crates/uselesskey-core-hmac-spec/", "uselesskey-hmac"),
+        ("crates/uselesskey-core-rustls-pki/", "uselesskey-rustls"),
+    ] {
+        if path.starts_with(prefix) {
+            return Some(owner);
+        }
+    }
+    None
+}
+
+fn is_adapter_crate(crate_name: &str) -> bool {
+    matches!(
+        crate_name,
+        "uselesskey-jsonwebtoken"
+            | "uselesskey-rustls"
+            | "uselesskey-tonic"
+            | "uselesskey-axum"
+            | "uselesskey-ring"
+            | "uselesskey-rustcrypto"
+            | "uselesskey-aws-lc-rs"
+            | "uselesskey-jose-openid"
+            | "uselesskey-pgp-native"
+    )
 }
 
 fn run_pr_plan(
@@ -3624,6 +3865,77 @@ mod tests {
         assert!(summary.contains("Status: skipped"));
         assert!(summary.contains("ripr missing"));
         assert!(dir.path().join("review.md").exists());
+    }
+
+    #[test]
+    fn impacted_evidence_core_derivation_requires_mutation() {
+        let paths = vec![
+            "crates/uselesskey-core/src/srp/hash.rs".to_string(),
+            "docs/ci/test-evidence-lanes.md".to_string(),
+        ];
+
+        let report = impacted_evidence_report("origin/main", &paths);
+
+        assert_eq!(report.schema_version, 1);
+        assert_eq!(report.base, "origin/main");
+        assert_eq!(report.owner_crates, vec!["uselesskey-core".to_string()]);
+        assert!(report.requires_targeted_mutation);
+        assert_eq!(report.reasons, vec!["core-derivation".to_string()]);
+    }
+
+    #[test]
+    fn impacted_evidence_maps_owner_internals_and_adapters() {
+        let paths = vec![
+            "crates/uselesskey-x509/src/srp/spec/chain_spec.rs".to_string(),
+            "crates/uselesskey-rustls/src/config.rs".to_string(),
+            "crates/uselesskey-core-jwk/src/lib.rs".to_string(),
+        ];
+
+        let report = impacted_evidence_report("origin/main", &paths);
+
+        assert_eq!(
+            report.owner_crates,
+            vec![
+                "uselesskey-jwk".to_string(),
+                "uselesskey-rustls".to_string(),
+                "uselesskey-x509".to_string()
+            ]
+        );
+        assert!(report.requires_targeted_mutation);
+        assert_eq!(
+            report.reasons,
+            vec![
+                "adapter-conversion".to_string(),
+                "compatibility-shim".to_string(),
+                "x509-owner-internal".to_string()
+            ]
+        );
+    }
+
+    #[test]
+    fn impacted_evidence_docs_only_has_no_owner() {
+        let paths = vec!["docs/ci/test-evidence-lanes.md".to_string()];
+
+        let report = impacted_evidence_report("origin/main", &paths);
+
+        assert!(report.owner_crates.is_empty());
+        assert!(!report.requires_targeted_mutation);
+        assert!(report.reasons.is_empty());
+    }
+
+    #[test]
+    fn impacted_evidence_normalizes_windows_paths() {
+        let paths = vec!["crates\\uselesskey-token\\src\\srp\\shape.rs".to_string()];
+
+        let report = impacted_evidence_report("origin/main", &paths);
+
+        assert_eq!(
+            report.changed_paths[0],
+            "crates/uselesskey-token/src/srp/shape.rs"
+        );
+        assert_eq!(report.owner_crates, vec!["uselesskey-token".to_string()]);
+        assert!(report.requires_targeted_mutation);
+        assert_eq!(report.reasons, vec!["token-owner-internal".to_string()]);
     }
 
     #[test]
