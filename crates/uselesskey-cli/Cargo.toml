@@ -41,6 +41,7 @@ uselesskey-core.workspace = true
 uselesskey-ecdsa = { workspace = true, features = ["jwk"], optional = true }
 uselesskey-ed25519 = { workspace = true, features = ["jwk"], optional = true }
 uselesskey-hmac = { workspace = true, features = ["jwk"], optional = true }
+uselesskey-jwk = { path = "../uselesskey-jwk", version = "0.6.0" }
 uselesskey-rsa = { workspace = true, features = ["jwk"], optional = true }
 uselesskey-token.workspace = true
 uselesskey-x509 = { workspace = true, optional = true }

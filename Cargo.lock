@@ -4705,6 +4705,7 @@ dependencies = [
  "uselesskey-ecdsa",
  "uselesskey-ed25519",
  "uselesskey-hmac",
+ "uselesskey-jwk",
  "uselesskey-rsa",
  "uselesskey-token",
  "uselesskey-x509",

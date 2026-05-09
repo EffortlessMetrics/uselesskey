@@ -1,6 +1,8 @@
 use std::fs;
 
 use assert_cmd::Command;
+use base64::Engine as _;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use insta::{assert_snapshot, assert_yaml_snapshot};
 use predicates::prelude::*;
 use serde_json::Value;
@@ -233,6 +235,127 @@ fn bundle_profile_runtime_preserves_requested_material_format() {
             .any(|artifact| artifact["kind"].as_str() == Some("rsa")
                 && artifact["scanner_safe"] == false)
     );
+}
+
+#[test]
+fn bundle_profile_oidc_writes_contract_pack() {
+    let dir = tempdir().expect("tempdir");
+    let bundle_dir = dir.path().join("oidc");
+
+    let mut cmd = Command::cargo_bin("uselesskey").expect("bin exists");
+    cmd.args([
+        "bundle",
+        "--profile",
+        "oidc",
+        "--seed",
+        "oidc-seed",
+        "--label",
+        "issuer",
+        "--out",
+        bundle_dir.to_str().expect("utf-8"),
+    ]);
+    cmd.assert().success();
+
+    let manifest_path = bundle_dir.join("manifest.json");
+    let manifest: Value = serde_json::from_slice(&fs::read(&manifest_path).expect("read manifest"))
+        .expect("manifest json");
+    assert_eq!(manifest["profile"], "oidc");
+    assert_eq!(manifest["format"], "jwk");
+    assert_eq!(manifest["files"][0], "jwks/valid.json");
+    assert_eq!(manifest["files"][1], "jwks/negative-duplicate-kid.json");
+    assert_eq!(manifest["files"][2], "jwks/negative-missing-kid.json");
+    assert_eq!(manifest["files"][3], "tokens/valid-rs256.json");
+    assert_eq!(manifest["files"][4], "tokens/negative-alg-none.json");
+    assert_eq!(manifest["files"][5], "tokens/negative-bad-audience.json");
+    assert_eq!(manifest["files"][6], "receipts/materialization.json");
+    assert_eq!(manifest["files"][7], "receipts/audit-surface.json");
+
+    let artifacts = manifest["artifacts"].as_array().expect("artifacts");
+    assert_eq!(artifacts.len(), 6);
+    assert!(
+        artifacts
+            .iter()
+            .all(|artifact| artifact["profile"] == "oidc" && artifact["scanner_safe"] == true)
+    );
+    assert!(
+        artifacts
+            .iter()
+            .any(|artifact| artifact["description"]
+                == "OIDC negative JWKS with duplicate kid values")
+    );
+    assert!(
+        artifacts
+            .iter()
+            .any(|artifact| artifact["description"] == "OIDC negative token with alg none")
+    );
+
+    let valid_jwks: Value =
+        serde_json::from_slice(&fs::read(bundle_dir.join("jwks/valid.json")).expect("valid jwks"))
+            .expect("valid jwks json");
+    assert_eq!(valid_jwks["keys"][0]["kty"], "RSA");
+    assert_eq!(valid_jwks["keys"][0]["alg"], "RS256");
+    assert!(valid_jwks["keys"][0]["kid"].is_string());
+
+    let duplicate: Value = serde_json::from_slice(
+        &fs::read(bundle_dir.join("jwks/negative-duplicate-kid.json")).expect("duplicate kid jwks"),
+    )
+    .expect("duplicate kid jwks json");
+    let duplicate_keys = duplicate["keys"].as_array().expect("duplicate keys");
+    assert_eq!(duplicate_keys.len(), 2);
+    assert_eq!(duplicate_keys[0]["kid"], duplicate_keys[1]["kid"]);
+    assert_ne!(duplicate_keys[0], duplicate_keys[1]);
+
+    let missing: Value = serde_json::from_slice(
+        &fs::read(bundle_dir.join("jwks/negative-missing-kid.json")).expect("missing kid jwks"),
+    )
+    .expect("missing kid jwks json");
+    assert!(missing["keys"][0].get("kid").is_none());
+
+    let valid_token: Value = serde_json::from_slice(
+        &fs::read(bundle_dir.join("tokens/valid-rs256.json")).expect("valid token"),
+    )
+    .expect("valid token json");
+    assert_eq!(valid_token["alg"], "RS256");
+    let valid_header = decode_jwt_segment(valid_token["value"].as_str().expect("token"), 0);
+    assert_eq!(valid_header["alg"], "RS256");
+
+    let alg_none: Value = serde_json::from_slice(
+        &fs::read(bundle_dir.join("tokens/negative-alg-none.json")).expect("alg none token"),
+    )
+    .expect("alg none token json");
+    assert_eq!(alg_none["negative"], "alg_none");
+    let alg_none_header = decode_jwt_segment(alg_none["value"].as_str().expect("token"), 0);
+    assert_eq!(alg_none_header["alg"], "none");
+
+    let bad_audience: Value = serde_json::from_slice(
+        &fs::read(bundle_dir.join("tokens/negative-bad-audience.json"))
+            .expect("bad audience token"),
+    )
+    .expect("bad audience token json");
+    assert_eq!(bad_audience["negative"], "bad_audience");
+    let bad_audience_payload =
+        decode_jwt_segment(bad_audience["value"].as_str().expect("token"), 1);
+    assert_eq!(bad_audience_payload["aud"], "wrong-audience");
+
+    let audit: Value = serde_json::from_slice(
+        &fs::read(bundle_dir.join("receipts/audit-surface.json")).expect("audit receipt"),
+    )
+    .expect("audit receipt json");
+    assert_eq!(audit["profile"], "oidc");
+    assert_eq!(audit["scanner_safe"], true);
+    assert_eq!(audit["artifact_count"], 6);
+    assert_eq!(audit["runtime_material_count"], 0);
+
+    let mut verify = Command::cargo_bin("uselesskey").expect("bin exists");
+    verify.args([
+        "verify-bundle",
+        "--path",
+        bundle_dir.to_str().expect("utf-8"),
+    ]);
+    verify
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("\"status\": \"ok\""));
 }
 
 #[test]
@@ -547,6 +670,17 @@ fn export_k8s_and_vault_payloads_from_scanner_safe_bundle() {
             .expect("token payload")
             .contains("uk_tset_")
     );
+}
+
+fn decode_jwt_segment(token: &str, index: usize) -> Value {
+    let segment = token
+        .split('.')
+        .nth(index)
+        .expect("jwt segment should exist");
+    let bytes = URL_SAFE_NO_PAD
+        .decode(segment)
+        .expect("segment should be base64url");
+    serde_json::from_slice(&bytes).expect("segment should be json")
 }
 
 #[test]

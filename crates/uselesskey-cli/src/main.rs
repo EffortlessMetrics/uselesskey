@@ -17,6 +17,7 @@ use uselesskey_core::Factory;
 use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
 use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
 use uselesskey_hmac::{HmacFactoryExt, HmacSpec};
+use uselesskey_jwk::NegativeJwks;
 use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 use uselesskey_token::{NegativeToken, TokenFactoryExt, TokenSpec};
 use uselesskey_x509::{X509FactoryExt, X509Spec};
@@ -189,6 +190,7 @@ impl Format {
 #[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
 enum BundleProfile {
     ScannerSafe,
+    Oidc,
     Runtime,
 }
 
@@ -196,6 +198,7 @@ impl BundleProfile {
     const fn manifest_name(self) -> &'static str {
         match self {
             Self::ScannerSafe => "scanner-safe",
+            Self::Oidc => "oidc",
             Self::Runtime => "runtime",
         }
     }
@@ -238,18 +241,17 @@ fn run_bundle(args: BundleArgs) -> Result<()> {
     let fx = Factory::deterministic_from_str(&args.seed);
     let mut files = Vec::new();
     let mut artifacts = Vec::new();
-    for (name, kind) in bundle_entries() {
-        let bundle_format = preferred_bundle_format(kind, args.format, args.profile);
+    for entry in bundle_entries(args.profile) {
+        let bundle_format = entry.preferred_format(args.format, args.profile);
         let artifact =
-            generate_bundle_artifact(&fx, kind, name, &args.label, bundle_format, args.profile)
-                .with_context(|| format!("failed to generate {name}"))?;
-        let ext = format_extension(bundle_format, &artifact);
-        let file_name = format!("{name}.{ext}");
+            generate_bundle_entry_artifact(&fx, entry, &args.label, bundle_format, args.profile)
+                .with_context(|| format!("failed to generate {}", entry.name()))?;
+        let file_name = entry.file_name(bundle_format, &artifact);
         let file = out_dir.join(&file_name);
         write_artifact_to_path(&artifact, &file)?;
         files.push(file_name.clone());
         artifacts.push(bundle_artifact_record(
-            kind,
+            entry,
             bundle_format,
             &file_name,
             args.profile,
@@ -418,13 +420,12 @@ fn verify_bundle_manifest(bundle_dir: &Path, manifest: &BundleManifest) -> Resul
     let mut expected_files = Vec::new();
     let mut expected_artifacts = Vec::new();
 
-    for (name, kind) in bundle_entries() {
-        let bundle_format = preferred_bundle_format(kind, format, profile);
+    for entry in bundle_entries(profile) {
+        let bundle_format = entry.preferred_format(format, profile);
         let artifact =
-            generate_bundle_artifact(&fx, kind, name, &manifest.label, bundle_format, profile)
-                .with_context(|| format!("failed to regenerate {name}"))?;
-        let ext = format_extension(bundle_format, &artifact);
-        let file_name = format!("{name}.{ext}");
+            generate_bundle_entry_artifact(&fx, entry, &manifest.label, bundle_format, profile)
+                .with_context(|| format!("failed to regenerate {}", entry.name()))?;
+        let file_name = entry.file_name(bundle_format, &artifact);
         let expected = artifact_bytes(&artifact)?;
         let path = bundle_dir.join(&file_name);
         let actual =
@@ -437,7 +438,7 @@ fn verify_bundle_manifest(bundle_dir: &Path, manifest: &BundleManifest) -> Resul
         }
         expected_files.push(file_name);
         expected_artifacts.push(bundle_artifact_record(
-            kind,
+            entry,
             bundle_format,
             expected_files.last().expect("just pushed"),
             profile,
@@ -559,12 +560,114 @@ fn parse_manifest_format(raw: &str) -> Result<Format> {
 fn parse_manifest_profile(raw: &str) -> Result<BundleProfile> {
     match raw {
         "scanner-safe" | "scannersafe" => Ok(BundleProfile::ScannerSafe),
+        "oidc" => Ok(BundleProfile::Oidc),
         "runtime" => Ok(BundleProfile::Runtime),
         other => bail!("unsupported bundle manifest profile `{other}`"),
     }
 }
 
-fn bundle_entries() -> [(&'static str, Kind); 8] {
+#[derive(Clone, Copy, Debug)]
+enum BundleEntry {
+    Standard {
+        name: &'static str,
+        kind: Kind,
+    },
+    OidcValidJwks,
+    OidcNegativeJwks {
+        name: &'static str,
+        variant: NegativeJwks,
+        description: &'static str,
+    },
+    OidcValidToken,
+    OidcNegativeToken {
+        name: &'static str,
+        variant: NegativeToken,
+        description: &'static str,
+    },
+}
+
+impl BundleEntry {
+    const fn name(self) -> &'static str {
+        match self {
+            Self::Standard { name, .. } => name,
+            Self::OidcValidJwks => "jwks/valid",
+            Self::OidcNegativeJwks { name, .. } | Self::OidcNegativeToken { name, .. } => name,
+            Self::OidcValidToken => "tokens/valid-rs256",
+        }
+    }
+
+    const fn kind(self) -> Kind {
+        match self {
+            Self::Standard { kind, .. } => kind,
+            Self::OidcValidJwks | Self::OidcNegativeJwks { .. } => Kind::Jwks,
+            Self::OidcValidToken | Self::OidcNegativeToken { .. } => Kind::Token,
+        }
+    }
+
+    fn preferred_format(self, requested: Format, profile: BundleProfile) -> Format {
+        match self {
+            Self::Standard { kind, .. } => preferred_bundle_format(kind, requested, profile),
+            Self::OidcValidJwks | Self::OidcNegativeJwks { .. } => Format::Jwks,
+            Self::OidcValidToken | Self::OidcNegativeToken { .. } => Format::JsonManifest,
+        }
+    }
+
+    fn file_name(self, format: Format, artifact: &Artifact) -> String {
+        match self {
+            Self::Standard { name, .. } => {
+                let ext = format_extension(format, artifact);
+                format!("{name}.{ext}")
+            }
+            _ => format!("{}.json", self.name()),
+        }
+    }
+
+    fn description(self, profile: BundleProfile) -> &'static str {
+        match self {
+            Self::Standard { kind, .. } => bundle_artifact_description(kind, profile),
+            Self::OidcValidJwks => "OIDC valid JWKS fixture",
+            Self::OidcValidToken => "OIDC valid RS256 JWT-shaped token fixture",
+            Self::OidcNegativeJwks { description, .. }
+            | Self::OidcNegativeToken { description, .. } => description,
+        }
+    }
+}
+
+fn bundle_entries(profile: BundleProfile) -> Vec<BundleEntry> {
+    if matches!(profile, BundleProfile::Oidc) {
+        return vec![
+            BundleEntry::OidcValidJwks,
+            BundleEntry::OidcNegativeJwks {
+                name: "jwks/negative-duplicate-kid",
+                variant: NegativeJwks::DuplicateKid,
+                description: "OIDC negative JWKS with duplicate kid values",
+            },
+            BundleEntry::OidcNegativeJwks {
+                name: "jwks/negative-missing-kid",
+                variant: NegativeJwks::MissingKid,
+                description: "OIDC negative JWKS with missing kid",
+            },
+            BundleEntry::OidcValidToken,
+            BundleEntry::OidcNegativeToken {
+                name: "tokens/negative-alg-none",
+                variant: NegativeToken::AlgNone,
+                description: "OIDC negative token with alg none",
+            },
+            BundleEntry::OidcNegativeToken {
+                name: "tokens/negative-bad-audience",
+                variant: NegativeToken::BadAudience,
+                description: "OIDC negative token with bad audience",
+            },
+        ];
+    }
+
+    standard_bundle_entries()
+        .into_iter()
+        .map(|(name, kind)| BundleEntry::Standard { name, kind })
+        .collect()
+}
+
+fn standard_bundle_entries() -> [(&'static str, Kind); 8] {
     [
         ("rsa", Kind::Rsa),
         ("ecdsa", Kind::Ecdsa),
@@ -578,25 +681,25 @@ fn bundle_entries() -> [(&'static str, Kind); 8] {
 }
 
 fn bundle_artifact_record(
-    kind: Kind,
+    entry: BundleEntry,
     format: Format,
     path: &str,
     profile: BundleProfile,
 ) -> BundleArtifactRecord {
     BundleArtifactRecord {
         path: path.to_string(),
-        kind: kind.manifest_name().to_string(),
+        kind: entry.kind().manifest_name().to_string(),
         format: format.manifest_name().to_string(),
         profile: profile.manifest_name().to_string(),
         lanes: vec!["runtime".to_string(), "materialized".to_string()],
-        scanner_safe: bundle_artifact_is_scanner_safe(kind, profile),
-        description: bundle_artifact_description(kind, profile).to_string(),
+        scanner_safe: bundle_artifact_is_scanner_safe(entry.kind(), profile),
+        description: entry.description(profile).to_string(),
     }
 }
 
 fn bundle_artifact_is_scanner_safe(kind: Kind, profile: BundleProfile) -> bool {
     match profile {
-        BundleProfile::ScannerSafe => true,
+        BundleProfile::ScannerSafe | BundleProfile::Oidc => true,
         BundleProfile::Runtime => matches!(kind, Kind::Jwk | Kind::Jwks | Kind::X509),
     }
 }
@@ -615,6 +718,7 @@ fn bundle_artifact_description(kind: Kind, profile: BundleProfile) -> &'static s
             "runtime-generated public fixture material"
         }
         (BundleProfile::Runtime, _) => "runtime-generated fixture material",
+        (BundleProfile::Oidc, _) => "OIDC fixture material",
     }
 }
 
@@ -731,6 +835,68 @@ fn generate_bundle_artifact(
     }
 
     generate_artifact(fx, kind, label, format)
+}
+
+fn generate_bundle_entry_artifact(
+    fx: &Factory,
+    entry: BundleEntry,
+    label: &str,
+    format: Format,
+    profile: BundleProfile,
+) -> Result<Artifact> {
+    match entry {
+        BundleEntry::Standard { name, kind } => {
+            generate_bundle_artifact(fx, kind, name, label, format, profile)
+        }
+        BundleEntry::OidcValidJwks => {
+            if matches!(format, Format::Jwks) {
+                Ok(Artifact::Json(
+                    fx.rsa(label, RsaSpec::rs256()).public_jwks_json(),
+                ))
+            } else {
+                unsupported(Kind::Jwks, format)
+            }
+        }
+        BundleEntry::OidcNegativeJwks { variant, .. } => {
+            if matches!(format, Format::Jwks) {
+                Ok(Artifact::Json(
+                    fx.rsa(label, RsaSpec::rs256())
+                        .public_jwks()
+                        .negative_value(variant),
+                ))
+            } else {
+                unsupported(Kind::Jwks, format)
+            }
+        }
+        BundleEntry::OidcValidToken => {
+            let token = fx.token(label, TokenSpec::oauth_access_token());
+            if matches!(format, Format::JsonManifest) {
+                Ok(Artifact::Json(json!({
+                    "kind": "token",
+                    "label": label,
+                    "profile": "oidc",
+                    "alg": "RS256",
+                    "value": token.value(),
+                })))
+            } else {
+                unsupported(Kind::Token, format)
+            }
+        }
+        BundleEntry::OidcNegativeToken { variant, .. } => {
+            let token = fx.token(label, TokenSpec::oauth_access_token());
+            if matches!(format, Format::JsonManifest) {
+                Ok(Artifact::Json(json!({
+                    "kind": "token",
+                    "label": label,
+                    "profile": "oidc",
+                    "negative": variant.variant_name(),
+                    "value": token.negative_value(variant),
+                })))
+            } else {
+                unsupported(Kind::Token, format)
+            }
+        }
+    }
 }
 
 fn generate_scanner_safe_bundle_artifact(

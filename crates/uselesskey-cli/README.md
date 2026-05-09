@@ -80,3 +80,24 @@ Vault, cloud APIs, or long-running secret stores.
 public certificate material, scanner-safe symmetric JWK shape data, and
 near-miss token shapes. Use `--profile runtime` when a downstream test really
 needs runtime-generated private or symmetric fixture material in the bundle.
+
+Use `--profile oidc` when a downstream OIDC/JWKS validator needs a focused
+contract pack:
+
+```bash
+cargo run -p uselesskey-cli -- bundle \
+  --profile oidc \
+  --out target/oidc-fixtures
+
+cargo run -p uselesskey-cli -- verify-bundle \
+  --path target/oidc-fixtures
+```
+
+The OIDC profile emits:
+
+- `jwks/valid.json`
+- `jwks/negative-duplicate-kid.json`
+- `jwks/negative-missing-kid.json`
+- `tokens/valid-rs256.json`
+- `tokens/negative-alg-none.json`
+- `tokens/negative-bad-audience.json`
