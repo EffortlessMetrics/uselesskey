@@ -13,6 +13,7 @@ in `uselesskey`. The principle is constant:
 | `policy/clippy-debt.toml`             | Receipted Clippy warn-stage debt with expiry       | `cargo xtask check-lint-policy`        |
 | `policy/no-panic-allowlist.toml`      | Receipted panic-family call sites                  | `cargo xtask check-no-panic-family`    |
 | `policy/non-rust-allowlist.toml`      | Receipted non-Rust tracked files                   | `cargo xtask check-file-policy`        |
+| `policy/mutation-survivors.toml`      | Reviewed mutation survivors and expiries           | `cargo xtask mutants-nightly --dry-run` |
 
 ## Common rules
 
@@ -31,10 +32,11 @@ in `uselesskey`. The principle is constant:
 Each checker writes both human-readable and machine-readable artifacts:
 
 ```
-target/no-panic.md       target/no-panic.json
-target/file-policy.md    target/file-policy.json
-target/lint-policy.md    target/lint-policy.json
-target/policy-report.md  target/policy-report.json
+target/no-panic.md            target/no-panic.json
+target/file-policy.md         target/file-policy.json
+target/lint-policy.md         target/lint-policy.json
+target/policy-report.md       target/policy-report.json
+target/mutation/survivors.md  target/mutation/survivors.json
 ```
 
 `cargo xtask policy-report` aggregates all four into a single review surface.

@@ -940,6 +940,9 @@ const MUTATION_EVIDENCE_CLAIM_BOUNDARY: &[&str] = &[
     "mutation testing does not replace deterministic fixture regression tests",
 ];
 
+const MUTATION_SURVIVOR_LEDGER_PATH: &str = "policy/mutation-survivors.toml";
+const MUTATION_SURVIVOR_CLASSIFICATIONS: &[&str] = &["equivalent", "accepted-risk", "pending-test"];
+
 fn publish_check() -> Result<()> {
     for name in PUBLISH_CRATES {
         let output = Command::new("cargo")
@@ -1725,7 +1728,48 @@ struct MutationNightlySummary {
     scope: MutationNightlyScope,
     dry_run: bool,
     crates: Vec<String>,
+    survivor_ledger: MutationSurvivorLedgerSummary,
     claim_boundary: Vec<&'static str>,
+}
+
+#[derive(Debug, Default, serde::Deserialize)]
+struct MutationSurvivorLedger {
+    schema_version: Option<String>,
+    #[serde(default)]
+    survivor: Vec<MutationSurvivorEntry>,
+}
+
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+struct MutationSurvivorEntry {
+    #[serde(rename = "crate")]
+    crate_name: String,
+    function: String,
+    classification: String,
+    owner: String,
+    reason: String,
+    expires: String,
+    #[serde(default)]
+    issue: Option<String>,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+struct MutationSurvivorLedgerSummary {
+    path: String,
+    known_survivors: usize,
+    expired_classifications: usize,
+    pending_tests: usize,
+    accepted_risks: usize,
+    equivalent_mutants: usize,
+    unviable_mutants: usize,
+}
+
+#[derive(Debug, serde::Serialize)]
+struct MutationSurvivorLedgerReport {
+    summary: MutationSurvivorLedgerSummary,
+    known_survivors: Vec<MutationSurvivorEntry>,
+    expired_classifications: Vec<MutationSurvivorEntry>,
+    classification_counts: BTreeMap<String, usize>,
+    notes: Vec<&'static str>,
 }
 
 fn mutants_nightly(
@@ -1789,6 +1833,10 @@ fn write_mutation_nightly_artifacts(
     let out_dir = Path::new("target/mutation");
     fs::create_dir_all(out_dir)
         .with_context(|| format!("failed to create {}", out_dir.display()))?;
+    let survivor_report = mutation_survivor_report(
+        Path::new(MUTATION_SURVIVOR_LEDGER_PATH),
+        chrono::Utc::now().date_naive(),
+    )?;
 
     let summary = MutationNightlySummary {
         schema_version: 1,
@@ -1796,10 +1844,12 @@ fn write_mutation_nightly_artifacts(
         scope,
         dry_run,
         crates: crates.to_vec(),
+        survivor_ledger: survivor_report.summary.clone(),
         claim_boundary: MUTATION_EVIDENCE_CLAIM_BOUNDARY.to_vec(),
     };
 
     write_json_pretty(&out_dir.join("nightly-summary.json"), &summary)?;
+    write_json_pretty(&out_dir.join("survivors.json"), &survivor_report)?;
     fs::write(
         out_dir.join("nightly-summary.md"),
         render_mutation_nightly_markdown(&summary),
@@ -1812,7 +1862,7 @@ fn write_mutation_nightly_artifacts(
     })?;
     fs::write(
         out_dir.join("survivors.md"),
-        "# Mutation Survivors\n\nSurvivor classification is tracked in a follow-up ledger.\n",
+        render_mutation_survivors_markdown(&survivor_report),
     )
     .with_context(|| format!("failed to write {}", out_dir.join("survivors.md").display()))?;
 
@@ -1825,6 +1875,14 @@ fn render_mutation_nightly_markdown(summary: &MutationNightlySummary) -> String 
     md.push_str(&format!("- Lane: `{}`\n", summary.lane));
     md.push_str(&format!("- Scope: `{}`\n", summary.scope.as_str()));
     md.push_str(&format!("- Dry run: `{}`\n", summary.dry_run));
+    md.push_str(&format!(
+        "- Known survivor classifications: `{}`\n",
+        summary.survivor_ledger.known_survivors
+    ));
+    md.push_str(&format!(
+        "- Expired survivor classifications: `{}`\n",
+        summary.survivor_ledger.expired_classifications
+    ));
     md.push_str("\n## Crates\n\n");
     for crate_name in &summary.crates {
         md.push_str(&format!("- `{crate_name}`\n"));
@@ -1832,6 +1890,171 @@ fn render_mutation_nightly_markdown(summary: &MutationNightlySummary) -> String 
     md.push_str("\n## Claim Boundary\n\n");
     for claim in &summary.claim_boundary {
         md.push_str(&format!("- {claim}\n"));
+    }
+    md
+}
+
+fn mutation_survivor_report(
+    path: &Path,
+    today: chrono::NaiveDate,
+) -> Result<MutationSurvivorLedgerReport> {
+    let ledger = read_mutation_survivor_ledger(path)?;
+    mutation_survivor_report_from_ledger(path, ledger, today)
+}
+
+fn read_mutation_survivor_ledger(path: &Path) -> Result<MutationSurvivorLedger> {
+    let raw = fs::read_to_string(path)
+        .with_context(|| format!("failed to read mutation survivor ledger {}", path.display()))?;
+    toml::from_str(&raw).with_context(|| {
+        format!(
+            "failed to parse mutation survivor ledger {}",
+            path.display()
+        )
+    })
+}
+
+fn mutation_survivor_report_from_ledger(
+    path: &Path,
+    ledger: MutationSurvivorLedger,
+    today: chrono::NaiveDate,
+) -> Result<MutationSurvivorLedgerReport> {
+    if ledger.schema_version.as_deref() != Some("0.1") {
+        bail!("mutation survivor ledger must set schema_version = \"0.1\"");
+    }
+
+    let mut classification_counts = BTreeMap::new();
+    let mut expired_classifications = Vec::new();
+
+    for entry in &ledger.survivor {
+        validate_mutation_survivor_entry(entry)?;
+        *classification_counts
+            .entry(entry.classification.clone())
+            .or_insert(0) += 1;
+
+        let expires = chrono::NaiveDate::parse_from_str(&entry.expires, "%Y-%m-%d")
+            .with_context(|| format!("invalid mutation survivor expiry {}", entry.expires))?;
+        if expires < today {
+            expired_classifications.push(entry.clone());
+        }
+    }
+
+    let summary = MutationSurvivorLedgerSummary {
+        path: path.display().to_string(),
+        known_survivors: ledger.survivor.len(),
+        expired_classifications: expired_classifications.len(),
+        pending_tests: *classification_counts.get("pending-test").unwrap_or(&0),
+        accepted_risks: *classification_counts.get("accepted-risk").unwrap_or(&0),
+        equivalent_mutants: *classification_counts.get("equivalent").unwrap_or(&0),
+        unviable_mutants: 0,
+    };
+
+    Ok(MutationSurvivorLedgerReport {
+        summary,
+        known_survivors: ledger.survivor,
+        expired_classifications,
+        classification_counts,
+        notes: vec![
+            "new survivor detection will be added with mutation result receipts",
+            "unviable mutants are counted from cargo-mutants output in a later lane",
+        ],
+    })
+}
+
+fn validate_mutation_survivor_entry(entry: &MutationSurvivorEntry) -> Result<()> {
+    for (field, value) in [
+        ("crate", entry.crate_name.as_str()),
+        ("function", entry.function.as_str()),
+        ("classification", entry.classification.as_str()),
+        ("owner", entry.owner.as_str()),
+        ("reason", entry.reason.as_str()),
+        ("expires", entry.expires.as_str()),
+    ] {
+        if value.trim().is_empty() {
+            bail!("mutation survivor entry has empty {field}");
+        }
+    }
+
+    if !PUBLISH_CRATES.contains(&entry.crate_name.as_str()) {
+        bail!(
+            "mutation survivor entry references unknown publish crate: {}",
+            entry.crate_name
+        );
+    }
+
+    if !MUTATION_SURVIVOR_CLASSIFICATIONS.contains(&entry.classification.as_str()) {
+        bail!(
+            "mutation survivor entry has unsupported classification {}",
+            entry.classification
+        );
+    }
+
+    chrono::NaiveDate::parse_from_str(&entry.expires, "%Y-%m-%d")
+        .with_context(|| format!("invalid mutation survivor expiry {}", entry.expires))?;
+
+    if entry
+        .issue
+        .as_deref()
+        .is_some_and(|issue| issue.trim().is_empty())
+    {
+        bail!("mutation survivor entry has empty issue");
+    }
+
+    Ok(())
+}
+
+fn render_mutation_survivors_markdown(report: &MutationSurvivorLedgerReport) -> String {
+    let mut md = String::new();
+    md.push_str("# Mutation Survivors\n\n");
+    md.push_str(&format!("- Ledger: `{}`\n", report.summary.path));
+    md.push_str(&format!(
+        "- Known survivor classifications: `{}`\n",
+        report.summary.known_survivors
+    ));
+    md.push_str(&format!(
+        "- Expired survivor classifications: `{}`\n",
+        report.summary.expired_classifications
+    ));
+    md.push_str(&format!(
+        "- Pending tests: `{}`\n",
+        report.summary.pending_tests
+    ));
+    md.push_str(&format!(
+        "- Accepted risks: `{}`\n",
+        report.summary.accepted_risks
+    ));
+    md.push_str(&format!(
+        "- Equivalent mutants: `{}`\n",
+        report.summary.equivalent_mutants
+    ));
+    md.push_str("\n## Known Survivors\n\n");
+    if report.known_survivors.is_empty() {
+        md.push_str("None classified.\n");
+    } else {
+        for survivor in &report.known_survivors {
+            md.push_str(&format!(
+                "- `{}` `{}`: {} ({}, expires `{}`)\n",
+                survivor.crate_name,
+                survivor.function,
+                survivor.classification,
+                survivor.owner,
+                survivor.expires
+            ));
+        }
+    }
+    md.push_str("\n## Expired Classifications\n\n");
+    if report.expired_classifications.is_empty() {
+        md.push_str("None.\n");
+    } else {
+        for survivor in &report.expired_classifications {
+            md.push_str(&format!(
+                "- `{}` `{}` expired `{}`\n",
+                survivor.crate_name, survivor.function, survivor.expires
+            ));
+        }
+    }
+    md.push_str("\n## Notes\n\n");
+    for note in &report.notes {
+        md.push_str(&format!("- {note}\n"));
     }
     md
 }
@@ -4230,6 +4453,73 @@ mod tests {
         );
         assert!(mutation_nightly_crates(MutationNightlyScope::Crate, None).is_err());
         assert!(mutation_nightly_crates(MutationNightlyScope::Crate, Some("not-a-crate")).is_err());
+    }
+
+    #[test]
+    fn mutation_survivor_ledger_reports_expired_and_counts() {
+        let ledger: MutationSurvivorLedger = toml::from_str(
+            r#"
+schema_version = "0.1"
+
+[[survivor]]
+crate = "uselesskey-x509"
+function = "encode_optional_not_before"
+classification = "pending-test"
+owner = "fixtures/x509"
+reason = "Needs a focused stable-bytes assertion."
+expires = "2026-01-01"
+issue = "https://github.com/EffortlessMetrics/uselesskey/issues/1"
+
+[[survivor]]
+crate = "uselesskey-token"
+function = "near_miss_api_key"
+classification = "equivalent"
+owner = "fixtures/token"
+reason = "Equivalent mutant under current parser boundary."
+expires = "2026-12-01"
+"#,
+        )
+        .unwrap();
+        let report = mutation_survivor_report_from_ledger(
+            Path::new("policy/mutation-survivors.toml"),
+            ledger,
+            chrono::NaiveDate::from_ymd_opt(2026, 5, 9).unwrap(),
+        )
+        .unwrap();
+
+        assert_eq!(report.summary.known_survivors, 2);
+        assert_eq!(report.summary.expired_classifications, 1);
+        assert_eq!(report.summary.pending_tests, 1);
+        assert_eq!(report.summary.equivalent_mutants, 1);
+        assert_eq!(
+            report.expired_classifications[0].function,
+            "encode_optional_not_before"
+        );
+    }
+
+    #[test]
+    fn mutation_survivor_ledger_rejects_unknown_classification() {
+        let ledger = MutationSurvivorLedger {
+            schema_version: Some("0.1".to_string()),
+            survivor: vec![MutationSurvivorEntry {
+                crate_name: "uselesskey-token".to_string(),
+                function: "token_shape".to_string(),
+                classification: "ignored".to_string(),
+                owner: "fixtures/token".to_string(),
+                reason: "unsupported classification should fail".to_string(),
+                expires: "2026-12-01".to_string(),
+                issue: None,
+            }],
+        };
+
+        assert!(
+            mutation_survivor_report_from_ledger(
+                Path::new("policy/mutation-survivors.toml"),
+                ledger,
+                chrono::NaiveDate::from_ymd_opt(2026, 5, 9).unwrap(),
+            )
+            .is_err()
+        );
     }
 
     #[test]
