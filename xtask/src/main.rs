@@ -93,9 +93,28 @@ enum Cmd {
     /// Run publish dry-runs for crates in dependency order.
     PublishCheck,
     /// Run PR-scoped tests based on git diff.
-    Pr,
+    Pr {
+        /// Include the targeted mutation step in the PR gate.
+        #[arg(long)]
+        with_mutants: bool,
+    },
     /// Run advisory ripr PR exposure evidence (requires external `ripr`).
     RiprPr,
+    /// Run PR-scoped mutation testing explicitly.
+    MutantsPr {
+        /// Run mutation testing for mutation-eligible crates changed against the PR base.
+        #[arg(long)]
+        changed: bool,
+        /// Run mutation testing for an explicit crate. Can be supplied multiple times.
+        #[arg(long = "crate", value_name = "CRATE")]
+        crates: Vec<String>,
+        /// Run mutation testing for all publish crates.
+        #[arg(long)]
+        all: bool,
+        /// Document that the selected owner crate(s) should receive full-owner mutation proof.
+        #[arg(long)]
+        full_owner: bool,
+    },
     /// Guard against multiple semver-major versions of pinned deps (e.g. rand_core).
     DepGuard,
     /// Run cucumber BDD features.
@@ -303,8 +322,14 @@ fn main() -> Result<()> {
         Cmd::PublicSurface => public_surface::public_surface_cmd(PUBLISH_CRATES),
         Cmd::ExamplesSmoke { run } => docs_sync::examples_smoke_cmd(run),
         Cmd::PublishCheck => publish_check(),
-        Cmd::Pr => pr(),
+        Cmd::Pr { with_mutants } => pr(with_mutants),
         Cmd::RiprPr => ripr_pr(),
+        Cmd::MutantsPr {
+            changed,
+            crates,
+            all,
+            full_owner,
+        } => mutants_pr(changed, crates, all, full_owner),
         Cmd::DepGuard => dep_guard(),
         Cmd::Bdd => bdd(),
         Cmd::BddMatrix => bdd_matrix(),
@@ -1651,7 +1676,7 @@ fn fuzz(target: Option<&str>, extra: &[String]) -> Result<()> {
     }
 }
 
-fn pr() -> Result<()> {
+fn pr(with_mutants: bool) -> Result<()> {
     let base_ref = resolve_base_ref();
     let changed_files = git_changed_files(&base_ref)?;
     let plan = plan::build_plan(&changed_files);
@@ -1662,7 +1687,7 @@ fn pr() -> Result<()> {
     }
     runner.set_crate_set(format!("pr:{}", plan.impacted_crates.len()));
 
-    let result = run_pr_plan(&base_ref, &changed_files, &plan, &mut runner);
+    let result = run_pr_plan(&base_ref, &changed_files, &plan, &mut runner, with_mutants);
     runner.summary();
     if let Err(err) = runner.write() {
         eprintln!("failed to write receipt: {err}");
@@ -1673,11 +1698,46 @@ fn pr() -> Result<()> {
     result
 }
 
+fn mutants_pr(changed: bool, crates: Vec<String>, all: bool, full_owner: bool) -> Result<()> {
+    let selector_count = usize::from(changed) + usize::from(!crates.is_empty()) + usize::from(all);
+    if selector_count != 1 {
+        bail!("select exactly one of --changed, --crate <CRATE>, or --all");
+    }
+
+    if full_owner {
+        eprintln!("mutants-pr: full-owner proof requested for selected target(s)");
+    }
+
+    if all {
+        return run_mutants(PUBLISH_CRATES);
+    }
+
+    if !crates.is_empty() {
+        let crate_refs = crates.iter().map(String::as_str).collect::<Vec<_>>();
+        return run_mutants(&crate_refs);
+    }
+
+    let base_ref = resolve_base_ref();
+    let changed_files = git_changed_files(&base_ref)?;
+    let plan = plan::build_plan(&changed_files);
+    let pr_crates =
+        mutation_target_crates(&base_ref, &changed_files, &plan.directly_changed_crates)?;
+
+    if pr_crates.is_empty() {
+        println!("mutants-pr: no mutant-eligible behavior changes");
+        return Ok(());
+    }
+
+    let pr_crate_refs = pr_crates.iter().map(String::as_str).collect::<Vec<_>>();
+    run_mutants(&pr_crate_refs)
+}
+
 fn run_pr_plan(
     base_ref: &str,
     changed_files: &[String],
     plan: &plan::Plan,
     runner: &mut receipt::Runner,
+    with_mutants: bool,
 ) -> Result<()> {
     runner.step(
         "detect-changes",
@@ -1762,7 +1822,7 @@ fn run_pr_plan(
         );
     }
 
-    if plan.run_mutants {
+    if plan.run_mutants && with_mutants {
         let pr_crates =
             mutation_target_crates(base_ref, changed_files, &plan.directly_changed_crates)?;
         if pr_crates.is_empty() {
@@ -1774,6 +1834,11 @@ fn run_pr_plan(
             let pr_crate_refs = pr_crates.iter().map(String::as_str).collect::<Vec<_>>();
             runner.step("mutants", None, || run_mutants(&pr_crate_refs))?;
         }
+    } else if plan.run_mutants {
+        runner.skip(
+            "mutants",
+            Some("split from default pr gate; run cargo xtask pr --with-mutants or cargo xtask mutants-pr --changed".to_string()),
+        );
     } else {
         runner.skip("mutants", Some("no crate source changes".to_string()));
     }

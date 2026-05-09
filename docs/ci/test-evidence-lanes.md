@@ -53,7 +53,8 @@ Blocking posture:
   failures block when their affected surface is in scope;
 - `ripr` should start advisory and become blocking only for severe exposure
   gaps after the baseline is stable;
-- full mutation does not run here by default.
+- full mutation does not run here by default. Use `cargo xtask pr --with-mutants`
+  or `cargo xtask mutants-pr --changed` when PR-scoped mutation is required.
 
 ## Lane 2: PR Targeted Mutation
 
@@ -168,7 +169,8 @@ For a high-risk PR:
 1. Run the fast local gates.
 2. Run `cargo xtask ripr-pr` to find missing or weak test oracles.
 3. Add focused tests for severe exposure gaps.
-4. Run targeted mutation for the owner crate.
+4. Run `cargo xtask mutants-pr --changed` or
+   `cargo xtask mutants-pr --crate <crate> --full-owner` for the owner crate.
 5. Record the exact mutation command and result in the PR body.
 
 `cargo xtask ripr-pr` treats `ripr` as an external tool and writes advisory
