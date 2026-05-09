@@ -55,6 +55,9 @@ cargo run -p uselesskey-cli -- bundle \
 cargo run -p uselesskey-cli -- verify-bundle \
   --path target/uselesskey-bundle
 
+cargo run -p uselesskey-cli -- inspect-bundle \
+  --path target/uselesskey-bundle
+
 cargo run -p uselesskey-cli -- export k8s \
   --bundle-dir target/uselesskey-bundle \
   --name uselesskey-fixtures \
@@ -71,6 +74,11 @@ the recorded seed/label/format/profile, and fails if any file or manifest
 metadata is missing or changed. Bundles also include deterministic
 `receipts/materialization.json` and `receipts/audit-surface.json` metadata files;
 `verify-bundle` regenerates those receipts and fails on drift.
+
+`inspect-bundle` runs the same verification first, then prints a short
+human-readable summary of the profile, artifact count, scanner-safety posture,
+runtime material count, private/symmetric material flags, and receipt kinds. It
+does not print fixture payloads.
 
 The `export` subcommands verify the bundle first, then render handoff payloads
 for downstream tools. They write local files only; they do not call Kubernetes,

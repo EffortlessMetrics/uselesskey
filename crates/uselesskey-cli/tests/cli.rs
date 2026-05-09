@@ -359,6 +359,102 @@ fn bundle_profile_oidc_writes_contract_pack() {
 }
 
 #[test]
+fn inspect_bundle_summarizes_verified_scanner_safe_receipts() {
+    let dir = tempdir().expect("tempdir");
+    let bundle_dir = dir.path().join("bundle");
+
+    let mut bundle = Command::cargo_bin("uselesskey").expect("bin exists");
+    bundle.args([
+        "bundle",
+        "--profile",
+        "scanner-safe",
+        "--out",
+        bundle_dir.to_str().expect("utf-8"),
+    ]);
+    bundle.assert().success();
+
+    let mut inspect = Command::cargo_bin("uselesskey").expect("bin exists");
+    inspect.args([
+        "inspect-bundle",
+        "--path",
+        bundle_dir.to_str().expect("utf-8"),
+    ]);
+    inspect
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Bundle profile: scanner-safe"))
+        .stdout(predicate::str::contains("Artifacts: 8"))
+        .stdout(predicate::str::contains("Verified files: 10"))
+        .stdout(predicate::str::contains("Scanner-safe: yes"))
+        .stdout(predicate::str::contains("Private key material: no"))
+        .stdout(predicate::str::contains("Symmetric secret material: no"))
+        .stdout(predicate::str::contains("Runtime material artifacts: 0"))
+        .stdout(predicate::str::contains("Verification: ok"))
+        .stdout(predicate::str::contains(
+            "Receipts: materialization, audit-surface",
+        ));
+}
+
+#[test]
+fn inspect_bundle_reports_runtime_material_without_printing_payloads() {
+    let dir = tempdir().expect("tempdir");
+    let bundle_dir = dir.path().join("runtime");
+
+    let mut bundle = Command::cargo_bin("uselesskey").expect("bin exists");
+    bundle.args([
+        "bundle",
+        "--profile",
+        "runtime",
+        "--format",
+        "pem",
+        "--out",
+        bundle_dir.to_str().expect("utf-8"),
+    ]);
+    bundle.assert().success();
+
+    let mut inspect = Command::cargo_bin("uselesskey").expect("bin exists");
+    inspect.args([
+        "inspect-bundle",
+        "--path",
+        bundle_dir.to_str().expect("utf-8"),
+    ]);
+    let output = inspect.assert().success().get_output().stdout.clone();
+    let summary = String::from_utf8(output).expect("utf-8");
+
+    assert!(summary.contains("Bundle profile: runtime"));
+    assert!(summary.contains("Scanner-safe: no"));
+    assert!(summary.contains("Private key material: yes"));
+    assert!(summary.contains("Symmetric secret material: yes"));
+    assert!(summary.contains("Runtime material artifacts: 5"));
+    assert!(summary.contains("Verification: ok"));
+    assert!(!summary.contains("BEGIN PRIVATE KEY"));
+    assert!(!summary.contains("uk_test_"));
+}
+
+#[test]
+fn inspect_bundle_fails_when_bundle_drift_is_detected() {
+    let dir = tempdir().expect("tempdir");
+    let bundle_dir = dir.path().join("bundle");
+
+    let mut bundle = Command::cargo_bin("uselesskey").expect("bin exists");
+    bundle.args(["bundle", "--out", bundle_dir.to_str().expect("utf-8")]);
+    bundle.assert().success();
+
+    fs::write(bundle_dir.join("token.json"), "corrupt").expect("mutate token fixture");
+
+    let mut inspect = Command::cargo_bin("uselesskey").expect("bin exists");
+    inspect.args([
+        "inspect-bundle",
+        "--path",
+        bundle_dir.to_str().expect("utf-8"),
+    ]);
+    inspect
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("content mismatch"));
+}
+
+#[test]
 fn verify_bundle_accepts_generated_bundle_and_detects_mismatch() {
     let dir = tempdir().expect("tempdir");
     let bundle_dir = dir.path().join("bundle");
