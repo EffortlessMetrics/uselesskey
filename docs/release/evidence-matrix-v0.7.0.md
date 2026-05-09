@@ -1,9 +1,14 @@
-# v0.6.1 Public Fixture Evidence Matrix
+# v0.7.0 Public Fixture Evidence Matrix
 
 This matrix ties release evidence to user-facing fixture promises. It is not a
-replacement for the release run itself. Before cutting v0.6.1, refresh each
+replacement for the release run itself. Before cutting v0.7.0, refresh each
 listed command on the release candidate and replace `Pending RC run` with the
 actual result, artifact, or issue link.
+
+v0.6.0 is the Rust 1.92 crates.io baseline. v0.7.0 is the next release and the
+Rust 1.95 scanner-safe fixture platform release. It keeps published internal
+implementation shards as compatibility shims for this release while directing
+users to the owner crates and facade surfaces.
 
 The release claim is narrow:
 
@@ -15,7 +20,7 @@ tool.
 
 ## Required Release Gates
 
-| Gate | Command or artifact | Release claim covered | v0.6.1 status |
+| Gate | Command or artifact | Release claim covered | v0.7.0 status |
 | --- | --- | --- | --- |
 | Public-surface guard | `cargo xtask public-surface` | Public crates match the documented support promises. | Pending RC run |
 | Docs drift guard | `cargo xtask docs-sync --check` | User docs, snippets, and support metadata are synchronized. | Pending RC run |
@@ -33,7 +38,7 @@ tool.
 
 ## Public Promise Matrix
 
-| Public promise | Crates or surfaces | Required evidence | Artifact or command | v0.6.1 status |
+| Public promise | Crates or surfaces | Required evidence | Artifact or command | v0.7.0 status |
 | --- | --- | --- | --- | --- |
 | Default Rust fixture facade | `uselesskey` | No-default and feature-enabled facade checks; docs snippets remain synchronized. | `cargo test -p uselesskey --no-default-features`; `cargo test -p uselesskey --all-features`; `cargo xtask docs-sync --check` | Pending RC run |
 | Core deterministic identity | `uselesskey-core` | Derivation, seed, identity, cache, sink, and negative-helper behavior retain focused tests and mutation evidence. | `cargo test -p uselesskey-core --all-features`; `cargo test -p uselesskey-core --no-default-features`; `cargo xtask mutants-pr --crate uselesskey-core --full-owner` when core behavior changed | Pending RC run |
@@ -50,9 +55,8 @@ tool.
 
 ## Bundle Reference Evidence
 
-The v0.6.1 roadmap still tracks release-facing reference manifests and
-downstream fixture recipes separately. Until those examples land, the release
-candidate must at least attach or link a generated scanner-safe bundle proof:
+The v0.7.0 release candidate must attach or link a generated scanner-safe bundle
+proof:
 
 ```bash
 cargo run -p uselesskey-cli -- bundle --profile scanner-safe --out target/uselesskey-bundle

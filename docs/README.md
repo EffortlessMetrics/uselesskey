@@ -43,9 +43,9 @@ Validation lanes and the claim boundaries behind them.
 
 Release-candidate proof and public promise evidence.
 
-- [evidence-matrix-v0.6.1.md](release/evidence-matrix-v0.6.1.md) — v0.6.1 public fixture promise evidence matrix
-- [v0.6.1-checklist.md](release/v0.6.1-checklist.md) — Release-governance issue map for v0.6.1 checklist lines
-- [v0.6.1-category-notes.md](release/v0.6.1-category-notes.md) — Release note category map and draft-audit guidance for v0.6.1
+- [evidence-matrix-v0.7.0.md](release/evidence-matrix-v0.7.0.md) — v0.7.0 public fixture promise evidence matrix
+- [v0.7.0-checklist.md](release/v0.7.0-checklist.md) — Release-governance issue map for v0.7.0 checklist lines
+- [v0.7.0-category-notes.md](release/v0.7.0-category-notes.md) — Release note category map and draft-audit guidance for v0.7.0
 - [post-release-audit.md](release/post-release-audit.md) — Post-publish verification checklist for public fixture promises
 - [scanner-safe-bundle](../examples/scanner-safe-bundle/README.md) — Reference manifest, receipts, and Kubernetes/Vault payload shapes for the default bundle lane
 
