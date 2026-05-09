@@ -80,6 +80,7 @@ jobs:
         run: cargo deny check advisories
 
       - name: ripr PR evidence
+        id: ripr_pr
         run: cargo xtask ripr-pr
 
       - name: impacted evidence
@@ -99,33 +100,193 @@ jobs:
           PY
 
       - name: xtask pr
+        id: xtask_pr
         run: cargo xtask pr
 
       - name: targeted full-owner mutation
+        id: targeted_full_owner_mutation
         if: ${{ contains(github.event.pull_request.labels.*.name, 'mutation/full-owner') }}
         run: cargo xtask mutants-pr --changed --full-owner
 
       - name: targeted mutation
+        id: targeted_mutation
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'mutation/full-owner') && (contains(github.event.pull_request.labels.*.name, 'mutation') || contains(github.event.pull_request.labels.*.name, 'release-risk') || steps.impacted_evidence.outputs.requires_targeted_mutation == 'true' || steps.impacted_evidence.outputs.ripr_severe_gap == 'true') }}
         run: cargo xtask mutants-pr --changed
 
       - name: docs-sync check
+        id: docs_sync
         run: cargo xtask docs-sync --check
 
       - name: publish preflight
+        id: publish_preflight
         run: cargo xtask publish-preflight
 
       - name: examples smoke check
+        id: examples_smoke
         run: cargo xtask examples-smoke
 
       - name: economics receipt
+        id: economics_receipt
         run: cargo xtask economics
 
       - name: audit-surface receipt
+        id: audit_surface_receipt
         run: cargo xtask audit-surface
 
       - name: receipt docs drift check
+        id: receipt_docs_drift
         run: git diff --exit-code -- docs/reference/dependency-economics.md docs/reference/audit-surface.md
+
+      - name: PR evidence summary
+        if: always()
+        shell: bash
+        env:
+          RIPR_STEP: ${{ steps.ripr_pr.conclusion }}
+          XTASK_PR_STEP: ${{ steps.xtask_pr.conclusion }}
+          DOCS_SYNC_STEP: ${{ steps.docs_sync.conclusion }}
+          PUBLISH_PREFLIGHT_STEP: ${{ steps.publish_preflight.conclusion }}
+          EXAMPLES_SMOKE_STEP: ${{ steps.examples_smoke.conclusion }}
+          ECONOMICS_STEP: ${{ steps.economics_receipt.conclusion }}
+          AUDIT_SURFACE_STEP: ${{ steps.audit_surface_receipt.conclusion }}
+          RECEIPT_DOCS_STEP: ${{ steps.receipt_docs_drift.conclusion }}
+          TARGETED_MUTATION_STEP: ${{ steps.targeted_mutation.conclusion }}
+          FULL_OWNER_MUTATION_STEP: ${{ steps.targeted_full_owner_mutation.conclusion }}
+          MUTATION_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'mutation') }}
+          FULL_OWNER_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'mutation/full-owner') }}
+          RELEASE_RISK_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'release-risk') }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          def load_json(path):
+              path = Path(path)
+              if not path.exists():
+                  return None
+              try:
+                  return json.loads(path.read_text(encoding="utf-8"))
+              except json.JSONDecodeError as exc:
+                  return {"status": "invalid-json", "path": str(path), "error": str(exc)}
+
+          def yes_no(value):
+              return "yes" if value else "no"
+
+          def env_bool(name):
+              return str(os.environ.get(name, "")).lower() == "true"
+
+          def conclusion(name):
+              return os.environ.get(name) or "not-run"
+
+          ripr_json = load_json("target/ripr/pr/repo-exposure.json") or {}
+          impacted = load_json("target/xtask/impacted-evidence/latest.json") or {}
+          receipt = load_json("target/xtask/receipt.json") or {}
+
+          ripr_summary = ripr_json.get("summary") or {}
+          ripr_routing = impacted.get("ripr") or {}
+          owner_crates = impacted.get("owner_crates") or []
+          reasons = impacted.get("reasons") or []
+          ripr_owner_crates = ripr_routing.get("owner_crates") or []
+          ripr_reasons = ripr_routing.get("reasons") or []
+          ripr_actions = ripr_routing.get("suggested_actions") or []
+
+          requires_targeted = bool(impacted.get("requires_targeted_mutation"))
+          requires_ripr_targeted = bool(ripr_routing.get("requires_targeted_evidence"))
+          label_mutation = env_bool("MUTATION_LABEL")
+          label_full_owner = env_bool("FULL_OWNER_LABEL")
+          label_release_risk = env_bool("RELEASE_RISK_LABEL")
+          targeted_required = (
+              requires_targeted
+              or requires_ripr_targeted
+              or label_mutation
+              or label_full_owner
+              or label_release_risk
+          )
+
+          if label_full_owner:
+              mutation_step = conclusion("FULL_OWNER_MUTATION_STEP")
+          elif targeted_required:
+              mutation_step = conclusion("TARGETED_MUTATION_STEP")
+          else:
+              mutation_step = "not-required"
+
+          receipt_steps = receipt.get("steps") or []
+          receipt_failures = [
+              step.get("name", "unknown")
+              for step in receipt_steps
+              if str(step.get("status", "")).lower() not in {"ok", "success", "skipped"}
+          ]
+
+          lines = []
+          lines.append("# PR Evidence Summary")
+          lines.append("")
+          lines.append("## Fast Gate")
+          lines.append("")
+          lines.append("| Check | Status |")
+          lines.append("| --- | --- |")
+          for name, env_name in [
+              ("ripr-pr", "RIPR_STEP"),
+              ("xtask pr", "XTASK_PR_STEP"),
+              ("docs-sync", "DOCS_SYNC_STEP"),
+              ("publish-preflight", "PUBLISH_PREFLIGHT_STEP"),
+              ("examples-smoke", "EXAMPLES_SMOKE_STEP"),
+              ("economics receipt", "ECONOMICS_STEP"),
+              ("audit-surface receipt", "AUDIT_SURFACE_STEP"),
+              ("receipt docs drift", "RECEIPT_DOCS_STEP"),
+          ]:
+              lines.append(f"| {name} | `{conclusion(env_name)}` |")
+
+          lines.append("")
+          lines.append("## RIPR")
+          lines.append("")
+          lines.append(f"- Status: `{ripr_json.get('status', 'available')}`")
+          lines.append(f"- Findings: `{ripr_summary.get('findings', 0)}`")
+          lines.append(f"- Exposed: `{ripr_summary.get('exposed', 0)}`")
+          lines.append(f"- Weakly exposed: `{ripr_summary.get('weakly_exposed', 0)}`")
+          lines.append(f"- Reachable unrevealed: `{ripr_summary.get('reachable_unrevealed', 0)}`")
+          lines.append(f"- No static path: `{ripr_summary.get('no_static_path', 0)}`")
+          lines.append(f"- Severe gap routed: `{yes_no(requires_ripr_targeted)}`")
+          if ripr_owner_crates:
+              lines.append(f"- RIPR owner crates: `{', '.join(ripr_owner_crates)}`")
+          if ripr_reasons:
+              lines.append(f"- RIPR reasons: `{', '.join(ripr_reasons)}`")
+
+          lines.append("")
+          lines.append("## Targeted Mutation")
+          lines.append("")
+          lines.append(f"- Required: `{yes_no(targeted_required)}`")
+          lines.append(f"- Step: `{mutation_step}`")
+          lines.append(f"- Full-owner label: `{yes_no(label_full_owner)}`")
+          if owner_crates:
+              lines.append(f"- Impacted owner crates: `{', '.join(owner_crates)}`")
+          if reasons:
+              lines.append(f"- Impacted reasons: `{', '.join(reasons)}`")
+          if ripr_actions:
+              lines.append("- Suggested actions:")
+              for action in ripr_actions:
+                  lines.append(f"  - {action}")
+
+          lines.append("")
+          lines.append("## Artifacts")
+          lines.append("")
+          lines.append("- `ripr-pr`: `target/ripr/pr/`")
+          lines.append("- `impacted-evidence`: `target/xtask/impacted-evidence/`")
+          lines.append("- `receipt-pr`: `target/xtask/receipt.json`")
+          lines.append("- `lane-receipts-pr`: economics and audit-surface receipts")
+          if receipt_failures:
+              lines.append("")
+              lines.append("Receipt steps with non-success status:")
+              for name in receipt_failures:
+                  lines.append(f"- `{name}`")
+
+          summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary_path:
+              with open(summary_path, "a", encoding="utf-8") as fh:
+                  fh.write("\n".join(lines))
+                  fh.write("\n")
+          else:
+              print("\n".join(lines))
+          PY
 
       - name: Upload lane receipts
         uses: actions/upload-artifact@v7
