@@ -8,7 +8,7 @@ use std::process::{Command, Stdio};
 use anyhow::{Context, Result, bail};
 use base64::Engine;
 use base64::engine::general_purpose::{URL_SAFE, URL_SAFE_NO_PAD};
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 use indicatif::{ProgressBar, ProgressStyle};
 use owo_colors::OwoColorize;
 use regex::Regex;
@@ -114,6 +114,18 @@ enum Cmd {
         /// Document that the selected owner crate(s) should receive full-owner mutation proof.
         #[arg(long)]
         full_owner: bool,
+    },
+    /// Run scheduled/manual mutation evidence scopes.
+    MutantsNightly {
+        /// Mutation evidence scope.
+        #[arg(long, value_enum, default_value_t = MutationNightlyScope::Public)]
+        scope: MutationNightlyScope,
+        /// Crate to test when `--scope crate` is selected.
+        #[arg(long = "crate", value_name = "CRATE")]
+        crate_name: Option<String>,
+        /// Write planned artifacts without running cargo-mutants.
+        #[arg(long)]
+        dry_run: bool,
     },
     /// Report changed-path evidence owners and targeted mutation routing.
     ImpactedEvidence {
@@ -305,6 +317,26 @@ enum PrBundlesCmd {
     },
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, ValueEnum, serde::Serialize)]
+#[serde(rename_all = "kebab-case")]
+enum MutationNightlyScope {
+    Public,
+    Adapters,
+    All,
+    Crate,
+}
+
+impl MutationNightlyScope {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Public => "public",
+            Self::Adapters => "adapters",
+            Self::All => "all",
+            Self::Crate => "crate",
+        }
+    }
+}
+
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
@@ -336,6 +368,11 @@ fn main() -> Result<()> {
             all,
             full_owner,
         } => mutants_pr(changed, crates, all, full_owner),
+        Cmd::MutantsNightly {
+            scope,
+            crate_name,
+            dry_run,
+        } => mutants_nightly(scope, crate_name, dry_run),
         Cmd::ImpactedEvidence { base } => impacted_evidence(base),
         Cmd::DepGuard => dep_guard(),
         Cmd::Bdd => bdd(),
@@ -873,6 +910,34 @@ const MUTANT_CRATES: &[&str] = &[
     "uselesskey-core-base62",
     "uselesskey-core-token-shape",
     "uselesskey-core-token",
+];
+
+const NIGHTLY_PUBLIC_MUTATION_CRATES: &[&str] = &[
+    "uselesskey-core",
+    "uselesskey-jwk",
+    "uselesskey-token",
+    "uselesskey-x509",
+    "uselesskey-rsa",
+    "uselesskey-ecdsa",
+    "uselesskey-ed25519",
+    "uselesskey-hmac",
+    "uselesskey-cli",
+];
+
+const NIGHTLY_ADAPTER_MUTATION_CRATES: &[&str] = &[
+    "uselesskey-jsonwebtoken",
+    "uselesskey-rustls",
+    "uselesskey-tonic",
+    "uselesskey-axum",
+    "uselesskey-ring",
+    "uselesskey-rustcrypto",
+    "uselesskey-aws-lc-rs",
+];
+
+const MUTATION_EVIDENCE_CLAIM_BOUNDARY: &[&str] = &[
+    "mutation testing is scoped by lane and crate set",
+    "mutation testing does not prove cryptographic correctness",
+    "mutation testing does not replace deterministic fixture regression tests",
 ];
 
 fn publish_check() -> Result<()> {
@@ -1651,6 +1716,124 @@ fn run_mutants(crates: &[&str]) -> Result<()> {
     }
 
     Ok(())
+}
+
+#[derive(Debug, serde::Serialize)]
+struct MutationNightlySummary {
+    schema_version: u32,
+    lane: &'static str,
+    scope: MutationNightlyScope,
+    dry_run: bool,
+    crates: Vec<String>,
+    claim_boundary: Vec<&'static str>,
+}
+
+fn mutants_nightly(
+    scope: MutationNightlyScope,
+    crate_name: Option<String>,
+    dry_run: bool,
+) -> Result<()> {
+    let crates = mutation_nightly_crates(scope, crate_name.as_deref())?;
+    write_mutation_nightly_artifacts(scope, dry_run, &crates)?;
+
+    println!(
+        "mutants-nightly: scope={}, crates={}, dry_run={dry_run}",
+        scope.as_str(),
+        crates.join(",")
+    );
+
+    if dry_run {
+        return Ok(());
+    }
+
+    let crate_refs = crates.iter().map(String::as_str).collect::<Vec<_>>();
+    run_mutants(&crate_refs)
+}
+
+fn mutation_nightly_crates(
+    scope: MutationNightlyScope,
+    crate_name: Option<&str>,
+) -> Result<Vec<String>> {
+    let crates = match scope {
+        MutationNightlyScope::Public => NIGHTLY_PUBLIC_MUTATION_CRATES
+            .iter()
+            .map(|name| (*name).to_string())
+            .collect(),
+        MutationNightlyScope::Adapters => NIGHTLY_ADAPTER_MUTATION_CRATES
+            .iter()
+            .map(|name| (*name).to_string())
+            .collect(),
+        MutationNightlyScope::All => PUBLISH_CRATES
+            .iter()
+            .map(|name| (*name).to_string())
+            .collect(),
+        MutationNightlyScope::Crate => {
+            let Some(name) = crate_name.filter(|name| !name.trim().is_empty()) else {
+                bail!("--scope crate requires --crate <CRATE>");
+            };
+            if !PUBLISH_CRATES.contains(&name) {
+                bail!("unknown publish crate for mutation scope: {name}");
+            }
+            vec![name.to_string()]
+        }
+    };
+
+    Ok(crates)
+}
+
+fn write_mutation_nightly_artifacts(
+    scope: MutationNightlyScope,
+    dry_run: bool,
+    crates: &[String],
+) -> Result<()> {
+    let out_dir = Path::new("target/mutation");
+    fs::create_dir_all(out_dir)
+        .with_context(|| format!("failed to create {}", out_dir.display()))?;
+
+    let summary = MutationNightlySummary {
+        schema_version: 1,
+        lane: "mutation-nightly",
+        scope,
+        dry_run,
+        crates: crates.to_vec(),
+        claim_boundary: MUTATION_EVIDENCE_CLAIM_BOUNDARY.to_vec(),
+    };
+
+    write_json_pretty(&out_dir.join("nightly-summary.json"), &summary)?;
+    fs::write(
+        out_dir.join("nightly-summary.md"),
+        render_mutation_nightly_markdown(&summary),
+    )
+    .with_context(|| {
+        format!(
+            "failed to write {}",
+            out_dir.join("nightly-summary.md").display()
+        )
+    })?;
+    fs::write(
+        out_dir.join("survivors.md"),
+        "# Mutation Survivors\n\nSurvivor classification is tracked in a follow-up ledger.\n",
+    )
+    .with_context(|| format!("failed to write {}", out_dir.join("survivors.md").display()))?;
+
+    Ok(())
+}
+
+fn render_mutation_nightly_markdown(summary: &MutationNightlySummary) -> String {
+    let mut md = String::new();
+    md.push_str("# Nightly Mutation Evidence\n\n");
+    md.push_str(&format!("- Lane: `{}`\n", summary.lane));
+    md.push_str(&format!("- Scope: `{}`\n", summary.scope.as_str()));
+    md.push_str(&format!("- Dry run: `{}`\n", summary.dry_run));
+    md.push_str("\n## Crates\n\n");
+    for crate_name in &summary.crates {
+        md.push_str(&format!("- `{crate_name}`\n"));
+    }
+    md.push_str("\n## Claim Boundary\n\n");
+    for claim in &summary.claim_boundary {
+        md.push_str(&format!("- {claim}\n"));
+    }
+    md
 }
 
 fn fuzz(target: Option<&str>, extra: &[String]) -> Result<()> {
@@ -4007,6 +4190,46 @@ mod tests {
             mutation_target_paths_for_owner("uselesskey-x509", &paths),
             vec!["crates/uselesskey-x509/src/srp/spec/chain_spec.rs".to_string()]
         );
+    }
+
+    #[test]
+    fn mutation_nightly_public_scope_uses_public_owner_crates() {
+        let crates = mutation_nightly_crates(MutationNightlyScope::Public, None).unwrap();
+
+        assert!(crates.contains(&"uselesskey-core".to_string()));
+        assert!(crates.contains(&"uselesskey-jwk".to_string()));
+        assert!(crates.contains(&"uselesskey-token".to_string()));
+        assert!(crates.contains(&"uselesskey-x509".to_string()));
+        assert!(crates.contains(&"uselesskey-cli".to_string()));
+        assert!(!crates.contains(&"uselesskey-core-jwk".to_string()));
+    }
+
+    #[test]
+    fn mutation_nightly_adapter_scope_uses_adapter_crates() {
+        let crates = mutation_nightly_crates(MutationNightlyScope::Adapters, None).unwrap();
+
+        assert_eq!(
+            crates,
+            vec![
+                "uselesskey-jsonwebtoken".to_string(),
+                "uselesskey-rustls".to_string(),
+                "uselesskey-tonic".to_string(),
+                "uselesskey-axum".to_string(),
+                "uselesskey-ring".to_string(),
+                "uselesskey-rustcrypto".to_string(),
+                "uselesskey-aws-lc-rs".to_string(),
+            ]
+        );
+    }
+
+    #[test]
+    fn mutation_nightly_crate_scope_requires_known_crate() {
+        assert_eq!(
+            mutation_nightly_crates(MutationNightlyScope::Crate, Some("uselesskey-token")).unwrap(),
+            vec!["uselesskey-token".to_string()]
+        );
+        assert!(mutation_nightly_crates(MutationNightlyScope::Crate, None).is_err());
+        assert!(mutation_nightly_crates(MutationNightlyScope::Crate, Some("not-a-crate")).is_err());
     }
 
     #[test]
