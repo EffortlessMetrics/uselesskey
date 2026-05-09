@@ -49,6 +49,6 @@ This plan decomposes `roadmap.md` into milestone-aligned execution items.
 
 ## Governance
 
-- [ ] release governance milestone and labels
+- [x] release governance milestone and labels
 - [x] roadmap link to this follow-up from `roadmap.md`
 - [ ] one issue per checklist line before milestone exit
