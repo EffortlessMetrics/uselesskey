@@ -117,6 +117,16 @@ Artifacts should summarize:
 Nightly mutation is advisory for ordinary PRs. It can become release-blocking
 once the survivor ledger is classified and maintained.
 
+Run the local scope planner with:
+
+```bash
+cargo xtask mutants-nightly --scope public --dry-run
+```
+
+The scheduled/manual workflow lives at `.github/workflows/mutation.yml`. It runs
+`cargo xtask mutants-nightly`, defaults scheduled runs to `--scope public`, and
+uploads `target/mutation/` as the `mutation-nightly` artifact.
+
 ## Lane 4: Release Evidence
 
 Runs for release branches, release candidates, or tag candidates.

@@ -55,6 +55,7 @@ cargo xtask pr --with-mutants # PR-scoped tests plus targeted mutation
 cargo xtask ripr-pr         # Advisory PR oracle-exposure evidence (requires external ripr)
 cargo xtask impacted-evidence --base origin/main # Changed-path evidence owners + mutation routing
 cargo xtask mutants-pr --changed # Explicit PR-scoped mutation targets
+cargo xtask mutants-nightly --scope public --dry-run # Nightly/manual mutation scope planning
 cargo xtask pr-bundles      # Bundle-ledger workflow for large PR queues: snapshot, ledger, prepare, cleanup
 cargo xtask test            # Run all tests with all features
 cargo xtask fmt --fix       # Fix formatting
