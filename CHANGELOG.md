@@ -9,47 +9,112 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.7.0] - 2026-05-10
 
+The Rust 1.95 scanner-safe fixture platform release. v0.7.0 introduces the
+end-to-end scanner-safe bundle workflow (generate, verify, inspect, export),
+the OIDC/JWKS contract pack, scanner-safe negative JWK/JWKS and token
+fixtures, a public-surface promise map with compatibility shims, and a full
+release-evidence lane (RIPR, targeted/nightly mutation, perf, and release
+proofs).
+
+`uselesskey` remains a test-fixture layer. It is not production key
+management, scanner evasion, or cryptographic assurance.
+
 ### Added
 
-- Added scanner-safe JWK/JWKS and token-shape negative fixture helpers for
-  downstream parser and validator failure-path tests.
-- Added a facade example covering scanner-safe negative JWK/JWKS and token
-  shapes for downstream validator tests.
-- Added `uselesskey verify-bundle` to verify deterministic bundle outputs
-  against their recorded `manifest.json`.
-- Added scanner-safe bundle profiles and per-artifact lane metadata to
-  `uselesskey bundle` manifests.
+- Added the `uselesskey bundle` scanner-safe profile with deterministic
+  artifacts, manifest, per-artifact lane metadata, and `receipts/` files.
+- Added `uselesskey bundle --profile oidc` for an OIDC/JWKS contract pack with
+  valid JWKS and JWT-shape artifacts plus duplicate-`kid`, missing-`kid`,
+  `alg: none`, and bad-audience negatives.
+- Added `uselesskey verify-bundle` to verify deterministic bundle outputs and
+  receipts against their recorded `manifest.json`.
+- Added `uselesskey inspect-bundle` for human-readable bundle summaries that
+  do not print fixture payloads.
 - Added `uselesskey export k8s` and `uselesskey export vault-kv-json` payload
   renderers for verified bundle directories.
-- Added deterministic bundle receipt files under `receipts/` and verification
-  coverage for receipt drift.
-- Added a public-surface map that separates public support promises from
-  published internal implementation shards.
-- Added perf receipt coverage for seed derivation, JWK/JWKS emission,
-  WebAuthn, PKCS#11 mocks, and scanner-safe materialize/verify paths.
+- Added scanner-safe negative JWK/JWKS and token-shape fixture helpers in
+  `uselesskey-jwk` and `uselesskey-token` for downstream parser and validator
+  failure-path tests.
+- Added a facade example (`negative_payload_shapes`) covering scanner-safe
+  negative JWK/JWKS and token shapes for downstream validator tests.
+- Added a public-surface promise map and `cargo xtask public-surface` guard
+  separating public support promises from published-internal shards.
+- Added the release-evidence runner (`cargo xtask release-evidence
+  --summary`), scanner-safe and OIDC bundle proofs (`cargo xtask
+  bundle-proof`), and an aggregate release evidence summary.
+- Added the targeted-mutation lane: `cargo xtask mutants-pr` (PR scope) and
+  `cargo xtask mutants-nightly --scope public` (full owner scope), split from
+  the default `cargo xtask pr` gate.
+- Added `cargo xtask ripr-pr` for repo-exposure evidence and the
+  `impacted-evidence` routing command for targeted mutation/RIPR coverage on
+  changed crates.
+- Added the mutation survivor ledger (`policy/mutation-survivors.toml`) and
+  per-run survivor receipts under `target/mutation/`.
+- Added a scheduled performance evidence workflow and expanded fixture
+  benchmark coverage for seed derivation, JWK/JWKS emission, WebAuthn,
+  PKCS#11 mocks, and scanner-safe materialize/verify paths.
+- Added a Codecov advisory coverage workflow, badge, and conservative project
+  config.
+- Added the `uselesskey-test-support` crate with fallible test helpers so
+  test code can drop `unwrap`/`expect` while keeping diagnostics clear.
+- Added the panic-safety policy stack: `policy/no-panic-allowlist.toml`,
+  `policy/no-panic-baseline.toml`, `cargo xtask check-no-panic-family`, and
+  the `bare-allow` burndown flip to blocking.
+- Added the fixture failure atlas (`docs/reference/failure-atlas.md`),
+  scanner-safe bundle reference, test-evidence-lanes guide, public-surface
+  promises, PR disposition policy, v0.7.0 release category notes, evidence
+  matrix, checklist issue map, and post-release audit checklist.
 
 ### Changed
 
-- Raised MSRV from Rust 1.92 to Rust 1.95.
-- Prepared workspace packages and retained compatibility shims for the v0.7.0
-  package line.
+- Raised MSRV from Rust 1.92 to Rust 1.95 across the workspace and enabled
+  the Rust 1.95 compiler/Clippy lint floor under `-D warnings`.
 - Reconciled the v0.7.0 roadmap status with the landed bundle, verification,
-  Kubernetes/Vault export, scanner-safe profile, and receipt workflows.
-- Moved JWK/JWKS shape, builder, ordering, and deterministic `kid` internals
-  under `uselesskey-jwk::srp::*`, retaining the former `uselesskey-core-jwk*`,
-  `uselesskey-core-jwks-order`, and `uselesskey-core-kid` crates as
-  published-internal compatibility shims.
-- Moved token spec, base62, token-shape, and negative-token internals under
+  Kubernetes/Vault export, scanner-safe profile, OIDC contract pack, and
+  receipt workflows.
+- Folded JWK/JWKS shape, builder, ordering, and deterministic `kid`
+  internals into `uselesskey-jwk::srp::*`, retaining the former
+  `uselesskey-core-jwk*`, `uselesskey-core-jwks-order`, and
+  `uselesskey-core-kid` crates as published-internal compatibility shims.
+- Folded token spec, base62, token-shape, and negative-token internals into
   `uselesskey-token::srp::*`, retaining the former `uselesskey-token-spec`,
   `uselesskey-core-base62`, `uselesskey-core-token-shape`, and
   `uselesskey-core-token` crates as published-internal compatibility shims.
-- Moved core cache, factory, hash, identity, seed, sink, keypair material, and
-  generic negative-fixture internals under `uselesskey-core::srp::*`, retaining
-  the former `uselesskey-core-*` implementation crates as published-internal
-  compatibility shims.
-- Moved X.509 spec, deterministic derive, and negative-policy internals under
-  `uselesskey-x509::srp::*`, retaining the former `uselesskey-core-x509*`
-  crates as published-internal compatibility shims.
+- Folded core cache, factory, hash, identity, seed, sink, keypair, keypair
+  material, and generic negative-fixture internals into
+  `uselesskey-core::srp::*`, retaining the former `uselesskey-core-*` shards
+  as published-internal compatibility shims.
+- Folded X.509 spec, deterministic derive, and negative/chain-negative
+  policy internals into `uselesskey-x509::srp::*`, retaining the former
+  `uselesskey-core-x509*` crates as published-internal compatibility shims.
+- Refreshed advisory-blocked dependency floors so PR checks start from a
+  clean security baseline; bumped `blake3`, `sha2`, `insta`, and
+  `aws-lc-rs` to current floors.
+- Replaced direct `unwrap`/`expect` use in workspace tests with fallible
+  helpers from `uselesskey-test-support` across entropy, core-id,
+  core-keypair, core-keypair-material, feature-grid, core-x509, and
+  core-x509-negative.
+
+### Fixed
+
+- Honored byte-budget and UTF-8 boundaries when truncating PEM in negative
+  fixtures, preventing oversized or invalid-UTF-8 outputs.
+- Fixed the WebAuthn stable-bytes encoding for fields larger than
+  `u16::MAX` so deterministic ceremony fixtures stay stable for large
+  inputs.
+- Failed fast on oversized `u16` fixture encodings in `uselesskey-pkcs11-mock`
+  and normalized empty-label provider specs to a default signing key.
+- Escaped labels safely in `uselesskey-webhook` canonical JSON payload
+  fixtures so generated bodies remain valid JSON for adversarial labels.
+- Supported uppercase `0X` seed prefix parsing alongside lowercase `0x`.
+- Made `uselesskey-core-factory` tests run without `std` so
+  no-default-features lanes stay green.
+- Made `cargo xtask pr` resilient when `origin/main` is missing in fresh
+  checkouts.
+- Hardened BDD matrix feature isolation, added missing `uk-ssh` wiring, and
+  made `cargo xtask bdd` ignore commented/docstring scenario text in feature
+  counts.
+- Silenced `uselesskey-bdd-steps` unused warnings in default builds.
 
 ## [0.6.0] - 2026-04-08
 
