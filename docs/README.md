@@ -25,6 +25,9 @@ Task-oriented instructions for common workflows.
 - [choose-features.md](how-to/choose-features.md) — Choosing feature sets by need
 - [downstream-fixture-policy.md](how-to/downstream-fixture-policy.md) — Policy pack for downstream bots and reviewers
 - [adapter-template.md](how-to/adapter-template.md) — Scaffolding and validating new adapter crates
+- [test-oidc-jwks-validation.md](how-to/test-oidc-jwks-validation.md) — Using the OIDC/JWKS contract pack in validator tests
+- [test-jwt-negative-validation.md](how-to/test-jwt-negative-validation.md) — Using JWT-shaped negatives for policy rejection tests
+- [generate-scanner-safe-k8s-secret.md](how-to/generate-scanner-safe-k8s-secret.md) — Exporting scanner-safe Kubernetes and Vault-shaped payloads
 
 ## Contributing
 
@@ -66,6 +69,7 @@ Specifications and formal definitions.
 - [audit-surface.md](reference/audit-surface.md) — Current audit/island receipts
 - [requirements-v0.3.md](reference/requirements-v0.3.md) — v0.3 acceptance specification
 - [requirements-v0.4.md](reference/requirements-v0.4.md) — v0.4 RNG boundary refactor specification
+- [failure-atlas.md](reference/failure-atlas.md) — Failure classes covered by protocol-shaped negative fixtures
 
 ## Internal
 
