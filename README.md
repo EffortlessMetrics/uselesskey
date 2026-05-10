@@ -78,6 +78,7 @@ Start with the cheapest lane that preserves the test's semantics.
 | JWT / bearer / API-token shapes only | `uselesskey-token` or facade `features = ["token"]` | token-shaped fixtures without RSA/X.509 pull-in |
 | valid runtime crypto semantics | leaf crates such as `uselesskey-rsa`, `uselesskey-x509`, `uselesskey-ssh` | real PKCS#8/JWK/X.509/SSH fixture behavior |
 | build-time materialized fixtures | `uselesskey-cli materialize` + `verify` | clean shape-only `OUT_DIR` / `include_bytes!` workflow, with RSA materialization as an explicit opt-in |
+| reproducible fixture bundles + handoff | `uselesskey-cli bundle` + `verify-bundle` + `inspect-bundle` + `export` | deterministic scanner-safe bundle of fixtures, manifest, and receipts; Kubernetes/Vault payload handoff without committing real secrets |
 
 Start with [docs/how-to/choose-features.md](docs/how-to/choose-features.md) for feature selection.
 Use [docs/how-to/choose-lane.md](docs/how-to/choose-lane.md) when deciding between entropy, token, semantic, and materialized fixture workflows.
@@ -351,6 +352,40 @@ assert!(api_key.value().starts_with("uk_test_"));
 assert!(bearer.authorization_header().starts_with("Bearer "));
 assert_eq!(oauth.value().split('.').count(), 3);
 ```
+
+## Scanner-safe bundles and exports
+
+The `uselesskey-cli` bundle workflow generates a deterministic directory of fixtures, a manifest, and per-artifact receipts that downstream tests can verify, inspect, and hand off to Kubernetes or Vault without committing real secret material.
+
+```bash
+# Generate a scanner-safe fixture bundle (default profile)
+cargo run -p uselesskey-cli -- bundle --profile scanner-safe --out target/uselesskey-bundle
+
+# Verify the bundle against its recorded manifest and receipts
+cargo run -p uselesskey-cli -- verify-bundle --path target/uselesskey-bundle
+
+# Print a human-readable summary without exposing fixture payloads
+cargo run -p uselesskey-cli -- inspect-bundle --path target/uselesskey-bundle
+
+# Render Kubernetes / Vault payloads from the verified bundle
+cargo run -p uselesskey-cli -- export k8s \
+    --bundle-dir target/uselesskey-bundle \
+    --name uselesskey-fixtures \
+    --namespace tests \
+    --out target/uselesskey-bundle/secret.yaml
+
+cargo run -p uselesskey-cli -- export vault-kv-json \
+    --bundle-dir target/uselesskey-bundle \
+    --out target/uselesskey-bundle/kv-v2.json
+```
+
+The `oidc` profile emits an OIDC/JWKS contract pack with valid JWKS and JWT-shape fixtures plus duplicate-`kid`, missing-`kid`, `alg: none`, and bad-audience negatives:
+
+```bash
+cargo run -p uselesskey-cli -- bundle --profile oidc --out target/uselesskey-oidc
+```
+
+For the reference manifest, receipts, and payload shapes see [`examples/scanner-safe-bundle/README.md`](examples/scanner-safe-bundle/README.md). For OIDC/JWT validator-test recipes see [`docs/how-to/test-oidc-jwks-validation.md`](docs/how-to/test-oidc-jwks-validation.md) and [`docs/how-to/test-jwt-negative-validation.md`](docs/how-to/test-jwt-negative-validation.md).
 
 ## Adapter crates
 
