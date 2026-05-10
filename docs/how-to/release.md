@@ -47,6 +47,8 @@ Before tagging, make sure the release PR has already:
 - refreshed receipt docs via `cargo xtask economics` and `cargo xtask audit-surface`
 - generated scanner-safe bundle proof with
   `cargo xtask bundle-proof --profile scanner-safe --out target/release-evidence/scanner-safe`
+- generated OIDC contract-pack proof with
+  `cargo xtask bundle-proof --profile oidc --out target/release-evidence/oidc`
 - generated release evidence with
   `cargo xtask release-evidence --version 0.7.0 --out target/release-evidence`
 - mapped release checklist lines in
