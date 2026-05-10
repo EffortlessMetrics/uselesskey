@@ -144,6 +144,9 @@ enum Cmd {
         /// Write planned artifacts without running the release gates.
         #[arg(long)]
         dry_run: bool,
+        /// Also write a release-manager summary page.
+        #[arg(long)]
+        summary: bool,
     },
     /// Generate, verify, inspect, and export a bundle proof artifact for release evidence.
     BundleProof {
@@ -399,7 +402,8 @@ fn main() -> Result<()> {
             version,
             out,
             dry_run,
-        } => release_evidence(&version, &out, dry_run),
+            summary,
+        } => release_evidence(&version, &out, dry_run, summary),
         Cmd::BundleProof { profile, out } => bundle_proof(&profile, out.as_deref()),
         Cmd::DepGuard => dep_guard(),
         Cmd::Bdd => bdd(),
@@ -2656,7 +2660,7 @@ fn release_evidence_steps() -> Vec<ReleaseEvidenceStep> {
     ]
 }
 
-fn release_evidence(version: &str, out_dir: &Path, dry_run: bool) -> Result<()> {
+fn release_evidence(version: &str, out_dir: &Path, dry_run: bool, summary: bool) -> Result<()> {
     if version.trim().is_empty() {
         bail!("--version must not be empty");
     }
@@ -2665,7 +2669,7 @@ fn release_evidence(version: &str, out_dir: &Path, dry_run: bool) -> Result<()> 
     let mut receipt = release_evidence_receipt(version, dry_run, &steps);
 
     if dry_run {
-        write_release_evidence_artifacts(out_dir, &receipt)?;
+        write_release_evidence_artifacts(out_dir, &receipt, summary)?;
         println!(
             "release-evidence: planned {} commands for v{}",
             receipt.commands.len(),
@@ -2676,6 +2680,12 @@ fn release_evidence(version: &str, out_dir: &Path, dry_run: bool) -> Result<()> 
             out_dir.join("release-evidence.json").display(),
             out_dir.join("release-evidence.md").display()
         );
+        if summary {
+            println!(
+                "release-evidence: wrote {}",
+                out_dir.join("summary.md").display()
+            );
+        }
         return Ok(());
     }
 
@@ -2685,19 +2695,25 @@ fn release_evidence(version: &str, out_dir: &Path, dry_run: bool) -> Result<()> 
             Ok(()) => receipt.commands[idx].status = "ok".to_string(),
             Err(err) => {
                 receipt.commands[idx].status = "failed".to_string();
-                write_release_evidence_artifacts(out_dir, &receipt)?;
+                write_release_evidence_artifacts(out_dir, &receipt, summary)?;
                 return Err(err)
                     .with_context(|| format!("release evidence step failed: {}", step.name));
             }
         }
     }
 
-    write_release_evidence_artifacts(out_dir, &receipt)?;
+    write_release_evidence_artifacts(out_dir, &receipt, summary)?;
     println!(
         "release-evidence: wrote {} and {}",
         out_dir.join("release-evidence.json").display(),
         out_dir.join("release-evidence.md").display()
     );
+    if summary {
+        println!(
+            "release-evidence: wrote {}",
+            out_dir.join("summary.md").display()
+        );
+    }
     Ok(())
 }
 
@@ -2755,6 +2771,7 @@ fn run_release_evidence_step(step: &ReleaseEvidenceStep) -> Result<()> {
 fn write_release_evidence_artifacts(
     out_dir: &Path,
     receipt: &ReleaseEvidenceReceipt,
+    write_summary: bool,
 ) -> Result<()> {
     fs::create_dir_all(out_dir)
         .with_context(|| format!("failed to create {}", out_dir.display()))?;
@@ -2769,6 +2786,13 @@ fn write_release_evidence_artifacts(
             out_dir.join("release-evidence.md").display()
         )
     })?;
+    if write_summary {
+        fs::write(
+            out_dir.join("summary.md"),
+            render_release_evidence_summary_markdown(receipt),
+        )
+        .with_context(|| format!("failed to write {}", out_dir.join("summary.md").display()))?;
+    }
     Ok(())
 }
 
@@ -2808,6 +2832,130 @@ fn render_release_evidence_markdown(receipt: &ReleaseEvidenceReceipt) -> String 
     for claim in &receipt.claim_boundary {
         md.push_str(&format!("- {claim}\n"));
     }
+    md
+}
+
+fn release_summary_status(receipt: &ReleaseEvidenceReceipt, names: &[&str]) -> String {
+    let statuses = names
+        .iter()
+        .map(|name| {
+            receipt
+                .commands
+                .iter()
+                .find(|command| command.name == *name)
+                .map(|command| command.status.as_str())
+                .unwrap_or("missing")
+        })
+        .collect::<Vec<_>>();
+
+    if statuses.contains(&"failed") {
+        "failed".to_string()
+    } else if statuses.contains(&"missing") {
+        "missing".to_string()
+    } else if statuses.contains(&"running") {
+        "running".to_string()
+    } else if statuses.contains(&"pending") {
+        "pending".to_string()
+    } else if statuses.contains(&"planned") {
+        "planned".to_string()
+    } else if statuses.iter().all(|status| *status == "ok") {
+        "ok".to_string()
+    } else {
+        statuses.join(", ")
+    }
+}
+
+fn release_summary_artifacts(receipt: &ReleaseEvidenceReceipt, names: &[&str]) -> String {
+    let artifacts = receipt
+        .commands
+        .iter()
+        .filter(|command| names.iter().any(|name| command.name == *name))
+        .flat_map(|command| command.artifacts.iter())
+        .cloned()
+        .collect::<BTreeSet<_>>();
+
+    if artifacts.is_empty() {
+        "-".to_string()
+    } else {
+        artifacts
+            .iter()
+            .map(|artifact| format!("`{artifact}`"))
+            .collect::<Vec<_>>()
+            .join("<br>")
+    }
+}
+
+fn render_release_evidence_summary_markdown(receipt: &ReleaseEvidenceReceipt) -> String {
+    let mut md = String::new();
+    md.push_str("# v");
+    md.push_str(&receipt.version);
+    md.push_str(" Release Evidence Summary\n\n");
+    md.push_str("## Release Claim\n\n");
+    md.push_str(
+        "v0.7.0 is the Rust 1.95 scanner-safe fixture platform release. It raises the v0.6.0 crates.io baseline from Rust 1.92 and keeps published internal shards as compatibility shims while users move to owner crates and facade surfaces.\n\n",
+    );
+    md.push_str("`uselesskey` generates deterministic, scanner-safe, protocol-shaped test fixtures and bundles. It is not production key management, scanner evasion, or cryptographic assurance.\n\n");
+    md.push_str("## Gate Summary\n\n");
+    md.push_str("| Area | Status | Evidence |\n");
+    md.push_str("| --- | --- | --- |\n");
+    for (area, names) in [
+        ("Public surface", &["public-surface"][..]),
+        (
+            "Package and publish proof",
+            &["publish-preflight", "publish-check"][..],
+        ),
+        (
+            "Scanner-safe bundle proof",
+            &["scanner-safe-bundle-proof"][..],
+        ),
+        (
+            "OIDC contract-pack proof",
+            &["oidc-contract-pack-proof"][..],
+        ),
+        ("RIPR exposure", &["ripr-pr", "impacted-evidence"][..]),
+        ("Nightly mutation scope", &["mutants-nightly-public"][..]),
+        ("Performance evidence", &["perf"][..]),
+        (
+            "Docs, examples, and scanner guard",
+            &["docs-sync", "examples-smoke", "no-blob"][..],
+        ),
+        ("Receipts", &["economics", "audit-surface"][..]),
+    ] {
+        md.push_str(&format!(
+            "| {area} | `{}` | {} |\n",
+            release_summary_status(receipt, names),
+            release_summary_artifacts(receipt, names)
+        ));
+    }
+
+    md.push_str("\n## Open Issues\n\n");
+    let failed = receipt
+        .commands
+        .iter()
+        .filter(|command| command.status == "failed")
+        .map(|command| command.name.as_str())
+        .collect::<Vec<_>>();
+    if !failed.is_empty() {
+        for name in failed {
+            md.push_str(&format!(
+                "- `{name}` failed. Link the release-blocking issue before publishing.\n"
+            ));
+        }
+    } else if receipt
+        .commands
+        .iter()
+        .any(|command| command.status == "planned" || command.status == "pending")
+    {
+        md.push_str("- Pending RC execution. Replace planned or pending rows with artifacts, command results, or issue links before publishing.\n");
+    } else {
+        md.push_str("- None recorded by this release-evidence receipt.\n");
+    }
+
+    md.push_str("\n## Claim Boundaries\n\n");
+    for claim in &receipt.claim_boundary {
+        md.push_str(&format!("- {claim}\n"));
+    }
+
     md
 }
 
@@ -6616,6 +6764,21 @@ index 1111111..2222222 100644
             markdown
                 .contains("release evidence does not make uselesskey production key management")
         );
+    }
+
+    #[test]
+    fn release_evidence_summary_highlights_public_promises() {
+        let steps = release_evidence_steps();
+        let receipt = release_evidence_receipt("0.7.0", true, &steps);
+        let markdown = render_release_evidence_summary_markdown(&receipt);
+
+        assert!(markdown.contains("Rust 1.95 scanner-safe fixture platform release"));
+        assert!(markdown.contains("Package and publish proof"));
+        assert!(markdown.contains("Scanner-safe bundle proof"));
+        assert!(markdown.contains("OIDC contract-pack proof"));
+        assert!(markdown.contains("Nightly mutation scope"));
+        assert!(markdown.contains("Pending RC execution"));
+        assert!(markdown.contains("not production key management"));
     }
 
     #[test]

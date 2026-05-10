@@ -189,7 +189,7 @@ Release evidence should produce durable Markdown and JSON artifacts that can be
 linked from release notes. Plan or run the release evidence lane with:
 
 ```bash
-cargo xtask release-evidence --version 0.7.0 --out target/release-evidence
+cargo xtask release-evidence --version 0.7.0 --out target/release-evidence --summary
 ```
 
 The v0.7.0 release-candidate checklist starts in

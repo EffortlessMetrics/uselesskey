@@ -81,6 +81,16 @@ generated `manifest.json`, `receipts/materialization.json`,
 owner-crate JWK/token test results, and no-blob result in the release PR or
 release notes.
 
+Generate the release-manager summary with:
+
+```bash
+cargo xtask release-evidence --version 0.7.0 --out target/release-evidence --summary
+```
+
+Record `target/release-evidence/summary.md` alongside the full release evidence
+receipt so the release claim, gate summary, open issues, and claim boundaries
+are visible without opening each artifact.
+
 ## Claim Boundaries
 
 - Passing this matrix does not prove cryptographic correctness.
