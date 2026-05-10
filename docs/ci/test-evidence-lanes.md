@@ -177,6 +177,8 @@ Signals:
 - package proof and publish dry-runs;
 - `cargo xtask bundle-proof --profile scanner-safe` for bundle generation,
   `verify-bundle`, `inspect-bundle`, export handoff, and no-blob proof;
+- `cargo xtask bundle-proof --profile oidc` for OIDC contract-pack contents,
+  owner-crate JWK/token tests, verifier proof, inspection, and no-blob proof;
 - scanner-safe `no-blob` proof;
 - docs/examples smoke;
 - adapter matrix checks;

@@ -45,7 +45,7 @@ tool.
 | JWK/JWKS fixtures and negatives | `uselesskey-jwk`, `uselesskey-test-server`, `uselesskey-axum` | Valid/negative JWK and JWKS shapes, stable ordering, duplicate/missing `kid`, and adapter route expectations are covered at owner surfaces. | `cargo test -p uselesskey-jwk --all-features`; `cargo xtask mutants-pr --crate uselesskey-jwk` when JWK behavior changed | Pending RC run |
 | Token-shape fixtures and negatives | `uselesskey-token`, `uselesskey-jsonwebtoken` | API-key, bearer, JWT-shape, near-miss, and negative-token behavior remains scanner-safe by default. | `cargo test -p uselesskey-token --all-features`; `cargo test -p uselesskey-jsonwebtoken --all-features`; `cargo xtask mutants-pr --crate uselesskey-token` when token behavior changed | Pending RC run |
 | Scanner-safe bundle default | `uselesskey-cli` | `scanner-safe` bundle generation, manifest verification, human-readable inspection, materialization receipts, audit-surface receipts, and no-blob proof agree. | `cargo run -p uselesskey-cli -- bundle --profile scanner-safe --out target/uselesskey-bundle`; `cargo run -p uselesskey-cli -- verify-bundle --path target/uselesskey-bundle`; `cargo run -p uselesskey-cli -- inspect-bundle --path target/uselesskey-bundle`; `cargo xtask no-blob` | Pending RC run |
-| OIDC/JWKS contract pack | `uselesskey-cli`, `uselesskey-jwk`, `uselesskey-token` | OIDC profile emits valid JWKS/JWT-shaped fixtures plus duplicate-`kid`, missing-`kid`, `alg: none`, and bad-audience negatives. | `cargo run -p uselesskey-cli -- bundle --profile oidc --out target/oidc-fixtures`; `cargo run -p uselesskey-cli -- verify-bundle --path target/oidc-fixtures`; `cargo test -p uselesskey-cli bundle_profile_oidc_writes_contract_pack --all-features` | Pending RC run |
+| OIDC/JWKS contract pack | `uselesskey-cli`, `uselesskey-jwk`, `uselesskey-token` | OIDC profile emits valid JWKS/JWT-shaped fixtures plus duplicate-`kid`, missing-`kid`, `alg: none`, and bad-audience negatives. | `cargo xtask bundle-proof --profile oidc --out target/release-evidence/oidc` / `target/release-evidence/oidc/oidc-contract-pack-proof.*` | Pending RC run |
 | Kubernetes and Vault export handoff | `uselesskey-cli` | Export payloads are generated from verified bundles and do not require committed real secret material. | `cargo run -p uselesskey-cli -- export k8s --bundle-dir target/uselesskey-bundle --name uselesskey-fixtures --namespace tests --out target/uselesskey-bundle/secret.yaml`; `cargo run -p uselesskey-cli -- export vault-kv-json --bundle-dir target/uselesskey-bundle --out target/uselesskey-bundle/kv-v2.json` | Pending RC run |
 | X.509 and TLS fixtures | `uselesskey-x509`, `uselesskey-rustls`, `uselesskey-tonic` | Certificate/chain fixtures, stable bytes, validity offsets, and rustls/tonic adapter contracts remain covered. | `cargo test -p uselesskey-x509 --all-features`; `cargo test -p uselesskey-rustls --all-features`; `cargo test -p uselesskey-tonic --all-features` | Pending RC run |
 | RSA/ECDSA/Ed25519 fixtures | `uselesskey-rsa`, `uselesskey-ecdsa`, `uselesskey-ed25519` | Key-family encodings and deterministic fixture identity remain stable. | `cargo test -p uselesskey-rsa --all-features`; `cargo test -p uselesskey-ecdsa --all-features`; `cargo test -p uselesskey-ed25519 --all-features` | Pending RC run |
@@ -67,6 +67,19 @@ Record `scanner-safe-bundle-proof.json`,
 `receipts/materialization.json`, `receipts/audit-surface.json`, Kubernetes
 payload, Vault payload, verifier result, inspection summary, and no-blob result
 in the release PR or release notes.
+
+The v0.7.0 release candidate must also attach or link a generated OIDC
+contract-pack proof:
+
+```bash
+cargo xtask bundle-proof --profile oidc --out target/release-evidence/oidc
+```
+
+Record `oidc-contract-pack-proof.json`, `oidc-contract-pack-proof.md`, the
+generated `manifest.json`, `receipts/materialization.json`,
+`receipts/audit-surface.json`, verifier result, inspection summary,
+owner-crate JWK/token test results, and no-blob result in the release PR or
+release notes.
 
 ## Claim Boundaries
 
