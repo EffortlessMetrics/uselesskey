@@ -60,16 +60,42 @@ jobs:
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
 
-      - name: Publish all crates
-        run: cargo xtask publish
+      - name: Install shipper
+        run: cargo install shipper --locked --version "0.3.0-rc.2"
 
-      - name: Upload publish state
+      - name: Plan
+        run: |
+          mkdir -p .shipper
+          shipper plan --format json | tee .shipper/plan.txt
+
+      - name: Upload plan state
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: publish-state
-          path: target/xtask/publish-state.json
-          if-no-files-found: ignore
+          name: shipper-state-plan
+          path: .shipper/
+          include-hidden-files: true
+          retention-days: 30
+
+      - name: Preflight
+        run: shipper preflight --policy safe
+
+      - name: Publish
+        run: |
+          shipper publish \
+            --policy safe \
+            --readiness-method both \
+            --max-attempts 12 \
+            --max-delay 15m
+
+      - name: Upload final state
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: shipper-state-final
+          path: .shipper/
+          include-hidden-files: true
+          retention-days: 90
 
   release:
     needs: publish
