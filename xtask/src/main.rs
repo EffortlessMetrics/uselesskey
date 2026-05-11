@@ -840,54 +840,57 @@ fn feature_matrix_cmd() -> Result<()> {
 }
 
 const PUBLISH_CRATES: &[&str] = &[
-    // Leaf crates (no workspace deps)
-    "uselesskey-core-seed",
-    "uselesskey-core-hash",
+    // True leaf crates (no workspace deps)
     "uselesskey-core-hmac-spec",
-    "uselesskey-core-id",
-    "uselesskey-core-cache",
-    "uselesskey-core-factory",
     "uselesskey-jwk",
-    // JWK compatibility shims
     "uselesskey-core-kid",
-    // Negative fixture crates
-    "uselesskey-core-negative-der",
-    "uselesskey-core-negative-pem",
-    "uselesskey-core-negative",
-    // Sinks and shapes
-    "uselesskey-core-sink",
     "uselesskey-core-jwk-shape",
     "uselesskey-core-jwks-order",
     "uselesskey-core-jwk-builder",
+    // JWK aggregate (depends on the JWK shards above)
     "uselesskey-core-jwk",
-    // X.509 crates (in dep order)
-    "uselesskey-core-x509-spec",
-    "uselesskey-core-x509-derive",
-    "uselesskey-core-x509-chain-negative",
-    "uselesskey-core-x509-negative",
-    "uselesskey-core-x509",
-    // Core aggregate
+    // Core (depends on the JWK lane above)
     "uselesskey-core",
+    // Core compatibility shims (depend on uselesskey-core)
+    "uselesskey-core-seed",
+    "uselesskey-core-hash",
+    "uselesskey-core-id",
+    "uselesskey-core-cache",
+    "uselesskey-core-factory",
+    "uselesskey-core-negative-der",
+    "uselesskey-core-negative-pem",
+    "uselesskey-core-negative",
+    "uselesskey-core-sink",
+    // Keypair material
     "uselesskey-core-keypair-material",
     "uselesskey-core-keypair",
-    // Mid-level crates
+    // Mid-level fixture crates
     "uselesskey-entropy",
     "uselesskey-rsa",
     "uselesskey-ecdsa",
     "uselesskey-ed25519",
     "uselesskey-hmac",
     "uselesskey-token",
-    // Token compatibility shims
+    // Token compatibility shims (depend on uselesskey-token)
     "uselesskey-token-spec",
     "uselesskey-core-base62",
     "uselesskey-core-token-shape",
     "uselesskey-core-token",
+    // Higher-level fixture crates
     "uselesskey-webhook",
     "uselesskey-pkcs11-mock",
     "uselesskey-webauthn",
     "uselesskey-ssh",
     "uselesskey-pgp",
+    // X.509 (depends on core and downstream)
     "uselesskey-x509",
+    // X.509 compatibility shims (depend on uselesskey-x509)
+    "uselesskey-core-x509-spec",
+    "uselesskey-core-x509-derive",
+    "uselesskey-core-x509-chain-negative",
+    "uselesskey-core-x509-negative",
+    "uselesskey-core-x509",
+    // Servers and CLI
     "uselesskey-test-server",
     "uselesskey-axum",
     "uselesskey-cli",
@@ -7283,7 +7286,8 @@ end_of_record
 
     #[test]
     fn resolve_start_index_from_first_crate() {
-        let idx = resolve_start_index(Some("uselesskey-core-seed"), false).unwrap();
+        let first = PUBLISH_CRATES[0];
+        let idx = resolve_start_index(Some(first), false).unwrap();
         assert_eq!(idx, 0);
     }
 
