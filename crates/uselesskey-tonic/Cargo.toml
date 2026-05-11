@@ -15,7 +15,7 @@ documentation = "https://docs.rs/uselesskey-tonic"
 authors.workspace = true
 
 [dependencies]
-tonic = { version = "0.14.5", default-features = false, features = ["transport", "tls-ring"] }
+tonic = { version = "0.14.6", default-features = false, features = ["transport", "tls-ring"] }
 uselesskey-x509 = { path = "../uselesskey-x509", version = "0.7.1", optional = true }
 
 [package.metadata.docs.rs]
