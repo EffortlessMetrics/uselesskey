@@ -147,6 +147,9 @@ enum Cmd {
         /// Also write a release-manager summary page.
         #[arg(long)]
         summary: bool,
+        /// Run the patch-release evidence lane (publish-system + user-path smoke only, no full mutation).
+        #[arg(long)]
+        patch: bool,
     },
     /// Generate, verify, inspect, and export a bundle proof artifact for release evidence.
     BundleProof {
@@ -427,7 +430,8 @@ fn main() -> Result<()> {
             out,
             dry_run,
             summary,
-        } => release_evidence(&version, &out, dry_run, summary),
+            patch,
+        } => release_evidence(&version, &out, dry_run, summary, patch),
         Cmd::BundleProof { profile, out } => bundle_proof(&profile, out.as_deref()),
         Cmd::ScannerSafeReference { check } => {
             if check {
@@ -2747,6 +2751,9 @@ struct ReleaseEvidenceCommandReceipt {
 struct ReleaseEvidenceReceipt {
     schema_version: u32,
     lane: String,
+    /// Lane mode: `"minor"` for the full minor-release evidence lane,
+    /// `"patch"` for the publish-system + user-path smoke patch lane.
+    lane_mode: String,
     version: String,
     dry_run: bool,
     generated_at: String,
@@ -2763,7 +2770,7 @@ const RELEASE_EVIDENCE_CLAIM_BOUNDARY: &[&str] = &[
     "scanner-safe evidence covers checked profiles and committed artifacts, not scanner evasion",
 ];
 
-fn release_evidence_steps() -> Vec<ReleaseEvidenceStep> {
+fn release_evidence_steps_minor() -> Vec<ReleaseEvidenceStep> {
     vec![
         ReleaseEvidenceStep {
             name: "public-surface",
@@ -2888,13 +2895,109 @@ fn release_evidence_steps() -> Vec<ReleaseEvidenceStep> {
     ]
 }
 
-fn release_evidence(version: &str, out_dir: &Path, dry_run: bool, summary: bool) -> Result<()> {
+/// Patch-release evidence lane: publish-system gates + user-path smoke.
+///
+/// Patch releases don't need the full minor-release evidence pack
+/// (no `mutants-nightly`, no broad perf suite, no new product profile proofs).
+/// They need confidence that release tooling and the user install path still work,
+/// plus the standard scanner/no-blob/docs sanity checks.
+///
+/// `cratesio-smoke` is invoked with `--path .` and `--skip-install-cli`
+/// to keep patch evidence fast in CI; full install smoke remains available
+/// via `cargo xtask cratesio-smoke` on demand.
+///
+/// Targeted mutation (e.g. `mutants-pr`) is intentionally not run here.
+/// `cargo xtask pr` and `impacted-evidence` already gate targeted mutation
+/// when changed paths require it; full `mutants-nightly --scope public` is
+/// reserved for the minor lane.
+fn release_evidence_steps_patch() -> Vec<ReleaseEvidenceStep> {
+    vec![
+        ReleaseEvidenceStep {
+            name: "public-surface",
+            command: &["cargo", "xtask", "public-surface"],
+            artifacts: &[],
+        },
+        ReleaseEvidenceStep {
+            name: "check-file-policy",
+            command: &["cargo", "xtask", "check-file-policy"],
+            artifacts: &["target/file-policy.json", "target/file-policy.md"],
+        },
+        ReleaseEvidenceStep {
+            name: "publish-preflight",
+            command: &["cargo", "xtask", "publish-preflight"],
+            artifacts: &[],
+        },
+        ReleaseEvidenceStep {
+            name: "publish-check",
+            command: &["cargo", "xtask", "publish-check"],
+            artifacts: &[],
+        },
+        ReleaseEvidenceStep {
+            name: "scanner-safe-reference",
+            command: &["cargo", "xtask", "scanner-safe-reference", "--check"],
+            artifacts: &[],
+        },
+        ReleaseEvidenceStep {
+            name: "cratesio-smoke-local",
+            command: &[
+                "cargo",
+                "xtask",
+                "cratesio-smoke",
+                "--path",
+                ".",
+                "--skip-install-cli",
+            ],
+            artifacts: &[],
+        },
+        ReleaseEvidenceStep {
+            name: "docs-sync",
+            command: &["cargo", "xtask", "docs-sync", "--check"],
+            artifacts: &[],
+        },
+        ReleaseEvidenceStep {
+            name: "no-blob",
+            command: &["cargo", "xtask", "no-blob"],
+            artifacts: &[],
+        },
+        ReleaseEvidenceStep {
+            name: "examples-smoke",
+            command: &["cargo", "xtask", "examples-smoke"],
+            artifacts: &[],
+        },
+        ReleaseEvidenceStep {
+            name: "impacted-evidence",
+            command: &[
+                "cargo",
+                "xtask",
+                "impacted-evidence",
+                "--base",
+                "origin/main",
+            ],
+            artifacts: &["target/xtask/impacted-evidence/latest.json"],
+        },
+        // Note: mutants-nightly is intentionally omitted from patch mode.
+        // Targeted mutation runs only if `impacted-evidence` requires it
+        // (handled by `cargo xtask pr` already).
+    ]
+}
+
+fn release_evidence(
+    version: &str,
+    out_dir: &Path,
+    dry_run: bool,
+    summary: bool,
+    patch: bool,
+) -> Result<()> {
     if version.trim().is_empty() {
         bail!("--version must not be empty");
     }
 
-    let steps = release_evidence_steps();
-    let mut receipt = release_evidence_receipt(version, dry_run, &steps);
+    let steps = if patch {
+        release_evidence_steps_patch()
+    } else {
+        release_evidence_steps_minor()
+    };
+    let mut receipt = release_evidence_receipt(version, dry_run, &steps, patch);
 
     if dry_run {
         write_release_evidence_artifacts(out_dir, &receipt, summary)?;
@@ -2949,6 +3052,7 @@ fn release_evidence_receipt(
     version: &str,
     dry_run: bool,
     steps: &[ReleaseEvidenceStep],
+    patch: bool,
 ) -> ReleaseEvidenceReceipt {
     let artifacts = steps
         .iter()
@@ -2961,6 +3065,7 @@ fn release_evidence_receipt(
     ReleaseEvidenceReceipt {
         schema_version: 1,
         lane: "release-evidence".to_string(),
+        lane_mode: if patch { "patch" } else { "minor" }.to_string(),
         version: version.trim().to_string(),
         dry_run,
         generated_at: chrono::Utc::now().to_rfc3339(),
@@ -3028,6 +3133,7 @@ fn render_release_evidence_markdown(receipt: &ReleaseEvidenceReceipt) -> String 
     let mut md = String::new();
     md.push_str("# Release Evidence\n\n");
     md.push_str(&format!("- Lane: `{}`\n", receipt.lane));
+    md.push_str(&format!("- Mode: `{}`\n", receipt.lane_mode));
     md.push_str(&format!("- Version: `{}`\n", receipt.version));
     md.push_str(&format!("- Dry run: `{}`\n", receipt.dry_run));
     if let Some(sha) = &receipt.git_sha {
@@ -3118,42 +3224,76 @@ fn render_release_evidence_summary_markdown(receipt: &ReleaseEvidenceReceipt) ->
     md.push_str("# v");
     md.push_str(&receipt.version);
     md.push_str(" Release Evidence Summary\n\n");
-    md.push_str("## Release Claim\n\n");
-    md.push_str(
-        "v0.7.0 is the Rust 1.95 scanner-safe fixture platform release. It raises the v0.6.0 crates.io baseline from Rust 1.92 and keeps published internal shards as compatibility shims while users move to owner crates and facade surfaces.\n\n",
-    );
-    md.push_str("`uselesskey` generates deterministic, scanner-safe, protocol-shaped test fixtures and bundles. It is not production key management, scanner evasion, or cryptographic assurance.\n\n");
-    md.push_str("## Gate Summary\n\n");
-    md.push_str("| Area | Status | Evidence |\n");
-    md.push_str("| --- | --- | --- |\n");
-    for (area, names) in [
-        ("Public surface", &["public-surface"][..]),
-        (
-            "Package and publish proof",
-            &["publish-preflight", "publish-check"][..],
-        ),
-        (
-            "Scanner-safe bundle proof",
-            &["scanner-safe-bundle-proof"][..],
-        ),
-        (
-            "OIDC contract-pack proof",
-            &["oidc-contract-pack-proof"][..],
-        ),
-        ("RIPR exposure", &["ripr-pr", "impacted-evidence"][..]),
-        ("Nightly mutation scope", &["mutants-nightly-public"][..]),
-        ("Performance evidence", &["perf"][..]),
-        (
-            "Docs, examples, and scanner guard",
-            &["docs-sync", "examples-smoke", "no-blob"][..],
-        ),
-        ("Receipts", &["economics", "audit-surface"][..]),
-    ] {
-        md.push_str(&format!(
-            "| {area} | `{}` | {} |\n",
-            release_summary_status(receipt, names),
-            release_summary_artifacts(receipt, names)
-        ));
+
+    if receipt.lane_mode == "patch" {
+        md.push_str("> Patch-mode evidence lane: publish-system gates and user-path smoke only. Full nightly mutation, broad perf, and new product profile proofs are intentionally omitted; use the minor lane (`cargo xtask release-evidence --version <V> --summary`) for those.\n\n");
+        md.push_str("## Release Claim\n\n");
+        md.push_str(
+            "Patch releases harden release tooling and the user install path without changing public behavior. This summary records the publish-system and scanner gates that prove the candidate is safe to ship as a patch.\n\n",
+        );
+        md.push_str("`uselesskey` generates deterministic, scanner-safe, protocol-shaped test fixtures and bundles. It is not production key management, scanner evasion, or cryptographic assurance.\n\n");
+        md.push_str("## Gate Summary\n\n");
+        md.push_str("| Area | Status | Evidence |\n");
+        md.push_str("| --- | --- | --- |\n");
+        for (area, names) in [
+            ("Public surface", &["public-surface"][..]),
+            ("Non-Rust file policy", &["check-file-policy"][..]),
+            (
+                "Package and publish proof",
+                &["publish-preflight", "publish-check"][..],
+            ),
+            ("Scanner-safe reference", &["scanner-safe-reference"][..]),
+            ("Crates.io install smoke", &["cratesio-smoke-local"][..]),
+            (
+                "Docs, examples, and scanner guard",
+                &["docs-sync", "examples-smoke", "no-blob"][..],
+            ),
+            ("Impacted-evidence routing", &["impacted-evidence"][..]),
+        ] {
+            md.push_str(&format!(
+                "| {area} | `{}` | {} |\n",
+                release_summary_status(receipt, names),
+                release_summary_artifacts(receipt, names)
+            ));
+        }
+    } else {
+        md.push_str("## Release Claim\n\n");
+        md.push_str(
+            "v0.7.0 is the Rust 1.95 scanner-safe fixture platform release. It raises the v0.6.0 crates.io baseline from Rust 1.92 and keeps published internal shards as compatibility shims while users move to owner crates and facade surfaces.\n\n",
+        );
+        md.push_str("`uselesskey` generates deterministic, scanner-safe, protocol-shaped test fixtures and bundles. It is not production key management, scanner evasion, or cryptographic assurance.\n\n");
+        md.push_str("## Gate Summary\n\n");
+        md.push_str("| Area | Status | Evidence |\n");
+        md.push_str("| --- | --- | --- |\n");
+        for (area, names) in [
+            ("Public surface", &["public-surface"][..]),
+            (
+                "Package and publish proof",
+                &["publish-preflight", "publish-check"][..],
+            ),
+            (
+                "Scanner-safe bundle proof",
+                &["scanner-safe-bundle-proof"][..],
+            ),
+            (
+                "OIDC contract-pack proof",
+                &["oidc-contract-pack-proof"][..],
+            ),
+            ("RIPR exposure", &["ripr-pr", "impacted-evidence"][..]),
+            ("Nightly mutation scope", &["mutants-nightly-public"][..]),
+            ("Performance evidence", &["perf"][..]),
+            (
+                "Docs, examples, and scanner guard",
+                &["docs-sync", "examples-smoke", "no-blob"][..],
+            ),
+            ("Receipts", &["economics", "audit-surface"][..]),
+        ] {
+            md.push_str(&format!(
+                "| {area} | `{}` | {} |\n",
+                release_summary_status(receipt, names),
+                release_summary_artifacts(receipt, names)
+            ));
+        }
     }
 
     md.push_str("\n## Open Issues\n\n");
@@ -7332,7 +7472,7 @@ index 1111111..2222222 100644
 
     #[test]
     fn release_evidence_dry_run_plans_release_gates() {
-        let steps = release_evidence_steps();
+        let steps = release_evidence_steps_minor();
         let names = steps.iter().map(|step| step.name).collect::<BTreeSet<_>>();
 
         for expected in [
@@ -7355,9 +7495,10 @@ index 1111111..2222222 100644
             assert!(names.contains(expected), "missing release gate {expected}");
         }
 
-        let receipt = release_evidence_receipt("0.7.0", true, &steps);
+        let receipt = release_evidence_receipt("0.7.0", true, &steps, false);
         assert_eq!(receipt.version, "0.7.0");
         assert!(receipt.dry_run);
+        assert_eq!(receipt.lane_mode, "minor");
         assert!(receipt.commands.iter().all(|cmd| cmd.status == "planned"));
         assert!(
             receipt
@@ -7381,11 +7522,12 @@ index 1111111..2222222 100644
 
     #[test]
     fn release_evidence_markdown_summarizes_commands_and_boundaries() {
-        let steps = release_evidence_steps();
-        let receipt = release_evidence_receipt("0.7.0", true, &steps);
+        let steps = release_evidence_steps_minor();
+        let receipt = release_evidence_receipt("0.7.0", true, &steps, false);
         let markdown = render_release_evidence_markdown(&receipt);
 
         assert!(markdown.contains("Version: `0.7.0`"));
+        assert!(markdown.contains("Mode: `minor`"));
         assert!(markdown.contains("cargo xtask mutants-nightly --scope public"));
         assert!(
             markdown
@@ -7395,8 +7537,8 @@ index 1111111..2222222 100644
 
     #[test]
     fn release_evidence_summary_highlights_public_promises() {
-        let steps = release_evidence_steps();
-        let receipt = release_evidence_receipt("0.7.0", true, &steps);
+        let steps = release_evidence_steps_minor();
+        let receipt = release_evidence_receipt("0.7.0", true, &steps, false);
         let markdown = render_release_evidence_summary_markdown(&receipt);
 
         assert!(markdown.contains("Rust 1.95 scanner-safe fixture platform release"));
@@ -7406,6 +7548,100 @@ index 1111111..2222222 100644
         assert!(markdown.contains("Nightly mutation scope"));
         assert!(markdown.contains("Pending RC execution"));
         assert!(markdown.contains("not production key management"));
+    }
+
+    #[test]
+    fn release_evidence_patch_step_list_excludes_mutants_nightly() {
+        let steps = release_evidence_steps_patch();
+        for step in &steps {
+            assert!(
+                !(step.command.len() >= 3
+                    && step.command[0] == "cargo"
+                    && step.command[1] == "xtask"
+                    && step.command[2] == "mutants-nightly"),
+                "patch lane must not include mutants-nightly, found step {}",
+                step.name,
+            );
+        }
+    }
+
+    #[test]
+    fn release_evidence_minor_step_list_includes_mutants_nightly() {
+        let steps = release_evidence_steps_minor();
+        let has_mutants_nightly = steps.iter().any(|step| {
+            step.command.len() >= 3
+                && step.command[0] == "cargo"
+                && step.command[1] == "xtask"
+                && step.command[2] == "mutants-nightly"
+        });
+        assert!(
+            has_mutants_nightly,
+            "minor lane must still include mutants-nightly"
+        );
+    }
+
+    #[test]
+    fn release_evidence_patch_step_list_includes_scanner_safe_reference() {
+        let steps = release_evidence_steps_patch();
+        let names = steps.iter().map(|step| step.name).collect::<BTreeSet<_>>();
+        assert!(
+            names.contains("scanner-safe-reference"),
+            "patch lane must wire scanner-safe-reference",
+        );
+        let step = steps
+            .iter()
+            .find(|step| step.name == "scanner-safe-reference")
+            .expect("scanner-safe-reference step");
+        assert_eq!(
+            step.command,
+            &["cargo", "xtask", "scanner-safe-reference", "--check"],
+        );
+    }
+
+    #[test]
+    fn release_evidence_patch_step_list_includes_cratesio_smoke() {
+        let steps = release_evidence_steps_patch();
+        let names = steps.iter().map(|step| step.name).collect::<BTreeSet<_>>();
+        assert!(
+            names.contains("cratesio-smoke-local"),
+            "patch lane must wire cratesio-smoke install smoke",
+        );
+        let step = steps
+            .iter()
+            .find(|step| step.name == "cratesio-smoke-local")
+            .expect("cratesio-smoke-local step");
+        assert_eq!(
+            step.command,
+            &[
+                "cargo",
+                "xtask",
+                "cratesio-smoke",
+                "--path",
+                ".",
+                "--skip-install-cli",
+            ],
+        );
+    }
+
+    #[test]
+    fn release_evidence_patch_receipt_records_patch_mode() {
+        let steps = release_evidence_steps_patch();
+        let receipt = release_evidence_receipt("0.7.1", true, &steps, true);
+        assert_eq!(receipt.lane, "release-evidence");
+        assert_eq!(receipt.lane_mode, "patch");
+        assert!(receipt.dry_run);
+        assert!(receipt.commands.iter().all(|cmd| cmd.status == "planned"));
+    }
+
+    #[test]
+    fn release_evidence_patch_summary_announces_patch_lane() {
+        let steps = release_evidence_steps_patch();
+        let receipt = release_evidence_receipt("0.7.1", true, &steps, true);
+        let markdown = render_release_evidence_summary_markdown(&receipt);
+        assert!(markdown.contains("Patch-mode evidence lane"));
+        assert!(markdown.contains("Crates.io install smoke"));
+        assert!(markdown.contains("Scanner-safe reference"));
+        assert!(!markdown.contains("Nightly mutation scope"));
     }
 
     #[test]
