@@ -163,6 +163,24 @@ enum Cmd {
         #[arg(long)]
         check: bool,
     },
+    /// External install smoke against crates.io or a local path.
+    ///
+    /// Builds a fresh binary crate outside the workspace, depends on
+    /// `uselesskey` either from crates.io (`--version`) or a local path
+    /// (`--path`), and runs `cargo check` / `cargo build` / the resulting
+    /// binary plus the `uselesskey-cli` bundle workflow. Proves the
+    /// published-manifest view rather than the in-repo workspace view.
+    CratesioSmoke {
+        /// Use the published version from crates.io (e.g. "0.7.1"). Mutually exclusive with --path.
+        #[arg(long, conflicts_with = "path")]
+        version: Option<String>,
+        /// Use a local workspace path instead of crates.io. Pass "." for the current workspace.
+        #[arg(long, conflicts_with = "version")]
+        path: Option<std::path::PathBuf>,
+        /// Skip the `cargo install uselesskey-cli` step (useful in CI when binary install is slow).
+        #[arg(long)]
+        skip_install_cli: bool,
+    },
     /// Guard against multiple semver-major versions of pinned deps (e.g. rand_core).
     DepGuard,
     /// Run cucumber BDD features.
@@ -418,6 +436,11 @@ fn main() -> Result<()> {
                 bail!("scanner-safe-reference requires --check")
             }
         }
+        Cmd::CratesioSmoke {
+            version,
+            path,
+            skip_install_cli,
+        } => cratesio_smoke(version, path, skip_install_cli),
         Cmd::DepGuard => dep_guard(),
         Cmd::Bdd => bdd(),
         Cmd::BddMatrix => bdd_matrix(),
@@ -3635,6 +3658,242 @@ fn scanner_safe_reference_compare_bytes(expected_path: &Path, actual_path: &Path
         actual_lines.len(),
         first_diff
     );
+}
+
+/// External install smoke. Proves the published-manifest view by building
+/// a fresh binary crate outside the workspace, depending on `uselesskey`
+/// either from crates.io (`--version`) or a local path (`--path`), then
+/// running `cargo check` / `cargo build` / the resulting binary plus the
+/// `uselesskey-cli` bundle workflow. Catches failure modes the in-repo
+/// workspace tests cannot: missing crates.io entries, feature-flag drift,
+/// path-only resolution leakage, CLI install failure.
+fn cratesio_smoke(
+    version: Option<String>,
+    path: Option<PathBuf>,
+    skip_install_cli: bool,
+) -> Result<()> {
+    if version.is_none() && path.is_none() {
+        bail!("cratesio-smoke requires exactly one of --version or --path");
+    }
+    if version.is_some() && path.is_some() {
+        // clap's `conflicts_with` should already prevent this, but keep a
+        // defensive guard for direct internal callers.
+        bail!("cratesio-smoke: --version and --path are mutually exclusive");
+    }
+
+    let workspace_root = workspace_root_path();
+    let smoke_root = workspace_root.join("target/xtask/cratesio-smoke");
+    if smoke_root.exists() {
+        fs::remove_dir_all(&smoke_root)
+            .with_context(|| format!("failed to remove {}", smoke_root.display()))?;
+    }
+    fs::create_dir_all(&smoke_root)
+        .with_context(|| format!("failed to create {}", smoke_root.display()))?;
+
+    let project_dir = smoke_root.join("smoke-app");
+    fs::create_dir_all(&project_dir)
+        .with_context(|| format!("failed to create {}", project_dir.display()))?;
+
+    // (b) Hand-roll the binary crate. We deliberately do NOT use
+    // `cargo init` because, when invoked under `target/` inside the
+    // repo, recent cargo versions auto-add the new package as a member
+    // of the surrounding workspace (mutating the parent Cargo.toml in
+    // place). Writing the files directly avoids that side effect and
+    // gives us full control over the manifest. The explicit
+    // `[workspace]` table forces the smoke project to act as its own
+    // workspace and not inherit anything from the surrounding repo.
+    fs::create_dir_all(project_dir.join("src"))
+        .with_context(|| format!("failed to create {}/src", project_dir.display()))?;
+    let manifest_path = project_dir.join("Cargo.toml");
+    fs::write(
+        &manifest_path,
+        r#"[package]
+name = "uselesskey-smoke"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[[bin]]
+name = "uselesskey-smoke"
+path = "src/main.rs"
+
+[dependencies]
+
+[workspace]
+"#,
+    )
+    .with_context(|| format!("failed to write {}", manifest_path.display()))?;
+
+    // (c) Add `uselesskey` with the feature set we want to smoke-test.
+    let mode_label = if let Some(ref v) = version {
+        let spec = format!("uselesskey@{v}");
+        run(Command::new("cargo")
+            .args(["add", &spec, "--features", "rsa,jwk,token"])
+            .current_dir(&project_dir))?;
+        format!("version={v}")
+    } else {
+        let p = path.as_ref().expect("path validated above");
+        let abs_path = if p.is_absolute() {
+            p.clone()
+        } else {
+            std::env::current_dir()
+                .context("failed to read current dir")?
+                .join(p)
+        };
+        let abs_path = abs_path
+            .canonicalize()
+            .with_context(|| format!("failed to canonicalize {}", abs_path.display()))?;
+        // When the caller passes `--path .` from the workspace root we still
+        // want the `uselesskey` facade crate, not the workspace root. Detect
+        // and unwrap that case.
+        let facade_dir = if abs_path.join("crates/uselesskey/Cargo.toml").exists() {
+            abs_path.join("crates/uselesskey")
+        } else {
+            abs_path.clone()
+        };
+        run(Command::new("cargo")
+            .args([
+                "add",
+                "uselesskey",
+                "--path",
+                &facade_dir.display().to_string(),
+                "--features",
+                "rsa,jwk,token",
+            ])
+            .current_dir(&project_dir))?;
+        "path".to_string()
+    };
+
+    // (d) Replace `src/main.rs` with a small program that exercises the
+    // facade. Keep this tiny — the goal is "compiles and runs", not "tests
+    // behavior". We mirror the shape used in
+    // crates/uselesskey/examples/basic_usage.rs.
+    let main_src = project_dir.join("src").join("main.rs");
+    fs::write(
+        &main_src,
+        r#"//! External-install smoke for the `uselesskey` facade.
+//!
+//! Auto-generated by `cargo xtask cratesio-smoke`. Do not edit.
+use uselesskey::{Factory, RsaFactoryExt, RsaSpec, Seed, TokenFactoryExt, TokenSpec};
+
+fn main() {
+    let fx = Factory::deterministic(Seed::from_env_value("cratesio-smoke").unwrap());
+
+    let rsa = fx.rsa("smoke-auth", RsaSpec::rs256());
+    let jwk = rsa.public_jwk().to_value();
+    let token = fx.token("smoke-api", TokenSpec::api_key());
+
+    println!("rsa kid={}", rsa.kid());
+    println!("jwk kty={} alg={}", jwk["kty"], jwk["alg"]);
+    println!("token starts_with_uk_test={}", token.value().starts_with("uk_test_"));
+}
+"#,
+    )
+    .with_context(|| format!("failed to write {}", main_src.display()))?;
+
+    // (e) `cargo check` (debug profile).
+    run(Command::new("cargo")
+        .args(["check"])
+        .current_dir(&project_dir))?;
+
+    // (f) `cargo build` to materialize the binary.
+    run(Command::new("cargo")
+        .args(["build"])
+        .current_dir(&project_dir))?;
+
+    // (g) Run the built binary and capture stdout/stderr for diagnostic value.
+    let bin_name = if cfg!(windows) {
+        "uselesskey-smoke.exe"
+    } else {
+        "uselesskey-smoke"
+    };
+    let bin_path = project_dir.join("target").join("debug").join(bin_name);
+    let bin_output = Command::new(&bin_path)
+        .output()
+        .with_context(|| format!("failed to run {}", bin_path.display()))?;
+    print!("{}", String::from_utf8_lossy(&bin_output.stdout));
+    eprint!("{}", String::from_utf8_lossy(&bin_output.stderr));
+    if !bin_output.status.success() {
+        bail!(
+            "smoke binary failed with status: {} (path: {})",
+            bin_output.status,
+            bin_path.display()
+        );
+    }
+
+    // (h) CLI portion. Install `uselesskey-cli` to a temp root, then exercise
+    // the bundle / verify-bundle / inspect-bundle workflow.
+    let cli_label = if skip_install_cli {
+        "skipped".to_string()
+    } else {
+        let cli_root = smoke_root.join("cli-root");
+        let cli_bundle = smoke_root.join("cli-bundle");
+        let inspect_txt = smoke_root.join("inspect.txt");
+
+        let mut install = Command::new("cargo");
+        install.arg("install");
+        if let Some(ref v) = version {
+            install.args(["uselesskey-cli", "--version", v]);
+        } else {
+            let p = path.as_ref().expect("path validated above");
+            let abs_path = if p.is_absolute() {
+                p.clone()
+            } else {
+                std::env::current_dir()
+                    .context("failed to read current dir")?
+                    .join(p)
+            };
+            let abs_path = abs_path
+                .canonicalize()
+                .with_context(|| format!("failed to canonicalize {}", abs_path.display()))?;
+            let cli_dir = if abs_path.join("crates/uselesskey-cli/Cargo.toml").exists() {
+                abs_path.join("crates/uselesskey-cli")
+            } else {
+                abs_path.clone()
+            };
+            install.args(["--path", &cli_dir.display().to_string()]);
+        }
+        install.args(["--root", &cli_root.display().to_string(), "--locked"]);
+        run(&mut install)?;
+
+        let cli_bin_name = if cfg!(windows) {
+            "uselesskey.exe"
+        } else {
+            "uselesskey"
+        };
+        let cli_bin = cli_root.join("bin").join(cli_bin_name);
+        if !cli_bin.exists() {
+            bail!(
+                "expected installed CLI binary not found at {}",
+                cli_bin.display()
+            );
+        }
+
+        run(Command::new(&cli_bin).args([
+            "bundle",
+            "--profile",
+            "scanner-safe",
+            "--out",
+            &cli_bundle.display().to_string(),
+        ]))?;
+        run(Command::new(&cli_bin).args([
+            "verify-bundle",
+            "--path",
+            &cli_bundle.display().to_string(),
+        ]))?;
+        run(Command::new(&cli_bin).args([
+            "inspect-bundle",
+            "--path",
+            &cli_bundle.display().to_string(),
+            "--out",
+            &inspect_txt.display().to_string(),
+        ]))?;
+
+        "installed".to_string()
+    };
+
+    println!("cratesio-smoke: ok (mode={mode_label}, cli={cli_label})");
+    Ok(())
 }
 
 fn default_bundle_proof_out_dir(profile: &str) -> Result<PathBuf> {
@@ -7994,5 +8253,99 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
     fn publish_order_is_topological() {
         verify_publish_order_is_topological()
             .expect("PUBLISH_CRATES must remain in topological order");
+    }
+
+    /// `cratesio-smoke` requires exactly one of `--version` or `--path`.
+    /// clap should reject the bare invocation (no required flag chosen) at
+    /// parse time. We assert both:
+    ///   - bare invocation errors
+    ///   - mutual-exclusion (`--version X --path .`) errors
+    ///   - happy paths (`--version X` alone, `--path .` alone) parse cleanly
+    #[test]
+    fn cratesio_smoke_clap_validation() {
+        // Bare invocation must surface a non-zero parse error. Without a
+        // `required = true` we fall back to the runtime guard inside
+        // `cratesio_smoke`. Parse should still succeed at the clap layer.
+        let parsed = Cli::try_parse_from(["xtask", "cratesio-smoke"]);
+        assert!(
+            parsed.is_ok(),
+            "bare `cratesio-smoke` should parse (runtime guard fires later)"
+        );
+        match parsed.unwrap().cmd {
+            Cmd::CratesioSmoke {
+                version,
+                path,
+                skip_install_cli,
+            } => {
+                assert!(version.is_none(), "version should default to None");
+                assert!(path.is_none(), "path should default to None");
+                assert!(
+                    !skip_install_cli,
+                    "skip_install_cli should default to false"
+                );
+                // The runtime guard must reject the empty case.
+                let err = cratesio_smoke(version, path, skip_install_cli)
+                    .expect_err("cratesio_smoke without --version or --path must error");
+                let msg = err.to_string();
+                assert!(
+                    msg.contains("--version") && msg.contains("--path"),
+                    "error must mention both --version and --path: {msg}"
+                );
+            }
+            _ => panic!("expected Cmd::CratesioSmoke"),
+        }
+
+        // Mutual exclusion: clap should reject `--version X --path Y`.
+        let conflict = Cli::try_parse_from([
+            "xtask",
+            "cratesio-smoke",
+            "--version",
+            "0.7.1",
+            "--path",
+            ".",
+        ]);
+        assert!(
+            conflict.is_err(),
+            "clap must reject --version + --path together"
+        );
+
+        // Happy path: `--version 0.7.1` alone parses.
+        let ok_version =
+            Cli::try_parse_from(["xtask", "cratesio-smoke", "--version", "0.7.1"]).unwrap();
+        assert!(matches!(
+            ok_version.cmd,
+            Cmd::CratesioSmoke {
+                version: Some(_),
+                path: None,
+                ..
+            }
+        ));
+
+        // Happy path: `--path .` alone parses.
+        let ok_path = Cli::try_parse_from(["xtask", "cratesio-smoke", "--path", "."]).unwrap();
+        assert!(matches!(
+            ok_path.cmd,
+            Cmd::CratesioSmoke {
+                version: None,
+                path: Some(_),
+                ..
+            }
+        ));
+
+        // `--skip-install-cli` propagates.
+        let ok_skip = Cli::try_parse_from([
+            "xtask",
+            "cratesio-smoke",
+            "--path",
+            ".",
+            "--skip-install-cli",
+        ])
+        .unwrap();
+        match ok_skip.cmd {
+            Cmd::CratesioSmoke {
+                skip_install_cli, ..
+            } => assert!(skip_install_cli),
+            _ => panic!("expected Cmd::CratesioSmoke"),
+        }
     }
 }
