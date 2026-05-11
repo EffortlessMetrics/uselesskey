@@ -157,6 +157,12 @@ enum Cmd {
         #[arg(long)]
         out: Option<PathBuf>,
     },
+    /// Verify the committed scanner-safe-bundle reference outputs.
+    ScannerSafeReference {
+        /// Compare regenerated outputs against the committed reference; do not write.
+        #[arg(long)]
+        check: bool,
+    },
     /// Guard against multiple semver-major versions of pinned deps (e.g. rand_core).
     DepGuard,
     /// Run cucumber BDD features.
@@ -405,6 +411,13 @@ fn main() -> Result<()> {
             summary,
         } => release_evidence(&version, &out, dry_run, summary),
         Cmd::BundleProof { profile, out } => bundle_proof(&profile, out.as_deref()),
+        Cmd::ScannerSafeReference { check } => {
+            if check {
+                scanner_safe_reference_check()
+            } else {
+                bail!("scanner-safe-reference requires --check")
+            }
+        }
         Cmd::DepGuard => dep_guard(),
         Cmd::Bdd => bdd(),
         Cmd::BddMatrix => bdd_matrix(),
@@ -3270,6 +3283,169 @@ fn ensure_supported_bundle_proof_profile(profile: &str) -> Result<()> {
     } else {
         bail!("bundle-proof currently supports --profile scanner-safe and --profile oidc");
     }
+}
+
+const SCANNER_SAFE_REFERENCE_EXPECTED_DIR: &str = "examples/scanner-safe-bundle/expected";
+const SCANNER_SAFE_REFERENCE_OUT_DIR: &str = "target/scanner-safe-reference";
+const SCANNER_SAFE_REFERENCE_COMPARED_FILES: &[&str] = &[
+    "manifest.json",
+    "receipts/audit-surface.json",
+    "receipts/materialization.json",
+];
+const SCANNER_SAFE_REFERENCE_FORBIDDEN_FILES: &[&str] = &["secret.yaml", "kv-v2.json"];
+
+fn scanner_safe_reference_check() -> Result<()> {
+    let expected_dir = Path::new(SCANNER_SAFE_REFERENCE_EXPECTED_DIR);
+    let out_dir = Path::new(SCANNER_SAFE_REFERENCE_OUT_DIR);
+    let bundle_dir = out_dir.join("bundle");
+    let inspect_summary_path = out_dir.join("inspect-bundle.txt");
+    let k8s_path = out_dir.join("secret.yaml");
+    let vault_path = out_dir.join("kv-v2.json");
+
+    fs::create_dir_all(out_dir)
+        .with_context(|| format!("failed to create {}", out_dir.display()))?;
+
+    // Assert encoded-payload files are NOT committed under examples/.
+    for forbidden in SCANNER_SAFE_REFERENCE_FORBIDDEN_FILES {
+        let candidate = expected_dir.join(forbidden);
+        if candidate.exists() {
+            bail!(
+                "scanner-safe-reference: encoded payload `{}` must not be committed under {}; \
+                 keep it under target/",
+                forbidden,
+                expected_dir.display()
+            );
+        }
+    }
+
+    // 1) Regenerate the bundle.
+    run(Command::new("cargo").args([
+        "run",
+        "-p",
+        "uselesskey-cli",
+        "--",
+        "bundle",
+        "--profile",
+        "scanner-safe",
+        "--out",
+        &bundle_dir.display().to_string(),
+    ]))?;
+
+    // 2) Verify the bundle.
+    run(Command::new("cargo").args([
+        "run",
+        "-p",
+        "uselesskey-cli",
+        "--",
+        "verify-bundle",
+        "--path",
+        &bundle_dir.display().to_string(),
+    ]))?;
+
+    // 3) Inspect the bundle.
+    run(Command::new("cargo").args([
+        "run",
+        "-p",
+        "uselesskey-cli",
+        "--",
+        "inspect-bundle",
+        "--path",
+        &bundle_dir.display().to_string(),
+        "--out",
+        &inspect_summary_path.display().to_string(),
+    ]))?;
+
+    // 4) Export Kubernetes secret (encoded payload — kept under target/).
+    run(Command::new("cargo").args([
+        "run",
+        "-p",
+        "uselesskey-cli",
+        "--",
+        "export",
+        "k8s",
+        "--bundle-dir",
+        &bundle_dir.display().to_string(),
+        "--name",
+        "uselesskey-fixtures",
+        "--namespace",
+        "tests",
+        "--out",
+        &k8s_path.display().to_string(),
+    ]))?;
+
+    // 5) Export Vault KV v2 JSON (encoded payload — kept under target/).
+    run(Command::new("cargo").args([
+        "run",
+        "-p",
+        "uselesskey-cli",
+        "--",
+        "export",
+        "vault-kv-json",
+        "--bundle-dir",
+        &bundle_dir.display().to_string(),
+        "--out",
+        &vault_path.display().to_string(),
+    ]))?;
+
+    // 6) Compare regenerated outputs byte-equal against the committed reference.
+    let mut matched: usize = 0;
+    for rel in SCANNER_SAFE_REFERENCE_COMPARED_FILES {
+        let expected_path = expected_dir.join(rel);
+        let actual_path = bundle_dir.join(rel);
+        scanner_safe_reference_compare_bytes(&expected_path, &actual_path)?;
+        matched += 1;
+    }
+
+    // 7) Re-run no-blob and check-file-policy gates.
+    run(Command::new("cargo").args(["xtask", "no-blob"]))?;
+    run(Command::new("cargo").args(["xtask", "check-file-policy"]))?;
+
+    println!("scanner-safe-reference: ok ({matched} files matched)");
+    Ok(())
+}
+
+fn scanner_safe_reference_compare_bytes(expected_path: &Path, actual_path: &Path) -> Result<()> {
+    let expected = fs::read(expected_path)
+        .with_context(|| format!("failed to read {}", expected_path.display()))?;
+    let actual = fs::read(actual_path)
+        .with_context(|| format!("failed to read {}", actual_path.display()))?;
+    if expected == actual {
+        return Ok(());
+    }
+
+    let expected_text = String::from_utf8_lossy(&expected);
+    let actual_text = String::from_utf8_lossy(&actual);
+    let expected_lines: Vec<&str> = expected_text.lines().collect();
+    let actual_lines: Vec<&str> = actual_text.lines().collect();
+    let first_diff = expected_lines
+        .iter()
+        .zip(actual_lines.iter())
+        .enumerate()
+        .find(|(_, (e, a))| e != a)
+        .map(|(idx, (e, a))| {
+            format!(
+                "first differing line {}:\n  expected: {}\n  actual:   {}",
+                idx + 1,
+                e,
+                a
+            )
+        })
+        .unwrap_or_else(|| {
+            format!(
+                "line counts differ: expected={} actual={}",
+                expected_lines.len(),
+                actual_lines.len()
+            )
+        });
+
+    bail!(
+        "scanner-safe-reference: drift detected\n  expected: {} ({} lines)\n  actual:   {} ({} lines)\n  {}",
+        expected_path.display(),
+        expected_lines.len(),
+        actual_path.display(),
+        actual_lines.len(),
+        first_diff
+    );
 }
 
 fn default_bundle_proof_out_dir(profile: &str) -> Result<PathBuf> {
