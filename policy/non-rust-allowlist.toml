@@ -231,3 +231,14 @@ classification = "generated"
 reason = "Generated workspace docs / perf-baseline metadata."
 generated_by = "cargo xtask docs-sync"
 covered_by = ["cargo xtask docs-sync --check"]
+
+# === Example reference outputs =============================================
+
+[[allow]]
+glob = "examples/scanner-safe-bundle/expected/**/*"
+kind = "scanner_safe_bundle_reference"
+owner = "cli"
+surface = "examples"
+classification = "test"
+reason = "Scanner-safe bundle reference outputs (manifest, payload shapes, receipts) used by examples/scanner-safe-bundle/README.md to demonstrate deterministic generator stability. Shape-only — never real secret material."
+covered_by = ["examples/scanner-safe-bundle/README.md", "manual review"]
