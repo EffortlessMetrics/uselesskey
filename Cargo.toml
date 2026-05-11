@@ -126,7 +126,7 @@ uselesskey-core-x509-spec = { path = "crates/uselesskey-core-x509-spec", version
 uselesskey-core-x509 = { path = "crates/uselesskey-core-x509", version = "0.7.1" }
 
 # determinism / hashing
-blake3 = "1.8.4"
+blake3 = "1.8.5"
 
 # concurrency-friendly cache
 dashmap = "6.1.0"
