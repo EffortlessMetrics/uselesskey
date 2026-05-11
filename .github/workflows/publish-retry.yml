@@ -74,13 +74,15 @@ jobs:
             --policy safe \
             --readiness-method both \
             --max-attempts 12 \
-            --max-delay 15m
+            --max-delay 15m \
+            --allow-dirty
 
       - name: Resume from specific crate
         if: ${{ !inputs.dry_run && inputs.resume_from != '' }}
         run: |
           shipper resume \
-            --resume-from "${{ inputs.resume_from }}"
+            --resume-from "${{ inputs.resume_from }}" \
+            --allow-dirty
 
       - name: Publish dry-run
         if: ${{ inputs.dry_run }}

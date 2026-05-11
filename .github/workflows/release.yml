@@ -86,7 +86,8 @@ jobs:
             --policy safe \
             --readiness-method both \
             --max-attempts 12 \
-            --max-delay 15m
+            --max-delay 15m \
+            --allow-dirty
 
       - name: Upload final state
         if: always()
