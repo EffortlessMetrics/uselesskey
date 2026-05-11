@@ -81,9 +81,12 @@ authors = ["Effortless Metrics <opensource@effortlessmetrics.com>"]
 # error handling
 thiserror = "2.0.18"
 
-uselesskey-test-grid = { path = "crates/uselesskey-test-grid", version = "0.7.0" }
-uselesskey-test-support = { path = "crates/uselesskey-test-support", version = "0.7.0" }
-uselesskey-feature-grid = { path = "crates/uselesskey-feature-grid", version = "0.7.0" }
+# Internal test helpers, never published (publish = false in their Cargo.toml).
+# Path-only — no version constraint — so cargo publish of dependents strips
+# them from the published manifest rather than requiring them on crates.io.
+uselesskey-test-grid = { path = "crates/uselesskey-test-grid" }
+uselesskey-test-support = { path = "crates/uselesskey-test-support" }
+uselesskey-feature-grid = { path = "crates/uselesskey-feature-grid" }
 uselesskey = { path = "crates/uselesskey", version = "0.7.0", default-features = false }
 uselesskey-cli = { path = "crates/uselesskey-cli", version = "0.7.0" }
 uselesskey-entropy = { path = "crates/uselesskey-entropy", version = "0.7.0" }
