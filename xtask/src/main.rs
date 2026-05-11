@@ -1083,6 +1083,7 @@ fn verify_publish_order_is_topological() -> Result<()> {
 
 fn publish_check() -> Result<()> {
     verify_publish_order_is_topological()?;
+    verify_no_versioned_publish_false_deps()?;
     for name in PUBLISH_CRATES {
         let output = Command::new("cargo")
             .args(["publish", "--dry-run", "-p", name])
@@ -1101,6 +1102,97 @@ fn publish_check() -> Result<()> {
         }
         bail!("cargo publish --dry-run -p {name} failed:\n{stderr}");
     }
+    Ok(())
+}
+
+/// Reject `[workspace.dependencies]` entries that declare a `version`
+/// constraint alongside a `path` whose target crate is `publish = false`.
+///
+/// Context: the v0.7.0 release lane failed because `workspace.dependencies`
+/// had `version = "0.7.0"` on internal `publish = false` crates
+/// (`uselesskey-test-support`, `uselesskey-test-grid`, `uselesskey-feature-grid`).
+/// Even though those entries were only consumed as `[dev-dependencies]`,
+/// `cargo publish` resolves the workspace version constraint against
+/// crates.io and fails with `no matching package named ...`. PR #569
+/// stripped the offending `version` fields; this guard prevents the class
+/// of bug from recurring silently.
+///
+/// The check only flags inline-table entries that have BOTH `path` and
+/// `version`. Bare-string entries (`foo = "1.0"`) and path-only entries
+/// (`foo = { path = "..." }`) are fine.
+fn verify_no_versioned_publish_false_deps() -> Result<()> {
+    let workspace_root = workspace_root_path();
+    let root_manifest_path = workspace_root.join("Cargo.toml");
+    let raw = fs::read_to_string(&root_manifest_path).with_context(|| {
+        format!(
+            "failed to read workspace manifest {}",
+            root_manifest_path.display()
+        )
+    })?;
+    let manifest: toml::Value = toml::from_str(&raw).with_context(|| {
+        format!(
+            "failed to parse workspace manifest {}",
+            root_manifest_path.display()
+        )
+    })?;
+
+    let Some(deps) = manifest
+        .get("workspace")
+        .and_then(|w| w.get("dependencies"))
+        .and_then(|d| d.as_table())
+    else {
+        // No `[workspace.dependencies]` table — nothing to check.
+        return Ok(());
+    };
+
+    let mut violations: Vec<String> = Vec::new();
+
+    for (name, value) in deps {
+        let Some(table) = value.as_table() else {
+            // Bare-string form (`foo = "1.0"`) has no path to check.
+            continue;
+        };
+        let Some(path) = table.get("path").and_then(|p| p.as_str()) else {
+            continue;
+        };
+        let Some(version) = table.get("version").and_then(|v| v.as_str()) else {
+            continue;
+        };
+
+        let target_manifest = workspace_root.join(path).join("Cargo.toml");
+        let target_raw = fs::read_to_string(&target_manifest).with_context(|| {
+            format!(
+                "failed to read target manifest {} (referenced from workspace.dependencies entry `{name}`)",
+                target_manifest.display()
+            )
+        })?;
+        let target: toml::Value = toml::from_str(&target_raw).with_context(|| {
+            format!(
+                "failed to parse target manifest {} (referenced from workspace.dependencies entry `{name}`)",
+                target_manifest.display()
+            )
+        })?;
+
+        let publish_false = target
+            .get("package")
+            .and_then(|p| p.get("publish"))
+            .and_then(|p| p.as_bool())
+            .is_some_and(|b| !b);
+
+        if publish_false {
+            violations.push(format!(
+                "workspace.dependencies entry '{name}' has version = \"{version}\" but {path} is publish = false; strip the version to make it path-only"
+            ));
+        }
+    }
+
+    if !violations.is_empty() {
+        bail!(
+            "versioned workspace.dependencies entries point at publish = false crates:\n  {}",
+            violations.join("\n  ")
+        );
+    }
+
     Ok(())
 }
 
@@ -1557,6 +1649,11 @@ fn publish_preflight(allow_dirty: bool) -> Result<()> {
 }
 
 fn run_publish_preflight(runner: &mut receipt::Runner, allow_dirty: bool) -> Result<()> {
+    runner.step(
+        "preflight:publish-false-dep-guard",
+        None,
+        verify_no_versioned_publish_false_deps,
+    )?;
     runner.step("preflight:metadata", None, check_crate_metadata)?;
     runner.step(
         "preflight:doc-versions",
@@ -7434,6 +7531,21 @@ index 1111111..2222222 100644
         let workspace_root = workspace_root_path();
         let xtask_dir = workspace_root.join("xtask");
         assert_versioned_dependency_snippet_files_from_cwd(&xtask_dir, &workspace_root);
+    }
+
+    /// Guard against the class of bug fixed by #569: any
+    /// `[workspace.dependencies]` entry that pairs `path` with `version`
+    /// while pointing at a `publish = false` crate would break
+    /// `cargo publish` of its dependents. The current workspace was
+    /// cleaned up in #569, so this should pass; if someone re-adds a
+    /// stray `version = "..."` on `uselesskey-test-support`,
+    /// `uselesskey-test-grid`, or `uselesskey-feature-grid` (or any
+    /// future internal `publish = false` crate), this test and the
+    /// preflight gate both fail.
+    #[test]
+    fn verify_no_versioned_publish_false_deps_passes_on_current_workspace() {
+        verify_no_versioned_publish_false_deps()
+            .expect("workspace.dependencies must not version-pin publish = false crates");
     }
 
     #[test]
