@@ -7286,7 +7286,8 @@ end_of_record
 
     #[test]
     fn resolve_start_index_from_first_crate() {
-        let idx = resolve_start_index(Some("uselesskey-core-seed"), false).unwrap();
+        let first = PUBLISH_CRATES[0];
+        let idx = resolve_start_index(Some(first), false).unwrap();
         assert_eq!(idx, 0);
     }
 
