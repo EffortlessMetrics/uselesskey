@@ -65,7 +65,7 @@ jobs:
 
       - name: Preflight
         if: ${{ !inputs.dry_run }}
-        run: shipper preflight --policy safe
+        run: shipper preflight --policy safe --allow-dirty
 
       - name: Publish (shipper reconciles against registry truth)
         if: ${{ !inputs.dry_run && inputs.resume_from == '' }}

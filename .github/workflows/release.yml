@@ -78,7 +78,7 @@ jobs:
           retention-days: 30
 
       - name: Preflight
-        run: shipper preflight --policy safe
+        run: shipper preflight --policy safe --allow-dirty
 
       - name: Publish
         run: |

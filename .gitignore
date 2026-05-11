@@ -26,3 +26,6 @@ output.txt
 
 .gemini/
 gha-creds-*.json
+
+# shipper publish state (plan, receipts, etc.)
+.shipper/
