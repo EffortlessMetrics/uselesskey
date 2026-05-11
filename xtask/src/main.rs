@@ -977,7 +977,99 @@ const MUTATION_EVIDENCE_CLAIM_BOUNDARY: &[&str] = &[
 const MUTATION_SURVIVOR_LEDGER_PATH: &str = "policy/mutation-survivors.toml";
 const MUTATION_SURVIVOR_CLASSIFICATIONS: &[&str] = &["equivalent", "accepted-risk", "pending-test"];
 
+/// Verify that `PUBLISH_CRATES` is in a valid topological order with respect to
+/// workspace dependencies.
+///
+/// `cargo xtask publish` walks `PUBLISH_CRATES` in order and runs `cargo publish`
+/// against the live crates.io registry. If a crate appears before one of its
+/// workspace dependencies, the live publish will fail because the dependency is
+/// not yet on crates.io. This was the root cause of the v0.7.0 publish-lane
+/// failure (see PR #565: `uselesskey-core-seed` was listed before its owner
+/// `uselesskey-core`).
+///
+/// `publish-check` uses `cargo package --no-verify` for its dry-runs, which
+/// resolves workspace deps against local paths and therefore does NOT catch this
+/// class of bug. This function closes that gap by inspecting `cargo metadata`
+/// and asserting that every (crate, workspace-dep) pair where both are in
+/// `PUBLISH_CRATES` has the dep listed earlier.
+///
+/// Dependency kinds considered: normal, dev, and build (cargo metadata's `kind`
+/// field is null for normal deps, `"dev"` for dev-deps, and `"build"` for
+/// build-deps). All three matter for `cargo publish`.
+fn verify_publish_order_is_topological() -> Result<()> {
+    let output = Command::new("cargo")
+        .args(["metadata", "--format-version", "1", "--no-deps"])
+        .output()
+        .context("failed to run `cargo metadata` for publish-order topo check")?;
+
+    if !output.status.success() {
+        bail!(
+            "`cargo metadata` failed during publish-order topo check: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    let meta: serde_json::Value = serde_json::from_slice(&output.stdout)
+        .context("failed to parse cargo metadata JSON for publish-order topo check")?;
+    let packages = meta["packages"]
+        .as_array()
+        .context("missing 'packages' in cargo metadata for publish-order topo check")?;
+
+    let positions: BTreeMap<&str, usize> = PUBLISH_CRATES
+        .iter()
+        .enumerate()
+        .map(|(idx, name)| (*name, idx))
+        .collect();
+
+    let mut violations: Vec<String> = Vec::new();
+
+    for (crate_idx, crate_name) in PUBLISH_CRATES.iter().enumerate() {
+        let pkg = packages
+            .iter()
+            .find(|p| p["name"].as_str().is_some_and(|n| n == *crate_name));
+
+        let Some(pkg) = pkg else {
+            // `check_crate_metadata` already reports missing crates; skip here
+            // so this function focuses on order violations.
+            continue;
+        };
+
+        let deps = match pkg["dependencies"].as_array() {
+            Some(arr) => arr,
+            None => continue,
+        };
+
+        let mut seen: BTreeSet<&str> = BTreeSet::new();
+        for dep in deps {
+            let Some(dep_name) = dep["name"].as_str() else {
+                continue;
+            };
+            if !seen.insert(dep_name) {
+                continue;
+            }
+            let Some(&dep_idx) = positions.get(dep_name) else {
+                continue;
+            };
+            if dep_idx >= crate_idx {
+                violations.push(format!(
+                    "{crate_name} (#{crate_idx}) depends on {dep_name} (#{dep_idx}) but {dep_name} is listed later"
+                ));
+            }
+        }
+    }
+
+    if !violations.is_empty() {
+        bail!(
+            "PUBLISH_CRATES is not in topological order; cargo publish would fail on the live registry. Violations:\n  {}",
+            violations.join("\n  ")
+        );
+    }
+
+    Ok(())
+}
+
 fn publish_check() -> Result<()> {
+    verify_publish_order_is_topological()?;
     for name in PUBLISH_CRATES {
         let output = Command::new("cargo")
             .args(["publish", "--dry-run", "-p", name])
@@ -7601,5 +7693,18 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
             ),
             "uselesskey-cli must keep uselesskey-rsa optional:\n{manifest}"
         );
+    }
+
+    /// Sanity guard: `PUBLISH_CRATES` must be a valid topological order so
+    /// `cargo xtask publish` does not try to publish a crate before its
+    /// workspace deps land on crates.io.
+    ///
+    /// This regression-protects against the v0.7.0 publish-lane bug fixed in
+    /// PR #565, where a compatibility shim (`uselesskey-core-seed`) was listed
+    /// before its owner (`uselesskey-core`).
+    #[test]
+    fn publish_order_is_topological() {
+        verify_publish_order_is_topological()
+            .expect("PUBLISH_CRATES must remain in topological order");
     }
 }
