@@ -1,5 +1,12 @@
 # Rust 1.95 Compatibility Audit
 
+> **Historical record.** This document is the pre-bump compatibility audit
+> for the workspace MSRV change from 1.92 to 1.95. The MSRV bump has since
+> landed on `main` — see `Cargo.toml` (`rust-version = "1.95"`),
+> `rust-toolchain.toml` (`channel = "1.95"`), and `policy/clippy-lints.toml`
+> (`msrv = "1.95"`). The "Current MSRV: 1.92" field below reflects the
+> workspace state *at the time of this audit*, not today.
+
 **Date:** 2026-05-08  
 **Auditor:** Claude (automated)  
 **Branch:** `probe/rust-1.95-compat`  
