@@ -1,6 +1,6 @@
 [package]
 name = "uselesskey-cli"
-version = "0.7.0"
+version = "0.7.1"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
@@ -41,7 +41,7 @@ uselesskey-core.workspace = true
 uselesskey-ecdsa = { workspace = true, features = ["jwk"], optional = true }
 uselesskey-ed25519 = { workspace = true, features = ["jwk"], optional = true }
 uselesskey-hmac = { workspace = true, features = ["jwk"], optional = true }
-uselesskey-jwk = { path = "../uselesskey-jwk", version = "0.7.0" }
+uselesskey-jwk = { path = "../uselesskey-jwk", version = "0.7.1" }
 uselesskey-rsa = { workspace = true, features = ["jwk"], optional = true }
 uselesskey-token.workspace = true
 uselesskey-x509 = { workspace = true, optional = true }

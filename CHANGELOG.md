@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-05-11
+
+Release-hardening patch for v0.7.0. Adds publish-system guardrails,
+scanner-safe reference verification, external install smoke, and a
+patch-mode release evidence lane. No new product surface.
+
+### Added
+
+- `cargo xtask scanner-safe-reference --check` verifies the committed
+  scanner-safe bundle reference outputs against regenerated bundle and
+  exports. (#577)
+- `cargo xtask cratesio-smoke --path <dir> | --version <V>` proves the
+  external user view: fresh project, `cargo add`, `cargo check`, CLI
+  install, scanner-safe bundle workflow. (#580)
+- `cargo xtask release-evidence --patch` for a focused patch-release
+  evidence lane (no full nightly mutation). (#581)
+- `docs/how-to/recover-partial-publish.md` and
+  `docs/release/publish-recovery.md` capture partial-publish recovery
+  procedure and registry-truth rules. (#579)
+- `docs/release/v0.7.0-lessons-learned.md` documents the v0.7.0
+  publish-lane retrospective. (#571)
+
+### Changed
+
+- `cargo xtask publish-check` now verifies `PUBLISH_CRATES` is in
+  dependency-topological order at PR time, closing the
+  PUBLISH_CRATES-drift class of bug fixed inline during v0.7.0. (#572)
+- `cargo xtask publish-preflight` and `publish-check` reject
+  `workspace.dependencies` entries with `version = ...` when the
+  target crate is `publish = false`, closing the test-helper
+  dependency-leak class. (#578)
+
 ## [0.7.0] - 2026-05-10
 
 The Rust 1.95 scanner-safe fixture platform release. v0.7.0 introduces the
@@ -489,7 +521,8 @@ Repository organised into four layers:
 - **Determinism regression** — hardcoded expected-value snapshots ensure
   derivation stability across releases
 
-[Unreleased]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.5.0...v0.5.1

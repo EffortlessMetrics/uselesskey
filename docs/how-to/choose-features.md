@@ -35,53 +35,53 @@ Dependency snippets:
 - **Quick start (RSA)**
   ```toml
   [dev-dependencies]
-  uselesskey = { version = "0.7.0", features = ["rsa"] }
+  uselesskey = { version = "0.7.1", features = ["rsa"] }
   ```
 
 
 - **Token-only**
   ```toml
   [dev-dependencies]
-  uselesskey = { version = "0.7.0", default-features = false, features = ["token"] }
+  uselesskey = { version = "0.7.1", default-features = false, features = ["token"] }
   ```
 
 
 - **JWT/JWK**
   ```toml
   [dev-dependencies]
-  uselesskey = { version = "0.7.0", features = ["rsa", "jwk"] }
+  uselesskey = { version = "0.7.1", features = ["rsa", "jwk"] }
   ```
 
 
 - **X.509 + rustls**
   ```toml
   [dev-dependencies]
-  uselesskey = { version = "0.7.0", features = ["x509"] }
-  uselesskey-rustls = { version = "0.7.0", features = ["tls-config", "rustls-ring"] }
+  uselesskey = { version = "0.7.1", features = ["x509"] }
+  uselesskey-rustls = { version = "0.7.1", features = ["tls-config", "rustls-ring"] }
   ```
 
 
 - **jsonwebtoken adapter**
   ```toml
   [dev-dependencies]
-  uselesskey = { version = "0.7.0", features = ["rsa", "ecdsa", "ed25519", "hmac"] }
-  uselesskey-jsonwebtoken = { version = "0.7.0" }
+  uselesskey = { version = "0.7.1", features = ["rsa", "ecdsa", "ed25519", "hmac"] }
+  uselesskey-jsonwebtoken = { version = "0.7.1" }
   ```
 
 
 - **JOSE/OpenID adapter**
   ```toml
   [dev-dependencies]
-  uselesskey = { version = "0.7.0", features = ["rsa", "ecdsa", "ed25519", "hmac"] }
-  uselesskey-jose-openid = { version = "0.7.0" }
+  uselesskey = { version = "0.7.1", features = ["rsa", "ecdsa", "ed25519", "hmac"] }
+  uselesskey-jose-openid = { version = "0.7.1" }
   ```
 
 
 - **pgp-native adapter**
   ```toml
   [dev-dependencies]
-  uselesskey = { version = "0.7.0", features = ["pgp"] }
-  uselesskey-pgp-native = { version = "0.7.0" }
+  uselesskey = { version = "0.7.1", features = ["pgp"] }
+  uselesskey-pgp-native = { version = "0.7.1" }
   ```
 <!-- docs-sync:dependency-snippets-end -->
 

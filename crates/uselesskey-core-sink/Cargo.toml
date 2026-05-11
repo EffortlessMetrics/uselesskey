@@ -1,6 +1,6 @@
 [package]
 name = "uselesskey-core-sink"
-version = "0.7.0"
+version = "0.7.1"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
@@ -16,7 +16,7 @@ authors.workspace = true
 
 [dependencies]
 tempfile.workspace = true
-uselesskey-core = { path = "../uselesskey-core", version = "0.7.0" }
+uselesskey-core = { path = "../uselesskey-core", version = "0.7.1" }
 
 [dev-dependencies]
 insta.workspace = true
