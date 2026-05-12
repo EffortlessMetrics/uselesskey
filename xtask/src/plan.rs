@@ -205,42 +205,6 @@ fn expand_impacted_crates(changed: &HashSet<String>) -> BTreeSet<String> {
 
 fn dependents(crate_name: &str) -> &'static [&'static str] {
     match crate_name {
-        "uselesskey-core-seed" => &["uselesskey-core-id"],
-        "uselesskey-core-id" => &["uselesskey-core-cache", "uselesskey-core"],
-        "uselesskey-core-kid" => &[],
-        "uselesskey-core-keypair-material" => &[
-            "uselesskey-core-keypair",
-            "uselesskey-rsa",
-            "uselesskey-ecdsa",
-            "uselesskey-ed25519",
-        ],
-        "uselesskey-core-keypair" => &[],
-        "uselesskey-core-base62" => &[],
-        "uselesskey-core-factory" => &["uselesskey-core"],
-        "uselesskey-core-hmac-spec" => &[],
-        "uselesskey-core-negative-der" => &["uselesskey-core-negative"],
-        "uselesskey-core-negative-pem" => &["uselesskey-core-negative"],
-        "uselesskey-core-rustls-pki" => &[],
-        "uselesskey-core-x509-chain-negative" => &["uselesskey-core-x509-negative"],
-        "uselesskey-core-x509-negative" => &["uselesskey-core-x509"],
-        "uselesskey-core-hash" => &[
-            "uselesskey-core-id",
-            "uselesskey-core-negative",
-            "uselesskey-core-negative-pem",
-            "uselesskey-core-x509-derive",
-        ],
-        "uselesskey-core-jwks-order" => &[],
-        "uselesskey-core-jwk-builder" => &[],
-        "uselesskey-core-cache" => &["uselesskey-core"],
-        "uselesskey-core-negative" => &["uselesskey-core"],
-        "uselesskey-core-sink" => &["uselesskey-core"],
-        "uselesskey-core-token" => &[],
-        "uselesskey-core-token-shape" => &[],
-        "uselesskey-core-jwk-shape" => &[],
-        "uselesskey-core-jwk" => &[],
-        "uselesskey-core-x509-spec" => &["uselesskey-core-x509"],
-        "uselesskey-core-x509-derive" => &["uselesskey-core-x509"],
-        "uselesskey-core-x509" => &["uselesskey-x509"],
         "uselesskey-core" => &[
             "uselesskey-rsa",
             "uselesskey-ecdsa",
@@ -279,12 +243,6 @@ fn dependents(crate_name: &str) -> &'static [&'static str] {
         ],
         "uselesskey-x509" => &["uselesskey", "uselesskey-rustls", "uselesskey-tonic"],
         "uselesskey-jwk" => &[
-            "uselesskey-core-kid",
-            "uselesskey-core-keypair-material",
-            "uselesskey-core-jwk-shape",
-            "uselesskey-core-jwks-order",
-            "uselesskey-core-jwk-builder",
-            "uselesskey-core-jwk",
             "uselesskey-rsa",
             "uselesskey-ecdsa",
             "uselesskey-ed25519",
@@ -292,23 +250,15 @@ fn dependents(crate_name: &str) -> &'static [&'static str] {
             "uselesskey",
         ],
         "uselesskey-hmac" => &[
-            "uselesskey-core-hmac-spec",
             "uselesskey",
             "uselesskey-jsonwebtoken",
             "uselesskey-rustcrypto",
         ],
-        "uselesskey-token" => &[
-            "uselesskey-token-spec",
-            "uselesskey-core-base62",
-            "uselesskey-core-token-shape",
-            "uselesskey-core-token",
-            "uselesskey",
-        ],
-        "uselesskey-pgp" => &["uselesskey", "uselesskey-pgp-native"],
-        "uselesskey-pgp-native" => &[],
+        "uselesskey-token" => &["uselesskey"],
+        "uselesskey-pgp" => &["uselesskey"],
         "uselesskey" => &[],
         "uselesskey-jsonwebtoken" => &[],
-        "uselesskey-rustls" => &["uselesskey-core-rustls-pki"],
+        "uselesskey-rustls" => &[],
         "uselesskey-tonic" => &[],
         "uselesskey-ring" => &[],
         "uselesskey-rustcrypto" => &[],
@@ -318,7 +268,6 @@ fn dependents(crate_name: &str) -> &'static [&'static str] {
         "uselesskey-feature-grid" => &["uselesskey-test-grid"],
         "uselesskey-interop-tests" => &[],
         "uselesskey-test-grid" => &["uselesskey-bdd"],
-        "uselesskey-token-spec" => &[],
         _ => &[],
     }
 }
@@ -363,182 +312,6 @@ mod tests {
         assert!(plan.run_bdd);
         assert!(plan.run_mutants);
         assert!(plan.run_fuzz);
-    }
-
-    #[test]
-    fn core_id_change_expands_to_core_and_facade() {
-        let paths = vec!["crates/uselesskey-core-id/src/lib.rs".to_string()];
-        let plan = build_plan(&paths);
-        let impacted = plan.impacted_crates;
-        assert!(impacted.contains("uselesskey-core-id"));
-        assert!(impacted.contains("uselesskey-core-cache"));
-        assert!(impacted.contains("uselesskey-core"));
-        assert!(impacted.contains("uselesskey-rsa"));
-        assert!(impacted.contains("uselesskey"));
-        assert!(impacted.contains("uselesskey-bdd"));
-    }
-
-    #[test]
-    fn core_seed_change_expands_to_core_id_stack() {
-        let paths = vec!["crates/uselesskey-core-seed/src/lib.rs".to_string()];
-        let plan = build_plan(&paths);
-        let impacted = plan.impacted_crates;
-        assert!(impacted.contains("uselesskey-core-seed"));
-        assert!(impacted.contains("uselesskey-core-id"));
-        assert!(impacted.contains("uselesskey-core-cache"));
-        assert!(impacted.contains("uselesskey-core"));
-        assert!(impacted.contains("uselesskey-rsa"));
-        assert!(impacted.contains("uselesskey"));
-        assert!(impacted.contains("uselesskey-bdd"));
-    }
-
-    #[test]
-    fn core_cache_change_expands_to_core_and_facade() {
-        let paths = vec!["crates/uselesskey-core-cache/src/lib.rs".to_string()];
-        let plan = build_plan(&paths);
-        let impacted = plan.impacted_crates;
-        assert!(impacted.contains("uselesskey-core-cache"));
-        assert!(impacted.contains("uselesskey-core"));
-        assert!(impacted.contains("uselesskey-rsa"));
-        assert!(impacted.contains("uselesskey"));
-        assert!(impacted.contains("uselesskey-bdd"));
-    }
-
-    #[test]
-    fn core_kid_shim_change_stays_on_shim() {
-        let paths = vec!["crates/uselesskey-core-kid/src/lib.rs".to_string()];
-        let plan = build_plan(&paths);
-        let impacted = plan.impacted_crates;
-        assert!(impacted.contains("uselesskey-core-kid"));
-        assert!(!impacted.contains("uselesskey-jwk"));
-        assert!(!impacted.contains("uselesskey-core-keypair-material"));
-        assert!(!impacted.contains("uselesskey-hmac"));
-    }
-
-    #[test]
-    fn core_keypair_material_change_expands_to_key_fixture_crates() {
-        let paths = vec!["crates/uselesskey-core-keypair-material/src/lib.rs".to_string()];
-        let plan = build_plan(&paths);
-        let impacted = plan.impacted_crates;
-        assert!(impacted.contains("uselesskey-core-keypair-material"));
-        assert!(impacted.contains("uselesskey-core-keypair"));
-        assert!(impacted.contains("uselesskey-rsa"));
-        assert!(impacted.contains("uselesskey-ecdsa"));
-        assert!(impacted.contains("uselesskey-ed25519"));
-    }
-
-    #[test]
-    fn core_keypair_change_is_self_only() {
-        let paths = vec!["crates/uselesskey-core-keypair/src/lib.rs".to_string()];
-        let plan = build_plan(&paths);
-        let impacted = plan.impacted_crates;
-        assert!(impacted.contains("uselesskey-core-keypair"));
-        assert_eq!(impacted.len(), 1);
-    }
-
-    #[test]
-    fn core_negative_change_expands_to_core_and_facade() {
-        let paths = vec!["crates/uselesskey-core-negative/src/lib.rs".to_string()];
-        let plan = build_plan(&paths);
-        let impacted = plan.impacted_crates;
-        assert!(impacted.contains("uselesskey-core-negative"));
-        assert!(impacted.contains("uselesskey-core"));
-        assert!(impacted.contains("uselesskey-rsa"));
-        assert!(impacted.contains("uselesskey"));
-        assert!(impacted.contains("uselesskey-bdd"));
-    }
-
-    #[test]
-    fn core_sink_change_expands_to_core_and_dependents() {
-        let paths = vec!["crates/uselesskey-core-sink/src/lib.rs".to_string()];
-        let plan = build_plan(&paths);
-        let impacted = plan.impacted_crates;
-        assert!(impacted.contains("uselesskey-core-sink"));
-        assert!(impacted.contains("uselesskey-core"));
-        assert!(impacted.contains("uselesskey"));
-        assert!(impacted.contains("uselesskey-rsa"));
-        assert!(impacted.contains("uselesskey-bdd"));
-    }
-
-    #[test]
-    fn core_token_shim_change_stays_on_shim() {
-        let paths = vec!["crates/uselesskey-core-token/src/lib.rs".to_string()];
-        let plan = build_plan(&paths);
-        let impacted = plan.impacted_crates;
-        assert!(impacted.contains("uselesskey-core-token"));
-        assert!(!impacted.contains("uselesskey-token"));
-        assert!(!impacted.contains("uselesskey"));
-    }
-
-    #[test]
-    fn core_token_shape_shim_change_stays_on_shim() {
-        let paths = vec!["crates/uselesskey-core-token-shape/src/lib.rs".to_string()];
-        let plan = build_plan(&paths);
-        let impacted = plan.impacted_crates;
-        assert!(impacted.contains("uselesskey-core-token-shape"));
-        assert!(!impacted.contains("uselesskey-core-token"));
-        assert!(!impacted.contains("uselesskey-token"));
-        assert!(!impacted.contains("uselesskey"));
-    }
-
-    #[test]
-    fn core_jwk_shim_change_stays_on_shim() {
-        let paths = vec!["crates/uselesskey-core-jwk/src/lib.rs".to_string()];
-        let plan = build_plan(&paths);
-        let impacted = plan.impacted_crates;
-        assert!(impacted.contains("uselesskey-core-jwk"));
-        assert!(!impacted.contains("uselesskey-jwk"));
-        assert!(!impacted.contains("uselesskey-rsa"));
-        assert!(!impacted.contains("uselesskey"));
-    }
-
-    #[test]
-    fn core_jwk_shape_shim_change_stays_on_shim() {
-        let paths = vec!["crates/uselesskey-core-jwk-shape/src/lib.rs".to_string()];
-        let plan = build_plan(&paths);
-        let impacted = plan.impacted_crates;
-        assert!(impacted.contains("uselesskey-core-jwk-shape"));
-        assert!(!impacted.contains("uselesskey-core-jwk"));
-        assert!(!impacted.contains("uselesskey-core-jwk-builder"));
-        assert!(!impacted.contains("uselesskey-jwk"));
-    }
-
-    #[test]
-    fn core_x509_spec_change_expands_to_x509_stack() {
-        let paths = vec!["crates/uselesskey-core-x509-spec/src/lib.rs".to_string()];
-        let plan = build_plan(&paths);
-        let impacted = plan.impacted_crates;
-        assert!(impacted.contains("uselesskey-core-x509-spec"));
-        assert!(impacted.contains("uselesskey-core-x509"));
-        assert!(impacted.contains("uselesskey-x509"));
-        assert!(impacted.contains("uselesskey"));
-        assert!(impacted.contains("uselesskey-rustls"));
-        assert!(impacted.contains("uselesskey-tonic"));
-    }
-
-    #[test]
-    fn core_x509_derive_change_expands_to_x509_stack() {
-        let paths = vec!["crates/uselesskey-core-x509-derive/src/lib.rs".to_string()];
-        let plan = build_plan(&paths);
-        let impacted = plan.impacted_crates;
-        assert!(impacted.contains("uselesskey-core-x509-derive"));
-        assert!(impacted.contains("uselesskey-core-x509"));
-        assert!(impacted.contains("uselesskey-x509"));
-        assert!(impacted.contains("uselesskey"));
-        assert!(impacted.contains("uselesskey-rustls"));
-        assert!(impacted.contains("uselesskey-tonic"));
-    }
-
-    #[test]
-    fn core_x509_change_expands_to_x509_stack() {
-        let paths = vec!["crates/uselesskey-core-x509/src/lib.rs".to_string()];
-        let plan = build_plan(&paths);
-        let impacted = plan.impacted_crates;
-        assert!(impacted.contains("uselesskey-core-x509"));
-        assert!(impacted.contains("uselesskey-x509"));
-        assert!(impacted.contains("uselesskey"));
-        assert!(impacted.contains("uselesskey-rustls"));
-        assert!(impacted.contains("uselesskey-tonic"));
     }
 
     #[test]
@@ -686,12 +459,6 @@ mod tests {
         let plan = build_plan(&paths);
         let impacted = &plan.impacted_crates;
         assert!(impacted.contains("uselesskey-jwk"));
-        assert!(impacted.contains("uselesskey-core-kid"));
-        assert!(impacted.contains("uselesskey-core-jwk"));
-        assert!(impacted.contains("uselesskey-core-jwk-builder"));
-        assert!(impacted.contains("uselesskey-core-jwk-shape"));
-        assert!(impacted.contains("uselesskey-core-jwks-order"));
-        assert!(impacted.contains("uselesskey-core-keypair-material"));
         assert!(impacted.contains("uselesskey-rsa"));
         assert!(impacted.contains("uselesskey-ecdsa"));
         assert!(impacted.contains("uselesskey-ed25519"));
@@ -715,10 +482,6 @@ mod tests {
         let plan = build_plan(&paths);
         let impacted = &plan.impacted_crates;
         assert!(impacted.contains("uselesskey-token"));
-        assert!(impacted.contains("uselesskey-token-spec"));
-        assert!(impacted.contains("uselesskey-core-base62"));
-        assert!(impacted.contains("uselesskey-core-token-shape"));
-        assert!(impacted.contains("uselesskey-core-token"));
         assert!(impacted.contains("uselesskey"));
     }
 
@@ -786,134 +549,6 @@ mod tests {
     }
 
     #[test]
-    fn core_factory_change_expands_to_core_and_facade() {
-        let paths = vec!["crates/uselesskey-core-factory/src/lib.rs".to_string()];
-        let plan = build_plan(&paths);
-        let impacted = &plan.impacted_crates;
-        assert!(impacted.contains("uselesskey-core-factory"));
-        assert!(impacted.contains("uselesskey-core"));
-        assert!(impacted.contains("uselesskey-rsa"));
-        assert!(impacted.contains("uselesskey"));
-        assert!(impacted.contains("uselesskey-bdd"));
-    }
-
-    #[test]
-    fn core_negative_pem_change_expands_to_negative_and_core() {
-        let paths = vec!["crates/uselesskey-core-negative-pem/src/lib.rs".to_string()];
-        let plan = build_plan(&paths);
-        let impacted = &plan.impacted_crates;
-        assert!(impacted.contains("uselesskey-core-negative-pem"));
-        assert!(impacted.contains("uselesskey-core-negative"));
-        assert!(impacted.contains("uselesskey-core"));
-        assert!(impacted.contains("uselesskey"));
-    }
-
-    #[test]
-    fn core_x509_negative_change_expands_to_x509_stack() {
-        let paths = vec!["crates/uselesskey-core-x509-negative/src/lib.rs".to_string()];
-        let plan = build_plan(&paths);
-        let impacted = &plan.impacted_crates;
-        assert!(impacted.contains("uselesskey-core-x509-negative"));
-        assert!(impacted.contains("uselesskey-core-x509"));
-        assert!(impacted.contains("uselesskey-x509"));
-        assert!(impacted.contains("uselesskey"));
-    }
-
-    #[test]
-    fn core_hash_change_expands_to_id_and_negative() {
-        let paths = vec!["crates/uselesskey-core-hash/src/lib.rs".to_string()];
-        let plan = build_plan(&paths);
-        let impacted = &plan.impacted_crates;
-        assert!(impacted.contains("uselesskey-core-hash"));
-        assert!(impacted.contains("uselesskey-core-id"));
-        assert!(impacted.contains("uselesskey-core-negative"));
-        assert!(impacted.contains("uselesskey-core-negative-pem"));
-        assert!(impacted.contains("uselesskey-core-x509-derive"));
-        assert!(impacted.contains("uselesskey-core"));
-    }
-
-    #[test]
-    fn core_jwk_builder_shim_change_stays_on_shim() {
-        let paths = vec!["crates/uselesskey-core-jwk-builder/src/lib.rs".to_string()];
-        let plan = build_plan(&paths);
-        let impacted = &plan.impacted_crates;
-        assert!(impacted.contains("uselesskey-core-jwk-builder"));
-        assert!(!impacted.contains("uselesskey-core-jwk"));
-        assert!(!impacted.contains("uselesskey-jwk"));
-        assert!(!impacted.contains("uselesskey-rsa"));
-    }
-
-    #[test]
-    fn core_negative_der_change_expands_to_negative_and_core() {
-        let paths = vec!["crates/uselesskey-core-negative-der/src/lib.rs".to_string()];
-        let plan = build_plan(&paths);
-        let impacted = &plan.impacted_crates;
-        assert!(impacted.contains("uselesskey-core-negative-der"));
-        assert!(impacted.contains("uselesskey-core-negative"));
-        assert!(impacted.contains("uselesskey-core"));
-    }
-
-    #[test]
-    fn core_rustls_pki_change_is_isolated_to_shim() {
-        // After v0.8.0 fold, `uselesskey-core-rustls-pki` is a leaf shim that
-        // re-exports from `uselesskey-rustls`. Changes to it no longer ripple
-        // into the rustls adapter stack.
-        let paths = vec!["crates/uselesskey-core-rustls-pki/src/lib.rs".to_string()];
-        let plan = build_plan(&paths);
-        let impacted = &plan.impacted_crates;
-        assert!(impacted.contains("uselesskey-core-rustls-pki"));
-        assert!(!impacted.contains("uselesskey-rustls"));
-    }
-
-    #[test]
-    fn core_base62_shim_change_stays_on_shim() {
-        let paths = vec!["crates/uselesskey-core-base62/src/lib.rs".to_string()];
-        let plan = build_plan(&paths);
-        let impacted = &plan.impacted_crates;
-        assert!(impacted.contains("uselesskey-core-base62"));
-        assert!(!impacted.contains("uselesskey-core-token-shape"));
-        assert!(!impacted.contains("uselesskey-core-token"));
-        assert!(!impacted.contains("uselesskey-token"));
-        assert!(!impacted.contains("uselesskey"));
-    }
-
-    #[test]
-    fn core_hmac_spec_change_is_isolated_to_shim() {
-        // After v0.8.0 fold, `uselesskey-core-hmac-spec` is a leaf shim that
-        // re-exports from `uselesskey-hmac`. Changes to it no longer ripple
-        // into the HMAC stack.
-        let paths = vec!["crates/uselesskey-core-hmac-spec/src/lib.rs".to_string()];
-        let plan = build_plan(&paths);
-        let impacted = &plan.impacted_crates;
-        assert!(impacted.contains("uselesskey-core-hmac-spec"));
-        assert!(!impacted.contains("uselesskey-hmac"));
-    }
-
-    #[test]
-    fn pgp_native_change_is_isolated_to_shim() {
-        // After v0.8.0 fold, `uselesskey-pgp-native` is a leaf shim that
-        // re-exports from `uselesskey-pgp`. Changes to it no longer ripple
-        // into the PGP stack.
-        let paths = vec!["crates/uselesskey-pgp-native/src/lib.rs".to_string()];
-        let plan = build_plan(&paths);
-        let impacted = &plan.impacted_crates;
-        assert!(impacted.contains("uselesskey-pgp-native"));
-        assert!(!impacted.contains("uselesskey-pgp"));
-    }
-
-    #[test]
-    fn core_x509_chain_negative_change_expands_to_x509_stack() {
-        let paths = vec!["crates/uselesskey-core-x509-chain-negative/src/lib.rs".to_string()];
-        let plan = build_plan(&paths);
-        let impacted = &plan.impacted_crates;
-        assert!(impacted.contains("uselesskey-core-x509-chain-negative"));
-        assert!(impacted.contains("uselesskey-core-x509-negative"));
-        assert!(impacted.contains("uselesskey-core-x509"));
-        assert!(impacted.contains("uselesskey-x509"));
-        assert!(impacted.contains("uselesskey"));
-    }
-
-    #[test]
     fn bdd_steps_change_expands_to_bdd() {
         let paths = vec!["crates/uselesskey-bdd-steps/src/lib.rs".to_string()];
         let plan = build_plan(&paths);
@@ -948,18 +583,6 @@ mod tests {
         let impacted = &plan.impacted_crates;
         assert!(impacted.contains("uselesskey-test-grid"));
         assert!(impacted.contains("uselesskey-bdd"));
-    }
-
-    #[test]
-    fn token_spec_shim_change_stays_on_shim() {
-        let paths = vec!["crates/uselesskey-token-spec/src/lib.rs".to_string()];
-        let plan = build_plan(&paths);
-        let impacted = &plan.impacted_crates;
-        assert!(impacted.contains("uselesskey-token-spec"));
-        assert!(!impacted.contains("uselesskey-core-token-shape"));
-        assert!(!impacted.contains("uselesskey-core-token"));
-        assert!(!impacted.contains("uselesskey-token"));
-        assert!(!impacted.contains("uselesskey"));
     }
 
     #[test]

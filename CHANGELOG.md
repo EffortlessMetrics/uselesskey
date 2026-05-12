@@ -21,18 +21,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Moved `HmacSpec` and its helpers from `uselesskey-core-hmac-spec`
-  into `uselesskey-hmac::srp::spec`. `uselesskey-core-hmac-spec`
-  remains as a published-internal re-export shim for v0.7.x compat;
-  scheduled for removal in a later v0.8.x PR.
+  into `uselesskey-hmac::srp::spec`.
 - Moved `RustlsPrivateKeyExt`, `RustlsCertExt`, and `RustlsChainExt`
   traits from `uselesskey-core-rustls-pki` into
-  `uselesskey-rustls::srp::pki`. `uselesskey-core-rustls-pki` remains
-  as a published-internal re-export shim for v0.7.x compat; scheduled
-  for removal in a later v0.8.x PR.
+  `uselesskey-rustls::srp::pki`.
 - Moved `PgpNativeExt` and its impls from `uselesskey-pgp-native` into
   `uselesskey-pgp::native` (gated behind the new `native` Cargo feature).
-  `uselesskey-pgp-native` remains as a published-internal re-export
-  shim for v0.7.x compat; scheduled for removal in a later v0.8.0 PR.
+
+### Removed
+
+**Breaking.** Removed the 29 fully-folded published-internal compatibility
+shim crates introduced in v0.7.x. The content they re-exported now lives
+exclusively as `srp::*` modules under the owner public crates. Downstream
+consumers should depend on the owner crates and the facade; the shim
+crate names are no longer published. See `docs/how-to/migrate-from-v0.7.md`
+for the full mapping.
+
+Core internals (canonical home: `uselesskey_core::srp::*`):
+
+- `uselesskey-core-cache` -> `uselesskey_core::srp::cache`
+- `uselesskey-core-factory` -> `uselesskey_core::srp::factory`
+- `uselesskey-core-hash` -> `uselesskey_core::srp::hash`
+- `uselesskey-core-id` -> `uselesskey_core::srp::identity`
+- `uselesskey-core-seed` -> `uselesskey_core::srp::seed`
+- `uselesskey-core-sink` -> `uselesskey_core::srp::sink`
+- `uselesskey-core-keypair` -> `uselesskey_core::srp::keypair`
+- `uselesskey-core-keypair-material` -> `uselesskey_core::srp::keypair_material`
+- `uselesskey-core-negative` -> `uselesskey_core::srp::negative`
+- `uselesskey-core-negative-der` -> `uselesskey_core::srp::negative::der`
+- `uselesskey-core-negative-pem` -> `uselesskey_core::srp::negative::pem`
+
+JWK internals (canonical home: `uselesskey_jwk::srp::*`):
+
+- `uselesskey-core-kid` -> `uselesskey_jwk::srp::kid`
+- `uselesskey-core-jwk` -> `uselesskey_jwk`
+- `uselesskey-core-jwk-builder` -> `uselesskey_jwk::JwksBuilder`
+- `uselesskey-core-jwk-shape` -> `uselesskey_jwk::srp::shape`
+- `uselesskey-core-jwks-order` -> `uselesskey_jwk::srp::ordering`
+
+Token internals (canonical home: `uselesskey_token::srp::*`):
+
+- `uselesskey-core-base62` -> `uselesskey_token::srp::base62`
+- `uselesskey-core-token` -> `uselesskey_token::srp::shape`
+- `uselesskey-core-token-shape` -> `uselesskey_token::srp::shape`
+- `uselesskey-token-spec` -> `uselesskey_token::srp::spec`
+
+X.509 internals (canonical home: `uselesskey_x509::srp::*`):
+
+- `uselesskey-core-x509` -> `uselesskey_x509::srp::policy`
+- `uselesskey-core-x509-spec` -> `uselesskey_x509::srp::spec`
+- `uselesskey-core-x509-derive` -> `uselesskey_x509::srp::derive`
+- `uselesskey-core-x509-negative` -> `uselesskey_x509::srp::negative`
+- `uselesskey-core-x509-chain-negative` -> `uselesskey_x509::srp::chain_negative`
+
+Folded standalones (content moved in v0.7.2 by #595, #598, #599; shim
+crates removed in v0.8.0):
+
+- `uselesskey-core-hmac-spec` -> `uselesskey_hmac::srp::spec` (#595)
+- `uselesskey-core-rustls-pki` -> `uselesskey_rustls::srp::pki` (#598)
+- `uselesskey-pgp-native` -> `uselesskey_pgp::native` (feature = "native") (#599)
+
+Conditional duplicate (byte-equal to `JwtKeyExt`):
+
+- `uselesskey-jose-openid` -> `uselesskey_jsonwebtoken::JwtKeyExt`
 
 ## [0.7.1] - 2026-05-11
 

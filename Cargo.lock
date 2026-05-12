@@ -4654,19 +4654,12 @@ dependencies = [
  "uselesskey",
  "uselesskey-aws-lc-rs",
  "uselesskey-core",
- "uselesskey-core-hash",
- "uselesskey-core-id",
- "uselesskey-core-keypair-material",
- "uselesskey-core-kid",
- "uselesskey-core-negative",
- "uselesskey-core-negative-pem",
- "uselesskey-core-seed",
- "uselesskey-core-sink",
- "uselesskey-core-token-shape",
  "uselesskey-jsonwebtoken",
+ "uselesskey-jwk",
  "uselesskey-ring",
  "uselesskey-rustcrypto",
  "uselesskey-rustls",
+ "uselesskey-token",
  "uselesskey-tonic",
  "x509-parser",
 ]
@@ -4732,308 +4725,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "uselesskey-core-base62"
-version = "0.7.1"
-dependencies = [
- "insta",
- "proptest",
- "rstest",
- "serde",
- "uselesskey-core-seed",
- "uselesskey-token",
-]
-
-[[package]]
-name = "uselesskey-core-cache"
-version = "0.7.1"
-dependencies = [
- "insta",
- "proptest",
- "rstest",
- "serde",
- "uselesskey-core",
- "uselesskey-core-id",
-]
-
-[[package]]
-name = "uselesskey-core-factory"
-version = "0.7.1"
-dependencies = [
- "insta",
- "proptest",
- "serde",
- "uselesskey-core",
- "uselesskey-core-id",
-]
-
-[[package]]
-name = "uselesskey-core-hash"
-version = "0.7.1"
-dependencies = [
- "blake3",
- "insta",
- "proptest",
- "serde",
- "uselesskey-core",
-]
-
-[[package]]
-name = "uselesskey-core-hmac-spec"
-version = "0.7.2"
-dependencies = [
- "insta",
- "proptest",
- "serde",
- "uselesskey-hmac",
-]
-
-[[package]]
-name = "uselesskey-core-id"
-version = "0.7.1"
-dependencies = [
- "insta",
- "proptest",
- "rstest",
- "serde",
- "uselesskey-core",
- "uselesskey-core-seed",
- "uselesskey-test-support",
-]
-
-[[package]]
-name = "uselesskey-core-jwk"
-version = "0.7.1"
-dependencies = [
- "insta",
- "proptest",
- "serde",
- "serde_json",
- "uselesskey-jwk",
-]
-
-[[package]]
-name = "uselesskey-core-jwk-builder"
-version = "0.7.1"
-dependencies = [
- "insta",
- "proptest",
- "serde",
- "serde_json",
- "uselesskey-core-jwk-shape",
- "uselesskey-jwk",
-]
-
-[[package]]
-name = "uselesskey-core-jwk-shape"
-version = "0.7.1"
-dependencies = [
- "insta",
- "proptest",
- "serde",
- "serde_json",
- "uselesskey-jwk",
-]
-
-[[package]]
-name = "uselesskey-core-jwks-order"
-version = "0.7.1"
-dependencies = [
- "insta",
- "proptest",
- "serde",
- "uselesskey-jwk",
-]
-
-[[package]]
-name = "uselesskey-core-keypair"
-version = "0.7.1"
-dependencies = [
- "insta",
- "proptest",
- "serde",
- "uselesskey-core",
- "uselesskey-core-negative",
- "uselesskey-test-support",
-]
-
-[[package]]
-name = "uselesskey-core-keypair-material"
-version = "0.7.1"
-dependencies = [
- "insta",
- "proptest",
- "serde",
- "uselesskey-core",
- "uselesskey-test-support",
-]
-
-[[package]]
-name = "uselesskey-core-kid"
-version = "0.7.1"
-dependencies = [
- "base64",
- "blake3",
- "insta",
- "proptest",
- "rstest",
- "serde",
- "uselesskey-jwk",
-]
-
-[[package]]
-name = "uselesskey-core-negative"
-version = "0.7.1"
-dependencies = [
- "insta",
- "proptest",
- "rstest",
- "serde",
- "uselesskey-core",
-]
-
-[[package]]
-name = "uselesskey-core-negative-der"
-version = "0.7.1"
-dependencies = [
- "insta",
- "proptest",
- "rstest",
- "serde",
- "uselesskey-core",
-]
-
-[[package]]
-name = "uselesskey-core-negative-pem"
-version = "0.7.1"
-dependencies = [
- "insta",
- "proptest",
- "serde",
- "uselesskey-core",
- "uselesskey-core-hash",
-]
-
-[[package]]
-name = "uselesskey-core-rustls-pki"
-version = "0.7.2"
-dependencies = [
- "uselesskey-rustls",
-]
-
-[[package]]
-name = "uselesskey-core-seed"
-version = "0.7.1"
-dependencies = [
- "blake3",
- "insta",
- "proptest",
- "rstest",
- "serde",
- "uselesskey-core",
-]
-
-[[package]]
-name = "uselesskey-core-sink"
-version = "0.7.1"
-dependencies = [
- "insta",
- "proptest",
- "rstest",
- "serde",
- "tempfile",
- "uselesskey-core",
-]
-
-[[package]]
-name = "uselesskey-core-token"
-version = "0.7.1"
-dependencies = [
- "base64",
- "insta",
- "proptest",
- "serde",
- "serde_json",
- "uselesskey-core-seed",
- "uselesskey-token",
-]
-
-[[package]]
-name = "uselesskey-core-token-shape"
-version = "0.7.1"
-dependencies = [
- "base64",
- "insta",
- "proptest",
- "serde",
- "serde_json",
- "uselesskey-core-seed",
- "uselesskey-token",
-]
-
-[[package]]
-name = "uselesskey-core-x509"
-version = "0.7.1"
-dependencies = [
- "insta",
- "proptest",
- "rstest",
- "serde",
- "uselesskey-core-seed",
- "uselesskey-test-support",
- "uselesskey-x509",
-]
-
-[[package]]
-name = "uselesskey-core-x509-chain-negative"
-version = "0.7.1"
-dependencies = [
- "insta",
- "proptest",
- "rstest",
- "serde",
- "uselesskey-core-x509-spec",
- "uselesskey-x509",
-]
-
-[[package]]
-name = "uselesskey-core-x509-derive"
-version = "0.7.1"
-dependencies = [
- "insta",
- "proptest",
- "rcgen",
- "serde",
- "time",
- "uselesskey-core-hash",
- "uselesskey-core-seed",
- "uselesskey-x509",
-]
-
-[[package]]
-name = "uselesskey-core-x509-negative"
-version = "0.7.1"
-dependencies = [
- "insta",
- "proptest",
- "rstest",
- "serde",
- "uselesskey-core-x509-chain-negative",
- "uselesskey-core-x509-spec",
- "uselesskey-x509",
-]
-
-[[package]]
-name = "uselesskey-core-x509-spec"
-version = "0.7.1"
-dependencies = [
- "insta",
- "proptest",
- "rstest",
- "serde",
- "uselesskey-x509",
-]
-
-[[package]]
 name = "uselesskey-ecdsa"
 version = "0.7.1"
 dependencies = [
@@ -5049,7 +4740,6 @@ dependencies = [
  "serde",
  "serde_json",
  "uselesskey-core",
- "uselesskey-core-keypair-material",
  "uselesskey-jwk",
 ]
 
@@ -5066,7 +4756,6 @@ dependencies = [
  "serde",
  "serde_json",
  "uselesskey-core",
- "uselesskey-core-keypair-material",
  "uselesskey-jwk",
 ]
 
@@ -5169,20 +4858,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "uselesskey-jose-openid"
-version = "0.7.1"
-dependencies = [
- "jsonwebtoken",
- "serde",
- "serde_json",
- "uselesskey-core",
- "uselesskey-ecdsa",
- "uselesskey-ed25519",
- "uselesskey-hmac",
- "uselesskey-rsa",
-]
-
-[[package]]
 name = "uselesskey-jsonwebtoken"
 version = "0.7.1"
 dependencies = [
@@ -5220,15 +4895,6 @@ dependencies = [
  "rand_core 0.6.4",
  "serde",
  "uselesskey-core",
-]
-
-[[package]]
-name = "uselesskey-pgp-native"
-version = "0.7.2"
-dependencies = [
- "pgp",
- "uselesskey-core",
- "uselesskey-pgp",
 ]
 
 [[package]]
@@ -5271,7 +4937,6 @@ dependencies = [
  "serde",
  "serde_json",
  "uselesskey-core",
- "uselesskey-core-keypair-material",
  "uselesskey-jwk",
 ]
 
@@ -5366,15 +5031,6 @@ dependencies = [
  "serde",
  "serde_json",
  "uselesskey-core",
-]
-
-[[package]]
-name = "uselesskey-token-spec"
-version = "0.7.1"
-dependencies = [
- "insta",
- "serde",
- "uselesskey-token",
 ]
 
 [[package]]

@@ -16,7 +16,6 @@ authors.workspace = true
 
 [dependencies]
 uselesskey-core = { path = "../uselesskey-core", version = "0.7.1" }
-uselesskey-core-keypair-material.workspace = true
 ed25519-dalek.workspace = true
 pkcs8.workspace = true
 

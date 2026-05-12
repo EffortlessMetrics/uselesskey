@@ -1,5 +1,12 @@
 # Public Surface
 
+> **v0.8.0 status.** The "Published Internal" and "Maybe public" survey rows
+> for the `uselesskey-core-*` shards, `uselesskey-token-spec`,
+> `uselesskey-pgp-native`, and `uselesskey-jose-openid` were resolved by the
+> v0.8.0 SRP collapse: those 29 crates are removed and their content lives
+> under owner-crate `srp::*` modules. The remaining public surface is the
+> facade, owner crates, adapters, CLI, and test-server / pkcs11-mock.
+
 `uselesskey` has three different crate-level concepts. Keep them separate:
 
 | Term | Meaning | User-facing promise |
@@ -70,8 +77,6 @@ configuration objects. They serve users who already chose a downstream library.
 | `uselesskey-ring` | Public adapter | Exposes `ring` native signing/verifying fixture types. | Users import `ring` conversion helpers directly. | Medium; tracks ring API compatibility. | No. |
 | `uselesskey-rustcrypto` | Public adapter | Exposes RustCrypto native key and signing fixture types. | Users import RustCrypto conversion helpers directly. | High; tracks pre-release RustCrypto APIs. | No. |
 | `uselesskey-aws-lc-rs` | Public adapter | Exposes `aws-lc-rs` native key/signature fixtures. | Users import aws-lc-rs conversion helpers directly. | High; native build requirements and upstream API compatibility are visible. | No. |
-| `uselesskey-jose-openid` | Maybe public | JOSE/OpenID-oriented native key conversion flows. | Keep only if it serves a distinct OpenID/Jose integration job beyond `jsonwebtoken` and `test-server`. | Medium; duplicate adapter risk. | Decide deliberately. |
-| `uselesskey-pgp-native` | Maybe public | Native `pgp` crate key adapters. | Keep only if users need native `pgp` types, not just PGP-shaped fixtures. | Medium; duplicate adapter risk. | Decide deliberately. |
 
 ## Workspace-Only Crates
 
@@ -98,33 +103,6 @@ single-responsibility modules under the owning public crate over time.
 
 | Crate | Classification | Why it exists | Downstream import story | Semver risk | Collapse target |
 |-------|----------------|---------------|--------------------------|-------------|-----------------|
-| `uselesskey-core-base62` | Published internal | Compatibility shim for base62 helpers now owned by `uselesskey-token`. | None; users should consume token outputs. | Low if not recommended; noisy if treated public. | `uselesskey_token::srp::base62`. |
-| `uselesskey-core-cache` | Published internal | Compatibility shim for cache mechanics now owned by `uselesskey-core`. | None; hidden behind `Factory`. | High if exposed because cache internals constrain implementation. | `uselesskey_core::srp::cache`. |
-| `uselesskey-core-factory` | Published internal | Compatibility shim for factory orchestration now owned by `uselesskey-core`. | None; `uselesskey-core` exposes `Factory`. | High if exposed because it fragments the core API. | `uselesskey_core::srp::factory`. |
-| `uselesskey-core-hash` | Published internal | Compatibility shim for length-prefixed BLAKE3 helpers now owned by `uselesskey-core`. | None; derivation is a contract through fixture outputs. | High if exposed because algorithm changes are derivation-sensitive. | `uselesskey_core::srp::hash`. |
-| `uselesskey-core-id` | Published internal | Compatibility shim for artifact identity and derivation version inputs now owned by `uselesskey-core`. | None; users name labels/specs/variants through public crates. | High if exposed because identity bytes are compatibility-sensitive. | `uselesskey_core::srp::identity`. |
-| `uselesskey-core-seed` | Published internal | Compatibility shim for seed parsing and redaction now owned by `uselesskey-core`. | Advanced users get `Seed` from `uselesskey-core`. | Medium because `Seed` is public via `uselesskey-core`; crate split is not. | `uselesskey_core::srp::seed`. |
-| `uselesskey-core-kid` | Published internal | Compatibility shim for deterministic key-ID generation now owned by `uselesskey-jwk`. | None; users observe `kid()` on fixture outputs. | High if direct imports freeze internals. | `uselesskey_jwk::srp::kid`. |
-| `uselesskey-core-hmac-spec` | Published internal | HMAC spec enum implementation. | Users should import `HmacSpec` from `uselesskey-hmac` or facade. | Medium; spec values are public, crate split is not. | `uselesskey_hmac::srp::spec` or `uselesskey_core::srp::hmac_spec`. |
-| `uselesskey-core-keypair` | Published internal | Shared keypair compatibility facade. | None; key families expose their own fixture handles. | Medium; re-export shell should not become a user dependency. | `uselesskey_core::srp::keypair`. |
-| `uselesskey-core-keypair-material` | Published internal | Compatibility shim for PKCS#8/SPKI material helpers now owned by `uselesskey-core`. | None; users ask fixture crates for PEM/DER outputs. | High if exposed because encoding internals become promises. | `uselesskey_core::srp::keypair_material`. |
-| `uselesskey-core-negative` | Published internal | Compatibility shim for generic DER/PEM corruption helpers now owned by `uselesskey-core`. | Users should use `uselesskey::negative` or fixture-specific negative APIs. | Medium; negative behavior is public, crate split is not. | `uselesskey_core::srp::negative`. |
-| `uselesskey-core-negative-der` | Published internal | Compatibility shim for DER truncation/corruption now owned by `uselesskey-core`. | None; exposed through public negative helpers. | Medium; output behavior matters, crate split should not. | `uselesskey_core::srp::negative::der`. |
-| `uselesskey-core-negative-pem` | Published internal | Compatibility shim for PEM corruption now owned by `uselesskey-core`. | None; exposed through public negative helpers. | Medium; output behavior matters, crate split should not. | `uselesskey_core::srp::negative::pem`. |
-| `uselesskey-token-spec` | Published internal | Compatibility shim for the token spec now owned by `uselesskey-token`. | Users should import `TokenSpec` from `uselesskey-token` or facade. | Medium; spec values are public, crate split is not. | `uselesskey_token::srp::spec`. |
-| `uselesskey-core-token` | Published internal | Compatibility shim for token-shape primitives now owned by `uselesskey-token`. | None; users should import `uselesskey-token`. | Medium; re-export shell should not become a user dependency. | `uselesskey_token::srp::shape`. |
-| `uselesskey-core-token-shape` | Published internal | Compatibility shim for API key, bearer, JWT-shape, and negative-token construction now owned by `uselesskey-token`. | None; users should ask `TokenFixture` for values. | High if exposed because scanner-safe shape details become standalone promises. | `uselesskey_token::srp::shape`. |
-| `uselesskey-core-jwk` | Published internal | Compatibility shim for typed JWK/JWKS models now owned by `uselesskey-jwk`. | Users should import `uselesskey-jwk`. | Medium; JSON shape is public through `uselesskey-jwk`, crate split is not. | `uselesskey_jwk::srp::shape`. |
-| `uselesskey-core-jwk-builder` | Published internal | Compatibility shim for the JWKS builder now owned by `uselesskey-jwk`. | Users should import `JwksBuilder` from `uselesskey-jwk`. | Medium; ordering is public, builder crate split is not. | `uselesskey_jwk::srp::builder`. |
-| `uselesskey-core-jwk-shape` | Published internal | Compatibility shim for structured JWK/JWKS shapes and negatives now owned by `uselesskey-jwk`. | Users should import typed shapes from `uselesskey-jwk`. | High if exposed because JSON-field internals become standalone promises. | `uselesskey_jwk::srp::shape`. |
-| `uselesskey-core-jwks-order` | Published internal | Compatibility shim for stable `kid` ordering now owned by `uselesskey-jwk`. | None; users observe stable JWKS output. | Medium; ordering behavior matters, helper crate does not. | `uselesskey_jwk::srp::ordering`. |
-| `uselesskey-core-x509-spec` | Published internal | Compatibility shim for X.509 spec models now owned by `uselesskey-x509`. | Users should import `X509Spec` / `ChainSpec` from `uselesskey-x509` or facade. | High; cert shape is visible, crate split is not. | `uselesskey_x509::srp::spec`. |
-| `uselesskey-core-x509-derive` | Published internal | Compatibility shim for deterministic X.509 time, serial, and identity helpers now owned by `uselesskey-x509`. | None; users observe generated certs. | High if exposed because derivation details become promises. | `uselesskey_x509::srp::derive`. |
-| `uselesskey-core-x509` | Published internal | Compatibility shim for X.509 policy helper/re-export shell. | Users should import `uselesskey-x509`. | Medium; re-export shell should not become a user dependency. | `uselesskey_x509::srp::policy`. |
-| `uselesskey-core-x509-negative` | Published internal | Compatibility shim for X.509 certificate negative-policy implementation now owned by `uselesskey-x509`. | None; users call fixture negative APIs. | High if exposed because validator-error shapes become standalone promises. | `uselesskey_x509::srp::negative`. |
-| `uselesskey-core-x509-chain-negative` | Published internal | Compatibility shim for X.509 chain negative-policy implementation now owned by `uselesskey-x509`. | None; users call chain negative APIs. | High if exposed because chain failure semantics become standalone promises. | `uselesskey_x509::srp::chain_negative`. |
-| `uselesskey-core-sink` | Published internal | Compatibility shim for tempfile and artifact sink implementation now owned by `uselesskey-core`. | Users get `TempArtifact` from the facade/core API. | Medium; file-path behavior matters, crate split does not. | `uselesskey_core::srp::sink`. |
-| `uselesskey-core-rustls-pki` | Published internal | Shared rustls-pki conversion bridge. | Users should import `uselesskey-rustls`. | High if exposed because downstream adapter internals become promises. | `uselesskey_rustls::srp::pki`. |
 
 ## Demotion Policy
 

@@ -4,9 +4,8 @@
 //! converting fixture outputs into `rustls_pki_types` key and certificate types.
 //!
 //! Historically this lived in the standalone `uselesskey-core-rustls-pki`
-//! crate; the implementation was folded into `uselesskey-rustls` in v0.8.0.
-//! `uselesskey-core-rustls-pki` remains as a thin re-export shim for v0.7.x
-//! consumers.
+//! crate; the implementation was folded into `uselesskey-rustls` in v0.7.2
+//! (#598) and the published-internal shim was removed in v0.8.0.
 
 use rustls_pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
 

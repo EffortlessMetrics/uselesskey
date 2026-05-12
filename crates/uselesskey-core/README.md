@@ -16,9 +16,9 @@ primitives.
 
 - `Factory` in random and deterministic modes
 - Order-independent derivation from `(domain, label, spec, variant)`
-- Per-factory cache for generated artifacts (powered by `uselesskey-core-cache`)
+- Per-factory cache for generated artifacts
 - Generic negative helpers for corrupted PEM / truncated DER
-- Tempfile sinks when `std` is enabled (implemented in `uselesskey-core-sink`)
+- Tempfile sinks when `std` is enabled
 
 ## Features
 

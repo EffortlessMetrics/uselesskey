@@ -880,69 +880,32 @@ fn feature_matrix_cmd() -> Result<()> {
 }
 
 const PUBLISH_CRATES: &[&str] = &[
-    // True leaf crates (no workspace deps)
+    // True leaf crate (no workspace deps)
     "uselesskey-jwk",
-    "uselesskey-core-kid",
-    "uselesskey-core-jwk-shape",
-    "uselesskey-core-jwks-order",
-    "uselesskey-core-jwk-builder",
-    // JWK aggregate (depends on the JWK shards above)
-    "uselesskey-core-jwk",
     // Core (depends on the JWK lane above)
     "uselesskey-core",
-    // Core compatibility shims (depend on uselesskey-core)
-    "uselesskey-core-seed",
-    "uselesskey-core-hash",
-    "uselesskey-core-id",
-    "uselesskey-core-cache",
-    "uselesskey-core-factory",
-    "uselesskey-core-negative-der",
-    "uselesskey-core-negative-pem",
-    "uselesskey-core-negative",
-    "uselesskey-core-sink",
-    // Keypair material
-    "uselesskey-core-keypair-material",
-    "uselesskey-core-keypair",
     // Mid-level fixture crates
     "uselesskey-entropy",
     "uselesskey-rsa",
     "uselesskey-ecdsa",
     "uselesskey-ed25519",
     "uselesskey-hmac",
-    // HMAC compatibility shim (depends on uselesskey-hmac)
-    "uselesskey-core-hmac-spec",
     "uselesskey-token",
-    // Token compatibility shims (depend on uselesskey-token)
-    "uselesskey-token-spec",
-    "uselesskey-core-base62",
-    "uselesskey-core-token-shape",
-    "uselesskey-core-token",
     // Higher-level fixture crates
     "uselesskey-webhook",
     "uselesskey-pkcs11-mock",
     "uselesskey-webauthn",
     "uselesskey-ssh",
     "uselesskey-pgp",
-    // PGP compatibility shim (depends on uselesskey-pgp)
-    "uselesskey-pgp-native",
     // X.509 (depends on core and downstream)
     "uselesskey-x509",
-    // X.509 compatibility shims (depend on uselesskey-x509)
-    "uselesskey-core-x509-spec",
-    "uselesskey-core-x509-derive",
-    "uselesskey-core-x509-chain-negative",
-    "uselesskey-core-x509-negative",
-    "uselesskey-core-x509",
     // Servers and CLI
     "uselesskey-test-server",
     "uselesskey-axum",
     "uselesskey-cli",
     // Adapters (depend on key crates, NOT on facade)
     "uselesskey-jsonwebtoken",
-    "uselesskey-jose-openid",
     "uselesskey-rustls",
-    // rustls compatibility shim (depends on uselesskey-rustls)
-    "uselesskey-core-rustls-pki",
     "uselesskey-tonic",
     "uselesskey-ring",
     "uselesskey-rustcrypto",
@@ -957,36 +920,10 @@ const PUBLISH_CRATES: &[&str] = &[
 /// (RSA, ECDSA, Ed25519, PGP, X.509, adapters). These are still
 /// mutant-tested when directly impacted in PR-scoped runs.
 const MUTANT_CRATES: &[&str] = &[
-    "uselesskey-core-seed",
-    "uselesskey-core-hash",
-    "uselesskey-core-hmac-spec",
-    "uselesskey-core-id",
-    "uselesskey-core-cache",
-    "uselesskey-core-factory",
     "uselesskey-jwk",
-    "uselesskey-core-kid",
-    "uselesskey-core-negative-der",
-    "uselesskey-core-negative-pem",
-    "uselesskey-core-negative",
-    "uselesskey-core-sink",
-    "uselesskey-core-jwk-shape",
-    "uselesskey-core-jwks-order",
-    "uselesskey-core-jwk-builder",
-    "uselesskey-core-jwk",
-    "uselesskey-core-x509-spec",
-    "uselesskey-core-x509-derive",
-    "uselesskey-core-x509-chain-negative",
-    "uselesskey-core-x509-negative",
-    "uselesskey-core-x509",
     "uselesskey-core",
-    "uselesskey-core-keypair-material",
-    "uselesskey-core-keypair",
     "uselesskey-hmac",
     "uselesskey-token",
-    "uselesskey-token-spec",
-    "uselesskey-core-base62",
-    "uselesskey-core-token-shape",
-    "uselesskey-core-token",
 ];
 
 const NIGHTLY_PUBLIC_MUTATION_CRATES: &[&str] = &[
@@ -4765,14 +4702,6 @@ fn impacted_evidence_rule(path: &str) -> Option<ImpactedEvidenceRule> {
         });
     }
 
-    if let Some(owner) = compatibility_shim_owner(path) {
-        return Some(ImpactedEvidenceRule {
-            owner_crate: owner.to_string(),
-            reason: "compatibility-shim",
-            requires_targeted_mutation: false,
-        });
-    }
-
     if let Some(crate_name) = path
         .strip_prefix("crates/")
         .and_then(|rest| rest.split('/').next())
@@ -4794,35 +4723,6 @@ fn impacted_evidence_rule(path: &str) -> Option<ImpactedEvidenceRule> {
     None
 }
 
-fn compatibility_shim_owner(path: &str) -> Option<&'static str> {
-    for (prefix, owner) in [
-        ("crates/uselesskey-core-jwk/", "uselesskey-jwk"),
-        ("crates/uselesskey-core-jwk-shape/", "uselesskey-jwk"),
-        ("crates/uselesskey-core-jwk-builder/", "uselesskey-jwk"),
-        ("crates/uselesskey-core-jwks-order/", "uselesskey-jwk"),
-        ("crates/uselesskey-core-kid/", "uselesskey-jwk"),
-        ("crates/uselesskey-core-token/", "uselesskey-token"),
-        ("crates/uselesskey-core-token-shape/", "uselesskey-token"),
-        ("crates/uselesskey-core-base62/", "uselesskey-token"),
-        ("crates/uselesskey-token-spec/", "uselesskey-token"),
-        ("crates/uselesskey-core-x509/", "uselesskey-x509"),
-        ("crates/uselesskey-core-x509-spec/", "uselesskey-x509"),
-        ("crates/uselesskey-core-x509-derive/", "uselesskey-x509"),
-        ("crates/uselesskey-core-x509-negative/", "uselesskey-x509"),
-        (
-            "crates/uselesskey-core-x509-chain-negative/",
-            "uselesskey-x509",
-        ),
-        ("crates/uselesskey-core-hmac-spec/", "uselesskey-hmac"),
-        ("crates/uselesskey-core-rustls-pki/", "uselesskey-rustls"),
-    ] {
-        if path.starts_with(prefix) {
-            return Some(owner);
-        }
-    }
-    None
-}
-
 fn is_adapter_crate(crate_name: &str) -> bool {
     matches!(
         crate_name,
@@ -4833,8 +4733,6 @@ fn is_adapter_crate(crate_name: &str) -> bool {
             | "uselesskey-ring"
             | "uselesskey-rustcrypto"
             | "uselesskey-aws-lc-rs"
-            | "uselesskey-jose-openid"
-            | "uselesskey-pgp-native"
     )
 }
 
@@ -6858,7 +6756,7 @@ mod tests {
         let paths = vec![
             "crates/uselesskey-x509/src/srp/spec/chain_spec.rs".to_string(),
             "crates/uselesskey-rustls/src/config.rs".to_string(),
-            "crates/uselesskey-core-jwk/src/lib.rs".to_string(),
+            "crates/uselesskey-jwk/src/srp/builder.rs".to_string(),
         ];
 
         let report = impacted_evidence_report("origin/main", &paths);
@@ -6876,7 +6774,7 @@ mod tests {
             report.reasons,
             vec![
                 "adapter-conversion".to_string(),
-                "compatibility-shim".to_string(),
+                "jwk-owner-internal".to_string(),
                 "x509-owner-internal".to_string()
             ]
         );
@@ -6912,7 +6810,6 @@ mod tests {
     fn mutation_target_owners_use_impacted_evidence() {
         let paths = vec![
             "crates/uselesskey-token/src/srp/shape.rs".to_string(),
-            "crates/uselesskey-core-token/src/lib.rs".to_string(),
             "docs/ci/test-evidence-lanes.md".to_string(),
         ];
 
@@ -6923,11 +6820,8 @@ mod tests {
     }
 
     #[test]
-    fn mutation_target_owners_skip_docs_and_shims() {
-        let paths = vec![
-            "crates/uselesskey-core-jwk/src/lib.rs".to_string(),
-            "docs/ci/test-evidence-lanes.md".to_string(),
-        ];
+    fn mutation_target_owners_skip_docs() {
+        let paths = vec!["docs/ci/test-evidence-lanes.md".to_string()];
 
         assert!(mutation_target_owners(&paths).is_empty());
     }
@@ -6936,7 +6830,6 @@ mod tests {
     fn mutation_target_paths_follow_owner_mapping() {
         let paths = vec![
             "crates/uselesskey-rustls/src/config.rs".to_string(),
-            "crates/uselesskey-core-rustls-pki/src/lib.rs".to_string(),
             "crates/uselesskey-x509/src/srp/spec/chain_spec.rs".to_string(),
         ];
 
@@ -6959,7 +6852,6 @@ mod tests {
         assert!(crates.contains(&"uselesskey-token".to_string()));
         assert!(crates.contains(&"uselesskey-x509".to_string()));
         assert!(crates.contains(&"uselesskey-cli".to_string()));
-        assert!(!crates.contains(&"uselesskey-core-jwk".to_string()));
     }
 
     #[test]
@@ -8555,30 +8447,6 @@ end_of_record
     }
 
     #[test]
-    fn publish_order_keeps_token_before_token_shims() {
-        let token_idx = PUBLISH_CRATES
-            .iter()
-            .position(|name| *name == "uselesskey-token")
-            .expect("token crate present");
-        let base62_idx = PUBLISH_CRATES
-            .iter()
-            .position(|name| *name == "uselesskey-core-base62")
-            .expect("base62 crate present");
-        let shape_idx = PUBLISH_CRATES
-            .iter()
-            .position(|name| *name == "uselesskey-core-token-shape")
-            .expect("token shape crate present");
-        let token_spec_idx = PUBLISH_CRATES
-            .iter()
-            .position(|name| *name == "uselesskey-token-spec")
-            .expect("token spec crate present");
-        assert!(
-            token_idx < base62_idx && token_idx < shape_idx && token_idx < token_spec_idx,
-            "publish order must place uselesskey-token before token compatibility shims"
-        );
-    }
-
-    #[test]
     fn publish_order_includes_entropy_before_facade() {
         let entropy_idx = PUBLISH_CRATES
             .iter()
@@ -8622,7 +8490,7 @@ end_of_record
         let msg = err.to_string();
         assert!(msg.contains("not found in publish order"), "got: {msg}");
         // Should list valid crate names
-        assert!(msg.contains("uselesskey-core-base62"), "got: {msg}");
+        assert!(msg.contains("uselesskey-core"), "got: {msg}");
     }
 
     #[test]
@@ -8659,7 +8527,7 @@ end_of_record
 
     #[test]
     fn resolve_start_index_from_and_resume_mutual_exclusion() {
-        let err = resolve_start_index(Some("uselesskey-core-seed"), true).unwrap_err();
+        let err = resolve_start_index(Some("uselesskey-core"), true).unwrap_err();
         let msg = err.to_string();
         assert!(
             msg.contains("mutually exclusive"),
@@ -8788,15 +8656,15 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
             timestamp: 1234567890,
             crates: vec![
                 PublishCrateState {
-                    name: "uselesskey-core-base62".to_string(),
+                    name: "uselesskey-jwk".to_string(),
                     status: "published".to_string(),
                 },
                 PublishCrateState {
-                    name: "uselesskey-core-seed".to_string(),
+                    name: "uselesskey-core".to_string(),
                     status: "already_published".to_string(),
                 },
                 PublishCrateState {
-                    name: "uselesskey-core-hash".to_string(),
+                    name: "uselesskey-entropy".to_string(),
                     status: "failed".to_string(),
                 },
             ],
@@ -8871,8 +8739,8 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
     /// workspace deps land on crates.io.
     ///
     /// This regression-protects against the v0.7.0 publish-lane bug fixed in
-    /// PR #565, where a compatibility shim (`uselesskey-core-seed`) was listed
-    /// before its owner (`uselesskey-core`).
+    /// PR #565, where a compatibility shim was listed before its owner
+    /// (`uselesskey-core`); the shims were removed in v0.8.0.
     #[test]
     fn publish_order_is_topological() {
         verify_publish_order_is_topological()

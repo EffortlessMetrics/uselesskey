@@ -304,7 +304,11 @@ fn new_baseline_debt<'a>(
                 .get(&baseline_entry_key(entry))
                 .copied()
                 .unwrap_or(0);
-            (current > existing).then_some((entry, current - existing))
+            if current > existing {
+                Some((entry, current - existing))
+            } else {
+                None
+            }
         })
         .collect()
 }

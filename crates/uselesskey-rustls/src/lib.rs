@@ -5,8 +5,8 @@
 //! This crate owns the PKI extension traits that convert uselesskey
 //! fixtures into `rustls-pki-types` types (`PrivateKeyDer`,
 //! `CertificateDer`). The implementation lives under
-//! [`crate::srp::pki`]; the published-internal `uselesskey-core-rustls-pki`
-//! crate re-exports the same surface for v0.7.x consumers.
+//! [`crate::srp::pki`]. (The v0.7.x `uselesskey-core-rustls-pki`
+//! published-internal shim was removed in v0.8.0.)
 //!
 //! With the `server-config` and `client-config` features, it also provides
 //! convenience builders for `rustls::ServerConfig` and `rustls::ClientConfig`,

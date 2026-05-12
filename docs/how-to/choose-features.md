@@ -67,22 +67,6 @@ Dependency snippets:
   uselesskey = { version = "0.7.1", features = ["rsa", "ecdsa", "ed25519", "hmac"] }
   uselesskey-jsonwebtoken = { version = "0.7.1" }
   ```
-
-
-- **JOSE/OpenID adapter**
-  ```toml
-  [dev-dependencies]
-  uselesskey = { version = "0.7.1", features = ["rsa", "ecdsa", "ed25519", "hmac"] }
-  uselesskey-jose-openid = { version = "0.7.1" }
-  ```
-
-
-- **pgp-native adapter**
-  ```toml
-  [dev-dependencies]
-  uselesskey = { version = "0.7.1", features = ["pgp"] }
-  uselesskey-pgp-native = { version = "0.7.2" }
-  ```
 <!-- docs-sync:dependency-snippets-end -->
 
 If you need every key family, use `all-keys`.
