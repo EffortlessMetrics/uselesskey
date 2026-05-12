@@ -3900,7 +3900,13 @@ fn badges(check: bool) -> Result<()> {
 fn ripr_plus_badge() -> Result<ShieldsEndpointBadge> {
     let ripr_bin = env::var("RIPR_BIN").unwrap_or_else(|_| "ripr".to_string());
     let output = Command::new(&ripr_bin)
-        .args(["check", "--root", ".", "--format", "repo-badge-plus-shields"])
+        .args([
+            "check",
+            "--root",
+            ".",
+            "--format",
+            "repo-badge-plus-shields",
+        ])
         .output()
         .with_context(|| format!("failed to spawn {ripr_bin:?}"))?;
     if !output.status.success() {
