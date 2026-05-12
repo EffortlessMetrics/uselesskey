@@ -179,7 +179,7 @@ jsonwebtoken = { version = "10.3.0", features = ["use_pem", "rust_crypto"] }
 
 # TLS
 rustls = { version = "0.23.40", default-features = false, features = ["std", "tls12", "ring"] }
-rustls-pki-types = "1.14.0"
+rustls-pki-types = "1.14.1"
 
 # Crypto backends
 aws-lc-rs = { version = "1.16.3", default-features = false, features = ["alloc", "non-fips"] }
