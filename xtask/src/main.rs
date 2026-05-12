@@ -977,12 +977,16 @@ const MUTATION_SURVIVOR_CLASSIFICATIONS: &[&str] = &["equivalent", "accepted-ris
 /// field is null for normal deps, `"dev"` for dev-deps, and `"build"` for
 /// build-deps). All three matter for `cargo publish`.
 fn verify_publish_order_is_topological() -> Result<()> {
-    // Pass `--manifest-path` derived from `CARGO_MANIFEST_DIR` so this is
-    // independent of the process CWD. Tests that change CWD in parallel can
-    // otherwise race with `cargo metadata`'s implicit `getcwd()` and fail
-    // with `Could not locate working directory: No such file or directory`.
-    let workspace_manifest = workspace_root_path().join("Cargo.toml");
+    // Pin both the child process's working directory and `--manifest-path` to
+    // the workspace root so this is independent of our process CWD. Without
+    // an explicit `current_dir`, cargo's `getcwd()` happens BEFORE it parses
+    // `--manifest-path`, so a parallel test that drops its tempdir can make
+    // the OS-level CWD invalid and cargo aborts with
+    // `Could not locate working directory: No such file or directory`.
+    let workspace_root = workspace_root_path();
+    let workspace_manifest = workspace_root.join("Cargo.toml");
     let output = Command::new("cargo")
+        .current_dir(&workspace_root)
         .args(["metadata", "--format-version", "1", "--no-deps"])
         .arg("--manifest-path")
         .arg(&workspace_manifest)
