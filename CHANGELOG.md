@@ -7,83 +7,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-05-12
+
+TLS contract-pack and public crate-surface cleanup release. v0.8.0 adds
+a deterministic TLS contract pack (valid chain plus four negative
+classes) with a matching release-evidence proof, lands a task-first
+how-to sweep across the public docs, completes the v0.7.x SRP fold by
+moving HMAC/rustls/PGP content into their owner crates, and removes the
+v0.7.0-vintage published-internal shim crates from the workspace.
+
+`uselesskey` is a test-fixture layer. It is not production key
+management, scanner evasion, or cryptographic assurance.
+
 ### Added
 
 - `uselesskey bundle --profile tls` generates a deterministic TLS
   contract pack with a valid intermediate-signed chain plus four
   negative-class leaves (expired, not-yet-valid, hostname mismatch,
   untrusted root). Per-fixture rejection expectations in
-  `docs/release/v0.8.0-tls-profile-design.md`.
+  `docs/release/v0.8.0-tls-profile-design.md`. (#585, #587)
 - `cargo xtask bundle-proof --profile tls` generates a release-evidence
-  proof artifact for the TLS contract pack, mirroring the OIDC pattern.
-  Included in the minor-release `release-evidence` step list.
+  proof artifact for the TLS contract pack, mirroring the OIDC
+  pattern, and is included in the minor-release `release-evidence`
+  step list. (#588)
+- Task-first how-to docs sweep across the public surface: TLS chain
+  validation, Vault KV export, build.rs materialize, WebAuthn
+  ceremony validation, PKCS#11 mock fixtures, and webhook signature
+  validation. (#589, #590, #591, #592, #593, #594)
+- `docs/how-to/migrate-to-v0.8.md` documents the v0.7.x to v0.8.0
+  crate-surface migration. Most users do not need to migrate. (#603)
 
 ### Changed
 
 - Moved `HmacSpec` and its helpers from `uselesskey-core-hmac-spec`
-  into `uselesskey-hmac::srp::spec`.
+  into `uselesskey-hmac::srp::spec`. The former crate becomes a thin
+  re-export shim while it remains in the workspace. (#595)
 - Moved `RustlsPrivateKeyExt`, `RustlsCertExt`, and `RustlsChainExt`
-  traits from `uselesskey-core-rustls-pki` into
-  `uselesskey-rustls::srp::pki`.
-- Moved `PgpNativeExt` and its impls from `uselesskey-pgp-native` into
-  `uselesskey-pgp::native` (gated behind the new `native` Cargo feature).
+  traits and their impls from `uselesskey-core-rustls-pki` into
+  `uselesskey-rustls::srp::pki`. The former crate becomes a thin
+  re-export shim while it remains in the workspace. (#598)
+- Moved `PgpNativeExt` and its impls from `uselesskey-pgp-native`
+  into `uselesskey-pgp::native`, gated behind the new `native` Cargo
+  feature on `uselesskey-pgp`. The former crate becomes a thin
+  re-export shim while it remains in the workspace. (#599)
+- Activated the Rust 1.94/1.95 Clippy ratchets workspace-wide under
+  `-D warnings`. (#505)
+- Refreshed dependency floors via the standard maintenance lane:
+  `blake3`, `tokio`, `clap`, `tonic`, `cucumber`, `rustls-pki-types`,
+  `signature`, and `codecov/codecov-action`. (#484-#491)
 
 ### Removed
 
-**Breaking.** Removed the 29 fully-folded published-internal compatibility
-shim crates introduced in v0.7.x. The content they re-exported now lives
-exclusively as `srp::*` modules under the owner public crates. Downstream
-consumers should depend on the owner crates and the facade; the shim
-crate names are no longer published. See `docs/how-to/migrate-from-v0.7.md`
-for the full mapping.
-
-Core internals (canonical home: `uselesskey_core::srp::*`):
-
-- `uselesskey-core-cache` -> `uselesskey_core::srp::cache`
-- `uselesskey-core-factory` -> `uselesskey_core::srp::factory`
-- `uselesskey-core-hash` -> `uselesskey_core::srp::hash`
-- `uselesskey-core-id` -> `uselesskey_core::srp::identity`
-- `uselesskey-core-seed` -> `uselesskey_core::srp::seed`
-- `uselesskey-core-sink` -> `uselesskey_core::srp::sink`
-- `uselesskey-core-keypair` -> `uselesskey_core::srp::keypair`
-- `uselesskey-core-keypair-material` -> `uselesskey_core::srp::keypair_material`
-- `uselesskey-core-negative` -> `uselesskey_core::srp::negative`
-- `uselesskey-core-negative-der` -> `uselesskey_core::srp::negative::der`
-- `uselesskey-core-negative-pem` -> `uselesskey_core::srp::negative::pem`
-
-JWK internals (canonical home: `uselesskey_jwk::srp::*`):
-
-- `uselesskey-core-kid` -> `uselesskey_jwk::srp::kid`
-- `uselesskey-core-jwk` -> `uselesskey_jwk`
-- `uselesskey-core-jwk-builder` -> `uselesskey_jwk::JwksBuilder`
-- `uselesskey-core-jwk-shape` -> `uselesskey_jwk::srp::shape`
-- `uselesskey-core-jwks-order` -> `uselesskey_jwk::srp::ordering`
-
-Token internals (canonical home: `uselesskey_token::srp::*`):
-
-- `uselesskey-core-base62` -> `uselesskey_token::srp::base62`
-- `uselesskey-core-token` -> `uselesskey_token::srp::shape`
-- `uselesskey-core-token-shape` -> `uselesskey_token::srp::shape`
-- `uselesskey-token-spec` -> `uselesskey_token::srp::spec`
-
-X.509 internals (canonical home: `uselesskey_x509::srp::*`):
-
-- `uselesskey-core-x509` -> `uselesskey_x509::srp::policy`
-- `uselesskey-core-x509-spec` -> `uselesskey_x509::srp::spec`
-- `uselesskey-core-x509-derive` -> `uselesskey_x509::srp::derive`
-- `uselesskey-core-x509-negative` -> `uselesskey_x509::srp::negative`
-- `uselesskey-core-x509-chain-negative` -> `uselesskey_x509::srp::chain_negative`
-
-Folded standalones (content moved in v0.7.2 by #595, #598, #599; shim
-crates removed in v0.8.0):
-
-- `uselesskey-core-hmac-spec` -> `uselesskey_hmac::srp::spec` (#595)
-- `uselesskey-core-rustls-pki` -> `uselesskey_rustls::srp::pki` (#598)
-- `uselesskey-pgp-native` -> `uselesskey_pgp::native` (feature = "native") (#599)
-
-Conditional duplicate (byte-equal to `JwtKeyExt`):
-
-- `uselesskey-jose-openid` -> `uselesskey_jsonwebtoken::JwtKeyExt`
+- Removed the 29 v0.7.0-vintage published-internal shim crates from the
+  workspace. v0.7.0 folded their content into owner-crate `srp::*`
+  modules; v0.7.x kept the shims as compatibility re-exports; v0.8.0
+  removes them entirely. The v0.7.x crate versions remain on
+  crates.io as historical records. Downstreams that pinned a shim
+  directly should follow `docs/how-to/migrate-to-v0.8.md`. (#602)
 
 ## [0.7.1] - 2026-05-11
 
@@ -599,7 +579,8 @@ Repository organised into four layers:
 - **Determinism regression** — hardcoded expected-value snapshots ensure
   derivation stability across releases
 
-[Unreleased]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.5.1...v0.6.0
