@@ -164,6 +164,85 @@ fn tls_bundle_is_deterministic_across_runs() {
 }
 
 #[test]
+fn tls_evidence_markdown_lists_all_fixtures_with_failure_classes() {
+    let dir = tempdir().expect("tempdir");
+    let bundle_dir = dir.path().join("tls");
+    run_bundle(&bundle_dir);
+
+    let evidence =
+        fs::read_to_string(bundle_dir.join("evidence/tls-profile.md")).expect("read evidence doc");
+
+    // Title and design pointer must be present so the doc is recognisable
+    // even outside the bundle.
+    assert!(
+        evidence.contains("# TLS contract-pack profile evidence"),
+        "evidence doc must carry its title heading"
+    );
+    assert!(
+        evidence.contains("docs/release/v0.8.0-tls-profile-design.md"),
+        "evidence doc must point at the design doc"
+    );
+    assert!(
+        evidence.contains("uselesskey bundle --profile tls"),
+        "evidence doc must name the command that produces the bundle"
+    );
+
+    // Hostname expectations are documented so verifiers know what to compare against.
+    assert!(
+        evidence.contains("Expected hostname:"),
+        "evidence doc must declare the expected hostname"
+    );
+    assert!(
+        evidence.contains("Hostname-mismatch wrong hostname:"),
+        "evidence doc must declare the wrong hostname used by the negative fixture"
+    );
+
+    // The markdown table header must be present so the per-row entries are
+    // actually structured rather than free text.
+    assert!(
+        evidence.contains("| File | Role | Failure class |"),
+        "evidence doc must include the per-fixture table header"
+    );
+
+    // Each of the six certificate fixtures must be named by its relative path
+    // so consumers can grep for the exact filename they care about.
+    for fixture in [
+        "`certs/valid-leaf.pem`",
+        "`certs/valid-chain.pem`",
+        "`certs/negative-expired-leaf.pem`",
+        "`certs/negative-not-yet-valid.pem`",
+        "`certs/negative-wrong-hostname.pem`",
+        "`certs/negative-untrusted-root.pem`",
+    ] {
+        assert!(
+            evidence.contains(fixture),
+            "evidence doc must mention fixture path {fixture}"
+        );
+    }
+
+    // Each negative fixture must announce its failure class so callers know
+    // why a given fixture is expected to be rejected.
+    for failure_class in [
+        "expired",
+        "not yet valid",
+        "hostname mismatch",
+        "unknown CA",
+    ] {
+        assert!(
+            evidence.contains(failure_class),
+            "evidence doc must name failure class {failure_class:?}"
+        );
+    }
+
+    // Happy-path entries must be tagged as such so they aren't mistaken for
+    // rejection cases.
+    assert!(
+        evidence.contains("(none - happy path)"),
+        "evidence doc must mark happy-path fixtures with no failure class"
+    );
+}
+
+#[test]
 fn tls_bundle_round_trips_through_verify_bundle() {
     let dir = tempdir().expect("tempdir");
     let bundle_dir = dir.path().join("tls");
