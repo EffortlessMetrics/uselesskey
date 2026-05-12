@@ -37,7 +37,7 @@ rustls-pki-types = { workspace = true }
 ed25519-dalek = { workspace = true }
 rsa = { workspace = true, features = ["sha2"] }
 sha2 = { version = "0.11", features = ["oid"] }
-signature = "2"
+signature = "3"
 hmac = "0.13.0-rc.6"
 rustls = { workspace = true }
 jsonwebtoken = { workspace = true }
