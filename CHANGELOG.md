@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `uselesskey bundle --profile tls` generates a deterministic TLS
+  contract pack with a valid intermediate-signed chain plus four
+  negative-class leaves (expired, not-yet-valid, hostname mismatch,
+  untrusted root). Per-fixture rejection expectations in
+  `docs/release/v0.8.0-tls-profile-design.md`.
+
 ## [0.7.1] - 2026-05-11
 
 Release-hardening patch for v0.7.0. Adds publish-system guardrails,

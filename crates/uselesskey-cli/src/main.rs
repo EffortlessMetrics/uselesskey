@@ -20,7 +20,7 @@ use uselesskey_hmac::{HmacFactoryExt, HmacSpec};
 use uselesskey_jwk::NegativeJwks;
 use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 use uselesskey_token::{NegativeToken, TokenFactoryExt, TokenSpec};
-use uselesskey_x509::{X509FactoryExt, X509Spec};
+use uselesskey_x509::{ChainNegative, ChainSpec, X509Chain, X509FactoryExt, X509Spec};
 
 #[derive(Parser, Debug)]
 #[command(name = "uselesskey", about = "Deterministic fixture generation CLI")]
@@ -200,6 +200,7 @@ impl Format {
 enum BundleProfile {
     ScannerSafe,
     Oidc,
+    Tls,
     Runtime,
 }
 
@@ -208,6 +209,7 @@ impl BundleProfile {
         match self {
             Self::ScannerSafe => "scanner-safe",
             Self::Oidc => "oidc",
+            Self::Tls => "tls",
             Self::Runtime => "runtime",
         }
     }
@@ -745,6 +747,7 @@ fn parse_manifest_profile(raw: &str) -> Result<BundleProfile> {
     match raw {
         "scanner-safe" | "scannersafe" => Ok(BundleProfile::ScannerSafe),
         "oidc" => Ok(BundleProfile::Oidc),
+        "tls" => Ok(BundleProfile::Tls),
         "runtime" => Ok(BundleProfile::Runtime),
         other => bail!("unsupported bundle manifest profile `{other}`"),
     }
@@ -768,7 +771,41 @@ enum BundleEntry {
         variant: NegativeToken,
         description: &'static str,
     },
+    TlsValidLeaf,
+    TlsValidChain,
+    TlsNegativeChain {
+        name: &'static str,
+        variant: TlsChainNegativeKind,
+        description: &'static str,
+    },
+    TlsEvidenceDoc,
 }
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum TlsChainNegativeKind {
+    ExpiredLeaf,
+    NotYetValidLeaf,
+    HostnameMismatch,
+    UnknownCa,
+}
+
+impl TlsChainNegativeKind {
+    fn to_chain_negative(self) -> ChainNegative {
+        match self {
+            Self::ExpiredLeaf => ChainNegative::ExpiredLeaf,
+            Self::NotYetValidLeaf => ChainNegative::NotYetValidLeaf,
+            Self::HostnameMismatch => ChainNegative::HostnameMismatch {
+                wrong_hostname: TLS_WRONG_HOSTNAME.to_string(),
+            },
+            Self::UnknownCa => ChainNegative::UnknownCa,
+        }
+    }
+}
+
+/// Documented expected hostname for the TLS profile's valid leaf.
+const TLS_EXPECTED_HOSTNAME: &str = "valid.tls.uselesskey.test";
+/// Documented wrong hostname for the hostname-mismatch negative fixture.
+const TLS_WRONG_HOSTNAME: &str = "wrong.tls.uselesskey.test";
 
 impl BundleEntry {
     const fn name(self) -> &'static str {
@@ -777,6 +814,10 @@ impl BundleEntry {
             Self::OidcValidJwks => "jwks/valid",
             Self::OidcNegativeJwks { name, .. } | Self::OidcNegativeToken { name, .. } => name,
             Self::OidcValidToken => "tokens/valid-rs256",
+            Self::TlsValidLeaf => "certs/valid-leaf",
+            Self::TlsValidChain => "certs/valid-chain",
+            Self::TlsNegativeChain { name, .. } => name,
+            Self::TlsEvidenceDoc => "evidence/tls-profile",
         }
     }
 
@@ -785,6 +826,10 @@ impl BundleEntry {
             Self::Standard { kind, .. } => kind,
             Self::OidcValidJwks | Self::OidcNegativeJwks { .. } => Kind::Jwks,
             Self::OidcValidToken | Self::OidcNegativeToken { .. } => Kind::Token,
+            Self::TlsValidLeaf
+            | Self::TlsValidChain
+            | Self::TlsNegativeChain { .. }
+            | Self::TlsEvidenceDoc => Kind::X509,
         }
     }
 
@@ -793,6 +838,8 @@ impl BundleEntry {
             Self::Standard { kind, .. } => preferred_bundle_format(kind, requested, profile),
             Self::OidcValidJwks | Self::OidcNegativeJwks { .. } => Format::Jwks,
             Self::OidcValidToken | Self::OidcNegativeToken { .. } => Format::JsonManifest,
+            Self::TlsValidLeaf | Self::TlsValidChain | Self::TlsNegativeChain { .. } => Format::Pem,
+            Self::TlsEvidenceDoc => Format::Pem,
         }
     }
 
@@ -802,6 +849,10 @@ impl BundleEntry {
                 let ext = format_extension(format, artifact);
                 format!("{name}.{ext}")
             }
+            Self::TlsValidLeaf | Self::TlsValidChain | Self::TlsNegativeChain { .. } => {
+                format!("{}.pem", self.name())
+            }
+            Self::TlsEvidenceDoc => format!("{}.md", self.name()),
             _ => format!("{}.json", self.name()),
         }
     }
@@ -813,6 +864,10 @@ impl BundleEntry {
             Self::OidcValidToken => "OIDC valid RS256 JWT-shaped token fixture",
             Self::OidcNegativeJwks { description, .. }
             | Self::OidcNegativeToken { description, .. } => description,
+            Self::TlsValidLeaf => "TLS valid leaf certificate (PEM)",
+            Self::TlsValidChain => "TLS valid full chain: leaf + intermediate + root (PEM)",
+            Self::TlsNegativeChain { description, .. } => description,
+            Self::TlsEvidenceDoc => "TLS profile per-fixture rejection-expectation evidence",
         }
     }
 }
@@ -842,6 +897,34 @@ fn bundle_entries(profile: BundleProfile) -> Vec<BundleEntry> {
                 variant: NegativeToken::BadAudience,
                 description: "OIDC negative token with bad audience",
             },
+        ];
+    }
+
+    if matches!(profile, BundleProfile::Tls) {
+        return vec![
+            BundleEntry::TlsValidLeaf,
+            BundleEntry::TlsValidChain,
+            BundleEntry::TlsNegativeChain {
+                name: "certs/negative-expired-leaf",
+                variant: TlsChainNegativeKind::ExpiredLeaf,
+                description: "TLS negative chain with expired leaf (notAfter in past)",
+            },
+            BundleEntry::TlsNegativeChain {
+                name: "certs/negative-not-yet-valid",
+                variant: TlsChainNegativeKind::NotYetValidLeaf,
+                description: "TLS negative chain with not-yet-valid leaf (notBefore in future)",
+            },
+            BundleEntry::TlsNegativeChain {
+                name: "certs/negative-wrong-hostname",
+                variant: TlsChainNegativeKind::HostnameMismatch,
+                description: "TLS negative chain with leaf SAN/CN mismatch against expected hostname",
+            },
+            BundleEntry::TlsNegativeChain {
+                name: "certs/negative-untrusted-root",
+                variant: TlsChainNegativeKind::UnknownCa,
+                description: "TLS negative chain anchored to an untrusted root CA",
+            },
+            BundleEntry::TlsEvidenceDoc,
         ];
     }
 
@@ -883,7 +966,7 @@ fn bundle_artifact_record(
 
 fn bundle_artifact_is_scanner_safe(kind: Kind, profile: BundleProfile) -> bool {
     match profile {
-        BundleProfile::ScannerSafe | BundleProfile::Oidc => true,
+        BundleProfile::ScannerSafe | BundleProfile::Oidc | BundleProfile::Tls => true,
         BundleProfile::Runtime => matches!(kind, Kind::Jwk | Kind::Jwks | Kind::X509),
     }
 }
@@ -903,6 +986,7 @@ fn bundle_artifact_description(kind: Kind, profile: BundleProfile) -> &'static s
         }
         (BundleProfile::Runtime, _) => "runtime-generated fixture material",
         (BundleProfile::Oidc, _) => "OIDC fixture material",
+        (BundleProfile::Tls, _) => "TLS contract-pack fixture material",
     }
 }
 
@@ -1080,7 +1164,50 @@ fn generate_bundle_entry_artifact(
                 unsupported(Kind::Token, format)
             }
         }
+        BundleEntry::TlsValidLeaf => {
+            let chain = tls_valid_chain(fx, label);
+            Ok(Artifact::Text(chain.leaf_cert_pem().to_string()))
+        }
+        BundleEntry::TlsValidChain => {
+            let chain = tls_valid_chain(fx, label);
+            Ok(Artifact::Text(chain.full_chain_pem()))
+        }
+        BundleEntry::TlsNegativeChain { variant, .. } => {
+            let valid = tls_valid_chain(fx, label);
+            let negative = valid.negative(variant.to_chain_negative());
+            Ok(Artifact::Text(negative.leaf_cert_pem().to_string()))
+        }
+        BundleEntry::TlsEvidenceDoc => Ok(Artifact::Text(render_tls_evidence_markdown())),
     }
+}
+
+fn tls_valid_chain(fx: &Factory, label: &str) -> X509Chain {
+    fx.x509_chain(label, ChainSpec::new(TLS_EXPECTED_HOSTNAME))
+}
+
+fn render_tls_evidence_markdown() -> String {
+    let mut out = String::new();
+    out.push_str("# TLS contract-pack profile evidence\n\n");
+    out.push_str(
+        "Per-fixture role and rejection-class expectations for the TLS contract\n\
+         pack generated by `uselesskey bundle --profile tls`. See\n\
+         `docs/release/v0.8.0-tls-profile-design.md` for the full design.\n\n",
+    );
+    out.push_str(&format!("Expected hostname: `{TLS_EXPECTED_HOSTNAME}`\n"));
+    out.push_str(&format!(
+        "Hostname-mismatch wrong hostname: `{TLS_WRONG_HOSTNAME}`\n\n",
+    ));
+    out.push_str("| File | Role | Failure class |\n");
+    out.push_str("|---|---|---|\n");
+    out.push_str("| `certs/valid-leaf.pem` | Valid leaf signed by the bundle's intermediate | (none - happy path) |\n");
+    out.push_str("| `certs/valid-chain.pem` | Full chain: leaf + intermediate + root | (none - happy path) |\n");
+    out.push_str(
+        "| `certs/negative-expired-leaf.pem` | Leaf with notAfter in the past | expired |\n",
+    );
+    out.push_str("| `certs/negative-not-yet-valid.pem` | Leaf with notBefore in the future | not yet valid |\n");
+    out.push_str("| `certs/negative-wrong-hostname.pem` | Leaf SAN/CN does not match expected hostname | hostname mismatch |\n");
+    out.push_str("| `certs/negative-untrusted-root.pem` | Leaf chained to an untrusted root CA | unknown CA |\n");
+    out
 }
 
 fn generate_scanner_safe_bundle_artifact(
