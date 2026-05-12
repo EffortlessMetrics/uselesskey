@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   negative-class leaves (expired, not-yet-valid, hostname mismatch,
   untrusted root). Per-fixture rejection expectations in
   `docs/release/v0.8.0-tls-profile-design.md`.
+- `cargo xtask bundle-proof --profile tls` generates a release-evidence
+  proof artifact for the TLS contract pack, mirroring the OIDC pattern.
+  Included in the minor-release `release-evidence` step list.
 
 ## [0.7.1] - 2026-05-11
 

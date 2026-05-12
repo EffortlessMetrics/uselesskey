@@ -153,7 +153,7 @@ enum Cmd {
     },
     /// Generate, verify, inspect, and export a bundle proof artifact for release evidence.
     BundleProof {
-        /// Bundle profile to prove. Supports `scanner-safe` and `oidc`.
+        /// Bundle profile to prove. Supports `scanner-safe`, `oidc`, and `tls`.
         #[arg(long, default_value = "scanner-safe")]
         profile: String,
         /// Output directory for proof artifacts.
@@ -2860,6 +2860,22 @@ fn release_evidence_steps_minor() -> Vec<ReleaseEvidenceStep> {
             ],
         },
         ReleaseEvidenceStep {
+            name: "tls-contract-pack-proof",
+            command: &[
+                "cargo",
+                "xtask",
+                "bundle-proof",
+                "--profile",
+                "tls",
+                "--out",
+                "target/release-evidence/tls",
+            ],
+            artifacts: &[
+                "target/release-evidence/tls/tls-contract-pack-proof.json",
+                "target/release-evidence/tls/tls-contract-pack-proof.md",
+            ],
+        },
+        ReleaseEvidenceStep {
             name: "economics",
             command: &["cargo", "xtask", "economics"],
             artifacts: &[
@@ -3279,6 +3295,7 @@ fn render_release_evidence_summary_markdown(receipt: &ReleaseEvidenceReceipt) ->
                 "OIDC contract-pack proof",
                 &["oidc-contract-pack-proof"][..],
             ),
+            ("TLS contract-pack proof", &["tls-contract-pack-proof"][..]),
             ("RIPR exposure", &["ripr-pr", "impacted-evidence"][..]),
             ("Nightly mutation scope", &["mutants-nightly-public"][..]),
             ("Performance evidence", &["perf"][..]),
@@ -3425,6 +3442,14 @@ const OIDC_CONTRACT_PACK_PROOF_CLAIM_BOUNDARY: &[&str] = &[
     "OIDC contract-pack proof covers the generated release-candidate OIDC profile, not every downstream validator",
     "OIDC proof verifies pack shape and fixture presence, not downstream validator correctness",
     "OIDC profile artifacts remain scanner-safe and do not include usable private or symmetric fixture material",
+    "bundle proof is fixture-platform evidence, not production key management or scanner evasion",
+];
+
+const TLS_CONTRACT_PACK_PROOF_CLAIM_BOUNDARY: &[&str] = &[
+    "TLS contract-pack proof covers the generated release-candidate TLS profile, not every downstream TLS verifier",
+    "TLS proof verifies pack shape and fixture presence (valid chain + four negative-class leaves), not downstream verifier correctness",
+    "TLS proof does not cover revocation (CRL/OCSP), certificate transparency, mTLS client chains, browser trust stores, or production CA custody",
+    "TLS profile artifacts remain scanner-safe and do not include usable private or symmetric fixture material",
     "bundle proof is fixture-platform evidence, not production key management or scanner evasion",
 ];
 
@@ -3592,6 +3617,32 @@ fn bundle_proof(profile: &str, out_dir: Option<&Path>) -> Result<()> {
         )?);
     }
 
+    if profile == "tls" {
+        commands.push(run_bundle_proof_command(
+            "cli-tls-contract-pack-test",
+            vec![
+                "cargo".to_string(),
+                "test".to_string(),
+                "-p".to_string(),
+                "uselesskey-cli".to_string(),
+                "tls".to_string(),
+                "--all-features".to_string(),
+            ],
+            Vec::new(),
+        )?);
+        commands.push(run_bundle_proof_command(
+            "x509-owner-tests",
+            vec![
+                "cargo".to_string(),
+                "test".to_string(),
+                "-p".to_string(),
+                "uselesskey-x509".to_string(),
+                "--all-features".to_string(),
+            ],
+            Vec::new(),
+        )?);
+    }
+
     commands.push(run_bundle_proof_command(
         "no-blob",
         vec![
@@ -3630,11 +3681,24 @@ fn bundle_proof(profile: &str, out_dir: Option<&Path>) -> Result<()> {
 }
 
 fn ensure_supported_bundle_proof_profile(profile: &str) -> Result<()> {
-    if matches!(profile, "scanner-safe" | "oidc") {
+    if BUNDLE_PROOF_SUPPORTED_PROFILES.contains(&profile) {
         Ok(())
     } else {
-        bail!("bundle-proof currently supports --profile scanner-safe and --profile oidc");
+        bail!("{}", unsupported_bundle_proof_profile_message());
     }
+}
+
+/// Profiles supported by `cargo xtask bundle-proof --profile <name>`.
+///
+/// Order matches the v0.7.0 -> v0.8.0 release lane introduction order:
+/// scanner-safe (v0.7.0), oidc (v0.7.0), tls (v0.8.0 PR-C).
+const BUNDLE_PROOF_SUPPORTED_PROFILES: &[&str] = &["scanner-safe", "oidc", "tls"];
+
+fn unsupported_bundle_proof_profile_message() -> String {
+    format!(
+        "bundle-proof currently supports --profile {}",
+        BUNDLE_PROOF_SUPPORTED_PROFILES.join(", "),
+    )
 }
 
 const SCANNER_SAFE_REFERENCE_EXPECTED_DIR: &str = "examples/scanner-safe-bundle/expected";
@@ -4040,7 +4104,8 @@ fn default_bundle_proof_out_dir(profile: &str) -> Result<PathBuf> {
     Ok(PathBuf::from(match profile {
         "scanner-safe" => "target/release-evidence/scanner-safe",
         "oidc" => "target/release-evidence/oidc",
-        _ => bail!("bundle-proof currently supports --profile scanner-safe and --profile oidc"),
+        "tls" => "target/release-evidence/tls",
+        _ => bail!("{}", unsupported_bundle_proof_profile_message()),
     }))
 }
 
@@ -4048,7 +4113,8 @@ fn bundle_proof_json_filename(profile: &str) -> Result<&'static str> {
     Ok(match profile {
         "scanner-safe" => "scanner-safe-bundle-proof.json",
         "oidc" => "oidc-contract-pack-proof.json",
-        _ => bail!("bundle-proof currently supports --profile scanner-safe and --profile oidc"),
+        "tls" => "tls-contract-pack-proof.json",
+        _ => bail!("{}", unsupported_bundle_proof_profile_message()),
     })
 }
 
@@ -4056,7 +4122,8 @@ fn bundle_proof_markdown_filename(profile: &str) -> Result<&'static str> {
     Ok(match profile {
         "scanner-safe" => "scanner-safe-bundle-proof.md",
         "oidc" => "oidc-contract-pack-proof.md",
-        _ => bail!("bundle-proof currently supports --profile scanner-safe and --profile oidc"),
+        "tls" => "tls-contract-pack-proof.md",
+        _ => bail!("{}", unsupported_bundle_proof_profile_message()),
     })
 }
 
@@ -4064,7 +4131,8 @@ fn bundle_proof_markdown_title(profile: &str) -> Result<&'static str> {
     Ok(match profile {
         "scanner-safe" => "Scanner-Safe Bundle Proof",
         "oidc" => "OIDC Contract-Pack Proof",
-        _ => bail!("bundle-proof currently supports --profile scanner-safe and --profile oidc"),
+        "tls" => "TLS Contract-Pack Proof",
+        _ => bail!("{}", unsupported_bundle_proof_profile_message()),
     })
 }
 
@@ -4072,7 +4140,8 @@ fn bundle_proof_claim_boundary(profile: &str) -> Result<Vec<&'static str>> {
     Ok(match profile {
         "scanner-safe" => SCANNER_SAFE_BUNDLE_PROOF_CLAIM_BOUNDARY.to_vec(),
         "oidc" => OIDC_CONTRACT_PACK_PROOF_CLAIM_BOUNDARY.to_vec(),
-        _ => bail!("bundle-proof currently supports --profile scanner-safe and --profile oidc"),
+        "tls" => TLS_CONTRACT_PACK_PROOF_CLAIM_BOUNDARY.to_vec(),
+        _ => bail!("{}", unsupported_bundle_proof_profile_message()),
     })
 }
 
@@ -4111,7 +4180,44 @@ fn bundle_proof_expected_artifacts(profile: &str) -> Result<Vec<BundleProofExpec
                 description: "OIDC negative token with bad audience",
             },
         ],
-        _ => bail!("bundle-proof currently supports --profile scanner-safe and --profile oidc"),
+        "tls" => vec![
+            BundleProofExpectedArtifact {
+                name: "valid_leaf",
+                path: "certs/valid-leaf.pem",
+                description: "TLS valid leaf certificate (PEM)",
+            },
+            BundleProofExpectedArtifact {
+                name: "valid_chain",
+                path: "certs/valid-chain.pem",
+                description: "TLS valid full chain: leaf + intermediate + root (PEM)",
+            },
+            BundleProofExpectedArtifact {
+                name: "negative_expired_leaf",
+                path: "certs/negative-expired-leaf.pem",
+                description: "TLS negative chain with expired leaf (notAfter in past)",
+            },
+            BundleProofExpectedArtifact {
+                name: "negative_not_yet_valid",
+                path: "certs/negative-not-yet-valid.pem",
+                description: "TLS negative chain with not-yet-valid leaf (notBefore in future)",
+            },
+            BundleProofExpectedArtifact {
+                name: "negative_wrong_hostname",
+                path: "certs/negative-wrong-hostname.pem",
+                description: "TLS negative chain with leaf SAN/CN mismatch against expected hostname",
+            },
+            BundleProofExpectedArtifact {
+                name: "negative_untrusted_root",
+                path: "certs/negative-untrusted-root.pem",
+                description: "TLS negative chain anchored to an untrusted root CA",
+            },
+            BundleProofExpectedArtifact {
+                name: "tls_evidence_doc",
+                path: "evidence/tls-profile.md",
+                description: "TLS profile per-fixture rejection-expectation evidence",
+            },
+        ],
+        _ => bail!("{}", unsupported_bundle_proof_profile_message()),
     })
 }
 
@@ -7487,6 +7593,7 @@ index 1111111..2222222 100644
             "examples-smoke",
             "scanner-safe-bundle-proof",
             "oidc-contract-pack-proof",
+            "tls-contract-pack-proof",
             "economics",
             "audit-surface",
             "perf",
@@ -7512,6 +7619,11 @@ index 1111111..2222222 100644
             receipt
                 .artifacts
                 .contains(&"target/release-evidence/oidc/oidc-contract-pack-proof.md".to_string())
+        );
+        assert!(
+            receipt
+                .artifacts
+                .contains(&"target/release-evidence/tls/tls-contract-pack-proof.md".to_string())
         );
         assert!(
             receipt
@@ -7545,6 +7657,7 @@ index 1111111..2222222 100644
         assert!(markdown.contains("Package and publish proof"));
         assert!(markdown.contains("Scanner-safe bundle proof"));
         assert!(markdown.contains("OIDC contract-pack proof"));
+        assert!(markdown.contains("TLS contract-pack proof"));
         assert!(markdown.contains("Nightly mutation scope"));
         assert!(markdown.contains("Pending RC execution"));
         assert!(markdown.contains("not production key management"));
@@ -7642,6 +7755,87 @@ index 1111111..2222222 100644
         assert!(markdown.contains("Crates.io install smoke"));
         assert!(markdown.contains("Scanner-safe reference"));
         assert!(!markdown.contains("Nightly mutation scope"));
+    }
+
+    #[test]
+    fn release_evidence_patch_step_list_excludes_tls_contract_pack_proof() {
+        let steps = release_evidence_steps_patch();
+        let names = steps.iter().map(|step| step.name).collect::<BTreeSet<_>>();
+        assert!(
+            !names.contains("tls-contract-pack-proof"),
+            "patch lane must not include tls-contract-pack-proof (full pack proofs are minor-only)",
+        );
+    }
+
+    #[test]
+    fn release_evidence_minor_step_list_includes_tls_contract_pack_proof() {
+        let steps = release_evidence_steps_minor();
+        let step = steps
+            .iter()
+            .find(|step| step.name == "tls-contract-pack-proof")
+            .expect("minor lane must wire tls-contract-pack-proof");
+        assert_eq!(
+            step.command,
+            &[
+                "cargo",
+                "xtask",
+                "bundle-proof",
+                "--profile",
+                "tls",
+                "--out",
+                "target/release-evidence/tls",
+            ],
+        );
+        assert!(
+            step.artifacts
+                .contains(&"target/release-evidence/tls/tls-contract-pack-proof.json"),
+        );
+        assert!(
+            step.artifacts
+                .contains(&"target/release-evidence/tls/tls-contract-pack-proof.md"),
+        );
+    }
+
+    #[test]
+    fn bundle_proof_tls_profile_constant_includes_tls() {
+        assert!(
+            BUNDLE_PROOF_SUPPORTED_PROFILES.contains(&"tls"),
+            "tls must be a supported bundle-proof profile",
+        );
+        ensure_supported_bundle_proof_profile("tls")
+            .expect("tls profile must pass ensure_supported_bundle_proof_profile");
+        assert_eq!(
+            bundle_proof_json_filename("tls").unwrap(),
+            "tls-contract-pack-proof.json",
+        );
+        assert_eq!(
+            bundle_proof_markdown_filename("tls").unwrap(),
+            "tls-contract-pack-proof.md",
+        );
+        assert_eq!(
+            bundle_proof_markdown_title("tls").unwrap(),
+            "TLS Contract-Pack Proof",
+        );
+        assert_eq!(
+            default_bundle_proof_out_dir("tls").unwrap(),
+            PathBuf::from("target/release-evidence/tls"),
+        );
+        let expected = bundle_proof_expected_artifacts("tls").expect("tls expected artifacts");
+        let paths = expected.iter().map(|e| e.path).collect::<Vec<_>>();
+        for required in [
+            "certs/valid-leaf.pem",
+            "certs/valid-chain.pem",
+            "certs/negative-expired-leaf.pem",
+            "certs/negative-not-yet-valid.pem",
+            "certs/negative-wrong-hostname.pem",
+            "certs/negative-untrusted-root.pem",
+            "evidence/tls-profile.md",
+        ] {
+            assert!(
+                paths.contains(&required),
+                "tls expected artifacts missing {required}",
+            );
+        }
     }
 
     #[test]
@@ -7862,6 +8056,102 @@ index 1111111..2222222 100644
         assert!(markdown.contains("downstream validator correctness"));
     }
 
+    #[test]
+    fn bundle_proof_receipt_enforces_tls_contract_pack_contents() {
+        let manifest = tls_bundle_proof_manifest();
+        let audit_surface = serde_json::json!({
+            "scanner_safe": true,
+            "runtime_material_count": 0,
+        });
+        let receipt = bundle_proof_receipt(BundleProofReceiptInput {
+            profile: "tls",
+            bundle_dir: Path::new("target/release-evidence/tls/bundle"),
+            manifest_path: Path::new("target/release-evidence/tls/bundle/manifest.json"),
+            inspect_summary_path: Path::new("target/release-evidence/tls/inspect-bundle.txt"),
+            manifest: &manifest,
+            audit_surface: &audit_surface,
+            expected_artifacts: bundle_proof_expected_artifacts("tls")
+                .expect("tls expected artifacts"),
+            commands: Vec::new(),
+            exports_generated: Vec::new(),
+        })
+        .expect("tls proof receipt");
+
+        assert_eq!(receipt.profile, "tls");
+        assert_eq!(receipt.artifact_count, 7);
+        assert_eq!(receipt.contract_pack_checks.len(), 7);
+        assert!(
+            receipt
+                .contract_pack_checks
+                .iter()
+                .all(|check| check.present)
+        );
+        assert!(!receipt.private_key_material);
+        assert!(!receipt.symmetric_secret_material);
+    }
+
+    #[test]
+    fn bundle_proof_receipt_rejects_incomplete_tls_contract_pack() {
+        let mut manifest = tls_bundle_proof_manifest();
+        manifest
+            .files
+            .retain(|path| path != "certs/negative-wrong-hostname.pem");
+        manifest
+            .artifacts
+            .retain(|artifact| artifact.path != "certs/negative-wrong-hostname.pem");
+        let audit_surface = serde_json::json!({
+            "scanner_safe": true,
+            "runtime_material_count": 0,
+        });
+        let error = bundle_proof_receipt(BundleProofReceiptInput {
+            profile: "tls",
+            bundle_dir: Path::new("target/release-evidence/tls/bundle"),
+            manifest_path: Path::new("target/release-evidence/tls/bundle/manifest.json"),
+            inspect_summary_path: Path::new("target/release-evidence/tls/inspect-bundle.txt"),
+            manifest: &manifest,
+            audit_surface: &audit_surface,
+            expected_artifacts: bundle_proof_expected_artifacts("tls")
+                .expect("tls expected artifacts"),
+            commands: Vec::new(),
+            exports_generated: Vec::new(),
+        })
+        .expect_err("missing TLS artifact should fail proof");
+
+        assert!(
+            error.to_string().contains("negative_wrong_hostname"),
+            "unexpected error: {error}"
+        );
+    }
+
+    #[test]
+    fn bundle_proof_markdown_summarizes_tls_contract_checks() {
+        let manifest = tls_bundle_proof_manifest();
+        let audit_surface = serde_json::json!({
+            "scanner_safe": true,
+            "runtime_material_count": 0,
+        });
+        let receipt = bundle_proof_receipt(BundleProofReceiptInput {
+            profile: "tls",
+            bundle_dir: Path::new("target/release-evidence/tls/bundle"),
+            manifest_path: Path::new("target/release-evidence/tls/bundle/manifest.json"),
+            inspect_summary_path: Path::new("target/release-evidence/tls/inspect-bundle.txt"),
+            manifest: &manifest,
+            audit_surface: &audit_surface,
+            expected_artifacts: bundle_proof_expected_artifacts("tls")
+                .expect("tls expected artifacts"),
+            commands: Vec::new(),
+            exports_generated: Vec::new(),
+        })
+        .expect("tls proof receipt");
+        let markdown = render_bundle_proof_markdown(&receipt).expect("render proof markdown");
+
+        assert!(markdown.contains("# TLS Contract-Pack Proof"));
+        assert!(markdown.contains("negative_expired_leaf"));
+        assert!(markdown.contains("certs/negative-untrusted-root.pem"));
+        assert!(markdown.contains("evidence/tls-profile.md"));
+        assert!(markdown.contains("downstream TLS verifier"));
+    }
+
     fn scanner_safe_bundle_proof_manifest() -> BundleProofManifest {
         BundleProofManifest {
             profile: "scanner-safe".to_string(),
@@ -7981,6 +8271,101 @@ index 1111111..2222222 100644
                     path: "receipts/audit-surface.json".to_string(),
                     kind: "audit-surface".to_string(),
                     profile: "oidc".to_string(),
+                    description: "scanner-safety and lane metadata receipt".to_string(),
+                },
+            ],
+        }
+    }
+
+    fn tls_bundle_proof_manifest() -> BundleProofManifest {
+        BundleProofManifest {
+            profile: "tls".to_string(),
+            files: vec![
+                "certs/valid-leaf.pem".to_string(),
+                "certs/valid-chain.pem".to_string(),
+                "certs/negative-expired-leaf.pem".to_string(),
+                "certs/negative-not-yet-valid.pem".to_string(),
+                "certs/negative-wrong-hostname.pem".to_string(),
+                "certs/negative-untrusted-root.pem".to_string(),
+                "evidence/tls-profile.md".to_string(),
+                "receipts/materialization.json".to_string(),
+                "receipts/audit-surface.json".to_string(),
+            ],
+            artifacts: vec![
+                BundleProofArtifactRecord {
+                    path: "certs/valid-leaf.pem".to_string(),
+                    kind: "x509".to_string(),
+                    format: "pem".to_string(),
+                    lanes: vec!["runtime".to_string(), "materialized".to_string()],
+                    scanner_safe: true,
+                    description: "TLS valid leaf certificate (PEM)".to_string(),
+                },
+                BundleProofArtifactRecord {
+                    path: "certs/valid-chain.pem".to_string(),
+                    kind: "x509".to_string(),
+                    format: "pem".to_string(),
+                    lanes: vec!["runtime".to_string(), "materialized".to_string()],
+                    scanner_safe: true,
+                    description: "TLS valid full chain: leaf + intermediate + root (PEM)"
+                        .to_string(),
+                },
+                BundleProofArtifactRecord {
+                    path: "certs/negative-expired-leaf.pem".to_string(),
+                    kind: "x509".to_string(),
+                    format: "pem".to_string(),
+                    lanes: vec!["runtime".to_string(), "materialized".to_string()],
+                    scanner_safe: true,
+                    description: "TLS negative chain with expired leaf (notAfter in past)"
+                        .to_string(),
+                },
+                BundleProofArtifactRecord {
+                    path: "certs/negative-not-yet-valid.pem".to_string(),
+                    kind: "x509".to_string(),
+                    format: "pem".to_string(),
+                    lanes: vec!["runtime".to_string(), "materialized".to_string()],
+                    scanner_safe: true,
+                    description: "TLS negative chain with not-yet-valid leaf (notBefore in future)"
+                        .to_string(),
+                },
+                BundleProofArtifactRecord {
+                    path: "certs/negative-wrong-hostname.pem".to_string(),
+                    kind: "x509".to_string(),
+                    format: "pem".to_string(),
+                    lanes: vec!["runtime".to_string(), "materialized".to_string()],
+                    scanner_safe: true,
+                    description:
+                        "TLS negative chain with leaf SAN/CN mismatch against expected hostname"
+                            .to_string(),
+                },
+                BundleProofArtifactRecord {
+                    path: "certs/negative-untrusted-root.pem".to_string(),
+                    kind: "x509".to_string(),
+                    format: "pem".to_string(),
+                    lanes: vec!["runtime".to_string(), "materialized".to_string()],
+                    scanner_safe: true,
+                    description: "TLS negative chain anchored to an untrusted root CA".to_string(),
+                },
+                BundleProofArtifactRecord {
+                    path: "evidence/tls-profile.md".to_string(),
+                    kind: "x509".to_string(),
+                    format: "pem".to_string(),
+                    lanes: vec!["runtime".to_string(), "materialized".to_string()],
+                    scanner_safe: true,
+                    description: "TLS profile per-fixture rejection-expectation evidence"
+                        .to_string(),
+                },
+            ],
+            receipts: vec![
+                BundleProofReceiptRecord {
+                    path: "receipts/materialization.json".to_string(),
+                    kind: "materialization".to_string(),
+                    profile: "tls".to_string(),
+                    description: "deterministic bundle materialization receipt".to_string(),
+                },
+                BundleProofReceiptRecord {
+                    path: "receipts/audit-surface.json".to_string(),
+                    kind: "audit-surface".to_string(),
+                    profile: "tls".to_string(),
                     description: "scanner-safety and lane metadata receipt".to_string(),
                 },
             ],
