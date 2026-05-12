@@ -15,6 +15,7 @@ use regex::Regex;
 use uselesskey_feature_grid::{BDD_FEATURE_MATRIX, CORE_FEATURE_MATRIX};
 
 mod audit_surface;
+mod bundle_proof;
 mod docs_sync;
 mod economics;
 mod plan;
@@ -432,7 +433,7 @@ fn main() -> Result<()> {
             summary,
             patch,
         } => release_evidence(&version, &out, dry_run, summary, patch),
-        Cmd::BundleProof { profile, out } => bundle_proof(&profile, out.as_deref()),
+        Cmd::BundleProof { profile, out } => bundle_proof::run(&profile, out.as_deref()),
         Cmd::ScannerSafeReference { check } => {
             if check {
                 scanner_safe_reference_check()
@@ -636,7 +637,7 @@ fn bundle_cleanup(
     Ok(())
 }
 
-fn write_json_pretty(path: &Path, value: &impl serde::Serialize) -> Result<()> {
+pub(crate) fn write_json_pretty(path: &Path, value: &impl serde::Serialize) -> Result<()> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
             .with_context(|| format!("failed to create {}", parent.display()))?;
@@ -645,13 +646,13 @@ fn write_json_pretty(path: &Path, value: &impl serde::Serialize) -> Result<()> {
     fs::write(path, json).with_context(|| format!("failed to write {}", path.display()))
 }
 
-fn read_json_file<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T> {
+pub(crate) fn read_json_file<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T> {
     let raw =
         fs::read_to_string(path).with_context(|| format!("failed to read {}", path.display()))?;
     serde_json::from_str(&raw).with_context(|| format!("failed to parse {}", path.display()))
 }
 
-fn run(cmd: &mut Command) -> Result<()> {
+pub(crate) fn run(cmd: &mut Command) -> Result<()> {
     eprintln!(
         "{} {:?}",
         " RUN ".on_bright_blue().black().bold(),
@@ -2740,7 +2741,7 @@ struct ReleaseEvidenceStep {
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
-struct ReleaseEvidenceCommandReceipt {
+pub(crate) struct ReleaseEvidenceCommandReceipt {
     name: String,
     command: Vec<String>,
     status: String,
@@ -3327,316 +3328,6 @@ fn render_release_evidence_summary_markdown(receipt: &ReleaseEvidenceReceipt) ->
     md
 }
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
-struct BundleProofManifest {
-    profile: String,
-    files: Vec<String>,
-    #[serde(default)]
-    artifacts: Vec<BundleProofArtifactRecord>,
-    #[serde(default)]
-    receipts: Vec<BundleProofReceiptRecord>,
-}
-
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
-struct BundleProofArtifactRecord {
-    path: String,
-    kind: String,
-    format: String,
-    #[serde(default)]
-    lanes: Vec<String>,
-    scanner_safe: bool,
-    description: String,
-}
-
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
-struct BundleProofReceiptRecord {
-    path: String,
-    kind: String,
-    profile: String,
-    description: String,
-}
-
-#[derive(Debug, Clone, serde::Serialize)]
-struct BundleProofExportReceipt {
-    target: String,
-    path: String,
-}
-
-#[derive(Debug, Clone, serde::Serialize)]
-struct BundleProofContractCheck {
-    name: String,
-    path: String,
-    description: String,
-    present: bool,
-}
-
-#[derive(Debug, Clone)]
-struct BundleProofExpectedArtifact {
-    name: &'static str,
-    path: &'static str,
-    description: &'static str,
-}
-
-#[derive(Debug, Clone, serde::Serialize)]
-struct BundleProofReceipt {
-    schema_version: u32,
-    lane: String,
-    profile: String,
-    generated_at: String,
-    git_sha: Option<String>,
-    bundle_dir: String,
-    manifest_path: String,
-    inspect_summary_path: String,
-    artifact_count: usize,
-    verified_file_count: usize,
-    scanner_safe: bool,
-    scanner_safe_artifact_count: usize,
-    runtime_material_count: usize,
-    private_key_material: bool,
-    symmetric_secret_material: bool,
-    receipts_present: Vec<String>,
-    exports_generated: Vec<BundleProofExportReceipt>,
-    contract_pack_checks: Vec<BundleProofContractCheck>,
-    commands: Vec<ReleaseEvidenceCommandReceipt>,
-    artifacts: Vec<BundleProofArtifactRecord>,
-    claim_boundary: Vec<&'static str>,
-}
-
-struct BundleProofReceiptInput<'a> {
-    profile: &'a str,
-    bundle_dir: &'a Path,
-    manifest_path: &'a Path,
-    inspect_summary_path: &'a Path,
-    manifest: &'a BundleProofManifest,
-    audit_surface: &'a serde_json::Value,
-    expected_artifacts: Vec<BundleProofExpectedArtifact>,
-    commands: Vec<ReleaseEvidenceCommandReceipt>,
-    exports_generated: Vec<BundleProofExportReceipt>,
-}
-
-const SCANNER_SAFE_BUNDLE_PROOF_CLAIM_BOUNDARY: &[&str] = &[
-    "scanner-safe bundle proof covers the generated release-candidate bundle, not every possible future invocation",
-    "scanner-safe means no usable private or symmetric fixture material is emitted by this profile",
-    "bundle proof verifies deterministic regeneration, export shape generation, and no-blob scanning",
-    "bundle proof is fixture-platform evidence, not production key management or scanner evasion",
-];
-
-const OIDC_CONTRACT_PACK_PROOF_CLAIM_BOUNDARY: &[&str] = &[
-    "OIDC contract-pack proof covers the generated release-candidate OIDC profile, not every downstream validator",
-    "OIDC proof verifies pack shape and fixture presence, not downstream validator correctness",
-    "OIDC profile artifacts remain scanner-safe and do not include usable private or symmetric fixture material",
-    "bundle proof is fixture-platform evidence, not production key management or scanner evasion",
-];
-
-fn bundle_proof(profile: &str, out_dir: Option<&Path>) -> Result<()> {
-    let profile = profile.trim();
-    ensure_supported_bundle_proof_profile(profile)?;
-    let default_out_dir;
-    let out_dir = match out_dir {
-        Some(path) => path,
-        None => {
-            default_out_dir = default_bundle_proof_out_dir(profile)?;
-            &default_out_dir
-        }
-    };
-    fs::create_dir_all(out_dir)
-        .with_context(|| format!("failed to create {}", out_dir.display()))?;
-    let bundle_dir = out_dir.join("bundle");
-    let inspect_summary_path = out_dir.join("inspect-bundle.txt");
-    let k8s_path = out_dir.join("secret.yaml");
-    let vault_path = out_dir.join("kv-v2.json");
-
-    let mut commands = vec![
-        run_bundle_proof_command(
-            "bundle",
-            vec![
-                "cargo".to_string(),
-                "run".to_string(),
-                "-p".to_string(),
-                "uselesskey-cli".to_string(),
-                "--".to_string(),
-                "bundle".to_string(),
-                "--profile".to_string(),
-                profile.to_string(),
-                "--out".to_string(),
-                bundle_dir.display().to_string(),
-            ],
-            vec![
-                bundle_dir.join("manifest.json").display().to_string(),
-                bundle_dir
-                    .join("receipts/materialization.json")
-                    .display()
-                    .to_string(),
-                bundle_dir
-                    .join("receipts/audit-surface.json")
-                    .display()
-                    .to_string(),
-            ],
-        )?,
-        run_bundle_proof_command(
-            "verify-bundle",
-            vec![
-                "cargo".to_string(),
-                "run".to_string(),
-                "-p".to_string(),
-                "uselesskey-cli".to_string(),
-                "--".to_string(),
-                "verify-bundle".to_string(),
-                "--path".to_string(),
-                bundle_dir.display().to_string(),
-            ],
-            Vec::new(),
-        )?,
-        run_bundle_proof_command(
-            "inspect-bundle",
-            vec![
-                "cargo".to_string(),
-                "run".to_string(),
-                "-p".to_string(),
-                "uselesskey-cli".to_string(),
-                "--".to_string(),
-                "inspect-bundle".to_string(),
-                "--path".to_string(),
-                bundle_dir.display().to_string(),
-                "--out".to_string(),
-                inspect_summary_path.display().to_string(),
-            ],
-            vec![inspect_summary_path.display().to_string()],
-        )?,
-    ];
-    let mut exports_generated = Vec::new();
-
-    if profile == "scanner-safe" {
-        commands.push(run_bundle_proof_command(
-            "export-k8s",
-            vec![
-                "cargo".to_string(),
-                "run".to_string(),
-                "-p".to_string(),
-                "uselesskey-cli".to_string(),
-                "--".to_string(),
-                "export".to_string(),
-                "k8s".to_string(),
-                "--bundle-dir".to_string(),
-                bundle_dir.display().to_string(),
-                "--name".to_string(),
-                "uselesskey-fixtures".to_string(),
-                "--namespace".to_string(),
-                "tests".to_string(),
-                "--out".to_string(),
-                k8s_path.display().to_string(),
-            ],
-            vec![k8s_path.display().to_string()],
-        )?);
-        exports_generated.push(BundleProofExportReceipt {
-            target: "k8s".to_string(),
-            path: k8s_path.display().to_string(),
-        });
-        commands.push(run_bundle_proof_command(
-            "export-vault-kv-json",
-            vec![
-                "cargo".to_string(),
-                "run".to_string(),
-                "-p".to_string(),
-                "uselesskey-cli".to_string(),
-                "--".to_string(),
-                "export".to_string(),
-                "vault-kv-json".to_string(),
-                "--bundle-dir".to_string(),
-                bundle_dir.display().to_string(),
-                "--out".to_string(),
-                vault_path.display().to_string(),
-            ],
-            vec![vault_path.display().to_string()],
-        )?);
-        exports_generated.push(BundleProofExportReceipt {
-            target: "vault-kv-json".to_string(),
-            path: vault_path.display().to_string(),
-        });
-    }
-
-    if profile == "oidc" {
-        commands.push(run_bundle_proof_command(
-            "cli-oidc-contract-pack-test",
-            vec![
-                "cargo".to_string(),
-                "test".to_string(),
-                "-p".to_string(),
-                "uselesskey-cli".to_string(),
-                "bundle_profile_oidc_writes_contract_pack".to_string(),
-                "--all-features".to_string(),
-            ],
-            Vec::new(),
-        )?);
-        commands.push(run_bundle_proof_command(
-            "jwk-owner-tests",
-            vec![
-                "cargo".to_string(),
-                "test".to_string(),
-                "-p".to_string(),
-                "uselesskey-jwk".to_string(),
-                "--all-features".to_string(),
-            ],
-            Vec::new(),
-        )?);
-        commands.push(run_bundle_proof_command(
-            "token-owner-tests",
-            vec![
-                "cargo".to_string(),
-                "test".to_string(),
-                "-p".to_string(),
-                "uselesskey-token".to_string(),
-                "--all-features".to_string(),
-            ],
-            Vec::new(),
-        )?);
-    }
-
-    commands.push(run_bundle_proof_command(
-        "no-blob",
-        vec![
-            "cargo".to_string(),
-            "xtask".to_string(),
-            "no-blob".to_string(),
-        ],
-        Vec::new(),
-    )?);
-
-    let manifest_path = bundle_dir.join("manifest.json");
-    let manifest: BundleProofManifest = read_json_file(&manifest_path)?;
-    let audit_surface_path = bundle_dir.join("receipts/audit-surface.json");
-    let audit_surface: serde_json::Value = read_json_file(&audit_surface_path)?;
-    let receipt = bundle_proof_receipt(BundleProofReceiptInput {
-        profile,
-        bundle_dir: &bundle_dir,
-        manifest_path: &manifest_path,
-        inspect_summary_path: &inspect_summary_path,
-        manifest: &manifest,
-        audit_surface: &audit_surface,
-        expected_artifacts: bundle_proof_expected_artifacts(profile)?,
-        commands,
-        exports_generated,
-    })?;
-
-    write_bundle_proof_artifacts(out_dir, &receipt)?;
-    println!(
-        "bundle-proof: wrote {} and {}",
-        out_dir.join(bundle_proof_json_filename(profile)?).display(),
-        out_dir
-            .join(bundle_proof_markdown_filename(profile)?)
-            .display()
-    );
-    Ok(())
-}
-
-fn ensure_supported_bundle_proof_profile(profile: &str) -> Result<()> {
-    if matches!(profile, "scanner-safe" | "oidc") {
-        Ok(())
-    } else {
-        bail!("bundle-proof currently supports --profile scanner-safe and --profile oidc");
-    }
-}
-
 const SCANNER_SAFE_REFERENCE_EXPECTED_DIR: &str = "examples/scanner-safe-bundle/expected";
 const SCANNER_SAFE_REFERENCE_OUT_DIR: &str = "target/scanner-safe-reference";
 const SCANNER_SAFE_REFERENCE_COMPARED_FILES: &[&str] = &[
@@ -4034,331 +3725,6 @@ fn main() {
 
     println!("cratesio-smoke: ok (mode={mode_label}, cli={cli_label})");
     Ok(())
-}
-
-fn default_bundle_proof_out_dir(profile: &str) -> Result<PathBuf> {
-    Ok(PathBuf::from(match profile {
-        "scanner-safe" => "target/release-evidence/scanner-safe",
-        "oidc" => "target/release-evidence/oidc",
-        _ => bail!("bundle-proof currently supports --profile scanner-safe and --profile oidc"),
-    }))
-}
-
-fn bundle_proof_json_filename(profile: &str) -> Result<&'static str> {
-    Ok(match profile {
-        "scanner-safe" => "scanner-safe-bundle-proof.json",
-        "oidc" => "oidc-contract-pack-proof.json",
-        _ => bail!("bundle-proof currently supports --profile scanner-safe and --profile oidc"),
-    })
-}
-
-fn bundle_proof_markdown_filename(profile: &str) -> Result<&'static str> {
-    Ok(match profile {
-        "scanner-safe" => "scanner-safe-bundle-proof.md",
-        "oidc" => "oidc-contract-pack-proof.md",
-        _ => bail!("bundle-proof currently supports --profile scanner-safe and --profile oidc"),
-    })
-}
-
-fn bundle_proof_markdown_title(profile: &str) -> Result<&'static str> {
-    Ok(match profile {
-        "scanner-safe" => "Scanner-Safe Bundle Proof",
-        "oidc" => "OIDC Contract-Pack Proof",
-        _ => bail!("bundle-proof currently supports --profile scanner-safe and --profile oidc"),
-    })
-}
-
-fn bundle_proof_claim_boundary(profile: &str) -> Result<Vec<&'static str>> {
-    Ok(match profile {
-        "scanner-safe" => SCANNER_SAFE_BUNDLE_PROOF_CLAIM_BOUNDARY.to_vec(),
-        "oidc" => OIDC_CONTRACT_PACK_PROOF_CLAIM_BOUNDARY.to_vec(),
-        _ => bail!("bundle-proof currently supports --profile scanner-safe and --profile oidc"),
-    })
-}
-
-fn bundle_proof_expected_artifacts(profile: &str) -> Result<Vec<BundleProofExpectedArtifact>> {
-    Ok(match profile {
-        "scanner-safe" => Vec::new(),
-        "oidc" => vec![
-            BundleProofExpectedArtifact {
-                name: "valid_jwks",
-                path: "jwks/valid.json",
-                description: "OIDC valid JWKS fixture",
-            },
-            BundleProofExpectedArtifact {
-                name: "negative_duplicate_kid",
-                path: "jwks/negative-duplicate-kid.json",
-                description: "OIDC negative JWKS with duplicate kid values",
-            },
-            BundleProofExpectedArtifact {
-                name: "negative_missing_kid",
-                path: "jwks/negative-missing-kid.json",
-                description: "OIDC negative JWKS with missing kid",
-            },
-            BundleProofExpectedArtifact {
-                name: "valid_rs256_token_shape",
-                path: "tokens/valid-rs256.json",
-                description: "OIDC valid RS256 JWT-shaped token fixture",
-            },
-            BundleProofExpectedArtifact {
-                name: "negative_alg_none",
-                path: "tokens/negative-alg-none.json",
-                description: "OIDC negative token with alg none",
-            },
-            BundleProofExpectedArtifact {
-                name: "negative_bad_audience",
-                path: "tokens/negative-bad-audience.json",
-                description: "OIDC negative token with bad audience",
-            },
-        ],
-        _ => bail!("bundle-proof currently supports --profile scanner-safe and --profile oidc"),
-    })
-}
-
-fn run_bundle_proof_command(
-    name: &str,
-    command: Vec<String>,
-    artifacts: Vec<String>,
-) -> Result<ReleaseEvidenceCommandReceipt> {
-    let Some((program, args)) = command.split_first() else {
-        bail!("bundle proof command {name} has no program");
-    };
-    let mut cmd = Command::new(program);
-    cmd.args(args);
-    run(&mut cmd).with_context(|| format!("bundle proof step failed: {name}"))?;
-    Ok(ReleaseEvidenceCommandReceipt {
-        name: name.to_string(),
-        command,
-        status: "ok".to_string(),
-        artifacts,
-    })
-}
-
-fn bundle_proof_receipt(input: BundleProofReceiptInput<'_>) -> Result<BundleProofReceipt> {
-    let profile = input.profile;
-    let manifest = input.manifest;
-    let audit_surface = input.audit_surface;
-    let scanner_safe_artifact_count = manifest
-        .artifacts
-        .iter()
-        .filter(|artifact| artifact.scanner_safe)
-        .count();
-    let runtime_material_count = manifest.artifacts.len() - scanner_safe_artifact_count;
-    let private_key_material = manifest
-        .artifacts
-        .iter()
-        .any(bundle_proof_artifact_contains_private_key_material);
-    let symmetric_secret_material = manifest
-        .artifacts
-        .iter()
-        .any(bundle_proof_artifact_contains_symmetric_secret_material);
-    let receipts_present = manifest
-        .receipts
-        .iter()
-        .map(|receipt| receipt.kind.clone())
-        .collect::<Vec<_>>();
-    let contract_pack_checks = input
-        .expected_artifacts
-        .iter()
-        .map(|expected| {
-            let present = manifest.files.iter().any(|path| path == expected.path)
-                && manifest.artifacts.iter().any(|artifact| {
-                    artifact.path == expected.path && artifact.description == expected.description
-                });
-            BundleProofContractCheck {
-                name: expected.name.to_string(),
-                path: expected.path.to_string(),
-                description: expected.description.to_string(),
-                present,
-            }
-        })
-        .collect::<Vec<_>>();
-    let scanner_safe = scanner_safe_artifact_count == manifest.artifacts.len();
-
-    if manifest.profile != profile {
-        bail!(
-            "bundle proof expected profile `{profile}`, found `{}`",
-            manifest.profile
-        );
-    }
-    if manifest.artifacts.is_empty() {
-        bail!("bundle proof expected artifact metadata");
-    }
-    if !scanner_safe {
-        bail!("bundle proof expected all artifacts to be scanner-safe");
-    }
-    if runtime_material_count != 0 {
-        bail!("bundle proof expected zero runtime material artifacts");
-    }
-    if private_key_material {
-        bail!("bundle proof found private key material");
-    }
-    if symmetric_secret_material {
-        bail!("bundle proof found symmetric secret material");
-    }
-    for expected in ["materialization", "audit-surface"] {
-        if !receipts_present.iter().any(|kind| kind == expected) {
-            bail!("bundle proof missing `{expected}` receipt");
-        }
-    }
-    if let Some(missing) = contract_pack_checks.iter().find(|check| !check.present) {
-        bail!(
-            "bundle proof missing expected artifact `{}` at `{}`",
-            missing.name,
-            missing.path
-        );
-    }
-    if audit_surface
-        .get("scanner_safe")
-        .and_then(serde_json::Value::as_bool)
-        != Some(true)
-    {
-        bail!("bundle proof expected audit-surface scanner_safe=true");
-    }
-    if json_u64(audit_surface, "runtime_material_count") != 0 {
-        bail!("bundle proof expected audit-surface runtime_material_count=0");
-    }
-
-    Ok(BundleProofReceipt {
-        schema_version: 1,
-        lane: "bundle-proof".to_string(),
-        profile: profile.to_string(),
-        generated_at: chrono::Utc::now().to_rfc3339(),
-        git_sha: git_head_sha().ok(),
-        bundle_dir: input.bundle_dir.display().to_string(),
-        manifest_path: input.manifest_path.display().to_string(),
-        inspect_summary_path: input.inspect_summary_path.display().to_string(),
-        artifact_count: manifest.artifacts.len(),
-        verified_file_count: manifest.files.len(),
-        scanner_safe,
-        scanner_safe_artifact_count,
-        runtime_material_count,
-        private_key_material,
-        symmetric_secret_material,
-        receipts_present,
-        exports_generated: input.exports_generated,
-        contract_pack_checks,
-        commands: input.commands,
-        artifacts: manifest.artifacts.clone(),
-        claim_boundary: bundle_proof_claim_boundary(profile)?,
-    })
-}
-
-fn bundle_proof_artifact_contains_private_key_material(
-    artifact: &BundleProofArtifactRecord,
-) -> bool {
-    matches!(artifact.kind.as_str(), "rsa" | "ecdsa" | "ed25519")
-        && matches!(artifact.format.as_str(), "pem" | "der")
-        && !artifact.scanner_safe
-}
-
-fn bundle_proof_artifact_contains_symmetric_secret_material(
-    artifact: &BundleProofArtifactRecord,
-) -> bool {
-    artifact.kind == "hmac" && !artifact.scanner_safe
-}
-
-fn write_bundle_proof_artifacts(out_dir: &Path, receipt: &BundleProofReceipt) -> Result<()> {
-    fs::create_dir_all(out_dir)
-        .with_context(|| format!("failed to create {}", out_dir.display()))?;
-    let markdown_filename = bundle_proof_markdown_filename(&receipt.profile)?;
-    write_json_pretty(
-        &out_dir.join(bundle_proof_json_filename(&receipt.profile)?),
-        receipt,
-    )?;
-    fs::write(
-        out_dir.join(markdown_filename),
-        render_bundle_proof_markdown(receipt)?,
-    )
-    .with_context(|| {
-        format!(
-            "failed to write {}",
-            out_dir.join(markdown_filename).display()
-        )
-    })?;
-    Ok(())
-}
-
-fn render_bundle_proof_markdown(receipt: &BundleProofReceipt) -> Result<String> {
-    let mut md = String::new();
-    md.push_str(&format!(
-        "# {}\n\n",
-        bundle_proof_markdown_title(&receipt.profile)?
-    ));
-    md.push_str(&format!("- Lane: `{}`\n", receipt.lane));
-    md.push_str(&format!("- Profile: `{}`\n", receipt.profile));
-    md.push_str(&format!("- Bundle dir: `{}`\n", receipt.bundle_dir));
-    md.push_str(&format!("- Manifest: `{}`\n", receipt.manifest_path));
-    md.push_str(&format!(
-        "- Inspect summary: `{}`\n",
-        receipt.inspect_summary_path
-    ));
-    md.push_str(&format!("- Artifact count: `{}`\n", receipt.artifact_count));
-    md.push_str(&format!(
-        "- Verified files: `{}`\n",
-        receipt.verified_file_count
-    ));
-    md.push_str(&format!("- Scanner-safe: `{}`\n", receipt.scanner_safe));
-    md.push_str(&format!(
-        "- Runtime material count: `{}`\n",
-        receipt.runtime_material_count
-    ));
-    md.push_str(&format!(
-        "- Private key material: `{}`\n",
-        receipt.private_key_material
-    ));
-    md.push_str(&format!(
-        "- Symmetric secret material: `{}`\n",
-        receipt.symmetric_secret_material
-    ));
-    md.push_str("\n## Exports\n\n");
-    md.push_str("| Target | Path |\n");
-    md.push_str("| --- | --- |\n");
-    if receipt.exports_generated.is_empty() {
-        md.push_str("| - | - |\n");
-    } else {
-        for export in &receipt.exports_generated {
-            md.push_str(&format!("| `{}` | `{}` |\n", export.target, export.path));
-        }
-    }
-    if !receipt.contract_pack_checks.is_empty() {
-        md.push_str("\n## Contract Pack Checks\n\n");
-        md.push_str("| Check | Path | Present |\n");
-        md.push_str("| --- | --- | --- |\n");
-        for check in &receipt.contract_pack_checks {
-            md.push_str(&format!(
-                "| `{}` | `{}` | `{}` |\n",
-                check.name, check.path, check.present
-            ));
-        }
-    }
-    md.push_str("\n## Commands\n\n");
-    md.push_str("| Step | Status | Command | Artifacts |\n");
-    md.push_str("| --- | --- | --- | --- |\n");
-    for command in &receipt.commands {
-        let artifacts = if command.artifacts.is_empty() {
-            "-".to_string()
-        } else {
-            command
-                .artifacts
-                .iter()
-                .map(|artifact| format!("`{artifact}`"))
-                .collect::<Vec<_>>()
-                .join("<br>")
-        };
-        md.push_str(&format!(
-            "| `{}` | `{}` | `{}` | {} |\n",
-            command.name,
-            command.status,
-            command.command.join(" "),
-            artifacts
-        ));
-    }
-    md.push_str("\n## Claim Boundary\n\n");
-    for claim in &receipt.claim_boundary {
-        md.push_str(&format!("- {claim}\n"));
-    }
-    Ok(md)
 }
 
 fn impacted_evidence(base: Option<String>) -> Result<()> {
@@ -4910,7 +4276,7 @@ fn run_pr_plan(
     Ok(())
 }
 
-fn git_head_sha() -> Result<String> {
+pub(crate) fn git_head_sha() -> Result<String> {
     let output = Command::new("git")
         .args(["rev-parse", "HEAD"])
         .output()
@@ -5137,7 +4503,7 @@ fn render_claim_boundary() -> String {
         .collect::<String>()
 }
 
-fn json_u64(value: &serde_json::Value, key: &str) -> u64 {
+pub(crate) fn json_u64(value: &serde_json::Value, key: &str) -> u64 {
     value
         .get(key)
         .and_then(serde_json::Value::as_u64)
@@ -6469,6 +5835,7 @@ fn hook_pre_push() -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+    use super::bundle_proof::tests_support::*;
     use super::*;
     use std::env;
     use std::path::PathBuf;
