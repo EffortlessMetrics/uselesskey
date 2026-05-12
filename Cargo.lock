@@ -4915,16 +4915,9 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core-rustls-pki"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
- "insta",
- "rustls-pki-types",
- "serde",
- "uselesskey-core",
- "uselesskey-ecdsa",
- "uselesskey-ed25519",
- "uselesskey-rsa",
- "uselesskey-x509",
+ "uselesskey-rustls",
 ]
 
 [[package]]
@@ -5306,7 +5299,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-rustls"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "hex",
  "insta",
@@ -5315,7 +5308,6 @@ dependencies = [
  "rustls-pki-types",
  "serde",
  "uselesskey-core",
- "uselesskey-core-rustls-pki",
  "uselesskey-ecdsa",
  "uselesskey-ed25519",
  "uselesskey-rsa",

@@ -1,7 +1,10 @@
-//! Additional integration tests for uselesskey-core-rustls-pki conversion paths.
+//! Additional integration tests for `uselesskey_rustls::srp::pki` conversion paths.
 //!
 //! Covers deterministic factory roundtrips, cross-label distinctness,
 //! and property-level assertions for key/certificate conversions.
+//!
+//! Moved from the standalone `uselesskey-core-rustls-pki` crate in v0.8.0
+//! when the implementation was folded into `uselesskey-rustls`.
 
 #![forbid(unsafe_code)]
 
@@ -12,8 +15,8 @@
 #[cfg(feature = "rsa")]
 mod rsa_deterministic {
     use uselesskey_core::{Factory, Seed};
-    use uselesskey_core_rustls_pki::RustlsPrivateKeyExt;
     use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+    use uselesskey_rustls::RustlsPrivateKeyExt;
 
     #[test]
     fn deterministic_rsa_key_is_reproducible() {
@@ -46,8 +49,8 @@ mod rsa_deterministic {
 #[cfg(feature = "ecdsa")]
 mod ecdsa_deterministic {
     use uselesskey_core::{Factory, Seed};
-    use uselesskey_core_rustls_pki::RustlsPrivateKeyExt;
     use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
+    use uselesskey_rustls::RustlsPrivateKeyExt;
 
     #[test]
     fn deterministic_ecdsa_key_is_reproducible() {
@@ -90,8 +93,8 @@ mod ecdsa_deterministic {
 #[cfg(feature = "ed25519")]
 mod ed25519_deterministic {
     use uselesskey_core::{Factory, Seed};
-    use uselesskey_core_rustls_pki::RustlsPrivateKeyExt;
     use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
+    use uselesskey_rustls::RustlsPrivateKeyExt;
 
     #[test]
     fn deterministic_ed25519_key_is_reproducible() {
@@ -134,7 +137,7 @@ mod ed25519_deterministic {
 #[cfg(feature = "x509")]
 mod x509_deterministic {
     use uselesskey_core::{Factory, Seed};
-    use uselesskey_core_rustls_pki::{RustlsCertExt, RustlsChainExt, RustlsPrivateKeyExt};
+    use uselesskey_rustls::{RustlsCertExt, RustlsChainExt, RustlsPrivateKeyExt};
     use uselesskey_x509::{ChainSpec, X509FactoryExt, X509Spec};
 
     #[test]

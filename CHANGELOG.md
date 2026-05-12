@@ -24,6 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   into `uselesskey-hmac::srp::spec`. `uselesskey-core-hmac-spec`
   remains as a published-internal re-export shim for v0.7.x compat;
   scheduled for removal in a later v0.8.x PR.
+- Moved `RustlsPrivateKeyExt`, `RustlsCertExt`, and `RustlsChainExt`
+  traits from `uselesskey-core-rustls-pki` into
+  `uselesskey-rustls::srp::pki`. `uselesskey-core-rustls-pki` remains
+  as a published-internal re-export shim for v0.7.x compat; scheduled
+  for removal in a later v0.8.x PR.
 
 ## [0.7.1] - 2026-05-11
 

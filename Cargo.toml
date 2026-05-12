@@ -118,6 +118,8 @@ uselesskey-ssh = { path = "crates/uselesskey-ssh", version = "0.7.1" }
 uselesskey-core-jwk-builder = { path = "crates/uselesskey-core-jwk-builder", version = "0.7.1" }
 uselesskey-core-jwk = { path = "crates/uselesskey-core-jwk", version = "0.7.1" }
 uselesskey-core-hmac-spec = { path = "crates/uselesskey-core-hmac-spec", version = "0.7.2" }
+uselesskey-core-rustls-pki = { path = "crates/uselesskey-core-rustls-pki", version = "0.7.2" }
+uselesskey-rustls = { path = "crates/uselesskey-rustls", version = "0.7.2" }
 uselesskey-core-jwk-shape = { path = "crates/uselesskey-core-jwk-shape", version = "0.7.1" }
 uselesskey-core-x509-derive = { path = "crates/uselesskey-core-x509-derive", version = "0.7.1" }
 uselesskey-core-x509-chain-negative = { path = "crates/uselesskey-core-x509-chain-negative", version = "0.7.1" }

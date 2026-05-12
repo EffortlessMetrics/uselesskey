@@ -363,10 +363,10 @@
       "support_tier": "experimental",
       "publish_status": "published",
       "facade_exposed": false,
-      "semver_expectation": "Internal building blocks; APIs may change between minor releases.",
+      "semver_expectation": "Published-internal compatibility shim; the rustls-pki adapter traits are owned by `uselesskey-rustls`.",
       "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
       "intended_audience": "repo-internal",
-      "deprecation_note": "Prefer depending on `uselesskey` or key-type facade crates unless you are extending the workspace."
+      "deprecation_note": "Prefer `uselesskey-rustls`; this crate is retained only as a compatibility shim."
     },
     {
       "name": "uselesskey-core-seed",

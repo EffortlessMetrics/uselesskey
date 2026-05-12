@@ -936,11 +936,12 @@ const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-axum",
     "uselesskey-cli",
     // Adapters (depend on key crates, NOT on facade)
-    "uselesskey-core-rustls-pki",
     "uselesskey-jsonwebtoken",
     "uselesskey-jose-openid",
     "uselesskey-pgp-native",
     "uselesskey-rustls",
+    // rustls compatibility shim (depends on uselesskey-rustls)
+    "uselesskey-core-rustls-pki",
     "uselesskey-tonic",
     "uselesskey-ring",
     "uselesskey-rustcrypto",

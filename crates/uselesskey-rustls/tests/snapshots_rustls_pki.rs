@@ -1,15 +1,31 @@
-//! Insta snapshot tests for uselesskey-core-rustls-pki.
+//! Insta snapshot tests for `uselesskey_rustls::srp::pki`.
 //!
 //! These tests snapshot PKI type conversion metadata (DER lengths,
 //! chain counts) to detect unintended changes. All key material
 //! and certificate bytes are redacted.
+//!
+//! Moved from the standalone `uselesskey-core-rustls-pki` crate in v0.8.0
+//! when the implementation was folded into `uselesskey-rustls`. The seed
+//! and snapshot names are preserved so existing snapshot files continue
+//! to match.
 
-mod testutil;
+use std::sync::OnceLock;
 
 use serde::Serialize;
-use testutil::fx;
-use uselesskey_core_rustls_pki::{RustlsCertExt, RustlsChainExt, RustlsPrivateKeyExt};
+use uselesskey_core::{Factory, Seed};
+use uselesskey_rustls::{RustlsCertExt, RustlsChainExt, RustlsPrivateKeyExt};
 use uselesskey_x509::{ChainSpec, X509FactoryExt, X509Spec};
+
+static FX: OnceLock<Factory> = OnceLock::new();
+
+fn fx() -> Factory {
+    FX.get_or_init(|| {
+        let seed = Seed::from_env_value("uselesskey-rustls-pki-snap-seed-v1")
+            .expect("test seed should always parse");
+        Factory::deterministic(seed)
+    })
+    .clone()
+}
 
 // ---------------------------------------------------------------------------
 // Self-signed certificate conversions

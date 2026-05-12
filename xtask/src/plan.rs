@@ -220,7 +220,7 @@ fn dependents(crate_name: &str) -> &'static [&'static str] {
         "uselesskey-core-hmac-spec" => &[],
         "uselesskey-core-negative-der" => &["uselesskey-core-negative"],
         "uselesskey-core-negative-pem" => &["uselesskey-core-negative"],
-        "uselesskey-core-rustls-pki" => &["uselesskey-rustls"],
+        "uselesskey-core-rustls-pki" => &[],
         "uselesskey-core-x509-chain-negative" => &["uselesskey-core-x509-negative"],
         "uselesskey-core-x509-negative" => &["uselesskey-core-x509"],
         "uselesskey-core-hash" => &[
@@ -307,7 +307,7 @@ fn dependents(crate_name: &str) -> &'static [&'static str] {
         "uselesskey-pgp" => &["uselesskey"],
         "uselesskey" => &[],
         "uselesskey-jsonwebtoken" => &[],
-        "uselesskey-rustls" => &[],
+        "uselesskey-rustls" => &["uselesskey-core-rustls-pki"],
         "uselesskey-tonic" => &[],
         "uselesskey-ring" => &[],
         "uselesskey-rustcrypto" => &[],
@@ -853,12 +853,15 @@ mod tests {
     }
 
     #[test]
-    fn core_rustls_pki_change_expands_to_rustls() {
+    fn core_rustls_pki_change_is_isolated_to_shim() {
+        // After v0.8.0 fold, `uselesskey-core-rustls-pki` is a leaf shim that
+        // re-exports from `uselesskey-rustls`. Changes to it no longer ripple
+        // into the rustls adapter stack.
         let paths = vec!["crates/uselesskey-core-rustls-pki/src/lib.rs".to_string()];
         let plan = build_plan(&paths);
         let impacted = &plan.impacted_crates;
         assert!(impacted.contains("uselesskey-core-rustls-pki"));
-        assert!(impacted.contains("uselesskey-rustls"));
+        assert!(!impacted.contains("uselesskey-rustls"));
     }
 
     #[test]

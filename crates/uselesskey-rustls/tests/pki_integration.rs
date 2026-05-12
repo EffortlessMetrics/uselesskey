@@ -1,5 +1,10 @@
 #![forbid(unsafe_code)]
 
+//! Integration tests for the PKI conversion surface (`uselesskey_rustls::srp::pki`).
+//!
+//! Moved from the standalone `uselesskey-core-rustls-pki` crate in v0.8.0
+//! when the implementation was folded into `uselesskey-rustls`.
+
 use rustls_pki_types::PrivateKeyDer;
 
 // ---------------------------------------------------------------------------
@@ -10,8 +15,8 @@ use rustls_pki_types::PrivateKeyDer;
 mod rsa_tests {
     use super::*;
     use uselesskey_core::Factory;
-    use uselesskey_core_rustls_pki::RustlsPrivateKeyExt;
     use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
+    use uselesskey_rustls::RustlsPrivateKeyExt;
 
     #[test]
     fn rsa_private_key_roundtrips_through_rustls() {
@@ -55,8 +60,8 @@ mod rsa_tests {
 mod ecdsa_tests {
     use super::*;
     use uselesskey_core::Factory;
-    use uselesskey_core_rustls_pki::RustlsPrivateKeyExt;
     use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
+    use uselesskey_rustls::RustlsPrivateKeyExt;
 
     #[test]
     fn ecdsa_es256_private_key_roundtrips() {
@@ -94,8 +99,8 @@ mod ecdsa_tests {
 mod ed25519_tests {
     use super::*;
     use uselesskey_core::Factory;
-    use uselesskey_core_rustls_pki::RustlsPrivateKeyExt;
     use uselesskey_ed25519::{Ed25519FactoryExt, Ed25519Spec};
+    use uselesskey_rustls::RustlsPrivateKeyExt;
 
     #[test]
     fn ed25519_private_key_roundtrips() {
@@ -124,7 +129,7 @@ mod ed25519_tests {
 mod x509_self_signed_tests {
     use super::*;
     use uselesskey_core::Factory;
-    use uselesskey_core_rustls_pki::{RustlsCertExt, RustlsPrivateKeyExt};
+    use uselesskey_rustls::{RustlsCertExt, RustlsPrivateKeyExt};
     use uselesskey_x509::{X509FactoryExt, X509Spec};
 
     #[test]
@@ -172,7 +177,7 @@ mod x509_self_signed_tests {
 mod x509_chain_tests {
     use super::*;
     use uselesskey_core::Factory;
-    use uselesskey_core_rustls_pki::{RustlsCertExt, RustlsChainExt, RustlsPrivateKeyExt};
+    use uselesskey_rustls::{RustlsCertExt, RustlsChainExt, RustlsPrivateKeyExt};
     use uselesskey_x509::{ChainSpec, X509FactoryExt};
 
     #[test]

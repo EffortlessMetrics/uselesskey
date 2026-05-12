@@ -118,8 +118,8 @@ set of focused microcrates that each own a single concern:
 
 **Adapter bridge**
 
-- `uselesskey-core-rustls-pki` — rustls-pki-types adapter traits for
-  converting fixtures to PKI types
+- `uselesskey-core-rustls-pki` — compatibility shim re-exporting the
+  rustls-pki adapter traits now owned by `uselesskey-rustls`
 
 ### Adapter crates
 
