@@ -212,7 +212,7 @@ Dependency snippets:
   ```toml
   [dev-dependencies]
   uselesskey = { version = "0.7.1", features = ["x509"] }
-  uselesskey-rustls = { version = "0.7.1", features = ["tls-config", "rustls-ring"] }
+  uselesskey-rustls = { version = "0.7.2", features = ["tls-config", "rustls-ring"] }
   ```
 
 
@@ -400,7 +400,7 @@ With the `tls-config` feature, build rustls configs in one step:
 ```toml
 [dev-dependencies]
 uselesskey = { version = "0.7.1", features = ["x509"] }
-uselesskey-rustls = { version = "0.7.1", features = ["tls-config", "rustls-ring"] }
+uselesskey-rustls = { version = "0.7.2", features = ["tls-config", "rustls-ring"] }
 ```
 
 ```rust

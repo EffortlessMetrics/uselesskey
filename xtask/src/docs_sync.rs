@@ -72,6 +72,13 @@ struct SnippetDependency {
     crate_name: String,
     default_features: Option<bool>,
     features: Vec<String>,
+    /// Optional version override; when present, used in place of
+    /// `DocsMetadata::release_version` for this dependency only.
+    /// Use when an individual crate has been bumped ahead of the
+    /// workspace release version (e.g. a v0.8.0 SRP fold landing
+    /// while the rest of the workspace is still on v0.7.1).
+    #[serde(default)]
+    version: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -300,7 +307,8 @@ fn render_dependency_snippets(metadata: &DocsMetadata) -> String {
 fn render_single_dependency_snippet(item: &DependencySnippet, version: &str) -> String {
     let mut snippet = String::from("[dev-dependencies]\n");
     for dep in &item.dependencies {
-        let mut parts = vec![format!("version = \"{version}\"")];
+        let dep_version = dep.version.as_deref().unwrap_or(version);
+        let mut parts = vec![format!("version = \"{dep_version}\"")];
         if dep.default_features == Some(false) {
             parts.push("default-features = false".to_string());
         }

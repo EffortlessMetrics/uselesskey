@@ -1068,7 +1068,8 @@
           "features": [
             "tls-config",
             "rustls-ring"
-          ]
+          ],
+          "version": "0.7.2"
         }
       ],
       "minimal_example_command": "cargo run -p uselesskey --example adapter_rustls --no-default-features --features x509"
