@@ -25,7 +25,7 @@ fn deterministic_factory() -> Factory {
 }
 
 /// Timeout for individual test operations to prevent deadlocks.
-const DEADLOCK_TIMEOUT: Duration = Duration::from_secs(120);
+const DEADLOCK_TIMEOUT: Duration = Duration::from_mins(2);
 
 /// Run a closure with a timeout, panicking if it exceeds the deadline.
 fn with_timeout<F, R>(name: &str, f: F) -> R

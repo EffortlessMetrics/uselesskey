@@ -130,7 +130,7 @@ fn not_after_duration_days_ago_is_just_validity() {
     let spec = X509Spec::self_signed("t")
         .with_not_before(NotBeforeOffset::DaysAgo(1))
         .with_validity_days(10);
-    let expected = Duration::from_secs(10 * 24 * 60 * 60);
+    let expected = Duration::from_hours(240);
     assert_eq!(spec.not_after_duration(), expected);
 }
 
@@ -139,7 +139,7 @@ fn not_after_duration_days_from_now_adds_offset() {
     let spec = X509Spec::self_signed("t")
         .with_not_before(NotBeforeOffset::DaysFromNow(5))
         .with_validity_days(10);
-    let expected = Duration::from_secs((5 + 10) * 24 * 60 * 60);
+    let expected = Duration::from_hours(360);
     assert_eq!(spec.not_after_duration(), expected);
 }
 
