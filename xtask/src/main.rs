@@ -5419,15 +5419,37 @@ fn lint_name_fragment(line: &str) -> bool {
         || lint.starts_with("clippy::")
 }
 
+/// Compute the per-crate test targets for `cargo xtask pr`.
+///
+/// The plan's `impacted_crates` set is derived from the path components
+/// of changed files (`crates/<name>/...`). When a PR deletes a crate, that
+/// path still appears in the diff, so the deleted crate name leaks into
+/// `impacted_crates`. `cargo test -p <deleted-crate> --all-features` then
+/// fails with `error: cannot specify features for packages outside of workspace`.
+///
+/// This filter drops:
+/// - `uselesskey-bdd` (run separately via `bdd` step)
+/// - any crate name whose directory no longer exists under `crates/`
+///   (i.e. deleted in this PR's diff)
+fn impacted_test_targets(
+    crates: &std::collections::BTreeSet<String>,
+    workspace_root: &Path,
+) -> Vec<String> {
+    let crates_dir = workspace_root.join("crates");
+    crates
+        .iter()
+        .filter(|name| name.as_str() != "uselesskey-bdd")
+        .filter(|name| crates_dir.join(name.as_str()).join("Cargo.toml").is_file())
+        .cloned()
+        .collect()
+}
+
 fn run_impacted_tests(
     crates: &std::collections::BTreeSet<String>,
     runner: &mut receipt::Runner,
 ) -> Result<()> {
-    let mut targets: Vec<String> = crates
-        .iter()
-        .filter(|name| name.as_str() != "uselesskey-bdd")
-        .cloned()
-        .collect();
+    let workspace_root = workspace_root_path();
+    let targets = impacted_test_targets(crates, &workspace_root);
     if targets.is_empty() {
         runner.skip(
             "tests",
@@ -5435,10 +5457,7 @@ fn run_impacted_tests(
         );
         return Ok(());
     }
-    for name in targets.drain(..) {
-        if name == "uselesskey-bdd" {
-            continue;
-        }
+    for name in targets {
         let step_name = format!("test:{name}");
         runner.step(&step_name, None, || {
             let mut cmd = Command::new("cargo");
@@ -8839,5 +8858,48 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
             } => assert!(skip_install_cli),
             _ => panic!("expected Cmd::CratesioSmoke"),
         }
+    }
+
+    #[test]
+    fn impacted_test_targets_drops_deleted_crates_and_bdd() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let root = dir.path();
+        let crates_dir = root.join("crates");
+        for name in &["uselesskey-core", "uselesskey-rsa"] {
+            let crate_dir = crates_dir.join(name);
+            std::fs::create_dir_all(&crate_dir).expect("create crate dir");
+            std::fs::write(crate_dir.join("Cargo.toml"), "[package]\nname = \"x\"\n")
+                .expect("write Cargo.toml");
+        }
+
+        let mut input = std::collections::BTreeSet::new();
+        input.insert("uselesskey-core".to_string()); // exists
+        input.insert("uselesskey-rsa".to_string()); // exists
+        input.insert("uselesskey-core-base62".to_string()); // deleted shim
+        input.insert("uselesskey-core-cache".to_string()); // deleted shim
+        input.insert("uselesskey-bdd".to_string()); // explicitly excluded
+
+        let targets = impacted_test_targets(&input, root);
+        assert_eq!(targets, vec!["uselesskey-core", "uselesskey-rsa"]);
+    }
+
+    #[test]
+    fn impacted_test_targets_keeps_only_dirs_with_cargo_toml() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let root = dir.path();
+        let crates_dir = root.join("crates");
+        // Directory exists but no Cargo.toml (e.g. stale subdir) — should be skipped.
+        std::fs::create_dir_all(crates_dir.join("stale-dir")).expect("create stale-dir");
+        let good = crates_dir.join("uselesskey-core");
+        std::fs::create_dir_all(&good).expect("create core dir");
+        std::fs::write(good.join("Cargo.toml"), "[package]\nname = \"x\"\n")
+            .expect("write Cargo.toml");
+
+        let mut input = std::collections::BTreeSet::new();
+        input.insert("uselesskey-core".to_string());
+        input.insert("stale-dir".to_string());
+
+        let targets = impacted_test_targets(&input, root);
+        assert_eq!(targets, vec!["uselesskey-core".to_string()]);
     }
 }
