@@ -3,7 +3,7 @@
 use libfuzzer_sys::fuzz_target;
 use std::sync::OnceLock;
 
-use uselesskey_core_keypair_material::Pkcs8SpkiKeyMaterial;
+use uselesskey_core::srp::keypair_material::Pkcs8SpkiKeyMaterial;
 
 static SAMPLE_MATERIAL: OnceLock<Pkcs8SpkiKeyMaterial> = OnceLock::new();
 

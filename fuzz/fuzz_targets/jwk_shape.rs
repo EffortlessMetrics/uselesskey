@@ -2,7 +2,7 @@
 
 use libfuzzer_sys::fuzz_target;
 
-use uselesskey_core_jwk_shape::{AnyJwk, Jwks, OctJwk, PrivateJwk, PublicJwk, RsaPublicJwk};
+use uselesskey_jwk::{AnyJwk, Jwks, OctJwk, PrivateJwk, PublicJwk, RsaPublicJwk};
 
 fn string_from_bytes(bytes: &[u8], fallback: &str) -> String {
     if bytes.is_empty() {
