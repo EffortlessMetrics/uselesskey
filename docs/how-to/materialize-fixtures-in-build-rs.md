@@ -146,7 +146,7 @@ Shape-only — `crates/materialize-shape-buildrs-example/Cargo.toml`:
 
 ```toml
 [build-dependencies]
-uselesskey-cli = { path = "../uselesskey-cli", version = "0.7.1", default-features = false }
+uselesskey-cli = { path = "../uselesskey-cli", version = "0.8.0", default-features = false }
 ```
 
 Shape-only manifests use kinds like `entropy.bytes`, `token.jwt_shape`,
@@ -158,7 +158,7 @@ Runtime RSA — `crates/materialize-buildrs-example/Cargo.toml`:
 
 ```toml
 [build-dependencies]
-uselesskey-cli = { path = "../uselesskey-cli", version = "0.7.1", default-features = false, features = ["rsa-materialize"] }
+uselesskey-cli = { path = "../uselesskey-cli", version = "0.8.0", default-features = false, features = ["rsa-materialize"] }
 ```
 
 The `rsa-materialize` feature is what unlocks `rsa.pkcs8_der` and
