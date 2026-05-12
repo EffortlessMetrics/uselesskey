@@ -977,8 +977,15 @@ const MUTATION_SURVIVOR_CLASSIFICATIONS: &[&str] = &["equivalent", "accepted-ris
 /// field is null for normal deps, `"dev"` for dev-deps, and `"build"` for
 /// build-deps). All three matter for `cargo publish`.
 fn verify_publish_order_is_topological() -> Result<()> {
+    // Pass `--manifest-path` derived from `CARGO_MANIFEST_DIR` so this is
+    // independent of the process CWD. Tests that change CWD in parallel can
+    // otherwise race with `cargo metadata`'s implicit `getcwd()` and fail
+    // with `Could not locate working directory: No such file or directory`.
+    let workspace_manifest = workspace_root_path().join("Cargo.toml");
     let output = Command::new("cargo")
         .args(["metadata", "--format-version", "1", "--no-deps"])
+        .arg("--manifest-path")
+        .arg(&workspace_manifest)
         .output()
         .context("failed to run `cargo metadata` for publish-order topo check")?;
 
