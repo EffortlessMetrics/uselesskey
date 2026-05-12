@@ -236,7 +236,7 @@ Dependency snippets:
   ```toml
   [dev-dependencies]
   uselesskey = { version = "0.7.1", features = ["pgp"] }
-  uselesskey-pgp-native = { version = "0.7.1" }
+  uselesskey-pgp-native = { version = "0.7.2" }
   ```
 <!-- docs-sync:dependency-snippets-end -->
 
