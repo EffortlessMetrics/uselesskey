@@ -5211,7 +5211,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-pgp"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "insta",
  "pgp",
@@ -5224,7 +5224,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-pgp-native"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "pgp",
  "uselesskey-core",

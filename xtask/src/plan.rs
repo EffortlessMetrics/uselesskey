@@ -304,7 +304,8 @@ fn dependents(crate_name: &str) -> &'static [&'static str] {
             "uselesskey-core-token",
             "uselesskey",
         ],
-        "uselesskey-pgp" => &["uselesskey"],
+        "uselesskey-pgp" => &["uselesskey", "uselesskey-pgp-native"],
+        "uselesskey-pgp-native" => &[],
         "uselesskey" => &[],
         "uselesskey-jsonwebtoken" => &[],
         "uselesskey-rustls" => &["uselesskey-core-rustls-pki"],
@@ -886,6 +887,18 @@ mod tests {
         let impacted = &plan.impacted_crates;
         assert!(impacted.contains("uselesskey-core-hmac-spec"));
         assert!(!impacted.contains("uselesskey-hmac"));
+    }
+
+    #[test]
+    fn pgp_native_change_is_isolated_to_shim() {
+        // After v0.8.0 fold, `uselesskey-pgp-native` is a leaf shim that
+        // re-exports from `uselesskey-pgp`. Changes to it no longer ripple
+        // into the PGP stack.
+        let paths = vec!["crates/uselesskey-pgp-native/src/lib.rs".to_string()];
+        let plan = build_plan(&paths);
+        let impacted = &plan.impacted_crates;
+        assert!(impacted.contains("uselesskey-pgp-native"));
+        assert!(!impacted.contains("uselesskey-pgp"));
     }
 
     #[test]

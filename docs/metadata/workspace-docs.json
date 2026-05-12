@@ -559,12 +559,13 @@
     },
     {
       "name": "uselesskey-pgp-native",
-      "support_tier": "incubating",
+      "support_tier": "experimental",
       "publish_status": "published",
       "facade_exposed": false,
-      "semver_expectation": "Minor releases may refine APIs before 1.0.",
+      "semver_expectation": "Published-internal compatibility shim; `PgpNativeExt` is owned by `uselesskey-pgp` (under the `native` feature).",
       "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
-      "intended_audience": "adapter-users"
+      "intended_audience": "repo-internal",
+      "deprecation_note": "Prefer `uselesskey-pgp` with `features = [\"native\"]`; this crate is retained only as a compatibility shim."
     },
     {
       "name": "uselesskey-pkcs11-mock",
@@ -1129,7 +1130,8 @@
         {
           "crate_name": "uselesskey-pgp-native",
           "default_features": null,
-          "features": []
+          "features": [],
+          "version": "0.7.2"
         }
       ],
       "minimal_example_command": "cargo test -p uselesskey-pgp-native --no-default-features --features rsa"

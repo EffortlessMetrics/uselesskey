@@ -120,6 +120,9 @@ set of focused microcrates that each own a single concern:
 
 - `uselesskey-core-rustls-pki` — compatibility shim re-exporting the
   rustls-pki adapter traits now owned by `uselesskey-rustls`
+- `uselesskey-pgp-native` — compatibility shim re-exporting the native
+  `pgp` crate adapter (`PgpNativeExt`) now owned by `uselesskey-pgp`
+  under the `native` feature
 
 ### Adapter crates
 

@@ -923,6 +923,8 @@ const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-webauthn",
     "uselesskey-ssh",
     "uselesskey-pgp",
+    // PGP compatibility shim (depends on uselesskey-pgp)
+    "uselesskey-pgp-native",
     // X.509 (depends on core and downstream)
     "uselesskey-x509",
     // X.509 compatibility shims (depend on uselesskey-x509)
@@ -938,7 +940,6 @@ const PUBLISH_CRATES: &[&str] = &[
     // Adapters (depend on key crates, NOT on facade)
     "uselesskey-jsonwebtoken",
     "uselesskey-jose-openid",
-    "uselesskey-pgp-native",
     "uselesskey-rustls",
     // rustls compatibility shim (depends on uselesskey-rustls)
     "uselesskey-core-rustls-pki",

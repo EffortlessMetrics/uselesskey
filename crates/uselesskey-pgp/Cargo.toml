@@ -1,6 +1,6 @@
 [package]
 name = "uselesskey-pgp"
-version = "0.7.1"
+version = "0.7.2"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
@@ -16,7 +16,7 @@ authors.workspace = true
 
 [dependencies]
 uselesskey-core = { path = "../uselesskey-core", version = "0.7.1" }
-pgp = { version = "0.19.0", default-features = false }
+pgp = { workspace = true }
 rand_chacha = { version = "0.3.1", default-features = false }
 rand_core = { version = "0.6.4", default-features = false }
 
@@ -24,6 +24,13 @@ rand_core = { version = "0.6.4", default-features = false }
 proptest.workspace = true
 serde.workspace = true
 insta.workspace = true
+
+[features]
+# Re-export the native `pgp` crate adapter surface
+# (`PgpNativeExt` and impls). Off by default to keep the legacy `pgp` 0.19
+# / `rsa` 0.9 island from being forced on consumers that only want the
+# armored/binary byte surface owned by this crate.
+native = []
 
 [package.metadata.docs.rs]
 all-features = true

@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `uselesskey-rustls::srp::pki`. `uselesskey-core-rustls-pki` remains
   as a published-internal re-export shim for v0.7.x compat; scheduled
   for removal in a later v0.8.x PR.
+- Moved `PgpNativeExt` and its impls from `uselesskey-pgp-native` into
+  `uselesskey-pgp::native` (gated behind the new `native` Cargo feature).
+  `uselesskey-pgp-native` remains as a published-internal re-export
+  shim for v0.7.x compat; scheduled for removal in a later v0.8.0 PR.
 
 ## [0.7.1] - 2026-05-11
 

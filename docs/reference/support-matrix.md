@@ -52,7 +52,7 @@
 | `uselesskey-jsonwebtoken` | `stable` | `published` | — | `adapter-users` | Stable adapter API; follows upstream compatibility windows. | Tracks workspace MSRV (Rust 1.95). | — |
 | `uselesskey-jwk` | `stable` | `published` | ✓ | `most-users` | Normal semver guarantees for public APIs. | Tracks workspace MSRV (Rust 1.95). | — |
 | `uselesskey-pgp` | `stable` | `published` | ✓ | `most-users` | Normal semver guarantees for public APIs. | Tracks workspace MSRV (Rust 1.95). | — |
-| `uselesskey-pgp-native` | `incubating` | `published` | — | `adapter-users` | Minor releases may refine APIs before 1.0. | Tracks workspace MSRV (Rust 1.95). | — |
+| `uselesskey-pgp-native` | `experimental` | `published` | — | `repo-internal` | Published-internal compatibility shim; `PgpNativeExt` is owned by `uselesskey-pgp` (under the `native` feature). | Tracks workspace MSRV (Rust 1.95). | Prefer `uselesskey-pgp` with `features = ["native"]`; this crate is retained only as a compatibility shim. |
 | `uselesskey-pkcs11-mock` | `stable` | `published` | — | `most-users` | Normal semver guarantees for public APIs. | Tracks workspace MSRV (Rust 1.95). | — |
 | `uselesskey-ring` | `stable` | `published` | — | `adapter-users` | Stable adapter API; follows upstream compatibility windows. | Tracks workspace MSRV (Rust 1.95). | — |
 | `uselesskey-rsa` | `stable` | `published` | ✓ | `most-users` | Normal semver guarantees for public APIs. | Tracks workspace MSRV (Rust 1.95). | — |

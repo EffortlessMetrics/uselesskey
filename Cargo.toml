@@ -96,6 +96,8 @@ uselesskey-ecdsa = { path = "crates/uselesskey-ecdsa", version = "0.7.1" }
 uselesskey-ed25519 = { path = "crates/uselesskey-ed25519", version = "0.7.1" }
 uselesskey-hmac = { path = "crates/uselesskey-hmac", version = "0.7.2" }
 uselesskey-token = { path = "crates/uselesskey-token", version = "0.7.1" }
+uselesskey-pgp = { path = "crates/uselesskey-pgp", version = "0.7.2" }
+uselesskey-pgp-native = { path = "crates/uselesskey-pgp-native", version = "0.7.2" }
 uselesskey-x509 = { path = "crates/uselesskey-x509", version = "0.7.1" }
 uselesskey-core-base62 = { path = "crates/uselesskey-core-base62", version = "0.7.1" }
 uselesskey-core-cache = { path = "crates/uselesskey-core-cache", version = "0.7.1", default-features = false }
@@ -178,6 +180,9 @@ sha2 = "0.11.0"
 
 # JWT
 jsonwebtoken = { version = "10.3.0", features = ["use_pem", "rust_crypto"] }
+
+# OpenPGP — legacy upstream island (rsa 0.9 / rand_core 0.6).
+pgp = { version = "0.19.0", default-features = false }
 
 # TLS
 rustls = { version = "0.23.40", default-features = false, features = ["std", "tls12", "ring"] }

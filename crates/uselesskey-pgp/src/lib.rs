@@ -49,5 +49,11 @@
 mod keypair;
 mod spec;
 
+#[cfg(feature = "native")]
+pub mod native;
+
 pub use keypair::{DOMAIN_PGP_KEYPAIR, PgpFactoryExt, PgpKeyPair};
 pub use spec::PgpSpec;
+
+#[cfg(feature = "native")]
+pub use native::PgpNativeExt;
