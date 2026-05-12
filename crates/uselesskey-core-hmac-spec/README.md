@@ -1,6 +1,12 @@
 # uselesskey-core-hmac-spec
 
-Core `HmacSpec` model for uselesskey's test-fixture crates.
+Deprecated compatibility shim.
 
-This crate contains the stable algorithm enum and deterministic cache-key encoding
-used by higher-level HMAC fixture crates.
+The canonical `HmacSpec` type now lives under `uselesskey-hmac`:
+
+```rust
+use uselesskey_hmac::HmacSpec;
+```
+
+Prefer `uselesskey-hmac` or the `uselesskey` facade for supported HMAC
+fixture APIs.

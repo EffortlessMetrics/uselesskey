@@ -4784,6 +4784,7 @@ dependencies = [
  "insta",
  "proptest",
  "serde",
+ "uselesskey-hmac",
 ]
 
 [[package]]
@@ -5103,7 +5104,6 @@ dependencies = [
  "rand_core 0.10.1",
  "serde",
  "uselesskey-core",
- "uselesskey-core-hmac-spec",
  "uselesskey-jwk",
 ]
 

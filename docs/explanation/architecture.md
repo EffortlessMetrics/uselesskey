@@ -72,8 +72,9 @@ set of focused microcrates that each own a single concern:
 - `uselesskey-core-keypair` — shared PKCS#8/SPKI compatibility facade
 - `uselesskey-core-keypair-material` — PKCS#8/SPKI key-material helpers
   with PEM/DER encoding
-- `uselesskey-core-hmac-spec` — stable HMAC algorithm spec enum
-  (HS256/HS384/HS512)
+- `uselesskey-core-hmac-spec` — compatibility shim re-exporting the
+  HMAC algorithm spec enum (HS256/HS384/HS512) now owned by
+  `uselesskey-hmac`
 
 **JWK**
 
