@@ -881,7 +881,6 @@ fn feature_matrix_cmd() -> Result<()> {
 
 const PUBLISH_CRATES: &[&str] = &[
     // True leaf crates (no workspace deps)
-    "uselesskey-core-hmac-spec",
     "uselesskey-jwk",
     "uselesskey-core-kid",
     "uselesskey-core-jwk-shape",
@@ -910,6 +909,8 @@ const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-ecdsa",
     "uselesskey-ed25519",
     "uselesskey-hmac",
+    // HMAC compatibility shim (depends on uselesskey-hmac)
+    "uselesskey-core-hmac-spec",
     "uselesskey-token",
     // Token compatibility shims (depend on uselesskey-token)
     "uselesskey-token-spec",

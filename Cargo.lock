@@ -4779,11 +4779,12 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core-hmac-spec"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "insta",
  "proptest",
  "serde",
+ "uselesskey-hmac",
 ]
 
 [[package]]
@@ -5094,7 +5095,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-hmac"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "base64",
  "insta",
@@ -5103,7 +5104,6 @@ dependencies = [
  "rand_core 0.10.1",
  "serde",
  "uselesskey-core",
- "uselesskey-core-hmac-spec",
  "uselesskey-jwk",
 ]
 

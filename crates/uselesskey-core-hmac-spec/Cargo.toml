@@ -1,11 +1,11 @@
 [package]
 name = "uselesskey-core-hmac-spec"
-version = "0.7.1"
+version = "0.7.2"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-description = "HMAC algorithm spec model shared across uselesskey hmac-related crates."
+description = "Deprecated compatibility shim re-exporting HmacSpec from uselesskey-hmac."
 categories.workspace = true
 keywords = ["hmac", "jwt", "fixtures", "testing", "deterministic"]
 readme = "README.md"
@@ -13,6 +13,9 @@ exclude = ["fuzz/**", "corpus/**", "**/*.der", "**/*.pem"]
 homepage.workspace = true
 documentation = "https://docs.rs/uselesskey-core-hmac-spec"
 authors.workspace = true
+
+[dependencies]
+uselesskey-hmac.workspace = true
 
 [dev-dependencies]
 insta.workspace = true

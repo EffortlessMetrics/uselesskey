@@ -1,6 +1,6 @@
 [package]
 name = "uselesskey-hmac"
-version = "0.7.1"
+version = "0.7.2"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
@@ -16,7 +16,6 @@ authors.workspace = true
 
 [dependencies]
 uselesskey-core = { path = "../uselesskey-core", version = "0.7.1" }
-uselesskey-core-hmac-spec.workspace = true
 rand_chacha10.workspace = true
 rand_core10.workspace = true
 

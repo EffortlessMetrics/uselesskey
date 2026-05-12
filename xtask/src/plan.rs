@@ -217,7 +217,7 @@ fn dependents(crate_name: &str) -> &'static [&'static str] {
         "uselesskey-core-keypair" => &[],
         "uselesskey-core-base62" => &[],
         "uselesskey-core-factory" => &["uselesskey-core"],
-        "uselesskey-core-hmac-spec" => &["uselesskey-hmac"],
+        "uselesskey-core-hmac-spec" => &[],
         "uselesskey-core-negative-der" => &["uselesskey-core-negative"],
         "uselesskey-core-negative-pem" => &["uselesskey-core-negative"],
         "uselesskey-core-rustls-pki" => &["uselesskey-rustls"],
@@ -292,6 +292,7 @@ fn dependents(crate_name: &str) -> &'static [&'static str] {
             "uselesskey",
         ],
         "uselesskey-hmac" => &[
+            "uselesskey-core-hmac-spec",
             "uselesskey",
             "uselesskey-jsonwebtoken",
             "uselesskey-rustcrypto",
@@ -873,13 +874,15 @@ mod tests {
     }
 
     #[test]
-    fn core_hmac_spec_change_expands_to_hmac() {
+    fn core_hmac_spec_change_is_isolated_to_shim() {
+        // After v0.8.0 fold, `uselesskey-core-hmac-spec` is a leaf shim that
+        // re-exports from `uselesskey-hmac`. Changes to it no longer ripple
+        // into the HMAC stack.
         let paths = vec!["crates/uselesskey-core-hmac-spec/src/lib.rs".to_string()];
         let plan = build_plan(&paths);
         let impacted = &plan.impacted_crates;
         assert!(impacted.contains("uselesskey-core-hmac-spec"));
-        assert!(impacted.contains("uselesskey-hmac"));
-        assert!(impacted.contains("uselesskey"));
+        assert!(!impacted.contains("uselesskey-hmac"));
     }
 
     #[test]

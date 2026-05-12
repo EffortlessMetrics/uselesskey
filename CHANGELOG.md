@@ -18,6 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   proof artifact for the TLS contract pack, mirroring the OIDC pattern.
   Included in the minor-release `release-evidence` step list.
 
+### Changed
+
+- Moved `HmacSpec` and its helpers from `uselesskey-core-hmac-spec`
+  into `uselesskey-hmac::srp::spec`. `uselesskey-core-hmac-spec`
+  remains as a published-internal re-export shim for v0.7.x compat;
+  scheduled for removal in a later v0.8.x PR.
+
 ## [0.7.1] - 2026-05-11
 
 Release-hardening patch for v0.7.0. Adds publish-system guardrails,

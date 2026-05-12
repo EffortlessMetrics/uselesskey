@@ -53,6 +53,8 @@
 
 mod secret;
 mod spec;
+#[doc(hidden)]
+pub mod srp;
 
 pub use secret::{DOMAIN_HMAC_SECRET, HmacFactoryExt, HmacSecret};
 pub use spec::HmacSpec;
