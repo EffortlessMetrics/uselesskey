@@ -166,6 +166,12 @@ enum Cmd {
         #[arg(long)]
         check: bool,
     },
+    /// Regenerate public Shields endpoint badge JSON.
+    Badges {
+        /// Regenerate into target/xtask/badges and fail if committed endpoints drift.
+        #[arg(long)]
+        check: bool,
+    },
     /// External install smoke against crates.io or a local path.
     ///
     /// Builds a fresh binary crate outside the workspace, depends on
@@ -440,6 +446,7 @@ fn main() -> Result<()> {
                 bail!("scanner-safe-reference requires --check")
             }
         }
+        Cmd::Badges { check } => badges(check),
         Cmd::CratesioSmoke {
             version,
             path,
@@ -649,6 +656,20 @@ fn read_json_file<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T> {
     let raw =
         fs::read_to_string(path).with_context(|| format!("failed to read {}", path.display()))?;
     serde_json::from_str(&raw).with_context(|| format!("failed to parse {}", path.display()))
+}
+
+fn compare_files(expected: &Path, actual: &Path) -> Result<()> {
+    let expected_bytes =
+        fs::read(expected).with_context(|| format!("failed to read {}", expected.display()))?;
+    let actual_bytes =
+        fs::read(actual).with_context(|| format!("failed to read {}", actual.display()))?;
+    if expected_bytes != actual_bytes {
+        bail!(
+            "{} drifted; run `cargo xtask badges` and commit the refreshed endpoint",
+            expected.display()
+        );
+    }
+    Ok(())
 }
 
 fn run(cmd: &mut Command) -> Result<()> {
@@ -3813,6 +3834,134 @@ fn scanner_safe_reference_compare_bytes(expected_path: &Path, actual_path: &Path
         actual_lines.len(),
         first_diff
     );
+}
+
+const BADGE_ENDPOINT_DIR: &str = "badges";
+const BADGE_ENDPOINT_TARGET_DIR: &str = "target/xtask/badges";
+
+#[derive(Clone, Debug, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
+struct ShieldsEndpointBadge {
+    #[serde(rename = "schemaVersion")]
+    schema_version: u8,
+    label: String,
+    message: String,
+    color: String,
+}
+
+fn badges(check: bool) -> Result<()> {
+    let target_dir = Path::new(BADGE_ENDPOINT_TARGET_DIR);
+    fs::create_dir_all(target_dir)
+        .with_context(|| format!("failed to create {}", target_dir.display()))?;
+
+    let ripr_plus = ripr_plus_badge()?;
+    validate_shields_badge(&ripr_plus, Some("ripr+"))?;
+    write_json_pretty(&target_dir.join("ripr-plus.json"), &ripr_plus)?;
+
+    match scanner_safe_badge() {
+        Ok(scanner_safe) => {
+            validate_shields_badge(&scanner_safe, Some("fixtures"))?;
+            write_json_pretty(&target_dir.join("scanner-safe.json"), &scanner_safe)?;
+        }
+        Err(err) => {
+            let failure = ShieldsEndpointBadge {
+                schema_version: 1,
+                label: "fixtures".to_string(),
+                message: "blob-risk".to_string(),
+                color: "red".to_string(),
+            };
+            write_json_pretty(&target_dir.join("scanner-safe.json"), &failure)?;
+            return Err(err).context("scanner-safe badge generation failed");
+        }
+    }
+
+    if check {
+        for file in ["ripr-plus.json", "scanner-safe.json"] {
+            compare_files(
+                &Path::new(BADGE_ENDPOINT_DIR).join(file),
+                &target_dir.join(file),
+            )?;
+        }
+        println!("badges: committed endpoints are current");
+    } else {
+        let committed_dir = Path::new(BADGE_ENDPOINT_DIR);
+        fs::create_dir_all(committed_dir)
+            .with_context(|| format!("failed to create {}", committed_dir.display()))?;
+        for file in ["ripr-plus.json", "scanner-safe.json"] {
+            fs::copy(target_dir.join(file), committed_dir.join(file)).with_context(|| {
+                format!("failed to refresh {}", committed_dir.join(file).display())
+            })?;
+        }
+        println!("badges: refreshed public endpoint JSON under {BADGE_ENDPOINT_DIR}/");
+    }
+
+    Ok(())
+}
+
+fn ripr_plus_badge() -> Result<ShieldsEndpointBadge> {
+    let ripr_bin = env::var("RIPR_BIN").unwrap_or_else(|_| "ripr".to_string());
+    let output = Command::new(&ripr_bin)
+        .args(["check", "--root", ".", "--format", "repo-badge-plus-shields"])
+        .output()
+        .with_context(|| format!("failed to spawn {ripr_bin:?}"))?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        bail!(
+            "{ripr_bin} repo-badge-plus-shields failed with status {}: {}",
+            output.status,
+            stderr
+        );
+    }
+    serde_json::from_slice(&output.stdout)
+        .with_context(|| format!("{ripr_bin} emitted invalid Shields endpoint JSON"))
+}
+
+fn scanner_safe_badge() -> Result<ShieldsEndpointBadge> {
+    let offenders = find_secret_blobs()?;
+    if !offenders.is_empty() {
+        let mut msg =
+            String::from("found secret-shaped fixtures while generating scanner-safe badge:");
+        for hit in &offenders {
+            msg.push_str(&format!(
+                "\n  {}\n    kind: {}\n    fix:  {}",
+                hit.rel_path, hit.kind, hit.suggestion
+            ));
+        }
+        bail!("{msg}");
+    }
+    Ok(ShieldsEndpointBadge {
+        schema_version: 1,
+        label: "fixtures".to_string(),
+        message: "scanner-safe".to_string(),
+        color: "brightgreen".to_string(),
+    })
+}
+
+fn validate_shields_badge(
+    badge: &ShieldsEndpointBadge,
+    expected_label: Option<&str>,
+) -> Result<()> {
+    if badge.schema_version != 1 {
+        bail!(
+            "badge `{}` has unsupported schemaVersion {}; expected 1",
+            badge.label,
+            badge.schema_version
+        );
+    }
+    if let Some(expected_label) = expected_label
+        && badge.label != expected_label
+    {
+        bail!(
+            "badge label drifted: got `{}`, expected `{expected_label}`",
+            badge.label
+        );
+    }
+    if badge.message.trim().is_empty() {
+        bail!("badge `{}` has an empty message", badge.label);
+    }
+    if badge.color.trim().is_empty() {
+        bail!("badge `{}` has an empty color", badge.label);
+    }
+    Ok(())
 }
 
 /// External install smoke. Proves the published-manifest view by building
@@ -7634,6 +7783,35 @@ index 1111111..2222222 100644
             step.command,
             &["cargo", "xtask", "scanner-safe-reference", "--check"],
         );
+    }
+
+    #[test]
+    fn shields_badge_validation_accepts_expected_shape() {
+        let badge = ShieldsEndpointBadge {
+            schema_version: 1,
+            label: "ripr+".to_string(),
+            message: "0".to_string(),
+            color: "brightgreen".to_string(),
+        };
+
+        validate_shields_badge(&badge, Some("ripr+")).expect("valid badge shape");
+    }
+
+    #[test]
+    fn scanner_safe_badge_success_shape_is_stable() {
+        let badge = ShieldsEndpointBadge {
+            schema_version: 1,
+            label: "fixtures".to_string(),
+            message: "scanner-safe".to_string(),
+            color: "brightgreen".to_string(),
+        };
+
+        let json = serde_json::to_string_pretty(&badge).expect("serialize badge");
+
+        assert!(json.contains(r#""schemaVersion": 1"#));
+        assert!(json.contains(r#""label": "fixtures""#));
+        assert!(json.contains(r#""message": "scanner-safe""#));
+        assert!(json.contains(r#""color": "brightgreen""#));
     }
 
     #[test]
