@@ -7,3 +7,4 @@ to hosted CI while making heavy evidence routing explain itself.
 
 - [implementation-plan.md](implementation-plan.md) - PR sequence, proof
   commands, non-goals, and stop conditions.
+- [closeout.md](closeout.md) - implemented surface, proof, and next safe action.
