@@ -2,7 +2,7 @@
 id = "USELESSKEY-PLAN-0001"
 kind = "plan"
 title = "Spec-system rollout"
-status = "accepted"
+status = "implemented"
 owner = "EffortlessMetrics"
 created = "2026-05-13"
 milestone = "v0.9.0"
@@ -86,10 +86,12 @@ Completed:
 12. Wire `spec-check` into docs and PR evidence.
 13. Wire `spec-check` into patch and minor release evidence.
 
-Remaining:
-
 14. Close out the lane with a learning record and archived or updated active
     goal manifest.
+
+Remaining:
+
+- None. Follow-up product lanes should start from a new active goal manifest.
 
 ## Proof Commands
 
