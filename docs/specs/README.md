@@ -36,3 +36,4 @@ public crate-surface cleanup.
 ## Current Specs
 
 - [USELESSKEY-SPEC-0001: Source-of-truth model](USELESSKEY-SPEC-0001-source-of-truth-model.md)
+- [USELESSKEY-SPEC-0002: Public claim ledger](USELESSKEY-SPEC-0002-public-claim-ledger.md)

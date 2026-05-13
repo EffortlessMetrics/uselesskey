@@ -1,0 +1,213 @@
+schema_version = 1
+owner = "EffortlessMetrics"
+updated = "2026-05-13"
+
+[[claim]]
+id = "scanner-safe-fixtures"
+title = "Scanner-safe fixtures"
+status = "stable"
+spec = "USELESSKEY-SPEC-0002"
+surfaces = [
+  "README badge",
+  "docs/VERIFICATION.md",
+  "docs/reference/audit-surface.md",
+  "docs/status/PUBLIC_CLAIMS.md",
+]
+proof_commands = [
+  "cargo xtask scanner-safe-reference --check",
+  "cargo xtask no-blob",
+  "cargo xtask badges --check",
+]
+artifacts = [
+  "badges/scanner-safe.json",
+  "target/release-evidence/scanner-safe/scanner-safe-bundle-proof.json",
+  "target/release-evidence/scanner-safe/scanner-safe-bundle-proof.md",
+]
+docs = [
+  "docs/VERIFICATION.md",
+  "docs/how-to/downstream-fixture-policy.md",
+  "docs/how-to/generate-scanner-safe-k8s-secret.md",
+]
+release_lanes = ["pr", "patch", "minor"]
+boundary = "Scanner-safe fixture material means repo policy found no committed secret-shaped fixture blobs; it does not mean every encoded export is safe to commit or that uselesskey provides production key management."
+
+[[claim]]
+id = "ripr-plus-evidence-endpoint"
+title = "ripr+ evidence endpoint"
+status = "stable"
+spec = "USELESSKEY-SPEC-0002"
+surfaces = [
+  "README badge",
+  "badges/ripr-plus.json",
+  "docs/VERIFICATION.md",
+  "docs/status/PUBLIC_CLAIMS.md",
+]
+proof_commands = [
+  "cargo xtask badges --check",
+  "cargo xtask test-efficiency-report",
+]
+artifacts = [
+  "badges/ripr-plus.json",
+  "target/ripr/reports/test-efficiency.json",
+  "target/ripr/reports/test-efficiency.md",
+]
+docs = [
+  "docs/VERIFICATION.md",
+]
+release_lanes = ["pr", "main", "patch", "minor"]
+boundary = "ripr+ is a repo-scoped static evidence and test-efficiency inbox-zero counter; it is not coverage, runtime mutation proof, correctness proof, or a PR-scoped review artifact."
+
+[[claim]]
+id = "tls-contract-pack"
+title = "TLS contract pack"
+status = "stable"
+spec = "USELESSKEY-SPEC-0002"
+surfaces = [
+  "README",
+  "docs/how-to/test-tls-chain-validation.md",
+  "docs/status/PUBLIC_CLAIMS.md",
+]
+proof_commands = [
+  "cargo xtask bundle-proof --profile tls --out target/release-evidence/tls",
+  "cargo xtask no-blob",
+]
+artifacts = [
+  "target/release-evidence/tls/tls-contract-pack-proof.json",
+  "target/release-evidence/tls/tls-contract-pack-proof.md",
+]
+docs = [
+  "docs/how-to/test-tls-chain-validation.md",
+  "docs/release/v0.8.0-tls-profile-design.md",
+]
+release_lanes = ["minor"]
+boundary = "The TLS contract pack proves the documented generated fixtures, receipts, and negative validation paths; it does not prove mTLS, revocation, CT, browser trust-store behavior, production CA custody, or downstream verifier correctness."
+
+[[claim]]
+id = "oidc-jwks-contract-pack"
+title = "OIDC/JWKS contract pack"
+status = "stable"
+spec = "USELESSKEY-SPEC-0002"
+surfaces = [
+  "README",
+  "docs/how-to/test-oidc-jwks-validation.md",
+  "docs/status/PUBLIC_CLAIMS.md",
+]
+proof_commands = [
+  "cargo xtask bundle-proof --profile oidc --out target/release-evidence/oidc",
+  "cargo xtask no-blob",
+]
+artifacts = [
+  "target/release-evidence/oidc/oidc-contract-pack-proof.json",
+  "target/release-evidence/oidc/oidc-contract-pack-proof.md",
+]
+docs = [
+  "docs/how-to/test-oidc-jwks-validation.md",
+  "docs/how-to/test-jwt-negative-validation.md",
+]
+release_lanes = ["minor"]
+boundary = "The OIDC/JWKS contract pack proves deterministic key-set and token-shape fixtures plus documented negatives; it does not prove production signing-key custody, full OpenID provider behavior, or downstream validator correctness."
+
+[[claim]]
+id = "public-crate-surface-cleanup"
+title = "Public crate-surface cleanup"
+status = "stable"
+spec = "USELESSKEY-SPEC-0002"
+surfaces = [
+  "README workspace crate list",
+  "docs/architecture/public-surface.md",
+  "docs/how-to/migrate-to-v0.8.md",
+  "docs/status/PUBLIC_CLAIMS.md",
+]
+proof_commands = [
+  "cargo xtask public-surface",
+  "cargo xtask publish-check",
+  "cargo xtask publish-preflight",
+]
+artifacts = [
+  "target/xtask/public-surface/latest.json",
+  "target/xtask/public-surface/latest.md",
+]
+docs = [
+  "docs/architecture/public-surface.md",
+  "docs/how-to/migrate-to-v0.8.md",
+]
+release_lanes = ["patch", "minor"]
+boundary = "The public crate surface is the supported published contract for the current release; removed internal compatibility shims are not promised as v0.8.0 crates."
+
+[[claim]]
+id = "external-cratesio-install-smoke"
+title = "External crates.io install smoke"
+status = "release-proof"
+spec = "USELESSKEY-SPEC-0002"
+surfaces = [
+  "release evidence",
+  "docs/release/post-release-audit.md",
+  "docs/status/PUBLIC_CLAIMS.md",
+]
+proof_commands = [
+  "cargo xtask cratesio-smoke --version 0.8.0",
+]
+artifacts = [
+  "target/xtask/cratesio-smoke",
+]
+docs = [
+  "docs/release/post-release-audit.md",
+]
+release_lanes = ["post-release", "minor"]
+boundary = "Crates.io smoke proves the external install path for one published version; it does not prove every downstream feature combination, docs.rs completion, or future registry state."
+
+[[claim]]
+id = "generated-badge-endpoints"
+title = "Generated badge endpoints"
+status = "stable"
+spec = "USELESSKEY-SPEC-0002"
+surfaces = [
+  "README badge masthead",
+  "badges/README.md",
+  "docs/VERIFICATION.md",
+  "docs/status/PUBLIC_CLAIMS.md",
+]
+proof_commands = [
+  "cargo xtask badges",
+  "cargo xtask badges --check",
+]
+artifacts = [
+  "badges/ripr-plus.json",
+  "badges/scanner-safe.json",
+  "target/xtask/badges",
+]
+docs = [
+  "badges/README.md",
+  "docs/VERIFICATION.md",
+]
+release_lanes = ["pr", "main", "patch", "minor"]
+boundary = "Generated badge endpoints are public Shields JSON receipts checked into badges/; detailed reports stay under target/ or CI artifacts and badge JSON must not be hand-written."
+
+[[claim]]
+id = "ripr-pr-review-evidence"
+title = "ripr PR review evidence"
+status = "advisory"
+spec = "USELESSKEY-SPEC-0002"
+surfaces = [
+  "PR summaries",
+  "GitHub warning annotations",
+  "CI artifacts",
+  "docs/VERIFICATION.md",
+  "docs/status/PUBLIC_CLAIMS.md",
+]
+proof_commands = [
+  "cargo xtask ripr-pr --check",
+  "cargo xtask ripr-review-comments --check",
+]
+artifacts = [
+  "target/ripr/pr/repo-exposure.json",
+  "target/ripr/pr/repo-exposure.md",
+  "target/ripr/review/comments.json",
+  "target/ripr/review/comments.md",
+]
+docs = [
+  "docs/VERIFICATION.md",
+  "docs/ci/test-evidence-lanes.md",
+]
+release_lanes = ["pr"]
+boundary = "ripr PR review evidence is diff-scoped and advisory; comments[] can produce non-blocking warnings, summary_only[] stays in summaries or artifacts, and inline PR comments remain disabled by default."

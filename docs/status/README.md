@@ -8,7 +8,7 @@ proposal, behavior contract in a spec, and historical lessons in `docs/learnings
 
 ## Expected Surfaces
 
-Future status docs should cover:
+Status docs cover:
 
 - Public README claims and their proof commands
 - Support tiers for contract packs and adapter surfaces
@@ -17,3 +17,7 @@ Future status docs should cover:
 
 No status page should imply enforcement before the matching spec and `xtask`
 check exist.
+
+## Index
+
+- [PUBLIC_CLAIMS.md](PUBLIC_CLAIMS.md) - Public claim to proof-command and boundary map

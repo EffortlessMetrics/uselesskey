@@ -1,0 +1,42 @@
+# Public Claims
+
+This page summarizes public `uselesskey` claims and points to the command-backed
+ledger in [`policy/claim-ledger.toml`](../../policy/claim-ledger.toml).
+
+The Markdown page is for readers. The TOML ledger is the future parser target
+for `cargo xtask spec-check`.
+
+## Claim Statuses
+
+| Status | Meaning |
+| --- | --- |
+| `stable` | User-facing claim that should be proven in normal PR, docs, or release evidence when touched. |
+| `release-proof` | Claim whose primary proof is an external or shipped-state release lane. |
+| `advisory` | Reviewer or agent evidence that informs work but does not make a user-facing guarantee by itself. |
+
+## Current Claims
+
+| Claim | Status | Primary proof | Boundary |
+| --- | --- | --- | --- |
+| Scanner-safe fixtures | `stable` | `cargo xtask scanner-safe-reference --check`; `cargo xtask no-blob`; `cargo xtask badges --check` | Scanner-safe fixture material does not mean every encoded export is safe to commit. |
+| `ripr+` evidence endpoint | `stable` | `cargo xtask badges --check`; `cargo xtask test-efficiency-report` | `ripr+` is repo-scoped static evidence, not coverage or correctness proof. |
+| TLS contract pack | `stable` | `cargo xtask bundle-proof --profile tls --out target/release-evidence/tls` | TLS fixtures prove the documented pack paths and negatives, not mTLS, revocation, CT, browser trust stores, or production CA custody. |
+| OIDC/JWKS contract pack | `stable` | `cargo xtask bundle-proof --profile oidc --out target/release-evidence/oidc` | OIDC/JWKS fixtures prove key-set and token-shape contract paths, not production signing-key custody or full OpenID provider behavior. |
+| Public crate-surface cleanup | `stable` | `cargo xtask public-surface`; `cargo xtask publish-check` | The supported public crate surface is the current published contract; removed internal shims are not promised as v0.8.0 crates. |
+| External crates.io install smoke | `release-proof` | `cargo xtask cratesio-smoke --version 0.8.0` | Crates.io smoke proves an external install path for a published version, not every downstream feature combination. |
+| Generated badge endpoints | `stable` | `cargo xtask badges --check` | Badge JSON is a generated Shields endpoint receipt, not a hand-written slogan. |
+| `ripr` PR review evidence | `advisory` | `cargo xtask ripr-pr --check`; `cargo xtask ripr-review-comments --check` | PR evidence is diff-scoped and advisory; it is not the repo-scoped README `ripr+` badge. |
+
+## Reader Rule
+
+Public claims should answer four questions:
+
+```text
+what is promised?
+what command proves it?
+where is the generated artifact or receipt?
+what is explicitly outside the boundary?
+```
+
+If a claim cannot answer those questions, it should stay out of the README
+masthead and release headline until the proof path exists.
