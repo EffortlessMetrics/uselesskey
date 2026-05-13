@@ -72,6 +72,13 @@ struct SnippetDependency {
     crate_name: String,
     default_features: Option<bool>,
     features: Vec<String>,
+    /// Optional version override; when present, used in place of
+    /// `DocsMetadata::release_version` for this dependency only.
+    /// Use when an individual crate has been bumped ahead of the
+    /// workspace release version (e.g. a v0.8.0 SRP fold landing
+    /// while the rest of the workspace is still on v0.7.1).
+    #[serde(default)]
+    version: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -300,7 +307,8 @@ fn render_dependency_snippets(metadata: &DocsMetadata) -> String {
 fn render_single_dependency_snippet(item: &DependencySnippet, version: &str) -> String {
     let mut snippet = String::from("[dev-dependencies]\n");
     for dep in &item.dependencies {
-        let mut parts = vec![format!("version = \"{version}\"")];
+        let dep_version = dep.version.as_deref().unwrap_or(version);
+        let mut parts = vec![format!("version = \"{dep_version}\"")];
         if dep.default_features == Some(false) {
             parts.push("default-features = false".to_string());
         }
@@ -873,6 +881,7 @@ mod tests {
                 crate_name: "uselesskey".to_string(),
                 default_features: None,
                 features: vec!["rsa".to_string(), "jwk".to_string()],
+                version: None,
             }],
             minimal_example_command: "cargo run -p uselesskey --example jwt_rs256_jwks --no-default-features --features rsa,jwk".to_string(),
         };
@@ -881,6 +890,42 @@ mod tests {
         assert_eq!(
             rendered,
             "[dev-dependencies]\nuselesskey = { version = \"9.9.9\", features = [\"rsa\", \"jwk\"] }"
+        );
+    }
+
+    #[test]
+    fn dependency_snippet_per_dep_version_override_wins_over_release_version() {
+        // Used when a single crate has been bumped ahead of the
+        // workspace-wide `release_version` (e.g. the v0.8.0 SRP-fold
+        // pattern where one fold-target crate goes to 0.7.2 while the
+        // rest of the workspace stays on 0.7.1).
+        let entry = DependencySnippet {
+            name: "X.509 + rustls".to_string(),
+            dependencies: vec![
+                SnippetDependency {
+                    crate_name: "uselesskey".to_string(),
+                    default_features: None,
+                    features: vec!["x509".to_string()],
+                    version: None,
+                },
+                SnippetDependency {
+                    crate_name: "uselesskey-rustls".to_string(),
+                    default_features: None,
+                    features: vec!["tls-config".to_string(), "rustls-ring".to_string()],
+                    version: Some("0.7.2".to_string()),
+                },
+            ],
+            minimal_example_command: String::new(),
+        };
+
+        let rendered = render_single_dependency_snippet(&entry, "0.7.1");
+        assert_eq!(
+            rendered,
+            concat!(
+                "[dev-dependencies]\n",
+                "uselesskey = { version = \"0.7.1\", features = [\"x509\"] }\n",
+                "uselesskey-rustls = { version = \"0.7.2\", features = [\"tls-config\", \"rustls-ring\"] }"
+            )
         );
     }
 

@@ -41,84 +41,48 @@ Each adds a `*FactoryExt` trait to `Factory`:
   base62 helpers, token-shape construction, and negative fixtures under
   `uselesskey_token::srp::*`
 
-### Core microcrates
+### Core internals (single-responsibility modules)
 
-`uselesskey-core` is the public entry point; internally it re-exports a
-set of focused microcrates that each own a single concern:
+> **v0.8.0.** The v0.7.x line shipped each internal responsibility as its
+> own published-internal compatibility shim crate (`uselesskey-core-cache`,
+> `uselesskey-core-factory`, the `uselesskey-core-x509-*` shards,
+> `uselesskey-token-spec`, `uselesskey-pgp-native`, `uselesskey-jose-openid`,
+> etc.). v0.8.0 removes all 29 fully-folded shims; the canonical implementations
+> live as `srp::*` modules under their owner crates and the responsibility
+> boundary is preserved at the module level instead of the crate level.
 
-**Identity & derivation**
+`uselesskey-core` owns identity, derivation, factory/cache, sinks, and
+generic negative-fixture helpers. The internal modules are documented but
+not part of the public API surface:
 
-- `uselesskey-core-id` — artifact ID tuple (domain, label, spec, variant,
-  derivation version)
-- `uselesskey-core-seed` — seed parsing, redaction, and BLAKE3-backed
-  entropy
-- `uselesskey-core-hash` — length-prefixed BLAKE3 hashing for
-  deterministic derivation
-- `uselesskey-core-kid` — compatibility shim for deterministic key-ID
-  (kid) generation now owned by `uselesskey-jwk`
-- `uselesskey-core-base62` — compatibility shim for base62 helpers now owned
-  by `uselesskey-token`
+- `uselesskey_core::srp::identity` — artifact ID tuple
+  (domain, label, spec, variant, derivation version)
+- `uselesskey_core::srp::seed` — seed parsing and redaction
+- `uselesskey_core::srp::hash` — length-prefixed BLAKE3 hashing
+- `uselesskey_core::srp::factory` — factory orchestration (Random /
+  Deterministic mode, derivation dispatch)
+- `uselesskey_core::srp::cache` — per-factory artifact cache (DashMap +
+  `Arc<dyn Any>`) keyed by identity
+- `uselesskey_core::srp::sink` — tempfile-backed artifact sinks
+- `uselesskey_core::srp::keypair` / `keypair_material` — shared PKCS#8 /
+  SPKI helpers used by RSA / ECDSA / Ed25519
+- `uselesskey_core::srp::negative` — generic DER / PEM corruption helpers
+  (`negative::der::*`, `negative::pem::*`)
 
-**Factory & caching**
+Fixture-family crates own their model and shape internals as `srp::*`
+modules:
 
-- `uselesskey-core-factory` — factory orchestration: mode
-  (Random/Deterministic), derivation dispatch, artifact generation
-- `uselesskey-core-cache` — per-factory artifact cache keyed by identity
-  (DashMap + `Arc<dyn Any>`)
-- `uselesskey-core-sink` — tempfile-backed artifact sinks for disk output
-
-**Key material**
-
-- `uselesskey-core-keypair` — shared PKCS#8/SPKI compatibility facade
-- `uselesskey-core-keypair-material` — PKCS#8/SPKI key-material helpers
-  with PEM/DER encoding
-- `uselesskey-core-hmac-spec` — stable HMAC algorithm spec enum
-  (HS256/HS384/HS512)
-
-**JWK**
-
-- `uselesskey-core-jwk` — compatibility shim for typed JWK/JWKS models
-- `uselesskey-core-jwk-builder` — compatibility shim for `JwksBuilder`
-- `uselesskey-core-jwk-shape` — compatibility shim for structured JWK
-  types and JWKS collection serialization
-- `uselesskey-core-jwks-order` — compatibility shim for stable
-  kid-sorted ordering helper
-
-**Token**
-
-- `uselesskey-token-spec` — compatibility shim for `TokenSpec`
-- `uselesskey-core-token` — compatibility shim for token shape primitives
-- `uselesskey-core-token-shape` — compatibility shim for token generation
-  primitives (API keys, bearer tokens, OAuth)
-
-**Negative fixtures**
-
-- `uselesskey-core-negative` — compatibility facade for DER/PEM
-  corruption builders
-- `uselesskey-core-negative-der` — DER corruption (truncation,
-  byte-flipping)
-- `uselesskey-core-negative-pem` — PEM corruption (deterministic
-  `CorruptPem` strategies)
-
-**X.509**
-
-- `uselesskey-core-x509-spec` — compatibility shim for X.509 spec models
-  now owned by `uselesskey-x509`
-- `uselesskey-core-x509-derive` — compatibility shim for deterministic
-  X.509 helpers now owned by `uselesskey-x509`
-- `uselesskey-core-x509` — compatibility shim for X.509 policy helpers
-  and negative-policy types
-- `uselesskey-core-x509-negative` — compatibility shim for certificate
-  negative policies (expired, wrong-usage)
-- `uselesskey-core-x509-chain-negative` — compatibility shim for
-  chain-level negative policies (hostname mismatch, unknown CA,
-  expired/not-yet-valid leaf and intermediate, intermediate CA/key-usage
-  violations, revoked leaf)
-
-**Adapter bridge**
-
-- `uselesskey-core-rustls-pki` — rustls-pki-types adapter traits for
-  converting fixtures to PKI types
+- `uselesskey_jwk::srp::{kid, builder, ordering, shape}` — JWK / JWKS
+  models, deterministic kid, JwksBuilder, stable kid ordering
+- `uselesskey_token::srp::{base62, shape, spec}` — token shapes
+  (api-key / bearer / OAuth), TokenSpec, base62 helper
+- `uselesskey_x509::srp::{spec, derive, policy, negative, chain_negative}`
+  — X.509 specs, deterministic derivation, single-cert and chain negative
+  policies
+- `uselesskey_hmac::srp::spec` — HmacSpec enum
+- `uselesskey_rustls::srp::pki` — rustls-pki conversion traits
+- `uselesskey_pgp::native` — native `pgp` crate adapter
+  (`PgpNativeExt`, feature-gated on `native`)
 
 ### Adapter crates
 

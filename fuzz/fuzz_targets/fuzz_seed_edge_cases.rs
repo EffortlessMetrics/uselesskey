@@ -4,7 +4,8 @@ use arbitrary::Arbitrary;
 use libfuzzer_sys::fuzz_target;
 
 use uselesskey::Seed;
-use uselesskey_core_id::{ArtifactId, DerivationVersion, derive_seed};
+use uselesskey_core::srp::identity::derive_seed;
+use uselesskey_core::{ArtifactId, DerivationVersion};
 
 #[derive(Arbitrary, Debug)]
 struct SeedEdgeInput {

@@ -1,9 +1,9 @@
 #[cfg(feature = "uk-core-id")]
 use cucumber::{given, then, when};
 #[cfg(feature = "uk-core-id")]
-use uselesskey_core_hash::{Hasher, hash32};
+use uselesskey_core::srp::hash::{Hasher, hash32};
 #[cfg(feature = "uk-core-id")]
-use uselesskey_core_id::{ArtifactId, DerivationVersion, Seed, derive_seed};
+use uselesskey_core::srp::identity::{ArtifactId, DerivationVersion, Seed, derive_seed};
 
 #[cfg(feature = "uk-core-id")]
 #[given(regex = r#"^a core-id master seed "([^"]+)"$"#)]
@@ -81,12 +81,12 @@ fn core_id_hash32_stable(_world: &mut crate::UselessWorld, input: String) {
 #[then("core-id length-prefixed hashing should distinguish split boundaries")]
 fn core_id_length_prefix_boundary_safe(_world: &mut crate::UselessWorld) {
     let mut first = Hasher::new();
-    uselesskey_core_id::write_len_prefixed(&mut first, b"ab");
-    uselesskey_core_id::write_len_prefixed(&mut first, b"c");
+    uselesskey_core::srp::hash::write_len_prefixed(&mut first, b"ab");
+    uselesskey_core::srp::hash::write_len_prefixed(&mut first, b"c");
 
     let mut second = Hasher::new();
-    uselesskey_core_id::write_len_prefixed(&mut second, b"a");
-    uselesskey_core_id::write_len_prefixed(&mut second, b"bc");
+    uselesskey_core::srp::hash::write_len_prefixed(&mut second, b"a");
+    uselesskey_core::srp::hash::write_len_prefixed(&mut second, b"bc");
 
     assert_ne!(first.finalize(), second.finalize());
 }

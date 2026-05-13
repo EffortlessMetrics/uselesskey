@@ -2,8 +2,7 @@
 
 use libfuzzer_sys::fuzz_target;
 
-use uselesskey_core_x509_negative::{ChainNegative, X509Negative};
-use uselesskey_core_x509_spec::{ChainSpec, KeyUsage, NotBeforeOffset, X509Spec};
+use uselesskey_x509::{ChainNegative, ChainSpec, KeyUsage, NotBeforeOffset, X509Negative, X509Spec};
 
 /// Build an ASCII-safe label from fuzz bytes.
 fn ascii_label(bytes: &[u8]) -> String {

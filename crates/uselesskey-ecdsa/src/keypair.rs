@@ -9,8 +9,8 @@ use rand_chacha10::ChaCha20Rng;
 use rand_core10::SeedableRng;
 use uselesskey_core::negative::CorruptPem;
 use uselesskey_core::sink::TempArtifact;
+use uselesskey_core::srp::keypair_material::Pkcs8SpkiKeyMaterial;
 use uselesskey_core::{Error, Factory};
-use uselesskey_core_keypair_material::Pkcs8SpkiKeyMaterial;
 
 use crate::EcdsaSpec;
 

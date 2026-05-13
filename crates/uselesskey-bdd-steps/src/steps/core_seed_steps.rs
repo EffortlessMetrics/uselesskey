@@ -1,7 +1,7 @@
 #[cfg(feature = "uk-core-seed")]
 use cucumber::{given, then};
 #[cfg(feature = "uk-core-seed")]
-use uselesskey_core_seed::Seed;
+use uselesskey_core::srp::seed::Seed;
 
 #[cfg(feature = "uk-core-seed")]
 #[given(regex = r#"^a core-seed raw value "([^"]+)"$"#)]

@@ -171,13 +171,13 @@ struct UselessWorld {
     deterministic_bytes_2: Option<Vec<u8>>,
 
     #[cfg(feature = "uk-core-id")]
-    core_id_seed_master: Option<uselesskey_core_id::Seed>,
+    core_id_seed_master: Option<uselesskey_core::srp::identity::Seed>,
     #[cfg(feature = "uk-core-id")]
-    core_id_seed_first: Option<uselesskey_core_id::Seed>,
+    core_id_seed_first: Option<uselesskey_core::srp::identity::Seed>,
     #[cfg(feature = "uk-core-id")]
-    core_id_seed_second: Option<uselesskey_core_id::Seed>,
+    core_id_seed_second: Option<uselesskey_core::srp::identity::Seed>,
     #[cfg(feature = "uk-core-seed")]
-    core_seed_seed: Option<uselesskey_core_seed::Seed>,
+    core_seed_seed: Option<uselesskey_core::srp::seed::Seed>,
     #[cfg(feature = "uk-core-seed")]
     core_seed_error: Option<String>,
     #[cfg(feature = "uk-core-factory")]
@@ -191,7 +191,7 @@ struct UselessWorld {
     #[cfg(any(feature = "uk-core-kid", feature = "uk-core-keypair"))]
     core_kid_second: Option<String>,
     #[cfg(feature = "uk-core-keypair")]
-    core_keypair_material: Option<uselesskey_core_keypair_material::Pkcs8SpkiKeyMaterial>,
+    core_keypair_material: Option<uselesskey_core::srp::keypair_material::Pkcs8SpkiKeyMaterial>,
     #[cfg(feature = "uk-core-token-shape")]
     core_token_shape_value_1: Option<String>,
     #[cfg(feature = "uk-core-token-shape")]

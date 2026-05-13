@@ -20,6 +20,10 @@ Each ADR follows this structure:
 - **Consequences**: What are the positive and negative outcomes?
 - **Alternatives Considered**: What other options were evaluated?
 
+New source-of-truth ADRs should also include TOML front matter with a stable
+`USELESSKEY-ADR-XXXX` ID. Existing numbered ADRs remain valid historical
+records; do not renumber them only to adopt the newer template.
+
 ## Creating a New ADR
 
 1. Copy `0001-use-adr-template.md` to a new file
@@ -27,6 +31,9 @@ Each ADR follows this structure:
 3. Create a short, kebab-case title (e.g., `0005-add-new-feature.md`)
 4. Fill in all sections
 5. Submit with your pull request
+
+For spec-system work, start from [the ADR template](../templates/adr.md) and
+use a stable `USELESSKEY-ADR-XXXX` ID in the front matter.
 
 ### Naming Convention
 

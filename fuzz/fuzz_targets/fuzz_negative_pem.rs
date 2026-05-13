@@ -3,7 +3,7 @@
 use arbitrary::Arbitrary;
 use libfuzzer_sys::fuzz_target;
 
-use uselesskey_core_negative_pem::{CorruptPem, corrupt_pem, corrupt_pem_deterministic};
+use uselesskey_core::negative::{CorruptPem, corrupt_pem, corrupt_pem_deterministic};
 
 #[derive(Arbitrary, Debug)]
 struct NegativePemInput {

@@ -5,7 +5,7 @@ use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 #[cfg(feature = "uk-core-kid")]
 use cucumber::{then, when};
 #[cfg(feature = "uk-core-kid")]
-use uselesskey_core_kid::{kid_from_bytes, kid_from_bytes_with_prefix};
+use uselesskey_jwk::srp::kid::{kid_from_bytes, kid_from_bytes_with_prefix};
 
 #[cfg(feature = "uk-core-kid")]
 #[when(regex = r#"^I derive a core-kid from bytes "([^"]+)"$"#)]

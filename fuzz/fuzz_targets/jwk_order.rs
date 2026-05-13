@@ -1,7 +1,7 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use uselesskey_core_jwks_order::{HasKid, KidSorted};
+use uselesskey_jwk::srp::ordering::{HasKid, KidSorted};
 
 #[derive(Clone)]
 struct FixtureItem {

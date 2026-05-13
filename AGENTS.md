@@ -94,10 +94,7 @@ cargo test -p uselesskey-rsa test_name
 
 - **`crates/uselesskey`** - Public facade crate, re-exports stable API
 - **`crates/uselesskey-core`** - Core factory, derivation, caching, negative fixtures
-- **`crates/uselesskey-core-jwk`** - Core typed JWK/JWKS models plus stable `JwksBuilder` ordering semantics
-- **`crates/uselesskey-core-x509-spec`** - X.509 spec models and stable encoding helpers
-- **`crates/uselesskey-core-x509`** - X.509 negative-policy types plus X.509 spec/derive re-exports
-- **`crates/uselesskey-jwk`** - Compatibility facade re-exporting `uselesskey-core-jwk`
+- **`crates/uselesskey-jwk`** - Typed JWK/JWKS models, `JwksBuilder`, deterministic kid, stable ordering
 - **`crates/uselesskey-rsa`** - RSA fixtures via `RsaFactoryExt` trait
 - **`crates/uselesskey-ecdsa`** - ECDSA (P-256/P-384) fixtures via `EcdsaFactoryExt` trait
 - **`crates/uselesskey-ed25519`** - Ed25519 fixtures via `Ed25519FactoryExt` trait
@@ -116,11 +113,14 @@ cargo test -p uselesskey-rsa test_name
 - **`crates/uselesskey-interop-tests`** - Cross-adapter interop tests
 - **`crates/uselesskey-feature-grid`** - Feature-matrix definitions
 - **`crates/uselesskey-test-grid`** - Test-grid facade
-- **`crates/uselesskey-token-spec`** - Token spec models
 - **`tests/`** - Workspace-level integration tests
 - **`xtask`** - Build automation commands
 
-> See `docs/explanation/architecture.md` for the full 48-crate breakdown including core microcrates.
+> v0.8.0 removed 29 fully-folded `uselesskey-core-*` published-internal
+> compatibility shims plus `uselesskey-token-spec`, `uselesskey-pgp-native`,
+> and `uselesskey-jose-openid`. Their content now lives as `srp::*` modules
+> under the owner crates listed above. See `docs/how-to/migrate-from-v0.7.md`
+> for the mapping.
 
 ### Key Concepts
 

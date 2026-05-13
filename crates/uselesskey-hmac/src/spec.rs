@@ -1,1 +1,1 @@
-pub use uselesskey_core_hmac_spec::HmacSpec;
+pub use crate::srp::spec::HmacSpec;

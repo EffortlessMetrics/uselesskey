@@ -7,6 +7,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-05-12
+
+TLS contract-pack and public crate-surface cleanup release. v0.8.0 adds
+a deterministic TLS contract pack (valid chain plus four negative
+classes) with a matching release-evidence proof, lands a task-first
+how-to sweep across the public docs, completes the v0.7.x SRP fold by
+moving HMAC/rustls/PGP content into their owner crates, and removes the
+v0.7.0-vintage published-internal shim crates from the workspace.
+
+`uselesskey` is a test-fixture layer. It is not production key
+management, scanner evasion, or cryptographic assurance.
+
+### Added
+
+- `uselesskey bundle --profile tls` generates a deterministic TLS
+  contract pack with a valid intermediate-signed chain plus four
+  negative-class leaves (expired, not-yet-valid, hostname mismatch,
+  untrusted root). Per-fixture rejection expectations in
+  `docs/release/v0.8.0-tls-profile-design.md`. (#585, #587)
+- `cargo xtask bundle-proof --profile tls` generates a release-evidence
+  proof artifact for the TLS contract pack, mirroring the OIDC
+  pattern, and is included in the minor-release `release-evidence`
+  step list. (#588)
+- Task-first how-to docs sweep across the public surface: TLS chain
+  validation, Vault KV export, build.rs materialize, WebAuthn
+  ceremony validation, PKCS#11 mock fixtures, and webhook signature
+  validation. (#589, #590, #591, #592, #593, #594)
+- `docs/how-to/migrate-to-v0.8.md` documents the v0.7.x to v0.8.0
+  crate-surface migration. Most users do not need to migrate. (#603)
+
+### Changed
+
+- Moved `HmacSpec` and its helpers from `uselesskey-core-hmac-spec`
+  into `uselesskey-hmac::srp::spec`. The former crate becomes a thin
+  re-export shim while it remains in the workspace. (#595)
+- Moved `RustlsPrivateKeyExt`, `RustlsCertExt`, and `RustlsChainExt`
+  traits and their impls from `uselesskey-core-rustls-pki` into
+  `uselesskey-rustls::srp::pki`. The former crate becomes a thin
+  re-export shim while it remains in the workspace. (#598)
+- Moved `PgpNativeExt` and its impls from `uselesskey-pgp-native`
+  into `uselesskey-pgp::native`, gated behind the new `native` Cargo
+  feature on `uselesskey-pgp`. The former crate becomes a thin
+  re-export shim while it remains in the workspace. (#599)
+- Activated the Rust 1.94/1.95 Clippy ratchets workspace-wide under
+  `-D warnings`. (#505)
+- Refreshed dependency floors via the standard maintenance lane:
+  `blake3`, `tokio`, `clap`, `tonic`, `cucumber`, `rustls-pki-types`,
+  `signature`, and `codecov/codecov-action`. (#484-#491)
+
+### Removed
+
+- Removed the 29 v0.7.0-vintage published-internal shim crates from the
+  workspace. v0.7.0 folded their content into owner-crate `srp::*`
+  modules; v0.7.x kept the shims as compatibility re-exports; v0.8.0
+  removes them entirely. The v0.7.x crate versions remain on
+  crates.io as historical records. Downstreams that pinned a shim
+  directly should follow `docs/how-to/migrate-to-v0.8.md`. (#602)
+
 ## [0.7.1] - 2026-05-11
 
 Release-hardening patch for v0.7.0. Adds publish-system guardrails,
@@ -521,7 +579,8 @@ Repository organised into four layers:
 - **Determinism regression** — hardcoded expected-value snapshots ensure
   derivation stability across releases
 
-[Unreleased]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.5.1...v0.6.0
