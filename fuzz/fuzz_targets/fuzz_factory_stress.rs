@@ -5,7 +5,7 @@ use libfuzzer_sys::fuzz_target;
 
 use std::sync::Arc;
 use uselesskey::Seed;
-use uselesskey_core_factory::Factory;
+use uselesskey_core::Factory;
 
 #[derive(Arbitrary, Debug)]
 struct FactoryStressInput {

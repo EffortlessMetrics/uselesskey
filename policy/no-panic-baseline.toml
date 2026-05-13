@@ -12,18 +12,18 @@
 # Reset:   `cargo xtask no-panic baseline --reset`
 
 schema_version = "1.0"
-generated_at = "2026-05-07"
-generated_by = "cargo xtask no-panic baseline"
+generated_at = "2026-05-12"
+generated_by = "cargo xtask no-panic baseline --reset"
 
 [summary]
-total = 4224
+total = 3668
 
 [summary.by_family]
-expect = 2228
+expect = 2273
 get_unwrap = 1
-panic_macro = 123
-unreachable = 6
-unwrap = 1866
+panic_macro = 111
+unreachable = 4
+unwrap = 1279
 
 [[entry]]
 path = "crates/materialize-buildrs-example/build.rs"
@@ -2638,7 +2638,39 @@ path = "crates/uselesskey-cli/tests/cli.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
+snippet = '&fs::read(bundle_dir.join("                                ")).expect("                  "),'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-cli/tests/cli.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '&fs::read(bundle_dir.join("                              ")).expect("                "),'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-cli/tests/cli.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '&fs::read(bundle_dir.join("                             ")).expect("              "),'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-cli/tests/cli.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
 snippet = '&fs::read(bundle_dir.join("                           ")).expect("             "),'
+count = 2
+
+[[entry]]
+path = "crates/uselesskey-cli/tests/cli.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '&fs::read(bundle_dir.join("                       ")).expect("           "),'
 count = 1
 
 [[entry]]
@@ -2654,6 +2686,22 @@ path = "crates/uselesskey-cli/tests/cli.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
+snippet = '.expect("                           ");'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-cli/tests/cli.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '.expect("                        ");'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-cli/tests/cli.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
 snippet = '.expect("                       "),'
 count = 1
 
@@ -2662,8 +2710,16 @@ path = "crates/uselesskey-cli/tests/cli.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
-snippet = '.expect("                     ");'
+snippet = '.expect("                       ");'
 count = 2
+
+[[entry]]
+path = "crates/uselesskey-cli/tests/cli.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '.expect("                     ");'
+count = 3
 
 [[entry]]
 path = "crates/uselesskey-cli/tests/cli.rs"
@@ -2678,7 +2734,31 @@ path = "crates/uselesskey-cli/tests/cli.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
+snippet = '.expect("                   ");'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-cli/tests/cli.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '.expect("                  "),'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-cli/tests/cli.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
 snippet = '.expect("                  ");'
+count = 2
+
+[[entry]]
+path = "crates/uselesskey-cli/tests/cli.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '.expect("                ");'
 count = 1
 
 [[entry]]
@@ -2695,7 +2775,7 @@ family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
 snippet = '.expect("               ");'
-count = 2
+count = 3
 
 [[entry]]
 path = "crates/uselesskey-cli/tests/cli.rs"
@@ -2719,7 +2799,7 @@ family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
 snippet = '.expect("             ");'
-count = 7
+count = 8
 
 [[entry]]
 path = "crates/uselesskey-cli/tests/cli.rs"
@@ -2758,8 +2838,16 @@ path = "crates/uselesskey-cli/tests/cli.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
+snippet = 'bundle.args(["      ", "     ", bundle_dir.to_str().expect("     ")]);'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-cli/tests/cli.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
 snippet = 'bundle_dir.to_str().expect("     "),'
-count = 18
+count = 25
 
 [[entry]]
 path = "crates/uselesskey-cli/tests/cli.rs"
@@ -2767,6 +2855,14 @@ family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
 snippet = 'cmd.args(["      ", "     ", bundle_dir.to_str().expect("     ")]);'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-cli/tests/cli.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'decode_jwt_segment(bad_audience["     "].as_str().expect("     "), 1);'
 count = 1
 
 [[entry]]
@@ -2799,7 +2895,7 @@ family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
 snippet = 'fs::write(bundle_dir.join("          "), "       ").expect("                    ");'
-count = 1
+count = 2
 
 [[entry]]
 path = "crates/uselesskey-cli/tests/cli.rs"
@@ -2807,6 +2903,22 @@ family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
 snippet = 'k8s_path.to_str().expect("     "),'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-cli/tests/cli.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'let alg_none_header = decode_jwt_segment(alg_none["     "].as_str().expect("     "), 0);'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-cli/tests/cli.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'let artifacts = manifest["         "].as_array().expect("         ");'
 count = 1
 
 [[entry]]
@@ -2831,7 +2943,15 @@ family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
 snippet = 'let dir = tempdir().expect("       ");'
-count = 13
+count = 17
+
+[[entry]]
+path = "crates/uselesskey-cli/tests/cli.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'let duplicate_keys = duplicate["    "].as_array().expect("              ");'
+count = 1
 
 [[entry]]
 path = "crates/uselesskey-cli/tests/cli.rs"
@@ -2878,8 +2998,16 @@ path = "crates/uselesskey-cli/tests/cli.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
+snippet = 'let manifest: Value = serde_json::from_slice(&fs::read(&manifest_path).expect("             "))'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-cli/tests/cli.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
 snippet = 'let mut bundle = Command::cargo_bin("          ").expect("          ");'
-count = 7
+count = 10
 
 [[entry]]
 path = "crates/uselesskey-cli/tests/cli.rs"
@@ -2895,7 +3023,15 @@ family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
 snippet = 'let mut cmd = Command::cargo_bin("          ").expect("          ");'
-count = 11
+count = 12
+
+[[entry]]
+path = "crates/uselesskey-cli/tests/cli.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'let mut inspect = Command::cargo_bin("          ").expect("          ");'
+count = 3
 
 [[entry]]
 path = "crates/uselesskey-cli/tests/cli.rs"
@@ -2919,7 +3055,7 @@ family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
 snippet = 'let mut verify = Command::cargo_bin("          ").expect("          ");'
-count = 6
+count = 7
 
 [[entry]]
 path = "crates/uselesskey-cli/tests/cli.rs"
@@ -2958,7 +3094,23 @@ path = "crates/uselesskey-cli/tests/cli.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
+snippet = 'let summary = String::from_utf8(output).expect("     ");'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-cli/tests/cli.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
 snippet = 'let token_value = token["     "].as_str().expect("           ");'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-cli/tests/cli.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'let valid_header = decode_jwt_segment(valid_token["     "].as_str().expect("     "), 0);'
 count = 1
 
 [[entry]]
@@ -3006,6 +3158,14 @@ path = "crates/uselesskey-cli/tests/cli.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
+snippet = 'serde_json::from_slice(&bytes).expect("                      ")'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-cli/tests/cli.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
 snippet = 'serde_json::from_slice(&fs::read(&manifest_path).expect("             "))'
 count = 4
 
@@ -3015,6 +3175,14 @@ family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
 snippet = 'serde_json::from_slice(&fs::read(&vault_path).expect("             ")).expect("          ");'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-cli/tests/cli.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'serde_json::from_slice(&fs::read(bundle_dir.join("               ")).expect("          "))'
 count = 1
 
 [[entry]]
@@ -3178,4307 +3346,155 @@ snippet = 'uselesskey_cli::export_flat_files(&flat_root, &artifacts).expect("   
 count = 1
 
 [[entry]]
-path = "crates/uselesskey-core-cache/src/lib.rs"
+path = "crates/uselesskey-cli/tests/tls_profile.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
-snippet = '.expect("                           ");'
+snippet = '.expect("                    ");'
 count = 1
 
 [[entry]]
-path = "crates/uselesskey-core-cache/src/lib.rs"
-family = "panic_macro"
-selector_kind = "macro"
-selector_callee = "panic"
-snippet = "panic!("
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/src/lib.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(*cache.get_typed::<u32>(&id_a).unwrap(), 1);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/src/lib.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(*cache.get_typed::<u32>(&id_b).unwrap(), 2);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/src/lib.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let msg = err.downcast_ref::<String>().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/src/lib.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let results: Vec<u32> = handles.into_iter().map(|h| *h.join().unwrap()).collect();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/cache_perf.rs"
+path = "crates/uselesskey-cli/tests/tls_profile.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
-snippet = 'h.join().expect("               ");'
+snippet = '.expect("                   ");'
 count = 2
 
 [[entry]]
-path = "crates/uselesskey-core-cache/tests/cache_perf.rs"
+path = "crates/uselesskey-cli/tests/tls_profile.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
-snippet = 'let val = cache.get_typed::<u64>(&id).expect("                ");'
+snippet = '.expect("             ");'
 count = 1
 
 [[entry]]
-path = "crates/uselesskey-core-cache/tests/cache_perf.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert!(Arc::ptr_eq(&first, &cache.get_typed::<u64>(&id).unwrap()));"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/cache_perf.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(*cache.get_typed::<u32>(&base).unwrap(), 0);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/cache_perf.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(*cache.get_typed::<u32>(&id_256).unwrap(), 100);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/cache_perf.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(*cache.get_typed::<u32>(&id_384).unwrap(), 200);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/cache_perf.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(*cache.get_typed::<u32>(&id_alice).unwrap(), 10);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/cache_perf.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(*cache.get_typed::<u32>(&id_bob).unwrap(), 20);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/cache_perf.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(*cache.get_typed::<u32>(&id_corrupt).unwrap(), 2);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/cache_perf.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(*cache.get_typed::<u32>(&id_ec).unwrap(), 2);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/cache_perf.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(*cache.get_typed::<u32>(&id_good).unwrap(), 1);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/cache_perf.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(*cache.get_typed::<u32>(&id_mismatch).unwrap(), 3);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/cache_perf.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(*cache.get_typed::<u32>(&id_rsa).unwrap(), 1);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/cache_perf.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(*cache.get_typed::<u32>(&id_v1).unwrap(), 10);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/cache_perf.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(*cache.get_typed::<u32>(&id_v2).unwrap(), 20);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/cache_perf.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(*cache.get_typed::<u64>(&id).unwrap(), i as u64);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/cache_perf.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let again = cache.get_typed::<Vec<u8>>(&id).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/cache_perf.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let fetched = cache.get_typed::<Vec<u8>>(&id).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/cache_perf.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let results: Vec<Arc<u64>> = handles.into_iter().map(|h| h.join().unwrap()).collect();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/cache_perf.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let val = cache.get_typed::<String>(&id).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/cache_perf.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let val = cache.get_typed::<Vec<u8>>(&id).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/comprehensive.rs"
+path = "crates/uselesskey-cli/tests/tls_profile.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
-snippet = 'h.join().expect("                      ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "*cache.get_typed::<u32>(id).unwrap(),"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'assert_eq!(*cache.get_typed::<String>(&id_str).unwrap(), "     ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(*cache.get_typed::<Vec<u8>>(&id_vec).unwrap(), vec![1, 2, 3]);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(*cache.get_typed::<u32>(&id).unwrap(), 10);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(*cache.get_typed::<u32>(&id).unwrap(), 20);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(*cache.get_typed::<u32>(&id_rs256).unwrap(), 256);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(*cache.get_typed::<u32>(&id_rs384).unwrap(), 384);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(*cache.get_typed::<u32>(&id_u32).unwrap(), 42);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(*cache.get_typed::<u64>(&id_v1).unwrap(), 1);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(*cache.get_typed::<u64>(&id_v2).unwrap(), 2);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let fetched = cache.get_typed::<u64>(&id).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let got = cache.get_typed::<u64>(&id).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "prop_assert_eq!(*cache.get_typed::<u32>(&id_a).unwrap(), 1);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "prop_assert_eq!(*cache.get_typed::<u32>(&id_b).unwrap(), 2);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/concurrency.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'h.join().expect("               ");'
+snippet = 'bundle_dir.to_str().expect("          "),'
 count = 3
 
 [[entry]]
-path = "crates/uselesskey-core-cache/tests/concurrency.rs"
+path = "crates/uselesskey-cli/tests/tls_profile.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
-snippet = 'let val = cache.get_typed::<u64>(&id).expect("                 ");'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/concurrency.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let fetched = cache.get_typed::<u32>(&id).unwrap();"
+snippet = 'fs::read_to_string(bundle_dir.join("                       ")).expect("                 ");'
 count = 1
 
 [[entry]]
-path = "crates/uselesskey-core-cache/tests/edge_cases.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(*cache.get_typed::<u64>(&id).unwrap(), 42);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/edge_cases.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "h.join().unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/edge_cases.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let results: Vec<u64> = handles.into_iter().map(|h| h.join().unwrap()).collect();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/edge_cases.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let val = cache.get_typed::<String>(&id).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/edge_cases.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let val = cache.get_typed::<u64>(&id).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/integration.rs"
+path = "crates/uselesskey-cli/tests/tls_profile.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
-snippet = 'h.join().expect("                       ");'
-count = 2
+snippet = 'fs::read_to_string(bundle_dir.join("                    ")).expect("               ");'
+count = 1
 
 [[entry]]
-path = "crates/uselesskey-core-cache/tests/integration.rs"
+path = "crates/uselesskey-cli/tests/tls_profile.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
-snippet = 'let got = cache.get_typed::<String>(&id).expect("            ");'
+snippet = 'let a = fs::read(first_dir.join(relative)).expect("          ");'
 count = 1
 
 [[entry]]
-path = "crates/uselesskey-core-cache/tests/integration.rs"
+path = "crates/uselesskey-cli/tests/tls_profile.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
-snippet = 'let got = cache.get_typed::<u32>(&id).expect("            ");'
+snippet = 'let artifacts = manifest["         "].as_array().expect("               ");'
 count = 1
 
 [[entry]]
-path = "crates/uselesskey-core-cache/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(*cache.get_typed::<u32>(&id_a).unwrap(), 1);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(*cache.get_typed::<u32>(&id_b).unwrap(), 2);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(*cache.get_typed::<u32>(&id_bad).unwrap(), 20);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(*cache.get_typed::<u32>(&id_ec).unwrap(), 200);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(*cache.get_typed::<u32>(&id_good).unwrap(), 10);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(*cache.get_typed::<u32>(&id_rsa).unwrap(), 100);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let fetched = cache.get_typed::<u64>(&id).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let got = cache.get_typed::<u32>(&id).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let val = cache.get_typed::<u64>(&id).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/integration_cache.rs"
+path = "crates/uselesskey-cli/tests/tls_profile.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
-snippet = 'let retrieved = cache.get_typed::<u64>(&id).expect("            ");'
+snippet = 'let b = fs::read(second_dir.join(relative)).expect("           ");'
 count = 1
 
 [[entry]]
-path = "crates/uselesskey-core-cache/tests/integration_cache.rs"
+path = "crates/uselesskey-cli/tests/tls_profile.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
-snippet = 'let val = cache.get_typed::<u64>(&id).expect("            ");'
+snippet = 'let chain = fs::read_to_string(bundle_dir.join("                     ")).expect("          ");'
 count = 1
 
 [[entry]]
-path = "crates/uselesskey-core-cache/tests/integration_cache.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let fetched = cache.get_typed::<String>(&id).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/integration_cache.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let retrieved = cache.get_typed::<KeyPair>(&id).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/mutant_killers.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let val = cache.get_typed::<u32>(&id(" ")).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/prop_cache.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let got = cache.get_typed::<u64>(&id).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/prop_cache.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "prop_assert_eq!(*cache.get_typed::<u32>(&id_a).unwrap(), 1);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/prop_cache.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "prop_assert_eq!(*cache.get_typed::<u32>(&id_a).unwrap(), va);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/prop_cache.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "prop_assert_eq!(*cache.get_typed::<u32>(&id_b).unwrap(), 2);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-cache/tests/prop_cache.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "prop_assert_eq!(*cache.get_typed::<u32>(&id_b).unwrap(), vb);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-factory/src/lib.rs"
+path = "crates/uselesskey-cli/tests/tls_profile.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
-snippet = '.expect("                                          ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-factory/src/lib.rs"
-family = "panic_macro"
-selector_kind = "macro"
-selector_callee = "panic"
-snippet = 'Mode::Random => panic!("          "),'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-factory/src/lib.rs"
-family = "panic_macro"
-selector_kind = "macro"
-selector_callee = "panic"
-snippet = 'panic!("                                                                ")'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-factory/tests/edge_cases.rs"
-family = "panic_macro"
-selector_kind = "macro"
-selector_callee = "panic"
-snippet = 'panic!("                                          ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-factory/tests/edge_cases.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let mut results: Vec<(String, u64)> = handles.into_iter().map(|h| h.join().unwrap()).collect();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-factory/tests/edge_cases.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let results: Vec<u64> = handles.into_iter().map(|h| h.join().unwrap()).collect();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-factory/tests/factory_concurrency.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let (label, val) = h.join().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-factory/tests/factory_concurrency.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let expected: u32 = label.strip_prefix("    ").unwrap().parse().unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-factory/tests/factory_concurrency.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let results: Vec<Arc<u64>> = handles.into_iter().map(|h| h.join().unwrap()).collect();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-factory/tests/mutant_killers.rs"
-family = "panic_macro"
-selector_kind = "macro"
-selector_callee = "panic"
-snippet = 'Mode::Random => panic!("                      "),'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-hmac-spec/tests/prop_hmac_spec.rs"
-family = "panic_macro"
-selector_kind = "macro"
-selector_callee = "panic"
-snippet = 'other => panic!("                       "),'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-builder/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let keys = v["    "].as_array().expect("          ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-builder/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let v: serde_json::Value = serde_json::from_str(&json).expect("          ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-builder/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'assert!(parsed["    "].as_array().unwrap().is_empty());'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-builder/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'assert!(v.as_object().unwrap().contains_key("    "));'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-builder/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'assert_eq!(v["    "].as_array().unwrap().len(), 0);'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-builder/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let from_display: Value = serde_json::from_str(&jwks.to_string()).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-builder/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let json1 = serde_json::to_string(&build_jwks()).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-builder/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let json2 = serde_json::to_string(&build_jwks()).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-builder/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let json_str = serde_json::to_string(&jwks).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-builder/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let keys = v["    "].as_array().unwrap();'
-count = 5
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-builder/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let ktys: Vec<&str> = keys.iter().map(|k| k["   "].as_str().unwrap()).collect();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-builder/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let parsed: Value = serde_json::from_str(&display_str).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-builder/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let parsed: Value = serde_json::from_str(&json).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-builder/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let parsed: Value = serde_json::from_str(&json_str).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-builder/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "serde_json::to_string(&jwks1).unwrap(),"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-builder/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "serde_json::to_string(&jwks2).unwrap(),"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-builder/tests/jwk_prop.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let original_index = jwk.n.parse::<usize>().expect("          ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-builder/tests/jwk_prop.rs"
-family = "panic_macro"
-selector_kind = "macro"
-selector_callee = "panic"
-snippet = 'panic!("                                        ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-builder/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let from_display: Value = serde_json::from_str(&jwks.to_string()).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-builder/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let json1 = serde_json::to_string(&build()).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-builder/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let json2 = serde_json::to_string(&build()).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-builder/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let json_str = serde_json::to_string(&jwks).unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-builder/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let keys = parsed["    "].as_array().unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-builder/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let keys = v["    "].as_array().unwrap();'
+snippet = 'let dir = tempdir().expect("       ");'
 count = 4
 
 [[entry]]
-path = "crates/uselesskey-core-jwk-builder/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let ktys: Vec<&str> = keys.iter().map(|k| k["   "].as_str().unwrap()).collect();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-builder/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let parsed: Value = serde_json::from_str(&json_str).unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-builder/tests/snapshots_jwk_builder.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = '.map(|k| k.to_value()["   "].as_str().unwrap().to_string())'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/src/lib.rs"
+path = "crates/uselesskey-cli/tests/tls_profile.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
-snippet = 'let pub_round_trip: Value = serde_json::from_str(&pub_text).expect("                      ");'
+snippet = 'let first = tempdir().expect("        ");'
 count = 1
 
 [[entry]]
-path = "crates/uselesskey-core-jwk-shape/src/lib.rs"
+path = "crates/uselesskey-cli/tests/tls_profile.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
-snippet = 'let s = serde_json::to_string(self).expect("              ");'
+snippet = 'let meta = fs::metadata(&path).expect("            ");'
 count = 1
 
 [[entry]]
-path = "crates/uselesskey-core-jwk-shape/src/lib.rs"
+path = "crates/uselesskey-cli/tests/tls_profile.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
-snippet = 'let s = serde_json::to_string(self).expect("             ");'
-count = 3
+snippet = 'let mut cmd = Command::cargo_bin("          ").expect("          ");'
+count = 1
 
 [[entry]]
-path = "crates/uselesskey-core-jwk-shape/src/lib.rs"
+path = "crates/uselesskey-cli/tests/tls_profile.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
-snippet = 'let v: Value = serde_json::from_str(&json).expect("          ");'
-count = 4
+snippet = 'let mut verify = Command::cargo_bin("          ").expect("          ");'
+count = 1
 
 [[entry]]
-path = "crates/uselesskey-core-jwk-shape/src/lib.rs"
+path = "crates/uselesskey-cli/tests/tls_profile.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
-snippet = 'serde_json::from_str(&private_text).expect("                          ");'
+snippet = 'let mut verify_bad = Command::cargo_bin("          ").expect("          ");'
 count = 1
 
 [[entry]]
-path = "crates/uselesskey-core-jwk-shape/src/lib.rs"
+path = "crates/uselesskey-cli/tests/tls_profile.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
-snippet = 'serde_json::to_value(self).expect("              ")'
+snippet = 'let second = tempdir().expect("        ");'
 count = 1
 
 [[entry]]
-path = "crates/uselesskey-core-jwk-shape/src/lib.rs"
+path = "crates/uselesskey-cli/tests/tls_profile.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
-snippet = 'serde_json::to_value(self).expect("             ")'
-count = 3
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'Box::new(|| serde_json::to_string(&ec_private(" ")).unwrap()),'
+snippet = 'let text = fs::read_to_string(bundle_dir.join(single_cert)).expect("         ");'
 count = 1
 
 [[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'Box::new(|| serde_json::to_string(&ec_public(" ")).unwrap()),'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'Box::new(|| serde_json::to_string(&oct_jwk(" ")).unwrap()),'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'Box::new(|| serde_json::to_string(&okp_private(" ")).unwrap()),'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'Box::new(|| serde_json::to_string(&okp_public(" ")).unwrap()),'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'Box::new(|| serde_json::to_string(&rsa_private(" ")).unwrap()),'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'Box::new(|| serde_json::to_string(&rsa_public(" ")).unwrap()),'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'assert!(v["    "].as_array().unwrap().is_empty());'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'assert_eq!(parsed["    "].as_array().unwrap().len(), 100);'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'assert_eq!(parsed["    "].as_array().unwrap().len(), 2);'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(v.as_object().unwrap().len(), 12);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(v.as_object().unwrap().len(), 5);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(v.as_object().unwrap().len(), 6);"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(v.as_object().unwrap().len(), 7);"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(v.as_object().unwrap().len(), 8);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'assert_eq!(v["    "].as_array().unwrap().len(), 1);'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'assert_eq!(v["    "].as_array().unwrap().len(), 100);'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'assert_eq!(v["    "].as_array().unwrap().len(), 7);'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let any_v = serde_json::to_value(AnyJwk::from(PublicJwk::Ec(ec_public(" ")))).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let from_display: Value = serde_json::from_str(&any.to_string()).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let from_display: Value = serde_json::from_str(&jwk.to_string()).unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let from_display: Value = serde_json::from_str(&jwks.to_string()).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let json_str = serde_json::to_string(&jwks).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let keys = v["    "].as_array().unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let obj = v.as_object().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let parsed: Value = serde_json::from_str(&any_priv.to_string()).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let parsed: Value = serde_json::from_str(&any_pub.to_string()).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let parsed: Value = serde_json::from_str(&json).unwrap();"
-count = 13
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let parsed: Value = serde_json::from_str(&json_str).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let priv_v = serde_json::to_value(PrivateJwk::Oct(oct_jwk(" "))).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let pub_v = serde_json::to_value(PublicJwk::Rsa(rsa_public(" "))).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let v = serde_json::to_value(ec_private("  ")).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let v = serde_json::to_value(ec_public("  ")).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let v = serde_json::to_value(ec_public(" ")).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let v = serde_json::to_value(oct_jwk("  ")).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let v = serde_json::to_value(oct_jwk(" ")).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let v = serde_json::to_value(okp_private("  ")).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let v = serde_json::to_value(okp_public("  ")).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let v = serde_json::to_value(okp_public(" ")).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let v = serde_json::to_value(rsa_private("  ")).unwrap();'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let v = serde_json::to_value(rsa_public("  ")).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let v = serde_json::to_value(rsa_public(" ")).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "serde_json::to_string(&build()).unwrap(),"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "serde_json::to_string(&cloned).unwrap(),"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "serde_json::to_string(&jwks).unwrap(),"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "serde_json::to_value(cloned).unwrap(),"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "serde_json::to_value(jwk).unwrap(),"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/integration.rs"
+path = "crates/uselesskey-cli/tests/tls_profile.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
-snippet = 'let raw_keys = round_trip["    "].as_array().expect("          ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/integration.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let round_trip: serde_json::Value = serde_json::from_str(&json).expect("         ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/jwk_shape_integration.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let parsed: Value = serde_json::from_str(&json_str).expect("                    ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/jwk_shape_integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'assert_eq!(v["    "].as_array().unwrap().len(), 0);'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/jwk_shape_integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let keys = v["    "].as_array().unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/jwk_shape_integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let v = serde_json::to_value(&jwk).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/mutant_killers.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'assert_eq!(v["    "].as_array().unwrap().len(), 1);'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/mutant_killers.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let v: Value = serde_json::from_str(&json).unwrap();"
-count = 4
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/negative_fixtures.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'value["    "].as_array().expect("          ").as_slice()'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'assert!(!v.as_object().unwrap().contains_key("       "));'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'assert!(!v.as_object().unwrap().contains_key("      "));'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'assert!(!v.as_object().unwrap().contains_key("   "));'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'assert!(v.as_object().unwrap().contains_key(" "));'
-count = 3
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(parsed, serde_json::to_value(&jwk).unwrap());"
-count = 5
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let direct = serde_json::to_value(&jwk).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let direct = serde_json::to_value(&jwks).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let direct = serde_json::to_value(jwk).unwrap();"
-count = 3
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let direct_value = serde_json::to_value(&jwk).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let from_display: Value = serde_json::from_str(&jwk.to_string()).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let from_display: Value = serde_json::from_str(&jwks.to_string()).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let json = serde_json::to_string(&rsa_private("       ")).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let json1 = serde_json::to_string(&jwk).unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let json1 = serde_json::to_string(&jwks).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let json2 = serde_json::to_string(&jwk).unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let json2 = serde_json::to_string(&jwks).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let json_str = serde_json::to_string(&jwk).unwrap();"
-count = 7
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let json_str = serde_json::to_string(&jwks).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let json_str = serde_json::to_string(jwk).unwrap();"
-count = 3
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let keys = v["    "].as_array().unwrap();'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let obj = v.as_object().unwrap();"
-count = 7
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let parsed: Value = serde_json::from_str(&json_str).unwrap();"
-count = 11
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let v = serde_json::to_value(&jwk).unwrap();"
-count = 16
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let v = serde_json::to_value(&jwks).unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let v: Value = serde_json::from_str(minimal).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'serde_json::to_string(&ec_private("   ")).unwrap(),'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'serde_json::to_string(&ec_public("   ")).unwrap(),'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'serde_json::to_string(&ec_public(" ")).unwrap(),'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'serde_json::to_string(&oct_jwk("   ")).unwrap(),'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'serde_json::to_string(&oct_jwk(" ")).unwrap(),'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'serde_json::to_string(&okp_private("   ")).unwrap(),'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'serde_json::to_string(&okp_public("   ")).unwrap(),'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'serde_json::to_string(&okp_public(" ")).unwrap(),'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'serde_json::to_string(&rsa_private("   ")).unwrap(),'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'serde_json::to_string(&rsa_public("   ")).unwrap(),'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'serde_json::to_string(&rsa_public(" ")).unwrap(),'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/shape_tests.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let from_display: Value = serde_json::from_str(&jwks.to_string()).expect("          ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/shape_tests.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let parsed: Value = serde_json::from_str(&json).expect("          ");'
-count = 9
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/shape_tests.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let v = serde_json::to_value(&jwk).expect("         ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/shape_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'assert_eq!(v["    "].as_array().unwrap().len(), 0);'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/shape_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let keys = v["    "].as_array().unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/snapshots_jwk_shape.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'key_count: parsed["    "].as_array().unwrap().len(),'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/snapshots_jwk_shape.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'kty: jwk.to_value()["   "].as_str().unwrap().to_string(),'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/snapshots_jwk_shape.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let parsed: serde_json::Value = serde_json::from_str(&display).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk-shape/tests/snapshots_jwk_shape.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let value = serde_json::to_value(&jwk).unwrap();"
-count = 7
-
-[[entry]]
-path = "crates/uselesskey-core-jwk/tests/integration.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let keys = val["    "].as_array().expect("                      ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk/tests/integration.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let parsed: Value = serde_json::from_str(&json_str).expect("                                 ");'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-jwk/tests/integration.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'serde_json::from_str(&any.to_string()).expect("                                 ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk/tests/integration.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'serde_json::from_str(&json_str).expect("                                      ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk/tests/prop_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let parsed: Value = serde_json::from_str(&text).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let direct = serde_json::to_value(&any).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let json1 = serde_json::to_string(&build()).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let json2 = serde_json::to_string(&build()).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let json_str = serde_json::to_string(&any).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let json_str = serde_json::to_string(&jwks).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let keys = parsed["    "].as_array().unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-jwk/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let parsed: Value = serde_json::from_str(&json_str).unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-jwk/tests/serde_roundtrip.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let v = serde_json::to_value(&jwk).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-kid/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                             ");'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-kid/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                         ");'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-kid/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let decoded = URL_SAFE_NO_PAD.decode(kid.as_bytes()).unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-kid/tests/mutant_killers.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let decoded = URL_SAFE_NO_PAD.decode(&kid).unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-kid/tests/prop_kid.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let decoded = URL_SAFE_NO_PAD.decode(kid.as_bytes()).unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-negative-der/src/lib.rs"
-family = "unreachable"
-selector_kind = "macro"
-selector_callee = "unreachable"
-snippet = "unreachable!()"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-negative-pem/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                               ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-negative-pem/src/lib.rs"
-family = "unreachable"
-selector_kind = "macro"
-selector_callee = "unreachable"
-snippet = "unreachable!()"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-negative-pem/tests/integration.rs"
-family = "unreachable"
-selector_kind = "macro"
-selector_callee = "unreachable"
-snippet = "unreachable!()"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-negative-pem/tests/pem_tests.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                                   ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-negative-pem/tests/pem_tests.rs"
-family = "unreachable"
-selector_kind = "macro"
-selector_callee = "unreachable"
-snippet = "unreachable!()"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-negative-pem/tests/pem_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "*lines.last().unwrap(),"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-negative-pem/tests/pem_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let first_line = out.lines().next().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-negative-pem/tests/pem_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let last_non_empty = out.lines().last().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-rustls-pki/tests/testutil.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                             ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/src/lib.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_ne!(seed, Seed::from_env_value(&text).unwrap());"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/src/lib.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_ne!(seed, Seed::from_env_value(text).unwrap());"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/src/lib.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let result = parse_hex_32(&hex).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/src/lib.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let seed = Seed::from_env_value("                            ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/src/lib.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let seed = Seed::from_env_value("   ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/src/lib.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let seed = Seed::from_env_value(&format!("         ")).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/src/lib.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let seed = Seed::from_env_value(&hex).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/src/lib.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let seed = Seed::from_env_value(&input).unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-seed/src/lib.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let seed = Seed::from_env_value(hex).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/edge_cases.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let expected = Seed::from_env_value("     ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/edge_cases.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let seed = Seed::from_env_value("           ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/edge_cases.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let seed = Seed::from_env_value(&hex).unwrap();"
-count = 3
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/edge_cases.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let seed = Seed::from_env_value(&long).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/edge_cases.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let seed1 = Seed::from_env_value("                      ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/edge_cases.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let seed1 = Seed::from_env_value("            ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/edge_cases.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let seed1 = Seed::from_env_value("         ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/edge_cases.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let seed2 = Seed::from_env_value("                      ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/edge_cases.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let seed2 = Seed::from_env_value("            ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/edge_cases.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let seed2 = Seed::from_env_value("      ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/error_paths.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let hashed = Seed::from_env_value(&hex63).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/error_paths.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let hashed = Seed::from_env_value(&hex65).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/error_paths.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let result = Seed::from_env_value(&hex).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/error_paths.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let seed = Seed::from_env_value(&hex).unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/mutant_killers.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let seed = Seed::from_env_value("            ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/mutant_killers.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let seed = Seed::from_env_value(&format!("         ")).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/mutant_killers.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let seed = Seed::from_env_value(&hex).unwrap();"
-count = 4
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/prop_seed.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let a = Seed::from_env_value(&hex).unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/prop_seed.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let a = Seed::from_env_value(&lower).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/prop_seed.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let a = Seed::from_env_value(&s).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/prop_seed.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let a = Seed::from_env_value(&s1).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/prop_seed.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let b = Seed::from_env_value(&hex).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/prop_seed.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let b = Seed::from_env_value(&padded).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/prop_seed.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let b = Seed::from_env_value(&s).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/prop_seed.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let b = Seed::from_env_value(&s2).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/prop_seed.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let b = Seed::from_env_value(&upper).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/prop_seed.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let with = Seed::from_env_value(&format!("       ")).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/prop_seed.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let without = Seed::from_env_value(&hex).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/seed_prop.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let parsed = Seed::from_env_value(&hex).unwrap();"
-count = 3
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/seed_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let seed = Seed::from_env_value("     ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/seed_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let seed = Seed::from_env_value("  ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/seed_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let seed = Seed::from_env_value("").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/seed_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let seed = Seed::from_env_value(&hex).unwrap();"
-count = 5
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/seed_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let seed = Seed::from_env_value(&s).unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/snapshots_seed.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let a = Seed::from_env_value("             ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/snapshots_seed.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let b = Seed::from_env_value("             ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/snapshots_seed.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let c = Seed::from_env_value("         ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/snapshots_seed.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let seed = Seed::from_env_value("                     ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/snapshots_seed.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let seed = Seed::from_env_value("            ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/snapshots_seed.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let seed = Seed::from_env_value(&hex).unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-seed/tests/trait_impls.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let seed = Seed::from_env_value("               ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/src/lib.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let read_back = temp.read_to_bytes().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/src/lib.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let read_back = temp.read_to_string().unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-sink/src/lib.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_bytes("        ", "    ", &bytes).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/src/lib.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_bytes("        ", "    ", &data).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/src/lib.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("        ", "    ", "       ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/src/lib.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("        ", "    ", "   ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/src/lib.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("        ", "    ", text).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = ".unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'assert_eq!(a.read_to_string().unwrap(), "          ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'assert_eq!(b.read_to_string().unwrap(), "          ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'assert_eq!(temp.path().extension().unwrap(), "   ");'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(temp.read_to_bytes().unwrap(), data);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let a = TempArtifact::new_string("     ", "    ", "          ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let b = TempArtifact::new_string("     ", "    ", "          ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let content = std::fs::read(temp.path()).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let content = std::fs::read_to_string(temp.path()).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let content = temp.read_to_string().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let read_back = temp.read_to_bytes().unwrap();"
-count = 3
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let read_back = temp.read_to_string().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let s = temp.read_to_string().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_bytes("         ", "    ", &data).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_bytes("         ", "    ", data).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_bytes("        ", "    ", &[0x30]).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_bytes("        ", "    ", &[]).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_bytes("        ", "    ", &bytes).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_bytes("        ", "    ", &data).unwrap();'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_bytes("        ", "    ", &secret).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("         ", "    ", text).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("        ", "    ", "               ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("        ", "    ", "       ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("        ", "    ", "     ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("        ", "    ", "    ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("        ", "    ", pem).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("       ", "    ", pem).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/mutant_killers.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let read_back = temp.read_to_bytes().unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/mutant_killers.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let read_back = temp.read_to_string().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/mutant_killers.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let s = temp.read_to_string().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/mutant_killers.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_bytes("      ", "    ", &[]).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/mutant_killers.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_bytes("      ", "    ", &bytes).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/mutant_killers.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_bytes("      ", "    ", &data).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/mutant_killers.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("      ", "    ", "     ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/mutant_killers.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("      ", "    ", "    ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/mutant_killers.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("      ", "    ", "   ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/mutant_killers.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("      ", "    ", text).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/prop_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let _ = temp.read_to_string().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/prop_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let read_back = temp.read_to_bytes().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/prop_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let read_back = temp.read_to_string().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/prop_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_bytes("        ", "    ", &data).unwrap();'
-count = 3
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/prop_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_bytes("        ", &suffix, &data).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/prop_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("        ", "    ", &content).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/prop_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("        ", "    ", &text).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let parent = temp.path().parent().expect("                       ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = ".unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'TempArtifact::new_string("       ", "    ", &content).unwrap()'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'assert!(pem.read_to_string().unwrap().contains("         "));'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(artifact.read_to_string().unwrap(), expected);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(bin.read_to_bytes().unwrap().len(), 128);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(der.read_to_bytes().unwrap(), vec![0x30, 0x82]);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(temp.read_to_bytes().unwrap(), data);"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(temp.read_to_string().unwrap(), text);"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'assert_eq!(txt.read_to_string().unwrap(), "          ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "from_bytes.read_to_bytes().unwrap(),"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "from_string.read_to_bytes().unwrap(),"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let bin = TempArtifact::new_bytes("       ", "    ", &[0x00; 128]).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let der = TempArtifact::new_bytes("       ", "    ", &[0x30, 0x82]).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let from_bytes = TempArtifact::new_bytes("      ", "    ", text.as_bytes()).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let from_string = TempArtifact::new_string("      ", "    ", text).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let metadata = std::fs::metadata(temp.path()).unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let read_back = temp.read_to_bytes().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let read_back = temp.read_to_string().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_bytes("        ", "    ", &data).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_bytes("        ", "    ", data).unwrap();'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_bytes("       ", "    ", &data).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_bytes("      ", "    ", data).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_bytes("      ", suffix, &[0x01]).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("          ", "    ", "    ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("         ", "    ", "             ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("         ", "    ", &content).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("        ", "    ", "    ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("        ", "    ", &text).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("        ", "    ", text).unwrap();'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("       ", "    ", "    ").unwrap();'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("       ", "    ", content).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("      ", "    ", text).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let txt = TempArtifact::new_string("       ", "    ", "          ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let via_api = temp.read_to_bytes().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let via_api = temp.read_to_string().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let via_fs = std::fs::read(temp.path()).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let via_fs = std::fs::read_to_string(temp.path()).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/sink_rstest.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "temp.path().extension().and_then(|e| e.to_str()).unwrap(),"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/snapshots_sink.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let rb = temp_bytes.read_to_bytes().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/snapshots_sink.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let read_back = temp.read_to_bytes().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/snapshots_sink.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let read_back = temp.read_to_string().unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/snapshots_sink.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let rs = temp_str.read_to_string().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/snapshots_sink.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_bytes("        ", "    ", &bytes).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/snapshots_sink.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("        ", "    ", "           ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/snapshots_sink.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("        ", "    ", "         ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/snapshots_sink.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("        ", "    ", content).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/snapshots_sink.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp_bytes = TempArtifact::new_bytes("        ", "    ", &bytes_data).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/snapshots_sink.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp_str = TempArtifact::new_string("        ", "    ", string_data).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'TempArtifact::new_string("        ", "    ", &content).expect("           ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let read_back = temp.read_to_bytes().expect("         ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let read_back = temp.read_to_string().expect("         ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let temp = TempArtifact::new_bytes("        ", "    ", &data).expect("           ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = '.map(|_| TempArtifact::new_string("         ", "    ", " ").unwrap())'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = ".unwrap()"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = ".unwrap();"
-count = 3
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'TempArtifact::new_string("        ", "    ", &content).unwrap()'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'assert!(crt.read_to_string().unwrap().contains("           "));'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'assert!(pem.read_to_string().unwrap().contains("           "));'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'assert_eq!(crt.path().extension().unwrap(), "   ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'assert_eq!(der.path().extension().unwrap(), "   ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(der.read_to_bytes().unwrap(), vec![0x30, 0x82, 0x01]);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'assert_eq!(pem.path().extension().unwrap(), "   ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(temp.read_to_bytes().unwrap(), vec![0x42]);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(temp.read_to_string().unwrap(), text);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let a = TempArtifact::new_string("", "    ", " ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let artifacts: Vec<_> = handles.into_iter().map(|h| h.join().unwrap()).collect();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let b = TempArtifact::new_string("", "    ", " ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let bytes_temp = TempArtifact::new_bytes("      ", "    ", &[0x01, 0x02]).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let content = temp.read_to_string().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let der = TempArtifact::new_bytes("         ", "    ", &[0x30, 0x82, 0x01]).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let meta = std::fs::metadata(temp.path()).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let metadata = std::fs::metadata(temp.path()).unwrap();"
-count = 3
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let read_back = temp.read_to_bytes().unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let read_back = temp.read_to_string().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let results: Vec<_> = handles.into_iter().map(|h| h.join().unwrap()).collect();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let string_temp = TempArtifact::new_string("      ", "    ", "           ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_bytes("        ", "    ", &[0x30, 0x82]).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_bytes("        ", "    ", &data).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_bytes("       ", "    ", &der).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_bytes("      ", "    ", &[0x42]).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("                    ", "    ", "    ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("           ", "    ", "    ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("          ", "    ", pem).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("         ", "    ", "           ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("        ", "    ", "               ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("        ", "    ", "    ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("        ", "    ", &text).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("        ", "    ", text).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-sink/tests/tempfile_comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("   ", "          ", "    ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                                              ")'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                                 ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                                ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                      ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let decoded = URL_SAFE_NO_PAD.decode(value).expect("                ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let header = parts.next().expect("                  ").to_string();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let json = serde_json::to_vec(value).expect("                    ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let json: serde_json::Value = serde_json::from_slice(&payload).expect("             ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let payload = parts.next().expect("                   ").to_string();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let payload_json = serde_json::to_vec(&payload).expect("            ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let signature = parts.next().expect("                     ").to_string();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let value: Value = serde_json::from_slice(&bytes).expect("                                ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/comprehensive_shape.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert!(s.chars().next().unwrap().is_ascii_alphanumeric());"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/comprehensive_shape.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'assert_eq!(claims["   "].as_str().unwrap(), label);'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/comprehensive_shape.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let claims: serde_json::Value = serde_json::from_slice(&payload_bytes).unwrap();"
-count = 6
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/comprehensive_shape.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let decoded = URL_SAFE_NO_PAD.decode(sig).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/comprehensive_shape.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let header1 = h1.split('.').next().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/comprehensive_shape.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let header2 = h2.split('.').next().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/comprehensive_shape.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let jti = claims["   "].as_str().unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/comprehensive_shape.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let jti_decoded = URL_SAFE_NO_PAD.decode(jti).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/comprehensive_shape.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let payload_bytes = URL_SAFE_NO_PAD.decode(parts[1]).unwrap();"
-count = 4
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/comprehensive_shape.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let payload_bytes = URL_SAFE_NO_PAD.decode(payload_segment).unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/comprehensive_shape.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let payload_segment = token.split('.').nth(1).unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/comprehensive_shape.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let sig = token.split('.').nth(2).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/edge_cases.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert!(s.chars().next().unwrap().is_ascii_alphanumeric());"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/mutant_killers.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let decoded = URL_SAFE_NO_PAD.decode(&token).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/mutant_killers.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let header: serde_json::Value = serde_json::from_slice(&header_bytes).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/mutant_killers.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let header_bytes = URL_SAFE_NO_PAD.decode(header_segment).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/mutant_killers.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let header_segment = token.split('.').next().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/mutant_killers.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let payload: serde_json::Value = serde_json::from_slice(&payload_bytes).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/mutant_killers.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let payload_bytes = URL_SAFE_NO_PAD.decode(payload_segment).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/mutant_killers.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let payload_segment = token.split('.').nth(1).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/negative_fixtures.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                ")'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/negative_fixtures.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'assert!(payload["   "].as_u64().expect("                     ") > 2_000_000_000u64);'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/negative_fixtures.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let bytes = URL_SAFE_NO_PAD.decode(segment).expect("                  ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/negative_fixtures.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'serde_json::from_slice(&bytes).expect("                      ")'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/prop_token_shape.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let json: serde_json::Value = serde_json::from_slice(&payload).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/prop_token_shape.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let payload = URL_SAFE_NO_PAD.decode(parts[1]).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/prop_token_shape.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "prop_assert_eq!(decoded.unwrap().len(), BEARER_RANDOM_BYTES);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/prop_token_shape.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'prop_assert_eq!(json["   "].as_str().unwrap(), "          ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/prop_token_shape.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'prop_assert_eq!(json["   "].as_str().unwrap(), label.as_str());'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/shape_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let claims: serde_json::Value = serde_json::from_slice(&payload_bytes).unwrap();"
-count = 3
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/shape_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let decoded = URL_SAFE_NO_PAD.decode(&token).unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/shape_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let decoded = URL_SAFE_NO_PAD.decode(sig_segment).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/shape_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let header: serde_json::Value = serde_json::from_slice(&header_bytes).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/shape_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let header_bytes = URL_SAFE_NO_PAD.decode(header_segment).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/shape_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let header_segment = token.split('.').next().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/shape_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let jti = claims["   "].as_str().unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/shape_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let jti_decoded = URL_SAFE_NO_PAD.decode(jti).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/shape_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let payload_bytes = URL_SAFE_NO_PAD.decode(payload_segment).unwrap();"
-count = 3
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/shape_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let payload_segment = token.split('.').nth(1).unwrap();"
-count = 3
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/shape_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let sig_segment = token.split('.').nth(2).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token-shape/tests/shape_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'prop_assert_eq!(claims["   "].as_str().unwrap(), label.as_str());'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token/tests/token_integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let decoded = URL_SAFE_NO_PAD.decode(token).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token/tests/token_integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let header = URL_SAFE_NO_PAD.decode(parts[0]).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token/tests/token_integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let json: serde_json::Value = serde_json::from_slice(&header).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token/tests/token_integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let json: serde_json::Value = serde_json::from_slice(&payload).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token/tests/token_integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let payload = URL_SAFE_NO_PAD.decode(parts[1]).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token/tests/token_integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let suffix = key.strip_prefix("        ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token/tests/token_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = ".decode(t1.split('.').nth(1).unwrap())"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token/tests/token_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = ".decode(t2.split('.').nth(1).unwrap())"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token/tests/token_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = ".decode(token.split('.').nth(1).unwrap())"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token/tests/token_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = ".unwrap(),"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-token/tests/token_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = ".unwrap();"
-count = 3
-
-[[entry]]
-path = "crates/uselesskey-core-token/tests/token_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_eq!(decoded.unwrap().len(), OAUTH_SIGNATURE_BYTES);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token/tests/token_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let decoded = URL_SAFE_NO_PAD.decode(&token).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token/tests/token_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let header: serde_json::Value = serde_json::from_slice(&header_bytes).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token/tests/token_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let header_bytes = URL_SAFE_NO_PAD.decode(header_segment).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token/tests/token_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let header_segment = token.split('.').next().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token/tests/token_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let payload: serde_json::Value = serde_json::from_slice(&payload_bytes).unwrap();"
-count = 3
-
-[[entry]]
-path = "crates/uselesskey-core-token/tests/token_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let payload_bytes = URL_SAFE_NO_PAD.decode(parts[1]).unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-token/tests/token_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let sig = token.split('.').nth(2).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token/tests/token_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let suffix = key.strip_prefix(API_KEY_PREFIX).unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-token/tests/token_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'payload["   "].as_str().unwrap().to_string()'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-token/tests/token_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "prop_assert_eq!(decoded.unwrap().len(), BEARER_RANDOM_BYTES);"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-x509-chain-negative/tests/comprehensive_tests.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                                               ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-x509-chain-negative/tests/comprehensive_tests.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                                       ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-x509-chain-negative/tests/comprehensive_tests.rs"
-family = "panic_macro"
-selector_kind = "macro"
-selector_callee = "panic"
-snippet = 'NotBeforeOffset::DaysFromNow(days) => panic!("                                         "),'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-x509-chain-negative/tests/comprehensive_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "expect_days_ago(modified.leaf_not_before.unwrap()) - modified.leaf_validity_days;"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-x509-chain-negative/tests/comprehensive_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let days_since_expired = expect_days_ago(modified.intermediate_not_before.unwrap())"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-x509-chain-negative/tests/comprehensive_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let offset = expect_days_ago(modified.intermediate_not_before.unwrap());"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-x509-chain-negative/tests/comprehensive_tests.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let offset = expect_days_ago(modified.leaf_not_before.unwrap());"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-x509-derive/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                                             ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-x509-derive/src/lib.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let epoch = OffsetDateTime::from_unix_timestamp(BASE_TIME_EPOCH_UNIX).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-x509-derive/tests/comprehensive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let epoch = OffsetDateTime::from_unix_timestamp(BASE_TIME_EPOCH_UNIX).unwrap();"
-count = 7
-
-[[entry]]
-path = "crates/uselesskey-core-x509-derive/tests/derivation_paths.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let epoch = time::OffsetDateTime::from_unix_timestamp(BASE_TIME_EPOCH_UNIX).unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-x509-derive/tests/edge_cases.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let epoch = time::OffsetDateTime::from_unix_timestamp(BASE_TIME_EPOCH_UNIX).unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-x509-derive/tests/integration.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let epoch = time::OffsetDateTime::from_unix_timestamp(BASE_TIME_EPOCH_UNIX).unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-x509-derive/tests/mutant_killers.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let epoch = OffsetDateTime::from_unix_timestamp(BASE_TIME_EPOCH_UNIX).unwrap();"
-count = 3
-
-[[entry]]
-path = "crates/uselesskey-core-x509-derive/tests/prop_x509_derive.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let epoch = time::OffsetDateTime::from_unix_timestamp(BASE_TIME_EPOCH_UNIX).unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core-x509-derive/tests/trait_impls.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'time::OffsetDateTime::from_unix_timestamp(BASE_TIME_EPOCH_UNIX).expect("           ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-x509-negative/tests/negative_tests.rs"
-family = "panic_macro"
-selector_kind = "macro"
-selector_callee = "panic"
-snippet = 'NotBeforeOffset::DaysFromNow(days) => panic!("                                         "),'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-x509-negative/tests/negative_tests.rs"
-family = "panic_macro"
-selector_kind = "macro"
-selector_callee = "panic"
-snippet = 'other => panic!("                                   "),'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-x509-negative/tests/negative_tests.rs"
-family = "panic_macro"
-selector_kind = "macro"
-selector_callee = "panic"
-snippet = 'other => panic!("                               "),'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-x509-negative/tests/negative_tests.rs"
-family = "panic_macro"
-selector_kind = "macro"
-selector_callee = "panic"
-snippet = 'panic!("                                ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-x509-negative/tests/negative_tests.rs"
-family = "panic_macro"
-selector_kind = "macro"
-selector_callee = "panic"
-snippet = 'panic!("                        ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-x509-spec/src/chain_spec.rs"
-family = "unreachable"
-selector_kind = "macro"
-selector_callee = "unreachable"
-snippet = 'unreachable!("                                ")'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-x509/tests/negative_policy_tests.rs"
-family = "panic_macro"
-selector_kind = "macro"
-selector_callee = "panic"
-snippet = 'NotBeforeOffset::DaysFromNow(days) => panic!("                                         "),'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-x509/tests/negative_policy_tests.rs"
-family = "panic_macro"
-selector_kind = "macro"
-selector_callee = "panic"
-snippet = '_ => panic!("                                "),'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-x509/tests/negative_policy_tests.rs"
-family = "panic_macro"
-selector_kind = "macro"
-selector_callee = "panic"
-snippet = 'other => panic!("                                   "),'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core-x509/tests/negative_policy_tests.rs"
-family = "panic_macro"
-selector_kind = "macro"
-selector_callee = "panic"
-snippet = 'other => panic!("                               "),'
+snippet = 'serde_json::from_slice(&fs::read(bundle_dir.join("             ")).expect("             "))'
 count = 1
 
 [[entry]]
@@ -7503,6 +3519,230 @@ family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
 snippet = 'let text = artifact.read_to_string().expect("              ");'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-core/src/srp/cache.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '.expect("                           ");'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-core/src/srp/cache.rs"
+family = "panic_macro"
+selector_kind = "macro"
+selector_callee = "panic"
+snippet = "panic!("
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-core/src/srp/cache.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = "assert_eq!(*cache.get_typed::<u32>(&id_a).unwrap(), 1);"
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-core/src/srp/cache.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = "assert_eq!(*cache.get_typed::<u32>(&id_b).unwrap(), 2);"
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-core/src/srp/cache.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = "let msg = err.downcast_ref::<String>().unwrap();"
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-core/src/srp/cache.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = "let results: Vec<u32> = handles.into_iter().map(|h| *h.join().unwrap()).collect();"
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-core/src/srp/factory.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '.expect("                                          ");'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-core/src/srp/factory.rs"
+family = "panic_macro"
+selector_kind = "macro"
+selector_callee = "panic"
+snippet = 'Mode::Random => panic!("          "),'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-core/src/srp/factory.rs"
+family = "panic_macro"
+selector_kind = "macro"
+selector_callee = "panic"
+snippet = 'panic!("                                                                ")'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-core/src/srp/negative/der.rs"
+family = "unreachable"
+selector_kind = "macro"
+selector_callee = "unreachable"
+snippet = "unreachable!()"
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-core/src/srp/negative/pem.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '.expect("                               ");'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-core/src/srp/negative/pem.rs"
+family = "unreachable"
+selector_kind = "macro"
+selector_callee = "unreachable"
+snippet = "unreachable!()"
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-core/src/srp/seed.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = "assert_ne!(seed, Seed::from_env_value(&text).unwrap());"
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-core/src/srp/seed.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = "assert_ne!(seed, Seed::from_env_value(text).unwrap());"
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-core/src/srp/seed.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = "let result = parse_hex_32(&hex).unwrap();"
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-core/src/srp/seed.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = 'let seed = Seed::from_env_value("                            ").unwrap();'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-core/src/srp/seed.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = 'let seed = Seed::from_env_value("   ").unwrap();'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-core/src/srp/seed.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = 'let seed = Seed::from_env_value(&format!("         ")).unwrap();'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-core/src/srp/seed.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = "let seed = Seed::from_env_value(&hex).unwrap();"
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-core/src/srp/seed.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = "let seed = Seed::from_env_value(&input).unwrap();"
+count = 2
+
+[[entry]]
+path = "crates/uselesskey-core/src/srp/seed.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = "let seed = Seed::from_env_value(hex).unwrap();"
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-core/src/srp/sink.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = "let read_back = temp.read_to_bytes().unwrap();"
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-core/src/srp/sink.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = "let read_back = temp.read_to_string().unwrap();"
+count = 2
+
+[[entry]]
+path = "crates/uselesskey-core/src/srp/sink.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = 'let temp = TempArtifact::new_bytes("        ", "    ", &bytes).unwrap();'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-core/src/srp/sink.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = 'let temp = TempArtifact::new_bytes("        ", "    ", &data).unwrap();'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-core/src/srp/sink.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = 'let temp = TempArtifact::new_string("        ", "    ", "       ").unwrap();'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-core/src/srp/sink.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = 'let temp = TempArtifact::new_string("        ", "    ", "   ").unwrap();'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-core/src/srp/sink.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = 'let temp = TempArtifact::new_string("        ", "    ", text).unwrap();'
 count = 1
 
 [[entry]]
@@ -10442,102 +6682,6 @@ snippet = "server.writer().write_all(server_msg).unwrap();"
 count = 1
 
 [[entry]]
-path = "crates/uselesskey-jose-openid/examples/jwt_jose_openid.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                        ")'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-jose-openid/examples/jwt_jose_openid.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                      ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-jose-openid/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                                               ")'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-jose-openid/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                                              ")'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-jose-openid/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                                             ")'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-jose-openid/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                                            ")'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-jose-openid/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                                           ")'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-jose-openid/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                                          ")'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-jose-openid/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                               ");'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-jose-openid/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                             ");'
-count = 3
-
-[[entry]]
-path = "crates/uselesskey-jose-openid/tests/integration.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("            ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-jose-openid/tests/integration.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'encode(&Header::new(Algorithm::ES384), &claims, &key.encoding_key()).expect("          ");'
-count = 1
-
-[[entry]]
 path = "crates/uselesskey-jsonwebtoken/src/lib.rs"
 family = "expect"
 selector_kind = "method_call"
@@ -11314,6 +7458,102 @@ snippet = '.expect("                             ");'
 count = 1
 
 [[entry]]
+path = "crates/uselesskey-jwk/src/srp/builder.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'let keys = v["    "].as_array().expect("          ");'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-jwk/src/srp/builder.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'let v: serde_json::Value = serde_json::from_str(&json).expect("          ");'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-jwk/src/srp/kid.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '.expect("                             ");'
+count = 2
+
+[[entry]]
+path = "crates/uselesskey-jwk/src/srp/kid.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '.expect("                         ");'
+count = 2
+
+[[entry]]
+path = "crates/uselesskey-jwk/src/srp/shape.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'let keys = value["    "].as_array().expect("          ");'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-jwk/src/srp/shape.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'let pub_round_trip: Value = serde_json::from_str(&pub_text).expect("                      ");'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-jwk/src/srp/shape.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'let s = serde_json::to_string(self).expect("              ");'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-jwk/src/srp/shape.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'let s = serde_json::to_string(self).expect("             ");'
+count = 3
+
+[[entry]]
+path = "crates/uselesskey-jwk/src/srp/shape.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'let v: Value = serde_json::from_str(&json).expect("          ");'
+count = 4
+
+[[entry]]
+path = "crates/uselesskey-jwk/src/srp/shape.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'serde_json::from_str(&private_text).expect("                          ");'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-jwk/src/srp/shape.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'serde_json::to_value(self).expect("              ")'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-jwk/src/srp/shape.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'serde_json::to_value(self).expect("             ")'
+count = 3
+
+[[entry]]
 path = "crates/uselesskey-jwk/tests/jwk_unit.rs"
 family = "expect"
 selector_kind = "method_call"
@@ -11418,6 +7658,14 @@ snippet = 'serde_json::to_value(rsa_public(" ")).unwrap(),'
 count = 1
 
 [[entry]]
+path = "crates/uselesskey-jwk/tests/negative_fixtures.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'value["    "].as_array().expect("          ").as_slice()'
+count = 1
+
+[[entry]]
 path = "crates/uselesskey-jwk/tests/negative_reexports.rs"
 family = "expect"
 selector_kind = "method_call"
@@ -11439,38 +7687,6 @@ family = "unwrap"
 selector_kind = "method_call"
 selector_callee = "unwrap"
 snippet = "let parsed: serde_json::Value = serde_json::from_str(&display).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-pgp-native/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                                                  ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-pgp-native/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                                                 ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-pgp-native/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                                                ")'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-pgp-native/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                                               ")'
 count = 1
 
 [[entry]]
@@ -11623,6 +7839,38 @@ family = "unwrap"
 selector_kind = "method_call"
 selector_callee = "unwrap"
 snippet = 'let fx = Factory::deterministic(Seed::from_env_value("       ").unwrap());'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-pgp/src/native.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '.expect("                                                  ");'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-pgp/src/native.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '.expect("                                                 ");'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-pgp/src/native.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '.expect("                                                ")'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-pgp/src/native.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '.expect("                                               ")'
 count = 1
 
 [[entry]]
@@ -13330,6 +9578,14 @@ snippet = "server.write_tls(&mut buf).unwrap();"
 count = 1
 
 [[entry]]
+path = "crates/uselesskey-rustls/tests/snapshots_rustls_pki.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '.expect("                             ");'
+count = 1
+
+[[entry]]
 path = "crates/uselesskey-rustls/tests/testutil.rs"
 family = "expect"
 selector_kind = "method_call"
@@ -13842,6 +10098,126 @@ snippet = 'server.with_phase("       ").expect("            ");'
 count = 2
 
 [[entry]]
+path = "crates/uselesskey-token/src/srp/shape.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '.expect("                                              ")'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-token/src/srp/shape.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '.expect("                                      ")'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-token/src/srp/shape.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '.expect("                                 ");'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-token/src/srp/shape.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '.expect("                                ");'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-token/src/srp/shape.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '.expect("                      ");'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-token/src/srp/shape.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'let bytes = URL_SAFE_NO_PAD.decode(segment).expect("                  ");'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-token/src/srp/shape.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'let decoded = URL_SAFE_NO_PAD.decode(value).expect("                ");'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-token/src/srp/shape.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'let header = parts.next().expect("                  ").to_string();'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-token/src/srp/shape.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'let json = serde_json::to_vec(value).expect("                    ");'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-token/src/srp/shape.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'let json: serde_json::Value = serde_json::from_slice(&payload).expect("             ");'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-token/src/srp/shape.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'let payload = parts.next().expect("                   ").to_string();'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-token/src/srp/shape.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'let payload_json = serde_json::to_vec(&payload).expect("            ");'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-token/src/srp/shape.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'let signature = parts.next().expect("                     ").to_string();'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-token/src/srp/shape.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'let value: Value = serde_json::from_slice(&bytes).expect("                                ");'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-token/src/srp/shape.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'serde_json::from_slice(&bytes).expect("                      ")'
+count = 1
+
+[[entry]]
 path = "crates/uselesskey-token/src/token.rs"
 family = "expect"
 selector_kind = "method_call"
@@ -14238,8 +10614,16 @@ path = "crates/uselesskey-token/tests/negative_fixtures.rs"
 family = "unwrap"
 selector_kind = "method_call"
 selector_callee = "unwrap"
-snippet = 'let fx = Factory::deterministic(Seed::from_env_value("                     ").unwrap());'
+snippet = 'let fx = Factory::deterministic(Seed::from_env_value("                       ").unwrap());'
 count = 1
+
+[[entry]]
+path = "crates/uselesskey-token/tests/negative_fixtures.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = 'let fx = Factory::deterministic(Seed::from_env_value("                     ").unwrap());'
+count = 2
 
 [[entry]]
 path = "crates/uselesskey-token/tests/negative_fixtures.rs"
@@ -15327,6 +11711,30 @@ family = "unwrap"
 selector_kind = "method_call"
 selector_callee = "unwrap"
 snippet = 'let seed = Seed::from_env_value("         ").unwrap();'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-x509/src/srp/derive.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '.expect("                                             ");'
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-x509/src/srp/derive.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = "let epoch = OffsetDateTime::from_unix_timestamp(BASE_TIME_EPOCH_UNIX).unwrap();"
+count = 1
+
+[[entry]]
+path = "crates/uselesskey-x509/src/srp/spec/chain_spec.rs"
+family = "unreachable"
+selector_kind = "macro"
+selector_callee = "unreachable"
+snippet = 'unreachable!("                                ")'
 count = 1
 
 [[entry]]
@@ -19438,8 +15846,32 @@ path = "xtask/src/main.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
-snippet = '.expect("                                            ");'
+snippet = '.expect("                                                                  ");'
 count = 1
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '.expect("                                                           ");'
+count = 1
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '.expect("                                               ");'
+count = 1
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '.expect("                                            ");'
+count = 2
 
 [[entry]]
 path = "xtask/src/main.rs"
@@ -19462,8 +15894,64 @@ path = "xtask/src/main.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
+snippet = '.expect("                                ");'
+count = 1
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
 snippet = '.expect("                            ");'
 count = 1
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '.expect("                           ");'
+count = 1
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '.expect("                          ");'
+count = 2
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '.expect("                         ");'
+count = 1
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '.expect("                       "),'
+count = 3
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '.expect("                       ");'
+count = 1
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = '.expect("                      "),'
+count = 3
 
 [[entry]]
 path = "xtask/src/main.rs"
@@ -19478,8 +15966,16 @@ path = "xtask/src/main.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
+snippet = '.expect("                    "),'
+count = 1
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
 snippet = '.expect("                    ");'
-count = 3
+count = 2
 
 [[entry]]
 path = "xtask/src/main.rs"
@@ -19487,7 +15983,7 @@ family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
 snippet = '.expect("                  ");'
-count = 1
+count = 2
 
 [[entry]]
 path = "xtask/src/main.rs"
@@ -19495,7 +15991,7 @@ family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
 snippet = '.expect("                 ");'
-count = 1
+count = 3
 
 [[entry]]
 path = "xtask/src/main.rs"
@@ -19598,6 +16094,22 @@ path = "xtask/src/main.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
+snippet = 'fs::read_to_string(dir.path().join("          ")).expect("                     ");'
+count = 1
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'fs::read_to_string(repo.path().join("                     ")).expect("             ");'
+count = 1
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
 snippet = 'fs::read_to_string(workspace_path(PERF_BASELINE_PATH)).expect("                  ");'
 count = 1
 
@@ -19638,6 +16150,22 @@ path = "xtask/src/main.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
+snippet = 'fs::write(source.path().join("           "), "        ").expect("                  ");'
+count = 1
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'fs::write(source.path().join("       "), "        ").expect("              ");'
+count = 1
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
 snippet = 'git_changed_files("           ").expect("                                  ");'
 count = 1
 
@@ -19671,7 +16199,15 @@ family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
 snippet = 'let dir = tempfile::tempdir().expect("       ");'
-count = 20
+count = 21
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'let expected = bundle_proof_expected_artifacts("   ").expect("                      ");'
+count = 1
 
 [[entry]]
 path = "xtask/src/main.rs"
@@ -19694,8 +16230,24 @@ path = "xtask/src/main.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
+snippet = 'let markdown = render_bundle_proof_markdown(&receipt).expect("                     ");'
+count = 3
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
 snippet = 'let name = caps.name("    ").expect("            ").as_str();'
 count = 1
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'let p = path.as_ref().expect("                    ");'
+count = 2
 
 [[entry]]
 path = "xtask/src/main.rs"
@@ -19726,8 +16278,32 @@ path = "xtask/src/main.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
+snippet = 'let repo = tempfile::tempdir().expect("            ");'
+count = 1
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'let source = tempfile::tempdir().expect("              ");'
+count = 1
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
 snippet = 'let targets = list_fuzz_targets().expect("            ");'
 count = 2
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "expect"
+selector_kind = "method_call"
+selector_callee = "expect"
+snippet = 'read_json_file(&dir.path().join("                  ")).expect("              ");'
+count = 1
 
 [[entry]]
 path = "xtask/src/main.rs"
@@ -19747,6 +16323,14 @@ count = 1
 
 [[entry]]
 path = "xtask/src/main.rs"
+family = "panic_macro"
+selector_kind = "macro"
+selector_callee = "panic"
+snippet = '_ => panic!("                           "),'
+count = 2
+
+[[entry]]
+path = "xtask/src/main.rs"
 family = "unwrap"
 selector_kind = "method_call"
 selector_callee = "unwrap"
@@ -19759,7 +16343,15 @@ family = "unwrap"
 selector_kind = "method_call"
 selector_callee = "unwrap"
 snippet = ".unwrap();"
-count = 10
+count = 14
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = 'Cli::try_parse_from(["     ", "              ", "         ", "     "]).unwrap();'
+count = 1
 
 [[entry]]
 path = "xtask/src/main.rs"
@@ -19768,6 +16360,46 @@ selector_kind = "method_call"
 selector_callee = "unwrap"
 snippet = "assert!(parse_lcov_coverage(lcov.to_str().unwrap()).is_none());"
 count = 2
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = 'bundle_proof_json_filename("   ").unwrap(),'
+count = 1
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = 'bundle_proof_markdown_filename("   ").unwrap(),'
+count = 1
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = 'bundle_proof_markdown_title("   ").unwrap(),'
+count = 1
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = "chrono::NaiveDate::from_ymd_opt(2026, 5, 9).unwrap(),"
+count = 2
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = 'default_bundle_proof_out_dir("   ").unwrap(),'
+count = 1
 
 [[entry]]
 path = "xtask/src/main.rs"
@@ -20014,7 +16646,31 @@ path = "xtask/src/main.rs"
 family = "unwrap"
 selector_kind = "method_call"
 selector_callee = "unwrap"
+snippet = "let crates = mutation_nightly_crates(MutationNightlyScope::Adapters, None).unwrap();"
+count = 1
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = "let crates = mutation_nightly_crates(MutationNightlyScope::Public, None).unwrap();"
+count = 1
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
 snippet = "let dir = Path::new(PUBLISH_STATE_PATH).parent().unwrap();"
+count = 1
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = 'let fx = Factory::deterministic(Seed::from_env_value("              ").unwrap());'
 count = 1
 
 [[entry]]
@@ -20030,7 +16686,7 @@ path = "xtask/src/main.rs"
 family = "unwrap"
 selector_kind = "method_call"
 selector_callee = "unwrap"
-snippet = 'let idx = resolve_start_index(Some("                    "), false).unwrap();'
+snippet = 'let idx = resolve_start_index(Some("          "), false).unwrap();'
 count = 1
 
 [[entry]]
@@ -20038,7 +16694,7 @@ path = "xtask/src/main.rs"
 family = "unwrap"
 selector_kind = "method_call"
 selector_callee = "unwrap"
-snippet = 'let idx = resolve_start_index(Some("          "), false).unwrap();'
+snippet = "let idx = resolve_start_index(Some(first), false).unwrap();"
 count = 1
 
 [[entry]]
@@ -20055,6 +16711,14 @@ family = "unwrap"
 selector_kind = "method_call"
 selector_callee = "unwrap"
 snippet = "let json = serde_json::to_string_pretty(&state).unwrap();"
+count = 1
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = 'let ok_path = Cli::try_parse_from(["     ", "              ", "      ", " "]).unwrap();'
 count = 1
 
 [[entry]]
@@ -20079,6 +16743,22 @@ family = "unwrap"
 selector_kind = "method_call"
 selector_callee = "unwrap"
 snippet = "let w = wait.unwrap();"
+count = 1
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = "match parsed.unwrap().cmd {"
+count = 1
+
+[[entry]]
+path = "xtask/src/main.rs"
+family = "unwrap"
+selector_kind = "method_call"
+selector_callee = "unwrap"
+snippet = 'mutation_nightly_crates(MutationNightlyScope::Crate, Some("                ")).unwrap(),'
 count = 1
 
 [[entry]]

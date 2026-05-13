@@ -3,7 +3,8 @@
 use arbitrary::Arbitrary;
 use libfuzzer_sys::fuzz_target;
 
-use uselesskey_core_id::{ArtifactId, DerivationVersion, Seed, derive_seed};
+use uselesskey_core::srp::identity::derive_seed;
+use uselesskey_core::{ArtifactId, DerivationVersion, Seed};
 
 #[derive(Arbitrary, Debug)]
 struct SeedDerivationInput {

@@ -3,7 +3,7 @@
 use arbitrary::Arbitrary;
 use libfuzzer_sys::fuzz_target;
 
-use uselesskey_core_x509_spec::{ChainSpec, KeyUsage, NotBeforeOffset, X509Spec};
+use uselesskey_x509::{ChainSpec, KeyUsage, NotBeforeOffset, X509Spec};
 
 #[derive(Arbitrary, Debug)]
 struct X509SpecInput {

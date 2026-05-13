@@ -5,7 +5,7 @@ use cucumber::{then, when};
 #[cfg(feature = "uk-core-token-shape")]
 use uselesskey_core::Seed;
 #[cfg(feature = "uk-core-token-shape")]
-use uselesskey_core_token_shape::{
+use uselesskey_token::srp::shape::{
     TokenKind, authorization_scheme, generate_api_key, generate_bearer_token,
     generate_oauth_access_token, generate_token,
 };

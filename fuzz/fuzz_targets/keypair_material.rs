@@ -3,7 +3,7 @@
 use arbitrary::Arbitrary;
 use libfuzzer_sys::fuzz_target;
 
-use uselesskey_core_keypair_material::Pkcs8SpkiKeyMaterial;
+use uselesskey_core::srp::keypair_material::Pkcs8SpkiKeyMaterial;
 
 #[derive(Arbitrary, Debug)]
 struct KeypairInput {

@@ -8,35 +8,12 @@ use serde::Deserialize;
 
 const METADATA_PATH: &str = "docs/metadata/workspace-docs.json";
 
-const LEGACY_INTERNAL_SHARDS: &[&str] = &[
-    "uselesskey-core-base62",
-    "uselesskey-core-cache",
-    "uselesskey-core-factory",
-    "uselesskey-core-hash",
-    "uselesskey-core-hmac-spec",
-    "uselesskey-core-id",
-    "uselesskey-core-jwk",
-    "uselesskey-core-jwk-builder",
-    "uselesskey-core-jwk-shape",
-    "uselesskey-core-jwks-order",
-    "uselesskey-core-keypair",
-    "uselesskey-core-keypair-material",
-    "uselesskey-core-kid",
-    "uselesskey-core-negative",
-    "uselesskey-core-negative-der",
-    "uselesskey-core-negative-pem",
-    "uselesskey-core-rustls-pki",
-    "uselesskey-core-seed",
-    "uselesskey-core-sink",
-    "uselesskey-core-token",
-    "uselesskey-core-token-shape",
-    "uselesskey-core-x509",
-    "uselesskey-core-x509-chain-negative",
-    "uselesskey-core-x509-derive",
-    "uselesskey-core-x509-negative",
-    "uselesskey-core-x509-spec",
-    "uselesskey-token-spec",
-];
+/// Historically held the published-internal `uselesskey-core-*` and
+/// `uselesskey-token-spec` shards that wrapped owner-crate `srp::*` modules.
+/// All shards were removed in v0.8.0 (PR-4 of the SRP collapse). The list is
+/// retained as an empty slice so `package_is_core_shard` continues to reject
+/// any future re-introduction of an internal `uselesskey-core-*` shard.
+const LEGACY_INTERNAL_SHARDS: &[&str] = &[];
 
 #[derive(Debug, Deserialize)]
 struct DocsMetadata {
@@ -398,67 +375,8 @@ struct PublicSurfaceSummary {
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        CargoPackage, CrateEntry, DocsMetadata, PublicSurfaceSummary, SupportEntry,
-        validate_public_surface,
-    };
+    use super::{CargoPackage, CrateEntry, DocsMetadata, SupportEntry, validate_public_surface};
     use std::path::PathBuf;
-
-    #[test]
-    fn current_legacy_internal_shard_is_allowed_with_internal_metadata() {
-        let packages = vec![publishable_package(
-            "uselesskey-core-cache",
-            "crates/uselesskey-core-cache/Cargo.toml",
-        )];
-        let metadata = metadata_with(vec![SupportEntry {
-            name: "uselesskey-core-cache".to_string(),
-            support_tier: "experimental".to_string(),
-            publish_status: "published".to_string(),
-            intended_audience: "repo-internal".to_string(),
-            semver_expectation: "No public API stability commitments.".to_string(),
-            msrv_policy: "Tracks workspace MSRV.".to_string(),
-            deprecation_note: Some("Prefer uselesskey-core.".to_string()),
-        }]);
-
-        let summary = validate_public_surface(&packages, &metadata, &["uselesskey-core-cache"])
-            .expect("valid surface");
-
-        assert_eq!(
-            summary,
-            PublicSurfaceSummary {
-                workspace_crates: 1,
-                public_promises: 0,
-                adapter_promises: 0,
-                published_internals: 1,
-                workspace_only: 0,
-            }
-        );
-    }
-
-    #[test]
-    fn published_internal_must_remain_publishable_until_demoted() {
-        let packages = vec![unpublishable_package(
-            "uselesskey-core-cache",
-            "crates/uselesskey-core-cache/Cargo.toml",
-        )];
-        let metadata = metadata_with(vec![SupportEntry {
-            name: "uselesskey-core-cache".to_string(),
-            support_tier: "experimental".to_string(),
-            publish_status: "published".to_string(),
-            intended_audience: "repo-internal".to_string(),
-            semver_expectation: "No public API stability commitments.".to_string(),
-            msrv_policy: "Tracks workspace MSRV.".to_string(),
-            deprecation_note: Some("Prefer uselesskey-core.".to_string()),
-        }]);
-
-        let err = validate_public_surface(&packages, &metadata, &["uselesskey-core-cache"])
-            .expect_err("must reject stale published metadata");
-
-        assert!(
-            err.to_string()
-                .contains("published internal crate 'uselesskey-core-cache' is not publishable")
-        );
-    }
 
     #[test]
     fn unknown_core_shard_is_rejected() {
@@ -581,14 +499,6 @@ mod tests {
             name: name.to_string(),
             manifest_path: PathBuf::from(manifest_path),
             publish: None,
-        }
-    }
-
-    fn unpublishable_package(name: &str, manifest_path: &str) -> CargoPackage {
-        CargoPackage {
-            name: name.to_string(),
-            manifest_path: PathBuf::from(manifest_path),
-            publish: Some(Vec::new()),
         }
     }
 

@@ -3,9 +3,8 @@
 Typed JWK/JWKS models, deterministic JWKS builders, ordering helpers, and
 scanner-safe negative JWK fixtures used by `uselesskey` fixture crates.
 
-This is the canonical public JWK/JWKS crate. The former `uselesskey-core-jwk*`
-implementation crates are compatibility shims; new downstream code should import
-JWK types and `JwksBuilder` from `uselesskey-jwk`.
+This is the canonical public JWK/JWKS crate. (The former `uselesskey-core-jwk*`
+published-internal compatibility shims were removed in v0.8.0.)
 
 ## Example
 

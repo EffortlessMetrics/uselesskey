@@ -2,7 +2,7 @@
 
 use libfuzzer_sys::fuzz_target;
 
-use uselesskey_core_negative_pem::{corrupt_pem, corrupt_pem_deterministic, CorruptPem};
+use uselesskey_core::negative::{corrupt_pem, corrupt_pem_deterministic, CorruptPem};
 
 // Fuzz PEM corruption with realistic PEM-shaped input.
 // Unlike `core_negative_pem` (which feeds raw bytes), this target wraps

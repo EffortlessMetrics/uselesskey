@@ -3,7 +3,7 @@
 use libfuzzer_sys::fuzz_target;
 use std::sync::Arc;
 use uselesskey::Seed;
-use uselesskey_core_factory::Factory;
+use uselesskey_core::Factory;
 
 fuzz_target!(|data: &[u8]| {
     let mut seed = [0u8; 32];

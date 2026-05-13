@@ -2,7 +2,7 @@
   "workspace_crates": [
     {
       "name": "uselesskey",
-      "description": "Public facade \u2014 re-exports all key types and traits behind feature flags"
+      "description": "Public facade — re-exports all key types and traits behind feature flags"
     },
     {
       "name": "uselesskey-core",
@@ -77,14 +77,6 @@
     {
       "name": "uselesskey-jsonwebtoken",
       "description": "`jsonwebtoken` `EncodingKey` / `DecodingKey`"
-    },
-    {
-      "name": "uselesskey-jose-openid",
-      "description": "JOSE/OpenID-oriented native `jsonwebtoken` key conversions"
-    },
-    {
-      "name": "uselesskey-pgp-native",
-      "description": "Native `pgp` `SignedSecretKey` / `SignedPublicKey` adapters"
     },
     {
       "name": "uselesskey-rustls",
@@ -199,266 +191,6 @@
       "intended_audience": "most-users"
     },
     {
-      "name": "uselesskey-core-base62",
-      "support_tier": "experimental",
-      "publish_status": "published",
-      "facade_exposed": false,
-      "semver_expectation": "Published-internal compatibility shim; base62 implementation ownership moved into `uselesskey-token`.",
-      "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
-      "intended_audience": "repo-internal",
-      "deprecation_note": "Compatibility shim; base62 implementation ownership moved into `uselesskey-token`."
-    },
-    {
-      "name": "uselesskey-core-cache",
-      "support_tier": "experimental",
-      "publish_status": "published",
-      "facade_exposed": false,
-      "semver_expectation": "Published-internal compatibility shim; cache mechanics are owned by `uselesskey-core`.",
-      "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
-      "intended_audience": "repo-internal",
-      "deprecation_note": "Prefer `uselesskey-core`; this crate is retained only as a compatibility shim."
-    },
-    {
-      "name": "uselesskey-core-factory",
-      "support_tier": "experimental",
-      "publish_status": "published",
-      "facade_exposed": false,
-      "semver_expectation": "Published-internal compatibility shim; factory mechanics are owned by `uselesskey-core`.",
-      "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
-      "intended_audience": "repo-internal",
-      "deprecation_note": "Prefer `uselesskey-core`; this crate is retained only as a compatibility shim."
-    },
-    {
-      "name": "uselesskey-core-hash",
-      "support_tier": "experimental",
-      "publish_status": "published",
-      "facade_exposed": false,
-      "semver_expectation": "Published-internal compatibility shim; derivation hashing is owned by `uselesskey-core`.",
-      "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
-      "intended_audience": "repo-internal",
-      "deprecation_note": "Prefer `uselesskey-core`; this crate is retained only as a compatibility shim."
-    },
-    {
-      "name": "uselesskey-core-hmac-spec",
-      "support_tier": "experimental",
-      "publish_status": "published",
-      "facade_exposed": false,
-      "semver_expectation": "Internal building blocks; APIs may change between minor releases.",
-      "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
-      "intended_audience": "repo-internal",
-      "deprecation_note": "Prefer depending on `uselesskey` or key-type facade crates unless you are extending the workspace."
-    },
-    {
-      "name": "uselesskey-core-id",
-      "support_tier": "experimental",
-      "publish_status": "published",
-      "facade_exposed": false,
-      "semver_expectation": "Published-internal compatibility shim; artifact identity is owned by `uselesskey-core`.",
-      "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
-      "intended_audience": "repo-internal",
-      "deprecation_note": "Prefer `uselesskey-core`; this crate is retained only as a compatibility shim."
-    },
-    {
-      "name": "uselesskey-core-jwk",
-      "support_tier": "experimental",
-      "publish_status": "published",
-      "facade_exposed": false,
-      "semver_expectation": "Published-internal compatibility shim; the supported JWK surface is `uselesskey-jwk`.",
-      "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
-      "intended_audience": "repo-internal",
-      "deprecation_note": "Prefer `uselesskey-jwk`; this crate is retained only as a compatibility shim."
-    },
-    {
-      "name": "uselesskey-core-jwk-builder",
-      "support_tier": "experimental",
-      "publish_status": "published",
-      "facade_exposed": false,
-      "semver_expectation": "Published-internal compatibility shim; the supported JWKS builder surface is `uselesskey-jwk`.",
-      "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
-      "intended_audience": "repo-internal",
-      "deprecation_note": "Prefer `uselesskey-jwk::JwksBuilder`; this crate is retained only as a compatibility shim."
-    },
-    {
-      "name": "uselesskey-core-jwk-shape",
-      "support_tier": "experimental",
-      "publish_status": "published",
-      "facade_exposed": false,
-      "semver_expectation": "Published-internal compatibility shim; the supported JWK shape surface is `uselesskey-jwk`.",
-      "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
-      "intended_audience": "repo-internal",
-      "deprecation_note": "Prefer `uselesskey-jwk`; this crate is retained only as a compatibility shim."
-    },
-    {
-      "name": "uselesskey-core-jwks-order",
-      "support_tier": "experimental",
-      "publish_status": "published",
-      "facade_exposed": false,
-      "semver_expectation": "Published-internal compatibility shim; stable JWKS ordering is owned by `uselesskey-jwk`.",
-      "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
-      "intended_audience": "repo-internal",
-      "deprecation_note": "Prefer `uselesskey-jwk`; this crate is retained only as a compatibility shim."
-    },
-    {
-      "name": "uselesskey-core-keypair",
-      "support_tier": "experimental",
-      "publish_status": "published",
-      "facade_exposed": false,
-      "semver_expectation": "Published-internal compatibility shim; shared keypair helpers are owned by `uselesskey-core`.",
-      "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
-      "intended_audience": "repo-internal",
-      "deprecation_note": "Prefer fixture-family crates or `uselesskey-core`; this crate is retained only as a compatibility shim."
-    },
-    {
-      "name": "uselesskey-core-keypair-material",
-      "support_tier": "experimental",
-      "publish_status": "published",
-      "facade_exposed": false,
-      "semver_expectation": "Published-internal compatibility shim; PKCS#8/SPKI material helpers are owned by `uselesskey-core`.",
-      "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
-      "intended_audience": "repo-internal",
-      "deprecation_note": "Prefer fixture-family crates or `uselesskey-core`; this crate is retained only as a compatibility shim."
-    },
-    {
-      "name": "uselesskey-core-kid",
-      "support_tier": "experimental",
-      "publish_status": "published",
-      "facade_exposed": false,
-      "semver_expectation": "Published-internal compatibility shim; deterministic kid helpers are owned by `uselesskey-jwk`.",
-      "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
-      "intended_audience": "repo-internal",
-      "deprecation_note": "Prefer fixture `kid()` accessors or `uselesskey-jwk`; this crate is retained only as a compatibility shim."
-    },
-    {
-      "name": "uselesskey-core-negative",
-      "support_tier": "experimental",
-      "publish_status": "published",
-      "facade_exposed": false,
-      "semver_expectation": "Published-internal compatibility shim; generic negative helpers are owned by `uselesskey-core`.",
-      "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
-      "intended_audience": "repo-internal",
-      "deprecation_note": "Prefer `uselesskey::negative` or `uselesskey-core`; this crate is retained only as a compatibility shim."
-    },
-    {
-      "name": "uselesskey-core-negative-der",
-      "support_tier": "experimental",
-      "publish_status": "published",
-      "facade_exposed": false,
-      "semver_expectation": "Published-internal compatibility shim; DER corruption helpers are owned by `uselesskey-core`.",
-      "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
-      "intended_audience": "repo-internal",
-      "deprecation_note": "Prefer `uselesskey::negative` or `uselesskey-core`; this crate is retained only as a compatibility shim."
-    },
-    {
-      "name": "uselesskey-core-negative-pem",
-      "support_tier": "experimental",
-      "publish_status": "published",
-      "facade_exposed": false,
-      "semver_expectation": "Published-internal compatibility shim; PEM corruption helpers are owned by `uselesskey-core`.",
-      "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
-      "intended_audience": "repo-internal",
-      "deprecation_note": "Prefer `uselesskey::negative` or `uselesskey-core`; this crate is retained only as a compatibility shim."
-    },
-    {
-      "name": "uselesskey-core-rustls-pki",
-      "support_tier": "experimental",
-      "publish_status": "published",
-      "facade_exposed": false,
-      "semver_expectation": "Internal building blocks; APIs may change between minor releases.",
-      "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
-      "intended_audience": "repo-internal",
-      "deprecation_note": "Prefer depending on `uselesskey` or key-type facade crates unless you are extending the workspace."
-    },
-    {
-      "name": "uselesskey-core-seed",
-      "support_tier": "experimental",
-      "publish_status": "published",
-      "facade_exposed": false,
-      "semver_expectation": "Published-internal compatibility shim; seed parsing and redaction are owned by `uselesskey-core`.",
-      "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
-      "intended_audience": "repo-internal",
-      "deprecation_note": "Prefer `uselesskey-core::Seed`; this crate is retained only as a compatibility shim."
-    },
-    {
-      "name": "uselesskey-core-sink",
-      "support_tier": "experimental",
-      "publish_status": "published",
-      "facade_exposed": false,
-      "semver_expectation": "Published-internal compatibility shim; tempfile sink mechanics are owned by `uselesskey-core`.",
-      "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
-      "intended_audience": "repo-internal",
-      "deprecation_note": "Prefer `uselesskey::TempArtifact` or `uselesskey-core`; this crate is retained only as a compatibility shim."
-    },
-    {
-      "name": "uselesskey-core-token",
-      "support_tier": "experimental",
-      "publish_status": "published",
-      "facade_exposed": false,
-      "semver_expectation": "Internal building blocks; APIs may change between minor releases.",
-      "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
-      "intended_audience": "repo-internal",
-      "deprecation_note": "Compatibility shim; supported token fixture APIs now live under `uselesskey-token`."
-    },
-    {
-      "name": "uselesskey-core-token-shape",
-      "support_tier": "experimental",
-      "publish_status": "published",
-      "facade_exposed": false,
-      "semver_expectation": "Internal building blocks; APIs may change between minor releases.",
-      "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
-      "intended_audience": "repo-internal",
-      "deprecation_note": "Compatibility shim; token-shape implementation ownership moved into `uselesskey-token`."
-    },
-    {
-      "name": "uselesskey-core-x509",
-      "support_tier": "experimental",
-      "publish_status": "published",
-      "facade_exposed": false,
-      "semver_expectation": "Published-internal compatibility shim; X.509 policy helpers are owned by `uselesskey-x509`.",
-      "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
-      "intended_audience": "repo-internal",
-      "deprecation_note": "Prefer `uselesskey-x509`; this crate is retained only as a compatibility shim."
-    },
-    {
-      "name": "uselesskey-core-x509-chain-negative",
-      "support_tier": "experimental",
-      "publish_status": "published",
-      "facade_exposed": false,
-      "semver_expectation": "Published-internal compatibility shim; chain negative policy is owned by `uselesskey-x509`.",
-      "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
-      "intended_audience": "repo-internal",
-      "deprecation_note": "Prefer `uselesskey-x509::ChainNegative`; this crate is retained only as a compatibility shim."
-    },
-    {
-      "name": "uselesskey-core-x509-derive",
-      "support_tier": "experimental",
-      "publish_status": "published",
-      "facade_exposed": false,
-      "semver_expectation": "Published-internal compatibility shim; deterministic X.509 derivation is owned by `uselesskey-x509`.",
-      "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
-      "intended_audience": "repo-internal",
-      "deprecation_note": "Prefer `uselesskey-x509`; this crate is retained only as a compatibility shim."
-    },
-    {
-      "name": "uselesskey-core-x509-negative",
-      "support_tier": "experimental",
-      "publish_status": "published",
-      "facade_exposed": false,
-      "semver_expectation": "Published-internal compatibility shim; certificate negative policy is owned by `uselesskey-x509`.",
-      "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
-      "intended_audience": "repo-internal",
-      "deprecation_note": "Prefer `uselesskey-x509::X509Negative`; this crate is retained only as a compatibility shim."
-    },
-    {
-      "name": "uselesskey-core-x509-spec",
-      "support_tier": "experimental",
-      "publish_status": "published",
-      "facade_exposed": false,
-      "semver_expectation": "Published-internal compatibility shim; X.509 specs are owned by `uselesskey-x509`.",
-      "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
-      "intended_audience": "repo-internal",
-      "deprecation_note": "Prefer `uselesskey-x509::{X509Spec, ChainSpec}`; this crate is retained only as a compatibility shim."
-    },
-    {
       "name": "uselesskey-ecdsa",
       "support_tier": "stable",
       "publish_status": "published",
@@ -522,15 +254,6 @@
       "intended_audience": "repo-internal"
     },
     {
-      "name": "uselesskey-jose-openid",
-      "support_tier": "incubating",
-      "publish_status": "published",
-      "facade_exposed": false,
-      "semver_expectation": "Minor releases may refine APIs before 1.0.",
-      "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
-      "intended_audience": "adapter-users"
-    },
-    {
       "name": "uselesskey-jsonwebtoken",
       "support_tier": "stable",
       "publish_status": "published",
@@ -556,15 +279,6 @@
       "semver_expectation": "Normal semver guarantees for public APIs.",
       "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
       "intended_audience": "most-users"
-    },
-    {
-      "name": "uselesskey-pgp-native",
-      "support_tier": "incubating",
-      "publish_status": "published",
-      "facade_exposed": false,
-      "semver_expectation": "Minor releases may refine APIs before 1.0.",
-      "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
-      "intended_audience": "adapter-users"
     },
     {
       "name": "uselesskey-pkcs11-mock",
@@ -655,16 +369,6 @@
       "semver_expectation": "Normal semver guarantees for public APIs.",
       "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
       "intended_audience": "most-users"
-    },
-    {
-      "name": "uselesskey-token-spec",
-      "support_tier": "experimental",
-      "publish_status": "published",
-      "facade_exposed": false,
-      "semver_expectation": "Internal building blocks; APIs may change between minor releases.",
-      "msrv_policy": "Tracks workspace MSRV (Rust 1.95).",
-      "intended_audience": "repo-internal",
-      "deprecation_note": "Compatibility shim; canonical `TokenSpec` now lives under `uselesskey-token`."
     },
     {
       "name": "uselesskey-tonic",
@@ -879,19 +583,19 @@
     {
       "feature": "rsa",
       "extension_trait": "RsaFactoryExt",
-      "algorithms": "RSA 2048/3072/4096 \u2014 PKCS#8, SPKI, PEM, DER",
+      "algorithms": "RSA 2048/3072/4096 — PKCS#8, SPKI, PEM, DER",
       "implies": "-"
     },
     {
       "feature": "ecdsa",
       "extension_trait": "EcdsaFactoryExt",
-      "algorithms": "P-256 (ES256), P-384 (ES384) \u2014 PKCS#8, SPKI",
+      "algorithms": "P-256 (ES256), P-384 (ES384) — PKCS#8, SPKI",
       "implies": "-"
     },
     {
       "feature": "ed25519",
       "extension_trait": "Ed25519FactoryExt",
-      "algorithms": "Ed25519 \u2014 PKCS#8, SPKI",
+      "algorithms": "Ed25519 — PKCS#8, SPKI",
       "implies": "-"
     },
     {
@@ -903,7 +607,7 @@
     {
       "feature": "pgp",
       "extension_trait": "PgpFactoryExt",
-      "algorithms": "OpenPGP RSA 2048/3072, Ed25519 \u2014 armored, binary",
+      "algorithms": "OpenPGP RSA 2048/3072, Ed25519 — armored, binary",
       "implies": "-"
     },
     {
@@ -944,24 +648,6 @@
       "ecdsa": true,
       "ed25519": true,
       "hmac": true,
-      "x509_tls": false,
-      "extra_features": ""
-    },
-    {
-      "adapter": "uselesskey-jose-openid",
-      "rsa": true,
-      "ecdsa": true,
-      "ed25519": true,
-      "hmac": true,
-      "x509_tls": false,
-      "extra_features": ""
-    },
-    {
-      "adapter": "uselesskey-pgp-native",
-      "rsa": false,
-      "ecdsa": false,
-      "ed25519": false,
-      "hmac": false,
       "x509_tls": false,
       "extra_features": ""
     },
@@ -1093,48 +779,9 @@
         }
       ],
       "minimal_example_command": "cargo run -p uselesskey --example adapter_jsonwebtoken --no-default-features --features rsa,ecdsa,ed25519,hmac"
-    },
-    {
-      "name": "JOSE/OpenID adapter",
-      "dependencies": [
-        {
-          "crate_name": "uselesskey",
-          "default_features": null,
-          "features": [
-            "rsa",
-            "ecdsa",
-            "ed25519",
-            "hmac"
-          ]
-        },
-        {
-          "crate_name": "uselesskey-jose-openid",
-          "default_features": null,
-          "features": []
-        }
-      ],
-      "minimal_example_command": "cargo test -p uselesskey-jose-openid --no-default-features --features rsa"
-    },
-    {
-      "name": "pgp-native adapter",
-      "dependencies": [
-        {
-          "crate_name": "uselesskey",
-          "default_features": null,
-          "features": [
-            "pgp"
-          ]
-        },
-        {
-          "crate_name": "uselesskey-pgp-native",
-          "default_features": null,
-          "features": []
-        }
-      ],
-      "minimal_example_command": "cargo test -p uselesskey-pgp-native --no-default-features --features rsa"
     }
   ],
-  "release_version": "0.7.1",
+  "release_version": "0.8.0",
   "public_features": [
     "rsa",
     "ecdsa",

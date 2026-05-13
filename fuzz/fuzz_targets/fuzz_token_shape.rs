@@ -4,7 +4,7 @@ use arbitrary::Arbitrary;
 use libfuzzer_sys::fuzz_target;
 
 use uselesskey::Seed;
-use uselesskey_core_token_shape::{
+use uselesskey_token::srp::shape::{
     authorization_scheme, generate_api_key, generate_bearer_token, generate_oauth_access_token,
     generate_token, random_base62, TokenKind,
 };
