@@ -47,7 +47,7 @@ commands = [
 
 [[work_item]]
 id = "pr-lite-command"
-status = "ready"
+status = "done"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0010"
 plan = "plans/pr-lite-evidence/implementation-plan.md"
@@ -57,5 +57,19 @@ commands = [
   "cargo xtask pr-lite --format json",
   "cargo xtask spec-check --strict",
   "cargo xtask pr",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "mutation-routing-receipt"
+status = "ready"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0010"
+plan = "plans/pr-lite-evidence/implementation-plan.md"
+commands = [
+  "cargo test -p xtask impacted_evidence",
+  "cargo xtask impacted-evidence",
+  "cargo xtask mutants-pr --changed --explain",
+  "cargo xtask pr-lite",
   "git diff --check",
 ]

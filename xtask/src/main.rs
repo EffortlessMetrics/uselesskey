@@ -4,6 +4,7 @@ use std::fs;
 use std::io::{ErrorKind, Read};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::time::Instant;
 
 use anyhow::{Context, Result, bail};
 use base64::Engine;
@@ -104,6 +105,12 @@ enum Cmd {
         /// Include the targeted mutation step in the PR gate.
         #[arg(long)]
         with_mutants: bool,
+    },
+    /// Run a bounded local approximation of hosted PR evidence and write receipts.
+    PrLite {
+        /// Output format.
+        #[arg(long, value_enum, default_value = "human")]
+        format: PrLiteFormat,
     },
     /// Run advisory ripr PR exposure evidence (requires external `ripr`).
     RiprPr {
@@ -468,6 +475,12 @@ enum ContractPacksFormat {
     Json,
 }
 
+#[derive(Clone, Debug, ValueEnum)]
+enum PrLiteFormat {
+    Human,
+    Json,
+}
+
 impl From<SpecCheckFormat> for spec_check::OutputFormat {
     fn from(value: SpecCheckFormat) -> Self {
         match value {
@@ -530,6 +543,7 @@ fn main() -> Result<()> {
         Cmd::ExamplesSmoke { run } => docs_sync::examples_smoke_cmd(run),
         Cmd::PublishCheck => publish_check(),
         Cmd::Pr { with_mutants } => pr(with_mutants),
+        Cmd::PrLite { format } => pr_lite(format),
         Cmd::RiprPr { check } => ripr_pr(check),
         Cmd::RiprReviewComments { check } => ripr_review_comments(check),
         Cmd::TestEfficiencyReport => test_efficiency::test_efficiency_report_cmd(),
@@ -2799,6 +2813,506 @@ fn docs_sync_with_spec_check(check: bool) -> Result<()> {
         )?;
     }
     Ok(())
+}
+
+const PR_LITE_DIR: &str = "target/pr-lite";
+
+const PR_LITE_CLAIM_BOUNDARY: &[&str] = &[
+    "pr-lite is a bounded local approximation of hosted PR CI, not full hosted proof",
+    "pr-lite receipts distinguish local proof from skipped or hosted-only evidence",
+    "heavy evidence routing explains mutation decisions but does not weaken mutation requirements",
+    "release evidence remains the shipped-truth proof for public version handoff",
+];
+
+#[derive(Debug, Clone, serde::Serialize)]
+struct PrLiteReceipt {
+    schema_version: u32,
+    status: String,
+    generated_at: String,
+    git_sha: Option<String>,
+    base: String,
+    changed_paths: Vec<String>,
+    owner_crates: Vec<String>,
+    requires_targeted_mutation: bool,
+    steps: Vec<PrLiteStepReceipt>,
+    heavy_routing: PrLiteHeavyRouting,
+    artifacts: Vec<String>,
+    claim_boundary: Vec<&'static str>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+struct PrLiteStepReceipt {
+    name: String,
+    command: Vec<String>,
+    status: String,
+    duration_ms: u64,
+    details: Option<String>,
+    artifacts: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+struct PrLiteHeavyRouting {
+    requires_targeted_mutation: bool,
+    reasons: Vec<String>,
+    ripr_requires_targeted_evidence: bool,
+    ripr_severe_gap_count: usize,
+    selected_mutation_command: Option<String>,
+    hosted_only: Vec<String>,
+}
+
+fn pr_lite(format: PrLiteFormat) -> Result<()> {
+    let workspace_root = workspace_root_path();
+    let base_ref = resolve_base_ref();
+    let changed_paths = pr_lite_changed_files(&base_ref)?;
+    let plan = plan::build_plan(&changed_paths);
+    let ripr_json =
+        read_optional_ripr_pr_json(&workspace_root.join(RIPR_PR_DIR).join("repo-exposure.json"))?;
+    let impacted =
+        impacted_evidence_report_with_ripr(&base_ref, &changed_paths, ripr_json.as_ref());
+    let mut receipt = pr_lite_receipt(&base_ref, changed_paths, &impacted);
+
+    let result = run_pr_lite_steps(&workspace_root, &plan, &impacted, &mut receipt);
+    receipt.status = if receipt.steps.iter().any(|step| step.status == "failed") {
+        "failed".to_string()
+    } else {
+        "pass".to_string()
+    };
+
+    write_pr_lite_receipts(&workspace_root.join(PR_LITE_DIR), &receipt)?;
+
+    match format {
+        PrLiteFormat::Human => print_pr_lite_human(&receipt),
+        PrLiteFormat::Json => println!("{}", serde_json::to_string_pretty(&receipt)?),
+    }
+
+    result
+}
+
+fn pr_lite_receipt(
+    base_ref: &str,
+    changed_paths: Vec<String>,
+    impacted: &ImpactedEvidenceReport,
+) -> PrLiteReceipt {
+    PrLiteReceipt {
+        schema_version: 1,
+        status: "running".to_string(),
+        generated_at: chrono::Utc::now().to_rfc3339(),
+        git_sha: git_head_sha().ok(),
+        base: base_ref.to_string(),
+        changed_paths,
+        owner_crates: impacted.owner_crates.clone(),
+        requires_targeted_mutation: impacted.requires_targeted_mutation
+            || impacted.ripr.requires_targeted_evidence,
+        steps: Vec::new(),
+        heavy_routing: pr_lite_heavy_routing(impacted),
+        artifacts: vec![
+            "target/pr-lite/pr-lite.json".to_string(),
+            "target/pr-lite/pr-lite.md".to_string(),
+            "target/xtask/impacted-evidence/latest.json".to_string(),
+        ],
+        claim_boundary: PR_LITE_CLAIM_BOUNDARY.to_vec(),
+    }
+}
+
+fn pr_lite_heavy_routing(impacted: &ImpactedEvidenceReport) -> PrLiteHeavyRouting {
+    let requires_targeted_mutation =
+        impacted.requires_targeted_mutation || impacted.ripr.requires_targeted_evidence;
+    let mut reasons = impacted.reasons.clone();
+    reasons.extend(impacted.ripr.reasons.clone());
+    reasons.sort();
+    reasons.dedup();
+
+    PrLiteHeavyRouting {
+        requires_targeted_mutation,
+        reasons,
+        ripr_requires_targeted_evidence: impacted.ripr.requires_targeted_evidence,
+        ripr_severe_gap_count: impacted.ripr.severe_gap_count,
+        selected_mutation_command: requires_targeted_mutation
+            .then(|| "cargo xtask mutants-pr --changed".to_string()),
+        hosted_only: vec![
+            "full hosted PR matrix".to_string(),
+            "CodeRabbit review".to_string(),
+            "GitGuardian scan".to_string(),
+        ],
+    }
+}
+
+fn run_pr_lite_steps(
+    workspace_root: &Path,
+    plan: &plan::Plan,
+    impacted: &ImpactedEvidenceReport,
+    receipt: &mut PrLiteReceipt,
+) -> Result<()> {
+    pr_lite_run_step(
+        receipt,
+        "spec-check-strict",
+        &["cargo", "xtask", "spec-check", "--strict"],
+        &[],
+        || spec_check::run(workspace_root, true, spec_check::OutputFormat::Human),
+    )?;
+    pr_lite_run_step(
+        receipt,
+        "docs-sync",
+        &["cargo", "xtask", "docs-sync", "--check"],
+        &[],
+        || docs_sync::docs_sync_cmd(true),
+    )?;
+    pr_lite_run_step(
+        receipt,
+        "check-file-policy",
+        &["cargo", "xtask", "check-file-policy"],
+        &["target/file-policy.json", "target/file-policy.md"],
+        policy::check_file_policy,
+    )?;
+    pr_lite_run_step(
+        receipt,
+        "no-blob",
+        &["cargo", "xtask", "no-blob"],
+        &[],
+        no_blob_gate,
+    )?;
+    pr_lite_run_step(
+        receipt,
+        "public-surface",
+        &["cargo", "xtask", "public-surface"],
+        &[],
+        || public_surface::public_surface_cmd(PUBLISH_CRATES),
+    )?;
+
+    if plan.run_publish_preflight {
+        pr_lite_run_step(
+            receipt,
+            "publish-check",
+            &["cargo", "xtask", "publish-check"],
+            &[],
+            publish_check,
+        )?;
+    } else {
+        pr_lite_skip(
+            receipt,
+            "publish-check",
+            &["cargo", "xtask", "publish-check"],
+            "no Cargo manifest or lockfile changes",
+            &[],
+        );
+    }
+
+    let impacted_artifact = workspace_root.join("target/xtask/impacted-evidence/latest.json");
+    pr_lite_run_step(
+        receipt,
+        "impacted-evidence",
+        &["cargo", "xtask", "impacted-evidence"],
+        &["target/xtask/impacted-evidence/latest.json"],
+        || write_json_pretty(&impacted_artifact, impacted),
+    )?;
+
+    if workspace_root
+        .join(RIPR_PR_DIR)
+        .join("repo-exposure.json")
+        .is_file()
+    {
+        pr_lite_run_step(
+            receipt,
+            "ripr-pr-check",
+            &["cargo", "xtask", "ripr-pr", "--check"],
+            &[
+                "target/ripr/pr/repo-exposure.json",
+                "target/ripr/pr/repo-exposure.md",
+            ],
+            || check_ripr_pr_contract(&workspace_root.join(RIPR_PR_DIR)),
+        )?;
+    } else {
+        pr_lite_skip(
+            receipt,
+            "ripr-pr-check",
+            &["cargo", "xtask", "ripr-pr", "--check"],
+            "target/ripr/pr artifacts are absent; hosted CI or cargo xtask ripr-pr produces them",
+            &[],
+        );
+    }
+
+    if workspace_root
+        .join(RIPR_REVIEW_DIR)
+        .join("comments.json")
+        .is_file()
+    {
+        pr_lite_run_step(
+            receipt,
+            "ripr-review-comments-check",
+            &["cargo", "xtask", "ripr-review-comments", "--check"],
+            &[
+                "target/ripr/review/comments.json",
+                "target/ripr/review/comments.md",
+            ],
+            || check_ripr_review_contract(&workspace_root.join(RIPR_REVIEW_DIR)),
+        )?;
+    } else {
+        pr_lite_skip(
+            receipt,
+            "ripr-review-comments-check",
+            &["cargo", "xtask", "ripr-review-comments", "--check"],
+            "target/ripr/review artifacts are absent; hosted CI or cargo xtask ripr-review-comments produces them",
+            &[],
+        );
+    }
+
+    if plan.run_xtask_tests {
+        pr_lite_run_step(
+            receipt,
+            "xtask-tests",
+            &["cargo", "test", "-p", "xtask", "pr_lite"],
+            &[],
+            || {
+                let mut cmd = Command::new("cargo");
+                cmd.args(["test", "-p", "xtask", "pr_lite"]);
+                run(&mut cmd)
+            },
+        )?;
+    } else {
+        pr_lite_skip(
+            receipt,
+            "xtask-tests",
+            &["cargo", "test", "-p", "xtask", "pr_lite"],
+            "no xtask changes",
+            &[],
+        );
+    }
+
+    if pr_lite_examples_touched(&receipt.changed_paths) {
+        pr_lite_run_step(
+            receipt,
+            "examples-smoke",
+            &["cargo", "xtask", "examples-smoke"],
+            &[],
+            || docs_sync::examples_smoke_cmd(false),
+        )?;
+    } else {
+        pr_lite_skip(
+            receipt,
+            "examples-smoke",
+            &["cargo", "xtask", "examples-smoke"],
+            "no example paths changed",
+            &[],
+        );
+    }
+
+    if plan.run_bdd {
+        pr_lite_run_step(
+            receipt,
+            "bdd-check",
+            &["cargo", "check", "-p", "uselesskey-bdd"],
+            &[],
+            || {
+                let mut cmd = Command::new("cargo");
+                cmd.args(["check", "-p", "uselesskey-bdd"]);
+                run(&mut cmd)
+            },
+        )?;
+    } else {
+        pr_lite_skip(
+            receipt,
+            "bdd-check",
+            &["cargo", "check", "-p", "uselesskey-bdd"],
+            "no BDD-owned paths changed",
+            &[],
+        );
+    }
+
+    if plan.run_fuzz {
+        if cargo_fuzz_available() {
+            pr_lite_run_step(
+                receipt,
+                "fuzz-build",
+                &["cargo", "fuzz", "build"],
+                &[],
+                || {
+                    let mut cmd = Command::new("cargo");
+                    cmd.args(["fuzz", "build"]);
+                    run(&mut cmd)
+                },
+            )?;
+        } else {
+            pr_lite_skip(
+                receipt,
+                "fuzz-build",
+                &["cargo", "fuzz", "build"],
+                "cargo-fuzz is not installed",
+                &[],
+            );
+        }
+    } else {
+        pr_lite_skip(
+            receipt,
+            "fuzz-build",
+            &["cargo", "fuzz", "build"],
+            "no fuzz-owned paths changed",
+            &[],
+        );
+    }
+
+    Ok(())
+}
+
+fn pr_lite_examples_touched(changed_paths: &[String]) -> bool {
+    changed_paths
+        .iter()
+        .map(|path| path.replace('\\', "/"))
+        .any(|path| path.starts_with("examples/"))
+}
+
+fn cargo_fuzz_available() -> bool {
+    Command::new("cargo")
+        .args(["fuzz", "--help"])
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .map(|status| status.success())
+        .unwrap_or(false)
+}
+
+fn pr_lite_run_step<F>(
+    receipt: &mut PrLiteReceipt,
+    name: &str,
+    command: &[&str],
+    artifacts: &[&str],
+    f: F,
+) -> Result<()>
+where
+    F: FnOnce() -> Result<()>,
+{
+    eprintln!("==> {name}");
+    let start = Instant::now();
+    match f() {
+        Ok(()) => {
+            let duration_ms = start.elapsed().as_millis() as u64;
+            eprintln!("==> {name} [ok]");
+            receipt.steps.push(PrLiteStepReceipt {
+                name: name.to_string(),
+                command: command_to_strings(command),
+                status: "ok".to_string(),
+                duration_ms,
+                details: None,
+                artifacts: artifacts_to_strings(artifacts),
+            });
+            Ok(())
+        }
+        Err(err) => {
+            let duration_ms = start.elapsed().as_millis() as u64;
+            let details = err.to_string();
+            eprintln!("==> {name} [FAILED]");
+            eprintln!("    {details}");
+            receipt.steps.push(PrLiteStepReceipt {
+                name: name.to_string(),
+                command: command_to_strings(command),
+                status: "failed".to_string(),
+                duration_ms,
+                details: Some(details),
+                artifacts: artifacts_to_strings(artifacts),
+            });
+            Err(err)
+        }
+    }
+}
+
+fn pr_lite_skip(
+    receipt: &mut PrLiteReceipt,
+    name: &str,
+    command: &[&str],
+    reason: &str,
+    artifacts: &[&str],
+) {
+    eprintln!("==> {name} [skipped]");
+    receipt.steps.push(PrLiteStepReceipt {
+        name: name.to_string(),
+        command: command_to_strings(command),
+        status: "skipped".to_string(),
+        duration_ms: 0,
+        details: Some(reason.to_string()),
+        artifacts: artifacts_to_strings(artifacts),
+    });
+}
+
+fn command_to_strings(command: &[&str]) -> Vec<String> {
+    command.iter().map(|part| (*part).to_string()).collect()
+}
+
+fn artifacts_to_strings(artifacts: &[&str]) -> Vec<String> {
+    artifacts.iter().map(|path| (*path).to_string()).collect()
+}
+
+fn write_pr_lite_receipts(out_dir: &Path, receipt: &PrLiteReceipt) -> Result<()> {
+    write_json_pretty(&out_dir.join("pr-lite.json"), receipt)?;
+    fs::write(out_dir.join("pr-lite.md"), render_pr_lite_markdown(receipt))
+        .with_context(|| format!("failed to write {}", out_dir.join("pr-lite.md").display()))
+}
+
+fn print_pr_lite_human(receipt: &PrLiteReceipt) {
+    println!(
+        "pr-lite: {} (steps={}, targeted_mutation={})",
+        receipt.status,
+        receipt.steps.len(),
+        receipt.heavy_routing.requires_targeted_mutation
+    );
+    println!("pr-lite: wrote target/pr-lite/pr-lite.json and target/pr-lite/pr-lite.md");
+}
+
+fn render_pr_lite_markdown(receipt: &PrLiteReceipt) -> String {
+    let mut md = String::new();
+    md.push_str("# PR-Lite Evidence\n\n");
+    md.push_str(&format!("Status: `{}`\n\n", receipt.status));
+    md.push_str(&format!("Base: `{}`\n\n", receipt.base));
+    if let Some(git_sha) = &receipt.git_sha {
+        md.push_str(&format!("Git SHA: `{git_sha}`\n\n"));
+    }
+    md.push_str(&format!(
+        "Changed paths: `{}`\n\n",
+        receipt.changed_paths.len()
+    ));
+
+    md.push_str("## Steps\n\n");
+    md.push_str("| Step | Status | Command | Details |\n");
+    md.push_str("| --- | --- | --- | --- |\n");
+    for step in &receipt.steps {
+        let command = step.command.join(" ");
+        let details = step.details.as_deref().unwrap_or("");
+        md.push_str(&format!(
+            "| {} | `{}` | `{}` | {} |\n",
+            step.name, step.status, command, details
+        ));
+    }
+
+    md.push_str("\n## Heavy Evidence Routing\n\n");
+    md.push_str(&format!(
+        "- Targeted mutation required: `{}`\n",
+        receipt.heavy_routing.requires_targeted_mutation
+    ));
+    if let Some(command) = &receipt.heavy_routing.selected_mutation_command {
+        md.push_str(&format!("- Selected mutation command: `{command}`\n"));
+    }
+    if receipt.heavy_routing.reasons.is_empty() {
+        md.push_str("- Reasons: none\n");
+    } else {
+        md.push_str("- Reasons:\n");
+        for reason in &receipt.heavy_routing.reasons {
+            md.push_str(&format!("  - {reason}\n"));
+        }
+    }
+    md.push_str(&format!(
+        "- RIPR severe gap count: `{}`\n",
+        receipt.heavy_routing.ripr_severe_gap_count
+    ));
+
+    md.push_str("\n## Hosted-Only Evidence\n\n");
+    for item in &receipt.heavy_routing.hosted_only {
+        md.push_str(&format!("- {item}\n"));
+    }
+
+    md.push_str("\n## Boundaries\n\n");
+    for boundary in &receipt.claim_boundary {
+        md.push_str(&format!("- {boundary}\n"));
+    }
+
+    md
 }
 
 fn mutants_pr(changed: bool, crates: Vec<String>, all: bool, full_owner: bool) -> Result<()> {
@@ -5096,6 +5610,49 @@ fn git_changed_files(base_ref: &str) -> Result<Vec<String>> {
         "git diff failed for all attempted base refs: {}",
         attempts.join(" | ")
     )
+}
+
+fn pr_lite_changed_files(base_ref: &str) -> Result<Vec<String>> {
+    let committed = git_changed_files(base_ref)?;
+    let local = git_local_changed_files()?;
+    Ok(merge_changed_paths(committed, local))
+}
+
+fn git_local_changed_files() -> Result<Vec<String>> {
+    let mut paths = Vec::new();
+    paths.extend(git_name_only(&["diff", "--name-only"])?);
+    paths.extend(git_name_only(&["diff", "--cached", "--name-only"])?);
+    paths.extend(git_name_only(&[
+        "ls-files",
+        "--others",
+        "--exclude-standard",
+    ])?);
+    Ok(paths)
+}
+
+fn git_name_only(args: &[&str]) -> Result<Vec<String>> {
+    let output = Command::new("git")
+        .args(args)
+        .output()
+        .with_context(|| format!("failed to run git {}", args.join(" ")))?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        bail!(
+            "git {} failed with status {}: {stderr}",
+            args.join(" "),
+            output.status
+        );
+    }
+    parse_changed_files(&output.stdout)
+}
+
+fn merge_changed_paths(left: Vec<String>, right: Vec<String>) -> Vec<String> {
+    left.into_iter()
+        .chain(right)
+        .map(|path| path.replace('\\', "/"))
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect()
 }
 
 fn base_ref_candidates(base_ref: &str) -> Vec<String> {
@@ -9003,5 +9560,92 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
 
         let targets = impacted_test_targets(&input, root);
         assert_eq!(targets, vec!["uselesskey-core".to_string()]);
+    }
+
+    fn pr_lite_test_impacted_report() -> ImpactedEvidenceReport {
+        ImpactedEvidenceReport {
+            schema_version: 1,
+            base: "origin/main".to_string(),
+            changed_paths: vec!["crates/uselesskey-x509/src/chain.rs".to_string()],
+            owner_crates: vec!["uselesskey-x509".to_string()],
+            requires_targeted_mutation: true,
+            reasons: vec!["public owner crate changed".to_string()],
+            ripr: RiprEvidenceRouting {
+                status: "available".to_string(),
+                requires_targeted_evidence: false,
+                severe_gap_count: 0,
+                owner_crates: Vec::new(),
+                reasons: Vec::new(),
+                suggested_actions: Vec::new(),
+            },
+        }
+    }
+
+    #[test]
+    fn pr_lite_heavy_routing_selects_mutants_when_required() {
+        let impacted = pr_lite_test_impacted_report();
+        let routing = pr_lite_heavy_routing(&impacted);
+
+        assert!(routing.requires_targeted_mutation);
+        assert_eq!(
+            routing.selected_mutation_command.as_deref(),
+            Some("cargo xtask mutants-pr --changed"),
+        );
+        assert!(
+            routing
+                .reasons
+                .contains(&"public owner crate changed".to_string()),
+        );
+    }
+
+    #[test]
+    fn pr_lite_markdown_distinguishes_local_and_hosted_evidence() {
+        let impacted = pr_lite_test_impacted_report();
+        let mut receipt = pr_lite_receipt("origin/main", impacted.changed_paths.clone(), &impacted);
+        receipt.status = "pass".to_string();
+        pr_lite_skip(
+            &mut receipt,
+            "ripr-pr-check",
+            &["cargo", "xtask", "ripr-pr", "--check"],
+            "target/ripr/pr artifacts are absent",
+            &[],
+        );
+
+        let markdown = render_pr_lite_markdown(&receipt);
+
+        assert!(markdown.contains("Status: `pass`"));
+        assert!(markdown.contains("Targeted mutation required: `true`"));
+        assert!(markdown.contains("cargo xtask mutants-pr --changed"));
+        assert!(markdown.contains("Hosted-Only Evidence"));
+        assert!(markdown.contains("not full hosted proof"));
+    }
+
+    #[test]
+    fn pr_lite_examples_touched_normalizes_windows_paths() {
+        assert!(pr_lite_examples_touched(&["examples\\demo.rs".to_string()]));
+        assert!(!pr_lite_examples_touched(&["docs/guide.md".to_string()]));
+    }
+
+    #[test]
+    fn pr_lite_changed_paths_merge_local_and_base_diff() {
+        let merged = merge_changed_paths(
+            vec![
+                "xtask/src/main.rs".to_string(),
+                "docs\\specs\\USELESSKEY-SPEC-0010-pr-lite-evidence.md".to_string(),
+            ],
+            vec![
+                "xtask/src/main.rs".to_string(),
+                "plans/pr-lite-evidence/implementation-plan.md".to_string(),
+            ],
+        );
+
+        assert_eq!(
+            merged,
+            vec![
+                "docs/specs/USELESSKEY-SPEC-0010-pr-lite-evidence.md".to_string(),
+                "plans/pr-lite-evidence/implementation-plan.md".to_string(),
+                "xtask/src/main.rs".to_string(),
+            ],
+        );
     }
 }
