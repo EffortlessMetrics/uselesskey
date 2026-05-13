@@ -16,6 +16,7 @@ use uselesskey_feature_grid::{BDD_FEATURE_MATRIX, CORE_FEATURE_MATRIX};
 
 mod audit_surface;
 mod bundle_proof;
+mod claim_report;
 mod docs_sync;
 mod economics;
 mod plan;
@@ -195,6 +196,15 @@ enum Cmd {
         /// Output format.
         #[arg(long, value_enum, default_value = "human")]
         format: SpecCheckFormat,
+    },
+    /// Index public claim-ledger entries and proof commands for users and reviewers.
+    ClaimReport {
+        /// Output format.
+        #[arg(long, value_enum, default_value = "human")]
+        format: ClaimReportFormat,
+        /// Emit a single claim by id.
+        #[arg(long)]
+        claim: Option<String>,
     },
     /// External install smoke against crates.io or a local path.
     ///
@@ -413,11 +423,26 @@ enum SpecCheckFormat {
     Json,
 }
 
+#[derive(Clone, Debug, ValueEnum)]
+enum ClaimReportFormat {
+    Human,
+    Json,
+}
+
 impl From<SpecCheckFormat> for spec_check::OutputFormat {
     fn from(value: SpecCheckFormat) -> Self {
         match value {
             SpecCheckFormat::Human => spec_check::OutputFormat::Human,
             SpecCheckFormat::Json => spec_check::OutputFormat::Json,
+        }
+    }
+}
+
+impl From<ClaimReportFormat> for claim_report::OutputFormat {
+    fn from(value: ClaimReportFormat) -> Self {
+        match value {
+            ClaimReportFormat::Human => claim_report::OutputFormat::Human,
+            ClaimReportFormat::Json => claim_report::OutputFormat::Json,
         }
     }
 }
@@ -490,6 +515,9 @@ fn main() -> Result<()> {
         Cmd::Badges { check } => badges(check),
         Cmd::SpecCheck { strict, format } => {
             spec_check::run(&workspace_root_path(), strict, format.into())
+        }
+        Cmd::ClaimReport { format, claim } => {
+            claim_report::run(&workspace_root_path(), format.into(), claim.as_deref())
         }
         Cmd::CratesioSmoke {
             version,
