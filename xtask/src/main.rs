@@ -16,6 +16,7 @@ use uselesskey_feature_grid::{BDD_FEATURE_MATRIX, CORE_FEATURE_MATRIX};
 
 mod audit_surface;
 mod bundle_proof;
+mod claim_proof;
 mod claim_report;
 mod contract_packs;
 mod docs_sync;
@@ -209,6 +210,15 @@ enum Cmd {
         /// Fail if docs/status/PUBLIC_CLAIMS.md drifts from policy/claim-ledger.toml.
         #[arg(long)]
         check_public_claims: bool,
+    },
+    /// Run allowlisted proof handlers for public claims.
+    ClaimProof {
+        /// Run proof for one claim id.
+        #[arg(long, conflicts_with = "all_stable")]
+        claim: Option<String>,
+        /// Run proof for stable claims marked for all-stable execution.
+        #[arg(long)]
+        all_stable: bool,
     },
     /// Validate contract-pack registry rows against specs, claims, and proof commands.
     ContractPacks {
@@ -554,6 +564,9 @@ fn main() -> Result<()> {
             claim.as_deref(),
             check_public_claims,
         ),
+        Cmd::ClaimProof { claim, all_stable } => {
+            claim_proof::run(&workspace_root_path(), claim.as_deref(), all_stable)
+        }
         Cmd::ContractPacks { check, format } => {
             contract_packs::run(&workspace_root_path(), check, format.into())
         }

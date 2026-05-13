@@ -74,6 +74,15 @@ classification = "tooling"
 reason = "Small CI helper scripts used to project generated evidence into GitHub Actions annotations."
 covered_by = ["python scripts/ripr-annotations.py", "cargo xtask check-file-policy"]
 
+[[allow]]
+glob = ".uselesskey/goals/archive/.gitkeep"
+kind = "active_goal_archive_placeholder"
+owner = "repo-policy"
+surface = "ops"
+classification = "config"
+reason = "Keeps the active-goal archive directory present before the first archived lane file is written."
+covered_by = ["cargo xtask spec-check --strict", "cargo xtask check-file-policy"]
+
 # === Repo automation / hooks ================================================
 
 [[allow]]
