@@ -2941,6 +2941,37 @@ fn release_evidence_steps_minor() -> Vec<ReleaseEvidenceStep> {
             ],
         },
         ReleaseEvidenceStep {
+            name: "verification-pack",
+            command: &[
+                "cargo",
+                "xtask",
+                "verification-pack",
+                "--out",
+                "target/release-evidence/verification-pack",
+            ],
+            artifacts: &[
+                "target/release-evidence/verification-pack/README.md",
+                "target/release-evidence/verification-pack/public-claims.json",
+                "target/release-evidence/verification-pack/public-claims.md",
+                "target/release-evidence/verification-pack/contract-packs.json",
+                "target/release-evidence/verification-pack/contract-packs.md",
+                "target/release-evidence/verification-pack/badges/ripr-plus.json",
+                "target/release-evidence/verification-pack/badges/scanner-safe.json",
+                "target/release-evidence/verification-pack/claim-proof/scanner-safe-fixtures/receipt.json",
+                "target/release-evidence/verification-pack/claim-proof/scanner-safe-fixtures/receipt.md",
+                "target/release-evidence/verification-pack/claim-proof/ripr-plus-evidence-endpoint/receipt.json",
+                "target/release-evidence/verification-pack/claim-proof/ripr-plus-evidence-endpoint/receipt.md",
+                "target/release-evidence/verification-pack/claim-proof/tls-contract-pack/receipt.json",
+                "target/release-evidence/verification-pack/claim-proof/tls-contract-pack/receipt.md",
+                "target/release-evidence/verification-pack/claim-proof/oidc-jwks-contract-pack/receipt.json",
+                "target/release-evidence/verification-pack/claim-proof/oidc-jwks-contract-pack/receipt.md",
+                "target/release-evidence/verification-pack/claim-proof/public-crate-surface-cleanup/receipt.json",
+                "target/release-evidence/verification-pack/claim-proof/public-crate-surface-cleanup/receipt.md",
+                "target/release-evidence/verification-pack/claim-proof/generated-badge-endpoints/receipt.json",
+                "target/release-evidence/verification-pack/claim-proof/generated-badge-endpoints/receipt.md",
+            ],
+        },
+        ReleaseEvidenceStep {
             name: "publish-preflight",
             command: &["cargo", "xtask", "publish-preflight"],
             artifacts: &["target/xtask/receipt.json"],
@@ -3139,6 +3170,29 @@ fn release_evidence_steps_patch() -> Vec<ReleaseEvidenceStep> {
             artifacts: &[
                 "target/release-evidence/claims/public-claims.json",
                 "target/release-evidence/claims/public-claims.md",
+            ],
+        },
+        ReleaseEvidenceStep {
+            name: "verification-pack-scanner-safe",
+            command: &[
+                "cargo",
+                "xtask",
+                "verification-pack",
+                "--out",
+                "target/release-evidence/verification-pack",
+                "--claim",
+                "scanner-safe-fixtures",
+            ],
+            artifacts: &[
+                "target/release-evidence/verification-pack/README.md",
+                "target/release-evidence/verification-pack/public-claims.json",
+                "target/release-evidence/verification-pack/public-claims.md",
+                "target/release-evidence/verification-pack/contract-packs.json",
+                "target/release-evidence/verification-pack/contract-packs.md",
+                "target/release-evidence/verification-pack/badges/ripr-plus.json",
+                "target/release-evidence/verification-pack/badges/scanner-safe.json",
+                "target/release-evidence/verification-pack/claim-proof/scanner-safe-fixtures/receipt.json",
+                "target/release-evidence/verification-pack/claim-proof/scanner-safe-fixtures/receipt.md",
             ],
         },
         ReleaseEvidenceStep {
@@ -3442,6 +3496,7 @@ fn render_release_evidence_summary_markdown(receipt: &ReleaseEvidenceReceipt) ->
             ),
             ("Scanner-safe reference", &["scanner-safe-reference"][..]),
             ("Crates.io install smoke", &["cratesio-smoke-local"][..]),
+            ("Verification pack", &["verification-pack-scanner-safe"][..]),
             (
                 "Docs, examples, and scanner guard",
                 &["docs-sync", "examples-smoke", "no-blob"][..],
@@ -3479,6 +3534,7 @@ fn render_release_evidence_summary_markdown(receipt: &ReleaseEvidenceReceipt) ->
             ),
             ("TLS contract-pack proof", &["tls-contract-pack-proof"][..]),
             ("RIPR exposure", &["ripr-pr", "impacted-evidence"][..]),
+            ("Verification pack", &["verification-pack"][..]),
             ("Nightly mutation scope", &["mutants-nightly-public"][..]),
             ("Performance evidence", &["perf"][..]),
             (
@@ -7567,6 +7623,32 @@ index 1111111..2222222 100644
     }
 
     #[test]
+    fn release_evidence_patch_step_list_includes_scanner_safe_verification_pack() {
+        let steps = release_evidence_steps_patch();
+        let step = steps
+            .iter()
+            .find(|step| step.name == "verification-pack-scanner-safe")
+            .expect("patch lane must wire scanner-safe verification pack");
+        assert_eq!(
+            step.command,
+            &[
+                "cargo",
+                "xtask",
+                "verification-pack",
+                "--out",
+                "target/release-evidence/verification-pack",
+                "--claim",
+                "scanner-safe-fixtures",
+            ],
+        );
+        assert!(
+            step.artifacts.contains(
+                &"target/release-evidence/verification-pack/claim-proof/scanner-safe-fixtures/receipt.json"
+            ),
+        );
+    }
+
+    #[test]
     fn shields_badge_validation_accepts_expected_shape() {
         let badge = ShieldsEndpointBadge {
             schema_version: 1,
@@ -7702,6 +7784,32 @@ index 1111111..2222222 100644
             step.artifacts
                 .contains(&"target/release-evidence/contract-packs/contract-packs.json"),
         );
+    }
+
+    #[test]
+    fn release_evidence_minor_step_list_includes_verification_pack() {
+        let steps = release_evidence_steps_minor();
+        let step = steps
+            .iter()
+            .find(|step| step.name == "verification-pack")
+            .expect("minor lane must wire full verification pack");
+        assert_eq!(
+            step.command,
+            &[
+                "cargo",
+                "xtask",
+                "verification-pack",
+                "--out",
+                "target/release-evidence/verification-pack",
+            ],
+        );
+        assert!(
+            step.artifacts
+                .contains(&"target/release-evidence/verification-pack/README.md"),
+        );
+        assert!(step.artifacts.contains(
+            &"target/release-evidence/verification-pack/claim-proof/tls-contract-pack/receipt.json"
+        ));
     }
 
     #[test]
