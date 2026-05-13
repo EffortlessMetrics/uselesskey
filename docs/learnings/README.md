@@ -16,3 +16,7 @@ include:
 - Evidence that made the lesson visible
 - Repository rule or habit to keep
 - Follow-up specs, ADRs, plans, or policy entries
+
+## Records
+
+- [2026-05-spec-system.md](2026-05-spec-system.md) - public fixture claims need command-backed source of truth

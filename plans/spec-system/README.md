@@ -7,9 +7,10 @@ active goal manifests, and policy ledgers the normal operating model for
 The first PR is scaffold-only. It adds navigation and templates without claiming
 automation enforcement.
 
-## Current Plan
+## Plan Files
 
 - [implementation-plan.md](implementation-plan.md) - PR sequence, proof commands, rollback, and stop conditions
+- [closeout.md](closeout.md) - implemented lane state, proof commands, and next safe action
 
 ## Initial PR Order
 
