@@ -32,3 +32,7 @@ the relevant evidence lane.
 Good examples for this repo are scanner-safe fixtures, TLS contract packs,
 OIDC/JWKS validation fixtures, `ripr+` badge endpoints, crates.io smoke, and
 public crate-surface cleanup.
+
+## Current Specs
+
+- [USELESSKEY-SPEC-0001: Source-of-truth model](USELESSKEY-SPEC-0001-source-of-truth-model.md)
