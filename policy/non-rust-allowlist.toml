@@ -83,6 +83,15 @@ classification = "tooling"
 reason = "Repo-managed pre-push hook script."
 covered_by = ["cargo xtask gate"]
 
+[[allow]]
+glob = "scripts/*.py"
+kind = "tooling_script"
+owner = "release/ci"
+surface = "ci"
+classification = "tooling"
+reason = "Repository-maintained helper scripts for CI annotations and evidence projection."
+covered_by = ["cargo xtask check-file-policy", "python scripts/ripr-annotations.py"]
+
 # === Cargo / lock / manifests ==============================================
 
 [[allow]]
