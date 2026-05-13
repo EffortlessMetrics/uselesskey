@@ -14,6 +14,7 @@ linked_specs = [
   "USELESSKEY-SPEC-0004",
   "USELESSKEY-SPEC-0005",
   "USELESSKEY-SPEC-0006",
+  "USELESSKEY-SPEC-0007",
 ]
 linked_adrs = [
   "USELESSKEY-ADR-0001",
@@ -78,10 +79,10 @@ Completed:
 7. Add `USELESSKEY-SPEC-0005`, `USELESSKEY-ADR-0003`,
    `.uselesskey/goals/active.toml`, and this plan.
 8. Add `USELESSKEY-SPEC-0006` for release evidence lanes.
+9. Add `USELESSKEY-SPEC-0007` for PR review evidence.
 
 Remaining:
 
-9. Add PR review evidence spec.
 10. Add standalone `cargo xtask spec-check`.
 11. Wire `spec-check` into docs and PR evidence.
 12. Wire `spec-check` into patch and minor release evidence.

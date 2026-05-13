@@ -41,3 +41,4 @@ public crate-surface cleanup.
 - [USELESSKEY-SPEC-0004: Generated evidence endpoints](USELESSKEY-SPEC-0004-generated-evidence-endpoints.md)
 - [USELESSKEY-SPEC-0005: Agent lane state](USELESSKEY-SPEC-0005-agent-lane-state.md)
 - [USELESSKEY-SPEC-0006: Release evidence lanes](USELESSKEY-SPEC-0006-release-evidence-lanes.md)
+- [USELESSKEY-SPEC-0007: PR review evidence](USELESSKEY-SPEC-0007-pr-review-evidence.md)
