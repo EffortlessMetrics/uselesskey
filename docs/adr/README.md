@@ -78,6 +78,12 @@ NNNN-short-title.md
 | [0028](0028-workspace-public-surface-policy.md) | Workspace Public Surface Policy | Accepted | 2026-03-22 |
 | [0029](0029-export-bundle-references.md) | Export Bundles as References, Not Secret Custody | Accepted | 2026-03-28 |
 
+## Source-of-Truth ADRs
+
+| ID | Title | Status | Date |
+|----|-------|--------|------|
+| [USELESSKEY-ADR-0001](USELESSKEY-ADR-0001-contract-packs-are-proof-backed-fixture-profiles.md) | Contract packs are proof-backed fixture profiles | Accepted | 2026-05-13 |
+
 ## References
 
 - [Documenting Architecture Decisions (Michael Nygard)](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions)
