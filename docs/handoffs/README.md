@@ -7,6 +7,10 @@ Use handoffs for release gates, PR queue transitions, failed external
 dependencies, and lane closeout. Do not use handoffs as the active task source;
 current agent state belongs under `.uselesskey/goals/`.
 
+Start with [agent-bootstrap.md](agent-bootstrap.md) when resuming agent work.
+It defines the read order from `active.toml` to plans, specs, claim reports, and
+validation commands.
+
 ## Required Shape
 
 Use [the handoff template](../templates/handoff.md). A handoff should include:
