@@ -3,25 +3,9 @@
 use std::fmt;
 use std::sync::Arc;
 
-use rand_chacha::ChaCha20Rng;
-use rand_core::RngCore;
-use rand_core::SeedableRng;
-use rcgen::{
-    BasicConstraints, CertificateParams, CertificateRevocationListParams, DnType,
-    ExtendedKeyUsagePurpose, IsCa, Issuer, KeyPair, KeyUsagePurpose, PKCS_RSA_SHA256,
-    RevocationReason, RevokedCertParams,
-};
-use rustls_pki_types::PrivatePkcs8KeyDer;
-use time::Duration as TimeDuration;
-use time::OffsetDateTime;
+use crate::srp::spec::ChainSpec;
 use uselesskey_core::sink::TempArtifact;
 use uselesskey_core::{Error, Factory};
-use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
-
-use crate::srp::derive::{
-    deterministic_base_time_from_parts, deterministic_serial_number_with_rng,
-};
-use crate::srp::spec::{ChainSpec, KeyUsage, NotBeforeOffset};
 
 /// Cache domain for X.509 certificate chain fixtures.
 ///
@@ -37,24 +21,24 @@ pub struct X509Chain {
     inner: Arc<ChainInner>,
 }
 
-struct ChainInner {
-    root_cert_der: Arc<[u8]>,
-    root_cert_pem: String,
-    root_key_pkcs8_der: Arc<[u8]>,
-    root_key_pkcs8_pem: String,
+pub(crate) struct ChainInner {
+    pub(crate) root_cert_der: Arc<[u8]>,
+    pub(crate) root_cert_pem: String,
+    pub(crate) root_key_pkcs8_der: Arc<[u8]>,
+    pub(crate) root_key_pkcs8_pem: String,
 
-    intermediate_cert_der: Arc<[u8]>,
-    intermediate_cert_pem: String,
-    intermediate_key_pkcs8_der: Arc<[u8]>,
-    intermediate_key_pkcs8_pem: String,
+    pub(crate) intermediate_cert_der: Arc<[u8]>,
+    pub(crate) intermediate_cert_pem: String,
+    pub(crate) intermediate_key_pkcs8_der: Arc<[u8]>,
+    pub(crate) intermediate_key_pkcs8_pem: String,
 
-    leaf_cert_der: Arc<[u8]>,
-    leaf_cert_pem: String,
-    leaf_key_pkcs8_der: Arc<[u8]>,
-    leaf_key_pkcs8_pem: String,
+    pub(crate) leaf_cert_der: Arc<[u8]>,
+    pub(crate) leaf_cert_pem: String,
+    pub(crate) leaf_key_pkcs8_der: Arc<[u8]>,
+    pub(crate) leaf_key_pkcs8_pem: String,
 
-    crl_der: Option<Arc<[u8]>>,
-    crl_pem: Option<String>,
+    pub(crate) crl_der: Option<Arc<[u8]>>,
+    pub(crate) crl_pem: Option<String>,
 }
 
 impl fmt::Debug for X509Chain {
@@ -548,219 +532,13 @@ impl X509Chain {
     }
 }
 
-fn apply_not_before(base_time: OffsetDateTime, offset: Option<NotBeforeOffset>) -> OffsetDateTime {
-    match offset.unwrap_or(NotBeforeOffset::DaysAgo(1)) {
-        NotBeforeOffset::DaysAgo(days) => base_time - TimeDuration::days(days as i64),
-        NotBeforeOffset::DaysFromNow(days) => base_time + TimeDuration::days(days as i64),
-    }
-}
-
-fn key_usage_purposes(key_usage: KeyUsage) -> Vec<KeyUsagePurpose> {
-    let mut purposes = Vec::new();
-    if key_usage.key_cert_sign {
-        purposes.push(KeyUsagePurpose::KeyCertSign);
-    }
-    if key_usage.crl_sign {
-        purposes.push(KeyUsagePurpose::CrlSign);
-    }
-    if key_usage.digital_signature {
-        purposes.push(KeyUsagePurpose::DigitalSignature);
-    }
-    if key_usage.key_encipherment {
-        purposes.push(KeyUsagePurpose::KeyEncipherment);
-    }
-    purposes
-}
-
 fn load_chain_inner(
     factory: &Factory,
     label: &str,
     spec: &ChainSpec,
     variant: &str,
 ) -> Arc<ChainInner> {
-    let spec_bytes = spec.stable_bytes();
-
-    factory.get_or_init(DOMAIN_X509_CHAIN, label, &spec_bytes, variant, |seed| {
-        let mut rng = ChaCha20Rng::from_seed(*seed.bytes());
-        let rsa_spec = RsaSpec::new(spec.rsa_bits);
-
-        // Generate 3 RSA keypairs with role-tagged labels
-        let root_key_label = format!("{}-chain-root", label);
-        let int_key_label = format!("{}-chain-intermediate", label);
-        let leaf_key_label = format!("{}-chain-leaf", label);
-
-        let root_rsa = factory.rsa(&root_key_label, rsa_spec);
-        let int_rsa = factory.rsa(&int_key_label, rsa_spec);
-        let leaf_rsa = factory.rsa(&leaf_key_label, rsa_spec);
-
-        // Convert to rcgen KeyPairs
-        let root_kp = KeyPair::from_pkcs8_der_and_sign_algo(
-            &PrivatePkcs8KeyDer::from(root_rsa.private_key_pkcs8_der().to_vec()),
-            &PKCS_RSA_SHA256,
-        )
-        .expect("root key parse");
-
-        let int_kp = KeyPair::from_pkcs8_der_and_sign_algo(
-            &PrivatePkcs8KeyDer::from(int_rsa.private_key_pkcs8_der().to_vec()),
-            &PKCS_RSA_SHA256,
-        )
-        .expect("intermediate key parse");
-
-        let leaf_kp = KeyPair::from_pkcs8_der_and_sign_algo(
-            &PrivatePkcs8KeyDer::from(leaf_rsa.private_key_pkcs8_der().to_vec()),
-            &PKCS_RSA_SHA256,
-        )
-        .expect("leaf key parse");
-
-        // Deterministic base time for the chain
-        let rsa_bits = (spec.rsa_bits as u32).to_be_bytes();
-        let base_time = deterministic_base_time_from_parts(&[
-            label.as_bytes(),
-            spec.leaf_cn.as_bytes(),
-            spec.root_cn.as_bytes(),
-            &rsa_bits,
-        ]);
-
-        // --- Root CA ---
-        let mut root_params = CertificateParams::default();
-        root_params
-            .distinguished_name
-            .push(DnType::CommonName, spec.root_cn.clone());
-        root_params.is_ca = IsCa::Ca(BasicConstraints::Constrained(1));
-        root_params.key_usages = vec![
-            KeyUsagePurpose::KeyCertSign,
-            KeyUsagePurpose::CrlSign,
-            KeyUsagePurpose::DigitalSignature,
-        ];
-        root_params.not_before = base_time - TimeDuration::days(1);
-        root_params.not_after =
-            root_params.not_before + TimeDuration::days(spec.root_validity_days as i64);
-        root_params.serial_number = Some(deterministic_serial_number_with_rng(|bytes| {
-            rng.fill_bytes(bytes);
-        }));
-
-        let root_cert = root_params.self_signed(&root_kp).expect("root cert gen");
-
-        // --- Intermediate CA ---
-        let mut int_params = CertificateParams::default();
-        int_params
-            .distinguished_name
-            .push(DnType::CommonName, spec.intermediate_cn.clone());
-        let intermediate_is_ca = spec.intermediate_is_ca.unwrap_or(true);
-        int_params.is_ca = if intermediate_is_ca {
-            IsCa::Ca(BasicConstraints::Constrained(0))
-        } else {
-            IsCa::NoCa
-        };
-        int_params.key_usages =
-            key_usage_purposes(spec.intermediate_key_usage.unwrap_or_else(KeyUsage::ca));
-        int_params.not_before = apply_not_before(base_time, spec.intermediate_not_before);
-        int_params.not_after =
-            int_params.not_before + TimeDuration::days(spec.intermediate_validity_days as i64);
-        int_params.serial_number = Some(deterministic_serial_number_with_rng(|bytes| {
-            rng.fill_bytes(bytes);
-        }));
-
-        let root_issuer = Issuer::from_params(&root_params, &root_kp);
-        let int_cert = int_params
-            .signed_by(&int_kp, &root_issuer)
-            .expect("intermediate cert gen");
-
-        // --- Leaf ---
-        let mut leaf_params = CertificateParams::default();
-        leaf_params
-            .distinguished_name
-            .push(DnType::CommonName, spec.leaf_cn.clone());
-        leaf_params.is_ca = IsCa::NoCa;
-        leaf_params.key_usages = vec![
-            KeyUsagePurpose::DigitalSignature,
-            KeyUsagePurpose::KeyEncipherment,
-        ];
-        leaf_params.extended_key_usages = vec![
-            ExtendedKeyUsagePurpose::ServerAuth,
-            ExtendedKeyUsagePurpose::ClientAuth,
-        ];
-
-        // Add SANs (sorted and deduplicated to match stable_bytes)
-        let mut sorted_sans = spec.leaf_sans.clone();
-        sorted_sans.sort();
-        sorted_sans.dedup();
-        for san in &sorted_sans {
-            leaf_params.subject_alt_names.push(rcgen::SanType::DnsName(
-                san.clone().try_into().expect("valid DNS name"),
-            ));
-        }
-
-        leaf_params.not_before = apply_not_before(base_time, spec.leaf_not_before);
-        leaf_params.not_after =
-            leaf_params.not_before + TimeDuration::days(spec.leaf_validity_days as i64);
-        leaf_params.serial_number = Some(deterministic_serial_number_with_rng(|bytes| {
-            rng.fill_bytes(bytes);
-        }));
-
-        let leaf_serial = leaf_params
-            .serial_number
-            .clone()
-            .expect("leaf serial number");
-
-        let int_issuer = Issuer::from_params(&int_params, &int_kp);
-        let leaf_cert = leaf_params
-            .signed_by(&leaf_kp, &int_issuer)
-            .expect("leaf cert gen");
-
-        // --- CRL (only for revoked_leaf variant) ---
-        let (crl_der, crl_pem) = if variant == "revoked_leaf" {
-            let crl_number = deterministic_serial_number_with_rng(|bytes| {
-                rng.fill_bytes(bytes);
-            });
-
-            let revoked = RevokedCertParams {
-                serial_number: leaf_serial,
-                revocation_time: base_time,
-                reason_code: Some(RevocationReason::KeyCompromise),
-                invalidity_date: None,
-            };
-
-            let crl_params = CertificateRevocationListParams {
-                this_update: base_time,
-                next_update: base_time + TimeDuration::days(30),
-                crl_number,
-                issuing_distribution_point: None,
-                revoked_certs: vec![revoked],
-                key_identifier_method: rcgen::KeyIdMethod::Sha256,
-            };
-
-            let int_issuer = Issuer::from_params(&int_params, &int_kp);
-            let crl = crl_params.signed_by(&int_issuer).expect("CRL gen");
-
-            (
-                Some(Arc::from(crl.der().as_ref())),
-                Some(crl.pem().expect("CRL PEM")),
-            )
-        } else {
-            (None, None)
-        };
-
-        ChainInner {
-            root_cert_der: Arc::from(root_cert.der().as_ref()),
-            root_cert_pem: root_cert.pem(),
-            root_key_pkcs8_der: Arc::from(root_rsa.private_key_pkcs8_der()),
-            root_key_pkcs8_pem: root_rsa.private_key_pkcs8_pem().to_string(),
-
-            intermediate_cert_der: Arc::from(int_cert.der().as_ref()),
-            intermediate_cert_pem: int_cert.pem(),
-            intermediate_key_pkcs8_der: Arc::from(int_rsa.private_key_pkcs8_der()),
-            intermediate_key_pkcs8_pem: int_rsa.private_key_pkcs8_pem().to_string(),
-
-            leaf_cert_der: Arc::from(leaf_cert.der().as_ref()),
-            leaf_cert_pem: leaf_cert.pem(),
-            leaf_key_pkcs8_der: Arc::from(leaf_rsa.private_key_pkcs8_der()),
-            leaf_key_pkcs8_pem: leaf_rsa.private_key_pkcs8_pem().to_string(),
-
-            crl_der,
-            crl_pem,
-        }
-    })
+    crate::srp::chain_generation::load_inner(factory, label, spec, variant)
 }
 
 #[cfg(test)]
