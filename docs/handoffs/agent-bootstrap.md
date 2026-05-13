@@ -55,9 +55,14 @@ git diff --check
 Code or xtask changes should add the narrow relevant tests first, then run:
 
 ```bash
+cargo xtask pr-lite
 cargo xtask pr
 git diff --check
 ```
+
+Use [local-validation.md](local-validation.md) to report partial local evidence
+honestly. Do not say "all gates passed" unless the relevant local command and
+hosted required checks have both completed.
 
 ## Non-Goals
 

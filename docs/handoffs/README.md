@@ -11,6 +11,10 @@ Start with [agent-bootstrap.md](agent-bootstrap.md) when resuming agent work.
 It defines the read order from `active.toml` to plans, specs, claim reports, and
 validation commands.
 
+Use [local-validation.md](local-validation.md) when reporting local PR evidence
+or deciding what `pr-lite`, hosted CI, targeted mutation, and release evidence
+each prove.
+
 ## Required Shape
 
 Use [the handoff template](../templates/handoff.md). A handoff should include:
