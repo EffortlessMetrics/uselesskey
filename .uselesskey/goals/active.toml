@@ -95,7 +95,7 @@ commands = [
 
 [[work_item]]
 id = "pr-review-evidence"
-status = "active"
+status = "done"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0007"
 plan = "plans/spec-system/implementation-plan.md"
@@ -103,6 +103,18 @@ commands = [
   "cargo xtask ripr-pr --check",
   "cargo xtask ripr-review-comments --check",
   "cargo xtask docs-sync --check",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "readme-badge-front-panel-adr"
+status = "active"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0004"
+plan = "plans/spec-system/implementation-plan.md"
+commands = [
+  "cargo xtask docs-sync --check",
+  "cargo xtask typos",
   "git diff --check",
 ]
 

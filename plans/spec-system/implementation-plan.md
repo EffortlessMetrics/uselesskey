@@ -20,6 +20,7 @@ linked_adrs = [
   "USELESSKEY-ADR-0001",
   "USELESSKEY-ADR-0002",
   "USELESSKEY-ADR-0003",
+  "USELESSKEY-ADR-0004",
 ]
 +++
 
@@ -80,13 +81,14 @@ Completed:
    `.uselesskey/goals/active.toml`, and this plan.
 8. Add `USELESSKEY-SPEC-0006` for release evidence lanes.
 9. Add `USELESSKEY-SPEC-0007` for PR review evidence.
+10. Add `USELESSKEY-ADR-0004` for README badge front-panel policy.
 
 Remaining:
 
-10. Add standalone `cargo xtask spec-check`.
-11. Wire `spec-check` into docs and PR evidence.
-12. Wire `spec-check` into patch and minor release evidence.
-13. Close out the lane with a learning record and archived or updated active
+11. Add standalone `cargo xtask spec-check`.
+12. Wire `spec-check` into docs and PR evidence.
+13. Wire `spec-check` into patch and minor release evidence.
+14. Close out the lane with a learning record and archived or updated active
     goal manifest.
 
 ## Proof Commands
