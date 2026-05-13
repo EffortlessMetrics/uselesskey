@@ -140,6 +140,9 @@ enum Cmd {
         /// Document that the selected owner crate(s) should receive full-owner mutation proof.
         #[arg(long)]
         full_owner: bool,
+        /// Explain changed-path mutation routing and write receipts without running mutants.
+        #[arg(long)]
+        explain: bool,
     },
     /// Run scheduled/manual mutation evidence scopes.
     MutantsNightly {
@@ -552,7 +555,8 @@ fn main() -> Result<()> {
             crates,
             all,
             full_owner,
-        } => mutants_pr(changed, crates, all, full_owner),
+            explain,
+        } => mutants_pr(changed, crates, all, full_owner, explain),
         Cmd::MutantsNightly {
             scope,
             crate_name,
@@ -3315,10 +3319,20 @@ fn render_pr_lite_markdown(receipt: &PrLiteReceipt) -> String {
     md
 }
 
-fn mutants_pr(changed: bool, crates: Vec<String>, all: bool, full_owner: bool) -> Result<()> {
+fn mutants_pr(
+    changed: bool,
+    crates: Vec<String>,
+    all: bool,
+    full_owner: bool,
+    explain: bool,
+) -> Result<()> {
     let selector_count = usize::from(changed) + usize::from(!crates.is_empty()) + usize::from(all);
     if selector_count != 1 {
         bail!("select exactly one of --changed, --crate <CRATE>, or --all");
+    }
+
+    if explain && !changed {
+        bail!("mutants-pr --explain is only supported with --changed");
     }
 
     if full_owner {
@@ -3336,15 +3350,25 @@ fn mutants_pr(changed: bool, crates: Vec<String>, all: bool, full_owner: bool) -
 
     let base_ref = resolve_base_ref();
     let changed_files = git_changed_files(&base_ref)?;
-    let pr_crates = mutation_target_crates(&base_ref, &changed_files)?;
+    let routing = mutation_routing_receipt(&base_ref, &changed_files, full_owner)?;
+    write_mutation_routing_receipt(&workspace_root_path(), &routing)?;
+    if explain {
+        println!("{}", render_mutation_routing_markdown(&routing));
+        return Ok(());
+    }
 
-    if pr_crates.is_empty() {
+    if routing.target_crates.is_empty() {
         println!("mutants-pr: no mutant-eligible behavior changes");
         return Ok(());
     }
 
-    let pr_crate_refs = pr_crates.iter().map(String::as_str).collect::<Vec<_>>();
-    let diff_filter = write_mutation_diff_filter(&base_ref, &changed_files, &pr_crates)?;
+    let pr_crate_refs = routing
+        .target_crates
+        .iter()
+        .map(String::as_str)
+        .collect::<Vec<_>>();
+    let diff_filter =
+        write_mutation_diff_filter(&base_ref, &changed_files, &routing.target_crates)?;
     run_mutants(&pr_crate_refs, diff_filter.as_deref())
 }
 
@@ -3367,6 +3391,32 @@ struct RiprEvidenceRouting {
     owner_crates: Vec<String>,
     reasons: Vec<String>,
     suggested_actions: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+struct MutationRoutingReceipt {
+    schema_version: u32,
+    generated_at: String,
+    base: String,
+    changed_files: Vec<String>,
+    owner_crates: Vec<String>,
+    target_crates: Vec<String>,
+    requires_targeted_mutation: bool,
+    reasons: Vec<String>,
+    ripr: RiprEvidenceRouting,
+    labels_considered: Vec<String>,
+    release_risk_decision: String,
+    full_owner_requested: bool,
+    selected_command: Option<String>,
+    diff_filter: MutationDiffFilterRouting,
+    artifacts: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+struct MutationDiffFilterRouting {
+    available: bool,
+    path: Option<String>,
+    reason: String,
 }
 
 #[derive(Debug, Clone)]
@@ -5727,6 +5777,160 @@ fn mutation_target_crates(base_ref: &str, changed_files: &[String]) -> Result<Ve
         targets.push(name.clone());
     }
     Ok(targets)
+}
+
+fn mutation_routing_receipt(
+    base_ref: &str,
+    changed_files: &[String],
+    full_owner_requested: bool,
+) -> Result<MutationRoutingReceipt> {
+    let impacted = impacted_evidence_report(base_ref, changed_files);
+    let target_crates = mutation_target_crates(base_ref, changed_files)?;
+    let requires_targeted_mutation =
+        impacted.requires_targeted_mutation || impacted.ripr.requires_targeted_evidence;
+    let mut reasons = impacted.reasons.clone();
+    reasons.extend(impacted.ripr.reasons.clone());
+    reasons.sort();
+    reasons.dedup();
+
+    let diff_filter = mutation_diff_filter_routing(changed_files, &target_crates);
+    let selected_command = if target_crates.is_empty() {
+        None
+    } else if full_owner_requested {
+        Some("cargo xtask mutants-pr --changed --full-owner".to_string())
+    } else {
+        Some("cargo xtask mutants-pr --changed".to_string())
+    };
+
+    Ok(MutationRoutingReceipt {
+        schema_version: 1,
+        generated_at: chrono::Utc::now().to_rfc3339(),
+        base: base_ref.to_string(),
+        changed_files: changed_files
+            .iter()
+            .map(|path| path.replace('\\', "/"))
+            .collect(),
+        owner_crates: impacted.owner_crates,
+        target_crates,
+        requires_targeted_mutation,
+        reasons,
+        ripr: impacted.ripr,
+        labels_considered: vec![
+            "mutation".to_string(),
+            "release-risk".to_string(),
+            "mutation/full-owner".to_string(),
+        ],
+        release_risk_decision:
+            "local command cannot inspect PR labels; hosted CI adds label routing".to_string(),
+        full_owner_requested,
+        selected_command,
+        diff_filter,
+        artifacts: vec![
+            "target/xtask/mutation-routing/latest.json".to_string(),
+            "target/xtask/mutation-routing/latest.md".to_string(),
+        ],
+    })
+}
+
+fn mutation_diff_filter_routing(
+    changed_files: &[String],
+    target_crates: &[String],
+) -> MutationDiffFilterRouting {
+    if target_crates.is_empty() {
+        return MutationDiffFilterRouting {
+            available: false,
+            path: None,
+            reason: "no mutation target crates selected".to_string(),
+        };
+    }
+
+    match mutation_diff_filter_paths(changed_files, target_crates) {
+        Some(paths) => MutationDiffFilterRouting {
+            available: true,
+            path: Some("target/xtask/mutants-pr.diff".to_string()),
+            reason: format!(
+                "{} changed Rust path(s) can be used as a diff filter",
+                paths.len()
+            ),
+        },
+        None => MutationDiffFilterRouting {
+            available: false,
+            path: None,
+            reason: "changed owner paths include non-Rust files or no owner Rust paths".to_string(),
+        },
+    }
+}
+
+fn write_mutation_routing_receipt(root: &Path, receipt: &MutationRoutingReceipt) -> Result<()> {
+    let out_dir = root.join("target/xtask/mutation-routing");
+    write_json_pretty(&out_dir.join("latest.json"), receipt)?;
+    fs::write(
+        out_dir.join("latest.md"),
+        render_mutation_routing_markdown(receipt),
+    )
+    .with_context(|| format!("failed to write {}", out_dir.join("latest.md").display()))
+}
+
+fn render_mutation_routing_markdown(receipt: &MutationRoutingReceipt) -> String {
+    let mut md = String::new();
+    md.push_str("# Mutation Routing Receipt\n\n");
+    md.push_str(&format!("Base: `{}`\n\n", receipt.base));
+    md.push_str(&format!(
+        "Targeted mutation required: `{}`\n\n",
+        receipt.requires_targeted_mutation
+    ));
+
+    md.push_str("## Changed Files\n\n");
+    if receipt.changed_files.is_empty() {
+        md.push_str("- none\n");
+    } else {
+        for path in &receipt.changed_files {
+            md.push_str(&format!("- `{path}`\n"));
+        }
+    }
+
+    md.push_str("\n## Target Crates\n\n");
+    if receipt.target_crates.is_empty() {
+        md.push_str("- none\n");
+    } else {
+        for name in &receipt.target_crates {
+            md.push_str(&format!("- `{name}`\n"));
+        }
+    }
+
+    md.push_str("\n## Decision\n\n");
+    if let Some(command) = &receipt.selected_command {
+        md.push_str(&format!("- Selected command: `{command}`\n"));
+    } else {
+        md.push_str("- Selected command: none\n");
+    }
+    md.push_str(&format!(
+        "- Diff filter available: `{}`\n",
+        receipt.diff_filter.available
+    ));
+    md.push_str(&format!(
+        "- Diff filter reason: {}\n",
+        receipt.diff_filter.reason
+    ));
+    md.push_str(&format!(
+        "- RIPR severe gap count: `{}`\n",
+        receipt.ripr.severe_gap_count
+    ));
+    md.push_str(&format!(
+        "- Release-risk decision: {}\n",
+        receipt.release_risk_decision
+    ));
+
+    md.push_str("\n## Reasons\n\n");
+    if receipt.reasons.is_empty() {
+        md.push_str("- none\n");
+    } else {
+        for reason in &receipt.reasons {
+            md.push_str(&format!("- {reason}\n"));
+        }
+    }
+
+    md
 }
 
 fn write_mutation_diff_filter(
@@ -9647,5 +9851,90 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
                 "xtask/src/main.rs".to_string(),
             ],
         );
+    }
+
+    #[test]
+    fn mutation_diff_filter_routing_reports_available_rust_filter() {
+        let routing = mutation_diff_filter_routing(
+            &["crates/uselesskey-x509/src/lib.rs".to_string()],
+            &["uselesskey-x509".to_string()],
+        );
+
+        assert!(routing.available);
+        assert_eq!(
+            routing.path.as_deref(),
+            Some("target/xtask/mutants-pr.diff"),
+        );
+        assert!(routing.reason.contains("changed Rust path"));
+    }
+
+    #[test]
+    fn mutation_diff_filter_routing_records_fallback_reason() {
+        let routing = mutation_diff_filter_routing(
+            &["crates/uselesskey-x509/Cargo.toml".to_string()],
+            &["uselesskey-x509".to_string()],
+        );
+
+        assert!(!routing.available);
+        assert!(routing.path.is_none());
+        assert!(routing.reason.contains("non-Rust"));
+    }
+
+    #[test]
+    fn mutation_routing_markdown_includes_command_and_reasons() {
+        let receipt = MutationRoutingReceipt {
+            schema_version: 1,
+            generated_at: "2026-05-13T00:00:00Z".to_string(),
+            base: "origin/main".to_string(),
+            changed_files: vec!["crates/uselesskey-x509/src/lib.rs".to_string()],
+            owner_crates: vec!["uselesskey-x509".to_string()],
+            target_crates: vec!["uselesskey-x509".to_string()],
+            requires_targeted_mutation: true,
+            reasons: vec!["public owner crate changed".to_string()],
+            ripr: RiprEvidenceRouting {
+                status: "available".to_string(),
+                requires_targeted_evidence: false,
+                severe_gap_count: 0,
+                owner_crates: Vec::new(),
+                reasons: Vec::new(),
+                suggested_actions: Vec::new(),
+            },
+            labels_considered: vec!["mutation".to_string(), "release-risk".to_string()],
+            release_risk_decision: "hosted CI adds label routing".to_string(),
+            full_owner_requested: false,
+            selected_command: Some("cargo xtask mutants-pr --changed".to_string()),
+            diff_filter: MutationDiffFilterRouting {
+                available: true,
+                path: Some("target/xtask/mutants-pr.diff".to_string()),
+                reason: "1 changed Rust path(s) can be used as a diff filter".to_string(),
+            },
+            artifacts: vec![
+                "target/xtask/mutation-routing/latest.json".to_string(),
+                "target/xtask/mutation-routing/latest.md".to_string(),
+            ],
+        };
+
+        let markdown = render_mutation_routing_markdown(&receipt);
+
+        assert!(markdown.contains("Targeted mutation required: `true`"));
+        assert!(markdown.contains("cargo xtask mutants-pr --changed"));
+        assert!(markdown.contains("public owner crate changed"));
+        assert!(markdown.contains("Diff filter available: `true`"));
+    }
+
+    #[test]
+    fn mutants_pr_explain_flag_parses_with_changed() {
+        let parsed = Cli::try_parse_from(["xtask", "mutants-pr", "--changed", "--explain"])
+            .expect("mutants-pr --changed --explain parses");
+
+        match parsed.cmd {
+            Cmd::MutantsPr {
+                changed, explain, ..
+            } => {
+                assert!(changed);
+                assert!(explain);
+            }
+            _ => panic!("expected mutants-pr command"),
+        }
     }
 }
