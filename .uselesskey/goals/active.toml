@@ -34,13 +34,28 @@ commands = [
 
 [[work_item]]
 id = "pr-lite-spec"
-status = "ready"
+status = "done"
 proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0005"
+spec = "USELESSKEY-SPEC-0010"
 plan = "plans/pr-lite-evidence/implementation-plan.md"
 commands = [
   "cargo xtask spec-check --strict",
   "cargo xtask docs-sync --check",
   "cargo xtask typos",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "pr-lite-command"
+status = "ready"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0010"
+plan = "plans/pr-lite-evidence/implementation-plan.md"
+commands = [
+  "cargo test -p xtask pr_lite",
+  "cargo xtask pr-lite",
+  "cargo xtask pr-lite --format json",
+  "cargo xtask spec-check --strict",
+  "cargo xtask pr",
   "git diff --check",
 ]

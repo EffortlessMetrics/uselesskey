@@ -9,6 +9,7 @@ milestone = "v0.9.0"
 linked_proposal = "USELESSKEY-PROP-0001"
 linked_specs = [
   "USELESSKEY-SPEC-0005",
+  "USELESSKEY-SPEC-0010",
 ]
 linked_adrs = []
 +++
@@ -68,6 +69,7 @@ git diff --check
 Final lane proof:
 
 ```bash
+cargo test -p xtask pr_lite
 cargo xtask pr-lite
 cargo xtask pr-lite --format json
 cargo xtask mutants-pr --changed --explain
