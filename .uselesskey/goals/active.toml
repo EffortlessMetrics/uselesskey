@@ -49,7 +49,7 @@ commands = [
 
 [[work_item]]
 id = "public-claims-check"
-status = "ready"
+status = "done"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0002"
 plan = "plans/claim-backed-verification/implementation-plan.md"
@@ -60,7 +60,7 @@ commands = [
 
 [[work_item]]
 id = "contract-pack-registry"
-status = "planned"
+status = "ready"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0003"
 plan = "plans/claim-backed-verification/implementation-plan.md"
