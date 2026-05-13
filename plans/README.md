@@ -8,6 +8,7 @@ Plans do not define product truth. Link to proposals for why and specs for what.
 ## Current Plan Areas
 
 - [spec-system](spec-system/README.md) - Source-of-truth and spec-system rollout
+- [claim-backed-verification](claim-backed-verification/README.md) - User-facing claim proof and verification-pack rollout
 
 ## Templates
 

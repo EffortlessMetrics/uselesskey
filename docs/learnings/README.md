@@ -20,3 +20,4 @@ include:
 ## Records
 
 - [2026-05-spec-system.md](2026-05-spec-system.md) - public fixture claims need command-backed source of truth
+- [2026-05-claim-backed-verification.md](2026-05-claim-backed-verification.md) - public claims are useful when users can run the proof
