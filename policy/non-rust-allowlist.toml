@@ -63,6 +63,17 @@ classification = "config"
 reason = "Lefthook git-hook configuration."
 covered_by = ["lefthook run pre-commit"]
 
+# === Repo automation / scripts ==============================================
+
+[[allow]]
+glob = "scripts/*.py"
+kind = "ci_helper_script"
+owner = "release/ci"
+surface = "ci"
+classification = "tooling"
+reason = "Small CI helper scripts used to project generated evidence into GitHub Actions annotations."
+covered_by = ["python scripts/ripr-annotations.py", "cargo xtask check-file-policy"]
+
 # === Repo automation / hooks ================================================
 
 [[allow]]
