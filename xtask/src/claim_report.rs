@@ -125,6 +125,20 @@ pub fn run(
     Ok(())
 }
 
+pub(crate) fn write_release_receipt(root: &Path, out_dir: &Path) -> Result<()> {
+    let report = build_report(root, None)?;
+    let claims_dir = out_dir.join("claims");
+    fs::create_dir_all(&claims_dir).with_context(|| format!("create {}", claims_dir.display()))?;
+
+    let json_path = claims_dir.join("public-claims.json");
+    let md_path = claims_dir.join("public-claims.md");
+    write_json_pretty(&json_path, &report)?;
+    fs::write(&md_path, render_markdown(&report))
+        .with_context(|| format!("write {}", md_path.display()))?;
+
+    Ok(())
+}
+
 fn check_public_claims_doc(root: &Path, report: &ClaimReport) -> Result<()> {
     let errors = public_claim_errors(root, report)?;
     if !errors.is_empty() {

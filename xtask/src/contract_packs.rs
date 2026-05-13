@@ -96,6 +96,27 @@ pub fn run(root: &Path, check: bool, format: OutputFormat) -> Result<()> {
     Ok(())
 }
 
+pub(crate) fn write_release_receipt(root: &Path, out_dir: &Path) -> Result<()> {
+    let report = build_report(root)?;
+    if !report.errors.is_empty() {
+        bail!(
+            "contract-packs: policy/contract-packs.toml failed with {} error(s)",
+            report.errors.len()
+        );
+    }
+
+    let packs_dir = out_dir.join("contract-packs");
+    fs::create_dir_all(&packs_dir).with_context(|| format!("create {}", packs_dir.display()))?;
+    write_json_pretty(&packs_dir.join("contract-packs.json"), &report)?;
+    fs::write(
+        packs_dir.join("contract-packs.md"),
+        render_markdown_report(&report),
+    )
+    .with_context(|| format!("write {}", packs_dir.join("contract-packs.md").display()))?;
+
+    Ok(())
+}
+
 fn build_report(root: &Path) -> Result<ContractPackReport> {
     let registry_path = root.join("policy/contract-packs.toml");
     let registry_text = fs::read_to_string(&registry_path)
@@ -315,6 +336,38 @@ fn print_human_report(report: &ContractPackReport) {
             println!("- {error}");
         }
     }
+}
+
+fn render_markdown_report(report: &ContractPackReport) -> String {
+    let mut md = String::new();
+    md.push_str("# Contract-Pack Registry Report\n\n");
+    md.push_str(&format!("- Status: `{}`\n", report.status));
+    md.push_str(&format!("- Packs: `{}`\n", report.packs.len()));
+    md.push_str(&format!("- Errors: `{}`\n", report.errors.len()));
+
+    md.push_str("\n## Packs\n\n");
+    md.push_str("| Pack | Status | Profile | Claim | Proof command | How-to |\n");
+    md.push_str("| --- | --- | --- | --- | --- | --- |\n");
+    for pack in &report.packs {
+        md.push_str(&format!(
+            "| `{}` | `{}` | `{}` | `{}` | `{}` | `{}` |\n",
+            pack.id, pack.status, pack.profile, pack.claim, pack.proof_command, pack.how_to
+        ));
+    }
+
+    if !report.errors.is_empty() {
+        md.push_str("\n## Errors\n\n");
+        for error in &report.errors {
+            md.push_str(&format!("- {error}\n"));
+        }
+    }
+
+    md
+}
+
+fn write_json_pretty(path: &Path, value: &impl Serialize) -> Result<()> {
+    let json = serde_json::to_string_pretty(value)?;
+    fs::write(path, json + "\n").with_context(|| format!("write {}", path.display()))
 }
 
 #[cfg(test)]

@@ -2892,6 +2892,29 @@ fn release_evidence_steps_minor() -> Vec<ReleaseEvidenceStep> {
             artifacts: &[],
         },
         ReleaseEvidenceStep {
+            name: "claim-report",
+            command: &["cargo", "xtask", "claim-report", "--format", "json"],
+            artifacts: &[
+                "target/release-evidence/claims/public-claims.json",
+                "target/release-evidence/claims/public-claims.md",
+            ],
+        },
+        ReleaseEvidenceStep {
+            name: "contract-pack-registry",
+            command: &[
+                "cargo",
+                "xtask",
+                "contract-packs",
+                "--check",
+                "--format",
+                "json",
+            ],
+            artifacts: &[
+                "target/release-evidence/contract-packs/contract-packs.json",
+                "target/release-evidence/contract-packs/contract-packs.md",
+            ],
+        },
+        ReleaseEvidenceStep {
             name: "publish-preflight",
             command: &["cargo", "xtask", "publish-preflight"],
             artifacts: &["target/xtask/receipt.json"],
@@ -3085,6 +3108,14 @@ fn release_evidence_steps_patch() -> Vec<ReleaseEvidenceStep> {
             artifacts: &[],
         },
         ReleaseEvidenceStep {
+            name: "claim-report",
+            command: &["cargo", "xtask", "claim-report", "--format", "json"],
+            artifacts: &[
+                "target/release-evidence/claims/public-claims.json",
+                "target/release-evidence/claims/public-claims.md",
+            ],
+        },
+        ReleaseEvidenceStep {
             name: "no-blob",
             command: &["cargo", "xtask", "no-blob"],
             artifacts: &[],
@@ -3152,7 +3183,9 @@ fn release_evidence(
 
     for (idx, step) in steps.iter().enumerate() {
         receipt.commands[idx].status = "running".to_string();
-        match run_release_evidence_step(step) {
+        match run_release_evidence_step(step)
+            .and_then(|()| write_release_evidence_step_receipts(step, out_dir))
+        {
             Ok(()) => receipt.commands[idx].status = "ok".to_string(),
             Err(err) => {
                 receipt.commands[idx].status = "failed".to_string();
@@ -3176,6 +3209,15 @@ fn release_evidence(
         );
     }
     Ok(())
+}
+
+fn write_release_evidence_step_receipts(step: &ReleaseEvidenceStep, out_dir: &Path) -> Result<()> {
+    let root = workspace_root_path();
+    match step.name {
+        "claim-report" => claim_report::write_release_receipt(&root, out_dir),
+        "contract-pack-registry" => contract_packs::write_release_receipt(&root, out_dir),
+        _ => Ok(()),
+    }
 }
 
 fn release_evidence_receipt(
@@ -7342,6 +7384,8 @@ index 1111111..2222222 100644
         for expected in [
             "public-surface",
             "docs-sync",
+            "claim-report",
+            "contract-pack-registry",
             "publish-preflight",
             "publish-check",
             "pr",
@@ -7370,6 +7414,14 @@ index 1111111..2222222 100644
                 .artifacts
                 .contains(&"target/ripr/pr/summary.md".to_string())
         );
+        assert!(
+            receipt
+                .artifacts
+                .contains(&"target/release-evidence/claims/public-claims.json".to_string())
+        );
+        assert!(receipt.artifacts.contains(
+            &"target/release-evidence/contract-packs/contract-packs.json".to_string()
+        ));
         assert!(receipt.artifacts.contains(
             &"target/release-evidence/scanner-safe/scanner-safe-bundle-proof.md".to_string()
         ));
@@ -7466,6 +7518,23 @@ index 1111111..2222222 100644
         assert_eq!(
             step.command,
             &["cargo", "xtask", "scanner-safe-reference", "--check"],
+        );
+    }
+
+    #[test]
+    fn release_evidence_patch_step_list_includes_claim_report() {
+        let steps = release_evidence_steps_patch();
+        let step = steps
+            .iter()
+            .find(|step| step.name == "claim-report")
+            .expect("patch lane must wire claim-report");
+        assert_eq!(
+            step.command,
+            &["cargo", "xtask", "claim-report", "--format", "json"],
+        );
+        assert!(
+            step.artifacts
+                .contains(&"target/release-evidence/claims/public-claims.json"),
         );
     }
 
@@ -7580,6 +7649,30 @@ index 1111111..2222222 100644
         assert!(
             step.artifacts
                 .contains(&"target/release-evidence/tls/tls-contract-pack-proof.md"),
+        );
+    }
+
+    #[test]
+    fn release_evidence_minor_step_list_includes_contract_pack_registry() {
+        let steps = release_evidence_steps_minor();
+        let step = steps
+            .iter()
+            .find(|step| step.name == "contract-pack-registry")
+            .expect("minor lane must wire contract-pack registry");
+        assert_eq!(
+            step.command,
+            &[
+                "cargo",
+                "xtask",
+                "contract-packs",
+                "--check",
+                "--format",
+                "json",
+            ],
+        );
+        assert!(
+            step.artifacts
+                .contains(&"target/release-evidence/contract-packs/contract-packs.json"),
         );
     }
 
