@@ -30,6 +30,11 @@ Public claims are command-backed. Start with the
 [verification guide](docs/how-to/verify-uselesskey-public-claims.md) or the
 [public claim index](docs/status/PUBLIC_CLAIMS.md) to see what each badge and
 contract-pack claim proves, what command checks it, and what it does not prove.
+For reviewer handoff, generate a metadata-only proof bundle:
+
+```bash
+cargo xtask verification-pack --out target/uselesskey-verification
+```
 
 ## Why this exists
 

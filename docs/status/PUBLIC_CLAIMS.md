@@ -18,6 +18,18 @@ Check this page against the ledger:
 cargo xtask claim-report --check-public-claims
 ```
 
+Run a proof receipt for one claim:
+
+```bash
+cargo xtask claim-proof --claim scanner-safe-fixtures
+```
+
+Collect reviewer-facing receipts without generated fixture payloads:
+
+```bash
+cargo xtask verification-pack --out target/uselesskey-verification
+```
+
 ## Claim Statuses
 
 | Status | Meaning |
@@ -52,3 +64,8 @@ what is explicitly outside the boundary?
 
 If a claim cannot answer those questions, it should stay out of the README
 masthead and release headline until the proof path exists.
+
+Use `cargo xtask claim-proof --claim <claim-id>` when a reviewer needs runnable
+evidence for a supported claim. Use `cargo xtask verification-pack --out <dir>`
+when they need claim reports, badge endpoints, contract-pack receipts, and
+claim-proof receipts in one metadata-only bundle.
