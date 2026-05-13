@@ -117,6 +117,10 @@ pub(crate) fn write_release_receipt(root: &Path, out_dir: &Path) -> Result<()> {
     Ok(())
 }
 
+pub(crate) fn write_target_receipt(root: &Path) -> Result<()> {
+    write_release_receipt(root, &root.join("target"))
+}
+
 fn build_report(root: &Path) -> Result<ContractPackReport> {
     let registry_path = root.join("policy/contract-packs.toml");
     let registry_text = fs::read_to_string(&registry_path)

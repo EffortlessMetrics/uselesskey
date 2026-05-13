@@ -159,7 +159,7 @@ commands = [
 
 [[work_item]]
 id = "verification-pack-command"
-status = "ready"
+status = "done"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0009"
 plan = "plans/claim-backed-verification/implementation-plan.md"
@@ -168,4 +168,17 @@ commands = [
   "cargo xtask verification-pack --out target/uselesskey-verification",
   "cargo xtask no-blob",
   "cargo xtask check-file-policy",
+]
+
+[[work_item]]
+id = "release-evidence-claim-proof"
+status = "ready"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0006"
+plan = "plans/claim-backed-verification/implementation-plan.md"
+commands = [
+  "cargo xtask release-evidence --version 0.8.1 --patch --dry-run --summary",
+  "cargo xtask release-evidence --version 0.9.0 --dry-run --summary",
+  "cargo xtask claim-proof --all-stable",
+  "cargo xtask verification-pack --out target/uselesskey-verification",
 ]
