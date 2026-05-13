@@ -84,6 +84,7 @@ NNNN-short-title.md
 |----|-------|--------|------|
 | [USELESSKEY-ADR-0001](USELESSKEY-ADR-0001-contract-packs-are-proof-backed-fixture-profiles.md) | Contract packs are proof-backed fixture profiles | Accepted | 2026-05-13 |
 | [USELESSKEY-ADR-0002](USELESSKEY-ADR-0002-public-claims-require-command-backed-evidence.md) | Public claims require command-backed evidence | Accepted | 2026-05-13 |
+| [USELESSKEY-ADR-0003](USELESSKEY-ADR-0003-repo-goals-are-the-agent-control-plane.md) | Repo goals are the agent control plane | Accepted | 2026-05-13 |
 
 ## References
 

@@ -39,3 +39,4 @@ public crate-surface cleanup.
 - [USELESSKEY-SPEC-0002: Public claim ledger](USELESSKEY-SPEC-0002-public-claim-ledger.md)
 - [USELESSKEY-SPEC-0003: Contract-pack profile requirements](USELESSKEY-SPEC-0003-contract-pack-profile.md)
 - [USELESSKEY-SPEC-0004: Generated evidence endpoints](USELESSKEY-SPEC-0004-generated-evidence-endpoints.md)
+- [USELESSKEY-SPEC-0005: Agent lane state](USELESSKEY-SPEC-0005-agent-lane-state.md)

@@ -1,0 +1,95 @@
+id = "uselesskey-spec-system"
+title = "Encode source-of-truth and spec system"
+status = "active"
+owner = "EffortlessMetrics"
+created = "2026-05-13"
+
+objective = """
+Make proposals, specs, ADRs, implementation plans, active goal manifests,
+claim ledgers, and generated evidence endpoints the normal operating model
+for uselesskey.
+"""
+
+end_state = [
+  "Every public README claim has a claim-ledger entry.",
+  "Every accepted spec has proof commands.",
+  "Every active agent lane points to active.toml.",
+  "No automation prompt carries stale lane policy inline.",
+  "cargo xtask spec-check validates source-of-truth artifacts.",
+]
+
+[[work_item]]
+id = "source-of-truth-model"
+status = "done"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0001"
+plan = "plans/spec-system/implementation-plan.md"
+commands = [
+  "cargo xtask docs-sync --check",
+  "cargo xtask typos",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "public-claim-ledger"
+status = "done"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0002"
+plan = "plans/spec-system/implementation-plan.md"
+commands = [
+  "cargo xtask badges --check",
+  "cargo xtask scanner-safe-reference --check",
+  "cargo xtask docs-sync --check",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "contract-pack-profile"
+status = "done"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0003"
+plan = "plans/spec-system/implementation-plan.md"
+commands = [
+  "cargo xtask bundle-proof --profile tls --out target/release-evidence/tls",
+  "cargo xtask docs-sync --check",
+  "cargo xtask typos",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "generated-evidence-endpoints"
+status = "done"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0004"
+plan = "plans/spec-system/implementation-plan.md"
+commands = [
+  "cargo xtask badges --check",
+  "cargo test -p xtask badge",
+  "cargo xtask docs-sync --check",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "active-agent-lane-state"
+status = "active"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0005"
+plan = "plans/spec-system/implementation-plan.md"
+commands = [
+  "cargo xtask docs-sync --check",
+  "cargo xtask typos",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "spec-check"
+status = "planned"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0005"
+plan = "plans/spec-system/implementation-plan.md"
+commands = [
+  "cargo test -p xtask spec_check",
+  "cargo xtask spec-check",
+  "cargo xtask spec-check --format json",
+  "cargo xtask docs-sync --check",
+]

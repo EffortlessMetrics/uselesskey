@@ -7,6 +7,10 @@ active goal manifests, and policy ledgers the normal operating model for
 The first PR is scaffold-only. It adds navigation and templates without claiming
 automation enforcement.
 
+## Current Plan
+
+- [implementation-plan.md](implementation-plan.md) - PR sequence, proof commands, rollback, and stop conditions
+
 ## Initial PR Order
 
 1. Define source-of-truth scaffold.
