@@ -3849,15 +3849,16 @@ struct ShieldsEndpointBadge {
 }
 
 fn badges(check: bool) -> Result<()> {
-    let target_dir = Path::new(BADGE_ENDPOINT_TARGET_DIR);
-    fs::create_dir_all(target_dir)
+    let workspace_root = workspace_root_path();
+    let target_dir = workspace_root.join(BADGE_ENDPOINT_TARGET_DIR);
+    fs::create_dir_all(&target_dir)
         .with_context(|| format!("failed to create {}", target_dir.display()))?;
 
-    let ripr_plus = ripr_plus_badge()?;
+    let ripr_plus = ripr_plus_badge(&workspace_root)?;
     validate_shields_badge(&ripr_plus, Some("ripr+"))?;
     write_json_pretty(&target_dir.join("ripr-plus.json"), &ripr_plus)?;
 
-    match scanner_safe_badge() {
+    match scanner_safe_badge(&workspace_root) {
         Ok(scanner_safe) => {
             validate_shields_badge(&scanner_safe, Some("fixtures"))?;
             write_json_pretty(&target_dir.join("scanner-safe.json"), &scanner_safe)?;
@@ -3875,16 +3876,14 @@ fn badges(check: bool) -> Result<()> {
     }
 
     if check {
+        let committed_dir = workspace_root.join(BADGE_ENDPOINT_DIR);
         for file in ["ripr-plus.json", "scanner-safe.json"] {
-            compare_files(
-                &Path::new(BADGE_ENDPOINT_DIR).join(file),
-                &target_dir.join(file),
-            )?;
+            compare_files(&committed_dir.join(file), &target_dir.join(file))?;
         }
         println!("badges: committed endpoints are current");
     } else {
-        let committed_dir = Path::new(BADGE_ENDPOINT_DIR);
-        fs::create_dir_all(committed_dir)
+        let committed_dir = workspace_root.join(BADGE_ENDPOINT_DIR);
+        fs::create_dir_all(&committed_dir)
             .with_context(|| format!("failed to create {}", committed_dir.display()))?;
         for file in ["ripr-plus.json", "scanner-safe.json"] {
             fs::copy(target_dir.join(file), committed_dir.join(file)).with_context(|| {
@@ -3897,16 +3896,15 @@ fn badges(check: bool) -> Result<()> {
     Ok(())
 }
 
-fn ripr_plus_badge() -> Result<ShieldsEndpointBadge> {
+fn ripr_plus_badge(workspace_root: &Path) -> Result<ShieldsEndpointBadge> {
     let ripr_bin = env::var("RIPR_BIN").unwrap_or_else(|_| "ripr".to_string());
     let output = Command::new(&ripr_bin)
-        .args([
-            "check",
-            "--root",
-            ".",
-            "--format",
-            "repo-badge-plus-shields",
-        ])
+        .arg("check")
+        .arg("--root")
+        .arg(workspace_root)
+        .arg("--format")
+        .arg("repo-badge-plus-shields")
+        .current_dir(workspace_root)
         .output()
         .with_context(|| format!("failed to spawn {ripr_bin:?}"))?;
     if !output.status.success() {
@@ -3921,8 +3919,9 @@ fn ripr_plus_badge() -> Result<ShieldsEndpointBadge> {
         .with_context(|| format!("{ripr_bin} emitted invalid Shields endpoint JSON"))
 }
 
-fn scanner_safe_badge() -> Result<ShieldsEndpointBadge> {
-    let offenders = find_secret_blobs()?;
+fn scanner_safe_badge(workspace_root: &Path) -> Result<ShieldsEndpointBadge> {
+    let mut offenders = Vec::new();
+    walk_for_blobs(workspace_root, workspace_root, &mut offenders)?;
     if !offenders.is_empty() {
         let mut msg =
             String::from("found secret-shaped fixtures while generating scanner-safe badge:");
