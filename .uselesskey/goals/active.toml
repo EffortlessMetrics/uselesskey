@@ -1,22 +1,21 @@
-id = "uselesskey-pr-lite-evidence"
-title = "PR-lite evidence ergonomics"
-status = "archived"
+id = "uselesskey-no-panic-burndown"
+title = "No-panic burndown"
+status = "active"
 owner = "EffortlessMetrics"
 created = "2026-05-13"
 
 objective = """
-Make local PR evidence approximate hosted CI closely enough to reduce wasted CI
-cycles, and make heavy evidence routing explain itself with receipts that show
-what ran, what skipped, and why.
+Burn down the no-panic-family debt tracked by issue #575 without resetting the
+baseline, weakening policy, or absorbing new debt into the snapshot.
 """
 
 end_state = [
-  "cargo xtask pr-lite provides a bounded local approximation of hosted PR CI.",
-  "pr-lite writes Markdown and JSON receipts under target/pr-lite/.",
-  "heavy evidence routing explains why targeted mutation or deeper proof ran.",
-  "mutation routing receipts show changed files, owner crates, labels, ripr severity, and selected commands.",
-  "diff-scoped mutation is used only where safe and records fallback reasons.",
-  "agent docs distinguish partial local evidence from full hosted or release proof.",
+  "cargo xtask check-no-panic-family exits 0 in no-new-debt mode.",
+  "New-debt count reaches 0 without running cargo xtask no-panic baseline --reset.",
+  "Test-code panic-family sites move to fallible test-support helpers.",
+  "Production-path findings are removed or receipted in policy/no-panic-allowlist.toml.",
+  "Remaining exceptions have owner, explanation, classification, and expiry.",
+  "The policy can advance toward Stage C only after the baseline has burned down.",
 ]
 
 [[work_item]]
@@ -24,7 +23,7 @@ id = "open-lane"
 status = "done"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0005"
-plan = "plans/pr-lite-evidence/implementation-plan.md"
+plan = "plans/no-panic-burndown/implementation-plan.md"
 commands = [
   "cargo xtask spec-check --strict",
   "cargo xtask docs-sync --check",
@@ -33,84 +32,84 @@ commands = [
 ]
 
 [[work_item]]
-id = "pr-lite-spec"
-status = "done"
+id = "cli-tests"
+status = "ready"
 proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0010"
-plan = "plans/pr-lite-evidence/implementation-plan.md"
+spec = "USELESSKEY-SPEC-0005"
+plan = "plans/no-panic-burndown/implementation-plan.md"
 commands = [
-  "cargo xtask spec-check --strict",
-  "cargo xtask docs-sync --check",
-  "cargo xtask typos",
-  "git diff --check",
-]
-
-[[work_item]]
-id = "pr-lite-command"
-status = "done"
-proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0010"
-plan = "plans/pr-lite-evidence/implementation-plan.md"
-commands = [
-  "cargo test -p xtask pr_lite",
+  "cargo test -p uselesskey-cli --test cli",
+  "cargo xtask check-no-panic-family",
+  "cargo xtask no-panic baseline",
   "cargo xtask pr-lite",
-  "cargo xtask pr-lite --format json",
-  "cargo xtask spec-check --strict",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "xtask-tests"
+status = "planned"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0005"
+plan = "plans/no-panic-burndown/implementation-plan.md"
+commands = [
+  "cargo test -p xtask",
+  "cargo xtask check-no-panic-family",
+  "cargo xtask no-panic baseline",
+  "cargo xtask pr-lite",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "core-tests"
+status = "planned"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0005"
+plan = "plans/no-panic-burndown/implementation-plan.md"
+commands = [
+  "cargo test -p uselesskey-core",
+  "cargo xtask check-no-panic-family",
+  "cargo xtask no-panic baseline",
+  "cargo xtask pr-lite",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "jwk-token-tests"
+status = "planned"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0005"
+plan = "plans/no-panic-burndown/implementation-plan.md"
+commands = [
+  "cargo test -p uselesskey-jwk",
+  "cargo test -p uselesskey-token",
+  "cargo xtask check-no-panic-family",
+  "cargo xtask no-panic baseline",
+  "cargo xtask pr-lite",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "production-path-review"
+status = "planned"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0005"
+plan = "plans/no-panic-burndown/implementation-plan.md"
+commands = [
+  "cargo xtask check-no-panic-family",
+  "cargo xtask no-panic propose",
+  "cargo xtask pr-lite",
   "cargo xtask pr",
   "git diff --check",
 ]
-
 [[work_item]]
-id = "mutation-routing-receipt"
-status = "done"
+id = "policy-stage-flip"
+status = "planned"
 proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0010"
-plan = "plans/pr-lite-evidence/implementation-plan.md"
+spec = "USELESSKEY-SPEC-0005"
+plan = "plans/no-panic-burndown/implementation-plan.md"
 commands = [
-  "cargo test -p xtask impacted_evidence",
-  "cargo xtask impacted-evidence",
-  "cargo xtask mutants-pr --changed --explain",
-  "cargo xtask pr-lite",
-  "git diff --check",
-]
-
-[[work_item]]
-id = "diff-scoped-mutation"
-status = "done"
-proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0010"
-plan = "plans/pr-lite-evidence/implementation-plan.md"
-commands = [
-  "cargo test -p xtask mutants_pr",
-  "cargo xtask mutants-pr --changed --explain",
-  "cargo xtask pr-lite",
+  "cargo xtask check-no-panic-family",
+  "cargo xtask check-lint-policy",
   "cargo xtask pr",
-  "git diff --check",
-]
-
-[[work_item]]
-id = "local-validation-guide"
-status = "done"
-proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0010"
-plan = "plans/pr-lite-evidence/implementation-plan.md"
-commands = [
-  "cargo xtask spec-check --strict",
-  "cargo xtask docs-sync --check",
-  "cargo xtask typos",
-  "git diff --check",
-]
-
-[[work_item]]
-id = "lane-closeout"
-status = "done"
-proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0010"
-plan = "plans/pr-lite-evidence/implementation-plan.md"
-commands = [
-  "cargo xtask pr-lite",
-  "cargo xtask spec-check --strict",
-  "cargo xtask docs-sync --check",
-  "cargo xtask typos",
   "git diff --check",
 ]
