@@ -4700,6 +4700,7 @@ dependencies = [
  "uselesskey-hmac",
  "uselesskey-jwk",
  "uselesskey-rsa",
+ "uselesskey-test-support",
  "uselesskey-token",
  "uselesskey-x509",
 ]

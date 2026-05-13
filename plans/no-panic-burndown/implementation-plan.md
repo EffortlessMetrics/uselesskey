@@ -38,14 +38,19 @@ production-path cluster needs case-by-case review: either remove the panic path
 or add a receipted allowlist entry with owner, classification, explanation, and
 expiry.
 
+`cargo xtask no-panic baseline` refuses to refresh while any unrelated new debt
+remains. Early burndown PRs should therefore use
+`cargo xtask check-no-panic-family` as a reduction receipt and leave baseline
+refresh for the point where all new-debt sites have been removed or receipted.
+
 ## Scope
 
 This lane covers:
 
 - migration of test-code panic-family sites to `uselesskey-test-support`
   fallible helpers;
-- deliberate baseline refreshes with `cargo xtask no-panic baseline` after
-  vanished entries are removed;
+- deliberate baseline refreshes with `cargo xtask no-panic baseline` only after
+  all new-debt sites are removed or receipted;
 - case-by-case production-path review;
 - receipted allowlist entries only for justified invariants or fixture
   boundaries;
@@ -93,11 +98,15 @@ Per-burndown PR:
 
 ```bash
 cargo xtask check-no-panic-family
-cargo xtask no-panic baseline
 cargo xtask pr-lite
 cargo xtask pr
 git diff --check
 ```
+
+`check-no-panic-family` is expected to keep failing until the final burndown PR;
+the useful receipt is the lower new-debt count and the absence of the target
+cluster. Do not run `cargo xtask no-panic baseline` until the command can
+refresh without absorbing unrelated new debt.
 
 Use focused crate tests before the broad gate. For example:
 
