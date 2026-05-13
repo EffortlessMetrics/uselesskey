@@ -4,6 +4,15 @@
 import json
 from pathlib import Path
 
+
+def escape_data(value):
+    return str(value).replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+
+
+def escape_property(value):
+    return escape_data(value).replace(":", "%3A").replace(",", "%2C")
+
+
 path = Path("target/ripr/review/comments.json")
 if not path.exists():
     raise SystemExit(0)
@@ -19,5 +28,8 @@ for item in data.get("comments", []):
     if not file or not line:
         continue
 
-    body = str(body).replace("\n", "%0A")
+    file = escape_property(file)
+    line = escape_property(line)
+    title = escape_property(title)
+    body = escape_data(body)
     print(f"::warning file={file},line={line},title={title}::{body}")
