@@ -3,6 +3,15 @@
 README badges are public, repo-scoped trust markers. They are not the full
 evidence system.
 
+The badge row is a front panel:
+
+```text
+README badge -> public claim -> proof command -> receipt -> boundary
+```
+
+Use [`docs/status/PUBLIC_CLAIMS.md`](../status/PUBLIC_CLAIMS.md) for the claim
+index and `cargo xtask claim-report` for the generated Markdown/JSON report.
+
 `uselesskey` uses generated Shields endpoint JSON for badges that represent
 repo-owned proof:
 
@@ -72,6 +81,22 @@ Endpoint JSON uses this minimal Shields shape:
 If scanner-safe generation fails, `cargo xtask badges` may write a red debug
 endpoint under `target/xtask/badges/`, but it must fail before overwriting the
 committed public endpoint.
+
+## Release Receipts
+
+Badge endpoint JSON is intentionally small. Release evidence carries the wider
+claim and contract-pack receipts:
+
+```text
+target/release-evidence/claims/public-claims.json
+target/release-evidence/claims/public-claims.md
+target/release-evidence/contract-packs/contract-packs.json
+target/release-evidence/contract-packs/contract-packs.md
+```
+
+Patch release evidence includes the public claim report. Minor release evidence
+also includes the contract-pack registry because contract packs are public
+fixture-platform promises.
 
 ## Future Badges
 

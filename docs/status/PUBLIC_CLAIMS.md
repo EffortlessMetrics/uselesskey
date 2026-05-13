@@ -3,8 +3,20 @@
 This page summarizes public `uselesskey` claims and points to the command-backed
 ledger in [`policy/claim-ledger.toml`](../../policy/claim-ledger.toml).
 
-The Markdown page is for readers. The TOML ledger is the future parser target
-for `cargo xtask spec-check`.
+The Markdown page is for readers. The TOML ledger is the parser target for
+`cargo xtask spec-check` and the source for `cargo xtask claim-report`.
+
+Generate the current claim report:
+
+```bash
+cargo xtask claim-report
+```
+
+Check this page against the ledger:
+
+```bash
+cargo xtask claim-report --check-public-claims
+```
 
 ## Claim Statuses
 
