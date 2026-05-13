@@ -23,6 +23,7 @@ mod policy;
 mod pr_bundles;
 mod public_surface;
 mod receipt;
+mod spec_check;
 mod test_efficiency;
 
 #[derive(Parser)]
@@ -185,6 +186,15 @@ enum Cmd {
         /// Regenerate into target/xtask/badges and fail if committed endpoints drift.
         #[arg(long)]
         check: bool,
+    },
+    /// Validate source-of-truth specs, ADRs, plans, active goals, and claim ledgers.
+    SpecCheck {
+        /// Treat warnings as errors for release evidence.
+        #[arg(long)]
+        strict: bool,
+        /// Output format.
+        #[arg(long, value_enum, default_value = "human")]
+        format: SpecCheckFormat,
     },
     /// External install smoke against crates.io or a local path.
     ///
@@ -397,6 +407,21 @@ enum MutationNightlyScope {
     Crate,
 }
 
+#[derive(Clone, Debug, ValueEnum)]
+enum SpecCheckFormat {
+    Human,
+    Json,
+}
+
+impl From<SpecCheckFormat> for spec_check::OutputFormat {
+    fn from(value: SpecCheckFormat) -> Self {
+        match value {
+            SpecCheckFormat::Human => spec_check::OutputFormat::Human,
+            SpecCheckFormat::Json => spec_check::OutputFormat::Json,
+        }
+    }
+}
+
 impl MutationNightlyScope {
     fn as_str(self) -> &'static str {
         match self {
@@ -463,6 +488,9 @@ fn main() -> Result<()> {
             }
         }
         Cmd::Badges { check } => badges(check),
+        Cmd::SpecCheck { strict, format } => {
+            spec_check::run(&workspace_root_path(), strict, format.into())
+        }
         Cmd::CratesioSmoke {
             version,
             path,
