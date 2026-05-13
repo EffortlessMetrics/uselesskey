@@ -14,6 +14,7 @@ linked_specs = [
   "USELESSKEY-SPEC-0005",
   "USELESSKEY-SPEC-0006",
   "USELESSKEY-SPEC-0007",
+  "USELESSKEY-SPEC-0008",
 ]
 linked_adrs = [
   "USELESSKEY-ADR-0001",
@@ -51,7 +52,9 @@ surface:
 - release-evidence rows for claim-report and contract-pack receipts;
 - badge and claim-boundary documentation polish;
 - an agent bootstrap guide that starts from `.uselesskey/goals/active.toml`;
-- an allowlisted claim-proof runner for selected stable claims.
+- a claim-proof execution policy and allowlisted runner for selected stable
+  claims;
+- a verification-pack receipt bundle for users and reviewers.
 
 ## Non-Goals
 
@@ -77,8 +80,13 @@ Do not mix these into this lane:
 6. Add claim-report and contract-pack receipts to release evidence.
 7. Tighten badge meaning and claim-boundary docs.
 8. Add an agent bootstrap guide.
-9. Add an allowlisted `cargo xtask claim-proof` runner.
-10. Close out the lane with a learning record and archived goal manifest.
+9. Define the claim-proof execution policy.
+10. Add an allowlisted `cargo xtask claim-proof` runner.
+11. Define the verification-pack receipt bundle.
+12. Add `cargo xtask verification-pack`.
+13. Wire claim-proof and verification-pack receipts into release evidence.
+14. Polish the public verification UX.
+15. Close out the lane with a learning record and archived goal manifest.
 
 ## Proof Commands
 

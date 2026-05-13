@@ -120,10 +120,23 @@ commands = [
 ]
 
 [[work_item]]
+id = "claim-proof-policy"
+status = "done"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0008"
+plan = "plans/claim-backed-verification/implementation-plan.md"
+commands = [
+  "cargo xtask spec-check --strict",
+  "cargo xtask docs-sync --check",
+  "cargo xtask typos",
+  "git diff --check",
+]
+
+[[work_item]]
 id = "claim-proof-runner"
 status = "ready"
 proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0002"
+spec = "USELESSKEY-SPEC-0008"
 plan = "plans/claim-backed-verification/implementation-plan.md"
 commands = [
   "cargo test -p xtask claim_proof",

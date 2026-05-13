@@ -2,6 +2,51 @@ schema_version = 1
 owner = "EffortlessMetrics"
 updated = "2026-05-13"
 
+# `claim_proof` entries are symbolic execution policy, not shell commands.
+# `cargo xtask claim-proof` must map these handler IDs to argv in code.
+[[claim_proof]]
+claim = "scanner-safe-fixtures"
+status = "planned"
+include_in_all_stable = true
+handlers = ["scanner_safe_reference_check", "no_blob", "badges_check"]
+
+[[claim_proof]]
+claim = "ripr-plus-evidence-endpoint"
+status = "planned"
+include_in_all_stable = true
+handlers = ["badges_check", "test_efficiency_report"]
+
+[[claim_proof]]
+claim = "tls-contract-pack"
+status = "planned"
+include_in_all_stable = true
+handlers = ["bundle_proof_tls", "no_blob"]
+
+[[claim_proof]]
+claim = "oidc-jwks-contract-pack"
+status = "planned"
+include_in_all_stable = true
+handlers = ["bundle_proof_oidc", "no_blob"]
+
+[[claim_proof]]
+claim = "public-crate-surface-cleanup"
+status = "planned"
+include_in_all_stable = true
+handlers = ["public_surface", "publish_check", "publish_preflight"]
+
+[[claim_proof]]
+claim = "generated-badge-endpoints"
+status = "planned"
+include_in_all_stable = true
+handlers = ["badges_check"]
+
+[[claim_proof]]
+claim = "external-cratesio-install-smoke"
+status = "planned"
+include_in_all_stable = false
+requires_explicit_version = true
+handlers = ["cratesio_smoke_version"]
+
 [[claim]]
 id = "scanner-safe-fixtures"
 title = "Scanner-safe fixtures"
