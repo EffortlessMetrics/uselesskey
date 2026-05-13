@@ -232,6 +232,16 @@ reason = "Generated workspace docs / perf-baseline metadata."
 generated_by = "cargo xtask docs-sync"
 covered_by = ["cargo xtask docs-sync --check"]
 
+[[allow]]
+glob = "badges/*.json"
+kind = "generated_badge_endpoint"
+owner = "release/ci"
+surface = "docs"
+classification = "generated"
+reason = "Generated Shields endpoint JSON for public README badges."
+generated_by = "cargo xtask badges"
+covered_by = ["cargo xtask badges --check"]
+
 # === Example reference outputs =============================================
 
 [[allow]]
