@@ -23,6 +23,7 @@ mod policy;
 mod pr_bundles;
 mod public_surface;
 mod receipt;
+mod test_efficiency;
 
 #[derive(Parser)]
 #[command(
@@ -100,7 +101,19 @@ enum Cmd {
         with_mutants: bool,
     },
     /// Run advisory ripr PR exposure evidence (requires external `ripr`).
-    RiprPr,
+    RiprPr {
+        /// Verify the generated PR evidence output contract instead of running ripr.
+        #[arg(long)]
+        check: bool,
+    },
+    /// Run advisory ripr review guidance (requires external `ripr`).
+    RiprReviewComments {
+        /// Verify the generated review guidance output contract instead of running ripr.
+        #[arg(long)]
+        check: bool,
+    },
+    /// Generate the repo-scoped RIPR test-efficiency report used by ripr+ badge output.
+    TestEfficiencyReport,
     /// Run PR-scoped mutation testing explicitly.
     MutantsPr {
         /// Run mutation testing for mutation-eligible crates changed against the PR base.
@@ -154,7 +167,7 @@ enum Cmd {
     },
     /// Generate, verify, inspect, and export a bundle proof artifact for release evidence.
     BundleProof {
-        /// Bundle profile to prove. Supports `scanner-safe` and `oidc`.
+        /// Bundle profile to prove. Supports `scanner-safe`, `oidc`, and `tls`.
         #[arg(long, default_value = "scanner-safe")]
         profile: String,
         /// Output directory for proof artifacts.
@@ -164,6 +177,12 @@ enum Cmd {
     /// Verify the committed scanner-safe-bundle reference outputs.
     ScannerSafeReference {
         /// Compare regenerated outputs against the committed reference; do not write.
+        #[arg(long)]
+        check: bool,
+    },
+    /// Regenerate public Shields endpoint badge JSON.
+    Badges {
+        /// Regenerate into target/xtask/badges and fail if committed endpoints drift.
         #[arg(long)]
         check: bool,
     },
@@ -413,7 +432,9 @@ fn main() -> Result<()> {
         Cmd::ExamplesSmoke { run } => docs_sync::examples_smoke_cmd(run),
         Cmd::PublishCheck => publish_check(),
         Cmd::Pr { with_mutants } => pr(with_mutants),
-        Cmd::RiprPr => ripr_pr(),
+        Cmd::RiprPr { check } => ripr_pr(check),
+        Cmd::RiprReviewComments { check } => ripr_review_comments(check),
+        Cmd::TestEfficiencyReport => test_efficiency::test_efficiency_report_cmd(),
         Cmd::MutantsPr {
             changed,
             crates,
@@ -441,6 +462,7 @@ fn main() -> Result<()> {
                 bail!("scanner-safe-reference requires --check")
             }
         }
+        Cmd::Badges { check } => badges(check),
         Cmd::CratesioSmoke {
             version,
             path,
@@ -650,6 +672,20 @@ fn read_json_file<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T> {
     let raw =
         fs::read_to_string(path).with_context(|| format!("failed to read {}", path.display()))?;
     serde_json::from_str(&raw).with_context(|| format!("failed to parse {}", path.display()))
+}
+
+fn compare_files(expected: &Path, actual: &Path) -> Result<()> {
+    let expected_bytes =
+        fs::read(expected).with_context(|| format!("failed to read {}", expected.display()))?;
+    let actual_bytes =
+        fs::read(actual).with_context(|| format!("failed to read {}", actual.display()))?;
+    if expected_bytes != actual_bytes {
+        bail!(
+            "{} drifted; run `cargo xtask badges` and commit the refreshed endpoint",
+            expected.display()
+        );
+    }
+    Ok(())
 }
 
 fn run(cmd: &mut Command) -> Result<()> {
@@ -881,30 +917,10 @@ fn feature_matrix_cmd() -> Result<()> {
 }
 
 const PUBLISH_CRATES: &[&str] = &[
-    // True leaf crates (no workspace deps)
-    "uselesskey-core-hmac-spec",
+    // True leaf crate (no workspace deps)
     "uselesskey-jwk",
-    "uselesskey-core-kid",
-    "uselesskey-core-jwk-shape",
-    "uselesskey-core-jwks-order",
-    "uselesskey-core-jwk-builder",
-    // JWK aggregate (depends on the JWK shards above)
-    "uselesskey-core-jwk",
     // Core (depends on the JWK lane above)
     "uselesskey-core",
-    // Core compatibility shims (depend on uselesskey-core)
-    "uselesskey-core-seed",
-    "uselesskey-core-hash",
-    "uselesskey-core-id",
-    "uselesskey-core-cache",
-    "uselesskey-core-factory",
-    "uselesskey-core-negative-der",
-    "uselesskey-core-negative-pem",
-    "uselesskey-core-negative",
-    "uselesskey-core-sink",
-    // Keypair material
-    "uselesskey-core-keypair-material",
-    "uselesskey-core-keypair",
     // Mid-level fixture crates
     "uselesskey-entropy",
     "uselesskey-rsa",
@@ -912,11 +928,6 @@ const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-ed25519",
     "uselesskey-hmac",
     "uselesskey-token",
-    // Token compatibility shims (depend on uselesskey-token)
-    "uselesskey-token-spec",
-    "uselesskey-core-base62",
-    "uselesskey-core-token-shape",
-    "uselesskey-core-token",
     // Higher-level fixture crates
     "uselesskey-webhook",
     "uselesskey-pkcs11-mock",
@@ -925,21 +936,12 @@ const PUBLISH_CRATES: &[&str] = &[
     "uselesskey-pgp",
     // X.509 (depends on core and downstream)
     "uselesskey-x509",
-    // X.509 compatibility shims (depend on uselesskey-x509)
-    "uselesskey-core-x509-spec",
-    "uselesskey-core-x509-derive",
-    "uselesskey-core-x509-chain-negative",
-    "uselesskey-core-x509-negative",
-    "uselesskey-core-x509",
     // Servers and CLI
     "uselesskey-test-server",
     "uselesskey-axum",
     "uselesskey-cli",
     // Adapters (depend on key crates, NOT on facade)
-    "uselesskey-core-rustls-pki",
     "uselesskey-jsonwebtoken",
-    "uselesskey-jose-openid",
-    "uselesskey-pgp-native",
     "uselesskey-rustls",
     "uselesskey-tonic",
     "uselesskey-ring",
@@ -955,36 +957,10 @@ const PUBLISH_CRATES: &[&str] = &[
 /// (RSA, ECDSA, Ed25519, PGP, X.509, adapters). These are still
 /// mutant-tested when directly impacted in PR-scoped runs.
 const MUTANT_CRATES: &[&str] = &[
-    "uselesskey-core-seed",
-    "uselesskey-core-hash",
-    "uselesskey-core-hmac-spec",
-    "uselesskey-core-id",
-    "uselesskey-core-cache",
-    "uselesskey-core-factory",
     "uselesskey-jwk",
-    "uselesskey-core-kid",
-    "uselesskey-core-negative-der",
-    "uselesskey-core-negative-pem",
-    "uselesskey-core-negative",
-    "uselesskey-core-sink",
-    "uselesskey-core-jwk-shape",
-    "uselesskey-core-jwks-order",
-    "uselesskey-core-jwk-builder",
-    "uselesskey-core-jwk",
-    "uselesskey-core-x509-spec",
-    "uselesskey-core-x509-derive",
-    "uselesskey-core-x509-chain-negative",
-    "uselesskey-core-x509-negative",
-    "uselesskey-core-x509",
     "uselesskey-core",
-    "uselesskey-core-keypair-material",
-    "uselesskey-core-keypair",
     "uselesskey-hmac",
     "uselesskey-token",
-    "uselesskey-token-spec",
-    "uselesskey-core-base62",
-    "uselesskey-core-token-shape",
-    "uselesskey-core-token",
 ];
 
 const NIGHTLY_PUBLIC_MUTATION_CRATES: &[&str] = &[
@@ -1038,8 +1014,19 @@ const MUTATION_SURVIVOR_CLASSIFICATIONS: &[&str] = &["equivalent", "accepted-ris
 /// field is null for normal deps, `"dev"` for dev-deps, and `"build"` for
 /// build-deps). All three matter for `cargo publish`.
 fn verify_publish_order_is_topological() -> Result<()> {
+    // Pin both the child process's working directory and `--manifest-path` to
+    // the workspace root so this is independent of our process CWD. Without
+    // an explicit `current_dir`, cargo's `getcwd()` happens BEFORE it parses
+    // `--manifest-path`, so a parallel test that drops its tempdir can make
+    // the OS-level CWD invalid and cargo aborts with
+    // `Could not locate working directory: No such file or directory`.
+    let workspace_root = workspace_root_path();
+    let workspace_manifest = workspace_root.join("Cargo.toml");
     let output = Command::new("cargo")
+        .current_dir(&workspace_root)
         .args(["metadata", "--format-version", "1", "--no-deps"])
+        .arg("--manifest-path")
+        .arg(&workspace_manifest)
         .output()
         .context("failed to run `cargo metadata` for publish-order topo check")?;
 
@@ -2861,6 +2848,22 @@ fn release_evidence_steps_minor() -> Vec<ReleaseEvidenceStep> {
             ],
         },
         ReleaseEvidenceStep {
+            name: "tls-contract-pack-proof",
+            command: &[
+                "cargo",
+                "xtask",
+                "bundle-proof",
+                "--profile",
+                "tls",
+                "--out",
+                "target/release-evidence/tls",
+            ],
+            artifacts: &[
+                "target/release-evidence/tls/tls-contract-pack-proof.json",
+                "target/release-evidence/tls/tls-contract-pack-proof.md",
+            ],
+        },
+        ReleaseEvidenceStep {
             name: "economics",
             command: &["cargo", "xtask", "economics"],
             artifacts: &[
@@ -3280,6 +3283,7 @@ fn render_release_evidence_summary_markdown(receipt: &ReleaseEvidenceReceipt) ->
                 "OIDC contract-pack proof",
                 &["oidc-contract-pack-proof"][..],
             ),
+            ("TLS contract-pack proof", &["tls-contract-pack-proof"][..]),
             ("RIPR exposure", &["ripr-pr", "impacted-evidence"][..]),
             ("Nightly mutation scope", &["mutants-nightly-public"][..]),
             ("Performance evidence", &["perf"][..]),
@@ -3489,6 +3493,141 @@ fn scanner_safe_reference_compare_bytes(expected_path: &Path, actual_path: &Path
         actual_lines.len(),
         first_diff
     );
+}
+
+const BADGE_ENDPOINT_DIR: &str = "badges";
+const BADGE_ENDPOINT_TARGET_DIR: &str = "target/xtask/badges";
+
+#[derive(Clone, Debug, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
+struct ShieldsEndpointBadge {
+    #[serde(rename = "schemaVersion")]
+    schema_version: u8,
+    label: String,
+    message: String,
+    color: String,
+}
+
+fn badges(check: bool) -> Result<()> {
+    let workspace_root = workspace_root_path();
+    let target_dir = workspace_root.join(BADGE_ENDPOINT_TARGET_DIR);
+    fs::create_dir_all(&target_dir)
+        .with_context(|| format!("failed to create {}", target_dir.display()))?;
+
+    test_efficiency::write_test_efficiency_report(&workspace_root)?;
+
+    let ripr_plus = ripr_plus_badge(&workspace_root)?;
+    validate_shields_badge(&ripr_plus, Some("ripr+"))?;
+    write_json_pretty(&target_dir.join("ripr-plus.json"), &ripr_plus)?;
+
+    match scanner_safe_badge(&workspace_root) {
+        Ok(scanner_safe) => {
+            validate_shields_badge(&scanner_safe, Some("fixtures"))?;
+            write_json_pretty(&target_dir.join("scanner-safe.json"), &scanner_safe)?;
+        }
+        Err(err) => {
+            let failure = ShieldsEndpointBadge {
+                schema_version: 1,
+                label: "fixtures".to_string(),
+                message: "blob-risk".to_string(),
+                color: "red".to_string(),
+            };
+            write_json_pretty(&target_dir.join("scanner-safe.json"), &failure)?;
+            return Err(err).context("scanner-safe badge generation failed");
+        }
+    }
+
+    if check {
+        let committed_dir = workspace_root.join(BADGE_ENDPOINT_DIR);
+        for file in ["ripr-plus.json", "scanner-safe.json"] {
+            compare_files(&committed_dir.join(file), &target_dir.join(file))?;
+        }
+        println!("badges: committed endpoints are current");
+    } else {
+        let committed_dir = workspace_root.join(BADGE_ENDPOINT_DIR);
+        fs::create_dir_all(&committed_dir)
+            .with_context(|| format!("failed to create {}", committed_dir.display()))?;
+        for file in ["ripr-plus.json", "scanner-safe.json"] {
+            fs::copy(target_dir.join(file), committed_dir.join(file)).with_context(|| {
+                format!("failed to refresh {}", committed_dir.join(file).display())
+            })?;
+        }
+        println!("badges: refreshed public endpoint JSON under {BADGE_ENDPOINT_DIR}/");
+    }
+
+    Ok(())
+}
+
+fn ripr_plus_badge(workspace_root: &Path) -> Result<ShieldsEndpointBadge> {
+    let ripr_bin = env::var("RIPR_BIN").unwrap_or_else(|_| "ripr".to_string());
+    let output = Command::new(&ripr_bin)
+        .arg("check")
+        .arg("--root")
+        .arg(workspace_root)
+        .arg("--format")
+        .arg("repo-badge-plus-shields")
+        .current_dir(workspace_root)
+        .output()
+        .with_context(|| format!("failed to spawn {ripr_bin:?}"))?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        bail!(
+            "{ripr_bin} repo-badge-plus-shields failed with status {}: {}",
+            output.status,
+            stderr
+        );
+    }
+    serde_json::from_slice(&output.stdout)
+        .with_context(|| format!("{ripr_bin} emitted invalid Shields endpoint JSON"))
+}
+
+fn scanner_safe_badge(workspace_root: &Path) -> Result<ShieldsEndpointBadge> {
+    let mut offenders = Vec::new();
+    walk_for_blobs(workspace_root, workspace_root, &mut offenders)?;
+    if !offenders.is_empty() {
+        let mut msg =
+            String::from("found secret-shaped fixtures while generating scanner-safe badge:");
+        for hit in &offenders {
+            msg.push_str(&format!(
+                "\n  {}\n    kind: {}\n    fix:  {}",
+                hit.rel_path, hit.kind, hit.suggestion
+            ));
+        }
+        bail!("{msg}");
+    }
+    Ok(ShieldsEndpointBadge {
+        schema_version: 1,
+        label: "fixtures".to_string(),
+        message: "scanner-safe".to_string(),
+        color: "brightgreen".to_string(),
+    })
+}
+
+fn validate_shields_badge(
+    badge: &ShieldsEndpointBadge,
+    expected_label: Option<&str>,
+) -> Result<()> {
+    if badge.schema_version != 1 {
+        bail!(
+            "badge `{}` has unsupported schemaVersion {}; expected 1",
+            badge.label,
+            badge.schema_version
+        );
+    }
+    if let Some(expected_label) = expected_label
+        && badge.label != expected_label
+    {
+        bail!(
+            "badge label drifted: got `{}`, expected `{expected_label}`",
+            badge.label
+        );
+    }
+    if badge.message.trim().is_empty() {
+        bail!("badge `{}` has an empty message", badge.label);
+    }
+    if badge.color.trim().is_empty() {
+        bail!("badge `{}` has an empty color", badge.label);
+    }
+    Ok(())
 }
 
 /// External install smoke. Proves the published-manifest view by building
@@ -4022,14 +4161,6 @@ fn impacted_evidence_rule(path: &str) -> Option<ImpactedEvidenceRule> {
         });
     }
 
-    if let Some(owner) = compatibility_shim_owner(path) {
-        return Some(ImpactedEvidenceRule {
-            owner_crate: owner.to_string(),
-            reason: "compatibility-shim",
-            requires_targeted_mutation: false,
-        });
-    }
-
     if let Some(crate_name) = path
         .strip_prefix("crates/")
         .and_then(|rest| rest.split('/').next())
@@ -4051,35 +4182,6 @@ fn impacted_evidence_rule(path: &str) -> Option<ImpactedEvidenceRule> {
     None
 }
 
-fn compatibility_shim_owner(path: &str) -> Option<&'static str> {
-    for (prefix, owner) in [
-        ("crates/uselesskey-core-jwk/", "uselesskey-jwk"),
-        ("crates/uselesskey-core-jwk-shape/", "uselesskey-jwk"),
-        ("crates/uselesskey-core-jwk-builder/", "uselesskey-jwk"),
-        ("crates/uselesskey-core-jwks-order/", "uselesskey-jwk"),
-        ("crates/uselesskey-core-kid/", "uselesskey-jwk"),
-        ("crates/uselesskey-core-token/", "uselesskey-token"),
-        ("crates/uselesskey-core-token-shape/", "uselesskey-token"),
-        ("crates/uselesskey-core-base62/", "uselesskey-token"),
-        ("crates/uselesskey-token-spec/", "uselesskey-token"),
-        ("crates/uselesskey-core-x509/", "uselesskey-x509"),
-        ("crates/uselesskey-core-x509-spec/", "uselesskey-x509"),
-        ("crates/uselesskey-core-x509-derive/", "uselesskey-x509"),
-        ("crates/uselesskey-core-x509-negative/", "uselesskey-x509"),
-        (
-            "crates/uselesskey-core-x509-chain-negative/",
-            "uselesskey-x509",
-        ),
-        ("crates/uselesskey-core-hmac-spec/", "uselesskey-hmac"),
-        ("crates/uselesskey-core-rustls-pki/", "uselesskey-rustls"),
-    ] {
-        if path.starts_with(prefix) {
-            return Some(owner);
-        }
-    }
-    None
-}
-
 fn is_adapter_crate(crate_name: &str) -> bool {
     matches!(
         crate_name,
@@ -4090,8 +4192,6 @@ fn is_adapter_crate(crate_name: &str) -> bool {
             | "uselesskey-ring"
             | "uselesskey-rustcrypto"
             | "uselesskey-aws-lc-rs"
-            | "uselesskey-jose-openid"
-            | "uselesskey-pgp-native"
     )
 }
 
@@ -4304,6 +4404,7 @@ fn resolve_base_ref() -> String {
 }
 
 const RIPR_PR_DIR: &str = "target/ripr/pr";
+const RIPR_REVIEW_DIR: &str = "target/ripr/review";
 
 const RIPR_CLAIM_BOUNDARY: &[&str] = &[
     "ripr is static oracle-exposure evidence for changed behavior",
@@ -4311,14 +4412,27 @@ const RIPR_CLAIM_BOUNDARY: &[&str] = &[
     "advisory PR evidence should route targeted mutation, not suppress it",
 ];
 
-fn ripr_pr() -> Result<()> {
+fn ripr_pr(check: bool) -> Result<()> {
+    if check {
+        return check_ripr_pr_contract(&workspace_root_path().join(RIPR_PR_DIR));
+    }
+
     let base_ref = resolve_base_ref();
-    let out_dir = PathBuf::from(RIPR_PR_DIR);
+    let workspace_root = workspace_root_path();
+    let out_dir = workspace_root.join(RIPR_PR_DIR);
     fs::create_dir_all(&out_dir)
         .with_context(|| format!("failed to create {}", out_dir.display()))?;
 
-    let output = match Command::new("ripr")
-        .args(["check", "--base", &base_ref, "--format", "json"])
+    let ripr_bin = env::var("RIPR_BIN").unwrap_or_else(|_| "ripr".to_string());
+    let output = match Command::new(&ripr_bin)
+        .arg("check")
+        .arg("--root")
+        .arg(&workspace_root)
+        .arg("--base")
+        .arg(&base_ref)
+        .arg("--format")
+        .arg("json")
+        .current_dir(&workspace_root)
         .output()
     {
         Ok(output) => output,
@@ -4327,14 +4441,15 @@ fn ripr_pr() -> Result<()> {
             write_ripr_skipped_artifacts(&out_dir, &base_ref, reason)?;
             println!("ripr-pr: skipped ({reason})");
             println!(
-                "ripr-pr: wrote {}, {}, and {}",
+                "ripr-pr: wrote {}, {}, {}, and {}",
                 out_dir.join("repo-exposure.json").display(),
+                out_dir.join("repo-exposure.md").display(),
                 out_dir.join("summary.md").display(),
                 out_dir.join("review.md").display()
             );
             return Ok(());
         }
-        Err(err) => return Err(err).context("failed to spawn ripr"),
+        Err(err) => return Err(err).with_context(|| format!("failed to spawn {ripr_bin}")),
     };
 
     if !output.status.success() {
@@ -4355,6 +4470,9 @@ fn ripr_pr() -> Result<()> {
         .with_context(|| format!("failed to write {}", json_path.display()))?;
 
     let markdown = render_ripr_markdown(&base_ref, &json);
+    let exposure_path = out_dir.join("repo-exposure.md");
+    fs::write(&exposure_path, &markdown)
+        .with_context(|| format!("failed to write {}", exposure_path.display()))?;
     let summary_path = out_dir.join("summary.md");
     fs::write(&summary_path, &markdown)
         .with_context(|| format!("failed to write {}", summary_path.display()))?;
@@ -4372,9 +4490,25 @@ fn ripr_pr() -> Result<()> {
     println!(
         "ripr-pr: wrote {}, {}, and {}",
         json_path.display(),
-        summary_path.display(),
+        exposure_path.display(),
         review_path.display()
     );
+    Ok(())
+}
+
+fn check_ripr_pr_contract(out_dir: &Path) -> Result<()> {
+    let json_path = out_dir.join("repo-exposure.json");
+    let markdown_path = out_dir.join("repo-exposure.md");
+    let json: serde_json::Value = read_json_file(&json_path)?;
+    if !json.is_object() {
+        bail!("{} must contain a JSON object", json_path.display());
+    }
+    let markdown = fs::read_to_string(&markdown_path)
+        .with_context(|| format!("failed to read {}", markdown_path.display()))?;
+    if markdown.trim().is_empty() {
+        bail!("{} must not be empty", markdown_path.display());
+    }
+    println!("ripr-pr: output contract is intact");
     Ok(())
 }
 
@@ -4388,6 +4522,7 @@ fn write_ripr_skipped_artifacts(out_dir: &Path, base_ref: &str, reason: &str) ->
         "reason": reason,
         "artifacts": [
             "target/ripr/pr/repo-exposure.json",
+            "target/ripr/pr/repo-exposure.md",
             "target/ripr/pr/summary.md",
             "target/ripr/pr/review.md"
         ],
@@ -4396,11 +4531,150 @@ fn write_ripr_skipped_artifacts(out_dir: &Path, base_ref: &str, reason: &str) ->
     write_json_pretty(&out_dir.join("repo-exposure.json"), &json)?;
 
     let markdown = render_ripr_skipped_markdown(base_ref, reason);
+    fs::write(out_dir.join("repo-exposure.md"), &markdown).with_context(|| {
+        format!(
+            "failed to write {}",
+            out_dir.join("repo-exposure.md").display()
+        )
+    })?;
     fs::write(out_dir.join("summary.md"), &markdown)
         .with_context(|| format!("failed to write {}", out_dir.join("summary.md").display()))?;
     fs::write(out_dir.join("review.md"), &markdown)
         .with_context(|| format!("failed to write {}", out_dir.join("review.md").display()))?;
     Ok(())
+}
+
+fn ripr_review_comments(check: bool) -> Result<()> {
+    let workspace_root = workspace_root_path();
+    let out_dir = workspace_root.join(RIPR_REVIEW_DIR);
+    if check {
+        return check_ripr_review_contract(&out_dir);
+    }
+
+    fs::create_dir_all(&out_dir)
+        .with_context(|| format!("failed to create {}", out_dir.display()))?;
+    let base_ref = resolve_base_ref();
+    let json_path = out_dir.join("comments.json");
+    let ripr_bin = env::var("RIPR_BIN").unwrap_or_else(|_| "ripr".to_string());
+
+    let output = match Command::new(&ripr_bin)
+        .arg("review-comments")
+        .arg("--root")
+        .arg(&workspace_root)
+        .arg("--base")
+        .arg(&base_ref)
+        .arg("--head")
+        .arg("HEAD")
+        .arg("--out")
+        .arg(&json_path)
+        .current_dir(&workspace_root)
+        .output()
+    {
+        Ok(output) => output,
+        Err(err) if err.kind() == ErrorKind::NotFound => {
+            let reason = "ripr is not installed or not on PATH";
+            write_ripr_review_skipped_artifacts(&out_dir, &base_ref, reason)?;
+            println!("ripr-review-comments: skipped ({reason})");
+            return Ok(());
+        }
+        Err(err) => return Err(err).with_context(|| format!("failed to spawn {ripr_bin}")),
+    };
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        bail!(
+            "{ripr_bin} review-comments failed with status {}: {}",
+            output.status,
+            stderr
+        );
+    }
+
+    if !json_path.exists() {
+        fs::write(&json_path, &output.stdout)
+            .with_context(|| format!("failed to write {}", json_path.display()))?;
+    }
+    ensure_ripr_review_markdown(&out_dir, &base_ref)?;
+    println!(
+        "ripr-review-comments: wrote {} and {}",
+        json_path.display(),
+        out_dir.join("comments.md").display()
+    );
+    Ok(())
+}
+
+fn check_ripr_review_contract(out_dir: &Path) -> Result<()> {
+    let json_path = out_dir.join("comments.json");
+    let markdown_path = out_dir.join("comments.md");
+    let json: serde_json::Value = read_json_file(&json_path)?;
+    if !json.is_object() {
+        bail!("{} must contain a JSON object", json_path.display());
+    }
+    let markdown = fs::read_to_string(&markdown_path)
+        .with_context(|| format!("failed to read {}", markdown_path.display()))?;
+    if markdown.trim().is_empty() {
+        bail!("{} must not be empty", markdown_path.display());
+    }
+    println!("ripr-review-comments: output contract is intact");
+    Ok(())
+}
+
+fn write_ripr_review_skipped_artifacts(out_dir: &Path, base_ref: &str, reason: &str) -> Result<()> {
+    let json = serde_json::json!({
+        "schema_version": 1,
+        "tool": "ripr",
+        "lane": "review-comments",
+        "status": "skipped",
+        "base": base_ref,
+        "head": "HEAD",
+        "reason": reason,
+        "comments": [],
+        "summary_only": [],
+        "suppressed": [],
+        "warnings": [reason],
+        "claim_boundary": RIPR_CLAIM_BOUNDARY,
+    });
+    write_json_pretty(&out_dir.join("comments.json"), &json)?;
+    fs::write(
+        out_dir.join("comments.md"),
+        render_ripr_review_skipped_markdown(base_ref, reason),
+    )
+    .with_context(|| format!("failed to write {}", out_dir.join("comments.md").display()))?;
+    Ok(())
+}
+
+fn ensure_ripr_review_markdown(out_dir: &Path, base_ref: &str) -> Result<()> {
+    let markdown_path = out_dir.join("comments.md");
+    if markdown_path.exists() {
+        return Ok(());
+    }
+    let json: serde_json::Value = read_json_file(&out_dir.join("comments.json"))?;
+    fs::write(&markdown_path, render_ripr_review_markdown(base_ref, &json))
+        .with_context(|| format!("failed to write {}", markdown_path.display()))
+}
+
+fn render_ripr_review_skipped_markdown(base_ref: &str, reason: &str) -> String {
+    format!(
+        "\
+# RIPR Review Guidance\n\nStatus: skipped\n\nBase: `{base_ref}`\n\nReason: {reason}.\n\nInstall `ripr` and rerun `cargo xtask ripr-review-comments` to generate advisory review guidance.\n"
+    )
+}
+
+fn render_ripr_review_markdown(base_ref: &str, json: &serde_json::Value) -> String {
+    let comments = json_array_len(json, "comments");
+    let summary_only = json_array_len(json, "summary_only");
+    let suppressed = json_array_len(json, "suppressed");
+    let warnings = json_array_len(json, "warnings");
+    format!(
+        "\
+# RIPR Review Guidance\n\nStatus: advisory\n\nBase: `{base_ref}`\n\n| Bucket | Count |\n| --- | ---: |\n| comments | {comments} |\n| summary only | {summary_only} |\n| suppressed | {suppressed} |\n| warnings | {warnings} |\n\nLine-placeable guidance lives in `comments[]`; summary-only items remain in artifacts.\n"
+    )
+}
+
+fn json_array_len(value: &serde_json::Value, key: &str) -> usize {
+    value
+        .get(key)
+        .and_then(serde_json::Value::as_array)
+        .map_or(0, Vec::len)
 }
 
 fn render_ripr_skipped_markdown(base_ref: &str, reason: &str) -> String {
@@ -4778,15 +5052,37 @@ fn lint_name_fragment(line: &str) -> bool {
         || lint.starts_with("clippy::")
 }
 
+/// Compute the per-crate test targets for `cargo xtask pr`.
+///
+/// The plan's `impacted_crates` set is derived from the path components
+/// of changed files (`crates/<name>/...`). When a PR deletes a crate, that
+/// path still appears in the diff, so the deleted crate name leaks into
+/// `impacted_crates`. `cargo test -p <deleted-crate> --all-features` then
+/// fails with `error: cannot specify features for packages outside of workspace`.
+///
+/// This filter drops:
+/// - `uselesskey-bdd` (run separately via `bdd` step)
+/// - any crate name whose directory no longer exists under `crates/`
+///   (i.e. deleted in this PR's diff)
+fn impacted_test_targets(
+    crates: &std::collections::BTreeSet<String>,
+    workspace_root: &Path,
+) -> Vec<String> {
+    let crates_dir = workspace_root.join("crates");
+    crates
+        .iter()
+        .filter(|name| name.as_str() != "uselesskey-bdd")
+        .filter(|name| crates_dir.join(name.as_str()).join("Cargo.toml").is_file())
+        .cloned()
+        .collect()
+}
+
 fn run_impacted_tests(
     crates: &std::collections::BTreeSet<String>,
     runner: &mut receipt::Runner,
 ) -> Result<()> {
-    let mut targets: Vec<String> = crates
-        .iter()
-        .filter(|name| name.as_str() != "uselesskey-bdd")
-        .cloned()
-        .collect();
+    let workspace_root = workspace_root_path();
+    let targets = impacted_test_targets(crates, &workspace_root);
     if targets.is_empty() {
         runner.skip(
             "tests",
@@ -4794,10 +5090,7 @@ fn run_impacted_tests(
         );
         return Ok(());
     }
-    for name in targets.drain(..) {
-        if name == "uselesskey-bdd" {
-            continue;
-        }
+    for name in targets {
         let step_name = format!("test:{name}");
         runner.step(&step_name, None, || {
             let mut cmd = Command::new("cargo");
@@ -6116,7 +6409,7 @@ mod tests {
         let paths = vec![
             "crates/uselesskey-x509/src/srp/spec/chain_spec.rs".to_string(),
             "crates/uselesskey-rustls/src/config.rs".to_string(),
-            "crates/uselesskey-core-jwk/src/lib.rs".to_string(),
+            "crates/uselesskey-jwk/src/srp/builder.rs".to_string(),
         ];
 
         let report = impacted_evidence_report("origin/main", &paths);
@@ -6134,7 +6427,7 @@ mod tests {
             report.reasons,
             vec![
                 "adapter-conversion".to_string(),
-                "compatibility-shim".to_string(),
+                "jwk-owner-internal".to_string(),
                 "x509-owner-internal".to_string()
             ]
         );
@@ -6170,7 +6463,6 @@ mod tests {
     fn mutation_target_owners_use_impacted_evidence() {
         let paths = vec![
             "crates/uselesskey-token/src/srp/shape.rs".to_string(),
-            "crates/uselesskey-core-token/src/lib.rs".to_string(),
             "docs/ci/test-evidence-lanes.md".to_string(),
         ];
 
@@ -6181,11 +6473,8 @@ mod tests {
     }
 
     #[test]
-    fn mutation_target_owners_skip_docs_and_shims() {
-        let paths = vec![
-            "crates/uselesskey-core-jwk/src/lib.rs".to_string(),
-            "docs/ci/test-evidence-lanes.md".to_string(),
-        ];
+    fn mutation_target_owners_skip_docs() {
+        let paths = vec!["docs/ci/test-evidence-lanes.md".to_string()];
 
         assert!(mutation_target_owners(&paths).is_empty());
     }
@@ -6194,7 +6483,6 @@ mod tests {
     fn mutation_target_paths_follow_owner_mapping() {
         let paths = vec![
             "crates/uselesskey-rustls/src/config.rs".to_string(),
-            "crates/uselesskey-core-rustls-pki/src/lib.rs".to_string(),
             "crates/uselesskey-x509/src/srp/spec/chain_spec.rs".to_string(),
         ];
 
@@ -6217,7 +6505,6 @@ mod tests {
         assert!(crates.contains(&"uselesskey-token".to_string()));
         assert!(crates.contains(&"uselesskey-x509".to_string()));
         assert!(crates.contains(&"uselesskey-cli".to_string()));
-        assert!(!crates.contains(&"uselesskey-core-jwk".to_string()));
     }
 
     #[test]
@@ -6854,6 +7141,7 @@ index 1111111..2222222 100644
             "examples-smoke",
             "scanner-safe-bundle-proof",
             "oidc-contract-pack-proof",
+            "tls-contract-pack-proof",
             "economics",
             "audit-surface",
             "perf",
@@ -6879,6 +7167,11 @@ index 1111111..2222222 100644
             receipt
                 .artifacts
                 .contains(&"target/release-evidence/oidc/oidc-contract-pack-proof.md".to_string())
+        );
+        assert!(
+            receipt
+                .artifacts
+                .contains(&"target/release-evidence/tls/tls-contract-pack-proof.md".to_string())
         );
         assert!(
             receipt
@@ -6912,6 +7205,7 @@ index 1111111..2222222 100644
         assert!(markdown.contains("Package and publish proof"));
         assert!(markdown.contains("Scanner-safe bundle proof"));
         assert!(markdown.contains("OIDC contract-pack proof"));
+        assert!(markdown.contains("TLS contract-pack proof"));
         assert!(markdown.contains("Nightly mutation scope"));
         assert!(markdown.contains("Pending RC execution"));
         assert!(markdown.contains("not production key management"));
@@ -6966,6 +7260,35 @@ index 1111111..2222222 100644
     }
 
     #[test]
+    fn shields_badge_validation_accepts_expected_shape() {
+        let badge = ShieldsEndpointBadge {
+            schema_version: 1,
+            label: "ripr+".to_string(),
+            message: "0".to_string(),
+            color: "brightgreen".to_string(),
+        };
+
+        validate_shields_badge(&badge, Some("ripr+")).expect("valid badge shape");
+    }
+
+    #[test]
+    fn scanner_safe_badge_success_shape_is_stable() {
+        let badge = ShieldsEndpointBadge {
+            schema_version: 1,
+            label: "fixtures".to_string(),
+            message: "scanner-safe".to_string(),
+            color: "brightgreen".to_string(),
+        };
+
+        let json = serde_json::to_string_pretty(&badge).expect("serialize badge");
+
+        assert!(json.contains(r#""schemaVersion": 1"#));
+        assert!(json.contains(r#""label": "fixtures""#));
+        assert!(json.contains(r#""message": "scanner-safe""#));
+        assert!(json.contains(r#""color": "brightgreen""#));
+    }
+
+    #[test]
     fn release_evidence_patch_step_list_includes_cratesio_smoke() {
         let steps = release_evidence_steps_patch();
         let names = steps.iter().map(|step| step.name).collect::<BTreeSet<_>>();
@@ -7009,6 +7332,87 @@ index 1111111..2222222 100644
         assert!(markdown.contains("Crates.io install smoke"));
         assert!(markdown.contains("Scanner-safe reference"));
         assert!(!markdown.contains("Nightly mutation scope"));
+    }
+
+    #[test]
+    fn release_evidence_patch_step_list_excludes_tls_contract_pack_proof() {
+        let steps = release_evidence_steps_patch();
+        let names = steps.iter().map(|step| step.name).collect::<BTreeSet<_>>();
+        assert!(
+            !names.contains("tls-contract-pack-proof"),
+            "patch lane must not include tls-contract-pack-proof (full pack proofs are minor-only)",
+        );
+    }
+
+    #[test]
+    fn release_evidence_minor_step_list_includes_tls_contract_pack_proof() {
+        let steps = release_evidence_steps_minor();
+        let step = steps
+            .iter()
+            .find(|step| step.name == "tls-contract-pack-proof")
+            .expect("minor lane must wire tls-contract-pack-proof");
+        assert_eq!(
+            step.command,
+            &[
+                "cargo",
+                "xtask",
+                "bundle-proof",
+                "--profile",
+                "tls",
+                "--out",
+                "target/release-evidence/tls",
+            ],
+        );
+        assert!(
+            step.artifacts
+                .contains(&"target/release-evidence/tls/tls-contract-pack-proof.json"),
+        );
+        assert!(
+            step.artifacts
+                .contains(&"target/release-evidence/tls/tls-contract-pack-proof.md"),
+        );
+    }
+
+    #[test]
+    fn bundle_proof_tls_profile_constant_includes_tls() {
+        assert!(
+            BUNDLE_PROOF_SUPPORTED_PROFILES.contains(&"tls"),
+            "tls must be a supported bundle-proof profile",
+        );
+        ensure_supported_bundle_proof_profile("tls")
+            .expect("tls profile must pass ensure_supported_bundle_proof_profile");
+        assert_eq!(
+            bundle_proof_json_filename("tls").unwrap(),
+            "tls-contract-pack-proof.json",
+        );
+        assert_eq!(
+            bundle_proof_markdown_filename("tls").unwrap(),
+            "tls-contract-pack-proof.md",
+        );
+        assert_eq!(
+            bundle_proof_markdown_title("tls").unwrap(),
+            "TLS Contract-Pack Proof",
+        );
+        assert_eq!(
+            default_bundle_proof_out_dir("tls").unwrap(),
+            PathBuf::from("target/release-evidence/tls"),
+        );
+        let expected = bundle_proof_expected_artifacts("tls").expect("tls expected artifacts");
+        let paths = expected.iter().map(|e| e.path).collect::<Vec<_>>();
+        for required in [
+            "certs/valid-leaf.pem",
+            "certs/valid-chain.pem",
+            "certs/negative-expired-leaf.pem",
+            "certs/negative-not-yet-valid.pem",
+            "certs/negative-wrong-hostname.pem",
+            "certs/negative-untrusted-root.pem",
+            "evidence/tls-profile.md",
+        ] {
+            assert!(
+                paths.contains(&required),
+                "tls expected artifacts missing {required}",
+            );
+        }
     }
 
     #[test]
@@ -7229,6 +7633,102 @@ index 1111111..2222222 100644
         assert!(markdown.contains("downstream validator correctness"));
     }
 
+    #[test]
+    fn bundle_proof_receipt_enforces_tls_contract_pack_contents() {
+        let manifest = tls_bundle_proof_manifest();
+        let audit_surface = serde_json::json!({
+            "scanner_safe": true,
+            "runtime_material_count": 0,
+        });
+        let receipt = bundle_proof_receipt(BundleProofReceiptInput {
+            profile: "tls",
+            bundle_dir: Path::new("target/release-evidence/tls/bundle"),
+            manifest_path: Path::new("target/release-evidence/tls/bundle/manifest.json"),
+            inspect_summary_path: Path::new("target/release-evidence/tls/inspect-bundle.txt"),
+            manifest: &manifest,
+            audit_surface: &audit_surface,
+            expected_artifacts: bundle_proof_expected_artifacts("tls")
+                .expect("tls expected artifacts"),
+            commands: Vec::new(),
+            exports_generated: Vec::new(),
+        })
+        .expect("tls proof receipt");
+
+        assert_eq!(receipt.profile, "tls");
+        assert_eq!(receipt.artifact_count, 7);
+        assert_eq!(receipt.contract_pack_checks.len(), 7);
+        assert!(
+            receipt
+                .contract_pack_checks
+                .iter()
+                .all(|check| check.present)
+        );
+        assert!(!receipt.private_key_material);
+        assert!(!receipt.symmetric_secret_material);
+    }
+
+    #[test]
+    fn bundle_proof_receipt_rejects_incomplete_tls_contract_pack() {
+        let mut manifest = tls_bundle_proof_manifest();
+        manifest
+            .files
+            .retain(|path| path != "certs/negative-wrong-hostname.pem");
+        manifest
+            .artifacts
+            .retain(|artifact| artifact.path != "certs/negative-wrong-hostname.pem");
+        let audit_surface = serde_json::json!({
+            "scanner_safe": true,
+            "runtime_material_count": 0,
+        });
+        let error = bundle_proof_receipt(BundleProofReceiptInput {
+            profile: "tls",
+            bundle_dir: Path::new("target/release-evidence/tls/bundle"),
+            manifest_path: Path::new("target/release-evidence/tls/bundle/manifest.json"),
+            inspect_summary_path: Path::new("target/release-evidence/tls/inspect-bundle.txt"),
+            manifest: &manifest,
+            audit_surface: &audit_surface,
+            expected_artifacts: bundle_proof_expected_artifacts("tls")
+                .expect("tls expected artifacts"),
+            commands: Vec::new(),
+            exports_generated: Vec::new(),
+        })
+        .expect_err("missing TLS artifact should fail proof");
+
+        assert!(
+            error.to_string().contains("negative_wrong_hostname"),
+            "unexpected error: {error}"
+        );
+    }
+
+    #[test]
+    fn bundle_proof_markdown_summarizes_tls_contract_checks() {
+        let manifest = tls_bundle_proof_manifest();
+        let audit_surface = serde_json::json!({
+            "scanner_safe": true,
+            "runtime_material_count": 0,
+        });
+        let receipt = bundle_proof_receipt(BundleProofReceiptInput {
+            profile: "tls",
+            bundle_dir: Path::new("target/release-evidence/tls/bundle"),
+            manifest_path: Path::new("target/release-evidence/tls/bundle/manifest.json"),
+            inspect_summary_path: Path::new("target/release-evidence/tls/inspect-bundle.txt"),
+            manifest: &manifest,
+            audit_surface: &audit_surface,
+            expected_artifacts: bundle_proof_expected_artifacts("tls")
+                .expect("tls expected artifacts"),
+            commands: Vec::new(),
+            exports_generated: Vec::new(),
+        })
+        .expect("tls proof receipt");
+        let markdown = render_bundle_proof_markdown(&receipt).expect("render proof markdown");
+
+        assert!(markdown.contains("# TLS Contract-Pack Proof"));
+        assert!(markdown.contains("negative_expired_leaf"));
+        assert!(markdown.contains("certs/negative-untrusted-root.pem"));
+        assert!(markdown.contains("evidence/tls-profile.md"));
+        assert!(markdown.contains("downstream TLS verifier"));
+    }
+
     fn scanner_safe_bundle_proof_manifest() -> BundleProofManifest {
         BundleProofManifest {
             profile: "scanner-safe".to_string(),
@@ -7348,6 +7848,101 @@ index 1111111..2222222 100644
                     path: "receipts/audit-surface.json".to_string(),
                     kind: "audit-surface".to_string(),
                     profile: "oidc".to_string(),
+                    description: "scanner-safety and lane metadata receipt".to_string(),
+                },
+            ],
+        }
+    }
+
+    fn tls_bundle_proof_manifest() -> BundleProofManifest {
+        BundleProofManifest {
+            profile: "tls".to_string(),
+            files: vec![
+                "certs/valid-leaf.pem".to_string(),
+                "certs/valid-chain.pem".to_string(),
+                "certs/negative-expired-leaf.pem".to_string(),
+                "certs/negative-not-yet-valid.pem".to_string(),
+                "certs/negative-wrong-hostname.pem".to_string(),
+                "certs/negative-untrusted-root.pem".to_string(),
+                "evidence/tls-profile.md".to_string(),
+                "receipts/materialization.json".to_string(),
+                "receipts/audit-surface.json".to_string(),
+            ],
+            artifacts: vec![
+                BundleProofArtifactRecord {
+                    path: "certs/valid-leaf.pem".to_string(),
+                    kind: "x509".to_string(),
+                    format: "pem".to_string(),
+                    lanes: vec!["runtime".to_string(), "materialized".to_string()],
+                    scanner_safe: true,
+                    description: "TLS valid leaf certificate (PEM)".to_string(),
+                },
+                BundleProofArtifactRecord {
+                    path: "certs/valid-chain.pem".to_string(),
+                    kind: "x509".to_string(),
+                    format: "pem".to_string(),
+                    lanes: vec!["runtime".to_string(), "materialized".to_string()],
+                    scanner_safe: true,
+                    description: "TLS valid full chain: leaf + intermediate + root (PEM)"
+                        .to_string(),
+                },
+                BundleProofArtifactRecord {
+                    path: "certs/negative-expired-leaf.pem".to_string(),
+                    kind: "x509".to_string(),
+                    format: "pem".to_string(),
+                    lanes: vec!["runtime".to_string(), "materialized".to_string()],
+                    scanner_safe: true,
+                    description: "TLS negative chain with expired leaf (notAfter in past)"
+                        .to_string(),
+                },
+                BundleProofArtifactRecord {
+                    path: "certs/negative-not-yet-valid.pem".to_string(),
+                    kind: "x509".to_string(),
+                    format: "pem".to_string(),
+                    lanes: vec!["runtime".to_string(), "materialized".to_string()],
+                    scanner_safe: true,
+                    description: "TLS negative chain with not-yet-valid leaf (notBefore in future)"
+                        .to_string(),
+                },
+                BundleProofArtifactRecord {
+                    path: "certs/negative-wrong-hostname.pem".to_string(),
+                    kind: "x509".to_string(),
+                    format: "pem".to_string(),
+                    lanes: vec!["runtime".to_string(), "materialized".to_string()],
+                    scanner_safe: true,
+                    description:
+                        "TLS negative chain with leaf SAN/CN mismatch against expected hostname"
+                            .to_string(),
+                },
+                BundleProofArtifactRecord {
+                    path: "certs/negative-untrusted-root.pem".to_string(),
+                    kind: "x509".to_string(),
+                    format: "pem".to_string(),
+                    lanes: vec!["runtime".to_string(), "materialized".to_string()],
+                    scanner_safe: true,
+                    description: "TLS negative chain anchored to an untrusted root CA".to_string(),
+                },
+                BundleProofArtifactRecord {
+                    path: "evidence/tls-profile.md".to_string(),
+                    kind: "x509".to_string(),
+                    format: "pem".to_string(),
+                    lanes: vec!["runtime".to_string(), "materialized".to_string()],
+                    scanner_safe: true,
+                    description: "TLS profile per-fixture rejection-expectation evidence"
+                        .to_string(),
+                },
+            ],
+            receipts: vec![
+                BundleProofReceiptRecord {
+                    path: "receipts/materialization.json".to_string(),
+                    kind: "materialization".to_string(),
+                    profile: "tls".to_string(),
+                    description: "deterministic bundle materialization receipt".to_string(),
+                },
+                BundleProofReceiptRecord {
+                    path: "receipts/audit-surface.json".to_string(),
+                    kind: "audit-surface".to_string(),
+                    profile: "tls".to_string(),
                     description: "scanner-safety and lane metadata receipt".to_string(),
                 },
             ],
@@ -7534,30 +8129,6 @@ end_of_record
     }
 
     #[test]
-    fn publish_order_keeps_token_before_token_shims() {
-        let token_idx = PUBLISH_CRATES
-            .iter()
-            .position(|name| *name == "uselesskey-token")
-            .expect("token crate present");
-        let base62_idx = PUBLISH_CRATES
-            .iter()
-            .position(|name| *name == "uselesskey-core-base62")
-            .expect("base62 crate present");
-        let shape_idx = PUBLISH_CRATES
-            .iter()
-            .position(|name| *name == "uselesskey-core-token-shape")
-            .expect("token shape crate present");
-        let token_spec_idx = PUBLISH_CRATES
-            .iter()
-            .position(|name| *name == "uselesskey-token-spec")
-            .expect("token spec crate present");
-        assert!(
-            token_idx < base62_idx && token_idx < shape_idx && token_idx < token_spec_idx,
-            "publish order must place uselesskey-token before token compatibility shims"
-        );
-    }
-
-    #[test]
     fn publish_order_includes_entropy_before_facade() {
         let entropy_idx = PUBLISH_CRATES
             .iter()
@@ -7601,7 +8172,7 @@ end_of_record
         let msg = err.to_string();
         assert!(msg.contains("not found in publish order"), "got: {msg}");
         // Should list valid crate names
-        assert!(msg.contains("uselesskey-core-base62"), "got: {msg}");
+        assert!(msg.contains("uselesskey-core"), "got: {msg}");
     }
 
     #[test]
@@ -7638,7 +8209,7 @@ end_of_record
 
     #[test]
     fn resolve_start_index_from_and_resume_mutual_exclusion() {
-        let err = resolve_start_index(Some("uselesskey-core-seed"), true).unwrap_err();
+        let err = resolve_start_index(Some("uselesskey-core"), true).unwrap_err();
         let msg = err.to_string();
         assert!(
             msg.contains("mutually exclusive"),
@@ -7767,15 +8338,15 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
             timestamp: 1234567890,
             crates: vec![
                 PublishCrateState {
-                    name: "uselesskey-core-base62".to_string(),
+                    name: "uselesskey-jwk".to_string(),
                     status: "published".to_string(),
                 },
                 PublishCrateState {
-                    name: "uselesskey-core-seed".to_string(),
+                    name: "uselesskey-core".to_string(),
                     status: "already_published".to_string(),
                 },
                 PublishCrateState {
-                    name: "uselesskey-core-hash".to_string(),
+                    name: "uselesskey-entropy".to_string(),
                     status: "failed".to_string(),
                 },
             ],
@@ -7850,8 +8421,8 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
     /// workspace deps land on crates.io.
     ///
     /// This regression-protects against the v0.7.0 publish-lane bug fixed in
-    /// PR #565, where a compatibility shim (`uselesskey-core-seed`) was listed
-    /// before its owner (`uselesskey-core`).
+    /// PR #565, where a compatibility shim was listed before its owner
+    /// (`uselesskey-core`); the shims were removed in v0.8.0.
     #[test]
     fn publish_order_is_topological() {
         verify_publish_order_is_topological()
@@ -7950,5 +8521,48 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
             } => assert!(skip_install_cli),
             _ => panic!("expected Cmd::CratesioSmoke"),
         }
+    }
+
+    #[test]
+    fn impacted_test_targets_drops_deleted_crates_and_bdd() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let root = dir.path();
+        let crates_dir = root.join("crates");
+        for name in &["uselesskey-core", "uselesskey-rsa"] {
+            let crate_dir = crates_dir.join(name);
+            std::fs::create_dir_all(&crate_dir).expect("create crate dir");
+            std::fs::write(crate_dir.join("Cargo.toml"), "[package]\nname = \"x\"\n")
+                .expect("write Cargo.toml");
+        }
+
+        let mut input = std::collections::BTreeSet::new();
+        input.insert("uselesskey-core".to_string()); // exists
+        input.insert("uselesskey-rsa".to_string()); // exists
+        input.insert("uselesskey-core-base62".to_string()); // deleted shim
+        input.insert("uselesskey-core-cache".to_string()); // deleted shim
+        input.insert("uselesskey-bdd".to_string()); // explicitly excluded
+
+        let targets = impacted_test_targets(&input, root);
+        assert_eq!(targets, vec!["uselesskey-core", "uselesskey-rsa"]);
+    }
+
+    #[test]
+    fn impacted_test_targets_keeps_only_dirs_with_cargo_toml() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let root = dir.path();
+        let crates_dir = root.join("crates");
+        // Directory exists but no Cargo.toml (e.g. stale subdir) — should be skipped.
+        std::fs::create_dir_all(crates_dir.join("stale-dir")).expect("create stale-dir");
+        let good = crates_dir.join("uselesskey-core");
+        std::fs::create_dir_all(&good).expect("create core dir");
+        std::fs::write(good.join("Cargo.toml"), "[package]\nname = \"x\"\n")
+            .expect("write Cargo.toml");
+
+        let mut input = std::collections::BTreeSet::new();
+        input.insert("uselesskey-core".to_string());
+        input.insert("stale-dir".to_string());
+
+        let targets = impacted_test_targets(&input, root);
+        assert_eq!(targets, vec!["uselesskey-core".to_string()]);
     }
 }

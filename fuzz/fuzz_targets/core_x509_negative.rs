@@ -2,8 +2,7 @@
 
 use libfuzzer_sys::fuzz_target;
 
-use uselesskey_core_x509_negative::{ChainNegative, X509Negative};
-use uselesskey_core_x509_spec::{ChainSpec, X509Spec};
+use uselesskey_x509::{ChainNegative, ChainSpec, X509Negative, X509Spec};
 
 fn ascii_label(input: &[u8]) -> String {
     if input.is_empty() {

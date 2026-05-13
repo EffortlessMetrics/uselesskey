@@ -2,7 +2,7 @@
 
 use blake3::Hasher;
 use libfuzzer_sys::fuzz_target;
-use uselesskey_core_hash::{hash32, write_len_prefixed};
+use uselesskey_core::srp::hash::{hash32, write_len_prefixed};
 
 fuzz_target!(|data: &[u8]| {
     let _ = hash32(data);

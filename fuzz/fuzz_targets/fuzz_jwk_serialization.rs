@@ -3,10 +3,10 @@
 use arbitrary::Arbitrary;
 use libfuzzer_sys::fuzz_target;
 
-use uselesskey_core_jwk_shape::{
-    AnyJwk, EcPublicJwk, Jwks, OctJwk, OkpPublicJwk, PrivateJwk, PublicJwk, RsaPublicJwk,
+use uselesskey_jwk::{
+    AnyJwk, EcPublicJwk, JwksBuilder, Jwks, OctJwk, OkpPublicJwk, PrivateJwk, PublicJwk,
+    RsaPublicJwk,
 };
-use uselesskey_jwk::JwksBuilder;
 
 #[derive(Arbitrary, Debug)]
 struct JwkSerdeInput {

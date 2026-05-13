@@ -2,7 +2,7 @@
 
 use libfuzzer_sys::fuzz_target;
 
-use uselesskey_core_jwk_shape::{
+use uselesskey_jwk::{
     AnyJwk, EcPublicJwk, Jwks, OctJwk, OkpPublicJwk, PrivateJwk, PublicJwk, RsaPublicJwk,
 };
 

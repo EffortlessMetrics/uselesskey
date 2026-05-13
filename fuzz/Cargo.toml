@@ -14,19 +14,10 @@ blake3 = "1.8.3"
 
 # fuzz targets
 uselesskey = { path = "../crates/uselesskey", features = ["ecdsa", "ed25519", "hmac", "token", "x509", "rsa", "pgp"] }
+uselesskey-core = { path = "../crates/uselesskey-core" }
 uselesskey-jwk = { path = "../crates/uselesskey-jwk" }
-uselesskey-core-jwks-order = { path = "../crates/uselesskey-core-jwks-order" }
-uselesskey-core-keypair-material = { path = "../crates/uselesskey-core-keypair-material" }
-uselesskey-core-factory = { path = "../crates/uselesskey-core-factory" }
-uselesskey-core-hash = { path = "../crates/uselesskey-core-hash" }
-uselesskey-core-id = { path = "../crates/uselesskey-core-id" }
-uselesskey-core-kid = { path = "../crates/uselesskey-core-kid" }
+uselesskey-token = { path = "../crates/uselesskey-token" }
 base64 = "0.22"
-uselesskey-core-negative-pem = { path = "../crates/uselesskey-core-negative-pem" }
-uselesskey-core-x509-negative = { path = "../crates/uselesskey-core-x509-negative" }
-uselesskey-core-x509-spec = { path = "../crates/uselesskey-core-x509-spec" }
-uselesskey-core-token-shape = { path = "../crates/uselesskey-core-token-shape" }
-uselesskey-core-jwk-shape = { path = "../crates/uselesskey-core-jwk-shape" }
 uselesskey-ecdsa = { path = "../crates/uselesskey-ecdsa" }
 uselesskey-ed25519 = { path = "../crates/uselesskey-ed25519" }
 uselesskey-hmac = { path = "../crates/uselesskey-hmac" }

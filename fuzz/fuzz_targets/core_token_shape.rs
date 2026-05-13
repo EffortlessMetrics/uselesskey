@@ -3,7 +3,7 @@
 use libfuzzer_sys::fuzz_target;
 
 use uselesskey::Seed;
-use uselesskey_core_token_shape::{authorization_scheme, generate_oauth_access_token, generate_token, TokenKind};
+use uselesskey_token::srp::shape::{authorization_scheme, generate_oauth_access_token, generate_token, TokenKind};
 
 fuzz_target!(|data: &[u8]| {
     let mut seed = [0u8; 32];

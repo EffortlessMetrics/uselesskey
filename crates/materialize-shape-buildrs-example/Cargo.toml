@@ -11,7 +11,7 @@ authors.workspace = true
 description = "Build-time shape-only materialization example for uselesskey fixtures."
 
 [build-dependencies]
-uselesskey-cli = { path = "../uselesskey-cli", version = "0.7.1", default-features = false }
+uselesskey-cli = { path = "../uselesskey-cli", version = "0.8.0", default-features = false }
 
 
 [lints]

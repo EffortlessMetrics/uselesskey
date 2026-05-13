@@ -110,6 +110,14 @@ const OIDC_CONTRACT_PACK_PROOF_CLAIM_BOUNDARY: &[&str] = &[
     "bundle proof is fixture-platform evidence, not production key management or scanner evasion",
 ];
 
+const TLS_CONTRACT_PACK_PROOF_CLAIM_BOUNDARY: &[&str] = &[
+    "TLS contract-pack proof covers the generated release-candidate TLS profile, not every downstream TLS verifier",
+    "TLS proof verifies pack shape and fixture presence (valid chain + four negative-class leaves), not downstream verifier correctness",
+    "TLS proof does not cover revocation (CRL/OCSP), certificate transparency, mTLS client chains, browser trust stores, or production CA custody",
+    "TLS profile artifacts remain scanner-safe and do not include usable private or symmetric fixture material",
+    "bundle proof is fixture-platform evidence, not production key management or scanner evasion",
+];
+
 pub(crate) fn run(profile: &str, out_dir: Option<&Path>) -> Result<()> {
     let profile = profile.trim();
     ensure_supported_bundle_proof_profile(profile)?;
@@ -171,6 +179,7 @@ fn run_profile_commands(profile: &str, paths: &BundleProofPaths) -> Result<Bundl
     match profile {
         "scanner-safe" => run_scanner_safe_exports(paths, &mut execution)?,
         "oidc" => run_oidc_contract_pack_checks(&mut execution)?,
+        "tls" => run_tls_contract_pack_checks(&mut execution)?,
         _ => ensure_supported_bundle_proof_profile(profile)?,
     }
     append_no_blob_check(&mut execution)?;
@@ -310,6 +319,33 @@ fn run_oidc_contract_pack_checks(execution: &mut BundleProofExecution) -> Result
     Ok(())
 }
 
+fn run_tls_contract_pack_checks(execution: &mut BundleProofExecution) -> Result<()> {
+    execution.commands.push(run_bundle_proof_command(
+        "cli-tls-contract-pack-test",
+        vec![
+            "cargo".to_string(),
+            "test".to_string(),
+            "-p".to_string(),
+            "uselesskey-cli".to_string(),
+            "tls".to_string(),
+            "--all-features".to_string(),
+        ],
+        Vec::new(),
+    )?);
+    execution.commands.push(run_bundle_proof_command(
+        "x509-owner-tests",
+        vec![
+            "cargo".to_string(),
+            "test".to_string(),
+            "-p".to_string(),
+            "uselesskey-x509".to_string(),
+            "--all-features".to_string(),
+        ],
+        Vec::new(),
+    )?);
+    Ok(())
+}
+
 fn append_no_blob_check(execution: &mut BundleProofExecution) -> Result<()> {
     execution.commands.push(run_bundle_proof_command(
         "no-blob",
@@ -358,42 +394,60 @@ fn cli_command(args: impl IntoIterator<Item = String>) -> Vec<String> {
     command
 }
 
-fn ensure_supported_bundle_proof_profile(profile: &str) -> Result<()> {
-    if matches!(profile, "scanner-safe" | "oidc") {
+pub(crate) fn ensure_supported_bundle_proof_profile(profile: &str) -> Result<()> {
+    if BUNDLE_PROOF_SUPPORTED_PROFILES.contains(&profile) {
         Ok(())
     } else {
-        bail!("bundle-proof currently supports --profile scanner-safe and --profile oidc");
+        bail!("{}", unsupported_bundle_proof_profile_message());
     }
 }
-fn default_bundle_proof_out_dir(profile: &str) -> Result<PathBuf> {
+
+/// Profiles supported by `cargo xtask bundle-proof --profile <name>`.
+///
+/// Order matches the v0.7.0 -> v0.8.0 release lane introduction order:
+/// scanner-safe (v0.7.0), oidc (v0.7.0), tls (v0.8.0 PR-C).
+pub(crate) const BUNDLE_PROOF_SUPPORTED_PROFILES: &[&str] = &["scanner-safe", "oidc", "tls"];
+
+fn unsupported_bundle_proof_profile_message() -> String {
+    format!(
+        "bundle-proof currently supports --profile {}",
+        BUNDLE_PROOF_SUPPORTED_PROFILES.join(", "),
+    )
+}
+
+pub(crate) fn default_bundle_proof_out_dir(profile: &str) -> Result<PathBuf> {
     Ok(PathBuf::from(match profile {
         "scanner-safe" => "target/release-evidence/scanner-safe",
         "oidc" => "target/release-evidence/oidc",
-        _ => bail!("bundle-proof currently supports --profile scanner-safe and --profile oidc"),
+        "tls" => "target/release-evidence/tls",
+        _ => bail!("{}", unsupported_bundle_proof_profile_message()),
     }))
 }
 
-fn bundle_proof_json_filename(profile: &str) -> Result<&'static str> {
+pub(crate) fn bundle_proof_json_filename(profile: &str) -> Result<&'static str> {
     Ok(match profile {
         "scanner-safe" => "scanner-safe-bundle-proof.json",
         "oidc" => "oidc-contract-pack-proof.json",
-        _ => bail!("bundle-proof currently supports --profile scanner-safe and --profile oidc"),
+        "tls" => "tls-contract-pack-proof.json",
+        _ => bail!("{}", unsupported_bundle_proof_profile_message()),
     })
 }
 
-fn bundle_proof_markdown_filename(profile: &str) -> Result<&'static str> {
+pub(crate) fn bundle_proof_markdown_filename(profile: &str) -> Result<&'static str> {
     Ok(match profile {
         "scanner-safe" => "scanner-safe-bundle-proof.md",
         "oidc" => "oidc-contract-pack-proof.md",
-        _ => bail!("bundle-proof currently supports --profile scanner-safe and --profile oidc"),
+        "tls" => "tls-contract-pack-proof.md",
+        _ => bail!("{}", unsupported_bundle_proof_profile_message()),
     })
 }
 
-fn bundle_proof_markdown_title(profile: &str) -> Result<&'static str> {
+pub(crate) fn bundle_proof_markdown_title(profile: &str) -> Result<&'static str> {
     Ok(match profile {
         "scanner-safe" => "Scanner-Safe Bundle Proof",
         "oidc" => "OIDC Contract-Pack Proof",
-        _ => bail!("bundle-proof currently supports --profile scanner-safe and --profile oidc"),
+        "tls" => "TLS Contract-Pack Proof",
+        _ => bail!("{}", unsupported_bundle_proof_profile_message()),
     })
 }
 
@@ -401,7 +455,8 @@ fn bundle_proof_claim_boundary(profile: &str) -> Result<Vec<&'static str>> {
     Ok(match profile {
         "scanner-safe" => SCANNER_SAFE_BUNDLE_PROOF_CLAIM_BOUNDARY.to_vec(),
         "oidc" => OIDC_CONTRACT_PACK_PROOF_CLAIM_BOUNDARY.to_vec(),
-        _ => bail!("bundle-proof currently supports --profile scanner-safe and --profile oidc"),
+        "tls" => TLS_CONTRACT_PACK_PROOF_CLAIM_BOUNDARY.to_vec(),
+        _ => bail!("{}", unsupported_bundle_proof_profile_message()),
     })
 }
 
@@ -442,7 +497,44 @@ pub(crate) fn bundle_proof_expected_artifacts(
                 description: "OIDC negative token with bad audience",
             },
         ],
-        _ => bail!("bundle-proof currently supports --profile scanner-safe and --profile oidc"),
+        "tls" => vec![
+            BundleProofExpectedArtifact {
+                name: "valid_leaf",
+                path: "certs/valid-leaf.pem",
+                description: "TLS valid leaf certificate (PEM)",
+            },
+            BundleProofExpectedArtifact {
+                name: "valid_chain",
+                path: "certs/valid-chain.pem",
+                description: "TLS valid full chain: leaf + intermediate + root (PEM)",
+            },
+            BundleProofExpectedArtifact {
+                name: "negative_expired_leaf",
+                path: "certs/negative-expired-leaf.pem",
+                description: "TLS negative chain with expired leaf (notAfter in past)",
+            },
+            BundleProofExpectedArtifact {
+                name: "negative_not_yet_valid",
+                path: "certs/negative-not-yet-valid.pem",
+                description: "TLS negative chain with not-yet-valid leaf (notBefore in future)",
+            },
+            BundleProofExpectedArtifact {
+                name: "negative_wrong_hostname",
+                path: "certs/negative-wrong-hostname.pem",
+                description: "TLS negative chain with leaf SAN/CN mismatch against expected hostname",
+            },
+            BundleProofExpectedArtifact {
+                name: "negative_untrusted_root",
+                path: "certs/negative-untrusted-root.pem",
+                description: "TLS negative chain anchored to an untrusted root CA",
+            },
+            BundleProofExpectedArtifact {
+                name: "tls_evidence_doc",
+                path: "evidence/tls-profile.md",
+                description: "TLS profile per-fixture rejection-expectation evidence",
+            },
+        ],
+        _ => bail!("{}", unsupported_bundle_proof_profile_message()),
     })
 }
 

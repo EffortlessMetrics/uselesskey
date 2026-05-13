@@ -2,8 +2,8 @@
 //!
 //! Provides deterministic truncation, byte-flipping, and combined corruption
 //! strategies for DER-encoded blobs. Used by higher-level negative fixture
-//! crates (`uselesskey-core-negative`) to generate invalid DER artifacts
-//! that exercise parser error paths in tests.
+//! helpers (`uselesskey_core::srp::negative`) to generate invalid DER
+//! artifacts that exercise parser error paths in tests.
 
 use alloc::vec::Vec;
 

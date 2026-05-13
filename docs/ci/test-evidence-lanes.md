@@ -45,6 +45,8 @@ Typical signals:
 - `cargo xtask examples-smoke` when examples or user recipes change;
 - `cargo xtask no-blob` when fixture, docs, bundle, or example outputs change;
 - `cargo xtask ripr-pr` for advisory `ripr` PR exposure evidence;
+- `cargo xtask ripr-review-comments` for advisory line-placeable review
+  guidance;
 - `git diff --check`.
 
 Blocking posture:
@@ -232,10 +234,23 @@ For a high-risk PR:
 artifacts under `target/ripr/pr/`:
 
 - `repo-exposure.json`;
+- `repo-exposure.md`;
 - `summary.md`;
 - `review.md`.
 
 Pull request CI uploads that directory as the `ripr-pr` artifact.
+
+`cargo xtask ripr-review-comments` runs `ripr review-comments` with explicit
+root, base, head, and output paths. It writes advisory review guidance under
+`target/ripr/review/`:
+
+- `comments.json`;
+- `comments.md`.
+
+Pull request CI uploads that directory as the `ripr-review` artifact, appends
+`comments.md` to the step summary, and emits non-blocking warning annotations
+from `comments[]` only. `summary_only[]` stays in the summary and artifact;
+inline PR comments are disabled by default.
 
 If `ripr` is not installed, the command writes skipped artifacts with a clear
 reason and exits successfully. Other `ripr` runtime failures should fail the
