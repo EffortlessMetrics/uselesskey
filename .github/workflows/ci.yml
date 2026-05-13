@@ -66,11 +66,15 @@ jobs:
         with:
           tool: cargo-fuzz,cargo-mutants,typos-cli,cargo-deny
 
+      - name: Install ripr
+        run: cargo install ripr --locked
+
       - name: Toolchain diagnostics
         run: |
           rustc -vV
           cargo +nightly -vV
           cargo fuzz --version || true
+          ripr --version || true
 
       - name: Fetch base branch
         if: github.base_ref != ''
@@ -82,6 +86,32 @@ jobs:
       - name: ripr PR evidence
         id: ripr_pr
         run: cargo xtask ripr-pr
+
+      - name: ripr review guidance
+        id: ripr_review
+        run: cargo xtask ripr-review-comments
+
+      - name: ripr PR contract
+        if: always()
+        run: cargo xtask ripr-pr --check
+
+      - name: ripr review summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## RIPR Review Guidance"
+            echo
+            if [ -f target/ripr/review/comments.md ]; then
+              cat target/ripr/review/comments.md
+            else
+              echo "No RIPR review guidance was produced."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: ripr annotations
+        if: always()
+        run: python scripts/ripr-annotations.py
 
       - name: impacted evidence
         id: impacted_evidence
@@ -142,6 +172,7 @@ jobs:
         shell: bash
         env:
           RIPR_STEP: ${{ steps.ripr_pr.conclusion }}
+          RIPR_REVIEW_STEP: ${{ steps.ripr_review.conclusion }}
           XTASK_PR_STEP: ${{ steps.xtask_pr.conclusion }}
           DOCS_SYNC_STEP: ${{ steps.docs_sync.conclusion }}
           PUBLISH_PREFLIGHT_STEP: ${{ steps.publish_preflight.conclusion }}
@@ -226,6 +257,7 @@ jobs:
           lines.append("| --- | --- |")
           for name, env_name in [
               ("ripr-pr", "RIPR_STEP"),
+              ("ripr-review", "RIPR_REVIEW_STEP"),
               ("xtask pr", "XTASK_PR_STEP"),
               ("docs-sync", "DOCS_SYNC_STEP"),
               ("publish-preflight", "PUBLISH_PREFLIGHT_STEP"),
@@ -270,6 +302,7 @@ jobs:
           lines.append("## Artifacts")
           lines.append("")
           lines.append("- `ripr-pr`: `target/ripr/pr/`")
+          lines.append("- `ripr-review`: `target/ripr/review/`")
           lines.append("- `impacted-evidence`: `target/xtask/impacted-evidence/`")
           lines.append("- `receipt-pr`: `target/xtask/receipt.json`")
           lines.append("- `lane-receipts-pr`: economics and audit-surface receipts")
@@ -306,6 +339,14 @@ jobs:
         with:
           name: ripr-pr
           path: target/ripr/pr
+          if-no-files-found: warn
+        if: always()
+
+      - name: Upload ripr review guidance
+        uses: actions/upload-artifact@v7
+        with:
+          name: ripr-review
+          path: target/ripr/review
           if-no-files-found: warn
         if: always()
 

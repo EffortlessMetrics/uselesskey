@@ -213,7 +213,7 @@ The v0.7.0 release-candidate checklist starts in
 For an ordinary PR:
 
 1. Run the fast local gates for the touched surface.
-2. Run `cargo xtask ripr-pr` and read `target/ripr/pr/summary.md`.
+2. Run `cargo xtask ripr-pr` and read `target/ripr/pr/repo-exposure.md`.
 3. Add focused tests when changed behavior is weakly exposed.
 4. Use targeted mutation only when the routing rules call for it.
 
@@ -232,10 +232,15 @@ For a high-risk PR:
 artifacts under `target/ripr/pr/`:
 
 - `repo-exposure.json`;
-- `summary.md`;
-- `review.md`.
+- `repo-exposure.md`;
+- `summary.md` (compatibility alias);
+- `review.md` (compatibility alias).
 
-Pull request CI uploads that directory as the `ripr-pr` artifact.
+`cargo xtask ripr-pr --check` validates that required JSON and Markdown
+contract. `cargo xtask ripr-review-comments` writes line-placeable review
+guidance under `target/ripr/review/`, and `cargo xtask ripr-review-comments
+--check` validates `comments.json` and `comments.md`. Pull request CI uploads
+those directories as the `ripr-pr` and `ripr-review` artifacts.
 
 If `ripr` is not installed, the command writes skipped artifacts with a clear
 reason and exits successfully. Other `ripr` runtime failures should fail the
@@ -255,8 +260,9 @@ When no high-risk owner surface changed, it exits successfully without running
 mutation and prints that targeted mutation was not required. When a high-risk
 surface changed, it runs mutation for the mapped owner crate(s).
 
-Pull request CI runs `cargo xtask impacted-evidence` after `ripr-pr`, uploads
-`target/xtask/impacted-evidence/` as the `impacted-evidence` artifact, and runs
+Pull request CI runs `cargo xtask impacted-evidence` after `ripr-pr` and
+`ripr-review-comments`, uploads `target/xtask/impacted-evidence/` as the
+`impacted-evidence` artifact, and runs
 `cargo xtask mutants-pr --changed` when any of these are true:
 
 - the PR has a `mutation` label;

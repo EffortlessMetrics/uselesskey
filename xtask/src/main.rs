@@ -100,7 +100,17 @@ enum Cmd {
         with_mutants: bool,
     },
     /// Run advisory ripr PR exposure evidence (requires external `ripr`).
-    RiprPr,
+    RiprPr {
+        /// Verify the existing PR evidence output contract without regenerating.
+        #[arg(long)]
+        check: bool,
+    },
+    /// Run advisory RIPR review guidance for changed lines (requires external `ripr`).
+    RiprReviewComments {
+        /// Verify the existing review guidance output contract without regenerating.
+        #[arg(long)]
+        check: bool,
+    },
     /// Generate the repo-scoped RIPR test-efficiency report used by ripr+ badge output.
     TestEfficiencyReport,
     /// Run PR-scoped mutation testing explicitly.
@@ -421,7 +431,8 @@ fn main() -> Result<()> {
         Cmd::ExamplesSmoke { run } => docs_sync::examples_smoke_cmd(run),
         Cmd::PublishCheck => publish_check(),
         Cmd::Pr { with_mutants } => pr(with_mutants),
-        Cmd::RiprPr => ripr_pr(),
+        Cmd::RiprPr { check } => ripr_pr(check),
+        Cmd::RiprReviewComments { check } => ripr_review_comments(check),
         Cmd::TestEfficiencyReport => test_efficiency::test_efficiency_report_cmd(),
         Cmd::MutantsPr {
             changed,
@@ -2778,6 +2789,7 @@ fn release_evidence_steps_minor() -> Vec<ReleaseEvidenceStep> {
             command: &["cargo", "xtask", "ripr-pr"],
             artifacts: &[
                 "target/ripr/pr/repo-exposure.json",
+                "target/ripr/pr/repo-exposure.md",
                 "target/ripr/pr/summary.md",
                 "target/ripr/pr/review.md",
             ],
@@ -5123,24 +5135,33 @@ const RIPR_CLAIM_BOUNDARY: &[&str] = &[
     "advisory PR evidence should route targeted mutation, not suppress it",
 ];
 
-fn ripr_pr() -> Result<()> {
-    let base_ref = resolve_base_ref();
+fn ripr_pr(check: bool) -> Result<()> {
     let out_dir = PathBuf::from(RIPR_PR_DIR);
+    if check {
+        check_ripr_pr_contract(&out_dir)?;
+        println!("ripr-pr: output contract is intact");
+        return Ok(());
+    }
+
+    let base_ref = resolve_base_ref();
     fs::create_dir_all(&out_dir)
         .with_context(|| format!("failed to create {}", out_dir.display()))?;
 
-    let output = match Command::new("ripr")
+    let ripr_bin = env::var("RIPR_BIN").unwrap_or_else(|_| "ripr".to_string());
+    let output = match Command::new(&ripr_bin)
         .args(["check", "--base", &base_ref, "--format", "json"])
+        .current_dir(workspace_root_path())
         .output()
     {
         Ok(output) => output,
         Err(err) if err.kind() == ErrorKind::NotFound => {
-            let reason = "ripr is not installed or not on PATH";
-            write_ripr_skipped_artifacts(&out_dir, &base_ref, reason)?;
+            let reason = format!("{ripr_bin} is not installed or not on PATH");
+            write_ripr_skipped_artifacts(&out_dir, &base_ref, &reason)?;
             println!("ripr-pr: skipped ({reason})");
             println!(
-                "ripr-pr: wrote {}, {}, and {}",
+                "ripr-pr: wrote {}, {}, {}, and {}",
                 out_dir.join("repo-exposure.json").display(),
+                out_dir.join("repo-exposure.md").display(),
                 out_dir.join("summary.md").display(),
                 out_dir.join("review.md").display()
             );
@@ -5167,6 +5188,9 @@ fn ripr_pr() -> Result<()> {
         .with_context(|| format!("failed to write {}", json_path.display()))?;
 
     let markdown = render_ripr_markdown(&base_ref, &json);
+    let exposure_md_path = out_dir.join("repo-exposure.md");
+    fs::write(&exposure_md_path, &markdown)
+        .with_context(|| format!("failed to write {}", exposure_md_path.display()))?;
     let summary_path = out_dir.join("summary.md");
     fs::write(&summary_path, &markdown)
         .with_context(|| format!("failed to write {}", summary_path.display()))?;
@@ -5182,8 +5206,9 @@ fn ripr_pr() -> Result<()> {
         json_u64(summary, "weakly_exposed")
     );
     println!(
-        "ripr-pr: wrote {}, {}, and {}",
+        "ripr-pr: wrote {}, {}, {}, and {}",
         json_path.display(),
+        exposure_md_path.display(),
         summary_path.display(),
         review_path.display()
     );
@@ -5200,6 +5225,7 @@ fn write_ripr_skipped_artifacts(out_dir: &Path, base_ref: &str, reason: &str) ->
         "reason": reason,
         "artifacts": [
             "target/ripr/pr/repo-exposure.json",
+            "target/ripr/pr/repo-exposure.md",
             "target/ripr/pr/summary.md",
             "target/ripr/pr/review.md"
         ],
@@ -5208,10 +5234,143 @@ fn write_ripr_skipped_artifacts(out_dir: &Path, base_ref: &str, reason: &str) ->
     write_json_pretty(&out_dir.join("repo-exposure.json"), &json)?;
 
     let markdown = render_ripr_skipped_markdown(base_ref, reason);
+    fs::write(out_dir.join("repo-exposure.md"), &markdown).with_context(|| {
+        format!(
+            "failed to write {}",
+            out_dir.join("repo-exposure.md").display()
+        )
+    })?;
     fs::write(out_dir.join("summary.md"), &markdown)
         .with_context(|| format!("failed to write {}", out_dir.join("summary.md").display()))?;
     fs::write(out_dir.join("review.md"), &markdown)
         .with_context(|| format!("failed to write {}", out_dir.join("review.md").display()))?;
+    Ok(())
+}
+
+fn check_ripr_pr_contract(out_dir: &Path) -> Result<()> {
+    let json_path = out_dir.join("repo-exposure.json");
+    let markdown_path = out_dir.join("repo-exposure.md");
+    let json: serde_json::Value = read_json_file(&json_path)
+        .with_context(|| format!("missing or invalid {}", json_path.display()))?;
+
+    let schema_version = json.get("schema_version").and_then(serde_json::Value::as_u64);
+    if matches!(schema_version, Some(version) if version > 1) {
+        bail!(
+            "ripr-pr schema drift: unsupported schema_version {} in {}",
+            schema_version.unwrap_or_default(),
+            json_path.display()
+        );
+    }
+
+    let markdown = fs::read_to_string(&markdown_path)
+        .with_context(|| format!("missing {}", markdown_path.display()))?;
+    if markdown.trim().is_empty() {
+        bail!("{} is empty", markdown_path.display());
+    }
+
+    Ok(())
+}
+
+fn ripr_review_comments(check: bool) -> Result<()> {
+    let workspace_root = workspace_root_path();
+    let out_dir = workspace_root.join("target/ripr/review");
+    if check {
+        check_ripr_review_contract(&out_dir)?;
+        println!("ripr-review-comments: output contract is intact");
+        return Ok(());
+    }
+
+    fs::create_dir_all(&out_dir)
+        .with_context(|| format!("failed to create {}", out_dir.display()))?;
+    let json_path = out_dir.join("comments.json");
+    let base_ref = resolve_base_ref();
+    let ripr_bin = env::var("RIPR_BIN").unwrap_or_else(|_| "ripr".to_string());
+
+    let output = match Command::new(&ripr_bin)
+        .arg("review-comments")
+        .arg("--root")
+        .arg(&workspace_root)
+        .arg("--base")
+        .arg(&base_ref)
+        .arg("--head")
+        .arg("HEAD")
+        .arg("--out")
+        .arg(&json_path)
+        .current_dir(&workspace_root)
+        .output()
+    {
+        Ok(output) => output,
+        Err(err) if err.kind() == ErrorKind::NotFound => {
+            let reason = format!("{ripr_bin} is not installed or not on PATH");
+            write_ripr_review_skipped_artifacts(&out_dir, &base_ref, &reason)?;
+            println!("ripr-review-comments: skipped ({reason})");
+            return Ok(());
+        }
+        Err(err) => return Err(err).context("failed to spawn ripr review-comments"),
+    };
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        bail!(
+            "ripr review-comments failed with status {}: {}",
+            output.status,
+            stderr
+        );
+    }
+
+    check_ripr_review_contract(&out_dir)?;
+    println!(
+        "ripr-review-comments: wrote {} and {}",
+        out_dir.join("comments.json").display(),
+        out_dir.join("comments.md").display()
+    );
+    Ok(())
+}
+
+fn write_ripr_review_skipped_artifacts(out_dir: &Path, base_ref: &str, reason: &str) -> Result<()> {
+    let json = serde_json::json!({
+        "schema_version": 1,
+        "tool": "ripr",
+        "lane": "review-comments",
+        "status": "skipped",
+        "base": base_ref,
+        "head": "HEAD",
+        "reason": reason,
+        "comments": [],
+        "summary_only": [],
+        "suppressed": [],
+        "warnings": [reason],
+        "claim_boundary": RIPR_CLAIM_BOUNDARY,
+    });
+    write_json_pretty(&out_dir.join("comments.json"), &json)?;
+    fs::write(
+        out_dir.join("comments.md"),
+        format!(
+            "# RIPR Review Guidance\n\nStatus: skipped\n\nBase: `{base_ref}`\n\nReason: {reason}.\n"
+        ),
+    )
+    .with_context(|| format!("failed to write {}", out_dir.join("comments.md").display()))?;
+    Ok(())
+}
+
+fn check_ripr_review_contract(out_dir: &Path) -> Result<()> {
+    let json_path = out_dir.join("comments.json");
+    let markdown_path = out_dir.join("comments.md");
+    let json: serde_json::Value = read_json_file(&json_path)
+        .with_context(|| format!("missing or invalid {}", json_path.display()))?;
+    for key in ["comments", "summary_only", "suppressed", "warnings"] {
+        if !json.get(key).is_some_and(serde_json::Value::is_array) {
+            bail!(
+                "ripr-review-comments contract drift: `{key}` is missing or is not an array in {}",
+                json_path.display()
+            );
+        }
+    }
+    let markdown = fs::read_to_string(&markdown_path)
+        .with_context(|| format!("missing {}", markdown_path.display()))?;
+    if markdown.trim().is_empty() {
+        bail!("{} is empty", markdown_path.display());
+    }
     Ok(())
 }
 
@@ -7823,6 +7982,48 @@ index 1111111..2222222 100644
         assert!(json.contains(r#""label": "fixtures""#));
         assert!(json.contains(r#""message": "scanner-safe""#));
         assert!(json.contains(r#""color": "brightgreen""#));
+    }
+
+    #[test]
+    fn ripr_pr_contract_accepts_required_artifacts() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let out_dir = dir.path().join("pr");
+        fs::create_dir_all(&out_dir).expect("create pr dir");
+        write_json_pretty(
+            &out_dir.join("repo-exposure.json"),
+            &serde_json::json!({
+                "schema_version": 1,
+                "tool": "ripr",
+                "summary": {}
+            }),
+        )
+        .expect("write json");
+        fs::write(out_dir.join("repo-exposure.md"), "# RIPR PR Evidence\n")
+            .expect("write markdown");
+
+        check_ripr_pr_contract(&out_dir).expect("valid pr contract");
+    }
+
+    #[test]
+    fn ripr_review_comments_contract_accepts_required_artifacts() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let out_dir = dir.path().join("review");
+        fs::create_dir_all(&out_dir).expect("create review dir");
+        write_json_pretty(
+            &out_dir.join("comments.json"),
+            &serde_json::json!({
+                "schema_version": 1,
+                "comments": [],
+                "summary_only": [],
+                "suppressed": [],
+                "warnings": []
+            }),
+        )
+        .expect("write json");
+        fs::write(out_dir.join("comments.md"), "# RIPR Review Guidance\n")
+            .expect("write markdown");
+
+        check_ripr_review_contract(&out_dir).expect("valid review contract");
     }
 
     #[test]
