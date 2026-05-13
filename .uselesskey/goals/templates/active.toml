@@ -1,0 +1,36 @@
+id = "uselesskey-example-lane"
+title = "Short active goal title"
+status = "active"
+owner = "EffortlessMetrics"
+created = "YYYY-MM-DD"
+
+objective = """
+Describe the current lane in one durable paragraph.
+"""
+
+end_state = [
+  "Concrete end-state item.",
+  "Another concrete end-state item.",
+]
+
+[[work_item]]
+id = "first-work-item"
+status = "ready"
+proposal = "USELESSKEY-PROP-0000"
+spec = "USELESSKEY-SPEC-0000"
+plan = "plans/example/implementation-plan.md"
+commands = [
+  "cargo xtask docs-sync --check",
+  "cargo xtask typos",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "future-work-item"
+status = "planned"
+proposal = "USELESSKEY-PROP-0000"
+spec = "USELESSKEY-SPEC-0000"
+plan = "plans/example/implementation-plan.md"
+commands = [
+  "cargo xtask spec-check",
+]

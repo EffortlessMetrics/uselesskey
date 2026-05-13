@@ -14,6 +14,19 @@ Architecture Decision Records (ADRs) capture significant design choices and thei
 - [0003-order-independent-determinism.md](adr/0003-order-independent-determinism.md) — Order-independent derivation design
 - [0004-microcrate-architecture.md](adr/0004-microcrate-architecture.md) — Microcrate decomposition strategy
 
+## Source of Truth
+
+Repository operating artifacts are split by job so public claims, proof, and
+agent state do not drift into one document.
+
+- [proposals](proposals/README.md) - Why a lane exists, who benefits, and what alternatives were considered
+- [specs](specs/README.md) - What behavior is promised, not promised, and how it is proven
+- [status](status/README.md) - Public claim, support tier, and proof mapping indexes
+- [handoffs](handoffs/README.md) - Closeout notes and operator handoffs after a lane changes state
+- [learnings](learnings/README.md) - Durable lessons from releases, incidents, and proof lanes
+- [plans](../plans/README.md) - PR sequencing and rollback plans
+- [active goals](../.uselesskey/goals/README.md) - Machine-readable current agent lane state
+
 ## How-to Guides
 
 Task-oriented instructions for common workflows.
