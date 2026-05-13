@@ -42,6 +42,14 @@ Regenerate public badge endpoints:
 cargo xtask badges
 ```
 
+The badge command also refreshes the target-only
+`target/ripr/reports/test-efficiency.*` evidence consumed by `ripr+`. To inspect
+that evidence directly:
+
+```bash
+cargo xtask test-efficiency-report
+```
+
 Check for committed endpoint drift:
 
 ```bash

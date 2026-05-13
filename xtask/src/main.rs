@@ -22,6 +22,7 @@ mod policy;
 mod pr_bundles;
 mod public_surface;
 mod receipt;
+mod test_efficiency;
 
 #[derive(Parser)]
 #[command(
@@ -100,6 +101,8 @@ enum Cmd {
     },
     /// Run advisory ripr PR exposure evidence (requires external `ripr`).
     RiprPr,
+    /// Generate the repo-scoped RIPR test-efficiency report used by ripr+ badge output.
+    TestEfficiencyReport,
     /// Run PR-scoped mutation testing explicitly.
     MutantsPr {
         /// Run mutation testing for mutation-eligible crates changed against the PR base.
@@ -419,6 +422,7 @@ fn main() -> Result<()> {
         Cmd::PublishCheck => publish_check(),
         Cmd::Pr { with_mutants } => pr(with_mutants),
         Cmd::RiprPr => ripr_pr(),
+        Cmd::TestEfficiencyReport => test_efficiency::test_efficiency_report_cmd(),
         Cmd::MutantsPr {
             changed,
             crates,
@@ -3853,6 +3857,8 @@ fn badges(check: bool) -> Result<()> {
     let target_dir = workspace_root.join(BADGE_ENDPOINT_TARGET_DIR);
     fs::create_dir_all(&target_dir)
         .with_context(|| format!("failed to create {}", target_dir.display()))?;
+
+    test_efficiency::write_test_efficiency_report(&workspace_root)?;
 
     let ripr_plus = ripr_plus_badge(&workspace_root)?;
     validate_shields_badge(&ripr_plus, Some("ripr+"))?;
