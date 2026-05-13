@@ -3,26 +3,46 @@
 Use a verification pack when a security, platform, or release reviewer needs
 the public-claim receipts without reading the whole repository.
 
-Until `cargo xtask verification-pack` lands, assemble the same evidence from the
-existing commands in this guide.
-
-## 1. Generate the Claim Index
+Build the default pack:
 
 ```bash
-cargo xtask claim-report
+cargo xtask verification-pack --out target/uselesskey-verification
 ```
+
+Build a claim-filtered pack:
+
+```bash
+cargo xtask verification-pack --out target/uselesskey-verification-scanner-safe --claim scanner-safe-fixtures
+```
+
+The command writes receipts and metadata only. It does not copy generated
+secret-shaped fixture payloads into the review pack.
+
+## 1. Read the Pack
+
+Start with:
+
+```text
+target/uselesskey-verification/README.md
+```
+
+The README records the commit, commands, included claims, and boundaries. Attach
+the whole directory if your review system accepts folders, or attach the files
+listed below.
+
+## 2. Include the Claim Index
 
 Attach:
 
 ```text
-target/claim-report/public-claims.md
-target/claim-report/public-claims.json
+target/uselesskey-verification/public-claims.md
+target/uselesskey-verification/public-claims.json
 ```
 
 These files explain which claims exist, which commands prove them, which docs
 teach them, and which boundaries apply.
 
-## 2. Generate Claim Proof Receipts
+## 3. Include Claim Proof Receipts
 
 For scanner-safe fixtures:
 
@@ -39,10 +59,10 @@ cargo xtask claim-proof --claim tls-contract-pack
 Attach:
 
 ```text
-target/claim-proof/scanner-safe-fixtures/receipt.md
-target/claim-proof/scanner-safe-fixtures/receipt.json
-target/claim-proof/tls-contract-pack/receipt.md
-target/claim-proof/tls-contract-pack/receipt.json
+target/uselesskey-verification/claim-proof/scanner-safe-fixtures/receipt.md
+target/uselesskey-verification/claim-proof/scanner-safe-fixtures/receipt.json
+target/uselesskey-verification/claim-proof/tls-contract-pack/receipt.md
+target/uselesskey-verification/claim-proof/tls-contract-pack/receipt.json
 ```
 
 For all stable supported claims:
@@ -54,7 +74,7 @@ cargo xtask claim-proof --all-stable
 Do not use `--all-stable` as crates.io release proof. Registry smoke remains a
 version-explicit release check.
 
-## 3. Generate Contract-Pack Receipts
+## 4. Include Contract-Pack Receipts
 
 ```bash
 cargo xtask contract-packs --check
@@ -64,14 +84,14 @@ cargo xtask contract-packs --format json
 Attach:
 
 ```text
-target/contract-packs/contract-packs.md
-target/contract-packs/contract-packs.json
+target/uselesskey-verification/contract-packs.md
+target/uselesskey-verification/contract-packs.json
 ```
 
 These files show which contract packs are stable, which claim each pack backs,
 which proof command owns it, and which behavior is out of scope.
 
-## 4. Check Badge Endpoints
+## 5. Include Badge Endpoints
 
 ```bash
 cargo xtask badges --check
@@ -80,14 +100,14 @@ cargo xtask badges --check
 Attach the committed endpoint JSON:
 
 ```text
-badges/ripr-plus.json
-badges/scanner-safe.json
+target/uselesskey-verification/badges/ripr-plus.json
+target/uselesskey-verification/badges/scanner-safe.json
 ```
 
 Badges are the README front panel. They are not a substitute for the claim
 report or claim-proof receipts.
 
-## 5. Add a Short Cover Note
+## 6. Add a Short Cover Note
 
 Include the branch, commit, and commands run:
 
@@ -95,11 +115,7 @@ Include the branch, commit, and commands run:
 Repository: EffortlessMetrics/uselesskey
 Commit: <git sha>
 Commands:
-  cargo xtask claim-report
-  cargo xtask claim-proof --claim scanner-safe-fixtures
-  cargo xtask claim-proof --claim tls-contract-pack
-  cargo xtask contract-packs --check
-  cargo xtask badges --check
+  cargo xtask verification-pack --out target/uselesskey-verification
 ```
 
 Keep the boundaries visible:

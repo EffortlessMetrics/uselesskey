@@ -28,6 +28,7 @@ mod public_surface;
 mod receipt;
 mod spec_check;
 mod test_efficiency;
+mod verification_pack;
 
 #[derive(Parser)]
 #[command(
@@ -228,6 +229,15 @@ enum Cmd {
         /// Output format.
         #[arg(long, value_enum, default_value = "human")]
         format: ContractPacksFormat,
+    },
+    /// Build a metadata-only public-claim verification bundle.
+    VerificationPack {
+        /// Output directory for the verification bundle.
+        #[arg(long)]
+        out: PathBuf,
+        /// Include one claim instead of all stable supported claims.
+        #[arg(long)]
+        claim: Option<String>,
     },
     /// External install smoke against crates.io or a local path.
     ///
@@ -569,6 +579,9 @@ fn main() -> Result<()> {
         }
         Cmd::ContractPacks { check, format } => {
             contract_packs::run(&workspace_root_path(), check, format.into())
+        }
+        Cmd::VerificationPack { out, claim } => {
+            verification_pack::run(&workspace_root_path(), &out, claim.as_deref())
         }
         Cmd::CratesioSmoke {
             version,
