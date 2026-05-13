@@ -39,6 +39,7 @@ Repository operating rules for agents and maintainers.
 
 Validation lanes and the claim boundaries behind them.
 
+- [VERIFICATION.md](VERIFICATION.md) — README badge meanings, generated endpoints, and PR evidence boundaries
 - [coverage.md](ci/coverage.md) — Coverage workflow scope, artifacts, and advisory status
 - [test-evidence-lanes.md](ci/test-evidence-lanes.md) — PR, targeted mutation, nightly mutation, and release evidence model
 

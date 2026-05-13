@@ -3,7 +3,7 @@
 [![CI](https://github.com/EffortlessMetrics/uselesskey/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/EffortlessMetrics/uselesskey/actions/workflows/ci.yml)
 [![Codecov](https://codecov.io/gh/EffortlessMetrics/uselesskey/graph/badge.svg?branch=main)](https://codecov.io/gh/EffortlessMetrics/uselesskey)
 [![ripr+](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/EffortlessMetrics/uselesskey/main/badges/ripr-plus.json)](https://github.com/EffortlessMetrics/ripr/blob/main/docs/BADGE_POLICY.md)
-[![scanner-safe fixtures](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/EffortlessMetrics/uselesskey/main/badges/scanner-safe.json)](docs/reference/audit-surface.md)<br>
+[![scanner-safe fixtures](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/EffortlessMetrics/uselesskey/main/badges/scanner-safe.json)](docs/VERIFICATION.md)<br>
 [![Release](https://img.shields.io/github/v/release/EffortlessMetrics/uselesskey?sort=semver&label=release)](https://github.com/EffortlessMetrics/uselesskey/releases)
 [![Downloads](https://img.shields.io/crates/d/uselesskey.svg?label=crates.io%20downloads)](https://crates.io/crates/uselesskey)
 [![docs.rs](https://docs.rs/uselesskey/badge.svg)](https://docs.rs/uselesskey)<br>
