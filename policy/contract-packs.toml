@@ -1,0 +1,27 @@
+schema_version = 1
+owner = "EffortlessMetrics"
+updated = "2026-05-13"
+
+[[pack]]
+id = "tls"
+title = "TLS contract pack"
+status = "stable"
+profile = "tls"
+spec = "USELESSKEY-SPEC-0003"
+claim = "tls-contract-pack"
+proof_command = "cargo xtask bundle-proof --profile tls --out target/release-evidence/tls"
+how_to = "docs/how-to/test-tls-chain-validation.md"
+release_lane = "minor"
+boundary = "Does not prove production PKI, revocation, CT, mTLS, browser trust-store behavior, production CA custody, or downstream verifier correctness."
+
+[[pack]]
+id = "oidc"
+title = "OIDC/JWKS contract pack"
+status = "stable"
+profile = "oidc"
+spec = "USELESSKEY-SPEC-0003"
+claim = "oidc-jwks-contract-pack"
+proof_command = "cargo xtask bundle-proof --profile oidc --out target/release-evidence/oidc"
+how_to = "docs/how-to/test-oidc-jwks-validation.md"
+release_lane = "minor"
+boundary = "Does not prove production signing-key custody, full OpenID provider behavior, or downstream validator correctness."
