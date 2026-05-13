@@ -93,6 +93,7 @@ cargo xtask badges --check
 cargo xtask scanner-safe-reference --check
 cargo xtask cratesio-smoke --version X
 cargo xtask bundle-proof --profile tls --out target/release-evidence/tls
+cargo xtask verification-pack --out target/release-evidence/verification-pack
 cargo xtask publish-check
 cargo xtask publish-preflight
 ```
@@ -120,6 +121,8 @@ This spec is implemented when:
 
 - release evidence includes `spec-check`;
 - patch and minor release evidence clearly show which public claims were proven;
+- minor release evidence includes a metadata-only verification-pack receipt
+  bundle;
 - claim-ledger entries can name the release lanes that carry each claim.
 
 ## Acceptance Examples
@@ -178,6 +181,8 @@ Lane mapping should be tested at the command and receipt level:
 - `cargo xtask scanner-safe-reference --check` covers scanner-safe reference
   evidence.
 - `cargo xtask bundle-proof --profile <profile>` covers contract-pack proof.
+- `cargo xtask verification-pack --out <dir>` covers shareable claim-proof
+  receipt bundles without generated fixture payloads.
 - `cargo xtask cratesio-smoke --version X` covers external registry smoke.
 - `cargo xtask release-evidence --version X ...` writes release evidence
   artifacts and summaries.
