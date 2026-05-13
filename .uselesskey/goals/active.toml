@@ -59,6 +59,19 @@ commands = [
 ]
 
 [[work_item]]
+id = "verification-guide"
+status = "done"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0002"
+plan = "plans/claim-backed-verification/implementation-plan.md"
+commands = [
+  "cargo xtask claim-report",
+  "cargo xtask docs-sync --check",
+  "cargo xtask typos",
+  "git diff --check",
+]
+
+[[work_item]]
 id = "contract-pack-registry"
 status = "ready"
 proposal = "USELESSKEY-PROP-0001"

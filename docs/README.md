@@ -41,6 +41,7 @@ Task-oriented instructions for common workflows.
 - [test-oidc-jwks-validation.md](how-to/test-oidc-jwks-validation.md) — Using the OIDC/JWKS contract pack in validator tests
 - [test-jwt-negative-validation.md](how-to/test-jwt-negative-validation.md) — Using JWT-shaped negatives for policy rejection tests
 - [generate-scanner-safe-k8s-secret.md](how-to/generate-scanner-safe-k8s-secret.md) — Exporting scanner-safe Kubernetes and Vault-shaped payloads
+- [verify-uselesskey-public-claims.md](how-to/verify-uselesskey-public-claims.md) — Verifying badge, scanner-safe, contract-pack, and release-smoke claims
 
 ## Contributing
 
