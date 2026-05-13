@@ -9,6 +9,7 @@ Plans do not define product truth. Link to proposals for why and specs for what.
 
 - [spec-system](spec-system/README.md) - Source-of-truth and spec-system rollout
 - [claim-backed-verification](claim-backed-verification/README.md) - User-facing claim proof and verification-pack rollout
+- [pr-lite-evidence](pr-lite-evidence/README.md) - Local PR evidence and heavy-routing receipt rollout
 
 ## Templates
 
