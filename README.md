@@ -4,7 +4,7 @@
   <a href="https://github.com/EffortlessMetrics/uselesskey/actions/workflows/ci.yml"><img src="https://github.com/EffortlessMetrics/uselesskey/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
   <a href="https://codecov.io/gh/EffortlessMetrics/uselesskey"><img src="https://codecov.io/gh/EffortlessMetrics/uselesskey/graph/badge.svg?branch=main" alt="Codecov" /></a>
   <a href="https://github.com/EffortlessMetrics/ripr/blob/main/docs/BADGE_POLICY.md"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/EffortlessMetrics/uselesskey/main/badges/ripr-plus.json" alt="ripr+" /></a>
-  <a href="docs/reference/audit-surface.md"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/EffortlessMetrics/uselesskey/main/badges/scanner-safe.json" alt="scanner-safe fixtures" /></a>
+  <a href="docs/VERIFICATION.md"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/EffortlessMetrics/uselesskey/main/badges/scanner-safe.json" alt="scanner-safe fixtures" /></a>
 </p>
 
 <p align="center">
