@@ -43,6 +43,7 @@ Task-oriented instructions for common workflows.
 - [test-jwt-negative-validation.md](how-to/test-jwt-negative-validation.md) — Using JWT-shaped negatives for policy rejection tests
 - [generate-scanner-safe-k8s-secret.md](how-to/generate-scanner-safe-k8s-secret.md) — Exporting scanner-safe Kubernetes and Vault-shaped payloads
 - [verify-uselesskey-public-claims.md](how-to/verify-uselesskey-public-claims.md) — Verifying badge, scanner-safe, contract-pack, and release-smoke claims
+- [share-uselesskey-verification-pack.md](how-to/share-uselesskey-verification-pack.md) — Collecting public-claim receipts for security and platform review
 
 ## Contributing
 
