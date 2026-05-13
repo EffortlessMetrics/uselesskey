@@ -185,7 +185,7 @@ commands = [
 
 [[work_item]]
 id = "public-verification-ux-polish"
-status = "ready"
+status = "done"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0002"
 plan = "plans/claim-backed-verification/implementation-plan.md"
@@ -194,4 +194,22 @@ commands = [
   "cargo xtask badges --check",
   "cargo xtask docs-sync --check",
   "cargo xtask typos",
+]
+
+[[work_item]]
+id = "lane-closeout"
+status = "ready"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0005"
+plan = "plans/claim-backed-verification/implementation-plan.md"
+commands = [
+  "cargo xtask spec-check --strict",
+  "cargo xtask claim-report",
+  "cargo xtask claim-report --check-public-claims",
+  "cargo xtask contract-packs --check",
+  "cargo xtask claim-proof --all-stable",
+  "cargo xtask verification-pack --out target/uselesskey-verification",
+  "cargo xtask docs-sync --check",
+  "cargo xtask typos",
+  "git diff --check",
 ]

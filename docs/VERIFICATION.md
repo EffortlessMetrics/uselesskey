@@ -85,6 +85,34 @@ Use `cargo xtask claim-report --check-public-claims` to verify that the
 hand-written public claim page still contains every stable ledger claim, its
 proof commands, and its boundary.
 
+## Claim Proof Receipts
+
+`cargo xtask claim-proof` runs allowlisted proof handlers for selected claims
+and writes per-claim receipts:
+
+```bash
+cargo xtask claim-proof --claim scanner-safe-fixtures
+cargo xtask claim-proof --claim tls-contract-pack
+cargo xtask claim-proof --all-stable
+```
+
+The command uses symbolic handlers from `policy/claim-ledger.toml`; it does not
+shell-evaluate proof-command strings from the ledger. Receipts stay under
+`target/claim-proof/`.
+
+## Verification Packs
+
+Use `cargo xtask verification-pack` when a reviewer needs a shareable bundle of
+public-claim receipts:
+
+```bash
+cargo xtask verification-pack --out target/uselesskey-verification
+```
+
+The pack contains claim reports, contract-pack registry reports, badge endpoint
+JSON, and selected claim-proof receipts. It contains metadata and receipts only,
+not generated fixture payloads.
+
 ## Release Evidence Receipts
 
 Patch release evidence records the public claim index:
@@ -107,6 +135,7 @@ target/release-evidence/claims/public-claims.md
 target/release-evidence/claims/public-claims.json
 target/release-evidence/contract-packs/contract-packs.md
 target/release-evidence/contract-packs/contract-packs.json
+target/release-evidence/verification-pack/README.md
 ```
 
 ## Pull Request Evidence

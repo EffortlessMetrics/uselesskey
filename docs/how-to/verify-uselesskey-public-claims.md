@@ -6,7 +6,7 @@ commands prove those claims, and where the receipts are written.
 The quick rule:
 
 ```text
-README badge -> public claim -> proof command -> receipt -> boundary
+README badge -> public claim -> claim report -> claim proof -> verification pack
 ```
 
 ## 1. Read the Claim Index
@@ -83,7 +83,19 @@ commit.
 
 ## 4. Verify Scanner-Safe Fixture Claims
 
-Run the scanner-safe reference checks:
+For a single runnable receipt, use the allowlisted claim-proof runner:
+
+```bash
+cargo xtask claim-proof --claim scanner-safe-fixtures
+```
+
+The receipt is written under:
+
+```text
+target/claim-proof/scanner-safe-fixtures/
+```
+
+To run the underlying checks directly:
 
 ```bash
 cargo xtask scanner-safe-reference --check
@@ -112,9 +124,17 @@ Run the TLS bundle proof:
 cargo xtask bundle-proof --profile tls --out target/release-evidence/tls
 ```
 
+For a single runnable claim receipt:
+
+```bash
+cargo xtask claim-proof --claim tls-contract-pack
+```
+
 Attach these receipts:
 
 ```text
+target/claim-proof/tls-contract-pack/receipt.md
+target/claim-proof/tls-contract-pack/receipt.json
 target/release-evidence/tls/tls-contract-pack-proof.md
 target/release-evidence/tls/tls-contract-pack-proof.json
 target/release-evidence/contract-packs/contract-packs.md
@@ -142,9 +162,22 @@ registry state.
 
 ## 7. Attach Review Evidence
 
+For the full reviewer bundle:
+
+```bash
+cargo xtask verification-pack --out target/uselesskey-verification
+```
+
 For a security, platform, or release review, attach:
 
 ```text
+target/uselesskey-verification/README.md
+target/uselesskey-verification/public-claims.md
+target/uselesskey-verification/public-claims.json
+target/uselesskey-verification/contract-packs.md
+target/uselesskey-verification/contract-packs.json
+target/uselesskey-verification/claim-proof/*/receipt.md
+target/uselesskey-verification/claim-proof/*/receipt.json
 target/claim-report/public-claims.md
 target/claim-report/public-claims.json
 target/release-evidence/tls/tls-contract-pack-proof.md
@@ -153,6 +186,9 @@ target/release-evidence/tls/tls-contract-pack-proof.json
 
 Also include the commands you ran and the exact version, branch, or commit under
 review.
+
+The verification pack contains metadata and receipts only. Do not attach
+generated fixture payloads such as PEM, DER, JWT, or key files.
 
 ## Boundaries to Keep Visible
 

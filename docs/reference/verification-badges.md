@@ -10,7 +10,8 @@ README badge -> public claim -> proof command -> receipt -> boundary
 ```
 
 Use [`docs/status/PUBLIC_CLAIMS.md`](../status/PUBLIC_CLAIMS.md) for the claim
-index and `cargo xtask claim-report` for the generated Markdown/JSON report.
+index, `cargo xtask claim-report` for the generated Markdown/JSON report, and
+`cargo xtask claim-proof --claim <claim-id>` for runnable claim receipts.
 
 `uselesskey` uses generated Shields endpoint JSON for badges that represent
 repo-owned proof:
@@ -96,7 +97,12 @@ target/release-evidence/contract-packs/contract-packs.md
 
 Patch release evidence includes the public claim report. Minor release evidence
 also includes the contract-pack registry because contract packs are public
-fixture-platform promises.
+fixture-platform promises. Minor release evidence also carries a metadata-only
+verification pack under:
+
+```text
+target/release-evidence/verification-pack/
+```
 
 ## Future Badges
 

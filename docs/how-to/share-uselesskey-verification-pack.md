@@ -44,19 +44,8 @@ teach them, and which boundaries apply.
 
 ## 3. Include Claim Proof Receipts
 
-For scanner-safe fixtures:
-
-```bash
-cargo xtask claim-proof --claim scanner-safe-fixtures
-```
-
-For the TLS contract pack:
-
-```bash
-cargo xtask claim-proof --claim tls-contract-pack
-```
-
-Attach:
+The verification-pack command runs the selected claim proofs and copies the
+receipts into the pack. Attach:
 
 ```text
 target/uselesskey-verification/claim-proof/scanner-safe-fixtures/receipt.md
@@ -65,10 +54,11 @@ target/uselesskey-verification/claim-proof/tls-contract-pack/receipt.md
 target/uselesskey-verification/claim-proof/tls-contract-pack/receipt.json
 ```
 
-For all stable supported claims:
+If you need standalone receipts outside the pack:
 
 ```bash
-cargo xtask claim-proof --all-stable
+cargo xtask claim-proof --claim scanner-safe-fixtures
+cargo xtask claim-proof --claim tls-contract-pack
 ```
 
 Do not use `--all-stable` as crates.io release proof. Registry smoke remains a
