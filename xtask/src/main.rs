@@ -7419,9 +7419,11 @@ index 1111111..2222222 100644
                 .artifacts
                 .contains(&"target/release-evidence/claims/public-claims.json".to_string())
         );
-        assert!(receipt.artifacts.contains(
-            &"target/release-evidence/contract-packs/contract-packs.json".to_string()
-        ));
+        assert!(
+            receipt.artifacts.contains(
+                &"target/release-evidence/contract-packs/contract-packs.json".to_string()
+            )
+        );
         assert!(receipt.artifacts.contains(
             &"target/release-evidence/scanner-safe/scanner-safe-bundle-proof.md".to_string()
         ));
