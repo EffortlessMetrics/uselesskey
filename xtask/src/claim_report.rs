@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::Path;
 
@@ -86,7 +86,16 @@ struct ArtifactFrontMatter {
     status: Option<String>,
 }
 
-pub fn run(root: &Path, format: OutputFormat, claim_filter: Option<&str>) -> Result<()> {
+pub fn run(
+    root: &Path,
+    format: OutputFormat,
+    claim_filter: Option<&str>,
+    check_public_claims: bool,
+) -> Result<()> {
+    if check_public_claims && claim_filter.is_some() {
+        bail!("claim-report: --check-public-claims cannot be combined with --claim");
+    }
+
     let report = build_report(root, claim_filter)?;
     let out_dir = root.join("target/claim-report");
     fs::create_dir_all(&out_dir).with_context(|| format!("create {}", out_dir.display()))?;
@@ -96,6 +105,10 @@ pub fn run(root: &Path, format: OutputFormat, claim_filter: Option<&str>) -> Res
     write_json_pretty(&json_path, &report)?;
     fs::write(&md_path, render_markdown(&report))
         .with_context(|| format!("write {}", md_path.display()))?;
+
+    if check_public_claims {
+        check_public_claims_doc(root, &report)?;
+    }
 
     match format {
         OutputFormat::Human => {
@@ -109,6 +122,19 @@ pub fn run(root: &Path, format: OutputFormat, claim_filter: Option<&str>) -> Res
         OutputFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
     }
 
+    Ok(())
+}
+
+fn check_public_claims_doc(root: &Path, report: &ClaimReport) -> Result<()> {
+    let errors = public_claim_errors(root, report)?;
+    if !errors.is_empty() {
+        for error in &errors {
+            eprintln!("claim-report: {error}");
+        }
+        bail!("claim-report: docs/status/PUBLIC_CLAIMS.md drifted from policy/claim-ledger.toml");
+    }
+
+    println!("claim-report: docs/status/PUBLIC_CLAIMS.md matches policy/claim-ledger.toml");
     Ok(())
 }
 
@@ -353,6 +379,136 @@ fn render_markdown(report: &ClaimReport) -> String {
     md
 }
 
+fn public_claim_errors(root: &Path, report: &ClaimReport) -> Result<Vec<String>> {
+    let public_claims_path = root.join("docs/status/PUBLIC_CLAIMS.md");
+    let markdown = fs::read_to_string(&public_claims_path)
+        .with_context(|| format!("read {}", public_claims_path.display()))?;
+    let rows = parse_public_claim_rows(&markdown);
+    let mut errors = Vec::new();
+
+    if rows.is_empty() {
+        errors
+            .push("docs/status/PUBLIC_CLAIMS.md has no parseable Current Claims rows".to_string());
+        return Ok(errors);
+    }
+
+    let claims_by_id = report
+        .claims
+        .iter()
+        .map(|claim| (claim.id.as_str(), claim))
+        .collect::<BTreeMap<_, _>>();
+    let row_ids = rows
+        .iter()
+        .map(|row| row.id.as_str())
+        .collect::<BTreeSet<_>>();
+
+    for claim in report
+        .claims
+        .iter()
+        .filter(|claim| claim.status == "stable")
+    {
+        if !row_ids.contains(claim.id.as_str()) {
+            errors.push(format!(
+                "stable claim `{}` is missing from docs/status/PUBLIC_CLAIMS.md",
+                claim.id
+            ));
+        }
+    }
+
+    for row in rows {
+        let Some(claim) = claims_by_id.get(row.id.as_str()) else {
+            errors.push(format!(
+                "docs/status/PUBLIC_CLAIMS.md:{} references unknown claim `{}`",
+                row.line, row.id
+            ));
+            continue;
+        };
+
+        if row.status != claim.status {
+            errors.push(format!(
+                "docs/status/PUBLIC_CLAIMS.md:{} claim `{}` has status `{}`, expected `{}`",
+                row.line, row.id, row.status, claim.status
+            ));
+        }
+        if row.boundary.trim().is_empty() {
+            errors.push(format!(
+                "docs/status/PUBLIC_CLAIMS.md:{} claim `{}` has an empty boundary",
+                row.line, row.id
+            ));
+        }
+        if row.proof.trim().is_empty() {
+            errors.push(format!(
+                "docs/status/PUBLIC_CLAIMS.md:{} claim `{}` has no visible proof commands",
+                row.line, row.id
+            ));
+        }
+        for command in &claim.proof_commands {
+            if !row.proof.contains(command) {
+                errors.push(format!(
+                    "docs/status/PUBLIC_CLAIMS.md:{} claim `{}` omits proof command `{}`",
+                    row.line, row.id, command
+                ));
+            }
+        }
+    }
+
+    Ok(errors)
+}
+
+#[derive(Debug)]
+struct PublicClaimRow {
+    line: usize,
+    id: String,
+    status: String,
+    proof: String,
+    boundary: String,
+}
+
+fn parse_public_claim_rows(markdown: &str) -> Vec<PublicClaimRow> {
+    let mut rows = Vec::new();
+    let mut in_current_claims = false;
+
+    for (idx, line) in markdown.lines().enumerate() {
+        let trimmed = line.trim();
+        if trimmed == "## Current Claims" {
+            in_current_claims = true;
+            continue;
+        }
+        if in_current_claims && trimmed.starts_with("## ") {
+            break;
+        }
+        if !in_current_claims || !trimmed.starts_with('|') {
+            continue;
+        }
+
+        let cells = trimmed
+            .trim_matches('|')
+            .split('|')
+            .map(str::trim)
+            .collect::<Vec<_>>();
+        if cells.len() < 5 {
+            continue;
+        }
+        if cells[0] == "Claim ID" || cells[0].starts_with("---") {
+            continue;
+        }
+
+        rows.push(PublicClaimRow {
+            line: idx + 1,
+            id: strip_inline_code(cells[0]),
+            status: strip_inline_code(cells[2]),
+            proof: cells[3].to_string(),
+            boundary: cells[4].to_string(),
+        });
+    }
+
+    rows
+}
+
+fn strip_inline_code(value: &str) -> String {
+    value.trim().trim_matches('`').trim().to_string()
+}
+
 fn join_inline(values: &[String]) -> String {
     if values.is_empty() {
         return "n/a".to_string();
@@ -443,6 +599,69 @@ mod tests {
         assert!(markdown.contains("Scanner-safe fixture material"));
     }
 
+    #[test]
+    fn public_claims_check_accepts_synced_markdown() {
+        let dir = minimal_repo();
+        let report = build_report(dir.path(), None).unwrap();
+        let errors = public_claim_errors(dir.path(), &report).unwrap();
+
+        assert!(errors.is_empty(), "errors: {errors:?}");
+    }
+
+    #[test]
+    fn public_claims_check_requires_stable_claim_rows() {
+        let dir = minimal_repo();
+        write_public_claims(dir.path(), "tls-contract-pack").unwrap();
+        let report = build_report(dir.path(), None).unwrap();
+        let errors = public_claim_errors(dir.path(), &report).unwrap();
+
+        assert!(
+            errors
+                .iter()
+                .any(|error| error.contains("stable claim `tls-contract-pack` is missing")),
+            "errors: {errors:?}"
+        );
+    }
+
+    #[test]
+    fn public_claims_check_rejects_unknown_claim_ids() {
+        let dir = minimal_repo();
+        let path = dir.path().join("docs/status/PUBLIC_CLAIMS.md");
+        let mut markdown = fs::read_to_string(&path).unwrap();
+        markdown.push_str(
+            "| `unknown-claim` | Unknown | `stable` | `cargo xtask unknown` | Boundary. |\n",
+        );
+        fs::write(&path, markdown).unwrap();
+        let report = build_report(dir.path(), None).unwrap();
+        let errors = public_claim_errors(dir.path(), &report).unwrap();
+
+        assert!(
+            errors
+                .iter()
+                .any(|error| error.contains("references unknown claim `unknown-claim`")),
+            "errors: {errors:?}"
+        );
+    }
+
+    #[test]
+    fn public_claims_check_requires_all_proof_commands() {
+        let dir = minimal_repo();
+        let path = dir.path().join("docs/status/PUBLIC_CLAIMS.md");
+        let markdown = fs::read_to_string(&path)
+            .unwrap()
+            .replace("; `cargo xtask badges --check`", "");
+        fs::write(&path, markdown).unwrap();
+        let report = build_report(dir.path(), None).unwrap();
+        let errors = public_claim_errors(dir.path(), &report).unwrap();
+
+        assert!(
+            errors.iter().any(|error| error.contains(
+                "claim `scanner-safe-fixtures` omits proof command `cargo xtask badges --check`"
+            )),
+            "errors: {errors:?}"
+        );
+    }
+
     fn minimal_repo() -> tempfile::TempDir {
         let dir = tempfile::tempdir().unwrap();
         fs::create_dir_all(dir.path().join("policy")).unwrap();
@@ -485,11 +704,7 @@ boundary = "TLS fixtures do not prove production PKI."
 "#,
         )
         .unwrap();
-        fs::write(
-            dir.path().join("docs/status/PUBLIC_CLAIMS.md"),
-            "# Claims\n",
-        )
-        .unwrap();
+        write_public_claims(dir.path(), "").unwrap();
         fs::write(
             dir.path().join("docs/how-to/scanner-safe.md"),
             "# Scanner\n",
@@ -525,5 +740,29 @@ status = "accepted"
         .unwrap();
 
         dir
+    }
+
+    fn write_public_claims(root: &Path, omit_id: &str) -> Result<()> {
+        let mut rows = vec![
+            "| `scanner-safe-fixtures` | Scanner-safe fixtures | `stable` | `cargo xtask scanner-safe-reference --check`; `cargo xtask badges --check` | Boundary. |",
+            "| `tls-contract-pack` | TLS contract pack | `stable` | `cargo xtask bundle-proof --profile tls --out target/release-evidence/tls` | Boundary. |",
+        ];
+        rows.retain(|row| !row.contains(&format!("`{omit_id}`")));
+
+        fs::write(
+            root.join("docs/status/PUBLIC_CLAIMS.md"),
+            format!(
+                r#"# Public Claims
+
+## Current Claims
+
+| Claim ID | Claim | Status | Proof commands | Boundary |
+| --- | --- | --- | --- | --- |
+{}
+"#,
+                rows.join("\n")
+            ),
+        )?;
+        Ok(())
     }
 }

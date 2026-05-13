@@ -205,6 +205,9 @@ enum Cmd {
         /// Emit a single claim by id.
         #[arg(long)]
         claim: Option<String>,
+        /// Fail if docs/status/PUBLIC_CLAIMS.md drifts from policy/claim-ledger.toml.
+        #[arg(long)]
+        check_public_claims: bool,
     },
     /// External install smoke against crates.io or a local path.
     ///
@@ -516,9 +519,16 @@ fn main() -> Result<()> {
         Cmd::SpecCheck { strict, format } => {
             spec_check::run(&workspace_root_path(), strict, format.into())
         }
-        Cmd::ClaimReport { format, claim } => {
-            claim_report::run(&workspace_root_path(), format.into(), claim.as_deref())
-        }
+        Cmd::ClaimReport {
+            format,
+            claim,
+            check_public_claims,
+        } => claim_report::run(
+            &workspace_root_path(),
+            format.into(),
+            claim.as_deref(),
+            check_public_claims,
+        ),
         Cmd::CratesioSmoke {
             version,
             path,
