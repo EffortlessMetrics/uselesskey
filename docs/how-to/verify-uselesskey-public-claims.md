@@ -30,6 +30,13 @@ target/claim-report/public-claims.md
 target/claim-report/public-claims.json
 ```
 
+Release evidence also carries a copy under:
+
+```text
+target/release-evidence/claims/public-claims.md
+target/release-evidence/claims/public-claims.json
+```
+
 For a single claim:
 
 ```bash
@@ -92,6 +99,13 @@ cryptographic assurance.
 
 ## 5. Verify the TLS Contract Pack
 
+Check that stable contract packs are registered against claims, specs, how-tos,
+release lanes, and proof commands:
+
+```bash
+cargo xtask contract-packs --check
+```
+
 Run the TLS bundle proof:
 
 ```bash
@@ -103,6 +117,8 @@ Attach these receipts:
 ```text
 target/release-evidence/tls/tls-contract-pack-proof.md
 target/release-evidence/tls/tls-contract-pack-proof.json
+target/release-evidence/contract-packs/contract-packs.md
+target/release-evidence/contract-packs/contract-packs.json
 ```
 
 This proves the documented generated TLS fixtures, receipts, and negative

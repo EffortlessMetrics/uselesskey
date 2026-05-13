@@ -9,6 +9,10 @@
 Badges are the front panel. The generated evidence, CI receipts, and release
 artifacts remain the source of truth.
 
+For the public claim index and local proof path, see
+[`docs/status/PUBLIC_CLAIMS.md`](status/PUBLIC_CLAIMS.md) and
+[`docs/how-to/verify-uselesskey-public-claims.md`](how-to/verify-uselesskey-public-claims.md).
+
 ## README badges
 
 ### `ripr+`
@@ -58,6 +62,52 @@ cargo xtask badges --check
 
 Committed endpoint files live under `badges/`. Detailed reports stay under
 `target/` locally or in CI artifacts.
+
+## Claim Reports
+
+`cargo xtask claim-report` turns `policy/claim-ledger.toml` into reader and
+machine receipts:
+
+```bash
+cargo xtask claim-report
+cargo xtask claim-report --format json
+cargo xtask claim-report --claim scanner-safe-fixtures
+```
+
+The command writes:
+
+```text
+target/claim-report/public-claims.md
+target/claim-report/public-claims.json
+```
+
+Use `cargo xtask claim-report --check-public-claims` to verify that the
+hand-written public claim page still contains every stable ledger claim, its
+proof commands, and its boundary.
+
+## Release Evidence Receipts
+
+Patch release evidence records the public claim index:
+
+```bash
+cargo xtask release-evidence --version 0.8.1 --patch --dry-run --summary
+```
+
+Minor release evidence records both public claims and contract-pack registry
+state:
+
+```bash
+cargo xtask release-evidence --version 0.9.0 --dry-run --summary
+```
+
+Non-dry release evidence writes these receipts:
+
+```text
+target/release-evidence/claims/public-claims.md
+target/release-evidence/claims/public-claims.json
+target/release-evidence/contract-packs/contract-packs.md
+target/release-evidence/contract-packs/contract-packs.json
+```
 
 ## Pull Request Evidence
 
