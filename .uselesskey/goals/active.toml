@@ -108,7 +108,7 @@ commands = [
 
 [[work_item]]
 id = "readme-badge-front-panel-adr"
-status = "active"
+status = "done"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0004"
 plan = "plans/spec-system/implementation-plan.md"
@@ -120,7 +120,7 @@ commands = [
 
 [[work_item]]
 id = "spec-check"
-status = "planned"
+status = "active"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0005"
 plan = "plans/spec-system/implementation-plan.md"
