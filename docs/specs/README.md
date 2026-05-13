@@ -44,3 +44,4 @@ public crate-surface cleanup.
 - [USELESSKEY-SPEC-0007: PR review evidence](USELESSKEY-SPEC-0007-pr-review-evidence.md)
 - [USELESSKEY-SPEC-0008: Claim-proof execution](USELESSKEY-SPEC-0008-claim-proof-execution.md)
 - [USELESSKEY-SPEC-0009: Verification-pack receipt bundle](USELESSKEY-SPEC-0009-verification-pack.md)
+- [USELESSKEY-SPEC-0010: PR-lite evidence ergonomics](USELESSKEY-SPEC-0010-pr-lite-evidence.md)
