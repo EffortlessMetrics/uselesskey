@@ -452,7 +452,7 @@ fn main() -> Result<()> {
             NoBlobCmd::Scan => no_blob_gate(),
             NoBlobCmd::Migrate => no_blob_migrate(),
         },
-        Cmd::DocsSync { check } => docs_sync::docs_sync_cmd(check),
+        Cmd::DocsSync { check } => docs_sync_with_spec_check(check),
         Cmd::PublicSurface => public_surface::public_surface_cmd(PUBLISH_CRATES),
         Cmd::ExamplesSmoke { run } => docs_sync::examples_smoke_cmd(run),
         Cmd::PublishCheck => publish_check(),
@@ -2697,6 +2697,18 @@ fn pr(with_mutants: bool) -> Result<()> {
     result
 }
 
+fn docs_sync_with_spec_check(check: bool) -> Result<()> {
+    docs_sync::docs_sync_cmd(check)?;
+    if check {
+        spec_check::run(
+            &workspace_root_path(),
+            false,
+            spec_check::OutputFormat::Human,
+        )?;
+    }
+    Ok(())
+}
+
 fn mutants_pr(changed: bool, crates: Vec<String>, all: bool, full_owner: bool) -> Result<()> {
     let selector_count = usize::from(changed) + usize::from(!crates.is_empty()) + usize::from(all);
     if selector_count != 1 {
@@ -4253,6 +4265,14 @@ fn run_pr_plan(
 
     runner.step("public-surface", None, || {
         public_surface::public_surface_cmd(PUBLISH_CRATES)
+    })?;
+
+    runner.step("spec-check", None, || {
+        spec_check::run(
+            &workspace_root_path(),
+            false,
+            spec_check::OutputFormat::Human,
+        )
     })?;
 
     if plan.docs_only {

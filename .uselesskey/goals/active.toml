@@ -120,7 +120,7 @@ commands = [
 
 [[work_item]]
 id = "spec-check"
-status = "active"
+status = "done"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0005"
 plan = "plans/spec-system/implementation-plan.md"
@@ -129,4 +129,17 @@ commands = [
   "cargo xtask spec-check",
   "cargo xtask spec-check --format json",
   "cargo xtask docs-sync --check",
+]
+
+[[work_item]]
+id = "wire-spec-check-docs-pr"
+status = "active"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0006"
+plan = "plans/spec-system/implementation-plan.md"
+commands = [
+  "cargo xtask spec-check",
+  "cargo xtask docs-sync --check",
+  "cargo xtask pr",
+  "git diff --check",
 ]
