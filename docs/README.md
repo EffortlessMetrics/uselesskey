@@ -26,6 +26,7 @@ agent state do not drift into one document.
 - [learnings](learnings/README.md) - Durable lessons from releases, incidents, and proof lanes
 - [plans](../plans/README.md) - PR sequencing and rollback plans
 - [active goals](../.uselesskey/goals/README.md) - Machine-readable current agent lane state
+- [agent bootstrap](handoffs/agent-bootstrap.md) - Read order and validation defaults for agents resuming work
 
 ## How-to Guides
 

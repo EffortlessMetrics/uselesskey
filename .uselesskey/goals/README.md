@@ -14,3 +14,7 @@ record history; they should not be treated as active instructions.
 
 Do not create `active.toml` until the lane has an accepted proposal or spec to
 link to.
+
+When resuming agent work, read
+[`docs/handoffs/agent-bootstrap.md`](../../docs/handoffs/agent-bootstrap.md)
+before acting on older chat context.
