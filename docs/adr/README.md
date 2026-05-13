@@ -83,6 +83,7 @@ NNNN-short-title.md
 | ID | Title | Status | Date |
 |----|-------|--------|------|
 | [USELESSKEY-ADR-0001](USELESSKEY-ADR-0001-contract-packs-are-proof-backed-fixture-profiles.md) | Contract packs are proof-backed fixture profiles | Accepted | 2026-05-13 |
+| [USELESSKEY-ADR-0002](USELESSKEY-ADR-0002-public-claims-require-command-backed-evidence.md) | Public claims require command-backed evidence | Accepted | 2026-05-13 |
 
 ## References
 
