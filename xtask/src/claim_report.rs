@@ -229,7 +229,7 @@ fn collect_artifacts(
         let text = fs::read_to_string(&path).with_context(|| format!("read {}", path.display()))?;
         let (front_matter, _) = split_toml_front_matter(&text)
             .with_context(|| format!("parse front matter from {}", rel_path(root, &path)))?;
-        let parsed: ArtifactFrontMatter = toml::from_str(front_matter)
+        let parsed: ArtifactFrontMatter = toml::from_str(&front_matter)
             .with_context(|| format!("parse TOML front matter from {}", rel_path(root, &path)))?;
         artifacts.insert(
             parsed.id.clone(),
@@ -245,14 +245,24 @@ fn collect_artifacts(
     Ok(artifacts)
 }
 
-fn split_toml_front_matter(text: &str) -> Result<(&str, &str)> {
-    let Some(rest) = text.strip_prefix("+++\n") else {
-        bail!("missing TOML front matter opening delimiter")
+fn split_toml_front_matter(text: &str) -> Result<(String, String)> {
+    let mut lines = text.lines();
+    let Some(first) = lines.next() else {
+        bail!("empty document")
     };
-    let Some((front, body)) = rest.split_once("\n+++") else {
-        bail!("missing TOML front matter closing delimiter")
-    };
-    Ok((front.trim(), body.trim_start_matches(['\r', '\n'])))
+    if first.trim() != "+++" {
+        bail!("first line is not +++");
+    }
+
+    let mut front = Vec::new();
+    for line in &mut lines {
+        if line.trim() == "+++" {
+            return Ok((front.join("\n"), lines.collect::<Vec<_>>().join("\n")));
+        }
+        front.push(line);
+    }
+
+    bail!("unterminated TOML front matter")
 }
 
 fn render_markdown(report: &ClaimReport) -> String {
