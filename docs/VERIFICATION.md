@@ -61,12 +61,16 @@ Committed endpoint files live under `badges/`. Detailed reports stay under
 
 ## Pull Request Evidence
 
-Pull requests run advisory `ripr` evidence, impacted evidence, fast gates,
-docs-sync, publish preflight, example smoke checks, and targeted mutation when
-routing rules require it.
+Pull requests run advisory `ripr` PR evidence, `ripr` review guidance, impacted
+evidence, fast gates, docs-sync, publish preflight, example smoke checks, and
+targeted mutation when routing rules require it.
 
 `ripr` may suggest focused tests or route targeted mutation. It does not edit
 code, generate tests, run mutation, or make merge decisions by default.
+
+Line-placeable `ripr` review guidance is emitted as non-blocking annotations
+from `comments[]` only. Summary-only findings stay in summaries and artifacts;
+inline PR comments are disabled by default.
 
 Pull request artifacts and summaries are diff-scoped. They must not be reused
 as repo-scope README badges.
