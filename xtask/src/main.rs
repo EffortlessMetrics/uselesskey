@@ -2821,6 +2821,11 @@ fn release_evidence_steps_minor() -> Vec<ReleaseEvidenceStep> {
             artifacts: &[],
         },
         ReleaseEvidenceStep {
+            name: "spec-check-strict",
+            command: &["cargo", "xtask", "spec-check", "--strict"],
+            artifacts: &[],
+        },
+        ReleaseEvidenceStep {
             name: "publish-preflight",
             command: &["cargo", "xtask", "publish-preflight"],
             artifacts: &["target/xtask/receipt.json"],
@@ -3006,6 +3011,11 @@ fn release_evidence_steps_patch() -> Vec<ReleaseEvidenceStep> {
         ReleaseEvidenceStep {
             name: "docs-sync",
             command: &["cargo", "xtask", "docs-sync", "--check"],
+            artifacts: &[],
+        },
+        ReleaseEvidenceStep {
+            name: "spec-check-strict",
+            command: &["cargo", "xtask", "spec-check", "--strict"],
             artifacts: &[],
         },
         ReleaseEvidenceStep {
