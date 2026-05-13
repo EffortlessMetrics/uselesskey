@@ -17,6 +17,7 @@ use uselesskey_feature_grid::{BDD_FEATURE_MATRIX, CORE_FEATURE_MATRIX};
 mod audit_surface;
 mod bundle_proof;
 mod claim_report;
+mod contract_packs;
 mod docs_sync;
 mod economics;
 mod plan;
@@ -208,6 +209,15 @@ enum Cmd {
         /// Fail if docs/status/PUBLIC_CLAIMS.md drifts from policy/claim-ledger.toml.
         #[arg(long)]
         check_public_claims: bool,
+    },
+    /// Validate contract-pack registry rows against specs, claims, and proof commands.
+    ContractPacks {
+        /// Fail if the contract-pack registry has invalid rows.
+        #[arg(long)]
+        check: bool,
+        /// Output format.
+        #[arg(long, value_enum, default_value = "human")]
+        format: ContractPacksFormat,
     },
     /// External install smoke against crates.io or a local path.
     ///
@@ -432,6 +442,12 @@ enum ClaimReportFormat {
     Json,
 }
 
+#[derive(Clone, Debug, ValueEnum)]
+enum ContractPacksFormat {
+    Human,
+    Json,
+}
+
 impl From<SpecCheckFormat> for spec_check::OutputFormat {
     fn from(value: SpecCheckFormat) -> Self {
         match value {
@@ -446,6 +462,15 @@ impl From<ClaimReportFormat> for claim_report::OutputFormat {
         match value {
             ClaimReportFormat::Human => claim_report::OutputFormat::Human,
             ClaimReportFormat::Json => claim_report::OutputFormat::Json,
+        }
+    }
+}
+
+impl From<ContractPacksFormat> for contract_packs::OutputFormat {
+    fn from(value: ContractPacksFormat) -> Self {
+        match value {
+            ContractPacksFormat::Human => contract_packs::OutputFormat::Human,
+            ContractPacksFormat::Json => contract_packs::OutputFormat::Json,
         }
     }
 }
@@ -529,6 +554,9 @@ fn main() -> Result<()> {
             claim.as_deref(),
             check_public_claims,
         ),
+        Cmd::ContractPacks { check, format } => {
+            contract_packs::run(&workspace_root_path(), check, format.into())
+        }
         Cmd::CratesioSmoke {
             version,
             path,
