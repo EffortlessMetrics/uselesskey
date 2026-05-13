@@ -3349,8 +3349,15 @@ fn mutants_pr(
     }
 
     let base_ref = resolve_base_ref();
-    let changed_files = git_changed_files(&base_ref)?;
-    let routing = mutation_routing_receipt(&base_ref, &changed_files, full_owner)?;
+    let changed_files = pr_lite_changed_files(&base_ref)?;
+    let mut routing = mutation_routing_receipt(&base_ref, &changed_files, full_owner)?;
+    let prepared_diff_filter = prepare_mutation_diff_filter(
+        &base_ref,
+        &changed_files,
+        &routing.target_crates,
+        full_owner,
+    );
+    routing.diff_filter = prepared_diff_filter.routing.clone();
     write_mutation_routing_receipt(&workspace_root_path(), &routing)?;
     if explain {
         println!("{}", render_mutation_routing_markdown(&routing));
@@ -3367,9 +3374,7 @@ fn mutants_pr(
         .iter()
         .map(String::as_str)
         .collect::<Vec<_>>();
-    let diff_filter =
-        write_mutation_diff_filter(&base_ref, &changed_files, &routing.target_crates)?;
-    run_mutants(&pr_crate_refs, diff_filter.as_deref())
+    run_mutants(&pr_crate_refs, prepared_diff_filter.path.as_deref())
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
@@ -3417,6 +3422,12 @@ struct MutationDiffFilterRouting {
     available: bool,
     path: Option<String>,
     reason: String,
+}
+
+#[derive(Debug, Clone)]
+struct PreparedMutationDiffFilter {
+    path: Option<PathBuf>,
+    routing: MutationDiffFilterRouting,
 }
 
 #[derive(Debug, Clone)]
@@ -5118,9 +5129,10 @@ fn run_pr_plan(
             );
         } else {
             let pr_crate_refs = pr_crates.iter().map(String::as_str).collect::<Vec<_>>();
-            let diff_filter = write_mutation_diff_filter(base_ref, changed_files, &pr_crates)?;
+            let diff_filter =
+                prepare_mutation_diff_filter(base_ref, changed_files, &pr_crates, false);
             runner.step("mutants", None, || {
-                run_mutants(&pr_crate_refs, diff_filter.as_deref())
+                run_mutants(&pr_crate_refs, diff_filter.path.as_deref())
             })?;
         }
     } else if plan.run_mutants {
@@ -5861,6 +5873,123 @@ fn mutation_diff_filter_routing(
     }
 }
 
+fn prepare_mutation_diff_filter(
+    base_ref: &str,
+    changed_files: &[String],
+    target_crates: &[String],
+    full_owner_requested: bool,
+) -> PreparedMutationDiffFilter {
+    if target_crates.is_empty() {
+        return PreparedMutationDiffFilter {
+            path: None,
+            routing: MutationDiffFilterRouting {
+                available: false,
+                path: None,
+                reason: "no mutation target crates selected".to_string(),
+            },
+        };
+    }
+
+    if full_owner_requested {
+        return PreparedMutationDiffFilter {
+            path: None,
+            routing: MutationDiffFilterRouting {
+                available: false,
+                path: None,
+                reason: "full-owner mutation requested; using crate-scope mutation".to_string(),
+            },
+        };
+    }
+
+    let Some(paths) = mutation_diff_filter_paths(changed_files, target_crates) else {
+        return PreparedMutationDiffFilter {
+            path: None,
+            routing: MutationDiffFilterRouting {
+                available: false,
+                path: None,
+                reason: "changed owner paths include non-Rust files or no owner Rust paths"
+                    .to_string(),
+            },
+        };
+    };
+
+    let diff = match git_diff_for_paths(base_ref, &paths) {
+        Ok(diff) => diff,
+        Err(err) => {
+            return PreparedMutationDiffFilter {
+                path: None,
+                routing: MutationDiffFilterRouting {
+                    available: false,
+                    path: None,
+                    reason: format!(
+                        "failed to generate diff filter ({err}); using crate-scope mutation"
+                    ),
+                },
+            };
+        }
+    };
+
+    if diff.trim().is_empty() {
+        return PreparedMutationDiffFilter {
+            path: None,
+            routing: MutationDiffFilterRouting {
+                available: false,
+                path: None,
+                reason: "git diff produced no changed hunks for owner Rust paths; using crate-scope mutation"
+                    .to_string(),
+            },
+        };
+    }
+
+    let path = PathBuf::from("target/xtask/mutants-pr.diff");
+    if let Some(parent) = path.parent()
+        && let Err(err) = fs::create_dir_all(parent)
+    {
+        return PreparedMutationDiffFilter {
+            path: None,
+            routing: MutationDiffFilterRouting {
+                available: false,
+                path: None,
+                reason: format!(
+                    "failed to create diff filter directory {} ({err}); using crate-scope mutation",
+                    parent.display()
+                ),
+            },
+        };
+    }
+
+    if let Err(err) = fs::write(&path, diff) {
+        return PreparedMutationDiffFilter {
+            path: None,
+            routing: MutationDiffFilterRouting {
+                available: false,
+                path: None,
+                reason: format!(
+                    "failed to write diff filter {} ({err}); using crate-scope mutation",
+                    path.display()
+                ),
+            },
+        };
+    }
+
+    eprintln!(
+        "mutants-pr: limiting mutation candidates to changed Rust hunks via {}",
+        path.display()
+    );
+
+    PreparedMutationDiffFilter {
+        path: Some(path),
+        routing: MutationDiffFilterRouting {
+            available: true,
+            path: Some("target/xtask/mutants-pr.diff".to_string()),
+            reason: format!(
+                "{} changed Rust path(s) can be used as a diff filter",
+                paths.len()
+            ),
+        },
+    }
+}
+
 fn write_mutation_routing_receipt(root: &Path, receipt: &MutationRoutingReceipt) -> Result<()> {
     let out_dir = root.join("target/xtask/mutation-routing");
     write_json_pretty(&out_dir.join("latest.json"), receipt)?;
@@ -5931,33 +6060,6 @@ fn render_mutation_routing_markdown(receipt: &MutationRoutingReceipt) -> String 
     }
 
     md
-}
-
-fn write_mutation_diff_filter(
-    base_ref: &str,
-    changed_files: &[String],
-    target_crates: &[String],
-) -> Result<Option<PathBuf>> {
-    let Some(paths) = mutation_diff_filter_paths(changed_files, target_crates) else {
-        return Ok(None);
-    };
-
-    let diff = git_diff_for_paths(base_ref, &paths)?;
-    if diff.trim().is_empty() {
-        return Ok(None);
-    }
-
-    let path = PathBuf::from("target/xtask/mutants-pr.diff");
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)
-            .with_context(|| format!("failed to create {}", parent.display()))?;
-    }
-    fs::write(&path, diff).with_context(|| format!("failed to write {}", path.display()))?;
-    eprintln!(
-        "mutants-pr: limiting mutation candidates to changed Rust hunks via {}",
-        path.display()
-    );
-    Ok(Some(path))
 }
 
 fn mutation_diff_filter_paths(
@@ -9878,6 +9980,64 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
         assert!(!routing.available);
         assert!(routing.path.is_none());
         assert!(routing.reason.contains("non-Rust"));
+    }
+
+    #[test]
+    fn prepare_mutation_diff_filter_keeps_full_owner_crate_scoped() {
+        let prepared = prepare_mutation_diff_filter(
+            "origin/main",
+            &["crates/uselesskey-x509/src/lib.rs".to_string()],
+            &["uselesskey-x509".to_string()],
+            true,
+        );
+
+        assert!(prepared.path.is_none());
+        assert!(!prepared.routing.available);
+        assert!(
+            prepared
+                .routing
+                .reason
+                .contains("full-owner mutation requested")
+        );
+    }
+
+    #[test]
+    fn prepare_mutation_diff_filter_falls_back_for_non_rust_owner_paths() {
+        let prepared = prepare_mutation_diff_filter(
+            "origin/main",
+            &["crates/uselesskey-x509/Cargo.toml".to_string()],
+            &["uselesskey-x509".to_string()],
+            false,
+        );
+
+        assert!(prepared.path.is_none());
+        assert!(!prepared.routing.available);
+        assert!(prepared.routing.reason.contains("non-Rust"));
+    }
+
+    #[test]
+    fn mutation_command_for_crate_passes_diff_filter_to_cargo_mutants() {
+        let tool_env = MutationToolEnv {
+            all_features_requested: true,
+            nasm_available: true,
+        };
+        let diff_path = Path::new("target/xtask/mutants-pr.diff");
+        let cmd = mutation_command_for_crate("uselesskey-x509", None, &tool_env, Some(diff_path))
+            .unwrap()
+            .expect("uselesskey-x509 has a mutation command");
+        let args = cmd
+            .get_args()
+            .map(|arg| arg.to_string_lossy().into_owned())
+            .collect::<Vec<_>>();
+        let in_diff = args
+            .iter()
+            .position(|arg| arg == "--in-diff")
+            .expect("cargo-mutants command includes --in-diff");
+
+        assert_eq!(
+            args.get(in_diff + 1),
+            Some(&diff_path.display().to_string())
+        );
     }
 
     #[test]
