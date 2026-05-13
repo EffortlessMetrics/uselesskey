@@ -474,7 +474,7 @@ fn main() -> Result<()> {
         Cmd::Coverage => coverage(),
         Cmd::PublishPreflight { allow_dirty } => publish_preflight(allow_dirty),
         Cmd::Publish { from, resume } => publish(from, resume),
-        Cmd::Mutants => run_mutants(PUBLISH_CRATES),
+        Cmd::Mutants => run_mutants(PUBLISH_CRATES, None),
         Cmd::Fuzz { target, args } => fuzz(target.as_deref(), &args),
         Cmd::LintFix { check, no_clippy } => lint_fix(check, no_clippy),
         Cmd::Gate { check: _ } => gate(),
@@ -885,7 +885,7 @@ fn run_ci_plan(runner: &mut receipt::Runner) -> Result<()> {
     runner.set_bdd_counts(counts);
 
     runner.step("no-blob", None, no_blob_gate)?;
-    runner.step("mutants", None, || run_mutants(MUTANT_CRATES))?;
+    runner.step("mutants", None, || run_mutants(MUTANT_CRATES, None))?;
     runner.step("fuzz", None, fuzz_pr)?;
 
     if is_llvm_cov_installed() {
@@ -1893,15 +1893,18 @@ fn collect_dependency_version_snippet_errors(
     Ok(errors)
 }
 
-fn run_mutants(crates: &[&str]) -> Result<()> {
+fn run_mutants(crates: &[&str], in_diff: Option<&Path>) -> Result<()> {
     ensure_cargo_mutants_installed()?;
 
     eprintln!("mutants targets: {crates:?}");
+    if let Some(in_diff) = in_diff {
+        eprintln!("mutants diff filter: {}", in_diff.display());
+    }
 
     let tool_env = MutationToolEnv::detect();
 
     for name in crates {
-        let Some(mut cmd) = mutation_command_for_crate(name, None, &tool_env)? else {
+        let Some(mut cmd) = mutation_command_for_crate(name, None, &tool_env, in_diff)? else {
             continue;
         };
         run(&mut cmd)?;
@@ -1950,6 +1953,7 @@ fn mutation_command_for_crate(
     name: &str,
     output_dir: Option<&Path>,
     tool_env: &MutationToolEnv,
+    in_diff: Option<&Path>,
 ) -> Result<Option<Command>> {
     let mut cmd = Command::new("cargo");
     cmd.arg("mutants");
@@ -1998,6 +2002,10 @@ fn mutation_command_for_crate(
 
     if let Some(output_dir) = output_dir {
         cmd.args(["--output", &output_dir.display().to_string()]);
+    }
+
+    if let Some(in_diff) = in_diff {
+        cmd.arg("--in-diff").arg(in_diff);
     }
 
     cmd.args(["--manifest-path", &format!("crates/{name}/Cargo.toml")]);
@@ -2260,7 +2268,8 @@ fn run_mutants_with_outputs(crates: &[&str], output_root: &Path) -> Result<Mutat
                 .with_context(|| format!("failed to remove {}", output_dir.display()))?;
         }
 
-        let Some(mut cmd) = mutation_command_for_crate(name, Some(&output_dir), &tool_env)? else {
+        let Some(mut cmd) = mutation_command_for_crate(name, Some(&output_dir), &tool_env, None)?
+        else {
             results.push(MutationEvidenceCrateResult {
                 crate_name: (*name).to_string(),
                 status: "skipped".to_string(),
@@ -2671,12 +2680,12 @@ fn mutants_pr(changed: bool, crates: Vec<String>, all: bool, full_owner: bool) -
     }
 
     if all {
-        return run_mutants(PUBLISH_CRATES);
+        return run_mutants(PUBLISH_CRATES, None);
     }
 
     if !crates.is_empty() {
         let crate_refs = crates.iter().map(String::as_str).collect::<Vec<_>>();
-        return run_mutants(&crate_refs);
+        return run_mutants(&crate_refs, None);
     }
 
     let base_ref = resolve_base_ref();
@@ -2689,7 +2698,8 @@ fn mutants_pr(changed: bool, crates: Vec<String>, all: bool, full_owner: bool) -
     }
 
     let pr_crate_refs = pr_crates.iter().map(String::as_str).collect::<Vec<_>>();
-    run_mutants(&pr_crate_refs)
+    let diff_filter = write_mutation_diff_filter(&base_ref, &changed_files, &pr_crates)?;
+    run_mutants(&pr_crate_refs, diff_filter.as_deref())
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
@@ -4296,7 +4306,10 @@ fn run_pr_plan(
             );
         } else {
             let pr_crate_refs = pr_crates.iter().map(String::as_str).collect::<Vec<_>>();
-            runner.step("mutants", None, || run_mutants(&pr_crate_refs))?;
+            let diff_filter = write_mutation_diff_filter(base_ref, changed_files, &pr_crates)?;
+            runner.step("mutants", None, || {
+                run_mutants(&pr_crate_refs, diff_filter.as_deref())
+            })?;
         }
     } else if plan.run_mutants {
         runner.skip(
@@ -4909,6 +4922,53 @@ fn mutation_target_crates(base_ref: &str, changed_files: &[String]) -> Result<Ve
         targets.push(name.clone());
     }
     Ok(targets)
+}
+
+fn write_mutation_diff_filter(
+    base_ref: &str,
+    changed_files: &[String],
+    target_crates: &[String],
+) -> Result<Option<PathBuf>> {
+    let Some(paths) = mutation_diff_filter_paths(changed_files, target_crates) else {
+        return Ok(None);
+    };
+
+    let diff = git_diff_for_paths(base_ref, &paths)?;
+    if diff.trim().is_empty() {
+        return Ok(None);
+    }
+
+    let path = PathBuf::from("target/xtask/mutants-pr.diff");
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)
+            .with_context(|| format!("failed to create {}", parent.display()))?;
+    }
+    fs::write(&path, diff).with_context(|| format!("failed to write {}", path.display()))?;
+    eprintln!(
+        "mutants-pr: limiting mutation candidates to changed Rust hunks via {}",
+        path.display()
+    );
+    Ok(Some(path))
+}
+
+fn mutation_diff_filter_paths(
+    changed_files: &[String],
+    target_crates: &[String],
+) -> Option<Vec<String>> {
+    let mut paths = BTreeSet::new();
+    for name in target_crates {
+        let owner_paths = mutation_target_paths_for_owner(name, changed_files);
+        if owner_paths.iter().any(|path| !path.ends_with(".rs")) {
+            return None;
+        }
+        paths.extend(owner_paths.into_iter().filter(|path| path.ends_with(".rs")));
+    }
+
+    if paths.is_empty() {
+        None
+    } else {
+        Some(paths.into_iter().collect())
+    }
 }
 
 fn mutation_target_owners(changed_files: &[String]) -> Vec<String> {
@@ -6494,6 +6554,32 @@ mod tests {
             mutation_target_paths_for_owner("uselesskey-x509", &paths),
             vec!["crates/uselesskey-x509/src/srp/spec/chain_spec.rs".to_string()]
         );
+    }
+
+    #[test]
+    fn mutation_diff_filter_paths_keep_changed_owner_rust_paths() {
+        let paths = vec![
+            "crates/uselesskey-x509/src/chain.rs".to_string(),
+            "crates/uselesskey-x509/src/chain/params.rs".to_string(),
+            "docs/ci/test-evidence-lanes.md".to_string(),
+        ];
+        let target_crates = vec!["uselesskey-x509".to_string()];
+
+        assert_eq!(
+            mutation_diff_filter_paths(&paths, &target_crates),
+            Some(vec![
+                "crates/uselesskey-x509/src/chain.rs".to_string(),
+                "crates/uselesskey-x509/src/chain/params.rs".to_string(),
+            ])
+        );
+    }
+
+    #[test]
+    fn mutation_diff_filter_paths_skip_when_no_owner_rust_paths() {
+        let paths = vec!["docs/ci/test-evidence-lanes.md".to_string()];
+        let target_crates = vec!["uselesskey-x509".to_string()];
+
+        assert!(mutation_diff_filter_paths(&paths, &target_crates).is_none());
     }
 
     #[test]
