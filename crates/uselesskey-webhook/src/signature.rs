@@ -1,7 +1,6 @@
 use std::collections::BTreeMap;
 
-use hmac::{KeyInit, Mac};
-use sha2::Sha256;
+use sha2::{Digest, Sha256};
 
 use crate::WebhookProfile;
 
@@ -67,8 +66,30 @@ fn slack_signature(
 }
 
 pub(crate) fn hmac_sha256_hex(secret: &[u8], msg: &[u8]) -> String {
-    let mut mac = hmac::Hmac::<Sha256>::new_from_slice(secret).expect("HMAC key is always valid");
-    mac.update(msg);
-    let out = mac.finalize().into_bytes();
-    hex::encode(out)
+    const SHA256_BLOCK_LEN: usize = 64;
+
+    let mut key_block = [0_u8; SHA256_BLOCK_LEN];
+    if secret.len() > SHA256_BLOCK_LEN {
+        let digest = Sha256::digest(secret);
+        key_block[..digest.len()].copy_from_slice(&digest);
+    } else {
+        key_block[..secret.len()].copy_from_slice(secret);
+    }
+
+    let mut ipad = [0x36_u8; SHA256_BLOCK_LEN];
+    let mut opad = [0x5c_u8; SHA256_BLOCK_LEN];
+    for idx in 0..SHA256_BLOCK_LEN {
+        ipad[idx] ^= key_block[idx];
+        opad[idx] ^= key_block[idx];
+    }
+
+    let mut inner = Sha256::new();
+    inner.update(ipad);
+    inner.update(msg);
+    let inner_digest = inner.finalize();
+
+    let mut outer = Sha256::new();
+    outer.update(opad);
+    outer.update(inner_digest);
+    hex::encode(outer.finalize())
 }

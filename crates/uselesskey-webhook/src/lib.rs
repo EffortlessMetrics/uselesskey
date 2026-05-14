@@ -32,6 +32,30 @@ mod tests {
     use rand_core10::{Rng, SeedableRng};
     use uselesskey_core::{Factory, Seed};
 
+    #[test]
+    fn hmac_sha256_matches_rfc4231_test_vector() {
+        let key = [0x0b_u8; 20];
+        let digest = hmac_sha256_hex(&key, b"Hi There");
+
+        assert_eq!(
+            digest,
+            "b0344c61d8db38535ca8afceaf0bf12b\
+             881dc200c9833da726e9376c2e32cff7"
+                .replace(char::is_whitespace, "")
+        );
+    }
+
+    #[test]
+    fn hmac_sha256_preserves_block_sized_key_without_hashing() {
+        let key = [0xaa_u8; 64];
+        let digest = hmac_sha256_hex(&key, b"block-size boundary");
+
+        assert_eq!(
+            digest,
+            "4bf714ba9df6b88605adb3e0a8a8b6d0320041fc2577408eaeb6e7120a03cf43"
+        );
+    }
+
     fn verify_github(secret: &str, payload: &str, headers: &BTreeMap<String, String>) -> bool {
         let expected = format!(
             "sha256={}",

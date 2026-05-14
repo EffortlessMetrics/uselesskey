@@ -56,4 +56,70 @@ mode = "no-new-debt"
 # line = 42
 # column = 17
 #
-# (No receipted entries yet.)
+[[allow]]
+id = "panic-x509-chain-rcgen-cert-invariant"
+path = "crates/uselesskey-x509/src/chain.rs"
+family = "expect"
+classification = "infallible_invariant"
+owner = "x509"
+explanation = "X.509 chain generation uses deterministic internally generated rcgen parameters and key material behind the current non-fallible fixture API; migrate to a fallible chain API before this expires."
+expires = "2026-11-13"
+
+[allow.selector]
+kind = "method_call"
+callee = "expect"
+
+[allow.last_seen]
+line = 572
+column = 13
+
+[[allow]]
+id = "panic-x509-crl-rcgen-invariant"
+path = "crates/uselesskey-x509/src/chain/crl.rs"
+family = "expect"
+classification = "infallible_invariant"
+owner = "x509"
+explanation = "Revoked-leaf CRL generation signs deterministic internally generated CRL parameters with the generated intermediate issuer; migrate to a fallible chain/CRL API before this expires."
+expires = "2026-11-13"
+
+[allow.selector]
+kind = "method_call"
+callee = "expect"
+
+[allow.last_seen]
+line = 54
+column = 28
+
+[[allow]]
+id = "panic-x509-material-keypair-invariant"
+path = "crates/uselesskey-x509/src/chain/material.rs"
+family = "panic_macro"
+classification = "infallible_invariant"
+owner = "x509"
+explanation = "X.509 chain key-pair parsing consumes PKCS#8 DER emitted by the same generated RSA material path; migrate to a fallible chain material API before this expires."
+expires = "2026-11-13"
+
+[allow.selector]
+kind = "macro"
+callee = "panic"
+
+[allow.last_seen]
+line = 36
+column = 25
+
+[[allow]]
+id = "panic-x509-sans-dnsname-invariant"
+path = "crates/uselesskey-x509/src/chain/params.rs"
+family = "expect"
+classification = "infallible_invariant"
+owner = "x509"
+explanation = "ChainSpec currently stores DNS SANs for the non-fallible chain API; invalid user-provided SANs need a fallible spec/chain API rather than silent dropping."
+expires = "2026-11-13"
+
+[allow.selector]
+kind = "method_call"
+callee = "expect"
+
+[allow.last_seen]
+line = 111
+column = 35
