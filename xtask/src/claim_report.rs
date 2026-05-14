@@ -569,9 +569,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn report_includes_claim_ledger_fields() {
-        let dir = minimal_repo();
-        let report = build_report(dir.path(), None).unwrap();
+    fn report_includes_claim_ledger_fields() -> Result<()> {
+        let dir = minimal_repo()?;
+        let report = build_report(dir.path(), None)?;
 
         assert_eq!(report.claims.len(), 2);
         let claim = &report.claims[0];
@@ -593,55 +593,63 @@ mod tests {
             "warnings: {:?}",
             report.warnings
         );
+        Ok(())
     }
 
     #[test]
-    fn claim_filter_selects_one_claim() {
-        let dir = minimal_repo();
-        let report = build_report(dir.path(), Some("tls-contract-pack")).unwrap();
+    fn claim_filter_selects_one_claim() -> Result<()> {
+        let dir = minimal_repo()?;
+        let report = build_report(dir.path(), Some("tls-contract-pack"))?;
 
         assert_eq!(report.claims.len(), 1);
         assert_eq!(report.claims[0].id, "tls-contract-pack");
         assert_eq!(report.filter.as_deref(), Some("tls-contract-pack"));
+        Ok(())
     }
 
     #[test]
-    fn unknown_claim_filter_fails() {
-        let dir = minimal_repo();
-        let err = build_report(dir.path(), Some("missing-claim")).unwrap_err();
+    fn unknown_claim_filter_fails() -> Result<()> {
+        let dir = minimal_repo()?;
+        let err = match build_report(dir.path(), Some("missing-claim")) {
+            Ok(report) => bail!("unexpected claim report: {report:?}"),
+            Err(err) => err,
+        };
 
         assert!(
             err.to_string().contains("no claim found"),
             "unexpected error: {err}"
         );
+        Ok(())
     }
 
     #[test]
-    fn markdown_renders_proof_commands_and_boundaries() {
-        let dir = minimal_repo();
-        let report = build_report(dir.path(), Some("scanner-safe-fixtures")).unwrap();
+    fn markdown_renders_proof_commands_and_boundaries() -> Result<()> {
+        let dir = minimal_repo()?;
+        let report = build_report(dir.path(), Some("scanner-safe-fixtures"))?;
         let markdown = render_markdown(&report);
 
         assert!(markdown.contains("# Public Claim Report"));
         assert!(markdown.contains("cargo xtask scanner-safe-reference --check"));
         assert!(markdown.contains("Scanner-safe fixture material"));
+        Ok(())
     }
 
     #[test]
-    fn public_claims_check_accepts_synced_markdown() {
-        let dir = minimal_repo();
-        let report = build_report(dir.path(), None).unwrap();
-        let errors = public_claim_errors(dir.path(), &report).unwrap();
+    fn public_claims_check_accepts_synced_markdown() -> Result<()> {
+        let dir = minimal_repo()?;
+        let report = build_report(dir.path(), None)?;
+        let errors = public_claim_errors(dir.path(), &report)?;
 
         assert!(errors.is_empty(), "errors: {errors:?}");
+        Ok(())
     }
 
     #[test]
-    fn public_claims_check_requires_stable_claim_rows() {
-        let dir = minimal_repo();
-        write_public_claims(dir.path(), "tls-contract-pack").unwrap();
-        let report = build_report(dir.path(), None).unwrap();
-        let errors = public_claim_errors(dir.path(), &report).unwrap();
+    fn public_claims_check_requires_stable_claim_rows() -> Result<()> {
+        let dir = minimal_repo()?;
+        write_public_claims(dir.path(), "tls-contract-pack")?;
+        let report = build_report(dir.path(), None)?;
+        let errors = public_claim_errors(dir.path(), &report)?;
 
         assert!(
             errors
@@ -649,19 +657,20 @@ mod tests {
                 .any(|error| error.contains("stable claim `tls-contract-pack` is missing")),
             "errors: {errors:?}"
         );
+        Ok(())
     }
 
     #[test]
-    fn public_claims_check_rejects_unknown_claim_ids() {
-        let dir = minimal_repo();
+    fn public_claims_check_rejects_unknown_claim_ids() -> Result<()> {
+        let dir = minimal_repo()?;
         let path = dir.path().join("docs/status/PUBLIC_CLAIMS.md");
-        let mut markdown = fs::read_to_string(&path).unwrap();
+        let mut markdown = fs::read_to_string(&path)?;
         markdown.push_str(
             "| `unknown-claim` | Unknown | `stable` | `cargo xtask unknown` | Boundary. |\n",
         );
-        fs::write(&path, markdown).unwrap();
-        let report = build_report(dir.path(), None).unwrap();
-        let errors = public_claim_errors(dir.path(), &report).unwrap();
+        fs::write(&path, markdown)?;
+        let report = build_report(dir.path(), None)?;
+        let errors = public_claim_errors(dir.path(), &report)?;
 
         assert!(
             errors
@@ -669,18 +678,17 @@ mod tests {
                 .any(|error| error.contains("references unknown claim `unknown-claim`")),
             "errors: {errors:?}"
         );
+        Ok(())
     }
 
     #[test]
-    fn public_claims_check_requires_all_proof_commands() {
-        let dir = minimal_repo();
+    fn public_claims_check_requires_all_proof_commands() -> Result<()> {
+        let dir = minimal_repo()?;
         let path = dir.path().join("docs/status/PUBLIC_CLAIMS.md");
-        let markdown = fs::read_to_string(&path)
-            .unwrap()
-            .replace("; `cargo xtask badges --check`", "");
-        fs::write(&path, markdown).unwrap();
-        let report = build_report(dir.path(), None).unwrap();
-        let errors = public_claim_errors(dir.path(), &report).unwrap();
+        let markdown = fs::read_to_string(&path)?.replace("; `cargo xtask badges --check`", "");
+        fs::write(&path, markdown)?;
+        let report = build_report(dir.path(), None)?;
+        let errors = public_claim_errors(dir.path(), &report)?;
 
         assert!(
             errors.iter().any(|error| error.contains(
@@ -688,15 +696,16 @@ mod tests {
             )),
             "errors: {errors:?}"
         );
+        Ok(())
     }
 
-    fn minimal_repo() -> tempfile::TempDir {
-        let dir = tempfile::tempdir().unwrap();
-        fs::create_dir_all(dir.path().join("policy")).unwrap();
-        fs::create_dir_all(dir.path().join("docs/status")).unwrap();
-        fs::create_dir_all(dir.path().join("docs/specs")).unwrap();
-        fs::create_dir_all(dir.path().join("docs/adr")).unwrap();
-        fs::create_dir_all(dir.path().join("docs/how-to")).unwrap();
+    fn minimal_repo() -> Result<tempfile::TempDir> {
+        let dir = tempfile::tempdir()?;
+        fs::create_dir_all(dir.path().join("policy"))?;
+        fs::create_dir_all(dir.path().join("docs/status"))?;
+        fs::create_dir_all(dir.path().join("docs/specs"))?;
+        fs::create_dir_all(dir.path().join("docs/adr"))?;
+        fs::create_dir_all(dir.path().join("docs/how-to"))?;
 
         fs::write(
             dir.path().join("policy/claim-ledger.toml"),
@@ -730,15 +739,13 @@ docs = ["docs/how-to/tls.md"]
 release_lanes = ["minor"]
 boundary = "TLS fixtures do not prove production PKI."
 "#,
-        )
-        .unwrap();
-        write_public_claims(dir.path(), "").unwrap();
+        )?;
+        write_public_claims(dir.path(), "")?;
         fs::write(
             dir.path().join("docs/how-to/scanner-safe.md"),
             "# Scanner\n",
-        )
-        .unwrap();
-        fs::write(dir.path().join("docs/how-to/tls.md"), "# TLS\n").unwrap();
+        )?;
+        fs::write(dir.path().join("docs/how-to/tls.md"), "# TLS\n")?;
         fs::write(
             dir.path().join("docs/specs/USELESSKEY-SPEC-0002-claims.md"),
             r#"+++
@@ -750,8 +757,7 @@ status = "accepted"
 
 # Spec
 "#,
-        )
-        .unwrap();
+        )?;
         fs::write(
             dir.path()
                 .join("docs/adr/USELESSKEY-ADR-0001-contract-packs.md"),
@@ -764,10 +770,9 @@ status = "accepted"
 
 # ADR
 "#,
-        )
-        .unwrap();
+        )?;
 
-        dir
+        Ok(dir)
     }
 
     fn write_public_claims(root: &Path, omit_id: &str) -> Result<()> {

@@ -8451,7 +8451,7 @@ index 1111111..2222222 100644
     }
 
     #[test]
-    fn release_evidence_patch_step_list_includes_scanner_safe_reference() {
+    fn release_evidence_patch_step_list_includes_scanner_safe_reference() -> Result<()> {
         let steps = release_evidence_steps_patch();
         let names = steps.iter().map(|step| step.name).collect::<BTreeSet<_>>();
         assert!(
@@ -8461,20 +8461,21 @@ index 1111111..2222222 100644
         let step = steps
             .iter()
             .find(|step| step.name == "scanner-safe-reference")
-            .expect("scanner-safe-reference step");
+            .context("scanner-safe-reference step")?;
         assert_eq!(
             step.command,
             &["cargo", "xtask", "scanner-safe-reference", "--check"],
         );
+        Ok(())
     }
 
     #[test]
-    fn release_evidence_patch_step_list_includes_claim_report() {
+    fn release_evidence_patch_step_list_includes_claim_report() -> Result<()> {
         let steps = release_evidence_steps_patch();
         let step = steps
             .iter()
             .find(|step| step.name == "claim-report")
-            .expect("patch lane must wire claim-report");
+            .context("patch lane must wire claim-report")?;
         assert_eq!(
             step.command,
             &["cargo", "xtask", "claim-report", "--format", "json"],
@@ -8483,15 +8484,16 @@ index 1111111..2222222 100644
             step.artifacts
                 .contains(&"target/release-evidence/claims/public-claims.json"),
         );
+        Ok(())
     }
 
     #[test]
-    fn release_evidence_patch_step_list_includes_scanner_safe_verification_pack() {
+    fn release_evidence_patch_step_list_includes_scanner_safe_verification_pack() -> Result<()> {
         let steps = release_evidence_steps_patch();
         let step = steps
             .iter()
             .find(|step| step.name == "verification-pack-scanner-safe")
-            .expect("patch lane must wire scanner-safe verification pack");
+            .context("patch lane must wire scanner-safe verification pack")?;
         assert_eq!(
             step.command,
             &[
@@ -8509,10 +8511,11 @@ index 1111111..2222222 100644
                 &"target/release-evidence/verification-pack/claim-proof/scanner-safe-fixtures/receipt.json"
             ),
         );
+        Ok(())
     }
 
     #[test]
-    fn shields_badge_validation_accepts_expected_shape() {
+    fn shields_badge_validation_accepts_expected_shape() -> Result<()> {
         let badge = ShieldsEndpointBadge {
             schema_version: 1,
             label: "ripr+".to_string(),
@@ -8520,11 +8523,12 @@ index 1111111..2222222 100644
             color: "brightgreen".to_string(),
         };
 
-        validate_shields_badge(&badge, Some("ripr+")).expect("valid badge shape");
+        validate_shields_badge(&badge, Some("ripr+"))?;
+        Ok(())
     }
 
     #[test]
-    fn scanner_safe_badge_success_shape_is_stable() {
+    fn scanner_safe_badge_success_shape_is_stable() -> Result<()> {
         let badge = ShieldsEndpointBadge {
             schema_version: 1,
             label: "fixtures".to_string(),
@@ -8532,16 +8536,17 @@ index 1111111..2222222 100644
             color: "brightgreen".to_string(),
         };
 
-        let json = serde_json::to_string_pretty(&badge).expect("serialize badge");
+        let json = serde_json::to_string_pretty(&badge)?;
 
         assert!(json.contains(r#""schemaVersion": 1"#));
         assert!(json.contains(r#""label": "fixtures""#));
         assert!(json.contains(r#""message": "scanner-safe""#));
         assert!(json.contains(r#""color": "brightgreen""#));
+        Ok(())
     }
 
     #[test]
-    fn release_evidence_patch_step_list_includes_cratesio_smoke() {
+    fn release_evidence_patch_step_list_includes_cratesio_smoke() -> Result<()> {
         let steps = release_evidence_steps_patch();
         let names = steps.iter().map(|step| step.name).collect::<BTreeSet<_>>();
         assert!(
@@ -8551,7 +8556,7 @@ index 1111111..2222222 100644
         let step = steps
             .iter()
             .find(|step| step.name == "cratesio-smoke-local")
-            .expect("cratesio-smoke-local step");
+            .context("cratesio-smoke-local step")?;
         assert_eq!(
             step.command,
             &[
@@ -8563,6 +8568,7 @@ index 1111111..2222222 100644
                 "--skip-install-cli",
             ],
         );
+        Ok(())
     }
 
     #[test]
@@ -8597,12 +8603,12 @@ index 1111111..2222222 100644
     }
 
     #[test]
-    fn release_evidence_minor_step_list_includes_tls_contract_pack_proof() {
+    fn release_evidence_minor_step_list_includes_tls_contract_pack_proof() -> Result<()> {
         let steps = release_evidence_steps_minor();
         let step = steps
             .iter()
             .find(|step| step.name == "tls-contract-pack-proof")
-            .expect("minor lane must wire tls-contract-pack-proof");
+            .context("minor lane must wire tls-contract-pack-proof")?;
         assert_eq!(
             step.command,
             &[
@@ -8623,15 +8629,16 @@ index 1111111..2222222 100644
             step.artifacts
                 .contains(&"target/release-evidence/tls/tls-contract-pack-proof.md"),
         );
+        Ok(())
     }
 
     #[test]
-    fn release_evidence_minor_step_list_includes_contract_pack_registry() {
+    fn release_evidence_minor_step_list_includes_contract_pack_registry() -> Result<()> {
         let steps = release_evidence_steps_minor();
         let step = steps
             .iter()
             .find(|step| step.name == "contract-pack-registry")
-            .expect("minor lane must wire contract-pack registry");
+            .context("minor lane must wire contract-pack registry")?;
         assert_eq!(
             step.command,
             &[
@@ -8647,15 +8654,16 @@ index 1111111..2222222 100644
             step.artifacts
                 .contains(&"target/release-evidence/contract-packs/contract-packs.json"),
         );
+        Ok(())
     }
 
     #[test]
-    fn release_evidence_minor_step_list_includes_verification_pack() {
+    fn release_evidence_minor_step_list_includes_verification_pack() -> Result<()> {
         let steps = release_evidence_steps_minor();
         let step = steps
             .iter()
             .find(|step| step.name == "verification-pack")
-            .expect("minor lane must wire full verification pack");
+            .context("minor lane must wire full verification pack")?;
         assert_eq!(
             step.command,
             &[
@@ -8673,33 +8681,33 @@ index 1111111..2222222 100644
         assert!(step.artifacts.contains(
             &"target/release-evidence/verification-pack/claim-proof/tls-contract-pack/receipt.json"
         ));
+        Ok(())
     }
 
     #[test]
-    fn bundle_proof_tls_profile_constant_includes_tls() {
+    fn bundle_proof_tls_profile_constant_includes_tls() -> Result<()> {
         assert!(
             BUNDLE_PROOF_SUPPORTED_PROFILES.contains(&"tls"),
             "tls must be a supported bundle-proof profile",
         );
-        ensure_supported_bundle_proof_profile("tls")
-            .expect("tls profile must pass ensure_supported_bundle_proof_profile");
+        ensure_supported_bundle_proof_profile("tls")?;
         assert_eq!(
-            bundle_proof_json_filename("tls").unwrap(),
+            bundle_proof_json_filename("tls")?,
             "tls-contract-pack-proof.json",
         );
         assert_eq!(
-            bundle_proof_markdown_filename("tls").unwrap(),
+            bundle_proof_markdown_filename("tls")?,
             "tls-contract-pack-proof.md",
         );
         assert_eq!(
-            bundle_proof_markdown_title("tls").unwrap(),
+            bundle_proof_markdown_title("tls")?,
             "TLS Contract-Pack Proof",
         );
         assert_eq!(
-            default_bundle_proof_out_dir("tls").unwrap(),
+            default_bundle_proof_out_dir("tls")?,
             PathBuf::from("target/release-evidence/tls"),
         );
-        let expected = bundle_proof_expected_artifacts("tls").expect("tls expected artifacts");
+        let expected = bundle_proof_expected_artifacts("tls")?;
         let paths = expected.iter().map(|e| e.path).collect::<Vec<_>>();
         for required in [
             "certs/valid-leaf.pem",
@@ -8715,6 +8723,7 @@ index 1111111..2222222 100644
                 "tls expected artifacts missing {required}",
             );
         }
+        Ok(())
     }
 
     #[test]
@@ -9826,15 +9835,14 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
     }
 
     #[test]
-    fn impacted_test_targets_drops_deleted_crates_and_bdd() {
-        let dir = tempfile::tempdir().expect("tempdir");
+    fn impacted_test_targets_drops_deleted_crates_and_bdd() -> Result<()> {
+        let dir = tempfile::tempdir()?;
         let root = dir.path();
         let crates_dir = root.join("crates");
         for name in &["uselesskey-core", "uselesskey-rsa"] {
             let crate_dir = crates_dir.join(name);
-            std::fs::create_dir_all(&crate_dir).expect("create crate dir");
-            std::fs::write(crate_dir.join("Cargo.toml"), "[package]\nname = \"x\"\n")
-                .expect("write Cargo.toml");
+            std::fs::create_dir_all(&crate_dir)?;
+            std::fs::write(crate_dir.join("Cargo.toml"), "[package]\nname = \"x\"\n")?;
         }
 
         let mut input = std::collections::BTreeSet::new();
@@ -9846,19 +9854,19 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
 
         let targets = impacted_test_targets(&input, root);
         assert_eq!(targets, vec!["uselesskey-core", "uselesskey-rsa"]);
+        Ok(())
     }
 
     #[test]
-    fn impacted_test_targets_keeps_only_dirs_with_cargo_toml() {
-        let dir = tempfile::tempdir().expect("tempdir");
+    fn impacted_test_targets_keeps_only_dirs_with_cargo_toml() -> Result<()> {
+        let dir = tempfile::tempdir()?;
         let root = dir.path();
         let crates_dir = root.join("crates");
         // Directory exists but no Cargo.toml (e.g. stale subdir) — should be skipped.
-        std::fs::create_dir_all(crates_dir.join("stale-dir")).expect("create stale-dir");
+        std::fs::create_dir_all(crates_dir.join("stale-dir"))?;
         let good = crates_dir.join("uselesskey-core");
-        std::fs::create_dir_all(&good).expect("create core dir");
-        std::fs::write(good.join("Cargo.toml"), "[package]\nname = \"x\"\n")
-            .expect("write Cargo.toml");
+        std::fs::create_dir_all(&good)?;
+        std::fs::write(good.join("Cargo.toml"), "[package]\nname = \"x\"\n")?;
 
         let mut input = std::collections::BTreeSet::new();
         input.insert("uselesskey-core".to_string());
@@ -9866,6 +9874,7 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
 
         let targets = impacted_test_targets(&input, root);
         assert_eq!(targets, vec!["uselesskey-core".to_string()]);
+        Ok(())
     }
 
     fn pr_lite_test_impacted_report() -> ImpactedEvidenceReport {
@@ -10016,15 +10025,15 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
     }
 
     #[test]
-    fn mutation_command_for_crate_passes_diff_filter_to_cargo_mutants() {
+    fn mutation_command_for_crate_passes_diff_filter_to_cargo_mutants() -> Result<()> {
         let tool_env = MutationToolEnv {
             all_features_requested: true,
             nasm_available: true,
         };
         let diff_path = Path::new("target/xtask/mutants-pr.diff");
         let cmd = mutation_command_for_crate("uselesskey-x509", None, &tool_env, Some(diff_path))
-            .unwrap()
-            .expect("uselesskey-x509 has a mutation command");
+            .context("build mutation command")?
+            .context("uselesskey-x509 has a mutation command")?;
         let args = cmd
             .get_args()
             .map(|arg| arg.to_string_lossy().into_owned())
@@ -10032,12 +10041,13 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
         let in_diff = args
             .iter()
             .position(|arg| arg == "--in-diff")
-            .expect("cargo-mutants command includes --in-diff");
+            .context("cargo-mutants command includes --in-diff")?;
 
         assert_eq!(
             args.get(in_diff + 1),
             Some(&diff_path.display().to_string())
         );
+        Ok(())
     }
 
     #[test]
@@ -10083,9 +10093,8 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
     }
 
     #[test]
-    fn mutants_pr_explain_flag_parses_with_changed() {
-        let parsed = Cli::try_parse_from(["xtask", "mutants-pr", "--changed", "--explain"])
-            .expect("mutants-pr --changed --explain parses");
+    fn mutants_pr_explain_flag_parses_with_changed() -> Result<()> {
+        let parsed = Cli::try_parse_from(["xtask", "mutants-pr", "--changed", "--explain"])?;
 
         match parsed.cmd {
             Cmd::MutantsPr {
@@ -10094,7 +10103,8 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
                 assert!(changed);
                 assert!(explain);
             }
-            _ => panic!("expected mutants-pr command"),
+            _ => bail!("expected mutants-pr command"),
         }
+        Ok(())
     }
 }

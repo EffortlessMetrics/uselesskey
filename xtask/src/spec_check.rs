@@ -620,36 +620,39 @@ mod tests {
     use super::*;
 
     #[test]
-    fn split_toml_front_matter_extracts_body() {
+    fn split_toml_front_matter_extracts_body() -> Result<()> {
         let input = "+++\nid = \"X\"\n+++\n# Title\n";
-        let (front, body) = split_toml_front_matter(input).unwrap();
+        let (front, body) = split_toml_front_matter(input)?;
         assert_eq!(front, "id = \"X\"");
         assert_eq!(body, "# Title");
+        Ok(())
     }
 
     #[test]
-    fn heading_match_is_case_insensitive() {
+    fn heading_match_is_case_insensitive() -> Result<()> {
         let body = "## Problem\n\n## Required Evidence\n";
         assert!(has_heading(body, "problem"));
         assert!(has_heading(body, "required evidence"));
         assert!(!has_heading(body, "CI Proof"));
+        Ok(())
     }
 
     #[test]
-    fn minimal_spec_system_passes() {
-        let dir = tempfile::tempdir().unwrap();
-        write_minimal_repo(dir.path(), full_spec_body()).unwrap();
-        let report = build_report(dir.path(), false).unwrap();
+    fn minimal_spec_system_passes() -> Result<()> {
+        let dir = tempfile::tempdir()?;
+        write_minimal_repo(dir.path(), full_spec_body())?;
+        let report = build_report(dir.path(), false)?;
         assert!(report.errors.is_empty(), "errors: {:?}", report.errors);
         assert_eq!(report.artifacts.len(), 4);
         assert_eq!(report.claims.len(), 1);
+        Ok(())
     }
 
     #[test]
-    fn accepted_spec_requires_required_sections() {
-        let dir = tempfile::tempdir().unwrap();
-        write_minimal_repo(dir.path(), "## Problem\n\n## Behavior\n").unwrap();
-        let report = build_report(dir.path(), false).unwrap();
+    fn accepted_spec_requires_required_sections() -> Result<()> {
+        let dir = tempfile::tempdir()?;
+        write_minimal_repo(dir.path(), "## Problem\n\n## Behavior\n")?;
+        let report = build_report(dir.path(), false)?;
         assert!(
             report
                 .errors
@@ -658,6 +661,7 @@ mod tests {
             "errors: {:?}",
             report.errors
         );
+        Ok(())
     }
 
     fn write_minimal_repo(root: &Path, spec_body: &str) -> Result<()> {

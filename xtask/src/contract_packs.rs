@@ -379,20 +379,21 @@ mod tests {
     use super::*;
 
     #[test]
-    fn registry_passes_for_supported_pack() {
-        let dir = minimal_repo();
-        let report = build_report(dir.path()).unwrap();
+    fn registry_passes_for_supported_pack() -> Result<()> {
+        let dir = minimal_repo()?;
+        let report = build_report(dir.path())?;
 
         assert_eq!(report.status, "pass");
         assert_eq!(report.packs.len(), 1);
         assert!(report.errors.is_empty(), "errors: {:?}", report.errors);
+        Ok(())
     }
 
     #[test]
-    fn registry_rejects_unsupported_profile() {
-        let dir = minimal_repo();
-        replace_registry(dir.path(), "profile = \"tls\"", "profile = \"bad\"").unwrap();
-        let report = build_report(dir.path()).unwrap();
+    fn registry_rejects_unsupported_profile() -> Result<()> {
+        let dir = minimal_repo()?;
+        replace_registry(dir.path(), "profile = \"tls\"", "profile = \"bad\"")?;
+        let report = build_report(dir.path())?;
 
         assert!(
             report
@@ -402,13 +403,14 @@ mod tests {
             "errors: {:?}",
             report.errors
         );
+        Ok(())
     }
 
     #[test]
-    fn registry_rejects_missing_how_to() {
-        let dir = minimal_repo();
-        fs::remove_file(dir.path().join("docs/how-to/test.md")).unwrap();
-        let report = build_report(dir.path()).unwrap();
+    fn registry_rejects_missing_how_to() -> Result<()> {
+        let dir = minimal_repo()?;
+        fs::remove_file(dir.path().join("docs/how-to/test.md"))?;
+        let report = build_report(dir.path())?;
 
         assert!(
             report
@@ -418,18 +420,18 @@ mod tests {
             "errors: {:?}",
             report.errors
         );
+        Ok(())
     }
 
     #[test]
-    fn registry_rejects_unregistered_claim_proof_command() {
-        let dir = minimal_repo();
+    fn registry_rejects_unregistered_claim_proof_command() -> Result<()> {
+        let dir = minimal_repo()?;
         replace_registry(
             dir.path(),
             "cargo xtask bundle-proof --profile tls --out target/release-evidence/tls",
             "cargo xtask bundle-proof --profile tls --out target/other",
-        )
-        .unwrap();
-        let report = build_report(dir.path()).unwrap();
+        )?;
+        let report = build_report(dir.path())?;
 
         assert!(
             report
@@ -439,14 +441,15 @@ mod tests {
             "errors: {:?}",
             report.errors
         );
+        Ok(())
     }
 
-    fn minimal_repo() -> tempfile::TempDir {
-        let dir = tempfile::tempdir().unwrap();
-        fs::create_dir_all(dir.path().join("policy")).unwrap();
-        fs::create_dir_all(dir.path().join("docs/specs")).unwrap();
-        fs::create_dir_all(dir.path().join("docs/how-to")).unwrap();
-        fs::write(dir.path().join("docs/how-to/test.md"), "# Test\n").unwrap();
+    fn minimal_repo() -> Result<tempfile::TempDir> {
+        let dir = tempfile::tempdir()?;
+        fs::create_dir_all(dir.path().join("policy"))?;
+        fs::create_dir_all(dir.path().join("docs/specs"))?;
+        fs::create_dir_all(dir.path().join("docs/how-to"))?;
+        fs::write(dir.path().join("docs/how-to/test.md"), "# Test\n")?;
         fs::write(
             dir.path().join("docs/specs/USELESSKEY-SPEC-0003-pack.md"),
             r#"+++
@@ -458,8 +461,7 @@ status = "accepted"
 
 # Spec
 "#,
-        )
-        .unwrap();
+        )?;
         fs::write(
             dir.path().join("policy/claim-ledger.toml"),
             r#"[[claim]]
@@ -468,8 +470,7 @@ status = "stable"
 proof_commands = ["cargo xtask bundle-proof --profile tls --out target/release-evidence/tls"]
 docs = ["docs/how-to/test.md"]
 "#,
-        )
-        .unwrap();
+        )?;
         fs::write(
             dir.path().join("policy/contract-packs.toml"),
             r#"[[pack]]
@@ -484,9 +485,8 @@ how_to = "docs/how-to/test.md"
 release_lane = "minor"
 boundary = "Boundary."
 "#,
-        )
-        .unwrap();
-        dir
+        )?;
+        Ok(dir)
     }
 
     fn replace_registry(root: &Path, from: &str, to: &str) -> Result<()> {
