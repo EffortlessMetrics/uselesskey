@@ -208,7 +208,7 @@ docs = [
   "docs/how-to/migrate-to-v0.8.md",
 ]
 release_lanes = ["patch", "minor"]
-boundary = "The public crate surface is the supported published contract for the current release; removed internal compatibility shims are not promised as v0.8.0 crates."
+boundary = "The public crate surface is the supported published contract for the current release; removed internal compatibility shims are not promised as supported public crates."
 
 [[claim]]
 id = "external-cratesio-install-smoke"
@@ -221,7 +221,7 @@ surfaces = [
   "docs/status/PUBLIC_CLAIMS.md",
 ]
 proof_commands = [
-  "cargo xtask cratesio-smoke --version 0.8.0",
+  "cargo xtask cratesio-smoke --version 0.9.0",
 ]
 artifacts = [
   "target/xtask/cratesio-smoke",

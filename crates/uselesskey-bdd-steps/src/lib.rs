@@ -6286,10 +6286,17 @@ fn rustls_key_der_not_empty(world: &mut UselessWorld) {
 }
 
 #[cfg(feature = "uk-rustls")]
+fn install_default_rustls_provider() {
+    // All-features coverage enables both rustls provider features; BDD steps use ring.
+    let _ = rustls::crypto::ring::default_provider().install_default();
+}
+
+#[cfg(feature = "uk-rustls")]
 #[when("I build a rustls ServerConfig from the chain")]
 fn rustls_server_config(world: &mut UselessWorld) {
     use uselesskey_rustls::RustlsServerConfigExt;
 
+    install_default_rustls_provider();
     let chain = world.x509_chain.as_ref().expect("X.509 chain not set");
     let _config = chain.server_config_rustls();
     world.rustls_server_config_ok = Some(true);
@@ -6306,6 +6313,7 @@ fn rustls_server_config_valid(world: &mut UselessWorld) {
 fn rustls_client_config(world: &mut UselessWorld) {
     use uselesskey_rustls::RustlsClientConfigExt;
 
+    install_default_rustls_provider();
     let chain = world.x509_chain.as_ref().expect("X.509 chain not set");
     let _config = chain.client_config_rustls();
     world.rustls_client_config_ok = Some(true);

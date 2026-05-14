@@ -27,14 +27,14 @@ cargo run -p uselesskey-cli -- verify \
 
 ```toml
 [build-dependencies]
-uselesskey-cli = { version = "0.8.0", default-features = false }
+uselesskey-cli = { version = "0.9.0", default-features = false }
 ```
 
 Specialized RSA PKCS#8 build-time lane:
 
 ```toml
 [build-dependencies]
-uselesskey-cli = { version = "0.8.0", default-features = false, features = ["rsa-materialize"] }
+uselesskey-cli = { version = "0.9.0", default-features = false, features = ["rsa-materialize"] }
 ```
 
 The workspace ships both compiled build-time examples:

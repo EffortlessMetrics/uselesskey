@@ -221,16 +221,16 @@ dependencies = [
 
 [[package]]
 name = "blake3"
-version = "1.8.3"
+version = "1.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2468ef7d57b3fb7e16b576e8377cdbde2320c60e1491e961d11da40fc4f02a2d"
+checksum = "0aa83c34e62843d924f905e0f5c866eb1dd6545fc4d719e803d9ba6030371fce"
 dependencies = [
  "arrayref",
  "arrayvec",
  "cc",
  "cfg-if",
  "constant_time_eq",
- "cpufeatures 0.2.17",
+ "cpufeatures 0.3.0",
 ]
 
 [[package]]
@@ -2518,7 +2518,7 @@ checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
 
 [[package]]
 name = "uselesskey"
-version = "0.6.0"
+version = "0.9.0"
 dependencies = [
  "uselesskey-core",
  "uselesskey-ecdsa",
@@ -2532,218 +2532,22 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-core"
-version = "0.6.0"
+version = "0.9.0"
 dependencies = [
- "thiserror",
- "uselesskey-core-cache",
- "uselesskey-core-factory",
- "uselesskey-core-id",
- "uselesskey-core-negative",
- "uselesskey-core-sink",
-]
-
-[[package]]
-name = "uselesskey-core-base62"
-version = "0.6.0"
-dependencies = [
- "rand_chacha 0.10.0",
- "rand_core 0.10.1",
- "uselesskey-core-seed",
-]
-
-[[package]]
-name = "uselesskey-core-cache"
-version = "0.6.0"
-dependencies = [
+ "base64",
+ "blake3",
  "dashmap",
- "spin 0.10.0",
- "uselesskey-core-id",
-]
-
-[[package]]
-name = "uselesskey-core-factory"
-version = "0.6.0"
-dependencies = [
  "rand 0.10.1",
- "uselesskey-core-cache",
- "uselesskey-core-id",
-]
-
-[[package]]
-name = "uselesskey-core-hash"
-version = "0.6.0"
-dependencies = [
- "blake3",
-]
-
-[[package]]
-name = "uselesskey-core-hmac-spec"
-version = "0.6.0"
-
-[[package]]
-name = "uselesskey-core-id"
-version = "0.6.0"
-dependencies = [
- "uselesskey-core-hash",
- "uselesskey-core-seed",
-]
-
-[[package]]
-name = "uselesskey-core-jwk"
-version = "0.6.0"
-dependencies = [
- "uselesskey-core-jwk-builder",
- "uselesskey-core-jwk-shape",
-]
-
-[[package]]
-name = "uselesskey-core-jwk-builder"
-version = "0.6.0"
-dependencies = [
- "serde_json",
- "uselesskey-core-jwk-shape",
- "uselesskey-core-jwks-order",
-]
-
-[[package]]
-name = "uselesskey-core-jwk-shape"
-version = "0.6.0"
-dependencies = [
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "uselesskey-core-jwks-order"
-version = "0.6.0"
-
-[[package]]
-name = "uselesskey-core-keypair-material"
-version = "0.6.0"
-dependencies = [
- "uselesskey-core",
- "uselesskey-core-kid",
-]
-
-[[package]]
-name = "uselesskey-core-kid"
-version = "0.6.0"
-dependencies = [
- "base64",
- "blake3",
-]
-
-[[package]]
-name = "uselesskey-core-negative"
-version = "0.6.0"
-dependencies = [
- "uselesskey-core-negative-der",
- "uselesskey-core-negative-pem",
-]
-
-[[package]]
-name = "uselesskey-core-negative-der"
-version = "0.6.0"
-dependencies = [
- "uselesskey-core-hash",
-]
-
-[[package]]
-name = "uselesskey-core-negative-pem"
-version = "0.6.0"
-dependencies = [
- "uselesskey-core-hash",
-]
-
-[[package]]
-name = "uselesskey-core-rustls-pki"
-version = "0.6.0"
-dependencies = [
- "rustls-pki-types",
- "uselesskey-ecdsa",
- "uselesskey-ed25519",
- "uselesskey-x509",
-]
-
-[[package]]
-name = "uselesskey-core-seed"
-version = "0.6.0"
-dependencies = [
- "blake3",
  "rand_chacha 0.10.0",
  "rand_core 0.10.1",
-]
-
-[[package]]
-name = "uselesskey-core-sink"
-version = "0.6.0"
-dependencies = [
+ "spin 0.10.0",
  "tempfile",
+ "thiserror",
 ]
-
-[[package]]
-name = "uselesskey-core-token"
-version = "0.6.0"
-dependencies = [
- "uselesskey-core-token-shape",
-]
-
-[[package]]
-name = "uselesskey-core-token-shape"
-version = "0.6.0"
-dependencies = [
- "base64",
- "rand_chacha 0.10.0",
- "rand_core 0.10.1",
- "serde_json",
- "uselesskey-core-base62",
- "uselesskey-core-seed",
- "uselesskey-token-spec",
-]
-
-[[package]]
-name = "uselesskey-core-x509"
-version = "0.6.0"
-dependencies = [
- "uselesskey-core-x509-derive",
- "uselesskey-core-x509-negative",
- "uselesskey-core-x509-spec",
-]
-
-[[package]]
-name = "uselesskey-core-x509-chain-negative"
-version = "0.6.0"
-dependencies = [
- "uselesskey-core-x509-spec",
-]
-
-[[package]]
-name = "uselesskey-core-x509-derive"
-version = "0.6.0"
-dependencies = [
- "rand_chacha 0.10.0",
- "rand_core 0.10.1",
- "rcgen",
- "time",
- "uselesskey-core-hash",
- "uselesskey-core-seed",
-]
-
-[[package]]
-name = "uselesskey-core-x509-negative"
-version = "0.6.0"
-dependencies = [
- "uselesskey-core-x509-chain-negative",
- "uselesskey-core-x509-spec",
-]
-
-[[package]]
-name = "uselesskey-core-x509-spec"
-version = "0.6.0"
 
 [[package]]
 name = "uselesskey-ecdsa"
-version = "0.6.0"
+version = "0.9.0"
 dependencies = [
  "elliptic-curve 0.14.0-rc.29",
  "p256 0.14.0-rc.8",
@@ -2751,17 +2555,15 @@ dependencies = [
  "rand_chacha 0.10.0",
  "rand_core 0.10.1",
  "uselesskey-core",
- "uselesskey-core-keypair-material",
 ]
 
 [[package]]
 name = "uselesskey-ed25519"
-version = "0.6.0"
+version = "0.9.0"
 dependencies = [
  "ed25519-dalek",
  "pkcs8 0.10.2",
  "uselesskey-core",
- "uselesskey-core-keypair-material",
 ]
 
 [[package]]
@@ -2781,17 +2583,7 @@ dependencies = [
  "serde_json",
  "sha2 0.10.9",
  "uselesskey",
- "uselesskey-core-factory",
- "uselesskey-core-hash",
- "uselesskey-core-id",
- "uselesskey-core-jwk-shape",
- "uselesskey-core-jwks-order",
- "uselesskey-core-keypair-material",
- "uselesskey-core-kid",
- "uselesskey-core-negative-pem",
- "uselesskey-core-token-shape",
- "uselesskey-core-x509-negative",
- "uselesskey-core-x509-spec",
+ "uselesskey-core",
  "uselesskey-ecdsa",
  "uselesskey-ed25519",
  "uselesskey-hmac",
@@ -2802,23 +2594,22 @@ dependencies = [
  "uselesskey-rsa",
  "uselesskey-rustcrypto",
  "uselesskey-rustls",
+ "uselesskey-token",
  "uselesskey-x509",
 ]
 
 [[package]]
 name = "uselesskey-hmac"
-version = "0.6.0"
+version = "0.9.0"
 dependencies = [
  "rand_chacha 0.10.0",
  "rand_core 0.10.1",
  "uselesskey-core",
- "uselesskey-core-hmac-spec",
- "uselesskey-core-kid",
 ]
 
 [[package]]
 name = "uselesskey-jsonwebtoken"
-version = "0.6.0"
+version = "0.9.0"
 dependencies = [
  "jsonwebtoken",
  "uselesskey-ecdsa",
@@ -2828,15 +2619,17 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-jwk"
-version = "0.6.0"
+version = "0.9.0"
 dependencies = [
- "uselesskey-core-jwk",
- "uselesskey-core-jwk-builder",
+ "base64",
+ "blake3",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
 name = "uselesskey-pgp"
-version = "0.6.0"
+version = "0.9.0"
 dependencies = [
  "pgp",
  "rand_chacha 0.3.1",
@@ -2846,7 +2639,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-ring"
-version = "0.6.0"
+version = "0.9.0"
 dependencies = [
  "ring",
  "uselesskey-ecdsa",
@@ -2855,7 +2648,7 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-rsa"
-version = "0.6.0"
+version = "0.9.0"
 dependencies = [
  "base64",
  "rand_chacha 0.10.0",
@@ -2866,13 +2659,12 @@ dependencies = [
  "rsa 0.9.10",
  "serde_json",
  "uselesskey-core",
- "uselesskey-core-keypair-material",
  "uselesskey-jwk",
 ]
 
 [[package]]
 name = "uselesskey-rustcrypto"
-version = "0.6.0"
+version = "0.9.0"
 dependencies = [
  "ed25519-dalek",
  "hmac 0.13.0-rc.6",
@@ -2888,9 +2680,9 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-rustls"
-version = "0.6.0"
+version = "0.9.0"
 dependencies = [
- "uselesskey-core-rustls-pki",
+ "rustls-pki-types",
  "uselesskey-ecdsa",
  "uselesskey-ed25519",
  "uselesskey-x509",
@@ -2898,30 +2690,29 @@ dependencies = [
 
 [[package]]
 name = "uselesskey-token"
-version = "0.6.0"
+version = "0.9.0"
 dependencies = [
+ "base64",
+ "rand_chacha 0.10.0",
+ "rand_core 0.10.1",
+ "serde_json",
  "uselesskey-core",
- "uselesskey-core-token",
- "uselesskey-token-spec",
 ]
 
 [[package]]
-name = "uselesskey-token-spec"
-version = "0.6.0"
-
-[[package]]
 name = "uselesskey-x509"
-version = "0.6.0"
+version = "0.9.0"
 dependencies = [
  "base64",
+ "rand_chacha 0.10.0",
  "rand_chacha 0.3.1",
+ "rand_core 0.10.1",
  "rand_core 0.6.4",
  "rcgen",
  "rsa 0.10.0-rc.17",
  "rustls-pki-types",
  "time",
  "uselesskey-core",
- "uselesskey-core-x509",
  "uselesskey-jwk",
  "uselesskey-rsa",
  "x509-parser",

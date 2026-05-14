@@ -118,31 +118,31 @@ Common starting points:
 ```toml
 # Entropy-only fixtures
 [dev-dependencies]
-uselesskey = { version = "0.8.0", default-features = false, features = ["entropy"] }
+uselesskey = { version = "0.9.0", default-features = false, features = ["entropy"] }
 ```
 
 ```toml
 # RSA fixtures
 [dev-dependencies]
-uselesskey = { version = "0.8.0", features = ["rsa"] }
+uselesskey = { version = "0.9.0", features = ["rsa"] }
 ```
 
 ```toml
 # Token-only fixtures, no RSA/X.509 pull-in
 [dev-dependencies]
-uselesskey = { version = "0.8.0", default-features = false, features = ["token"] }
+uselesskey = { version = "0.9.0", default-features = false, features = ["token"] }
 ```
 
 ```toml
 # RSA + JWK/JWKS
 [dev-dependencies]
-uselesskey = { version = "0.8.0", features = ["rsa", "jwk"] }
+uselesskey = { version = "0.9.0", features = ["rsa", "jwk"] }
 ```
 
 ```toml
 # X.509 fixtures
 [dev-dependencies]
-uselesskey = { version = "0.8.0", features = ["x509"] }
+uselesskey = { version = "0.9.0", features = ["x509"] }
 ```
 
 ```bash
@@ -156,13 +156,13 @@ For `build.rs` consumers:
 ```toml
 # Common shape-only build-time path
 [build-dependencies]
-uselesskey-cli = { version = "0.8.0", default-features = false }
+uselesskey-cli = { version = "0.9.0", default-features = false }
 ```
 
 ```toml
 # Specialized RSA PKCS#8 build-time path
 [build-dependencies]
-uselesskey-cli = { version = "0.8.0", default-features = false, features = ["rsa-materialize"] }
+uselesskey-cli = { version = "0.9.0", default-features = false, features = ["rsa-materialize"] }
 ```
 
 Use the facade for convenience. Depend on leaf crates only when compile-time minimization matters enough to justify the sharper API.
@@ -215,37 +215,37 @@ Dependency snippets:
 - **Quick start (RSA)**
   ```toml
   [dev-dependencies]
-  uselesskey = { version = "0.8.0", features = ["rsa"] }
+  uselesskey = { version = "0.9.0", features = ["rsa"] }
   ```
 
 
 - **Token-only**
   ```toml
   [dev-dependencies]
-  uselesskey = { version = "0.8.0", default-features = false, features = ["token"] }
+  uselesskey = { version = "0.9.0", default-features = false, features = ["token"] }
   ```
 
 
 - **JWT/JWK**
   ```toml
   [dev-dependencies]
-  uselesskey = { version = "0.8.0", features = ["rsa", "jwk"] }
+  uselesskey = { version = "0.9.0", features = ["rsa", "jwk"] }
   ```
 
 
 - **X.509 + rustls**
   ```toml
   [dev-dependencies]
-  uselesskey = { version = "0.8.0", features = ["x509"] }
-  uselesskey-rustls = { version = "0.8.0", features = ["tls-config", "rustls-ring"] }
+  uselesskey = { version = "0.9.0", features = ["x509"] }
+  uselesskey-rustls = { version = "0.9.0", features = ["tls-config", "rustls-ring"] }
   ```
 
 
 - **jsonwebtoken adapter**
   ```toml
   [dev-dependencies]
-  uselesskey = { version = "0.8.0", features = ["rsa", "ecdsa", "ed25519", "hmac"] }
-  uselesskey-jsonwebtoken = { version = "0.8.0" }
+  uselesskey = { version = "0.9.0", features = ["rsa", "ecdsa", "ed25519", "hmac"] }
+  uselesskey-jsonwebtoken = { version = "0.9.0" }
   ```
 <!-- docs-sync:dependency-snippets-end -->
 
@@ -408,8 +408,8 @@ With the `tls-config` feature, build rustls configs in one step:
 
 ```toml
 [dev-dependencies]
-uselesskey = { version = "0.8.0", features = ["x509"] }
-uselesskey-rustls = { version = "0.8.0", features = ["tls-config", "rustls-ring"] }
+uselesskey = { version = "0.9.0", features = ["x509"] }
+uselesskey-rustls = { version = "0.9.0", features = ["tls-config", "rustls-ring"] }
 ```
 
 ```rust
@@ -427,8 +427,8 @@ let client_config = chain.client_config_rustls();
 
 ```toml
 [dev-dependencies]
-uselesskey = { version = "0.8.0", features = ["rsa"] }
-uselesskey-ring = { version = "0.8.0", features = ["all"] }
+uselesskey = { version = "0.9.0", features = ["rsa"] }
+uselesskey-ring = { version = "0.9.0", features = ["all"] }
 ```
 
 ```rust
@@ -444,8 +444,8 @@ let ring_kp = rsa.rsa_key_pair_ring();
 
 ```toml
 [dev-dependencies]
-uselesskey = { version = "0.8.0", features = ["rsa"] }
-uselesskey-rustcrypto = { version = "0.8.0", features = ["all"] }
+uselesskey = { version = "0.9.0", features = ["rsa"] }
+uselesskey-rustcrypto = { version = "0.9.0", features = ["all"] }
 ```
 
 ```rust
@@ -461,8 +461,8 @@ let rsa_pk = rsa.rsa_private_key();
 
 ```toml
 [dev-dependencies]
-uselesskey = { version = "0.8.0", features = ["rsa"] }
-uselesskey-aws-lc-rs = { version = "0.8.0", features = ["native", "all"] }
+uselesskey = { version = "0.9.0", features = ["rsa"] }
+uselesskey-aws-lc-rs = { version = "0.9.0", features = ["native", "all"] }
 ```
 
 ```rust
@@ -478,8 +478,8 @@ let lc_kp = rsa.rsa_key_pair_aws_lc_rs();
 
 ```toml
 [dev-dependencies]
-uselesskey = { version = "0.8.0", features = ["x509"] }
-uselesskey-tonic = "0.8.0"
+uselesskey = { version = "0.9.0", features = ["x509"] }
+uselesskey-tonic = "0.9.0"
 ```
 
 ```rust
