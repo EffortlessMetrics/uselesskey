@@ -9,6 +9,7 @@ milestone = "v0.9.0"
 linked_proposal = "USELESSKEY-PROP-0001"
 linked_specs = [
   "USELESSKEY-SPEC-0005",
+  "USELESSKEY-SPEC-0011",
 ]
 linked_adrs = []
 +++
