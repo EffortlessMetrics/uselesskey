@@ -25,3 +25,15 @@ proof_command = "cargo xtask bundle-proof --profile oidc --out target/release-ev
 how_to = "docs/how-to/test-oidc-jwks-validation.md"
 release_lane = "minor"
 boundary = "Does not prove production signing-key custody, full OpenID provider behavior, or downstream validator correctness."
+
+[[pack]]
+id = "webhook"
+title = "Webhook contract pack"
+status = "stable"
+profile = "webhook"
+spec = "USELESSKEY-SPEC-0011"
+claim = "webhook-contract-pack"
+proof_command = "cargo xtask bundle-proof --profile webhook --out target/release-evidence/webhook"
+how_to = "docs/how-to/test-webhook-signature-validation.md"
+release_lane = "minor"
+boundary = "Does not prove provider compatibility, production secret management, replay protection completeness, transport security, or downstream verifier correctness."

@@ -26,6 +26,51 @@ uselesskey-webhook = "0.7"
 uselesskey-core = "0.7"
 ```
 
+## Generate the contract pack
+
+Use the bundle profile when you want filesystem fixtures plus receipts
+that a reviewer can inspect:
+
+```bash
+cargo run -p uselesskey-cli -- bundle \
+  --profile webhook \
+  --out target/webhook-fixtures
+
+cargo run -p uselesskey-cli -- verify-bundle \
+  --path target/webhook-fixtures
+
+cargo run -p uselesskey-cli -- inspect-bundle \
+  --path target/webhook-fixtures
+```
+
+The contract pack writes:
+
+- `requests/valid.json`
+- `requests/negative-tampered-body.json`
+- `requests/negative-wrong-secret.json`
+- `requests/negative-stale-timestamp.json`
+- `requests/negative-missing-signature.json`
+- `requests/negative-malformed-signature.json`
+- `evidence/webhook-profile.md`
+- `receipts/materialization.json`
+- `receipts/audit-surface.json`
+- `manifest.json`
+
+Each request fixture records `method`, `path`, `timestamp`, `body`,
+`headers`, `expected_result`, `rejection_class`, and
+`verifier_secret`.
+
+For release-grade evidence that the bundle still reproduces:
+
+```bash
+cargo xtask bundle-proof --profile webhook --out target/release-evidence/webhook
+cargo xtask no-blob
+```
+
+`bundle-proof` writes `webhook-contract-pack-proof.json` and
+`webhook-contract-pack-proof.md` under
+`target/release-evidence/webhook/`.
+
 ## Generate a signed webhook fixture
 
 The Stripe profile is the most common starting point because it
@@ -165,6 +210,7 @@ signature failure.
 
 ## What this does not prove
 
+- It does not prove production provider compatibility.
 - It does not prove webhook delivery, retry, or back-off semantics.
 - It does not prove replay protection beyond the timestamp tolerance
   check; storing seen `(timestamp, signature)` pairs is your
@@ -173,6 +219,7 @@ signature failure.
   encoded profiles (e.g. multi-signature `Stripe-Signature` rotation
   pairs, GitHub legacy `X-Hub-Signature` SHA-1).
 - It does not prove production secret custody or rotation policy.
+- It does not prove transport security.
 
 ## Scanner-safety note
 
@@ -199,3 +246,5 @@ will not leak the secret string into CI logs.
   — the JWKS analogue for asymmetric-signature validation paths.
 - [`test-jwt-negative-validation.md`](test-jwt-negative-validation.md)
   — JWT-shaped negative inputs for downstream token validators.
+- [`../specs/USELESSKEY-SPEC-0011-webhook-contract-pack.md`](../specs/USELESSKEY-SPEC-0011-webhook-contract-pack.md)
+  — contract-pack behavior, evidence, and claim boundary.
