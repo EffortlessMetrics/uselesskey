@@ -281,6 +281,22 @@ fn handler_spec(handler: &str) -> Result<HandlerSpec> {
                 "target/release-evidence/oidc/oidc-contract-pack-proof.md",
             ],
         },
+        "bundle_proof_webhook" => HandlerSpec {
+            id: "bundle_proof_webhook",
+            argv: vec![
+                "cargo",
+                "xtask",
+                "bundle-proof",
+                "--profile",
+                "webhook",
+                "--out",
+                "target/release-evidence/webhook",
+            ],
+            artifacts: vec![
+                "target/release-evidence/webhook/webhook-contract-pack-proof.json",
+                "target/release-evidence/webhook/webhook-contract-pack-proof.md",
+            ],
+        },
         "public_surface" => HandlerSpec {
             id: "public_surface",
             argv: vec!["cargo", "xtask", "public-surface"],
@@ -419,6 +435,30 @@ mod tests {
         assert_eq!(
             spec.argv,
             vec!["cargo", "xtask", "scanner-safe-reference", "--check"]
+        );
+        assert!(!spec.argv.iter().any(|part| part.contains("&&")));
+        Ok(())
+    }
+
+    #[test]
+    fn webhook_handler_runs_bundle_proof_without_shell() -> Result<()> {
+        let spec = handler_spec("bundle_proof_webhook")?;
+
+        assert_eq!(
+            spec.argv,
+            vec![
+                "cargo",
+                "xtask",
+                "bundle-proof",
+                "--profile",
+                "webhook",
+                "--out",
+                "target/release-evidence/webhook",
+            ]
+        );
+        assert!(
+            spec.artifacts
+                .contains(&"target/release-evidence/webhook/webhook-contract-pack-proof.json")
         );
         assert!(!spec.argv.iter().any(|part| part.contains("&&")));
         Ok(())

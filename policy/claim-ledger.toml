@@ -29,6 +29,12 @@ include_in_all_stable = true
 handlers = ["bundle_proof_oidc", "no_blob"]
 
 [[claim_proof]]
+claim = "webhook-contract-pack"
+status = "planned"
+include_in_all_stable = true
+handlers = ["bundle_proof_webhook", "no_blob"]
+
+[[claim_proof]]
 claim = "public-crate-surface-cleanup"
 status = "planned"
 include_in_all_stable = true
