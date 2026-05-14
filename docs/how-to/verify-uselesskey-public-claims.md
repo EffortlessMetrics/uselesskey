@@ -41,6 +41,7 @@ For a single claim:
 
 ```bash
 cargo xtask claim-report --claim scanner-safe-fixtures
+cargo xtask claim-report --claim webhook-contract-pack
 ```
 
 ## 2. Check the Human Page Against the Ledger
@@ -146,7 +147,55 @@ validation paths. It does not prove mTLS, revocation, certificate transparency,
 browser trust-store behavior, production CA custody, or downstream verifier
 correctness.
 
-## 6. Verify the Published Install Path
+## 6. Verify the Webhook Contract Pack
+
+Use this path when a reviewer wants proof that the generated webhook fixtures
+exercise deterministic HMAC verifier behavior and documented negative classes.
+
+Check the registry:
+
+```bash
+cargo xtask contract-packs --check
+```
+
+Run the webhook bundle proof:
+
+```bash
+cargo xtask bundle-proof --profile webhook --out target/release-evidence/webhook
+```
+
+For a single runnable claim receipt:
+
+```bash
+cargo xtask claim-proof --claim webhook-contract-pack
+```
+
+For a metadata-only review bundle:
+
+```bash
+cargo xtask verification-pack --out target/uselesskey-verification --claim webhook-contract-pack
+```
+
+Attach these receipts:
+
+```text
+target/claim-proof/webhook-contract-pack/receipt.md
+target/claim-proof/webhook-contract-pack/receipt.json
+target/release-evidence/webhook/webhook-contract-pack-proof.md
+target/release-evidence/webhook/webhook-contract-pack-proof.json
+target/uselesskey-verification/README.md
+target/uselesskey-verification/claim-proof/webhook-contract-pack/receipt.md
+target/uselesskey-verification/claim-proof/webhook-contract-pack/receipt.json
+```
+
+This proves the documented generic HMAC webhook verifier fixture paths:
+valid signature acceptance, tampered body rejection, wrong secret rejection,
+stale timestamp rejection, missing signature rejection, and malformed signature
+rejection. It does not prove production webhook provider compatibility, secret
+rotation, delivery retry behavior, replay protection completeness, transport
+security, or downstream verifier correctness.
+
+## 7. Verify the Published Install Path
 
 For the current published release:
 
@@ -160,7 +209,7 @@ This proves an external crates.io install path for that version. It does not
 prove every downstream feature combination, docs.rs completion, or future
 registry state.
 
-## 7. Attach Review Evidence
+## 8. Attach Review Evidence
 
 For the full reviewer bundle:
 
@@ -182,6 +231,8 @@ target/claim-report/public-claims.md
 target/claim-report/public-claims.json
 target/release-evidence/tls/tls-contract-pack-proof.md
 target/release-evidence/tls/tls-contract-pack-proof.json
+target/release-evidence/webhook/webhook-contract-pack-proof.md
+target/release-evidence/webhook/webhook-contract-pack-proof.json
 ```
 
 Also include the commands you ran and the exact version, branch, or commit under

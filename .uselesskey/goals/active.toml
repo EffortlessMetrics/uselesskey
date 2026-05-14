@@ -135,7 +135,7 @@ commands = [
 
 [[work_item]]
 id = "verification-polish"
-status = "ready"
+status = "done"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0011"
 plan = "plans/webhook-contract-pack/implementation-plan.md"
@@ -148,7 +148,7 @@ commands = [
 
 [[work_item]]
 id = "lane-closeout"
-status = "planned"
+status = "ready"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0011"
 plan = "plans/webhook-contract-pack/implementation-plan.md"

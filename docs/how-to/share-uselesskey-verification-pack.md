@@ -13,6 +13,7 @@ Build a claim-filtered pack:
 
 ```bash
 cargo xtask verification-pack --out target/uselesskey-verification-scanner-safe --claim scanner-safe-fixtures
+cargo xtask verification-pack --out target/uselesskey-verification-webhook --claim webhook-contract-pack
 ```
 
 The command writes receipts and metadata only. It does not copy generated
@@ -52,6 +53,8 @@ target/uselesskey-verification/claim-proof/scanner-safe-fixtures/receipt.md
 target/uselesskey-verification/claim-proof/scanner-safe-fixtures/receipt.json
 target/uselesskey-verification/claim-proof/tls-contract-pack/receipt.md
 target/uselesskey-verification/claim-proof/tls-contract-pack/receipt.json
+target/uselesskey-verification/claim-proof/webhook-contract-pack/receipt.md
+target/uselesskey-verification/claim-proof/webhook-contract-pack/receipt.json
 ```
 
 If you need standalone receipts outside the pack:
@@ -59,6 +62,7 @@ If you need standalone receipts outside the pack:
 ```bash
 cargo xtask claim-proof --claim scanner-safe-fixtures
 cargo xtask claim-proof --claim tls-contract-pack
+cargo xtask claim-proof --claim webhook-contract-pack
 ```
 
 Do not use `--all-stable` as crates.io release proof. Registry smoke remains a
@@ -113,6 +117,8 @@ Keep the boundaries visible:
 ```text
 scanner-safe fixtures do not mean every derived export is safe to commit
 TLS contract-pack proof does not prove production PKI or downstream verifier correctness
+webhook contract-pack proof does not prove provider compatibility, replay protection completeness,
+or production secret management
 ripr+ is static evidence and test-efficiency debt, not correctness proof
 ```
 

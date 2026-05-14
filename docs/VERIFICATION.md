@@ -93,6 +93,7 @@ and writes per-claim receipts:
 ```bash
 cargo xtask claim-proof --claim scanner-safe-fixtures
 cargo xtask claim-proof --claim tls-contract-pack
+cargo xtask claim-proof --claim webhook-contract-pack
 cargo xtask claim-proof --all-stable
 ```
 
@@ -107,11 +108,19 @@ public-claim receipts:
 
 ```bash
 cargo xtask verification-pack --out target/uselesskey-verification
+cargo xtask verification-pack --out target/uselesskey-verification-webhook --claim webhook-contract-pack
 ```
 
 The pack contains claim reports, contract-pack registry reports, badge endpoint
 JSON, and selected claim-proof receipts. It contains metadata and receipts only,
 not generated fixture payloads.
+
+Use the webhook-filtered pack when a security or platform reviewer needs proof
+for deterministic HMAC verifier fixtures without copying generated request
+payloads. The webhook claim covers documented valid and negative fixture
+classes; it does not prove provider compatibility, production secret
+management, replay protection completeness, transport security, or downstream
+verifier correctness.
 
 ## Release Evidence Receipts
 
@@ -136,6 +145,8 @@ target/release-evidence/claims/public-claims.json
 target/release-evidence/contract-packs/contract-packs.md
 target/release-evidence/contract-packs/contract-packs.json
 target/release-evidence/verification-pack/README.md
+target/release-evidence/webhook/webhook-contract-pack-proof.md
+target/release-evidence/webhook/webhook-contract-pack-proof.json
 ```
 
 ## Pull Request Evidence

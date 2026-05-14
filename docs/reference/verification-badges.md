@@ -104,6 +104,14 @@ verification pack under:
 target/release-evidence/verification-pack/
 ```
 
+Product contract-pack proofs such as TLS, OIDC/JWKS, and webhook live in
+release evidence and claim-proof receipts, not new README badges. For webhook
+review evidence, use:
+
+```bash
+cargo xtask verification-pack --out target/uselesskey-verification --claim webhook-contract-pack
+```
+
 ## Future Badges
 
 Future endpoints must be generated or absent. Candidate badges such as
