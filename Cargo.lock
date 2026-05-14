@@ -4702,6 +4702,7 @@ dependencies = [
  "uselesskey-rsa",
  "uselesskey-test-support",
  "uselesskey-token",
+ "uselesskey-webhook",
  "uselesskey-x509",
 ]
 

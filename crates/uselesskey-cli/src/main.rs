@@ -20,6 +20,7 @@ use uselesskey_hmac::{HmacFactoryExt, HmacSpec};
 use uselesskey_jwk::NegativeJwks;
 use uselesskey_rsa::{RsaFactoryExt, RsaSpec};
 use uselesskey_token::{NegativeToken, TokenFactoryExt, TokenSpec};
+use uselesskey_webhook::{WebhookFactoryExt, WebhookPayloadSpec};
 use uselesskey_x509::{ChainNegative, ChainSpec, X509Chain, X509FactoryExt, X509Spec};
 
 #[derive(Parser, Debug)]
@@ -201,6 +202,7 @@ enum BundleProfile {
     ScannerSafe,
     Oidc,
     Tls,
+    Webhook,
     Runtime,
 }
 
@@ -210,6 +212,7 @@ impl BundleProfile {
             Self::ScannerSafe => "scanner-safe",
             Self::Oidc => "oidc",
             Self::Tls => "tls",
+            Self::Webhook => "webhook",
             Self::Runtime => "runtime",
         }
     }
@@ -616,7 +619,7 @@ fn bundle_artifact_contains_private_key_material(artifact: &BundleArtifactRecord
 }
 
 fn bundle_artifact_contains_symmetric_secret_material(artifact: &BundleArtifactRecord) -> bool {
-    artifact.kind == "hmac" && !artifact.scanner_safe
+    matches!(artifact.kind.as_str(), "hmac" | "webhook") && !artifact.scanner_safe
 }
 
 fn yes_no_unknown(value: Option<bool>) -> &'static str {
@@ -657,6 +660,11 @@ mod inspect_bundle_tests {
     fn symmetric_secret_material_requires_hmac_and_non_scanner_safe_artifact() {
         assert!(bundle_artifact_contains_symmetric_secret_material(&record(
             "hmac", "jwk", false,
+        )));
+        assert!(bundle_artifact_contains_symmetric_secret_material(&record(
+            "webhook",
+            "json-manifest",
+            false,
         )));
         assert!(!bundle_artifact_contains_symmetric_secret_material(
             &record("token", "json-manifest", false,)
@@ -748,6 +756,7 @@ fn parse_manifest_profile(raw: &str) -> Result<BundleProfile> {
         "scanner-safe" | "scannersafe" => Ok(BundleProfile::ScannerSafe),
         "oidc" => Ok(BundleProfile::Oidc),
         "tls" => Ok(BundleProfile::Tls),
+        "webhook" => Ok(BundleProfile::Webhook),
         "runtime" => Ok(BundleProfile::Runtime),
         other => bail!("unsupported bundle manifest profile `{other}`"),
     }
@@ -779,6 +788,12 @@ enum BundleEntry {
         description: &'static str,
     },
     TlsEvidenceDoc,
+    WebhookRequest {
+        name: &'static str,
+        variant: WebhookRequestKind,
+        description: &'static str,
+    },
+    WebhookEvidenceDoc,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -802,6 +817,40 @@ impl TlsChainNegativeKind {
     }
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum WebhookRequestKind {
+    Valid,
+    TamperedBody,
+    WrongSecret,
+    StaleTimestamp,
+    MissingSignature,
+    MalformedSignature,
+}
+
+impl WebhookRequestKind {
+    const fn rejection_class(self) -> &'static str {
+        match self {
+            Self::Valid => "valid",
+            Self::TamperedBody => "tampered_body",
+            Self::WrongSecret => "wrong_secret",
+            Self::StaleTimestamp => "stale_timestamp",
+            Self::MissingSignature => "missing_signature",
+            Self::MalformedSignature => "malformed_signature",
+        }
+    }
+
+    const fn expected_result(self) -> &'static str {
+        match self {
+            Self::Valid => "accept",
+            Self::TamperedBody
+            | Self::WrongSecret
+            | Self::StaleTimestamp
+            | Self::MissingSignature
+            | Self::MalformedSignature => "reject",
+        }
+    }
+}
+
 /// Documented expected hostname for the TLS profile's valid leaf.
 const TLS_EXPECTED_HOSTNAME: &str = "valid.tls.uselesskey.test";
 /// Documented wrong hostname for the hostname-mismatch negative fixture.
@@ -818,6 +867,8 @@ impl BundleEntry {
             Self::TlsValidChain => "certs/valid-chain",
             Self::TlsNegativeChain { name, .. } => name,
             Self::TlsEvidenceDoc => "evidence/tls-profile",
+            Self::WebhookRequest { name, .. } => name,
+            Self::WebhookEvidenceDoc => "evidence/webhook-profile",
         }
     }
 
@@ -830,6 +881,14 @@ impl BundleEntry {
             | Self::TlsValidChain
             | Self::TlsNegativeChain { .. }
             | Self::TlsEvidenceDoc => Kind::X509,
+            Self::WebhookRequest { .. } | Self::WebhookEvidenceDoc => Kind::Hmac,
+        }
+    }
+
+    const fn kind_name(self) -> &'static str {
+        match self {
+            Self::WebhookRequest { .. } | Self::WebhookEvidenceDoc => "webhook",
+            _ => self.kind().manifest_name(),
         }
     }
 
@@ -840,6 +899,7 @@ impl BundleEntry {
             Self::OidcValidToken | Self::OidcNegativeToken { .. } => Format::JsonManifest,
             Self::TlsValidLeaf | Self::TlsValidChain | Self::TlsNegativeChain { .. } => Format::Pem,
             Self::TlsEvidenceDoc => Format::Pem,
+            Self::WebhookRequest { .. } | Self::WebhookEvidenceDoc => Format::JsonManifest,
         }
     }
 
@@ -853,6 +913,7 @@ impl BundleEntry {
                 format!("{}.pem", self.name())
             }
             Self::TlsEvidenceDoc => format!("{}.md", self.name()),
+            Self::WebhookEvidenceDoc => format!("{}.md", self.name()),
             _ => format!("{}.json", self.name()),
         }
     }
@@ -868,6 +929,8 @@ impl BundleEntry {
             Self::TlsValidChain => "TLS valid full chain: leaf + intermediate + root (PEM)",
             Self::TlsNegativeChain { description, .. } => description,
             Self::TlsEvidenceDoc => "TLS profile per-fixture rejection-expectation evidence",
+            Self::WebhookRequest { description, .. } => description,
+            Self::WebhookEvidenceDoc => "Webhook profile verifier expectation evidence",
         }
     }
 }
@@ -928,6 +991,42 @@ fn bundle_entries(profile: BundleProfile) -> Vec<BundleEntry> {
         ];
     }
 
+    if matches!(profile, BundleProfile::Webhook) {
+        return vec![
+            BundleEntry::WebhookRequest {
+                name: "requests/valid",
+                variant: WebhookRequestKind::Valid,
+                description: "Webhook valid HMAC request",
+            },
+            BundleEntry::WebhookRequest {
+                name: "requests/negative-tampered-body",
+                variant: WebhookRequestKind::TamperedBody,
+                description: "Webhook negative request with modified body",
+            },
+            BundleEntry::WebhookRequest {
+                name: "requests/negative-wrong-secret",
+                variant: WebhookRequestKind::WrongSecret,
+                description: "Webhook negative request signed with the wrong secret",
+            },
+            BundleEntry::WebhookRequest {
+                name: "requests/negative-stale-timestamp",
+                variant: WebhookRequestKind::StaleTimestamp,
+                description: "Webhook negative request outside timestamp tolerance",
+            },
+            BundleEntry::WebhookRequest {
+                name: "requests/negative-missing-signature",
+                variant: WebhookRequestKind::MissingSignature,
+                description: "Webhook negative request missing the signature header",
+            },
+            BundleEntry::WebhookRequest {
+                name: "requests/negative-malformed-signature",
+                variant: WebhookRequestKind::MalformedSignature,
+                description: "Webhook negative request with malformed signature",
+            },
+            BundleEntry::WebhookEvidenceDoc,
+        ];
+    }
+
     standard_bundle_entries()
         .into_iter()
         .map(|(name, kind)| BundleEntry::Standard { name, kind })
@@ -955,19 +1054,22 @@ fn bundle_artifact_record(
 ) -> BundleArtifactRecord {
     BundleArtifactRecord {
         path: path.to_string(),
-        kind: entry.kind().manifest_name().to_string(),
+        kind: entry.kind_name().to_string(),
         format: format.manifest_name().to_string(),
         profile: profile.manifest_name().to_string(),
         lanes: vec!["runtime".to_string(), "materialized".to_string()],
-        scanner_safe: bundle_artifact_is_scanner_safe(entry.kind(), profile),
+        scanner_safe: bundle_entry_is_scanner_safe(entry, profile),
         description: entry.description(profile).to_string(),
     }
 }
 
-fn bundle_artifact_is_scanner_safe(kind: Kind, profile: BundleProfile) -> bool {
-    match profile {
-        BundleProfile::ScannerSafe | BundleProfile::Oidc | BundleProfile::Tls => true,
-        BundleProfile::Runtime => matches!(kind, Kind::Jwk | Kind::Jwks | Kind::X509),
+fn bundle_entry_is_scanner_safe(entry: BundleEntry, profile: BundleProfile) -> bool {
+    match (profile, entry) {
+        (BundleProfile::ScannerSafe | BundleProfile::Oidc | BundleProfile::Tls, _) => true,
+        (BundleProfile::Webhook, BundleEntry::WebhookEvidenceDoc) => true,
+        (BundleProfile::Webhook, BundleEntry::WebhookRequest { .. }) => false,
+        (BundleProfile::Webhook, _) => false,
+        (BundleProfile::Runtime, _) => matches!(entry.kind(), Kind::Jwk | Kind::Jwks | Kind::X509),
     }
 }
 
@@ -987,6 +1089,7 @@ fn bundle_artifact_description(kind: Kind, profile: BundleProfile) -> &'static s
         (BundleProfile::Runtime, _) => "runtime-generated fixture material",
         (BundleProfile::Oidc, _) => "OIDC fixture material",
         (BundleProfile::Tls, _) => "TLS contract-pack fixture material",
+        (BundleProfile::Webhook, _) => "Webhook contract-pack fixture material",
     }
 }
 
@@ -1178,6 +1281,16 @@ fn generate_bundle_entry_artifact(
             Ok(Artifact::Text(negative.leaf_cert_pem().to_string()))
         }
         BundleEntry::TlsEvidenceDoc => Ok(Artifact::Text(render_tls_evidence_markdown())),
+        BundleEntry::WebhookRequest { variant, .. } => {
+            if matches!(format, Format::JsonManifest) {
+                Ok(Artifact::Json(generate_webhook_request_fixture(
+                    fx, label, variant,
+                )))
+            } else {
+                unsupported(Kind::Hmac, format)
+            }
+        }
+        BundleEntry::WebhookEvidenceDoc => Ok(Artifact::Text(render_webhook_evidence_markdown())),
     }
 }
 
@@ -1207,6 +1320,82 @@ fn render_tls_evidence_markdown() -> String {
     out.push_str("| `certs/negative-not-yet-valid.pem` | Leaf with notBefore in the future | not yet valid |\n");
     out.push_str("| `certs/negative-wrong-hostname.pem` | Leaf SAN/CN does not match expected hostname | hostname mismatch |\n");
     out.push_str("| `certs/negative-untrusted-root.pem` | Leaf chained to an untrusted root CA | unknown CA |\n");
+    out
+}
+
+fn generate_webhook_request_fixture(
+    fx: &Factory,
+    label: &str,
+    variant: WebhookRequestKind,
+) -> serde_json::Value {
+    let valid = fx.webhook_stripe(label, WebhookPayloadSpec::Canonical);
+    let mut headers = valid.headers.clone();
+    let mut body = valid.payload.clone();
+    let mut timestamp = valid.timestamp;
+
+    match variant {
+        WebhookRequestKind::Valid => {}
+        WebhookRequestKind::TamperedBody => {
+            body.push('\n');
+        }
+        WebhookRequestKind::WrongSecret => {
+            let wrong = valid.near_miss_wrong_secret();
+            headers = wrong.headers;
+            timestamp = wrong.timestamp;
+        }
+        WebhookRequestKind::StaleTimestamp => {
+            let stale = valid.near_miss_stale_timestamp(300);
+            headers = stale.headers;
+            timestamp = stale.timestamp;
+        }
+        WebhookRequestKind::MissingSignature => {
+            headers.remove("Stripe-Signature");
+        }
+        WebhookRequestKind::MalformedSignature => {
+            headers.insert(
+                "Stripe-Signature".to_string(),
+                format!("t={timestamp},v1=not-a-hex-signature"),
+            );
+        }
+    }
+
+    json!({
+        "method": "POST",
+        "path": "/webhooks/uselesskey",
+        "timestamp": timestamp,
+        "body": body,
+        "headers": headers,
+        "expected_result": variant.expected_result(),
+        "rejection_class": variant.rejection_class(),
+        "profile": "webhook",
+        "signature_profile": "stripe-shaped-hmac-sha256",
+        "verifier_secret": valid.secret,
+        "claim_boundary": "Deterministic HMAC verifier fixture; not provider compatibility or production secret management proof."
+    })
+}
+
+fn render_webhook_evidence_markdown() -> String {
+    let mut out = String::new();
+    out.push_str("# Webhook contract-pack profile evidence\n\n");
+    out.push_str(
+        "Per-fixture verifier expectations for the webhook contract pack\n\
+         generated by `uselesskey bundle --profile webhook`. The fixtures are\n\
+         provider-shaped HMAC-SHA256 requests, not provider compatibility\n\
+         claims.\n\n",
+    );
+    out.push_str("Verifier path: `POST /webhooks/uselesskey`\n");
+    out.push_str("Timestamp tolerance used by proof: `300` seconds\n\n");
+    out.push_str("| File | Expected result | Rejection class |\n");
+    out.push_str("|---|---|---|\n");
+    out.push_str("| `requests/valid.json` | accept | valid |\n");
+    out.push_str("| `requests/negative-tampered-body.json` | reject | tampered_body |\n");
+    out.push_str("| `requests/negative-wrong-secret.json` | reject | wrong_secret |\n");
+    out.push_str("| `requests/negative-stale-timestamp.json` | reject | stale_timestamp |\n");
+    out.push_str("| `requests/negative-missing-signature.json` | reject | missing_signature |\n");
+    out.push_str(
+        "| `requests/negative-malformed-signature.json` | reject | malformed_signature |\n\n",
+    );
+    out.push_str("Boundary: proves deterministic HMAC webhook verifier behavior for fixture requests; does not prove provider compatibility, replay protection completeness, transport security, or production secret management.\n");
     out
 }
 
