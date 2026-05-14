@@ -33,28 +33,26 @@ commands = [
 
 [[work_item]]
 id = "cli-tests"
-status = "ready"
+status = "done"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0005"
 plan = "plans/no-panic-burndown/implementation-plan.md"
 commands = [
   "cargo test -p uselesskey-cli --test cli",
   "cargo xtask check-no-panic-family",
-  "cargo xtask no-panic baseline",
   "cargo xtask pr-lite",
   "git diff --check",
 ]
 
 [[work_item]]
 id = "xtask-tests"
-status = "planned"
+status = "ready"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0005"
 plan = "plans/no-panic-burndown/implementation-plan.md"
 commands = [
   "cargo test -p xtask",
   "cargo xtask check-no-panic-family",
-  "cargo xtask no-panic baseline",
   "cargo xtask pr-lite",
   "git diff --check",
 ]
@@ -68,7 +66,6 @@ plan = "plans/no-panic-burndown/implementation-plan.md"
 commands = [
   "cargo test -p uselesskey-core",
   "cargo xtask check-no-panic-family",
-  "cargo xtask no-panic baseline",
   "cargo xtask pr-lite",
   "git diff --check",
 ]
@@ -83,7 +80,6 @@ commands = [
   "cargo test -p uselesskey-jwk",
   "cargo test -p uselesskey-token",
   "cargo xtask check-no-panic-family",
-  "cargo xtask no-panic baseline",
   "cargo xtask pr-lite",
   "git diff --check",
 ]
