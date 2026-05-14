@@ -111,9 +111,12 @@ Do not mix these into this lane:
 4. Add `cargo xtask bundle-proof --profile webhook`.
 5. Register `webhook-contract-pack` in `policy/claim-ledger.toml`,
    `policy/contract-packs.toml`, and `docs/status/PUBLIC_CLAIMS.md`.
+   This slice includes the task-first how-to because the contract-pack
+   registry requires a live `how_to` path.
 6. Add a whitelisted `cargo xtask claim-proof --claim webhook-contract-pack`
    handler.
-7. Add task-first webhook signature validation docs.
+7. Polish webhook verification-pack docs and any remaining user-facing
+   verification flow gaps.
 8. Wire webhook proof into minor release evidence while keeping patch evidence
    cheap unless webhook surfaces are touched.
 9. Polish verification-pack docs for the webhook user path.

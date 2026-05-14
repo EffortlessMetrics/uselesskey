@@ -153,6 +153,31 @@ release_lanes = ["minor"]
 boundary = "The OIDC/JWKS contract pack proves deterministic key-set and token-shape fixtures plus documented negatives; it does not prove production signing-key custody, full OpenID provider behavior, or downstream validator correctness."
 
 [[claim]]
+id = "webhook-contract-pack"
+title = "Webhook contract pack"
+status = "stable"
+spec = "USELESSKEY-SPEC-0011"
+surfaces = [
+  "docs/how-to/test-webhook-signature-validation.md",
+  "docs/status/PUBLIC_CLAIMS.md",
+  "policy/contract-packs.toml",
+]
+proof_commands = [
+  "cargo xtask bundle-proof --profile webhook --out target/release-evidence/webhook",
+  "cargo xtask no-blob",
+]
+artifacts = [
+  "target/release-evidence/webhook/webhook-contract-pack-proof.json",
+  "target/release-evidence/webhook/webhook-contract-pack-proof.md",
+]
+docs = [
+  "docs/how-to/test-webhook-signature-validation.md",
+  "docs/specs/USELESSKEY-SPEC-0011-webhook-contract-pack.md",
+]
+release_lanes = ["minor"]
+boundary = "The webhook contract pack proves deterministic HMAC verifier fixtures for valid and negative request classes; it does not prove provider compatibility, production secret management, replay protection completeness, transport security, or downstream verifier correctness."
+
+[[claim]]
 id = "public-crate-surface-cleanup"
 title = "Public crate-surface cleanup"
 status = "stable"
