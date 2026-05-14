@@ -86,7 +86,7 @@ commands = [
 
 [[work_item]]
 id = "production-path-review"
-status = "ready"
+status = "done"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0005"
 plan = "plans/no-panic-burndown/implementation-plan.md"
@@ -99,7 +99,7 @@ commands = [
 ]
 [[work_item]]
 id = "policy-stage-flip"
-status = "planned"
+status = "ready"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0005"
 plan = "plans/no-panic-burndown/implementation-plan.md"

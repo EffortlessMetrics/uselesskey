@@ -56,5 +56,5 @@ fn slack_payload(label: &str, nonce: u32) -> String {
 }
 
 fn json_string(value: &str) -> String {
-    serde_json::to_string(value).expect("serializing a string to JSON cannot fail")
+    serde_json::Value::String(value.to_string()).to_string()
 }
