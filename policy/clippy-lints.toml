@@ -20,7 +20,8 @@ suppression_style = "expect-with-reason"
 # Do not use `clippy::all`/`pedantic`/`nursery` blanket categories.
 blanket_categories = false
 # Promote panic-family clippy lints to `deny` only when the no-panic
-# allowlist is the authoritative ledger. Currently warn-stage.
+# allowlist is the authoritative ledger. Currently Stage A.5: the semantic
+# checker blocks new debt while historical baseline debt burns down.
 panic_family_level = "warn"
 # `cargo xtask check-no-panic-family` is the authoritative ledger for
 # panic-family exceptions. Clippy is the immediate code-shape detector.
@@ -144,14 +145,18 @@ keys = [
 
 # Stage tracking for the panic-family rollout.
 #
-# Stage A (current): warn-level panic-family lints, advisory no-panic checker.
-# Stage B: burn down debt, every remaining exception receipted in
-#          policy/no-panic-allowlist.toml with owner/reason/expiry.
-# Stage C: flip panic-family lints to deny.
+# Stage A: warn-level panic-family lints, advisory no-panic checker.
+# Stage A.5 (current): warn-level panic-family lints, no-new-debt semantic
+#          checker, historical baseline still active.
+# Stage B: move historical debt out of the baseline, shrinking it toward
+#          zero or receipting exceptions in policy/no-panic-allowlist.toml
+#          with owner/reason/expiry.
+# Stage C: flip panic-family lints to deny after the allowlist is the
+#          authoritative panic-family ledger.
 #
 # Bare-allow rollout:
 #   - bare `#[allow(...)]` is a hard error today (every suppression must carry
 #     `reason = "..."`); the workspace is at zero bare allows.
 [stage]
-current = "A"
-description = "Warn-stage panic-family lints; semantic no-panic checker advisory; bare-allow blocking."
+current = "A.5"
+description = "Warn-stage panic-family lints; semantic no-panic checker blocks new debt; bare-allow blocking."
