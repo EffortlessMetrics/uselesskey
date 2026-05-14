@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-05-14
+
+v0.9.0 is the command-backed fixture-platform release. It turns public
+claims into runnable receipts, adds local PR evidence receipts, finishes the
+no-panic new-debt cleanup, and ships the first post-TLS contract pack:
+deterministic webhook verifier fixtures.
+
+The public promise is still deliberately narrow: `uselesskey` provides
+scanner-safe fixture material and proof receipts for tests. It does not claim
+production secret management, production PKI, provider compatibility matrices,
+or broad security assurance.
+
+### Added
+
+- Added the source-of-truth operating model: proposal/spec/ADR/plan indexes,
+  active goal manifests, policy ledgers, closeout records, and standalone
+  `cargo xtask spec-check` with strict and JSON output modes.
+- Added claim-backed verification surfaces: `cargo xtask claim-report`,
+  `claim-report --check-public-claims`, `contract-packs --check`,
+  `claim-proof`, metadata-only verification packs, and release-evidence claim
+  receipts.
+- Added PR-lite evidence ergonomics through `cargo xtask pr-lite` receipts,
+  heavy-evidence routing receipts, local validation guidance, and safe
+  diff-scoped mutation fallback behavior.
+- Added the webhook contract pack: `uselesskey bundle --profile webhook`,
+  deterministic HMAC verifier fixtures, webhook bundle proof, claim-proof
+  coverage, verification-pack integration, and task-first webhook docs.
+- Added a v0.9.0 release evidence matrix for the command-backed claims,
+  verification-pack receipts, PR-lite evidence, no-panic posture, and webhook
+  contract-pack proof.
+
+### Changed
+
+- Minor release evidence now carries source-of-truth proof, claim reports,
+  contract-pack registry receipts, claim-proof receipts, verification-pack
+  summaries, and webhook bundle proof.
+- README, verification, and public-claim docs now route badge readers into
+  command-backed reports and explicit claim boundaries instead of treating
+  badges as a dashboard.
+- Contract packs are now registered product surfaces with specs, claims,
+  proof commands, how-to docs, and release-evidence lanes.
+
+### Fixed
+
+- Cleaned up the no-panic-family new-debt surface and recorded the Stage A.5
+  policy posture without resetting historical baseline debt.
+- Refreshed generated public badge endpoints through the existing
+  command-backed badge path.
+
 ## [0.8.0] - 2026-05-12
 
 TLS contract-pack and public crate-surface cleanup release. v0.8.0 adds
@@ -579,7 +628,8 @@ Repository organised into four layers:
 - **Determinism regression** — hardcoded expected-value snapshots ensure
   derivation stability across releases
 
-[Unreleased]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.6.0...v0.7.0

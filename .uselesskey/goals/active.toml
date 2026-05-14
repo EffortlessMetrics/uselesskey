@@ -1,74 +1,51 @@
-id = "uselesskey-webhook-contract-pack"
-title = "Webhook contract pack"
-status = "archived"
+id = "uselesskey-v0.9.0-release"
+title = "Prepare and cut v0.9.0"
+status = "active"
 owner = "EffortlessMetrics"
 created = "2026-05-14"
 
 objective = """
-Ship a bounded webhook contract pack that proves deterministic HMAC webhook
-verifier behavior through the existing spec, claim, proof, verification-pack,
-release-evidence, PR-lite, and no-panic rails.
+Ship v0.9.0 as the release where uselesskey's public claims are
+command-backed, reviewable, locally evidenced, and product-useful through
+generated badge endpoints, claim-report, claim-proof, verification-pack,
+PR-lite, no-panic new-debt cleanup, and the webhook contract pack.
 """
 
 end_state = [
-  "uselesskey bundle --profile webhook materializes a deterministic webhook fixture pack.",
-  "cargo xtask bundle-proof --profile webhook verifies the pack and writes release-evidence receipts.",
-  "webhook-contract-pack is registered in the claim ledger and contract-pack registry.",
-  "cargo xtask claim-proof --claim webhook-contract-pack runs a whitelisted proof handler.",
-  "verification-pack can include webhook-contract-pack metadata-only receipts.",
-  "User docs explain what webhook fixtures prove and explicitly do not prove.",
+  "CHANGELOG.md describes v0.9.0 as the command-backed fixture-platform release.",
+  "docs/release/evidence-matrix-v0.9.0.md maps release claims to proof commands.",
+  "Full minor release evidence passes for version 0.9.0.",
+  "v0.9.0 is published through cargo xtask publish, not shipper.",
+  "Post-release audit records crates.io, docs.rs, claim-proof, and bundle-proof state honestly.",
 ]
 
 [[work_item]]
-id = "open-lane"
+id = "release-notes-evidence-matrix"
 status = "done"
 proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0005"
-plan = "plans/webhook-contract-pack/implementation-plan.md"
+spec = "USELESSKEY-SPEC-0006"
+plan = "plans/v0.9.0-release/implementation-plan.md"
 commands = [
   "cargo xtask spec-check --strict",
+  "cargo xtask claim-report --check-public-claims",
+  "cargo xtask contract-packs --check",
   "cargo xtask docs-sync --check",
   "cargo xtask typos",
   "git diff --check",
 ]
 
 [[work_item]]
-id = "webhook-spec"
-status = "done"
+id = "release-candidate-proof"
+status = "ready"
 proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0011"
-plan = "plans/webhook-contract-pack/implementation-plan.md"
+spec = "USELESSKEY-SPEC-0006"
+plan = "plans/v0.9.0-release/implementation-plan.md"
 commands = [
-  "cargo xtask spec-check --strict",
-  "cargo xtask docs-sync --check",
-  "cargo xtask typos",
-  "git diff --check",
-]
-
-[[work_item]]
-id = "bundle-profile"
-status = "done"
-proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0011"
-plan = "plans/webhook-contract-pack/implementation-plan.md"
-commands = [
-  "cargo test -p uselesskey-webhook --all-features",
-  "cargo test -p uselesskey-cli --all-features webhook",
-  "cargo xtask pr-lite",
-  "cargo xtask no-blob",
-  "cargo xtask check-file-policy",
-  "cargo xtask pr",
-  "git diff --check",
-]
-
-[[work_item]]
-id = "bundle-proof"
-status = "done"
-proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0011"
-plan = "plans/webhook-contract-pack/implementation-plan.md"
-commands = [
-  "cargo test -p xtask bundle_proof",
+  "cargo xtask release-evidence --version 0.9.0 --dry-run --summary",
+  "cargo xtask claim-proof --all-stable",
+  "cargo xtask verification-pack --out target/uselesskey-verification",
+  "cargo xtask bundle-proof --profile tls --out target/release-evidence/tls",
+  "cargo xtask bundle-proof --profile oidc --out target/release-evidence/oidc",
   "cargo xtask bundle-proof --profile webhook --out target/release-evidence/webhook",
   "cargo xtask pr-lite",
   "cargo xtask pr",
@@ -76,90 +53,37 @@ commands = [
 ]
 
 [[work_item]]
-id = "claim-registration"
-status = "done"
+id = "cut-v0.9.0"
+status = "planned"
 proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0011"
-plan = "plans/webhook-contract-pack/implementation-plan.md"
+spec = "USELESSKEY-SPEC-0006"
+plan = "plans/v0.9.0-release/implementation-plan.md"
 commands = [
-  "cargo xtask claim-report --check-public-claims",
-  "cargo xtask contract-packs --check",
-  "cargo xtask spec-check --strict",
+  "cargo xtask release-evidence --version 0.9.0 --dry-run --summary",
+  "cargo xtask publish-preflight",
+  "cargo xtask publish-check",
+  "cargo xtask no-blob",
+  "cargo xtask check-no-panic-family",
+  "cargo xtask badges --check",
   "cargo xtask docs-sync --check",
+  "cargo xtask pr",
   "git diff --check",
+  "cargo xtask publish",
 ]
 
 [[work_item]]
-id = "claim-proof"
-status = "done"
+id = "post-release-audit"
+status = "planned"
 proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0011"
-plan = "plans/webhook-contract-pack/implementation-plan.md"
+spec = "USELESSKEY-SPEC-0006"
+plan = "plans/v0.9.0-release/implementation-plan.md"
 commands = [
-  "cargo test -p xtask claim_proof",
-  "cargo xtask claim-proof --claim webhook-contract-pack",
+  "cargo xtask cratesio-smoke --version 0.9.0",
   "cargo xtask claim-proof --all-stable",
-  "cargo xtask verification-pack --out target/uselesskey-verification --claim webhook-contract-pack",
-  "cargo xtask pr-lite",
-  "cargo xtask pr",
-  "git diff --check",
-]
-
-[[work_item]]
-id = "how-to"
-status = "done"
-proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0011"
-plan = "plans/webhook-contract-pack/implementation-plan.md"
-commands = [
-  "cargo xtask docs-sync --check",
-  "cargo xtask typos",
-  "cargo xtask claim-report --check-public-claims",
-  "git diff --check",
-]
-
-[[work_item]]
-id = "release-evidence"
-status = "done"
-proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0011"
-plan = "plans/webhook-contract-pack/implementation-plan.md"
-commands = [
-  "cargo xtask release-evidence --version 0.9.0 --dry-run --summary",
-  "cargo xtask release-evidence --version 0.8.1 --patch --dry-run --summary",
-  "cargo xtask spec-check --strict",
-  "cargo xtask pr-lite",
-  "cargo xtask pr",
-  "git diff --check",
-]
-
-[[work_item]]
-id = "verification-polish"
-status = "done"
-proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0011"
-plan = "plans/webhook-contract-pack/implementation-plan.md"
-commands = [
-  "cargo xtask verification-pack --out target/uselesskey-verification --claim webhook-contract-pack",
-  "cargo xtask docs-sync --check",
-  "cargo xtask typos",
-  "git diff --check",
-]
-
-[[work_item]]
-id = "lane-closeout"
-status = "done"
-proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0011"
-plan = "plans/webhook-contract-pack/implementation-plan.md"
-commands = [
-  "cargo xtask spec-check --strict",
-  "cargo xtask claim-report --check-public-claims",
-  "cargo xtask contract-packs --check",
-  "cargo xtask claim-proof --claim webhook-contract-pack",
-  "cargo xtask verification-pack --out target/uselesskey-verification --claim webhook-contract-pack",
-  "cargo xtask release-evidence --version 0.9.0 --dry-run --summary",
-  "cargo xtask pr-lite",
-  "cargo xtask pr",
-  "git diff --check",
+  "cargo xtask verification-pack --out target/uselesskey-verification",
+  "cargo xtask bundle-proof --profile tls --out target/release-evidence/tls",
+  "cargo xtask bundle-proof --profile oidc --out target/release-evidence/oidc",
+  "cargo xtask bundle-proof --profile webhook --out target/release-evidence/webhook",
+  "cargo xtask public-surface",
+  "cargo xtask publish-check",
 ]

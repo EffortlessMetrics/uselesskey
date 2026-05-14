@@ -6,9 +6,12 @@ Use this document for the steady-state crates.io release flow.
 
 Release readiness is gated by:
 
+- `cargo xtask spec-check --strict`
+- `cargo xtask claim-report --check-public-claims`
+- `cargo xtask contract-packs --check`
 - `cargo xtask docs-sync --check`
-- `cargo xtask economics`
-- `cargo xtask audit-surface`
+- `cargo xtask pr-lite`
+- `cargo xtask pr`
 - `cargo xtask publish-preflight`
 
 ## Publish order
@@ -44,19 +47,27 @@ Before tagging, make sure the release PR has already:
 - bumped publishable crate versions
 - updated `CHANGELOG.md`
 - refreshed versioned `uselesskey*` dependency snippets in README/doc examples
-- refreshed receipt docs via `cargo xtask economics` and `cargo xtask audit-surface`
-- generated scanner-safe bundle proof with
-  `cargo xtask bundle-proof --profile scanner-safe --out target/release-evidence/scanner-safe`
+- mapped release proof in the release-specific evidence matrix
+- generated full minor-release evidence with
+  `cargo xtask release-evidence --version <VERSION> --dry-run --summary`
+- generated stable claim proof with `cargo xtask claim-proof --all-stable`
+- generated a metadata-only verification pack with
+  `cargo xtask verification-pack --out target/uselesskey-verification`
+- generated TLS contract-pack proof with
+  `cargo xtask bundle-proof --profile tls --out target/release-evidence/tls`
 - generated OIDC contract-pack proof with
   `cargo xtask bundle-proof --profile oidc --out target/release-evidence/oidc`
-- generated release evidence with
-  `cargo xtask release-evidence --version 0.7.0 --out target/release-evidence --summary`
-- mapped release checklist lines in
-  [`docs/release/v0.7.0-checklist.md`](../release/v0.7.0-checklist.md)
-- reviewed the release category notes in
-  [`docs/release/v0.7.0-category-notes.md`](../release/v0.7.0-category-notes.md)
+- generated webhook contract-pack proof with
+  `cargo xtask bundle-proof --profile webhook --out target/release-evidence/webhook`
+- verified the no-panic-family policy posture with
+  `cargo xtask check-no-panic-family`
+- verified generated badge endpoint drift with `cargo xtask badges --check`
 - prepared the post-release audit checklist in
   [`docs/release/post-release-audit.md`](../release/post-release-audit.md)
+
+For v0.9.0, use
+[`docs/release/evidence-matrix-v0.9.0.md`](../release/evidence-matrix-v0.9.0.md)
+as the release-specific proof map.
 
 ## Publish
 

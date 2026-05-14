@@ -12,6 +12,7 @@ Plans do not define product truth. Link to proposals for why and specs for what.
 - [pr-lite-evidence](pr-lite-evidence/README.md) - Local PR evidence and heavy-routing receipt rollout
 - [no-panic-burndown](no-panic-burndown/README.md) - No-panic-family debt burndown without baseline reset
 - [webhook-contract-pack](webhook-contract-pack/README.md) - Webhook contract-pack product lane
+- [v0.9.0-release](v0.9.0-release/README.md) - v0.9.0 release preparation, proof, publish, and audit
 
 ## Templates
 
