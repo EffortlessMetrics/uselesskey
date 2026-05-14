@@ -118,6 +118,14 @@ const TLS_CONTRACT_PACK_PROOF_CLAIM_BOUNDARY: &[&str] = &[
     "bundle proof is fixture-platform evidence, not production key management or scanner evasion",
 ];
 
+const WEBHOOK_CONTRACT_PACK_PROOF_CLAIM_BOUNDARY: &[&str] = &[
+    "Webhook contract-pack proof covers deterministic HMAC verifier fixtures, not production webhook provider compatibility",
+    "Webhook proof verifies pack shape and fixture presence (valid request + five negative classes), not downstream verifier correctness",
+    "Webhook proof does not cover secret rotation, delivery retries, replay protection completeness, transport security, or production secret management",
+    "Webhook request artifacts intentionally contain runtime signing material and belong under target/ or other generated-output paths, not committed fixture paths",
+    "bundle proof is fixture-platform evidence, not production key management or scanner evasion",
+];
+
 pub(crate) fn run(profile: &str, out_dir: Option<&Path>) -> Result<()> {
     let profile = profile.trim();
     ensure_supported_bundle_proof_profile(profile)?;
@@ -180,6 +188,7 @@ fn run_profile_commands(profile: &str, paths: &BundleProofPaths) -> Result<Bundl
         "scanner-safe" => run_scanner_safe_exports(paths, &mut execution)?,
         "oidc" => run_oidc_contract_pack_checks(&mut execution)?,
         "tls" => run_tls_contract_pack_checks(&mut execution)?,
+        "webhook" => run_webhook_contract_pack_checks(&mut execution)?,
         _ => ensure_supported_bundle_proof_profile(profile)?,
     }
     append_no_blob_check(&mut execution)?;
@@ -346,6 +355,33 @@ fn run_tls_contract_pack_checks(execution: &mut BundleProofExecution) -> Result<
     Ok(())
 }
 
+fn run_webhook_contract_pack_checks(execution: &mut BundleProofExecution) -> Result<()> {
+    execution.commands.push(run_bundle_proof_command(
+        "cli-webhook-contract-pack-test",
+        vec![
+            "cargo".to_string(),
+            "test".to_string(),
+            "-p".to_string(),
+            "uselesskey-cli".to_string(),
+            "webhook".to_string(),
+            "--all-features".to_string(),
+        ],
+        Vec::new(),
+    )?);
+    execution.commands.push(run_bundle_proof_command(
+        "webhook-owner-tests",
+        vec![
+            "cargo".to_string(),
+            "test".to_string(),
+            "-p".to_string(),
+            "uselesskey-webhook".to_string(),
+            "--all-features".to_string(),
+        ],
+        Vec::new(),
+    )?);
+    Ok(())
+}
+
 fn append_no_blob_check(execution: &mut BundleProofExecution) -> Result<()> {
     execution.commands.push(run_bundle_proof_command(
         "no-blob",
@@ -405,8 +441,10 @@ pub(crate) fn ensure_supported_bundle_proof_profile(profile: &str) -> Result<()>
 /// Profiles supported by `cargo xtask bundle-proof --profile <name>`.
 ///
 /// Order matches the v0.7.0 -> v0.8.0 release lane introduction order:
-/// scanner-safe (v0.7.0), oidc (v0.7.0), tls (v0.8.0 PR-C).
-pub(crate) const BUNDLE_PROOF_SUPPORTED_PROFILES: &[&str] = &["scanner-safe", "oidc", "tls"];
+/// scanner-safe (v0.7.0), oidc (v0.7.0), tls (v0.8.0 PR-C),
+/// webhook (v0.9.0 lane).
+pub(crate) const BUNDLE_PROOF_SUPPORTED_PROFILES: &[&str] =
+    &["scanner-safe", "oidc", "tls", "webhook"];
 
 fn unsupported_bundle_proof_profile_message() -> String {
     format!(
@@ -420,6 +458,7 @@ pub(crate) fn default_bundle_proof_out_dir(profile: &str) -> Result<PathBuf> {
         "scanner-safe" => "target/release-evidence/scanner-safe",
         "oidc" => "target/release-evidence/oidc",
         "tls" => "target/release-evidence/tls",
+        "webhook" => "target/release-evidence/webhook",
         _ => bail!("{}", unsupported_bundle_proof_profile_message()),
     }))
 }
@@ -429,6 +468,7 @@ pub(crate) fn bundle_proof_json_filename(profile: &str) -> Result<&'static str> 
         "scanner-safe" => "scanner-safe-bundle-proof.json",
         "oidc" => "oidc-contract-pack-proof.json",
         "tls" => "tls-contract-pack-proof.json",
+        "webhook" => "webhook-contract-pack-proof.json",
         _ => bail!("{}", unsupported_bundle_proof_profile_message()),
     })
 }
@@ -438,6 +478,7 @@ pub(crate) fn bundle_proof_markdown_filename(profile: &str) -> Result<&'static s
         "scanner-safe" => "scanner-safe-bundle-proof.md",
         "oidc" => "oidc-contract-pack-proof.md",
         "tls" => "tls-contract-pack-proof.md",
+        "webhook" => "webhook-contract-pack-proof.md",
         _ => bail!("{}", unsupported_bundle_proof_profile_message()),
     })
 }
@@ -447,6 +488,7 @@ pub(crate) fn bundle_proof_markdown_title(profile: &str) -> Result<&'static str>
         "scanner-safe" => "Scanner-Safe Bundle Proof",
         "oidc" => "OIDC Contract-Pack Proof",
         "tls" => "TLS Contract-Pack Proof",
+        "webhook" => "Webhook Contract-Pack Proof",
         _ => bail!("{}", unsupported_bundle_proof_profile_message()),
     })
 }
@@ -456,6 +498,7 @@ fn bundle_proof_claim_boundary(profile: &str) -> Result<Vec<&'static str>> {
         "scanner-safe" => SCANNER_SAFE_BUNDLE_PROOF_CLAIM_BOUNDARY.to_vec(),
         "oidc" => OIDC_CONTRACT_PACK_PROOF_CLAIM_BOUNDARY.to_vec(),
         "tls" => TLS_CONTRACT_PACK_PROOF_CLAIM_BOUNDARY.to_vec(),
+        "webhook" => WEBHOOK_CONTRACT_PACK_PROOF_CLAIM_BOUNDARY.to_vec(),
         _ => bail!("{}", unsupported_bundle_proof_profile_message()),
     })
 }
@@ -534,6 +577,43 @@ pub(crate) fn bundle_proof_expected_artifacts(
                 description: "TLS profile per-fixture rejection-expectation evidence",
             },
         ],
+        "webhook" => vec![
+            BundleProofExpectedArtifact {
+                name: "valid_request",
+                path: "requests/valid.json",
+                description: "Webhook valid HMAC request",
+            },
+            BundleProofExpectedArtifact {
+                name: "negative_tampered_body",
+                path: "requests/negative-tampered-body.json",
+                description: "Webhook negative request with modified body",
+            },
+            BundleProofExpectedArtifact {
+                name: "negative_wrong_secret",
+                path: "requests/negative-wrong-secret.json",
+                description: "Webhook negative request signed with the wrong secret",
+            },
+            BundleProofExpectedArtifact {
+                name: "negative_stale_timestamp",
+                path: "requests/negative-stale-timestamp.json",
+                description: "Webhook negative request outside timestamp tolerance",
+            },
+            BundleProofExpectedArtifact {
+                name: "negative_missing_signature",
+                path: "requests/negative-missing-signature.json",
+                description: "Webhook negative request missing the signature header",
+            },
+            BundleProofExpectedArtifact {
+                name: "negative_malformed_signature",
+                path: "requests/negative-malformed-signature.json",
+                description: "Webhook negative request with malformed signature",
+            },
+            BundleProofExpectedArtifact {
+                name: "webhook_evidence_doc",
+                path: "evidence/webhook-profile.md",
+                description: "Webhook profile verifier expectation evidence",
+            },
+        ],
         _ => bail!("{}", unsupported_bundle_proof_profile_message()),
     })
 }
@@ -609,17 +689,8 @@ pub(crate) fn bundle_proof_receipt(
     if manifest.artifacts.is_empty() {
         bail!("bundle proof expected artifact metadata");
     }
-    if !scanner_safe {
-        bail!("bundle proof expected all artifacts to be scanner-safe");
-    }
-    if runtime_material_count != 0 {
-        bail!("bundle proof expected zero runtime material artifacts");
-    }
     if private_key_material {
         bail!("bundle proof found private key material");
-    }
-    if symmetric_secret_material {
-        bail!("bundle proof found symmetric secret material");
     }
     for expected in ["materialization", "audit-surface"] {
         if !receipts_present.iter().any(|kind| kind == expected) {
@@ -633,15 +704,20 @@ pub(crate) fn bundle_proof_receipt(
             missing.path
         );
     }
-    if audit_surface
-        .get("scanner_safe")
-        .and_then(serde_json::Value::as_bool)
-        != Some(true)
-    {
-        bail!("bundle proof expected audit-surface scanner_safe=true");
-    }
-    if json_u64(audit_surface, "runtime_material_count") != 0 {
-        bail!("bundle proof expected audit-surface runtime_material_count=0");
+
+    match profile {
+        "webhook" => enforce_webhook_proof_posture(
+            scanner_safe,
+            runtime_material_count,
+            symmetric_secret_material,
+            audit_surface,
+        )?,
+        _ => enforce_scanner_safe_proof_posture(
+            scanner_safe,
+            runtime_material_count,
+            symmetric_secret_material,
+            audit_surface,
+        )?,
     }
 
     Ok(BundleProofReceipt {
@@ -669,6 +745,62 @@ pub(crate) fn bundle_proof_receipt(
     })
 }
 
+fn enforce_scanner_safe_proof_posture(
+    scanner_safe: bool,
+    runtime_material_count: usize,
+    symmetric_secret_material: bool,
+    audit_surface: &serde_json::Value,
+) -> Result<()> {
+    if !scanner_safe {
+        bail!("bundle proof expected all artifacts to be scanner-safe");
+    }
+    if runtime_material_count != 0 {
+        bail!("bundle proof expected zero runtime material artifacts");
+    }
+    if symmetric_secret_material {
+        bail!("bundle proof found symmetric secret material");
+    }
+    if audit_surface
+        .get("scanner_safe")
+        .and_then(serde_json::Value::as_bool)
+        != Some(true)
+    {
+        bail!("bundle proof expected audit-surface scanner_safe=true");
+    }
+    if json_u64(audit_surface, "runtime_material_count") != 0 {
+        bail!("bundle proof expected audit-surface runtime_material_count=0");
+    }
+    Ok(())
+}
+
+fn enforce_webhook_proof_posture(
+    scanner_safe: bool,
+    runtime_material_count: usize,
+    symmetric_secret_material: bool,
+    audit_surface: &serde_json::Value,
+) -> Result<()> {
+    if scanner_safe {
+        bail!("webhook bundle proof expected runtime webhook material");
+    }
+    if runtime_material_count != 6 {
+        bail!("webhook bundle proof expected six runtime request artifacts");
+    }
+    if !symmetric_secret_material {
+        bail!("webhook bundle proof expected symmetric signing material metadata");
+    }
+    if audit_surface
+        .get("scanner_safe")
+        .and_then(serde_json::Value::as_bool)
+        != Some(false)
+    {
+        bail!("webhook bundle proof expected audit-surface scanner_safe=false");
+    }
+    if json_u64(audit_surface, "runtime_material_count") != 6 {
+        bail!("webhook bundle proof expected audit-surface runtime_material_count=6");
+    }
+    Ok(())
+}
+
 fn bundle_proof_artifact_contains_private_key_material(
     artifact: &BundleProofArtifactRecord,
 ) -> bool {
@@ -680,7 +812,7 @@ fn bundle_proof_artifact_contains_private_key_material(
 fn bundle_proof_artifact_contains_symmetric_secret_material(
     artifact: &BundleProofArtifactRecord,
 ) -> bool {
-    artifact.kind == "hmac" && !artifact.scanner_safe
+    matches!(artifact.kind.as_str(), "hmac" | "webhook") && !artifact.scanner_safe
 }
 
 fn write_bundle_proof_artifacts(out_dir: &Path, receipt: &BundleProofReceipt) -> Result<()> {

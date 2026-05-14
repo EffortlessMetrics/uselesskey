@@ -63,7 +63,7 @@ commands = [
 
 [[work_item]]
 id = "bundle-proof"
-status = "ready"
+status = "done"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0011"
 plan = "plans/webhook-contract-pack/implementation-plan.md"
@@ -77,7 +77,7 @@ commands = [
 
 [[work_item]]
 id = "claim-registration"
-status = "planned"
+status = "ready"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0011"
 plan = "plans/webhook-contract-pack/implementation-plan.md"
