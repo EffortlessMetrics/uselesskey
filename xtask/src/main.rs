@@ -3540,6 +3540,8 @@ fn release_evidence_steps_minor() -> Vec<ReleaseEvidenceStep> {
                 "target/release-evidence/verification-pack/claim-proof/tls-contract-pack/receipt.md",
                 "target/release-evidence/verification-pack/claim-proof/oidc-jwks-contract-pack/receipt.json",
                 "target/release-evidence/verification-pack/claim-proof/oidc-jwks-contract-pack/receipt.md",
+                "target/release-evidence/verification-pack/claim-proof/webhook-contract-pack/receipt.json",
+                "target/release-evidence/verification-pack/claim-proof/webhook-contract-pack/receipt.md",
                 "target/release-evidence/verification-pack/claim-proof/public-crate-surface-cleanup/receipt.json",
                 "target/release-evidence/verification-pack/claim-proof/public-crate-surface-cleanup/receipt.md",
                 "target/release-evidence/verification-pack/claim-proof/generated-badge-endpoints/receipt.json",
@@ -3637,6 +3639,22 @@ fn release_evidence_steps_minor() -> Vec<ReleaseEvidenceStep> {
             artifacts: &[
                 "target/release-evidence/tls/tls-contract-pack-proof.json",
                 "target/release-evidence/tls/tls-contract-pack-proof.md",
+            ],
+        },
+        ReleaseEvidenceStep {
+            name: "webhook-contract-pack-proof",
+            command: &[
+                "cargo",
+                "xtask",
+                "bundle-proof",
+                "--profile",
+                "webhook",
+                "--out",
+                "target/release-evidence/webhook",
+            ],
+            artifacts: &[
+                "target/release-evidence/webhook/webhook-contract-pack-proof.json",
+                "target/release-evidence/webhook/webhook-contract-pack-proof.md",
             ],
         },
         ReleaseEvidenceStep {
@@ -4108,6 +4126,10 @@ fn render_release_evidence_summary_markdown(receipt: &ReleaseEvidenceReceipt) ->
                 &["oidc-contract-pack-proof"][..],
             ),
             ("TLS contract-pack proof", &["tls-contract-pack-proof"][..]),
+            (
+                "Webhook contract-pack proof",
+                &["webhook-contract-pack-proof"][..],
+            ),
             ("RIPR exposure", &["ripr-pr", "impacted-evidence"][..]),
             ("Verification pack", &["verification-pack"][..]),
             ("Nightly mutation scope", &["mutants-nightly-public"][..]),
@@ -8341,6 +8363,7 @@ index 1111111..2222222 100644
             "scanner-safe-bundle-proof",
             "oidc-contract-pack-proof",
             "tls-contract-pack-proof",
+            "webhook-contract-pack-proof",
             "economics",
             "audit-surface",
             "perf",
@@ -8382,6 +8405,9 @@ index 1111111..2222222 100644
                 .artifacts
                 .contains(&"target/release-evidence/tls/tls-contract-pack-proof.md".to_string())
         );
+        assert!(receipt.artifacts.contains(
+            &"target/release-evidence/webhook/webhook-contract-pack-proof.md".to_string()
+        ));
         assert!(
             receipt
                 .artifacts
@@ -8415,6 +8441,7 @@ index 1111111..2222222 100644
         assert!(markdown.contains("Scanner-safe bundle proof"));
         assert!(markdown.contains("OIDC contract-pack proof"));
         assert!(markdown.contains("TLS contract-pack proof"));
+        assert!(markdown.contains("Webhook contract-pack proof"));
         assert!(markdown.contains("Nightly mutation scope"));
         assert!(markdown.contains("Pending RC execution"));
         assert!(markdown.contains("not production key management"));
@@ -8603,6 +8630,16 @@ index 1111111..2222222 100644
     }
 
     #[test]
+    fn release_evidence_patch_step_list_excludes_webhook_contract_pack_proof() {
+        let steps = release_evidence_steps_patch();
+        let names = steps.iter().map(|step| step.name).collect::<BTreeSet<_>>();
+        assert!(
+            !names.contains("webhook-contract-pack-proof"),
+            "patch lane must not include webhook-contract-pack-proof (full pack proofs are minor-only)",
+        );
+    }
+
+    #[test]
     fn release_evidence_minor_step_list_includes_tls_contract_pack_proof() -> Result<()> {
         let steps = release_evidence_steps_minor();
         let step = steps
@@ -8628,6 +8665,36 @@ index 1111111..2222222 100644
         assert!(
             step.artifacts
                 .contains(&"target/release-evidence/tls/tls-contract-pack-proof.md"),
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn release_evidence_minor_step_list_includes_webhook_contract_pack_proof() -> Result<()> {
+        let steps = release_evidence_steps_minor();
+        let step = steps
+            .iter()
+            .find(|step| step.name == "webhook-contract-pack-proof")
+            .context("minor lane must wire webhook-contract-pack-proof")?;
+        assert_eq!(
+            step.command,
+            &[
+                "cargo",
+                "xtask",
+                "bundle-proof",
+                "--profile",
+                "webhook",
+                "--out",
+                "target/release-evidence/webhook",
+            ],
+        );
+        assert!(
+            step.artifacts
+                .contains(&"target/release-evidence/webhook/webhook-contract-pack-proof.json"),
+        );
+        assert!(
+            step.artifacts
+                .contains(&"target/release-evidence/webhook/webhook-contract-pack-proof.md"),
         );
         Ok(())
     }
@@ -8680,6 +8747,9 @@ index 1111111..2222222 100644
         );
         assert!(step.artifacts.contains(
             &"target/release-evidence/verification-pack/claim-proof/tls-contract-pack/receipt.json"
+        ));
+        assert!(step.artifacts.contains(
+            &"target/release-evidence/verification-pack/claim-proof/webhook-contract-pack/receipt.json"
         ));
         Ok(())
     }

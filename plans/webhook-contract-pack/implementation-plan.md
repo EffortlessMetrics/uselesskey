@@ -115,11 +115,10 @@ Do not mix these into this lane:
    registry requires a live `how_to` path.
 6. Add a whitelisted `cargo xtask claim-proof --claim webhook-contract-pack`
    handler.
-7. Polish webhook verification-pack docs and any remaining user-facing
-   verification flow gaps.
-8. Wire webhook proof into minor release evidence while keeping patch evidence
+7. Wire webhook proof into minor release evidence while keeping patch evidence
    cheap unless webhook surfaces are touched.
-9. Polish verification-pack docs for the webhook user path.
+8. Polish verification-pack docs for the webhook user path.
+9. Polish any remaining user-facing verification flow gaps.
 10. Close out the lane with a learning record and archived active goal.
 
 ## Proof Commands
