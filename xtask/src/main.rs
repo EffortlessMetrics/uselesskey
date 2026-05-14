@@ -182,7 +182,7 @@ enum Cmd {
     },
     /// Generate, verify, inspect, and export a bundle proof artifact for release evidence.
     BundleProof {
-        /// Bundle profile to prove. Supports `scanner-safe`, `oidc`, and `tls`.
+        /// Bundle profile to prove. Supports `scanner-safe`, `oidc`, `tls`, and `webhook`.
         #[arg(long, default_value = "scanner-safe")]
         profile: String,
         /// Output directory for proof artifacts.
@@ -8727,6 +8727,48 @@ index 1111111..2222222 100644
     }
 
     #[test]
+    fn bundle_proof_webhook_profile_constant_includes_webhook() -> Result<()> {
+        assert!(
+            BUNDLE_PROOF_SUPPORTED_PROFILES.contains(&"webhook"),
+            "webhook must be a supported bundle-proof profile",
+        );
+        ensure_supported_bundle_proof_profile("webhook")?;
+        assert_eq!(
+            bundle_proof_json_filename("webhook")?,
+            "webhook-contract-pack-proof.json",
+        );
+        assert_eq!(
+            bundle_proof_markdown_filename("webhook")?,
+            "webhook-contract-pack-proof.md",
+        );
+        assert_eq!(
+            bundle_proof_markdown_title("webhook")?,
+            "Webhook Contract-Pack Proof",
+        );
+        assert_eq!(
+            default_bundle_proof_out_dir("webhook")?,
+            PathBuf::from("target/release-evidence/webhook"),
+        );
+        let expected = bundle_proof_expected_artifacts("webhook")?;
+        let paths = expected.iter().map(|e| e.path).collect::<Vec<_>>();
+        for required in [
+            "requests/valid.json",
+            "requests/negative-tampered-body.json",
+            "requests/negative-wrong-secret.json",
+            "requests/negative-stale-timestamp.json",
+            "requests/negative-missing-signature.json",
+            "requests/negative-malformed-signature.json",
+            "evidence/webhook-profile.md",
+        ] {
+            assert!(
+                paths.contains(&required),
+                "webhook expected artifacts missing {required}",
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn bundle_proof_receipt_enforces_scanner_safe_posture() {
         let manifest = scanner_safe_bundle_proof_manifest();
         let audit_surface = serde_json::json!({
@@ -8809,9 +8851,7 @@ index 1111111..2222222 100644
         .expect_err("runtime material should fail scanner-safe proof");
 
         assert!(
-            error
-                .to_string()
-                .contains("all artifacts to be scanner-safe"),
+            error.to_string().contains("private key material"),
             "unexpected error: {error}"
         );
     }
@@ -9040,6 +9080,103 @@ index 1111111..2222222 100644
         assert!(markdown.contains("downstream TLS verifier"));
     }
 
+    #[test]
+    fn bundle_proof_receipt_allows_webhook_runtime_material() -> Result<()> {
+        let manifest = webhook_bundle_proof_manifest();
+        let audit_surface = serde_json::json!({
+            "scanner_safe": false,
+            "runtime_material_count": 6,
+        });
+        let receipt = bundle_proof_receipt(BundleProofReceiptInput {
+            profile: "webhook",
+            bundle_dir: Path::new("target/release-evidence/webhook/bundle"),
+            manifest_path: Path::new("target/release-evidence/webhook/bundle/manifest.json"),
+            inspect_summary_path: Path::new("target/release-evidence/webhook/inspect-bundle.txt"),
+            manifest: &manifest,
+            audit_surface: &audit_surface,
+            expected_artifacts: bundle_proof_expected_artifacts("webhook")?,
+            commands: Vec::new(),
+            exports_generated: Vec::new(),
+        })?;
+
+        assert_eq!(receipt.profile, "webhook");
+        assert_eq!(receipt.artifact_count, 7);
+        assert_eq!(receipt.contract_pack_checks.len(), 7);
+        assert_eq!(receipt.scanner_safe_artifact_count, 1);
+        assert_eq!(receipt.runtime_material_count, 6);
+        assert!(!receipt.private_key_material);
+        assert!(receipt.symmetric_secret_material);
+        assert!(
+            receipt
+                .contract_pack_checks
+                .iter()
+                .all(|check| check.present)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn bundle_proof_receipt_rejects_incomplete_webhook_contract_pack() -> Result<()> {
+        let mut manifest = webhook_bundle_proof_manifest();
+        manifest
+            .files
+            .retain(|path| path != "requests/negative-malformed-signature.json");
+        manifest
+            .artifacts
+            .retain(|artifact| artifact.path != "requests/negative-malformed-signature.json");
+        let audit_surface = serde_json::json!({
+            "scanner_safe": false,
+            "runtime_material_count": 5,
+        });
+        let error = bundle_proof_receipt(BundleProofReceiptInput {
+            profile: "webhook",
+            bundle_dir: Path::new("target/release-evidence/webhook/bundle"),
+            manifest_path: Path::new("target/release-evidence/webhook/bundle/manifest.json"),
+            inspect_summary_path: Path::new("target/release-evidence/webhook/inspect-bundle.txt"),
+            manifest: &manifest,
+            audit_surface: &audit_surface,
+            expected_artifacts: bundle_proof_expected_artifacts("webhook")?,
+            commands: Vec::new(),
+            exports_generated: Vec::new(),
+        })
+        .err()
+        .context("missing webhook artifact should fail proof")?;
+
+        assert!(
+            error.to_string().contains("negative_malformed_signature"),
+            "unexpected error: {error}"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn bundle_proof_markdown_summarizes_webhook_contract_checks() -> Result<()> {
+        let manifest = webhook_bundle_proof_manifest();
+        let audit_surface = serde_json::json!({
+            "scanner_safe": false,
+            "runtime_material_count": 6,
+        });
+        let receipt = bundle_proof_receipt(BundleProofReceiptInput {
+            profile: "webhook",
+            bundle_dir: Path::new("target/release-evidence/webhook/bundle"),
+            manifest_path: Path::new("target/release-evidence/webhook/bundle/manifest.json"),
+            inspect_summary_path: Path::new("target/release-evidence/webhook/inspect-bundle.txt"),
+            manifest: &manifest,
+            audit_surface: &audit_surface,
+            expected_artifacts: bundle_proof_expected_artifacts("webhook")?,
+            commands: Vec::new(),
+            exports_generated: Vec::new(),
+        })?;
+        let markdown = render_bundle_proof_markdown(&receipt)?;
+
+        assert!(markdown.contains("# Webhook Contract-Pack Proof"));
+        assert!(markdown.contains("negative_tampered_body"));
+        assert!(markdown.contains("requests/negative-malformed-signature.json"));
+        assert!(markdown.contains("Runtime material count: `6`"));
+        assert!(markdown.contains("provider compatibility"));
+        Ok(())
+    }
+
     fn scanner_safe_bundle_proof_manifest() -> BundleProofManifest {
         BundleProofManifest {
             profile: "scanner-safe".to_string(),
@@ -9254,6 +9391,97 @@ index 1111111..2222222 100644
                     path: "receipts/audit-surface.json".to_string(),
                     kind: "audit-surface".to_string(),
                     profile: "tls".to_string(),
+                    description: "scanner-safety and lane metadata receipt".to_string(),
+                },
+            ],
+        }
+    }
+
+    fn webhook_bundle_proof_manifest() -> BundleProofManifest {
+        BundleProofManifest {
+            profile: "webhook".to_string(),
+            files: vec![
+                "requests/valid.json".to_string(),
+                "requests/negative-tampered-body.json".to_string(),
+                "requests/negative-wrong-secret.json".to_string(),
+                "requests/negative-stale-timestamp.json".to_string(),
+                "requests/negative-missing-signature.json".to_string(),
+                "requests/negative-malformed-signature.json".to_string(),
+                "evidence/webhook-profile.md".to_string(),
+                "receipts/materialization.json".to_string(),
+                "receipts/audit-surface.json".to_string(),
+            ],
+            artifacts: vec![
+                BundleProofArtifactRecord {
+                    path: "requests/valid.json".to_string(),
+                    kind: "webhook".to_string(),
+                    format: "json-manifest".to_string(),
+                    lanes: vec!["runtime".to_string(), "materialized".to_string()],
+                    scanner_safe: false,
+                    description: "Webhook valid HMAC request".to_string(),
+                },
+                BundleProofArtifactRecord {
+                    path: "requests/negative-tampered-body.json".to_string(),
+                    kind: "webhook".to_string(),
+                    format: "json-manifest".to_string(),
+                    lanes: vec!["runtime".to_string(), "materialized".to_string()],
+                    scanner_safe: false,
+                    description: "Webhook negative request with modified body".to_string(),
+                },
+                BundleProofArtifactRecord {
+                    path: "requests/negative-wrong-secret.json".to_string(),
+                    kind: "webhook".to_string(),
+                    format: "json-manifest".to_string(),
+                    lanes: vec!["runtime".to_string(), "materialized".to_string()],
+                    scanner_safe: false,
+                    description: "Webhook negative request signed with the wrong secret"
+                        .to_string(),
+                },
+                BundleProofArtifactRecord {
+                    path: "requests/negative-stale-timestamp.json".to_string(),
+                    kind: "webhook".to_string(),
+                    format: "json-manifest".to_string(),
+                    lanes: vec!["runtime".to_string(), "materialized".to_string()],
+                    scanner_safe: false,
+                    description: "Webhook negative request outside timestamp tolerance".to_string(),
+                },
+                BundleProofArtifactRecord {
+                    path: "requests/negative-missing-signature.json".to_string(),
+                    kind: "webhook".to_string(),
+                    format: "json-manifest".to_string(),
+                    lanes: vec!["runtime".to_string(), "materialized".to_string()],
+                    scanner_safe: false,
+                    description: "Webhook negative request missing the signature header"
+                        .to_string(),
+                },
+                BundleProofArtifactRecord {
+                    path: "requests/negative-malformed-signature.json".to_string(),
+                    kind: "webhook".to_string(),
+                    format: "json-manifest".to_string(),
+                    lanes: vec!["runtime".to_string(), "materialized".to_string()],
+                    scanner_safe: false,
+                    description: "Webhook negative request with malformed signature".to_string(),
+                },
+                BundleProofArtifactRecord {
+                    path: "evidence/webhook-profile.md".to_string(),
+                    kind: "webhook".to_string(),
+                    format: "json-manifest".to_string(),
+                    lanes: vec!["runtime".to_string(), "materialized".to_string()],
+                    scanner_safe: true,
+                    description: "Webhook profile verifier expectation evidence".to_string(),
+                },
+            ],
+            receipts: vec![
+                BundleProofReceiptRecord {
+                    path: "receipts/materialization.json".to_string(),
+                    kind: "materialization".to_string(),
+                    profile: "webhook".to_string(),
+                    description: "deterministic bundle materialization receipt".to_string(),
+                },
+                BundleProofReceiptRecord {
+                    path: "receipts/audit-surface.json".to_string(),
+                    kind: "audit-surface".to_string(),
+                    profile: "webhook".to_string(),
                     description: "scanner-safety and lane metadata receipt".to_string(),
                 },
             ],
