@@ -72,10 +72,10 @@ pub(crate) fn run(root: &Path, claim: Option<&str>, all_stable: bool) -> Result<
     }
 
     let ledger = read_ledger(root)?;
-    let selected = if all_stable {
-        stable_claims_with_policy(&ledger)?
-    } else {
-        vec![claim.expect("checked above").to_string()]
+    let selected = match (all_stable, claim) {
+        (true, _) => stable_claims_with_policy(&ledger)?,
+        (false, Some(claim)) => vec![claim.to_string()],
+        (false, None) => bail!("claim-proof: pass exactly one of --claim <id> or --all-stable"),
     };
 
     let mut failures = Vec::new();
@@ -374,9 +374,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn stable_claim_selection_uses_include_in_all_stable() {
+    fn stable_claim_selection_uses_include_in_all_stable() -> Result<()> {
         let ledger = minimal_ledger();
-        let selected = stable_claims_with_policy(&ledger).unwrap();
+        let selected = stable_claims_with_policy(&ledger)?;
 
         assert_eq!(
             selected,
@@ -385,10 +385,11 @@ mod tests {
                 "tls-contract-pack".to_string()
             ]
         );
+        Ok(())
     }
 
     #[test]
-    fn stable_claim_selection_rejects_missing_policy() {
+    fn stable_claim_selection_rejects_missing_policy() -> Result<()> {
         let mut ledger = minimal_ledger();
         ledger.claim.push(ClaimEntry {
             id: "generated-badge-endpoints".to_string(),
@@ -398,49 +399,62 @@ mod tests {
             artifacts: Vec::new(),
         });
 
-        let err = stable_claims_with_policy(&ledger).unwrap_err();
+        let err = match stable_claims_with_policy(&ledger) {
+            Ok(selected) => bail!("unexpected stable claim selection: {selected:?}"),
+            Err(err) => err,
+        };
 
         assert!(
             err.to_string()
                 .contains("stable claim `generated-badge-endpoints` has no claim-proof policy"),
             "unexpected error: {err}"
         );
+        Ok(())
     }
 
     #[test]
-    fn handler_specs_construct_argv_without_shell() {
-        let spec = handler_spec("scanner_safe_reference_check").unwrap();
+    fn handler_specs_construct_argv_without_shell() -> Result<()> {
+        let spec = handler_spec("scanner_safe_reference_check")?;
 
         assert_eq!(
             spec.argv,
             vec!["cargo", "xtask", "scanner-safe-reference", "--check"]
         );
         assert!(!spec.argv.iter().any(|part| part.contains("&&")));
+        Ok(())
     }
 
     #[test]
-    fn unknown_handler_is_rejected() {
-        let err = handler_spec("cargo xtask no-blob").unwrap_err();
+    fn unknown_handler_is_rejected() -> Result<()> {
+        let err = match handler_spec("cargo xtask no-blob") {
+            Ok(spec) => bail!("unexpected handler spec: {spec:?}"),
+            Err(err) => err,
+        };
 
         assert!(
             err.to_string()
                 .contains("unknown claim-proof handler `cargo xtask no-blob`"),
             "unexpected error: {err}"
         );
+        Ok(())
     }
 
     #[test]
-    fn explicit_version_handler_is_not_implicit() {
-        let err = handler_spec("cratesio_smoke_version").unwrap_err();
+    fn explicit_version_handler_is_not_implicit() -> Result<()> {
+        let err = match handler_spec("cratesio_smoke_version") {
+            Ok(spec) => bail!("unexpected handler spec: {spec:?}"),
+            Err(err) => err,
+        };
 
         assert!(
             err.to_string().contains("requires an explicit version"),
             "unexpected error: {err}"
         );
+        Ok(())
     }
 
     #[test]
-    fn receipt_markdown_includes_boundary() {
+    fn receipt_markdown_includes_boundary() -> Result<()> {
         let receipt = ClaimProofReceipt {
             schema_version: 1,
             claim: "scanner-safe-fixtures".to_string(),
@@ -467,16 +481,18 @@ mod tests {
 
         assert!(markdown.contains("scanner-safe-fixtures"));
         assert!(markdown.contains("Not production key management."));
+        Ok(())
     }
 
     #[test]
-    fn invalid_claim_ids_are_rejected() {
+    fn invalid_claim_ids_are_rejected() -> Result<()> {
         for claim_id in ["", "../bad", "BadClaim", "bad_claim"] {
             assert!(
                 validate_claim_id(claim_id).is_err(),
                 "{claim_id} should be invalid"
             );
         }
+        Ok(())
     }
 
     fn minimal_ledger() -> ClaimLedger {

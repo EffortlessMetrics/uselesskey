@@ -86,7 +86,7 @@ pub(crate) fn write_test_efficiency_report(root: &Path) -> Result<()> {
 fn build_report(root: &Path) -> Result<TestEfficiencyReport> {
     let mut tests = Vec::new();
     let fn_regex = Regex::new(r"\b(?:async\s+)?fn\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(")
-        .expect("valid function regex");
+        .context("valid function regex")?;
 
     for path in rust_files(root)? {
         collect_tests_from_file(root, &path, &fn_regex, &mut tests)?;

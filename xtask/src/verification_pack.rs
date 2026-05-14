@@ -347,9 +347,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn default_selection_uses_stable_all_stable_claims() {
+    fn default_selection_uses_stable_all_stable_claims() -> Result<()> {
         let ledger = minimal_ledger();
-        let selected = selected_claims(&ledger, None).unwrap();
+        let selected = selected_claims(&ledger, None)?;
 
         assert_eq!(
             selected
@@ -358,21 +358,26 @@ mod tests {
                 .collect::<Vec<_>>(),
             vec!["scanner-safe-fixtures", "tls-contract-pack"]
         );
+        Ok(())
     }
 
     #[test]
-    fn claim_selection_rejects_unknown_claim() {
+    fn claim_selection_rejects_unknown_claim() -> Result<()> {
         let ledger = minimal_ledger();
-        let err = selected_claims(&ledger, Some("missing")).unwrap_err();
+        let err = match selected_claims(&ledger, Some("missing")) {
+            Ok(claims) => bail!("unexpected claim selection: {claims:?}"),
+            Err(err) => err,
+        };
 
         assert!(
             err.to_string().contains("unknown claim `missing`"),
             "unexpected error: {err}"
         );
+        Ok(())
     }
 
     #[test]
-    fn readme_records_boundaries_and_commands() {
+    fn readme_records_boundaries_and_commands() -> Result<()> {
         let claims = vec![ClaimEntry {
             id: "scanner-safe-fixtures".to_string(),
             title: "Scanner-safe fixtures".to_string(),
@@ -385,10 +390,11 @@ mod tests {
         assert!(markdown.contains("cargo xtask claim-proof --claim scanner-safe-fixtures"));
         assert!(markdown.contains("Not every export is safe to commit."));
         assert!(markdown.contains("intentionally excludes generated fixture payloads"));
+        Ok(())
     }
 
     #[test]
-    fn forbidden_payload_paths_are_rejected() {
+    fn forbidden_payload_paths_are_rejected() -> Result<()> {
         for path in [
             "certs/valid-leaf.pem",
             "payload.der",
@@ -407,49 +413,58 @@ mod tests {
         ] {
             assert!(!forbidden_payload_path(path), "{path} should be allowed");
         }
+        Ok(())
     }
 
     #[test]
-    fn target_output_dir_can_be_recreated() {
-        let dir = tempfile::tempdir().unwrap();
+    fn target_output_dir_can_be_recreated() -> Result<()> {
+        let dir = tempfile::tempdir()?;
         let out = dir.path().join("target/uselesskey-verification");
-        fs::create_dir_all(&out).unwrap();
-        fs::write(out.join("old.txt"), "old").unwrap();
+        fs::create_dir_all(&out)?;
+        fs::write(out.join("old.txt"), "old")?;
 
-        let prepared =
-            prepare_out_dir(dir.path(), Path::new("target/uselesskey-verification")).unwrap();
+        let prepared = prepare_out_dir(dir.path(), Path::new("target/uselesskey-verification"))?;
 
         assert_eq!(prepared, out);
         assert!(!prepared.join("old.txt").exists());
+        Ok(())
     }
 
     #[test]
-    fn non_target_nonempty_output_dir_is_rejected() {
-        let dir = tempfile::tempdir().unwrap();
+    fn non_target_nonempty_output_dir_is_rejected() -> Result<()> {
+        let dir = tempfile::tempdir()?;
         let out = dir.path().join("review-pack");
-        fs::create_dir_all(&out).unwrap();
-        fs::write(out.join("old.txt"), "old").unwrap();
+        fs::create_dir_all(&out)?;
+        fs::write(out.join("old.txt"), "old")?;
 
-        let err = prepare_out_dir(dir.path(), &out).unwrap_err();
+        let err = match prepare_out_dir(dir.path(), &out) {
+            Ok(path) => bail!("unexpected prepared output dir: {}", path.display()),
+            Err(err) => err,
+        };
 
         assert!(
             err.to_string()
                 .contains("non-target output directory must be empty"),
             "unexpected error: {err}"
         );
+        Ok(())
     }
 
     #[test]
-    fn target_root_output_dir_is_rejected() {
-        let dir = tempfile::tempdir().unwrap();
+    fn target_root_output_dir_is_rejected() -> Result<()> {
+        let dir = tempfile::tempdir()?;
 
-        let err = prepare_out_dir(dir.path(), Path::new("target")).unwrap_err();
+        let err = match prepare_out_dir(dir.path(), Path::new("target")) {
+            Ok(path) => bail!("unexpected prepared output dir: {}", path.display()),
+            Err(err) => err,
+        };
 
         assert!(
             err.to_string()
                 .contains("refusing to use target root as output directory"),
             "unexpected error: {err}"
         );
+        Ok(())
     }
 
     fn minimal_ledger() -> ClaimLedger {
