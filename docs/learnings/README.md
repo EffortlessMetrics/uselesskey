@@ -23,3 +23,4 @@ include:
 - [2026-05-claim-backed-verification.md](2026-05-claim-backed-verification.md) - public claims are useful when users can run the proof
 - [2026-05-pr-lite-evidence.md](2026-05-pr-lite-evidence.md) - local evidence is useful when its boundary is explicit
 - [2026-05-no-panic-burndown.md](2026-05-no-panic-burndown.md) - no-panic progress needs a stage between advisory and deny
+- [2026-05-webhook-contract-pack.md](2026-05-webhook-contract-pack.md) - contract packs become real when a new user workflow uses every proof rail
