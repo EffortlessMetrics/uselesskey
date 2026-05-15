@@ -26,19 +26,46 @@
 
 `uselesskey` is a **test-fixture factory**, not a crypto library. It generates key material, certificates, token-shaped fixtures, and negative artifacts at runtime so tests do not need committed PEM/DER/JWK blobs.
 
-If you already know what you are trying to test, start with the task router:
-[docs/how-to/start-here.md](docs/how-to/start-here.md). It maps common jobs to
-one dependency snippet or command before introducing the internal proof system.
+## Start Here
 
-Public claims are command-backed. Start with the
-[verification guide](docs/how-to/verify-uselesskey-public-claims.md) or the
-[public claim index](docs/status/PUBLIC_CLAIMS.md) to see what each badge and
-contract-pack claim proves, what command checks it, and what it does not prove.
-For reviewer handoff, generate a metadata-only proof bundle:
+Pick the job first; the proof machinery is there when you need it.
+
+| I need | Copy this first |
+|----------|----------|
+| Fake keys, certs, or token shapes in Rust tests | `uselesskey = { version = "0.9.0", features = ["rsa"] }` |
+| The smallest feature lane for my test | `docs/how-to/start-here.md` |
+| A deterministic webhook verifier pack | `uselesskey bundle --profile webhook --out target/uselesskey-webhook` |
+| TLS or OIDC/JWKS verifier fixtures | `uselesskey profiles` |
+| Proof for a security/platform reviewer | `cargo xtask verification-pack --out target/uselesskey-verification` |
+
+CLI contract packs start with:
+
+```bash
+cargo install uselesskey-cli --version 0.9.0
+uselesskey profiles
+uselesskey profile webhook --explain
+```
+
+Generate and verify a webhook pack:
+
+```bash
+uselesskey bundle --profile webhook --out target/uselesskey-webhook
+uselesskey verify-bundle --path target/uselesskey-webhook
+```
+
+Public claims are command-backed. For reviewer handoff, generate a
+metadata-only proof bundle:
 
 ```bash
 cargo xtask verification-pack --out target/uselesskey-verification
 ```
+
+This proves the repo's public claim receipts; it does not prove production key
+management, provider-specific webhook compatibility, production PKI, or that
+every derived encoded export is safe to commit. Start with
+[docs/how-to/start-here.md](docs/how-to/start-here.md) for the task router, or
+[docs/status/PUBLIC_CLAIMS.md](docs/status/PUBLIC_CLAIMS.md) for the full proof
+index.
 
 ## Why this exists
 
