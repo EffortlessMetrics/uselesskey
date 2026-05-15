@@ -1,92 +1,143 @@
-id = "uselesskey-v0.9.0-release"
-title = "Prepare and cut v0.9.0"
-status = "archived"
+id = "uselesskey-first-run-ux"
+title = "First-run UX and contract-pack adoption"
+status = "active"
 owner = "EffortlessMetrics"
-created = "2026-05-14"
+created = "2026-05-15"
 
 objective = """
-Ship v0.9.0 as the release where uselesskey's public claims are
-command-backed, reviewable, locally evidenced, and product-useful through
-generated badge endpoints, claim-report, claim-proof, verification-pack,
-PR-lite, no-panic new-debt cleanup, and the webhook contract pack.
+Compress the path from user intent to a working fixture, verifier pack, and
+proof boundary. Users should be able to pick a job, copy one command or
+dependency snippet, generate a useful fixture, and optionally prove the claim
+without learning the repo's internal proof machinery first.
 """
 
 end_state = [
-  "CHANGELOG.md describes v0.9.0 as the command-backed fixture-platform release.",
-  "docs/release/evidence-matrix-v0.9.0.md maps release claims to proof commands.",
-  "Full minor release evidence passes for version 0.9.0.",
-  "v0.9.0 is published through cargo xtask publish, not shipper.",
-  "Post-release audit records crates.io, docs.rs, claim-proof, and bundle-proof state honestly.",
+  "README and docs route users by job before introducing internal proof machinery.",
+  "docs/how-to/start-here.md maps common user jobs to one copyable command or snippet.",
+  "Contract packs are visible as a product family with generate, verify, proof, and boundary rows.",
+  "CLI profile discovery explains available profiles, generated files, proof commands, and boundaries.",
+  "Reviewer evidence has a user-facing handoff that stays metadata-only.",
+  "Maintainers can diagnose local proof environment issues before running broad gates.",
+  "User-path smoke checks keep first-run examples honest.",
 ]
 
 [[work_item]]
-id = "release-notes-evidence-matrix"
+id = "open-lane"
 status = "done"
 proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0006"
-plan = "plans/v0.9.0-release/implementation-plan.md"
+spec = "USELESSKEY-SPEC-0005"
+plan = "plans/first-run-ux/implementation-plan.md"
 commands = [
   "cargo xtask spec-check --strict",
-  "cargo xtask claim-report --check-public-claims",
-  "cargo xtask contract-packs --check",
   "cargo xtask docs-sync --check",
   "cargo xtask typos",
   "git diff --check",
 ]
 
 [[work_item]]
-id = "release-candidate-proof"
-status = "done"
+id = "task-router"
+status = "ready"
 proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0006"
-plan = "plans/v0.9.0-release/implementation-plan.md"
+spec = "USELESSKEY-SPEC-0002"
+plan = "plans/first-run-ux/implementation-plan.md"
 commands = [
-  "cargo xtask release-evidence --version 0.9.0 --dry-run --summary",
-  "cargo xtask claim-proof --all-stable",
-  "cargo xtask verification-pack --out target/uselesskey-verification",
-  "cargo xtask bundle-proof --profile tls --out target/release-evidence/tls",
-  "cargo xtask bundle-proof --profile oidc --out target/release-evidence/oidc",
-  "cargo xtask bundle-proof --profile webhook --out target/release-evidence/webhook",
+  "cargo xtask docs-sync --check",
+  "cargo xtask typos",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "contract-pack-index"
+status = "planned"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0003"
+plan = "plans/first-run-ux/implementation-plan.md"
+commands = [
+  "cargo xtask contract-packs --check",
+  "cargo xtask claim-report --check-public-claims",
+  "cargo xtask docs-sync --check",
+  "cargo xtask typos",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "cli-profile-discovery"
+status = "planned"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0003"
+plan = "plans/first-run-ux/implementation-plan.md"
+commands = [
+  "cargo test -p uselesskey-cli --all-features profile",
   "cargo xtask pr-lite",
   "cargo xtask pr",
   "git diff --check",
 ]
 
 [[work_item]]
-id = "cut-v0.9.0"
-status = "done"
+id = "cli-proof-handoff"
+status = "planned"
 proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0006"
-plan = "plans/v0.9.0-release/implementation-plan.md"
+spec = "USELESSKEY-SPEC-0009"
+plan = "plans/first-run-ux/implementation-plan.md"
 commands = [
-  "cargo xtask release-evidence --version 0.9.0 --dry-run --summary",
-  "cargo xtask publish-preflight",
-  "cargo xtask publish-check",
+  "cargo test -p uselesskey-cli --all-features prove",
+  "cargo xtask verification-pack --out target/uselesskey-verification --claim webhook-contract-pack",
   "cargo xtask no-blob",
-  "cargo xtask check-no-panic-family",
-  "cargo xtask badges --check",
-  "cargo xtask docs-sync --check",
   "cargo xtask pr",
   "git diff --check",
-  "cargo xtask publish",
 ]
 
 [[work_item]]
-id = "post-release-audit"
-status = "done"
+id = "doctor"
+status = "planned"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0010"
+plan = "plans/first-run-ux/implementation-plan.md"
+commands = [
+  "cargo test -p xtask doctor",
+  "cargo xtask doctor",
+  "cargo xtask doctor --format json",
+  "cargo xtask pr-lite",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "readme-first-run"
+status = "planned"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0002"
+plan = "plans/first-run-ux/implementation-plan.md"
+commands = [
+  "cargo xtask docs-sync --check",
+  "cargo xtask typos",
+  "cargo xtask badges --check",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "user-path-smoke"
+status = "planned"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0006"
-plan = "plans/v0.9.0-release/implementation-plan.md"
+plan = "plans/first-run-ux/implementation-plan.md"
 commands = [
-  "cargo xtask cratesio-smoke --version 0.9.0",
-  "cargo xtask claim-proof --all-stable",
-  "cargo xtask verification-pack --out target/uselesskey-verification",
-  "cargo xtask bundle-proof --profile tls --out target/release-evidence/tls",
-  "cargo xtask bundle-proof --profile oidc --out target/release-evidence/oidc",
-  "cargo xtask bundle-proof --profile webhook --out target/release-evidence/webhook",
-  "cargo xtask public-surface",
-  "cargo xtask publish-check",
-  "cargo xtask badges --check",
-  "cargo xtask check-no-panic-family",
+  "cargo test -p xtask user_path_smoke",
+  "cargo xtask user-path-smoke",
+  "cargo xtask pr-lite",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "lane-closeout"
+status = "planned"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0005"
+plan = "plans/first-run-ux/implementation-plan.md"
+commands = [
+  "cargo xtask user-path-smoke",
+  "cargo xtask doctor",
+  "cargo xtask docs-sync --check",
+  "cargo xtask pr-lite",
+  "cargo xtask pr",
   "git diff --check",
 ]
