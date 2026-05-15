@@ -892,7 +892,10 @@ fn render_profile_explanation(profile: BundleProfile) -> String {
     let info = profile_info(profile);
     let mut out = render_profile_summary(profile);
     out.push_str(&format!("Required feature: {}\n", info.required_feature));
-    out.push_str(&format!("Scanner/runtime posture: {}\n", info.scanner_posture));
+    out.push_str(&format!(
+        "Scanner/runtime posture: {}\n",
+        info.scanner_posture
+    ));
     if let Some(claim) = info.claim {
         out.push_str(&format!("Claim: {claim}\n"));
     }
