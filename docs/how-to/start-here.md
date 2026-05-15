@@ -23,6 +23,7 @@ Install the CLI when you want bundle commands outside this workspace:
 
 ```bash
 cargo install uselesskey-cli --version 0.9.0
+uselesskey profiles
 ```
 
 Inside the workspace, use:
