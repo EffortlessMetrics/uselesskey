@@ -158,6 +158,13 @@ targeted mutation when routing rules require it.
 `ripr` may suggest focused tests or route targeted mutation. It does not edit
 code, generate tests, run mutation, or make merge decisions by default.
 
+The first-screen PR evidence summary is generated from machine-readable
+artifacts and written to:
+
+```text
+target/ripr/pr/summary.md
+```
+
 Line-placeable `ripr` review guidance is emitted as non-blocking annotations
 from `comments[]` only. Summary-only findings stay in summaries and artifacts;
 inline PR comments are disabled by default.

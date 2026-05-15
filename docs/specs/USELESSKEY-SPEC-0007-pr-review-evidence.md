@@ -35,6 +35,7 @@ Expected artifacts:
 ```text
 target/ripr/pr/repo-exposure.json
 target/ripr/pr/repo-exposure.md
+target/ripr/pr/summary.md
 target/ripr/review/comments.json
 target/ripr/review/comments.md
 ```
@@ -46,6 +47,8 @@ cargo xtask ripr-pr
 cargo xtask ripr-pr --check
 cargo xtask ripr-review-comments
 cargo xtask ripr-review-comments --check
+cargo xtask ripr-pr-summary
+cargo xtask ripr-pr-summary --check
 ```
 
 `ripr` review guidance is routed by field:
@@ -83,6 +86,7 @@ PR review evidence checks:
 ```bash
 cargo xtask ripr-pr --check
 cargo xtask ripr-review-comments --check
+cargo xtask ripr-pr-summary --check
 ```
 
 Docs-only changes to this spec should run:
@@ -115,7 +119,7 @@ This spec is accepted when:
 This spec is implemented when:
 
 - CI emits `ripr` PR evidence and review guidance;
-- PR summaries include review guidance when available;
+- PR summaries are generated from machine-readable PR evidence artifacts;
 - `comments[]` can produce non-blocking changed-line annotations;
 - artifacts are uploaded for `target/ripr/pr` and `target/ripr/review`;
 - `cargo xtask spec-check` can validate the documented contract.
@@ -169,6 +173,7 @@ PR review evidence maps to:
 - `cargo xtask ripr-pr --check` for artifact contract validation;
 - `cargo xtask ripr-review-comments` for PR-scoped review guidance;
 - `cargo xtask ripr-review-comments --check` for review artifact validation;
+- `cargo xtask ripr-pr-summary --check` for stable summary contract validation;
 - `scripts/ripr-annotations.py` or equivalent CI logic for non-blocking
   annotations from `comments[]`;
 - `cargo xtask impacted-evidence` for targeted mutation routing;
@@ -201,6 +206,7 @@ cargo xtask ripr-pr
 cargo xtask ripr-review-comments
 cargo xtask ripr-pr --check
 cargo xtask ripr-review-comments --check
+cargo xtask ripr-pr-summary --check
 cargo xtask pr
 ```
 

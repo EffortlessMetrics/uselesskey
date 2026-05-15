@@ -274,10 +274,12 @@ surfaces = [
 proof_commands = [
   "cargo xtask ripr-pr --check",
   "cargo xtask ripr-review-comments --check",
+  "cargo xtask ripr-pr-summary --check",
 ]
 artifacts = [
   "target/ripr/pr/repo-exposure.json",
   "target/ripr/pr/repo-exposure.md",
+  "target/ripr/pr/summary.md",
   "target/ripr/review/comments.json",
   "target/ripr/review/comments.md",
 ]

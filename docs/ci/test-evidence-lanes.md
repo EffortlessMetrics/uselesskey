@@ -238,6 +238,11 @@ artifacts under `target/ripr/pr/`:
 - `summary.md`;
 - `review.md`.
 
+`cargo xtask ripr-pr-summary` regenerates `summary.md` from the available
+machine-readable PR artifacts after `ripr` review guidance and impacted
+evidence have been produced. Missing data is represented explicitly rather than
+filled in from prose.
+
 Pull request CI uploads that directory as the `ripr-pr` artifact.
 
 `cargo xtask ripr-review-comments` runs `ripr review-comments` with explicit

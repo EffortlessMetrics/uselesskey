@@ -124,6 +124,12 @@ enum Cmd {
         #[arg(long)]
         check: bool,
     },
+    /// Generate the stable PR evidence summary from machine-readable PR artifacts.
+    RiprPrSummary {
+        /// Verify the generated PR evidence summary instead of writing it.
+        #[arg(long)]
+        check: bool,
+    },
     /// Generate the repo-scoped RIPR test-efficiency report used by ripr+ badge output.
     TestEfficiencyReport,
     /// Run PR-scoped mutation testing explicitly.
@@ -549,6 +555,7 @@ fn main() -> Result<()> {
         Cmd::PrLite { format } => pr_lite(format),
         Cmd::RiprPr { check } => ripr_pr(check),
         Cmd::RiprReviewComments { check } => ripr_review_comments(check),
+        Cmd::RiprPrSummary { check } => ripr_pr_summary(check),
         Cmd::TestEfficiencyReport => test_efficiency::test_efficiency_report_cmd(),
         Cmd::MutantsPr {
             changed,
@@ -4765,15 +4772,15 @@ fn impacted_evidence_report_with_ripr(
 }
 
 fn read_optional_ripr_pr_json(path: &Path) -> Result<Option<serde_json::Value>> {
+    read_optional_json_file(path)
+}
+
+fn read_optional_json_file(path: &Path) -> Result<Option<serde_json::Value>> {
     if !path.is_file() {
         return Ok(None);
     }
 
-    let raw =
-        fs::read_to_string(path).with_context(|| format!("failed to read {}", path.display()))?;
-    let json = serde_json::from_str(&raw)
-        .with_context(|| format!("failed to parse {}", path.display()))?;
-    Ok(Some(json))
+    read_json_file(path).map(Some)
 }
 
 fn ripr_evidence_routing(
@@ -5333,8 +5340,11 @@ fn ripr_pr(check: bool) -> Result<()> {
     fs::write(&exposure_path, &markdown)
         .with_context(|| format!("failed to write {}", exposure_path.display()))?;
     let summary_path = out_dir.join("summary.md");
-    fs::write(&summary_path, &markdown)
-        .with_context(|| format!("failed to write {}", summary_path.display()))?;
+    fs::write(
+        &summary_path,
+        render_pr_evidence_summary(Some(&json), None, None),
+    )
+    .with_context(|| format!("failed to write {}", summary_path.display()))?;
     let review_path = out_dir.join("review.md");
     fs::write(&review_path, &markdown)
         .with_context(|| format!("failed to write {}", review_path.display()))?;
@@ -5347,9 +5357,10 @@ fn ripr_pr(check: bool) -> Result<()> {
         json_u64(summary, "weakly_exposed")
     );
     println!(
-        "ripr-pr: wrote {}, {}, and {}",
+        "ripr-pr: wrote {}, {}, {}, and {}",
         json_path.display(),
         exposure_path.display(),
+        summary_path.display(),
         review_path.display()
     );
     Ok(())
@@ -5369,6 +5380,223 @@ fn check_ripr_pr_contract(out_dir: &Path) -> Result<()> {
     }
     println!("ripr-pr: output contract is intact");
     Ok(())
+}
+
+fn ripr_pr_summary(check: bool) -> Result<()> {
+    let workspace_root = workspace_root_path();
+    let out_dir = workspace_root.join(RIPR_PR_DIR);
+    let summary_path = out_dir.join("summary.md");
+    let markdown = render_pr_evidence_summary_for_root(&workspace_root)?;
+
+    if check {
+        let existing = fs::read_to_string(&summary_path)
+            .with_context(|| format!("failed to read {}", summary_path.display()))?;
+        if existing != markdown {
+            bail!(
+                "{} drifted; run `cargo xtask ripr-pr-summary` after regenerating PR evidence",
+                summary_path.display()
+            );
+        }
+        println!("ripr-pr-summary: output contract is intact");
+        return Ok(());
+    }
+
+    fs::create_dir_all(&out_dir)
+        .with_context(|| format!("failed to create {}", out_dir.display()))?;
+    fs::write(&summary_path, markdown)
+        .with_context(|| format!("failed to write {}", summary_path.display()))?;
+    println!("ripr-pr-summary: wrote {}", summary_path.display());
+    Ok(())
+}
+
+fn render_pr_evidence_summary_for_root(workspace_root: &Path) -> Result<String> {
+    let ripr_json =
+        read_optional_json_file(&workspace_root.join(RIPR_PR_DIR).join("repo-exposure.json"))?;
+    let review_json =
+        read_optional_json_file(&workspace_root.join(RIPR_REVIEW_DIR).join("comments.json"))?;
+    let impacted_json = read_optional_json_file(
+        &workspace_root
+            .join("target/xtask/impacted-evidence")
+            .join("latest.json"),
+    )?;
+    Ok(render_pr_evidence_summary(
+        ripr_json.as_ref(),
+        review_json.as_ref(),
+        impacted_json.as_ref(),
+    ))
+}
+
+fn render_pr_evidence_summary(
+    ripr_json: Option<&serde_json::Value>,
+    review_json: Option<&serde_json::Value>,
+    impacted_json: Option<&serde_json::Value>,
+) -> String {
+    let null = serde_json::Value::Null;
+    let ripr = ripr_json.unwrap_or(&null);
+    let review = review_json.unwrap_or(&null);
+    let impacted = impacted_json.unwrap_or(&null);
+    let ripr_summary = ripr.get("summary").unwrap_or(&null);
+    let ripr_routing = impacted.get("ripr").unwrap_or(&null);
+
+    let base = json_str(ripr, "base")
+        .or_else(|| json_str(impacted, "base"))
+        .unwrap_or("unknown");
+    let head = json_str(ripr, "head").unwrap_or("HEAD");
+    let ripr_status = json_str(ripr, "status").unwrap_or(if ripr_json.is_some() {
+        "available"
+    } else {
+        "missing"
+    });
+    let review_status = json_str(review, "status").unwrap_or(if review_json.is_some() {
+        "available"
+    } else {
+        "missing"
+    });
+    let impacted_status = if impacted_json.is_some() {
+        "available"
+    } else {
+        "missing"
+    };
+
+    let impacted_reasons = json_string_vec(impacted, "reasons");
+    let ripr_reasons = json_string_vec(ripr_routing, "reasons");
+    let ripr_actions = json_string_vec(ripr_routing, "suggested_actions");
+    let owner_crates = json_string_vec(impacted, "owner_crates");
+    let ripr_owner_crates = json_string_vec(ripr_routing, "owner_crates");
+    let requires_targeted_mutation = json_bool(impacted, "requires_targeted_mutation")
+        || json_bool(ripr_routing, "requires_targeted_evidence");
+    let routing_reason =
+        pr_summary_routing_reason(requires_targeted_mutation, &impacted_reasons, &ripr_reasons);
+
+    let mut md = String::new();
+    md.push_str("# PR Evidence Summary\n\n");
+    md.push_str(
+        "Generated from machine-readable PR evidence artifacts. Missing data is explicit.\n\n",
+    );
+
+    md.push_str("## Fast Gate\n\n");
+    md.push_str("| Artifact | Status |\n");
+    md.push_str("| --- | --- |\n");
+    md.push_str(&format!(
+        "| `target/ripr/pr/repo-exposure.json` | `{ripr_status}` |\n"
+    ));
+    md.push_str(&format!(
+        "| `target/ripr/review/comments.json` | `{review_status}` |\n"
+    ));
+    md.push_str(&format!(
+        "| `target/xtask/impacted-evidence/latest.json` | `{impacted_status}` |\n"
+    ));
+    md.push('\n');
+
+    md.push_str("## RIPR\n\n");
+    md.push_str("- Scope: `diff`\n");
+    md.push_str(&format!("- Base: `{base}`\n"));
+    md.push_str(&format!("- Head: `{head}`\n"));
+    md.push_str(&format!("- Status: `{ripr_status}`\n"));
+    if let Some(reason) = json_str(ripr, "reason") {
+        md.push_str(&format!("- Reason: `{reason}`\n"));
+    }
+    md.push_str(&format!(
+        "- Findings: `{}`\n",
+        json_u64(ripr_summary, "findings")
+    ));
+    md.push_str(&format!(
+        "- Exposed: `{}`\n",
+        json_u64(ripr_summary, "exposed")
+    ));
+    md.push_str(&format!(
+        "- Weakly exposed: `{}`\n",
+        json_u64(ripr_summary, "weakly_exposed")
+    ));
+    md.push_str(&format!(
+        "- Reachable unrevealed: `{}`\n",
+        json_u64(ripr_summary, "reachable_unrevealed")
+    ));
+    md.push_str(&format!(
+        "- No static path: `{}`\n",
+        json_u64(ripr_summary, "no_static_path")
+    ));
+    md.push_str(&format!(
+        "- Review comments: `{}`\n",
+        json_array_len(review, "comments")
+    ));
+    md.push_str(&format!(
+        "- Summary-only guidance: `{}`\n",
+        json_array_len(review, "summary_only")
+    ));
+    md.push_str(&format!(
+        "- Suppressed guidance: `{}`\n",
+        json_array_len(review, "suppressed")
+    ));
+    md.push_str(&format!(
+        "- Review warnings: `{}`\n",
+        json_array_len(review, "warnings")
+    ));
+    md.push_str(&format!(
+        "- Severe gap routed: `{}`\n",
+        yes_no(json_bool(ripr_routing, "requires_targeted_evidence"))
+    ));
+    if !ripr_owner_crates.is_empty() {
+        md.push_str(&format!(
+            "- RIPR owner crates: `{}`\n",
+            ripr_owner_crates.join(", ")
+        ));
+    }
+    if !ripr_reasons.is_empty() {
+        md.push_str(&format!("- RIPR reasons: `{}`\n", ripr_reasons.join(", ")));
+    }
+    md.push('\n');
+
+    md.push_str("## Targeted Mutation\n\n");
+    md.push_str(&format!(
+        "- Required by artifacts: `{}`\n",
+        yes_no(requires_targeted_mutation)
+    ));
+    md.push_str(&format!("- Routing reason: `{routing_reason}`\n"));
+    if !owner_crates.is_empty() {
+        md.push_str(&format!(
+            "- Impacted owner crates: `{}`\n",
+            owner_crates.join(", ")
+        ));
+    }
+    if !impacted_reasons.is_empty() {
+        md.push_str(&format!(
+            "- Impacted reasons: `{}`\n",
+            impacted_reasons.join(", ")
+        ));
+    }
+    if !ripr_actions.is_empty() {
+        md.push_str("- Suggested actions:\n");
+        for action in &ripr_actions {
+            md.push_str(&format!("  - {action}\n"));
+        }
+    }
+    md.push('\n');
+
+    md.push_str("## Artifacts\n\n");
+    md.push_str("- `ripr-pr`: `target/ripr/pr/`\n");
+    md.push_str("- `ripr-review`: `target/ripr/review/`\n");
+    md.push_str("- `impacted-evidence`: `target/xtask/impacted-evidence/`\n");
+    md.push_str("- `receipt-pr`: `target/xtask/receipt.json`\n");
+    md.push_str("- `summary`: `target/ripr/pr/summary.md`\n");
+    md
+}
+
+fn pr_summary_routing_reason(
+    requires_targeted_mutation: bool,
+    impacted_reasons: &[String],
+    ripr_reasons: &[String],
+) -> String {
+    if !impacted_reasons.is_empty() || !ripr_reasons.is_empty() {
+        let mut reasons = impacted_reasons.to_vec();
+        reasons.extend(ripr_reasons.iter().cloned());
+        return reasons.join(", ");
+    }
+    if requires_targeted_mutation {
+        "targeted mutation routed by artifact policy".to_string()
+    } else {
+        "fast PR evidence only".to_string()
+    }
 }
 
 fn write_ripr_skipped_artifacts(out_dir: &Path, base_ref: &str, reason: &str) -> Result<()> {
@@ -5396,8 +5624,11 @@ fn write_ripr_skipped_artifacts(out_dir: &Path, base_ref: &str, reason: &str) ->
             out_dir.join("repo-exposure.md").display()
         )
     })?;
-    fs::write(out_dir.join("summary.md"), &markdown)
-        .with_context(|| format!("failed to write {}", out_dir.join("summary.md").display()))?;
+    fs::write(
+        out_dir.join("summary.md"),
+        render_pr_evidence_summary(Some(&json), None, None),
+    )
+    .with_context(|| format!("failed to write {}", out_dir.join("summary.md").display()))?;
     fs::write(out_dir.join("review.md"), &markdown)
         .with_context(|| format!("failed to write {}", out_dir.join("review.md").display()))?;
     Ok(())
@@ -5645,6 +5876,31 @@ fn json_u64(value: &serde_json::Value, key: &str) -> u64 {
 
 fn json_str<'a>(value: &'a serde_json::Value, key: &str) -> Option<&'a str> {
     value.get(key).and_then(serde_json::Value::as_str)
+}
+
+fn json_bool(value: &serde_json::Value, key: &str) -> bool {
+    value
+        .get(key)
+        .and_then(serde_json::Value::as_bool)
+        .unwrap_or(false)
+}
+
+fn json_string_vec(value: &serde_json::Value, key: &str) -> Vec<String> {
+    value
+        .get(key)
+        .and_then(serde_json::Value::as_array)
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(serde_json::Value::as_str)
+                .map(ToOwned::to_owned)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn yes_no(value: bool) -> &'static str {
+    if value { "yes" } else { "no" }
 }
 
 fn git_changed_files(base_ref: &str) -> Result<Vec<String>> {
@@ -7502,7 +7758,7 @@ mod tests {
 
         let summary =
             fs::read_to_string(dir.path().join("summary.md")).expect("read summary markdown");
-        assert!(summary.contains("Status: skipped"));
+        assert!(summary.contains("- Status: `skipped`"));
         assert!(summary.contains("ripr missing"));
         assert!(dir.path().join("review.md").exists());
     }
@@ -10237,6 +10493,63 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
     fn pr_lite_examples_touched_normalizes_windows_paths() {
         assert!(pr_lite_examples_touched(&["examples\\demo.rs".to_string()]));
         assert!(!pr_lite_examples_touched(&["docs/guide.md".to_string()]));
+    }
+
+    #[test]
+    fn pr_evidence_summary_reports_missing_artifacts() {
+        let markdown = render_pr_evidence_summary(None, None, None);
+
+        assert!(markdown.contains("# PR Evidence Summary"));
+        assert!(markdown.contains("| `target/ripr/pr/repo-exposure.json` | `missing` |"));
+        assert!(markdown.contains("| `target/ripr/review/comments.json` | `missing` |"));
+        assert!(markdown.contains("- Routing reason: `fast PR evidence only`"));
+    }
+
+    #[test]
+    fn pr_evidence_summary_renders_counts_and_routing() {
+        let ripr = serde_json::json!({
+            "status": "available",
+            "base": "origin/main",
+            "head": "HEAD",
+            "summary": {
+                "findings": 3,
+                "exposed": 1,
+                "weakly_exposed": 2,
+                "reachable_unrevealed": 0,
+                "no_static_path": 1
+            }
+        });
+        let review = serde_json::json!({
+            "status": "advisory",
+            "comments": [{"path": "crates/uselesskey-x509/src/lib.rs"}],
+            "summary_only": [{"title": "focused test"}],
+            "suppressed": [],
+            "warnings": [{"code": "advisory"}]
+        });
+        let impacted = serde_json::json!({
+            "base": "origin/main",
+            "owner_crates": ["uselesskey-x509"],
+            "requires_targeted_mutation": false,
+            "reasons": [],
+            "ripr": {
+                "requires_targeted_evidence": true,
+                "severe_gap_count": 1,
+                "owner_crates": ["uselesskey-x509"],
+                "reasons": ["no-static-path"],
+                "suggested_actions": [
+                    "Run cargo xtask mutants-pr --crate uselesskey-x509"
+                ]
+            }
+        });
+
+        let markdown = render_pr_evidence_summary(Some(&ripr), Some(&review), Some(&impacted));
+
+        assert!(markdown.contains("- Findings: `3`"));
+        assert!(markdown.contains("- Review comments: `1`"));
+        assert!(markdown.contains("- Summary-only guidance: `1`"));
+        assert!(markdown.contains("- Severe gap routed: `yes`"));
+        assert!(markdown.contains("- Routing reason: `no-static-path`"));
+        assert!(markdown.contains("Run cargo xtask mutants-pr --crate uselesskey-x509"));
     }
 
     #[test]

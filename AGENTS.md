@@ -53,6 +53,7 @@ cargo xtask ci              # Main CI pipeline: fmt + clippy + tests + matrix + 
 cargo xtask pr              # Fast PR-scoped tests based on git diff (emits JSON receipt)
 cargo xtask pr --with-mutants # PR-scoped tests plus targeted mutation
 cargo xtask ripr-pr         # Advisory PR oracle-exposure evidence (requires external ripr)
+cargo xtask ripr-pr-summary # Stable PR evidence summary from generated artifacts
 cargo xtask impacted-evidence --base origin/main # Changed-path evidence owners + mutation routing
 cargo xtask mutants-pr --changed # Explicit PR-scoped mutation targets
 cargo xtask mutants-nightly --scope public --dry-run # Nightly/manual mutation scope planning

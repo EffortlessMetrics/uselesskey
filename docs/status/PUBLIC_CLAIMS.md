@@ -50,7 +50,7 @@ cargo xtask verification-pack --out target/uselesskey-verification
 | `public-crate-surface-cleanup` | Public crate-surface cleanup | `stable` | `cargo xtask public-surface`; `cargo xtask publish-check`; `cargo xtask publish-preflight` | The supported public crate surface is the current published contract; removed internal shims are not promised as supported public crates. |
 | `external-cratesio-install-smoke` | External crates.io install smoke | `release-proof` | `cargo xtask cratesio-smoke --version 0.9.0` | Crates.io smoke proves an external install path for a published version, not every downstream feature combination. |
 | `generated-badge-endpoints` | Generated badge endpoints | `stable` | `cargo xtask badges`; `cargo xtask badges --check` | Badge JSON is a generated Shields endpoint receipt, not a hand-written slogan. |
-| `ripr-pr-review-evidence` | `ripr` PR review evidence | `advisory` | `cargo xtask ripr-pr --check`; `cargo xtask ripr-review-comments --check` | PR evidence is diff-scoped and advisory; it is not the repo-scoped README `ripr+` badge. |
+| `ripr-pr-review-evidence` | `ripr` PR review evidence | `advisory` | `cargo xtask ripr-pr --check`; `cargo xtask ripr-review-comments --check`; `cargo xtask ripr-pr-summary --check` | PR evidence is diff-scoped and advisory; it is not the repo-scoped README `ripr+` badge. |
 
 ## Reader Rule
 
