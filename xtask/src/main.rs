@@ -1748,7 +1748,7 @@ fn run_coverage(runner: &mut receipt::Runner) -> Result<()> {
     })?;
     runner.step("coverage:report", None, || {
         run(Command::new("cargo")
-            .args(["llvm-cov", "report", "--workspace", "--all-features"])
+            .args(["llvm-cov", "report"])
             .env("PROPTEST_CASES", "16"))
     })?;
 
