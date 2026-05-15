@@ -57,6 +57,31 @@ fn generate_jwk_outputs_json() -> TestResult<()> {
 }
 
 #[test]
+fn profiles_command_lists_copyable_contract_pack_paths() -> TestResult<()> {
+    let out = run(["profiles"])?;
+
+    assert!(out.contains("Available uselesskey profiles"));
+    assert!(out.contains("uselesskey profile <name> --explain"));
+    assert!(out.contains("claim-proof --claim webhook-contract-pack"));
+    Ok(())
+}
+
+#[test]
+fn profile_command_summary_has_copyable_webhook_paths() -> TestResult<()> {
+    let out = run(["profile", "webhook"])?;
+
+    assert!(out.contains("Profile: webhook"));
+    assert!(
+        out.contains(
+            "Generate: uselesskey bundle --profile webhook --out target/uselesskey-webhook"
+        )
+    );
+    assert!(out.contains("Verify: uselesskey verify-bundle --path target/uselesskey-webhook"));
+    assert!(out.contains("Proof: cargo xtask claim-proof --claim webhook-contract-pack"));
+    Ok(())
+}
+
+#[test]
 fn bad_format_for_kind_exits_nonzero() -> TestResult<()> {
     let mut cmd = Command::cargo_bin("uselesskey").test_context("bin exists")?;
     cmd.args([

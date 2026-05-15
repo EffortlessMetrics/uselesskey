@@ -15,6 +15,13 @@ cargo install uselesskey-cli --version 0.9.0
 
 Inside this workspace, prefix CLI examples with `cargo run -p uselesskey-cli --`.
 
+Discover available profiles from the CLI:
+
+```bash
+uselesskey profiles
+uselesskey profile webhook --explain
+```
+
 ## Quick Index
 
 | Profile | Use when you need | Generate | Proof |
