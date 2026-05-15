@@ -86,6 +86,9 @@ For Kubernetes and Vault-shaped exports, see
 Use contract packs when you want fixtures plus documented positive and negative
 cases.
 
+For the product-family view, see
+[`../contract-packs/README.md`](../contract-packs/README.md).
+
 ### TLS
 
 ```bash

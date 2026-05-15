@@ -400,6 +400,9 @@ cargo run -p uselesskey-cli -- bundle --profile oidc --out target/uselesskey-oid
 
 For the reference manifest, receipts, and payload shapes see [`examples/scanner-safe-bundle/README.md`](examples/scanner-safe-bundle/README.md). For OIDC/JWT validator-test recipes see [`docs/how-to/test-oidc-jwks-validation.md`](docs/how-to/test-oidc-jwks-validation.md) and [`docs/how-to/test-jwt-negative-validation.md`](docs/how-to/test-jwt-negative-validation.md).
 
+For a task-first list of scanner-safe, TLS, OIDC/JWKS, and webhook profiles,
+see [`docs/contract-packs/README.md`](docs/contract-packs/README.md).
+
 ## Adapter crates
 
 Adapter crates are separate packages, not facade features. That keeps integration versioning explicit and avoids coupling the facade to every downstream ecosystem type.

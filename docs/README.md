@@ -46,6 +46,13 @@ Task-oriented instructions for common workflows.
 - [verify-uselesskey-public-claims.md](how-to/verify-uselesskey-public-claims.md) — Verifying badge, scanner-safe, contract-pack, claim-proof, and release-smoke claims
 - [share-uselesskey-verification-pack.md](how-to/share-uselesskey-verification-pack.md) — Collecting metadata-only public-claim receipts for security and platform review
 
+## Contract Packs
+
+Deterministic fixture bundles with documented positive and negative verifier
+paths.
+
+- [contract-packs](contract-packs/README.md) — Generate, verify, prove, and understand scanner-safe, TLS, OIDC/JWKS, and webhook profiles
+
 ## Contributing
 
 Repository operating rules for agents and maintainers.
