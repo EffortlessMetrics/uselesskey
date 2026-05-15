@@ -26,6 +26,10 @@
 
 `uselesskey` is a **test-fixture factory**, not a crypto library. It generates key material, certificates, token-shaped fixtures, and negative artifacts at runtime so tests do not need committed PEM/DER/JWK blobs.
 
+If you already know what you are trying to test, start with the task router:
+[docs/how-to/start-here.md](docs/how-to/start-here.md). It maps common jobs to
+one dependency snippet or command before introducing the internal proof system.
+
 Public claims are command-backed. Start with the
 [verification guide](docs/how-to/verify-uselesskey-public-claims.md) or the
 [public claim index](docs/status/PUBLIC_CLAIMS.md) to see what each badge and
