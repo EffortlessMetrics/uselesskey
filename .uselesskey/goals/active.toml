@@ -89,7 +89,7 @@ commands = [
 
 [[work_item]]
 id = "doctor"
-status = "ready"
+status = "done"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0010"
 plan = "plans/first-run-ux/implementation-plan.md"
@@ -103,7 +103,7 @@ commands = [
 
 [[work_item]]
 id = "readme-first-run"
-status = "planned"
+status = "ready"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0002"
 plan = "plans/first-run-ux/implementation-plan.md"

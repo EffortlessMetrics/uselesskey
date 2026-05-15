@@ -21,6 +21,7 @@ mod claim_proof;
 mod claim_report;
 mod contract_packs;
 mod docs_sync;
+mod doctor;
 mod economics;
 mod plan;
 mod policy;
@@ -111,6 +112,12 @@ enum Cmd {
         /// Output format.
         #[arg(long, value_enum, default_value = "human")]
         format: PrLiteFormat,
+    },
+    /// Diagnose local proof-stack readiness.
+    Doctor {
+        /// Output format.
+        #[arg(long, value_enum, default_value = "human")]
+        format: DoctorFormat,
     },
     /// Run advisory ripr PR exposure evidence (requires external `ripr`).
     RiprPr {
@@ -490,6 +497,12 @@ enum PrLiteFormat {
     Json,
 }
 
+#[derive(Clone, Debug, ValueEnum)]
+enum DoctorFormat {
+    Human,
+    Json,
+}
+
 impl From<SpecCheckFormat> for spec_check::OutputFormat {
     fn from(value: SpecCheckFormat) -> Self {
         match value {
@@ -513,6 +526,15 @@ impl From<ContractPacksFormat> for contract_packs::OutputFormat {
         match value {
             ContractPacksFormat::Human => contract_packs::OutputFormat::Human,
             ContractPacksFormat::Json => contract_packs::OutputFormat::Json,
+        }
+    }
+}
+
+impl From<DoctorFormat> for doctor::OutputFormat {
+    fn from(value: DoctorFormat) -> Self {
+        match value {
+            DoctorFormat::Human => doctor::OutputFormat::Human,
+            DoctorFormat::Json => doctor::OutputFormat::Json,
         }
     }
 }
@@ -553,6 +575,7 @@ fn main() -> Result<()> {
         Cmd::PublishCheck => publish_check(),
         Cmd::Pr { with_mutants } => pr(with_mutants),
         Cmd::PrLite { format } => pr_lite(format),
+        Cmd::Doctor { format } => doctor::run(&workspace_root_path(), format.into()),
         Cmd::RiprPr { check } => ripr_pr(check),
         Cmd::RiprReviewComments { check } => ripr_review_comments(check),
         Cmd::RiprPrSummary { check } => ripr_pr_summary(check),
