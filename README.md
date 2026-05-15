@@ -44,6 +44,7 @@ CLI contract packs start with:
 cargo install uselesskey-cli --version 0.9.0
 uselesskey profiles
 uselesskey profile webhook --explain
+uselesskey bundle --profile webhook --explain
 ```
 
 Generate and verify a webhook pack:

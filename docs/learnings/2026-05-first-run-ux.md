@@ -51,6 +51,8 @@ claim ledger, specs, receipts, or release evidence.
 - `uselesskey profiles` and `uselesskey profile <name> --explain` expose
   profile purpose, generated files, proof commands, and claim boundaries in the
   tool.
+- `uselesskey bundle --profile <name> --explain` gives users the same boundary
+  check at the command they were about to run, without materializing a bundle.
 - `USELESSKEY-SPEC-0012` prevents a premature CLI proof wrapper from shelling
   out to repo-local `xtask` or arbitrary ledger strings.
 - `cargo xtask doctor` reports local proof-environment readiness.

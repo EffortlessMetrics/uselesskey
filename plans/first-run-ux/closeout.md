@@ -53,6 +53,8 @@ selected.
   verify, proof, and verification-pack commands.
 - `uselesskey profile <name> --explain` explains generated files, scanner-safe
   posture, proof commands, and claim boundaries for each profile.
+- `uselesskey bundle --profile <name> --explain` exposes the same profile
+  explanation from the bundle command without writing generated fixture files.
 - `USELESSKEY-SPEC-0012` defines the CLI proof-handoff boundary and keeps
   executable proof in allowlisted `xtask` surfaces until a safe reusable proof
   engine exists.
