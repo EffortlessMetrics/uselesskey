@@ -25,3 +25,4 @@ include:
 - [2026-05-no-panic-burndown.md](2026-05-no-panic-burndown.md) - no-panic progress needs a stage between advisory and deny
 - [2026-05-webhook-contract-pack.md](2026-05-webhook-contract-pack.md) - contract packs become real when a new user workflow uses every proof rail
 - [2026-05-v0.9.0-release.md](2026-05-v0.9.0-release.md) - a command-backed release still needs one release authority
+- [2026-05-first-run-ux.md](2026-05-first-run-ux.md) - first-run UX works when proof rails stay behind task routing
