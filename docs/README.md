@@ -33,6 +33,7 @@ agent state do not drift into one document.
 Task-oriented instructions for common workflows.
 
 - [choose-lane.md](how-to/choose-lane.md) — Pick the cheapest correct lane first
+- [start-here.md](how-to/start-here.md) — Pick a user job and copy the first command or dependency snippet
 - [migration.md](how-to/migration.md) — Migrating between uselesskey versions
 - [publishing.md](how-to/publishing.md) — Publishing crates to crates.io
 - [release.md](how-to/release.md) — Cutting a release

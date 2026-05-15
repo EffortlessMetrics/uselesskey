@@ -36,7 +36,7 @@ commands = [
 
 [[work_item]]
 id = "task-router"
-status = "ready"
+status = "done"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0002"
 plan = "plans/first-run-ux/implementation-plan.md"
@@ -48,7 +48,7 @@ commands = [
 
 [[work_item]]
 id = "contract-pack-index"
-status = "planned"
+status = "ready"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0003"
 plan = "plans/first-run-ux/implementation-plan.md"
