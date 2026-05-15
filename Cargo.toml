@@ -122,7 +122,7 @@ ciborium = "0.2.2"
 sha2 = "0.11.0"
 
 # JWT
-jsonwebtoken = { version = "10.3.0", features = ["use_pem", "rust_crypto"] }
+jsonwebtoken = { version = "10.4.0", features = ["use_pem", "rust_crypto"] }
 
 # OpenPGP — legacy upstream island (rsa 0.9 / rand_core 0.6).
 pgp = { version = "0.19.0", default-features = false }
