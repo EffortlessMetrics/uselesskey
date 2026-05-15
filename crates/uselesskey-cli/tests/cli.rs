@@ -294,6 +294,68 @@ fn bundle_profile_runtime_preserves_requested_material_format() -> TestResult<()
 }
 
 #[test]
+fn bundle_profile_runtime_jwk_marks_public_key_artifacts_scanner_safe() -> TestResult<()> {
+    let dir = tempdir().test_context("tempdir")?;
+    let bundle_dir = dir.path().join("bundle");
+
+    let mut cmd = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    cmd.args([
+        "bundle",
+        "--profile",
+        "runtime",
+        "--format",
+        "jwk",
+        "--seed",
+        "det-seed",
+        "--label",
+        "issuer",
+        "--out",
+        bundle_dir.to_str().test_context("utf-8")?,
+    ]);
+    cmd.assert().success();
+
+    let manifest_path = bundle_dir.join("manifest.json");
+    let manifest: Value =
+        serde_json::from_slice(&fs::read(&manifest_path).test_context("read manifest")?)
+            .test_context("manifest json")?;
+    let artifacts = manifest["artifacts"]
+        .as_array()
+        .test_context("artifacts array")?;
+
+    let public_jwk_kinds = ["rsa", "ecdsa", "ed25519"];
+    for kind in public_jwk_kinds {
+        let artifact = artifacts
+            .iter()
+            .find(|a| a["kind"].as_str() == Some(kind) && a["format"].as_str() == Some("jwk"))
+            .test_context(format!("{kind} jwk artifact"))?;
+        assert_eq!(
+            artifact["scanner_safe"], true,
+            "{kind} JWK only contains public components and must be scanner-safe",
+        );
+    }
+
+    let hmac = artifacts
+        .iter()
+        .find(|a| a["kind"].as_str() == Some("hmac"))
+        .test_context("hmac artifact")?;
+    assert_eq!(
+        hmac["scanner_safe"], false,
+        "hmac JWK includes the symmetric `k` secret",
+    );
+
+    let audit: Value = serde_json::from_slice(
+        &fs::read(bundle_dir.join("receipts/audit-surface.json"))
+            .test_context("read audit surface")?,
+    )
+    .test_context("audit json")?;
+    assert_eq!(
+        audit["runtime_material_count"], 2,
+        "only hmac + token carry secret material in runtime+jwk bundles",
+    );
+    Ok(())
+}
+
+#[test]
 fn bundle_profile_oidc_writes_contract_pack() -> TestResult<()> {
     let dir = tempdir().test_context("tempdir")?;
     let bundle_dir = dir.path().join("oidc");
