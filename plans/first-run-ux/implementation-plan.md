@@ -16,6 +16,7 @@ linked_specs = [
   "USELESSKEY-SPEC-0009",
   "USELESSKEY-SPEC-0010",
   "USELESSKEY-SPEC-0011",
+  "USELESSKEY-SPEC-0012",
 ]
 linked_adrs = [
   "USELESSKEY-ADR-0001",
@@ -129,6 +130,10 @@ Do not mix these into the first-run UX lane:
      `uselesskey prove --claim webhook-contract-pack --out target/uselesskey-verification`.
    - If CLI architecture cannot cleanly own this yet, add the spec and defer the
      command rather than duplicating unsafe proof execution.
+   - Current decision: `USELESSKEY-SPEC-0012` defers executable CLI proof until
+     the proof engine has a safe reusable surface. The shipped CLI handoff is
+     profile discovery text that points to `cargo xtask claim-proof` and
+     `cargo xtask verification-pack`.
    - Keep verification packs metadata-only.
    - Validation:
 
