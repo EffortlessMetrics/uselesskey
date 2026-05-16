@@ -45,6 +45,7 @@ uselesskey-hmac = { path = "../uselesskey-hmac", version = "0.9.0" }
 serde.workspace = true
 insta.workspace = true
 proptest.workspace = true
+uselesskey-test-support.workspace = true
 
 # Enable rust_crypto for tests
 [dev-dependencies.jsonwebtoken]
