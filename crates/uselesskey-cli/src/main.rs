@@ -1003,6 +1003,37 @@ mod inspect_bundle_tests {
         assert_eq!(count_or_unknown(None), "unknown");
     }
 
+    #[test]
+    fn runtime_public_jwk_outputs_are_scanner_safe() {
+        for kind in [Kind::Rsa, Kind::Ecdsa, Kind::Ed25519] {
+            assert!(
+                runtime_entry_is_scanner_safe(kind, Format::Jwk),
+                "{kind:?} jwk emits only public components",
+            );
+            assert!(
+                runtime_entry_is_scanner_safe(kind, Format::Jwks),
+                "{kind:?} jwks emits only public components",
+            );
+            assert!(
+                !runtime_entry_is_scanner_safe(kind, Format::Pem),
+                "{kind:?} pem emits private key material",
+            );
+            assert!(
+                !runtime_entry_is_scanner_safe(kind, Format::Der),
+                "{kind:?} der emits private key material",
+            );
+        }
+        assert!(runtime_entry_is_scanner_safe(Kind::X509, Format::Pem));
+        assert!(runtime_entry_is_scanner_safe(Kind::Jwk, Format::Jwk));
+        assert!(runtime_entry_is_scanner_safe(Kind::Jwks, Format::Jwks));
+        // Hmac jwk carries the symmetric secret in `k`; token outputs carry the value.
+        assert!(!runtime_entry_is_scanner_safe(Kind::Hmac, Format::Jwk));
+        assert!(!runtime_entry_is_scanner_safe(
+            Kind::Token,
+            Format::JsonManifest
+        ));
+    }
+
     fn record(kind: &str, format: &str, scanner_safe: bool) -> BundleArtifactRecord {
         BundleArtifactRecord {
             path: format!("{kind}.{format}"),
@@ -1378,19 +1409,37 @@ fn bundle_artifact_record(
         format: format.manifest_name().to_string(),
         profile: profile.manifest_name().to_string(),
         lanes: vec!["runtime".to_string(), "materialized".to_string()],
-        scanner_safe: bundle_entry_is_scanner_safe(entry, profile),
+        scanner_safe: bundle_entry_is_scanner_safe(entry, format, profile),
         description: entry.description(profile).to_string(),
     }
 }
 
-fn bundle_entry_is_scanner_safe(entry: BundleEntry, profile: BundleProfile) -> bool {
+fn bundle_entry_is_scanner_safe(
+    entry: BundleEntry,
+    format: Format,
+    profile: BundleProfile,
+) -> bool {
     match (profile, entry) {
         (BundleProfile::ScannerSafe | BundleProfile::Oidc | BundleProfile::Tls, _) => true,
         (BundleProfile::Webhook, BundleEntry::WebhookEvidenceDoc) => true,
         (BundleProfile::Webhook, BundleEntry::WebhookRequest { .. }) => false,
         (BundleProfile::Webhook, _) => false,
-        (BundleProfile::Runtime, _) => matches!(entry.kind(), Kind::Jwk | Kind::Jwks | Kind::X509),
+        (BundleProfile::Runtime, _) => runtime_entry_is_scanner_safe(entry.kind(), format),
     }
+}
+
+// Runtime bundles emit asymmetric key kinds as either private (Pem/Der) or
+// public (Jwk/Jwks) material; only the public-shaped formats are scanner-safe.
+// Hmac and Token always carry secret material regardless of format.
+fn runtime_entry_is_scanner_safe(kind: Kind, format: Format) -> bool {
+    matches!(
+        (kind, format),
+        (Kind::Jwk | Kind::Jwks | Kind::X509, _)
+            | (
+                Kind::Rsa | Kind::Ecdsa | Kind::Ed25519,
+                Format::Jwk | Format::Jwks
+            )
+    )
 }
 
 fn bundle_artifact_description(kind: Kind, profile: BundleProfile) -> &'static str {

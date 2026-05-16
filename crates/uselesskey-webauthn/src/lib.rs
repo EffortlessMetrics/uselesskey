@@ -589,4 +589,137 @@ mod tests {
             _ => None,
         }
     }
+
+    #[test]
+    fn assertion_fixture_fields_are_deterministic_and_consistent() {
+        let fx = Factory::deterministic_from_str("webauthn-assertion-fields");
+        let spec = WebAuthnSpec::packed("example.com", b"challenge-assertion");
+
+        let a = fx.webauthn_assertion("alice", spec.clone());
+        let b = fx.webauthn_assertion("alice", spec.clone());
+
+        assert_eq!(a.client_data_json, b.client_data_json);
+        assert_eq!(a.authenticator_data, b.authenticator_data);
+        assert_eq!(a.signature, b.signature);
+        assert_eq!(a.rp_id_hash, b.rp_id_hash);
+
+        // rp_id_hash is sha256 of rp_id
+        assert_eq!(a.rp_id_hash, sha256_arr(spec.rp_id.as_bytes()));
+
+        // The first 32 bytes of authenticator_data is the rp_id_hash
+        assert_eq!(&a.authenticator_data[..32], &a.rp_id_hash);
+
+        // Assertion clientDataJSON has type "webauthn.get"
+        let parsed: Result<serde_json::Value, _> = serde_json::from_slice(&a.client_data_json);
+        assert!(
+            parsed.is_ok(),
+            "clientDataJSON must parse: {:?}",
+            parsed.as_ref().err()
+        );
+        if let Ok(json) = parsed {
+            assert_eq!(json["type"], "webauthn.get");
+        }
+    }
+
+    #[test]
+    fn self_attestation_registration_uses_self_fmt() {
+        let fx = Factory::deterministic_from_str("webauthn-self-attestation");
+        let mut spec = WebAuthnSpec::packed("example.com", b"challenge-self");
+        spec.attestation_mode = AttestationMode::SelfAttestation;
+
+        let reg = fx.webauthn_registration("alice", spec);
+        let parsed: Result<Value, _> = from_reader(reg.attestation_object.as_slice());
+        assert!(parsed.is_ok(), "attestation_object must parse as CBOR");
+        assert!(
+            matches!(parsed, Ok(Value::Map(_))),
+            "attestation_object must be a CBOR map, got {parsed:?}"
+        );
+
+        if let Ok(Value::Map(entries)) = parsed {
+            let fmt_value = entries
+                .iter()
+                .find_map(|(k, v)| (*k == Value::Text("fmt".to_string())).then_some(v));
+            assert_eq!(fmt_value, Some(&Value::Text("self".to_string())));
+        }
+    }
+
+    #[test]
+    fn packed_and_self_attestation_objects_differ() {
+        let fx = Factory::deterministic_from_str("webauthn-att-mode-diff");
+        let challenge = b"challenge-att-diff";
+
+        let packed_spec = WebAuthnSpec::packed("example.com", challenge);
+        let mut self_spec = packed_spec.clone();
+        self_spec.attestation_mode = AttestationMode::SelfAttestation;
+
+        let packed = fx.webauthn_registration("alice", packed_spec);
+        let self_attest = fx.webauthn_registration("alice", self_spec);
+
+        assert_ne!(
+            packed.attestation_object, self_attest.attestation_object,
+            "registrations with different attestation_mode must produce distinct objects"
+        );
+    }
+
+    #[test]
+    fn distinct_labels_produce_distinct_registration_objects() {
+        let fx = Factory::deterministic_from_str("webauthn-label-uniq");
+        let spec = WebAuthnSpec::packed("example.com", b"challenge-labels");
+
+        let alice = fx.webauthn_registration("alice", spec.clone());
+        let bob = fx.webauthn_registration("bob", spec);
+
+        assert_ne!(
+            alice.attestation_object, bob.attestation_object,
+            "labels are part of the cache identity and seed derivation"
+        );
+        assert_ne!(alice.aaguid, bob.aaguid);
+    }
+
+    #[test]
+    fn distinct_challenges_produce_distinct_assertion_signatures() {
+        let fx = Factory::deterministic_from_str("webauthn-challenge-uniq");
+
+        let a = fx.webauthn_assertion(
+            "alice",
+            WebAuthnSpec::packed("example.com", b"challenge-aaa"),
+        );
+        let b = fx.webauthn_assertion(
+            "alice",
+            WebAuthnSpec::packed("example.com", b"challenge-bbb"),
+        );
+
+        assert_ne!(a.signature, b.signature);
+        assert_ne!(a.client_data_json, b.client_data_json);
+        assert_ne!(a.sign_count, b.sign_count);
+    }
+
+    #[test]
+    fn webauthn_spec_packed_accepts_owned_challenge_vec() {
+        // Compile-time check that the AsRef<[u8]> bound on `challenge`
+        // accepts both borrowed slices and owned Vec<u8>.
+        let owned_challenge: Vec<u8> = vec![1, 2, 3, 4];
+        let spec = WebAuthnSpec::packed("example.com", owned_challenge.clone());
+
+        assert_eq!(spec.challenge, owned_challenge);
+        assert_eq!(spec.attestation_mode, AttestationMode::Packed);
+    }
+
+    #[test]
+    fn webauthn_spec_partial_eq_distinguishes_fields() {
+        let base = WebAuthnSpec::packed("example.com", b"chal");
+        assert_eq!(base, base.clone());
+
+        let mut mode_changed = base.clone();
+        mode_changed.attestation_mode = AttestationMode::SelfAttestation;
+        assert_ne!(base, mode_changed);
+
+        let mut model_changed = base.clone();
+        model_changed.authenticator_model = "OTHER-MODEL".to_string();
+        assert_ne!(base, model_changed);
+
+        let mut credential_changed = base.clone();
+        credential_changed.credential_id = b"different-id".to_vec();
+        assert_ne!(base, credential_changed);
+    }
 }

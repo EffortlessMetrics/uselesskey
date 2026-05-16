@@ -4990,6 +4990,7 @@ dependencies = [
  "rand_chacha 0.3.1",
  "ssh-key",
  "uselesskey-core",
+ "uselesskey-test-support",
 ]
 
 [[package]]
