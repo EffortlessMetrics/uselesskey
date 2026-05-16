@@ -14,6 +14,7 @@ Plans do not define product truth. Link to proposals for why and specs for what.
 - [webhook-contract-pack](webhook-contract-pack/README.md) - Webhook contract-pack product lane
 - [v0.9.0-release](v0.9.0-release/README.md) - v0.9.0 release preparation, proof, publish, and audit
 - [first-run-ux](first-run-ux/README.md) - First-run task routing and contract-pack adoption UX
+- [adoption-confidence](adoption-confidence/README.md) - Copied user-path correctness, fixture confidence, and adoption-regression closeout
 
 ## Templates
 
