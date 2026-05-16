@@ -4760,6 +4760,7 @@ dependencies = [
  "serde_json",
  "uselesskey-core",
  "uselesskey-jwk",
+ "uselesskey-test-support",
 ]
 
 [[package]]
@@ -4790,6 +4791,7 @@ dependencies = [
  "serde",
  "uselesskey-core",
  "uselesskey-jwk",
+ "uselesskey-test-support",
 ]
 
 [[package]]
