@@ -350,4 +350,215 @@ mod tests {
             "expected lowercase hex: {value}"
         );
     }
+
+    #[test]
+    fn webhook_profile_stable_tag_is_unique_per_variant() {
+        use crate::model::WebhookProfile;
+        let tags = [
+            WebhookProfile::GitHub.stable_tag(),
+            WebhookProfile::Stripe.stable_tag(),
+            WebhookProfile::Slack.stable_tag(),
+        ];
+        assert_eq!(tags, ["github", "stripe", "slack"]);
+
+        let unique: std::collections::HashSet<&&str> = tags.iter().collect();
+        assert_eq!(unique.len(), tags.len(), "stable_tag values must be unique");
+    }
+
+    #[test]
+    fn raw_payload_spec_is_returned_verbatim() {
+        let fx = Factory::deterministic_from_str("webhook-raw-spec");
+        let payload = "{\"custom\":\"shape\"}".to_string();
+        let fixture = fx.webhook_github("raw-repo", WebhookPayloadSpec::Raw(payload.clone()));
+
+        assert_eq!(fixture.payload, payload);
+        assert!(verify_github(
+            &fixture.secret,
+            &fixture.payload,
+            &fixture.headers
+        ));
+    }
+
+    #[test]
+    fn raw_payload_distinct_strings_yield_distinct_cache_identities() {
+        let fx = Factory::deterministic_from_str("webhook-raw-cache");
+        let one = fx.webhook_stripe("svc", WebhookPayloadSpec::Raw("one".to_string()));
+        let two = fx.webhook_stripe("svc", WebhookPayloadSpec::Raw("two".to_string()));
+
+        assert_ne!(one.payload, two.payload);
+        assert_ne!(one.signature_input, two.signature_input);
+        assert_ne!(
+            one.headers.get("Stripe-Signature"),
+            two.headers.get("Stripe-Signature")
+        );
+    }
+
+    #[test]
+    fn stale_timestamp_near_miss_works_for_all_profiles() {
+        let fx = Factory::deterministic_from_str("webhook-stale-all");
+        let max_age = 300_i64;
+
+        for profile in [
+            WebhookProfile::GitHub,
+            WebhookProfile::Stripe,
+            WebhookProfile::Slack,
+        ] {
+            let base = fx.webhook(profile, "svc", WebhookPayloadSpec::Canonical);
+            let stale = base.near_miss_stale_timestamp(max_age);
+
+            assert_eq!(stale.scenario, NearMissScenario::StaleTimestamp);
+            assert_eq!(stale.timestamp, base.timestamp - max_age - 1);
+            // GitHub does not include a timestamp in its signed input, so the
+            // signature_input is just the payload; for Stripe/Slack the input
+            // includes the (stale) timestamp.
+            match profile {
+                WebhookProfile::GitHub => {
+                    assert_eq!(stale.signature_input, stale.payload);
+                }
+                WebhookProfile::Stripe => {
+                    assert_eq!(
+                        stale.signature_input,
+                        format!("{}.{}", stale.timestamp, stale.payload)
+                    );
+                }
+                WebhookProfile::Slack => {
+                    assert_eq!(
+                        stale.signature_input,
+                        format!("v0:{}:{}", stale.timestamp, stale.payload)
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn wrong_secret_near_miss_works_for_github_and_slack() {
+        let fx = Factory::deterministic_from_str("webhook-wrong-secret");
+
+        let gh = fx.webhook_github("svc", WebhookPayloadSpec::Canonical);
+        let gh_wrong = gh.near_miss_wrong_secret();
+        assert_eq!(gh_wrong.scenario, NearMissScenario::WrongSecret);
+        assert_ne!(gh_wrong.secret, gh.secret);
+        assert!(gh_wrong.secret.ends_with("_wrong"));
+        assert!(!verify_github(
+            &gh.secret,
+            &gh_wrong.payload,
+            &gh_wrong.headers
+        ));
+
+        let sl = fx.webhook_slack("svc", WebhookPayloadSpec::Canonical);
+        let sl_wrong = sl.near_miss_wrong_secret();
+        assert_eq!(sl_wrong.scenario, NearMissScenario::WrongSecret);
+        assert_ne!(sl_wrong.secret, sl.secret);
+        assert!(!verify_slack(
+            &sl.secret,
+            &sl_wrong.payload,
+            &sl_wrong.headers,
+            sl_wrong.timestamp,
+            300
+        ));
+    }
+
+    #[test]
+    fn tampered_payload_near_miss_works_for_github_and_slack() {
+        let fx = Factory::deterministic_from_str("webhook-tampered");
+
+        let gh = fx.webhook_github("svc", WebhookPayloadSpec::Canonical);
+        let gh_tampered = gh.near_miss_tampered_payload();
+        assert_eq!(gh_tampered.scenario, NearMissScenario::TamperedPayload);
+        assert_ne!(gh_tampered.payload, gh.payload);
+        // The tampered fixture re-signs its own modified payload, so it
+        // verifies against itself; verifying the *original* payload with the
+        // tampered signature must fail.
+        assert!(!verify_github(
+            &gh.secret,
+            &gh.payload,
+            &gh_tampered.headers
+        ));
+
+        let sl = fx.webhook_slack("svc", WebhookPayloadSpec::Canonical);
+        let sl_tampered = sl.near_miss_tampered_payload();
+        assert_eq!(sl_tampered.scenario, NearMissScenario::TamperedPayload);
+        assert_ne!(sl_tampered.payload, sl.payload);
+        assert!(!verify_slack(
+            &sl.secret,
+            &sl.payload,
+            &sl_tampered.headers,
+            sl_tampered.timestamp,
+            300
+        ));
+    }
+
+    #[test]
+    fn hmac_sha256_long_key_is_hashed_first() {
+        // RFC 4231 test vector 4: 131-byte key (longer than the 64-byte block),
+        // exercising the SHA-256 pre-hash branch of hmac_sha256_hex.
+        let key = vec![0xaa_u8; 131];
+        let digest = hmac_sha256_hex(
+            &key,
+            b"Test Using Larger Than Block-Size Key - Hash Key First",
+        );
+        assert_eq!(
+            digest,
+            "60e431591ee0b67f0d8a26aacbf5b77f8e0bc6213728c5140546040f0ee37f54"
+        );
+    }
+
+    #[test]
+    fn hmac_sha256_short_key_is_zero_padded() {
+        // A short key should be zero-padded into the 64-byte block, not hashed.
+        // This exercises the else-branch of hmac_sha256_hex with a sub-block-size key.
+        let short = b"key";
+        let padded = {
+            let mut padded = [0_u8; 64];
+            padded[..short.len()].copy_from_slice(short);
+            padded.to_vec()
+        };
+        assert_eq!(
+            hmac_sha256_hex(short, b"hello"),
+            hmac_sha256_hex(&padded, b"hello"),
+            "short key must zero-pad into the same block as the explicitly padded key"
+        );
+    }
+
+    #[test]
+    fn debug_redacts_secret_for_all_profiles() {
+        let fx = Factory::deterministic_from_str("webhook-debug-all");
+
+        for profile in [
+            WebhookProfile::GitHub,
+            WebhookProfile::Stripe,
+            WebhookProfile::Slack,
+        ] {
+            let fixture = fx.webhook(profile, "svc", WebhookPayloadSpec::Canonical);
+            let dbg = format!("{fixture:?}");
+            assert!(dbg.contains("WebhookFixture"));
+            assert!(
+                !dbg.contains(&fixture.secret),
+                "Debug for {profile:?} must not leak secret: {dbg}"
+            );
+        }
+    }
+
+    #[test]
+    fn debug_redacts_secret_for_all_near_miss_scenarios() {
+        let fx = Factory::deterministic_from_str("webhook-debug-nm");
+        let base = fx.webhook_stripe("svc", WebhookPayloadSpec::Canonical);
+
+        let scenarios = [
+            base.near_miss_stale_timestamp(300),
+            base.near_miss_wrong_secret(),
+            base.near_miss_tampered_payload(),
+        ];
+
+        for fixture in scenarios {
+            let dbg = format!("{fixture:?}");
+            assert!(dbg.contains("NearMissWebhookFixture"));
+            assert!(
+                !dbg.contains(&fixture.secret),
+                "Debug for {:?} must not leak secret: {dbg}",
+                fixture.scenario
+            );
+        }
+    }
 }
