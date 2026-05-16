@@ -224,6 +224,62 @@ mod tests {
             );
             public_key.verify(msg, sig.as_ref()).expect("verify");
         }
+
+        // ---------------------------------------------------------------
+        // Cross-curve verification boundary
+        //
+        // `ecdsa_key_pair_ring()` exposes a single entry point that picks
+        // the signing algorithm from `self.spec()`. There is no separate
+        // "P-256 method" the caller can mis-invoke on a P-384 key, so the
+        // adapter cannot panic on cross-curve dispatch. The adjacent
+        // boundary asserted below is: a P-256 signature must NOT verify
+        // under the P-384 verifier algorithm (and the reverse). This pins
+        // the algorithm match in the adapter to the curve it claims.
+        // ---------------------------------------------------------------
+
+        #[test]
+        fn test_ecdsa_p256_sig_fails_p384_verify() {
+            let fx = super::fx();
+            let ring_kp = fx
+                .ecdsa("ring-cross-curve-p256-vs-p384", EcdsaSpec::es256())
+                .ecdsa_key_pair_ring();
+
+            let msg = b"cross-curve verify";
+            let rng = ring::rand::SystemRandom::new();
+            let sig = ring_kp.sign(&rng, msg).expect("sign");
+
+            let public_key_bytes = ring_kp.public_key().as_ref();
+            let public_key = signature::UnparsedPublicKey::new(
+                &signature::ECDSA_P384_SHA384_ASN1,
+                public_key_bytes,
+            );
+            assert!(
+                public_key.verify(msg, sig.as_ref()).is_err(),
+                "P-256 signature must not verify under P-384 algorithm"
+            );
+        }
+
+        #[test]
+        fn test_ecdsa_p384_sig_fails_p256_verify() {
+            let fx = super::fx();
+            let ring_kp = fx
+                .ecdsa("ring-cross-curve-p384-vs-p256", EcdsaSpec::es384())
+                .ecdsa_key_pair_ring();
+
+            let msg = b"cross-curve verify reverse";
+            let rng = ring::rand::SystemRandom::new();
+            let sig = ring_kp.sign(&rng, msg).expect("sign");
+
+            let public_key_bytes = ring_kp.public_key().as_ref();
+            let public_key = signature::UnparsedPublicKey::new(
+                &signature::ECDSA_P256_SHA256_ASN1,
+                public_key_bytes,
+            );
+            assert!(
+                public_key.verify(msg, sig.as_ref()).is_err(),
+                "P-384 signature must not verify under P-256 algorithm"
+            );
+        }
     }
 
     #[cfg(feature = "ed25519")]

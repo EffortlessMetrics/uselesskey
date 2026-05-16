@@ -207,6 +207,66 @@ mod tests {
             );
             public_key.verify(msg, sig.as_ref()).expect("verify");
         }
+
+        // ---------------------------------------------------------------
+        // Cross-curve verification boundary
+        //
+        // The `ecdsa_key_pair_aws_lc_rs()` adapter has a single entry point
+        // that selects the signing algorithm internally via `match self.spec()`.
+        // There is therefore no "P-256 method" the caller can erroneously
+        // invoke on a P-384 key (or vice versa) — the adapter cannot panic
+        // on cross-curve dispatch. The architecturally adjacent boundary
+        // exercised below is: a P-256 signature must NOT verify when fed
+        // to a P-384 verifier (and the reverse). This pins the algorithm
+        // match in the adapter to the curve it claims to produce.
+        // ---------------------------------------------------------------
+
+        #[test]
+        fn test_ecdsa_p256_sig_fails_p384_verify() {
+            let fx = super::fx();
+            let kp = fx
+                .ecdsa("cross-curve-p256-vs-p384", EcdsaSpec::es256())
+                .ecdsa_key_pair_aws_lc_rs();
+
+            let msg = b"cross-curve verify";
+            let rng = aws_lc_rs::rand::SystemRandom::new();
+            let sig = kp.sign(&rng, msg).expect("sign");
+
+            // Try to verify the P-256 signature using the P-384 algorithm
+            // on the same public-key bytes; this must fail (key encoding
+            // and signature length differ between curves).
+            let public_key_bytes = kp.public_key().as_ref();
+            let public_key = signature::UnparsedPublicKey::new(
+                &signature::ECDSA_P384_SHA384_ASN1,
+                public_key_bytes,
+            );
+            assert!(
+                public_key.verify(msg, sig.as_ref()).is_err(),
+                "P-256 signature must not verify under P-384 algorithm"
+            );
+        }
+
+        #[test]
+        fn test_ecdsa_p384_sig_fails_p256_verify() {
+            let fx = super::fx();
+            let kp = fx
+                .ecdsa("cross-curve-p384-vs-p256", EcdsaSpec::es384())
+                .ecdsa_key_pair_aws_lc_rs();
+
+            let msg = b"cross-curve verify reverse";
+            let rng = aws_lc_rs::rand::SystemRandom::new();
+            let sig = kp.sign(&rng, msg).expect("sign");
+
+            let public_key_bytes = kp.public_key().as_ref();
+            let public_key = signature::UnparsedPublicKey::new(
+                &signature::ECDSA_P256_SHA256_ASN1,
+                public_key_bytes,
+            );
+            assert!(
+                public_key.verify(msg, sig.as_ref()).is_err(),
+                "P-384 signature must not verify under P-256 algorithm"
+            );
+        }
     }
 
     #[cfg(all(feature = "native", any(not(windows), has_nasm), feature = "ed25519"))]

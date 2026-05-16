@@ -377,6 +377,62 @@ mod tests {
             let keypair = fx.ecdsa("test", EcdsaSpec::es384());
             let _ = keypair.p256_signing_key();
         }
+
+        // Verifying-key derivation called in isolation (no prior signing).
+        // The trait impl derives the verifying key by calling the signing-key
+        // accessor first; this asserts that path stands on its own and that
+        // the derived key is bound to the same curve point as the signing key.
+        #[test]
+        fn test_p256_verifying_key_derived_in_isolation() {
+            use p256::ecdsa::signature::{Signer, Verifier};
+
+            let fx = Factory::random();
+            let keypair = fx.ecdsa("vk-iso-p256", EcdsaSpec::es256());
+
+            // Derive the verifying key without touching the signing key first.
+            let verifying_key = keypair.p256_verifying_key();
+
+            // It must validate a fresh signature produced by the signing key.
+            let signing_key = keypair.p256_signing_key();
+            let sig: p256::ecdsa::Signature = signing_key.sign(b"isolated vk p256");
+            verifying_key
+                .verify(b"isolated vk p256", &sig)
+                .expect("isolated vk must verify");
+        }
+
+        #[test]
+        fn test_p384_verifying_key_derived_in_isolation() {
+            use p384::ecdsa::signature::{Signer, Verifier};
+
+            let fx = Factory::random();
+            let keypair = fx.ecdsa("vk-iso-p384", EcdsaSpec::es384());
+
+            let verifying_key = keypair.p384_verifying_key();
+
+            let signing_key = keypair.p384_signing_key();
+            let sig: p384::ecdsa::Signature = signing_key.sign(b"isolated vk p384");
+            verifying_key
+                .verify(b"isolated vk p384", &sig)
+                .expect("isolated vk must verify");
+        }
+
+        // Mirror of the existing P-256/P-384 panic tests but for the
+        // verifying-key path, which also asserts curve identity.
+        #[test]
+        #[should_panic(expected = "expected P-384")]
+        fn test_p384_verifying_key_on_p256_key_panics() {
+            let fx = Factory::random();
+            let keypair = fx.ecdsa("test-vk-cross", EcdsaSpec::es256());
+            let _ = keypair.p384_verifying_key();
+        }
+
+        #[test]
+        #[should_panic(expected = "expected P-256")]
+        fn test_p256_verifying_key_on_p384_key_panics() {
+            let fx = Factory::random();
+            let keypair = fx.ecdsa("test-vk-cross", EcdsaSpec::es384());
+            let _ = keypair.p256_verifying_key();
+        }
     }
 
     #[cfg(feature = "ed25519")]
@@ -399,6 +455,26 @@ mod tests {
             verifying_key
                 .verify(b"test message", &signature)
                 .expect("verify");
+        }
+
+        // Verifying-key derivation in isolation, no prior signing-key access.
+        // Exercises the implementation path that calls `ed25519_signing_key()`
+        // internally to derive the verifying key.
+        #[test]
+        fn test_ed25519_verifying_key_derived_in_isolation() {
+            let fx = Factory::random();
+            let keypair = fx.ed25519("vk-iso-ed25519", Ed25519Spec::new());
+
+            // Derive the verifying key first, without touching the signing
+            // key in the caller.
+            let verifying_key = keypair.ed25519_verifying_key();
+
+            // It must validate a signature later produced by the signing key.
+            let signing_key = keypair.ed25519_signing_key();
+            let signature = signing_key.sign(b"isolated vk ed25519");
+            verifying_key
+                .verify(b"isolated vk ed25519", &signature)
+                .expect("isolated vk must verify");
         }
     }
 
@@ -450,6 +526,91 @@ mod tests {
             let mut mac2 = secret.hmac_sha512();
             mac2.update(b"test message");
             mac2.verify(&result.into_bytes()).expect("verify");
+        }
+
+        // ---------------------------------------------------------------
+        // HMAC variant boundary
+        //
+        // The adapter calls `hmac::Hmac::<H>::new_from_slice(self.secret_bytes())`
+        // for every variant. HMAC accepts any key length, so feeding an
+        // HS256-sized (32-byte) secret into `hmac_sha384` (or any other
+        // variant) is well-defined: it succeeds and produces a tag of the
+        // hash's natural output length. The two paths must, however,
+        // produce DIFFERENT tags on the same input because the underlying
+        // hash differs. These tests pin both halves of that contract.
+        // ---------------------------------------------------------------
+
+        #[test]
+        fn test_hs256_secret_through_sha384_variant_succeeds() {
+            // Build an HS256 fixture (32-byte secret), then drive it through
+            // the SHA-384 variant. The construction must not panic, and the
+            // resulting tag must be 48 bytes (SHA-384 output length).
+            let fx = super::fx();
+            let secret = fx.hmac("hs256-through-sha384", HmacSpec::hs256());
+            assert_eq!(
+                secret.secret_bytes().len(),
+                32,
+                "HS256 fixture must yield 32-byte secret"
+            );
+
+            let mut mac = secret.hmac_sha384();
+            mac.update(b"cross-variant message");
+            let tag = mac.finalize().into_bytes();
+            assert_eq!(tag.len(), 48, "SHA-384 tag must be 48 bytes");
+
+            // The same secret, run through the SHA-384 variant again, must
+            // produce an identical tag (HMAC is deterministic in the key).
+            let mut mac2 = secret.hmac_sha384();
+            mac2.update(b"cross-variant message");
+            mac2.verify(&tag)
+                .expect("re-derived HMAC-SHA384 must verify");
+        }
+
+        #[test]
+        fn test_hmac_sha256_and_sha384_variants_produce_different_tags() {
+            // Same secret, same message, different hash variants must yield
+            // different tags. This pins the variant selection in the adapter
+            // and guards against an accidental swap (e.g. wiring sha256 to
+            // the sha384 method).
+            let fx = super::fx();
+            let secret = fx.hmac("variant-divergence", HmacSpec::hs256());
+
+            let mut mac_256 = secret.hmac_sha256();
+            mac_256.update(b"variant test");
+            let tag_256 = mac_256.finalize().into_bytes();
+
+            let mut mac_384 = secret.hmac_sha384();
+            mac_384.update(b"variant test");
+            let tag_384 = mac_384.finalize().into_bytes();
+
+            // Different output lengths first (cheap sanity).
+            assert_eq!(tag_256.len(), 32);
+            assert_eq!(tag_384.len(), 48);
+            // Truncated comparison: the first 32 bytes of the SHA-384 tag
+            // must not coincide with the SHA-256 tag.
+            assert_ne!(
+                tag_256.as_slice(),
+                &tag_384.as_slice()[..32],
+                "HMAC-SHA256 and HMAC-SHA384 must differ on the same key/message"
+            );
+        }
+
+        #[test]
+        fn test_hs256_secret_through_sha512_variant_succeeds() {
+            // Symmetric coverage for the SHA-512 variant: ensure an HS256
+            // (32-byte) secret can also drive HMAC-SHA512 (64-byte output).
+            let fx = super::fx();
+            let secret = fx.hmac("hs256-through-sha512", HmacSpec::hs256());
+
+            let mut mac = secret.hmac_sha512();
+            mac.update(b"cross-variant 512");
+            let tag = mac.finalize().into_bytes();
+            assert_eq!(tag.len(), 64, "SHA-512 tag must be 64 bytes");
+
+            let mut mac2 = secret.hmac_sha512();
+            mac2.update(b"cross-variant 512");
+            mac2.verify(&tag)
+                .expect("re-derived HMAC-SHA512 must verify");
         }
     }
 }
