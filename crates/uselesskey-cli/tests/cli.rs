@@ -82,6 +82,31 @@ fn profile_command_summary_has_copyable_webhook_paths() -> TestResult<()> {
 }
 
 #[test]
+fn bundle_explain_has_copyable_webhook_paths_without_writing_bundle() -> TestResult<()> {
+    let dir = tempdir().test_context("tempdir")?;
+    let bundle_dir = dir.path().join("bundle");
+    let out = run([
+        "bundle",
+        "--profile",
+        "webhook",
+        "--out",
+        bundle_dir.to_str().test_context("utf-8")?,
+        "--explain",
+    ])?;
+
+    assert!(out.contains("Profile: webhook"));
+    assert!(
+        out.contains(
+            "Generate: uselesskey bundle --profile webhook --out target/uselesskey-webhook"
+        )
+    );
+    assert!(out.contains("Does not prove"));
+    assert!(out.contains("provider compatibility"));
+    assert!(!bundle_dir.exists());
+    Ok(())
+}
+
+#[test]
 fn bad_format_for_kind_exits_nonzero() -> TestResult<()> {
     let mut cmd = Command::cargo_bin("uselesskey").test_context("bin exists")?;
     cmd.args([

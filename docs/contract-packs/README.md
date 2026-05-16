@@ -20,6 +20,7 @@ Discover available profiles from the CLI:
 ```bash
 uselesskey profiles
 uselesskey profile webhook --explain
+uselesskey bundle --profile webhook --explain
 ```
 
 ## Quick Index

@@ -24,6 +24,7 @@ Install the CLI when you want bundle commands outside this workspace:
 ```bash
 cargo install uselesskey-cli --version 0.9.0
 uselesskey profiles
+uselesskey bundle --profile webhook --explain
 ```
 
 Inside the workspace, use:
@@ -72,6 +73,7 @@ For feature selection, see [choose-features.md](choose-features.md).
 Generate and verify a bundle:
 
 ```bash
+uselesskey bundle --profile scanner-safe --explain
 uselesskey bundle --profile scanner-safe --out target/uselesskey-bundle
 uselesskey verify-bundle --path target/uselesskey-bundle
 ```

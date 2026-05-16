@@ -30,6 +30,7 @@ mod public_surface;
 mod receipt;
 mod spec_check;
 mod test_efficiency;
+mod user_path_smoke;
 mod verification_pack;
 
 #[derive(Parser)]
@@ -99,6 +100,8 @@ enum Cmd {
         #[arg(long)]
         run: bool,
     },
+    /// Run bounded first-run user-path smoke checks.
+    UserPathSmoke,
     /// Run publish dry-runs for crates in dependency order.
     PublishCheck,
     /// Run PR-scoped tests based on git diff.
@@ -572,6 +575,7 @@ fn main() -> Result<()> {
         Cmd::DocsSync { check } => docs_sync_with_spec_check(check),
         Cmd::PublicSurface => public_surface::public_surface_cmd(PUBLISH_CRATES),
         Cmd::ExamplesSmoke { run } => docs_sync::examples_smoke_cmd(run),
+        Cmd::UserPathSmoke => user_path_smoke::run(&workspace_root_path()),
         Cmd::PublishCheck => publish_check(),
         Cmd::Pr { with_mutants } => pr(with_mutants),
         Cmd::PrLite { format } => pr_lite(format),

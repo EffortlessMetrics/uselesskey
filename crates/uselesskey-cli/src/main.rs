@@ -82,6 +82,8 @@ struct BundleArgs {
     profile: BundleProfile,
     #[arg(long)]
     out: Option<PathBuf>,
+    #[arg(long)]
+    explain: bool,
 }
 
 #[derive(clap::Args, Debug)]
@@ -294,6 +296,13 @@ fn run_generate(args: GenerateArgs) -> Result<()> {
 }
 
 fn run_bundle(args: BundleArgs) -> Result<()> {
+    if args.explain {
+        return emit_artifact(
+            &Artifact::Text(render_profile_explanation(args.profile)),
+            None,
+        );
+    }
+
     let out_dir = args
         .out
         .clone()
@@ -876,6 +885,7 @@ fn render_profile_summary(profile: BundleProfile) -> String {
             "Verify: uselesskey verify-bundle --path {}\n",
             "Proof: {}\n",
             "Explain: uselesskey profile {} --explain\n",
+            "Bundle explain: uselesskey bundle --profile {} --explain\n",
         ),
         info.profile.manifest_name(),
         info.title,
@@ -884,6 +894,7 @@ fn render_profile_summary(profile: BundleProfile) -> String {
         info.profile.output_dir_hint(),
         info.profile.output_dir_hint(),
         info.proof_command,
+        info.profile.manifest_name(),
         info.profile.manifest_name(),
     )
 }
