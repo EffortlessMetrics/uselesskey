@@ -5021,6 +5021,7 @@ dependencies = [
  "uselesskey-ed25519",
  "uselesskey-jwk",
  "uselesskey-rsa",
+ "uselesskey-test-support",
 ]
 
 [[package]]
