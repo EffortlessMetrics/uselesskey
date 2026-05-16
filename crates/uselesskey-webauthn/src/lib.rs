@@ -722,4 +722,143 @@ mod tests {
         credential_changed.credential_id = b"different-id".to_vec();
         assert_ne!(base, credential_changed);
     }
+
+    #[test]
+    fn cbor_public_key_all_zero_seed_is_well_formed_and_distinct() {
+        // Edge case: all-zero seed must still produce a non-empty, well-formed
+        // CBOR map. The leading byte of a definite-length CBOR map is in the
+        // major-type-5 range (0xa0..=0xb7 for short maps), and this fixture
+        // emits a 5-entry map (0xa5).
+        let encoded_zero = cbor_public_key(&[0_u8; 32]);
+        assert!(
+            !encoded_zero.is_empty(),
+            "cbor_public_key must never return empty bytes"
+        );
+        let header = encoded_zero[0];
+        assert!(
+            (0xa0..=0xb7).contains(&header),
+            "expected CBOR map major type header, got {header:#04x}"
+        );
+        assert_eq!(
+            header, 0xa5,
+            "EC2 public key uses a 5-entry definite-length CBOR map"
+        );
+
+        // Determinism: same seed -> same bytes.
+        let encoded_zero_again = cbor_public_key(&[0_u8; 32]);
+        assert_eq!(encoded_zero, encoded_zero_again);
+
+        // Distinct seed -> distinct bytes (the x/y coordinates derive from seed).
+        let encoded_other = cbor_public_key(&[1_u8; 32]);
+        assert_ne!(
+            encoded_zero, encoded_other,
+            "different seeds must produce different COSE keys"
+        );
+
+        // And the all-zero seed produces parseable CBOR.
+        let parsed: Value =
+            from_reader(encoded_zero.as_slice()).expect("all-zero seed must produce valid CBOR");
+        assert!(matches!(parsed, Value::Map(_)));
+    }
+
+    #[test]
+    fn attestation_mode_as_tag_values_are_distinct_and_non_empty() {
+        let packed = AttestationMode::Packed.as_tag();
+        let self_attest = AttestationMode::SelfAttestation.as_tag();
+
+        assert!(!packed.is_empty(), "Packed tag must not be empty");
+        assert!(
+            !self_attest.is_empty(),
+            "SelfAttestation tag must not be empty"
+        );
+        assert_ne!(
+            packed, self_attest,
+            "attestation mode tags must be distinct between variants"
+        );
+    }
+
+    #[test]
+    fn webauthn_spec_clone_preserves_identity_fieldwise() {
+        let original = WebAuthnSpec {
+            rp_id: "example.com".to_string(),
+            challenge: b"clone-challenge".to_vec(),
+            credential_id: b"clone-credential".to_vec(),
+            authenticator_model: "UK-MODEL-CLONE".to_string(),
+            attestation_mode: AttestationMode::SelfAttestation,
+        };
+        let cloned = original.clone();
+
+        // Field-by-field equality.
+        assert_eq!(original.rp_id, cloned.rp_id);
+        assert_eq!(original.challenge, cloned.challenge);
+        assert_eq!(original.credential_id, cloned.credential_id);
+        assert_eq!(original.authenticator_model, cloned.authenticator_model);
+        assert_eq!(original.attestation_mode, cloned.attestation_mode);
+
+        // PartialEq equality and stable_bytes equivalence as a structural check.
+        assert_eq!(original, cloned);
+        assert_eq!(original.stable_bytes(), cloned.stable_bytes());
+    }
+
+    #[test]
+    fn registration_fixture_clone_preserves_fields() {
+        let fx = Factory::deterministic_from_str("webauthn-reg-clone");
+        let spec = WebAuthnSpec::packed("example.com", b"challenge-reg-clone");
+        let reg = fx.webauthn_registration("alice", spec);
+        let cloned = reg.clone();
+
+        assert_eq!(reg.spec, cloned.spec);
+        assert_eq!(reg.client_data_json, cloned.client_data_json);
+        assert_eq!(reg.authenticator_data, cloned.authenticator_data);
+        assert_eq!(reg.attestation_object, cloned.attestation_object);
+        assert_eq!(reg.rp_id_hash, cloned.rp_id_hash);
+        assert_eq!(reg.sign_count, cloned.sign_count);
+        assert_eq!(reg.aaguid, cloned.aaguid);
+    }
+
+    #[test]
+    fn assertion_fixture_clone_preserves_fields() {
+        let fx = Factory::deterministic_from_str("webauthn-assert-clone");
+        let spec = WebAuthnSpec::packed("example.com", b"challenge-assert-clone");
+        let assertion = fx.webauthn_assertion("alice", spec);
+        let cloned = assertion.clone();
+
+        assert_eq!(assertion.spec, cloned.spec);
+        assert_eq!(assertion.client_data_json, cloned.client_data_json);
+        assert_eq!(assertion.authenticator_data, cloned.authenticator_data);
+        assert_eq!(assertion.signature, cloned.signature);
+        assert_eq!(assertion.rp_id_hash, cloned.rp_id_hash);
+        assert_eq!(assertion.sign_count, cloned.sign_count);
+    }
+
+    #[test]
+    fn write_field_short_path_emits_two_byte_be_length() {
+        // write_field is private but reachable from this in-module test.
+        let mut out = Vec::new();
+        let value = b"hello";
+        write_field(&mut out, "name", value);
+
+        // Layout: "name" + 0x1f + 0x0005 + payload
+        assert_eq!(&out[..4], b"name");
+        assert_eq!(out[4], 0x1f);
+        assert_eq!(&out[5..7], &(value.len() as u16).to_be_bytes());
+        assert_eq!(&out[7..], value);
+    }
+
+    #[test]
+    fn write_field_long_path_emits_extended_length_prefix() {
+        // A payload strictly larger than u16::MAX forces the 0xFFFF + u32 path.
+        let len: usize = (u16::MAX as usize) + 1;
+        let value = vec![0xCD_u8; len];
+        let mut out = Vec::new();
+        write_field(&mut out, "k", &value);
+
+        // Layout: "k" + 0x1f + 0xFFFF + u32(len) + payload
+        assert_eq!(&out[..1], b"k");
+        assert_eq!(out[1], 0x1f);
+        assert_eq!(&out[2..4], &u16::MAX.to_be_bytes());
+        assert_eq!(&out[4..8], &(len as u32).to_be_bytes());
+        assert_eq!(out.len(), 1 + 1 + 2 + 4 + len);
+        assert_eq!(&out[8..], value.as_slice());
+    }
 }
