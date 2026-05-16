@@ -41,6 +41,7 @@ insta.workspace = true
 proptest.workspace = true
 rstest.workspace = true
 serde.workspace = true
+uselesskey-test-support = { workspace = true }
 
 
 [lints]
