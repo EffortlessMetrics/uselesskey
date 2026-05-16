@@ -3,6 +3,7 @@ use uselesskey_core::Factory;
 use uselesskey_ssh::{
     SshCertFactoryExt, SshCertSpec, SshCertType, SshFactoryExt, SshSpec, SshValidity,
 };
+use uselesskey_test_support::{TestResult, ensure, ensure_eq, require_ok};
 
 #[test]
 fn round_trip_parse_openssh_keys() {
@@ -70,4 +71,161 @@ fn cert_principals_and_validity_match_spec() {
 
     let permit_pty = parsed.extensions().get("permit-pty").map(String::as_str);
     assert_eq!(permit_pty, Some(""));
+}
+
+#[test]
+fn host_cert_decodes_with_host_cert_type() -> TestResult<()> {
+    let fx = Factory::deterministic_from_str("ssh-host-cert-seed");
+    let spec = SshCertSpec::host(
+        ["host1.internal", "host2.internal"],
+        SshValidity::new(1_700_000_000, 1_700_001_000),
+    );
+
+    let cert_fx = fx.ssh_cert("host-cert", spec.clone());
+    let parsed = require_ok(
+        Certificate::from_openssh(cert_fx.certificate_openssh()),
+        "host certificate fixture must parse",
+    )?;
+
+    ensure_eq!(parsed.cert_type(), CertType::Host);
+    ensure_eq!(
+        parsed.valid_principals(),
+        &["host1.internal".to_string(), "host2.internal".to_string()][..]
+    );
+    ensure_eq!(parsed.valid_after(), spec.validity.valid_after);
+    ensure_eq!(parsed.valid_before(), spec.validity.valid_before);
+    Ok(())
+}
+
+#[test]
+fn empty_principals_yields_all_principals_valid() -> TestResult<()> {
+    let fx = Factory::deterministic_from_str("ssh-empty-principals-seed");
+    let spec = SshCertSpec {
+        principals: Vec::new(),
+        validity: SshValidity::new(1_700_000_000, 1_700_000_300),
+        cert_type: SshCertType::User,
+        critical_options: Vec::new(),
+        extensions: Vec::new(),
+    };
+
+    let cert_fx = fx.ssh_cert("anyone", spec);
+    let parsed = require_ok(
+        Certificate::from_openssh(cert_fx.certificate_openssh()),
+        "empty-principals certificate fixture must parse",
+    )?;
+
+    ensure!(
+        parsed.valid_principals().is_empty(),
+        "an empty principals list must encode 'all principals valid', got {:?}",
+        parsed.valid_principals()
+    );
+    Ok(())
+}
+
+#[test]
+fn key_pair_accessors_report_label_and_spec() -> TestResult<()> {
+    let fx = Factory::deterministic_from_str("ssh-key-accessors-seed");
+    let key = fx.ssh_key("my-deploy", SshSpec::ed25519());
+
+    ensure_eq!(key.label(), "my-deploy");
+    ensure_eq!(key.spec(), SshSpec::Ed25519);
+
+    let rsa_key = fx.ssh_key("my-rsa", SshSpec::rsa());
+    ensure_eq!(rsa_key.label(), "my-rsa");
+    ensure_eq!(rsa_key.spec(), SshSpec::Rsa);
+    Ok(())
+}
+
+#[test]
+fn cert_fixture_accessors_report_label_and_spec() -> TestResult<()> {
+    let fx = Factory::deterministic_from_str("ssh-cert-accessors-seed");
+    let spec = SshCertSpec::user(["alice"], SshValidity::new(1_700_000_000, 1_700_000_600));
+    let cert_fx = fx.ssh_cert("alice-cert", spec.clone());
+
+    ensure_eq!(cert_fx.label(), "alice-cert");
+    ensure_eq!(cert_fx.spec(), &spec);
+    Ok(())
+}
+
+#[test]
+fn ssh_spec_default_is_ed25519() -> TestResult<()> {
+    ensure_eq!(SshSpec::default(), SshSpec::Ed25519);
+    ensure_eq!(SshCertType::default(), SshCertType::User);
+    Ok(())
+}
+
+#[test]
+fn ssh_cert_type_stable_byte_distinguishes_variants() -> TestResult<()> {
+    ensure!(SshCertType::User.stable_byte() != SshCertType::Host.stable_byte());
+    Ok(())
+}
+
+#[test]
+fn key_pair_debug_omits_key_material() -> TestResult<()> {
+    let fx = Factory::deterministic_from_str("ssh-debug-seed");
+    let key = fx.ssh_key("debug-host", SshSpec::ed25519());
+    let dbg = format!("{key:?}");
+
+    ensure!(dbg.contains("SshKeyPair"));
+    ensure!(dbg.contains("debug-host"));
+    ensure!(
+        !dbg.contains("BEGIN OPENSSH PRIVATE KEY"),
+        "Debug output must not leak private key material: {dbg}"
+    );
+    ensure!(
+        !dbg.contains("ssh-ed25519 "),
+        "Debug output must not leak the public key body: {dbg}"
+    );
+    Ok(())
+}
+
+#[test]
+fn cert_fixture_debug_omits_key_material() -> TestResult<()> {
+    let fx = Factory::deterministic_from_str("ssh-cert-debug-seed");
+    let cert = fx.ssh_cert(
+        "debug-cert",
+        SshCertSpec::user(["alice"], SshValidity::new(1, 2)),
+    );
+    let dbg = format!("{cert:?}");
+
+    ensure!(dbg.contains("SshCertFixture"));
+    ensure!(dbg.contains("debug-cert"));
+    ensure!(
+        !dbg.contains("BEGIN OPENSSH PRIVATE KEY"),
+        "Debug output must not leak private key material: {dbg}"
+    );
+    ensure!(
+        !dbg.contains("ssh-ed25519-cert-v01"),
+        "Debug output must not leak the certificate body: {dbg}"
+    );
+    Ok(())
+}
+
+#[test]
+fn cert_spec_stable_bytes_change_with_critical_options_and_extensions() -> TestResult<()> {
+    let base = SshCertSpec::user(["alice"], SshValidity::new(1, 2));
+    let with_option = SshCertSpec {
+        critical_options: vec![("force-command".to_string(), "/bin/echo".to_string())],
+        ..base.clone()
+    };
+    let with_extension = SshCertSpec {
+        extensions: vec![("permit-pty".to_string(), String::new())],
+        ..base.clone()
+    };
+
+    ensure!(base.stable_bytes() != with_option.stable_bytes());
+    ensure!(base.stable_bytes() != with_extension.stable_bytes());
+    ensure!(with_option.stable_bytes() != with_extension.stable_bytes());
+    Ok(())
+}
+
+#[test]
+fn cert_spec_stable_bytes_change_with_validity_and_cert_type() -> TestResult<()> {
+    let user = SshCertSpec::user(["alice"], SshValidity::new(1, 2));
+    let later = SshCertSpec::user(["alice"], SshValidity::new(10, 20));
+    let host = SshCertSpec::host(["alice"], SshValidity::new(1, 2));
+
+    ensure!(user.stable_bytes() != later.stable_bytes());
+    ensure!(user.stable_bytes() != host.stable_bytes());
+    Ok(())
 }
