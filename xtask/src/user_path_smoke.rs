@@ -108,21 +108,26 @@ mod tests {
     }
 
     #[test]
-    fn user_path_smoke_rejects_non_target_output() {
+    fn user_path_smoke_rejects_non_target_output() -> Result<()> {
         let root = std::env::temp_dir().join("uselesskey-user-path-smoke-test");
         let outside = root
             .parent()
-            .unwrap_or_else(|| Path::new("/"))
+            .context("temp-dir test root has no parent")?
             .join("outside-user-path-smoke");
-        let err = ensure_target_child(&root, &outside).unwrap_err();
+        let err = match ensure_target_child(&root, &outside) {
+            Ok(()) => bail!("non-target output was accepted"),
+            Err(err) => err,
+        };
 
         assert!(err.to_string().contains("outside target"));
+        Ok(())
     }
 
     #[test]
-    fn user_path_smoke_accepts_target_output() {
+    fn user_path_smoke_accepts_target_output() -> Result<()> {
         let root = std::env::temp_dir().join("uselesskey-user-path-smoke-test");
 
-        ensure_target_child(&root, &root.join("target/user-path-smoke")).unwrap();
+        ensure_target_child(&root, &root.join("target/user-path-smoke"))?;
+        Ok(())
     }
 }
