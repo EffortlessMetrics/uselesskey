@@ -5111,6 +5111,7 @@ dependencies = [
  "uselesskey-core",
  "uselesskey-jwk",
  "uselesskey-rsa",
+ "uselesskey-test-support",
  "x509-parser",
 ]
 

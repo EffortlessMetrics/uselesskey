@@ -40,6 +40,7 @@ proptest.workspace = true
 rstest.workspace = true
 insta.workspace = true
 serde = { workspace = true, features = ["derive"] }
+uselesskey-test-support = { workspace = true }
 
 
 [lints]
