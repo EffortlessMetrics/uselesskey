@@ -4885,6 +4885,7 @@ dependencies = [
  "proptest",
  "serde",
  "serde_json",
+ "uselesskey-test-support",
 ]
 
 [[package]]

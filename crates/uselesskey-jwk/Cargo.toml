@@ -27,6 +27,7 @@ json = ["dep:serde", "dep:serde_json"]
 [dev-dependencies]
 insta.workspace = true
 proptest.workspace = true
+uselesskey-test-support.workspace = true
 
 [package.metadata.docs.rs]
 all-features = true
