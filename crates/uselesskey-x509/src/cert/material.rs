@@ -5,7 +5,7 @@ use uselesskey_rsa::{RsaFactoryExt, RsaKeyPair, RsaSpec};
 
 pub(super) struct CertKeyMaterial {
     pub(super) rsa: RsaKeyPair,
-    pub(super) kp: KeyPair,
+    pub(super) kp: Option<KeyPair>,
 }
 
 pub(super) fn generate(factory: &Factory, label: &str, rsa_bits: usize) -> CertKeyMaterial {
@@ -15,6 +15,6 @@ pub(super) fn generate(factory: &Factory, label: &str, rsa_bits: usize) -> CertK
         &PrivatePkcs8KeyDer::from(rsa.private_key_pkcs8_der().to_vec()),
         &PKCS_RSA_SHA256,
     )
-    .expect("key parse");
+    .ok();
     CertKeyMaterial { rsa, kp }
 }

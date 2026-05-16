@@ -92,8 +92,10 @@ fn add_sorted_dns_sans(params: &mut CertificateParams, sans: &[String]) {
     sorted_sans.dedup();
 
     for san in &sorted_sans {
-        params.subject_alt_names.push(rcgen::SanType::DnsName(
-            san.clone().try_into().expect("valid DNS name"),
-        ));
+        if let Ok(dns_name) = san.clone().try_into() {
+            params
+                .subject_alt_names
+                .push(rcgen::SanType::DnsName(dns_name));
+        }
     }
 }

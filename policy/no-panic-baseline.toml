@@ -12,14 +12,14 @@
 # Reset:   `cargo xtask no-panic baseline --reset`
 
 schema_version = "1.0"
-generated_at = "2026-05-14"
+generated_at = "2026-05-16"
 generated_by = "cargo xtask no-panic baseline"
 
 [summary]
-total = 3469
+total = 3466
 
 [summary.by_family]
-expect = 2077
+expect = 2074
 get_unwrap = 1
 panic_macro = 112
 unreachable = 4
@@ -10646,14 +10646,6 @@ path = "crates/uselesskey-x509/src/cert.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
-snippet = 'KeyPair::from_pkcs8_der_and_sign_algo(&pkcs8_key, &PKCS_RSA_SHA256).expect("         ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-x509/src/cert.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
 snippet = 'X509Certificate::from_der(cert_ago.cert_der()).expect("              ");'
 count = 1
 
@@ -10678,23 +10670,7 @@ path = "crates/uselesskey-x509/src/cert.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
-snippet = 'let cert = params.self_signed(&key_pair).expect("               ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-x509/src/cert.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
 snippet = 'let cn = parsed.subject().iter_common_name().next().expect("  ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-x509/src/cert.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'san.clone().try_into().expect("              "),'
 count = 1
 
 [[entry]]

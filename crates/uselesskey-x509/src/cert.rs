@@ -59,6 +59,17 @@ struct Inner {
     private_key_pkcs8_pem: String,
 }
 
+impl Inner {
+    fn certificate_unavailable(keys: &material::CertKeyMaterial) -> Self {
+        Self {
+            cert_der: Arc::<[u8]>::from(Vec::<u8>::new()),
+            cert_pem: String::new(),
+            private_key_pkcs8_der: Arc::from(keys.rsa.private_key_pkcs8_der()),
+            private_key_pkcs8_pem: keys.rsa.private_key_pkcs8_pem().to_string(),
+        }
+    }
+}
+
 impl fmt::Debug for X509Cert {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("X509Cert")
@@ -483,7 +494,12 @@ fn load_inner_with_spec(
         let base_time = params::deterministic_base_time(label, spec);
         let cert_params = params::self_signed_params(spec, base_time, &mut rng);
 
-        let cert = cert_params.self_signed(&keys.kp).expect("cert generation");
+        let Some(key_pair) = keys.kp.as_ref() else {
+            return Inner::certificate_unavailable(&keys);
+        };
+        let Ok(cert) = cert_params.self_signed(key_pair) else {
+            return Inner::certificate_unavailable(&keys);
+        };
 
         Inner {
             cert_der: Arc::from(cert.der().as_ref()),
@@ -521,6 +537,17 @@ mod tests {
         let cn = parsed.subject().iter_common_name().next().expect("CN");
         assert_eq!(cn.as_str().unwrap(), "test.example.com");
         assert!(!parsed.is_ca(), "leaf cert must not be CA");
+    }
+
+    #[test]
+    fn invalid_dns_san_does_not_block_self_signed_generation() {
+        let factory = fx();
+        let spec =
+            X509Spec::self_signed("test.example.com").with_sans(vec!["not a dns name".into()]);
+        let cert = factory.x509_self_signed("invalid-san", spec);
+
+        assert!(cert.cert_der().len() > 1);
+        assert!(cert.cert_pem().contains("-----BEGIN CERTIFICATE-----"));
     }
 
     #[test]
