@@ -678,4 +678,90 @@ mod tests {
             }
         }
     }
+
+    // --- Coverage gap closure: direct field reads, const-eval, per-constant
+    //     pinning, and slice-length pinning. Pins these so a rename or
+    //     accidental addition trips CI rather than silently drifting.
+
+    #[test]
+    fn feature_set_direct_field_access_pins_struct_layout() {
+        // Reads `.name` and `.cargo_args` directly so the field
+        // names/types are pinned by the test (a rename would fail to
+        // compile here).
+        let fs = FeatureSet::new(
+            "direct-fields",
+            &["--no-default-features", "--features", "rsa"],
+        );
+        let name: &'static str = fs.name;
+        let cargo_args: &'static [&'static str] = fs.cargo_args;
+        assert_eq!(name, "direct-fields");
+        assert_eq!(cargo_args.len(), 3);
+        assert_eq!(cargo_args[0], "--no-default-features");
+        assert_eq!(cargo_args[1], "--features");
+        assert_eq!(cargo_args[2], "rsa");
+    }
+
+    #[test]
+    fn feature_set_new_is_const_evaluable() {
+        // If `FeatureSet::new` ever loses `const`, this fails to compile.
+        const FS: FeatureSet = FeatureSet::new("const-eval", &["--all-features"]);
+        const NAME: &str = FS.name;
+        const ARGS: &[&str] = FS.cargo_args;
+        assert_eq!(NAME, "const-eval");
+        assert_eq!(ARGS, &["--all-features"]);
+    }
+
+    #[test]
+    fn feature_set_is_copy_not_just_clone() {
+        // Asserts `Copy` semantics: the assignment below moves a copy,
+        // and `original` remains usable. If `Copy` is removed from the
+        // derive list, the second use of `original` fails to compile.
+        let original = FeatureSet::new("copy-test", &["--features", "rsa"]);
+        let copied = original;
+        let still_original = original;
+        assert_eq!(copied.name, "copy-test");
+        assert_eq!(still_original.name, "copy-test");
+        assert_eq!(copied, still_original);
+    }
+
+    #[test]
+    fn uk_feature_all_constant_value_is_pinned() {
+        assert_eq!(UK_FEATURE_ALL, "uk-all");
+    }
+
+    #[test]
+    fn uk_feature_rsa_constant_value_is_pinned() {
+        assert_eq!(UK_FEATURE_RSA, "uk-rsa");
+    }
+
+    #[test]
+    fn uk_feature_core_factory_constant_value_is_pinned() {
+        assert_eq!(UK_FEATURE_CORE_FACTORY, "uk-core-factory");
+    }
+
+    #[test]
+    fn uk_feature_aws_lc_rs_constant_value_is_pinned() {
+        assert_eq!(UK_FEATURE_AWS_LC_RS, "uk-aws-lc-rs");
+    }
+
+    #[test]
+    fn core_feature_matrix_len_is_pinned() {
+        // Pin the count so any addition/removal of a CORE_FEATURE_MATRIX
+        // entry must update this test, forcing review.
+        assert_eq!(CORE_FEATURE_MATRIX.len(), 19);
+    }
+
+    #[test]
+    fn bdd_feature_matrix_len_is_pinned() {
+        // Pin the count so any addition/removal of a BDD_FEATURE_MATRIX
+        // entry must update this test, forcing review.
+        assert_eq!(BDD_FEATURE_MATRIX.len(), 6);
+    }
+
+    #[test]
+    fn uk_feature_sets_len_is_pinned() {
+        // Pin the count so any addition/removal of a UK_FEATURE_SETS
+        // entry must update this test, forcing review.
+        assert_eq!(UK_FEATURE_SETS.len(), 24);
+    }
 }
