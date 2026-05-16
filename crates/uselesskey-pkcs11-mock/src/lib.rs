@@ -249,7 +249,10 @@ fn hex8(bytes: &[u8]) -> String {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::{HashMap, HashSet};
+
     use uselesskey_core::Seed;
+    use uselesskey_test_support::{TestResult, require_ok, require_some};
 
     use super::*;
 
@@ -398,5 +401,141 @@ mod tests {
         spec.model = long;
         spec.key_labels = vec!["k".repeat(22_000)];
         let _ = fx.pkcs11_mock("oversized-der", spec);
+    }
+
+    #[test]
+    fn domain_constant_is_stable_for_the_lifetime_of_v1() {
+        // Changing this constant changes derived outputs. The test exists so
+        // an accidental rename is caught by CI rather than by silent fixture
+        // drift in downstream test suites.
+        assert_eq!(DOMAIN_PKCS11_MOCK, "uselesskey:pkcs11:mock:v1");
+    }
+
+    #[test]
+    fn sign_with_unknown_handle_returns_none() {
+        let fx = Factory::random();
+        let provider = fx.pkcs11_mock("err-sign", Pkcs11MockSpec::basic("HSM-ERR-SIGN"));
+
+        // Handle 0 is below the 1-based handle range, and 999 is above the
+        // single-key default — neither maps to a stored KeyRecord.
+        assert!(provider.sign(KeyHandle(0), b"msg").is_none());
+        assert!(provider.sign(KeyHandle(999), b"msg").is_none());
+    }
+
+    #[test]
+    fn verify_with_unknown_handle_returns_false() -> TestResult<()> {
+        let fx = Factory::random();
+        let provider = fx.pkcs11_mock("err-verify", Pkcs11MockSpec::basic("HSM-ERR-VERIFY"));
+        let valid = *require_some(provider.key_handles().first(), "default key handle present")?;
+        let real_sig = require_some(
+            provider.sign(valid, b"msg"),
+            "signing succeeds for valid handle",
+        )?;
+
+        // A real signature must not verify under an unknown handle, and an
+        // empty signature buffer must not verify either.
+        assert!(!provider.verify(KeyHandle(0), b"msg", &real_sig));
+        assert!(!provider.verify(KeyHandle(999), b"msg", &real_sig));
+        assert!(!provider.verify(KeyHandle(999), b"msg", &[]));
+        Ok(())
+    }
+
+    #[test]
+    fn certificate_der_with_unknown_handle_returns_none() {
+        let fx = Factory::random();
+        let provider = fx.pkcs11_mock("err-cert", Pkcs11MockSpec::basic("HSM-ERR-CERT"));
+
+        assert!(provider.certificate_der(KeyHandle(0)).is_none());
+        assert!(provider.certificate_der(KeyHandle(999)).is_none());
+    }
+
+    #[test]
+    fn key_label_with_unknown_handle_returns_none() {
+        let fx = Factory::random();
+        let provider = fx.pkcs11_mock("err-label", Pkcs11MockSpec::basic("HSM-ERR-LABEL"));
+
+        assert!(provider.key_label(KeyHandle(0)).is_none());
+        assert!(provider.key_label(KeyHandle(999)).is_none());
+    }
+
+    #[test]
+    fn key_handle_is_copy_and_usable_in_hash_collections() {
+        let original = KeyHandle(42);
+        let copied = original; // Copy, not move
+        // Exercising the explicit Clone impl is the point of this test, so
+        // suppress the Copy-friendly suggestion.
+        #[allow(clippy::clone_on_copy)]
+        let cloned = original.clone();
+
+        // Copy semantics: original is still usable after the copy/clone.
+        assert_eq!(original, copied);
+        assert_eq!(original, cloned);
+        assert_eq!(original.0, 42);
+
+        // Hash + Eq make KeyHandle a valid HashMap key.
+        let mut map: HashMap<KeyHandle, &'static str> = HashMap::new();
+        map.insert(original, "first");
+        // Inserting via the copy must collide with the original key.
+        let prior = map.insert(copied, "second");
+        assert_eq!(prior, Some("first"));
+        assert_eq!(map.len(), 1);
+        assert_eq!(map.get(&KeyHandle(42)), Some(&"second"));
+
+        // And HashSet de-duplicates equal-by-value handles.
+        let mut set: HashSet<KeyHandle> = HashSet::new();
+        set.insert(original);
+        set.insert(copied);
+        set.insert(KeyHandle(42));
+        assert_eq!(set.len(), 1);
+    }
+
+    #[test]
+    fn slot_token_info_round_trips_clone_debug_and_equality() {
+        let info = SlotTokenInfo {
+            slot_id: 7,
+            token_label: "HSM-RT".to_string(),
+            manufacturer_id: "uselesskey".to_string(),
+            model: "UK-PKCS11-MOCK".to_string(),
+            serial_number: "ABCDEF0123456789".to_string(),
+        };
+
+        let cloned = info.clone();
+        assert_eq!(info, cloned);
+
+        // Debug output names every field — so a future field rename trips this
+        // assertion before downstream parsers silently regress.
+        let debug = format!("{info:?}");
+        for needle in [
+            "SlotTokenInfo",
+            "slot_id",
+            "token_label",
+            "manufacturer_id",
+            "model",
+            "serial_number",
+        ] {
+            assert!(debug.contains(needle), "debug missing {needle}: {debug}");
+        }
+
+        // Mutating the clone must not change the original (true `Clone`, not
+        // shared state) and must compare unequal afterward.
+        let mut diverged = info.clone();
+        diverged.slot_id = info.slot_id + 1;
+        assert_ne!(info, diverged);
+        assert_eq!(info.slot_id, 7);
+    }
+
+    #[test]
+    fn next_sign_count_increments_monotonically() -> TestResult<()> {
+        let fx = Factory::deterministic(require_ok(
+            Seed::from_env_value("pkcs11-monotonic"),
+            "must parse seed",
+        )?);
+        let provider = fx.pkcs11_mock("monotonic", Pkcs11MockSpec::basic("HSM-MONO"));
+
+        let observed: Vec<u64> = (0..5).map(|_| provider.next_sign_count()).collect();
+
+        // Pin the +1 semantic: starts at 1 and grows by exactly 1 per call.
+        assert_eq!(observed, vec![1, 2, 3, 4, 5]);
+        Ok(())
     }
 }
