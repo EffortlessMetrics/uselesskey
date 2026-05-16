@@ -1,14 +1,16 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::env;
 use std::fs;
-use std::io::{ErrorKind, Read};
+use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::Instant;
 
 use anyhow::{Context, Result, bail};
+#[cfg(test)]
 use base64::Engine;
-use base64::engine::general_purpose::{URL_SAFE, URL_SAFE_NO_PAD};
+#[cfg(test)]
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use clap::{Parser, Subcommand, ValueEnum};
 use indicatif::{ProgressBar, ProgressStyle};
 use owo_colors::OwoColorize;
@@ -23,6 +25,7 @@ mod contract_packs;
 mod docs_sync;
 mod doctor;
 mod economics;
+mod no_blob;
 mod plan;
 mod policy;
 mod pr_bundles;
@@ -569,8 +572,8 @@ fn main() -> Result<()> {
         Cmd::Ci => ci(),
         Cmd::FeatureMatrix => feature_matrix_cmd(),
         Cmd::NoBlob { subcmd } => match subcmd.as_ref().unwrap_or(&NoBlobCmd::Scan) {
-            NoBlobCmd::Scan => no_blob_gate(),
-            NoBlobCmd::Migrate => no_blob_migrate(),
+            NoBlobCmd::Scan => no_blob::gate(),
+            NoBlobCmd::Migrate => no_blob::migrate(),
         },
         Cmd::DocsSync { check } => docs_sync_with_spec_check(check),
         Cmd::PublicSurface => public_surface::public_surface_cmd(PUBLISH_CRATES),
@@ -1056,7 +1059,7 @@ fn run_ci_plan(runner: &mut receipt::Runner) -> Result<()> {
     let counts = count_bdd_scenarios().unwrap_or_default();
     runner.set_bdd_counts(counts);
 
-    runner.step("no-blob", None, no_blob_gate)?;
+    runner.step("no-blob", None, no_blob::gate)?;
     runner.step("mutants", None, || run_mutants(MUTANT_CRATES, None))?;
     runner.step("fuzz", None, fuzz_pr)?;
 
@@ -3007,7 +3010,7 @@ fn run_pr_lite_steps(
         "no-blob",
         &["cargo", "xtask", "no-blob"],
         &[],
-        no_blob_gate,
+        no_blob::gate,
     )?;
     pr_lite_run_step(
         receipt,
@@ -4463,7 +4466,7 @@ fn ripr_plus_badge(workspace_root: &Path) -> Result<ShieldsEndpointBadge> {
 
 fn scanner_safe_badge(workspace_root: &Path) -> Result<ShieldsEndpointBadge> {
     let mut offenders = Vec::new();
-    walk_for_blobs(workspace_root, workspace_root, &mut offenders)?;
+    no_blob::walk_for_blobs(workspace_root, workspace_root, &mut offenders)?;
     if !offenders.is_empty() {
         let mut msg =
             String::from("found secret-shaped fixtures while generating scanner-safe badge:");
@@ -5207,7 +5210,7 @@ fn run_pr_plan(
     }
 
     if plan.run_no_blob {
-        runner.step("no-blob", None, no_blob_gate)?;
+        runner.step("no-blob", None, no_blob::gate)?;
     } else {
         runner.skip("no-blob", Some("no test/fixture changes".to_string()));
     }
@@ -6663,413 +6666,6 @@ fn list_fuzz_targets() -> Result<Vec<String>> {
     Ok(targets)
 }
 
-fn no_blob_gate() -> Result<()> {
-    let offenders = find_secret_blobs()?;
-    if offenders.is_empty() {
-        return Ok(());
-    }
-    let mut msg = String::from("found secret-shaped fixtures:\n");
-    for hit in &offenders {
-        msg.push_str(&format!(
-            "\n  {}\n    kind: {}\n    fix:  {}\n",
-            hit.rel_path, hit.kind, hit.suggestion
-        ));
-    }
-    bail!("{msg}");
-}
-
-struct BlobHit {
-    rel_path: String,
-    kind: &'static str,
-    suggestion: &'static str,
-}
-
-/// Scan for blobs and emit migration recipes (read-only).
-fn no_blob_migrate() -> Result<()> {
-    let offenders = find_secret_blobs()?;
-    if offenders.is_empty() {
-        println!("no-blob: no secret-shaped fixtures found");
-        return Ok(());
-    }
-
-    println!(
-        "no-blob migrate: found {} secret-shaped fixture(s)",
-        offenders.len()
-    );
-    println!();
-    println!("# Migration Recipe");
-    println!();
-    for (i, hit) in offenders.iter().enumerate() {
-        println!("## {}. {}", i + 1, hit.rel_path);
-        println!();
-        println!("  Detected: {}", hit.kind);
-        println!();
-        println!("  Suggested replacement:");
-        println!("  ```rust");
-        println!("  {}", hit.suggestion);
-        println!("  ```");
-        println!();
-        println!("---\n");
-    }
-
-    println!("# Next Steps");
-    println!();
-    println!("1. Identify the fixture type (see suggested replacement above)");
-    println!("2. Replace static file with runtime generation using uselesskey");
-    println!(
-        "3. Remove the static file: `git rm {}`",
-        offenders
-            .iter()
-            .map(|h| h.rel_path.as_str())
-            .collect::<Vec<_>>()
-            .join(" ")
-    );
-    println!("4. Re-run `cargo xtask no-blob` to verify");
-    println!();
-    println!("For more details, see: https://docs.rs/uselesskey");
-
-    Ok(())
-}
-
-fn find_secret_blobs() -> Result<Vec<BlobHit>> {
-    let mut offenders = Vec::new();
-    let root = Path::new(".");
-    walk_for_blobs(root, root, &mut offenders)?;
-    Ok(offenders)
-}
-
-fn walk_for_blobs(root: &Path, dir: &Path, offenders: &mut Vec<BlobHit>) -> Result<()> {
-    for entry in fs::read_dir(dir).with_context(|| format!("read_dir failed for {dir:?}"))? {
-        let entry = entry.context("failed to read dir entry")?;
-        let path = entry.path();
-        if path.is_dir() {
-            if is_ignored_dir(&path) {
-                continue;
-            }
-            walk_for_blobs(root, &path, offenders)?;
-        } else if path.is_file() {
-            let rel = path.strip_prefix(root).unwrap_or(&path);
-            let rel_str = rel.to_string_lossy().replace('\\', "/");
-            if !should_scan_path(&rel_str) {
-                continue;
-            }
-            if let Some((kind, suggestion)) = detect_and_classify(&path)? {
-                offenders.push(BlobHit {
-                    rel_path: rel_str,
-                    kind,
-                    suggestion,
-                });
-            }
-        }
-    }
-    Ok(())
-}
-
-/// Read the file header once and use it for both detection and classification.
-/// Returns `Some((kind, suggestion))` if the file is a secret-shaped blob.
-fn detect_and_classify(path: &Path) -> Result<Option<(&'static str, &'static str)>> {
-    let ext_hit = is_secret_extension(path);
-    let header = read_file_header(path)?;
-    let allow_secret_markers = !is_source_like_extension(path);
-
-    if let Some(hit) = classify_by_content(&header, allow_secret_markers) {
-        return Ok(Some(hit));
-    }
-
-    if ext_hit {
-        return Ok(Some(classify_by_extension(path)));
-    }
-
-    if allow_secret_markers && has_secret_markers(&header) {
-        return Ok(Some(classify_by_extension(path)));
-    }
-
-    Ok(None)
-}
-
-/// Read a bounded prefix of a file for marker detection.
-fn read_file_header(path: &Path) -> Result<Vec<u8>> {
-    const HEADER_SIZE: u64 = 64 * 1024;
-    let file = fs::File::open(path).with_context(|| format!("failed to read {path:?}"))?;
-    let mut buf = Vec::new();
-    file.take(HEADER_SIZE).read_to_end(&mut buf)?;
-    Ok(buf)
-}
-
-fn is_source_like_extension(path: &Path) -> bool {
-    let ext = path
-        .extension()
-        .and_then(|s| s.to_str())
-        .unwrap_or("")
-        .to_ascii_lowercase();
-    matches!(ext.as_str(), "rs" | "feature" | "md" | "toml" | "snap")
-}
-
-/// Check if a file header contains PEM, SSH, or other secret markers.
-fn has_secret_markers(bytes: &[u8]) -> bool {
-    let text = String::from_utf8_lossy(bytes);
-    if text.contains("-----BEGIN") && text.contains("-----END") {
-        return true;
-    }
-    for line in text.lines() {
-        let trimmed = line.trim();
-        if trimmed.starts_with("ssh-rsa ")
-            || trimmed.starts_with("ssh-ed25519 ")
-            || trimmed.starts_with("ssh-dss ")
-            || trimmed.starts_with("ecdsa-sha2-")
-        {
-            return true;
-        }
-    }
-    false
-}
-
-fn is_ignored_dir(path: &Path) -> bool {
-    let name = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
-    matches!(name, ".git" | "target" | ".cargo")
-}
-
-fn should_scan_path(path: &str) -> bool {
-    path.starts_with("tests/")
-        || path.starts_with("fixtures/")
-        || path.starts_with("testdata/")
-        || (path.starts_with("crates/") && path.contains("/tests/"))
-}
-
-fn is_secret_extension(path: &Path) -> bool {
-    let ext = path
-        .extension()
-        .and_then(|s| s.to_str())
-        .unwrap_or("")
-        .to_ascii_lowercase();
-    if matches!(
-        ext.as_str(),
-        "pem" | "der" | "key" | "crt" | "cer" | "p12" | "pfx" | "pub"
-    ) {
-        return true;
-    }
-    // SSH private key filenames: id_rsa, id_ed25519, id_ecdsa (no extension)
-    let stem = path
-        .file_name()
-        .and_then(|s| s.to_str())
-        .unwrap_or("")
-        .to_ascii_lowercase();
-    matches!(stem.as_str(), "id_rsa" | "id_ed25519" | "id_ecdsa")
-}
-
-/// Backward-compatible wrapper used by tests. Delegates to `read_file_header` + `has_secret_markers`.
-#[cfg(test)]
-fn contains_pem_markers(path: &Path) -> Result<bool> {
-    if is_source_like_extension(path) {
-        return Ok(false);
-    }
-    let header = read_file_header(path)?;
-    Ok(has_secret_markers(&header))
-}
-
-/// Classify a secret-shaped blob by content (first 1024 bytes) then extension.
-#[cfg(test)]
-fn classify_blob(path: &Path) -> (&'static str, &'static str) {
-    let header = fs::read(path)
-        .ok()
-        .map(|bytes| bytes.into_iter().take(1024).collect::<Vec<u8>>());
-
-    if let Some(ref bytes) = header
-        && let Some(hit) = classify_by_content(bytes, !is_source_like_extension(path))
-    {
-        return hit;
-    }
-
-    classify_by_extension(path)
-}
-
-fn classify_by_content(
-    bytes: &[u8],
-    allow_secret_markers: bool,
-) -> Option<(&'static str, &'static str)> {
-    let text = String::from_utf8_lossy(bytes);
-
-    if allow_secret_markers {
-        // PEM header detection
-        if let Some(pem_start) = text.find("-----BEGIN ") {
-            let after = &text[pem_start + 11..];
-            if let Some(end) = after.find("-----") {
-                let label = after[..end].trim();
-                return Some(classify_pem_label(label));
-            }
-        }
-
-        // SSH public key prefixes (check per-line, not just file start)
-        for line in text.lines() {
-            let trimmed = line.trim();
-            if trimmed.starts_with("ssh-rsa ")
-                || trimmed.starts_with("ssh-ed25519 ")
-                || trimmed.starts_with("ssh-dss ")
-                || trimmed.starts_with("ecdsa-sha2-")
-            {
-                return Some((
-                    "SSH public key",
-                    "fx.ssh_key(\"key\", SshSpec::ed25519()).authorized_key_line()",
-                ));
-            }
-        }
-    }
-
-    if find_jwt_candidate(&text).is_some() {
-        return Some((
-            "JWT token",
-            "fx.token(\"auth\", TokenSpec::oauth_access_token())",
-        ));
-    }
-
-    None
-}
-
-fn find_jwt_candidate(text: &str) -> Option<&str> {
-    text.split(|c: char| !(c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.' | '=')))
-        .find(|candidate| looks_like_jwt(candidate))
-}
-
-fn classify_pem_label(label: &str) -> (&'static str, &'static str) {
-    match label {
-        "RSA PRIVATE KEY" => (
-            "RSA private key (PKCS#1)",
-            "fx.rsa(\"key\", RsaSpec::rs256()).private_key_pkcs1_pem()",
-        ),
-        "PRIVATE KEY" => (
-            "Private key (PKCS#8)",
-            "fx.rsa(\"key\", RsaSpec::rs256()).private_key_pem()  -- or ecdsa/ed25519 variant",
-        ),
-        "EC PRIVATE KEY" => (
-            "EC private key (SEC1)",
-            "fx.ecdsa(\"key\", EcdsaSpec::es256()).private_key_sec1_pem()",
-        ),
-        "PUBLIC KEY" => (
-            "Public key (SPKI)",
-            "fx.rsa(\"key\", RsaSpec::rs256()).public_key_pem()  -- or ecdsa/ed25519 variant",
-        ),
-        "RSA PUBLIC KEY" => (
-            "RSA public key (PKCS#1)",
-            "fx.rsa(\"key\", RsaSpec::rs256()).public_key_pkcs1_pem()",
-        ),
-        "CERTIFICATE" => (
-            "X.509 certificate",
-            "fx.x509_self_signed(\"ca\", X509Spec::default()).cert_pem()",
-        ),
-        "CERTIFICATE REQUEST" => (
-            "X.509 CSR",
-            "fx.x509_self_signed(\"ca\", X509Spec::default()) -- CSR not yet supported; use cert",
-        ),
-        "ENCRYPTED PRIVATE KEY" => (
-            "Encrypted private key (PKCS#8)",
-            "fx.rsa(\"key\", RsaSpec::rs256()).private_key_pem()  -- uselesskey generates unencrypted keys",
-        ),
-        "OPENSSH PRIVATE KEY" => (
-            "OpenSSH private key",
-            "fx.ssh_key(\"key\", SshSpec::ed25519()).private_key_openssh()",
-        ),
-        "PGP PUBLIC KEY BLOCK" | "PGP PRIVATE KEY BLOCK" => {
-            ("PGP key block", "fx.pgp(\"key\", PgpSpec::rsa()).armored()")
-        }
-        "PGP MESSAGE" => (
-            "PGP message",
-            "fx.pgp(\"key\", PgpSpec::rsa()) -- generate key, then encrypt test data",
-        ),
-        "PGP SIGNATURE" => (
-            "PGP signature",
-            "fx.pgp(\"key\", PgpSpec::rsa()) -- generate key, then sign test data",
-        ),
-        _ => (
-            "Unknown PEM type",
-            "Delete the file and use the appropriate uselesskey fixture API",
-        ),
-    }
-}
-
-fn looks_like_jwt(s: &str) -> bool {
-    let mut parts = s.split('.');
-    let (Some(header), Some(payload), Some(signature)) = (parts.next(), parts.next(), parts.next())
-    else {
-        return false;
-    };
-    if parts.next().is_some() {
-        return false;
-    }
-
-    if !is_jwt_signature_segment(signature) {
-        return false;
-    }
-
-    let header = decode_jwt_json_segment(header);
-    let payload = decode_jwt_json_segment(payload);
-    let (Some(header), Some(payload)) = (header, payload) else {
-        return false;
-    };
-
-    header.is_object()
-        && payload.is_object()
-        && header
-            .as_object()
-            .is_some_and(|header| header.contains_key("alg") || header.contains_key("enc"))
-}
-
-fn decode_jwt_json_segment(segment: &str) -> Option<serde_json::Value> {
-    let decoded = decode_jwt_segment(segment)?;
-    serde_json::from_slice(&decoded).ok()
-}
-
-fn decode_jwt_segment(segment: &str) -> Option<Vec<u8>> {
-    URL_SAFE_NO_PAD
-        .decode(segment)
-        .or_else(|_| URL_SAFE.decode(segment))
-        .ok()
-}
-
-fn is_jwt_signature_segment(segment: &str) -> bool {
-    !segment.is_empty()
-        && segment.len() >= 8
-        && segment
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '='))
-}
-
-fn classify_by_extension(path: &Path) -> (&'static str, &'static str) {
-    let ext = path
-        .extension()
-        .and_then(|s| s.to_str())
-        .unwrap_or("")
-        .to_ascii_lowercase();
-    match ext.as_str() {
-        "pem" => (
-            "PEM file (unknown type)",
-            "Read the PEM header to determine key type, then use the matching uselesskey API",
-        ),
-        "der" => (
-            "DER-encoded file",
-            "fx.rsa(\"key\", RsaSpec::rs256()).private_key_der()  -- or .public_key_der(), .cert_der()",
-        ),
-        "key" => (
-            "Key file",
-            "fx.rsa(\"key\", RsaSpec::rs256()).private_key_pem()  -- or ecdsa/ed25519 variant",
-        ),
-        "crt" | "cer" => (
-            "Certificate file",
-            "fx.x509_self_signed(\"ca\", X509Spec::default()).cert_pem()",
-        ),
-        "p12" | "pfx" => (
-            "PKCS#12 bundle",
-            "fx.x509_self_signed(\"ca\", X509Spec::default()) for cert/key material, then build PKCS#12 at runtime",
-        ),
-        "pub" => (
-            "Public key file",
-            "fx.rsa(\"key\", RsaSpec::rs256()).public_key_pem()  -- or ecdsa/ed25519 variant",
-        ),
-        _ => (
-            "Secret-shaped file",
-            "Delete the file and use the appropriate uselesskey fixture API",
-        ),
-    }
-}
 
 fn count_bdd_scenarios() -> Result<BTreeMap<String, usize>> {
     let mut counts = BTreeMap::new();
@@ -7606,6 +7202,11 @@ fn hook_pre_push() -> Result<()> {
 mod tests {
     use super::*;
     use crate::bundle_proof::*;
+    #[cfg(test)]
+    use crate::no_blob::{
+        classify_blob, classify_by_content, classify_pem_label, contains_pem_markers,
+        is_secret_extension, looks_like_jwt, should_scan_path, walk_for_blobs,
+    };
     use std::env;
     use std::path::PathBuf;
     use std::sync::Mutex;
