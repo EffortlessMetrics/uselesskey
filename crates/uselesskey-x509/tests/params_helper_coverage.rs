@@ -139,7 +139,10 @@ fn self_signed_san_dedup_observable_in_generated_cert() -> TestResult<()> {
     names.sort();
     ensure_eq!(
         names,
-        vec!["alpha.example.com".to_string(), "beta.example.com".to_string()]
+        vec![
+            "alpha.example.com".to_string(),
+            "beta.example.com".to_string()
+        ]
     );
     Ok(())
 }
@@ -293,7 +296,8 @@ fn x509_cert_clone_shares_inner_buffer() -> TestResult<()> {
     let orig_ptr = cert.cert_der().as_ptr();
     let cloned_ptr = cloned.cert_der().as_ptr();
     ensure_eq!(
-        orig_ptr, cloned_ptr,
+        orig_ptr,
+        cloned_ptr,
         "Clone should reuse the Arc-allocated DER buffer"
     );
 
