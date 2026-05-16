@@ -14,8 +14,8 @@ Add the crate as a dev-dependency alongside the core factory:
 
 ```toml
 [dev-dependencies]
-uselesskey-core = "0.7"
-uselesskey-webauthn = "0.7"
+uselesskey-core = "0.9.0"
+uselesskey-webauthn = "0.9.0"
 ```
 
 Then derive a registration and an assertion fixture from the same seed

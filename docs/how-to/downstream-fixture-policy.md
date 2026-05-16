@@ -53,14 +53,14 @@ Shape-only common lane:
 
 ```toml
 [build-dependencies]
-uselesskey-cli = { version = "0.7.0", default-features = false }
+uselesskey-cli = { version = "0.9.0", default-features = false }
 ```
 
 Specialized RSA build-time lane:
 
 ```toml
 [build-dependencies]
-uselesskey-cli = { version = "0.7.0", default-features = false, features = ["rsa-materialize"] }
+uselesskey-cli = { version = "0.9.0", default-features = false, features = ["rsa-materialize"] }
 ```
 
 ## Materialize in CI or build scripts
