@@ -214,7 +214,8 @@ fn negative_value_does_not_perturb_positive_token_value() -> TestResult<()> {
         let _ = token.negative_value(variant);
         let positive_after = token.value().to_string();
         ensure_eq!(
-            baseline, positive_after,
+            baseline,
+            positive_after,
             "positive token must be stable after {variant:?}"
         );
     }
@@ -256,10 +257,7 @@ fn distinct_negative_variants_yield_distinct_outputs() -> TestResult<()> {
         NegativeToken::NotYetValidClaims,
     ];
 
-    let values: Vec<String> = variants
-        .iter()
-        .map(|v| token.negative_value(*v))
-        .collect();
+    let values: Vec<String> = variants.iter().map(|v| token.negative_value(*v)).collect();
 
     for (i, vi) in values.iter().enumerate() {
         ensure!(
