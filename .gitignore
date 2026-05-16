@@ -27,5 +27,8 @@ output.txt
 .gemini/
 gha-creds-*.json
 
+# Claude Code agent worktrees (created by isolation: "worktree")
+.claude/worktrees/
+
 # shipper publish state (plan, receipts, etc.)
 .shipper/
