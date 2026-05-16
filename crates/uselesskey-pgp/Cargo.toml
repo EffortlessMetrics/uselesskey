@@ -24,6 +24,7 @@ rand_core = { version = "0.6.4", default-features = false }
 proptest.workspace = true
 serde.workspace = true
 insta.workspace = true
+uselesskey-test-support = { workspace = true }
 
 [features]
 # Re-export the native `pgp` crate adapter surface
