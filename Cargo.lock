@@ -4984,6 +4984,7 @@ dependencies = [
  "uselesskey-ecdsa",
  "uselesskey-ed25519",
  "uselesskey-rsa",
+ "uselesskey-test-support",
  "uselesskey-x509",
 ]
 
