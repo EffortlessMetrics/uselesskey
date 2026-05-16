@@ -35,12 +35,13 @@
 //! assert_eq!(expired.matches('.').count(), 2);
 //! ```
 
-use base64::Engine as _;
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-use rand_chacha10::ChaCha20Rng;
-use rand_core10::{Rng, SeedableRng};
+mod jwt;
+mod negative;
+mod standard;
 
-use serde_json::{Map, Value, json};
+pub use negative::{NegativeToken, generate_negative_token};
+pub use standard::{generate_api_key, generate_bearer_token, generate_oauth_access_token};
+
 use uselesskey_core::Seed;
 
 pub use super::base62::random_base62;
@@ -67,55 +68,6 @@ const NEAR_MISS_API_KEY_PREFIX: &str = "uk_tset_";
 /// Token shape kind.
 pub use super::spec::TokenSpec as TokenKind;
 
-/// Negative token shape variants for downstream parser and validator tests.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum NegativeToken {
-    /// Emit a JWT-like value with the wrong number of dot-separated segments.
-    MalformedJwtSegmentCount,
-    /// Replace one JWT segment with scanner-safe invalid base64url text.
-    BadBase64UrlSegment,
-    /// Encode a JWT header that is JSON, but not a header object.
-    InvalidJwtHeaderShape,
-    /// Remove `alg` from the JWT header.
-    MissingAlg,
-    /// Set the JWT header algorithm to `none`.
-    AlgNone,
-    /// Emit different `kid` values in the header and payload.
-    MismatchedKid,
-    /// Set an already-expired `exp` claim.
-    ExpiredClaims,
-    /// Set a future `nbf` claim.
-    NotYetValidClaims,
-    /// Replace the expected issuer claim.
-    BadIssuer,
-    /// Replace the expected audience claim.
-    BadAudience,
-    /// Emit a bearer-like token that is not valid base64url.
-    MalformedBearer,
-    /// Emit an API-key near miss that is close to, but not, `uk_test_`.
-    NearMissApiKey,
-}
-
-impl NegativeToken {
-    /// Stable cache/disposition name for this negative token variant.
-    pub const fn variant_name(&self) -> &'static str {
-        match self {
-            Self::MalformedJwtSegmentCount => "malformed_jwt_segment_count",
-            Self::BadBase64UrlSegment => "bad_base64url_segment",
-            Self::InvalidJwtHeaderShape => "invalid_jwt_header_shape",
-            Self::MissingAlg => "missing_alg",
-            Self::AlgNone => "alg_none",
-            Self::MismatchedKid => "mismatched_kid",
-            Self::ExpiredClaims => "expired_claims",
-            Self::NotYetValidClaims => "not_yet_valid_claims",
-            Self::BadIssuer => "bad_issuer",
-            Self::BadAudience => "bad_audience",
-            Self::MalformedBearer => "malformed_bearer",
-            Self::NearMissApiKey => "near_miss_api_key",
-        }
-    }
-}
-
 /// Generate a token value for the provided shape kind.
 pub fn generate_token(label: &str, kind: TokenKind, seed: Seed) -> String {
     match kind {
@@ -125,208 +77,9 @@ pub fn generate_token(label: &str, kind: TokenKind, seed: Seed) -> String {
     }
 }
 
-/// Generate a scanner-safe negative token value for parser and validator tests.
-pub fn generate_negative_token(
-    label: &str,
-    kind: TokenKind,
-    seed: Seed,
-    variant: NegativeToken,
-) -> String {
-    match variant {
-        NegativeToken::MalformedJwtSegmentCount => malformed_jwt_segment_count(label, seed),
-        NegativeToken::BadBase64UrlSegment => bad_base64url_segment(label, seed),
-        NegativeToken::InvalidJwtHeaderShape => invalid_jwt_header_shape(label, seed),
-        NegativeToken::MissingAlg => missing_alg(label, seed),
-        NegativeToken::AlgNone => alg_none(label, seed),
-        NegativeToken::MismatchedKid => mismatched_kid(label, seed),
-        NegativeToken::ExpiredClaims => token_with_payload_claim(label, seed, "exp", json!(1u64)),
-        NegativeToken::NotYetValidClaims => not_yet_valid_claims(label, seed),
-        NegativeToken::BadIssuer => {
-            token_with_payload_claim(label, seed, "iss", json!("wrong-issuer"))
-        }
-        NegativeToken::BadAudience => {
-            token_with_payload_claim(label, seed, "aud", json!("wrong-audience"))
-        }
-        NegativeToken::MalformedBearer => malformed_bearer(seed),
-        NegativeToken::NearMissApiKey => near_miss_api_key(kind, seed),
-    }
-}
-
 /// Return HTTP authorization scheme for the token kind.
 pub fn authorization_scheme(kind: TokenKind) -> &'static str {
     kind.authorization_scheme()
-}
-
-/// Generate an API-key style token fixture (`uk_test_<base62>`).
-pub fn generate_api_key(seed: Seed) -> String {
-    let mut out = String::from(API_KEY_PREFIX);
-    out.push_str(&random_base62(seed, API_KEY_RANDOM_LEN));
-    out
-}
-
-/// Generate an opaque bearer token fixture (base64url of 32 random bytes).
-pub fn generate_bearer_token(seed: Seed) -> String {
-    let mut rng = ChaCha20Rng::from_seed(*seed.bytes());
-    let mut bytes = [0u8; BEARER_RANDOM_BYTES];
-    rng.fill_bytes(&mut bytes);
-    URL_SAFE_NO_PAD.encode(bytes)
-}
-
-/// Generate an OAuth access token fixture in JWT shape (`header.payload.signature`).
-pub fn generate_oauth_access_token(label: &str, seed: Seed) -> String {
-    let header = URL_SAFE_NO_PAD.encode(r#"{"alg":"RS256","typ":"JWT"}"#);
-    let mut rng = ChaCha20Rng::from_seed(*seed.bytes());
-
-    let mut jti = [0u8; OAUTH_JTI_BYTES];
-    rng.fill_bytes(&mut jti);
-
-    let payload = json!({
-        "iss": "uselesskey",
-        "sub": label,
-        "aud": "tests",
-        "scope": "fixture.read",
-        "jti": URL_SAFE_NO_PAD.encode(jti),
-        "exp": 2_000_000_000u64,
-    });
-    let payload_json = serde_json::to_vec(&payload).expect("payload JSON");
-    let payload_segment = URL_SAFE_NO_PAD.encode(payload_json);
-
-    let mut signature = [0u8; OAUTH_SIGNATURE_BYTES];
-    rng.fill_bytes(&mut signature);
-    let signature_segment = URL_SAFE_NO_PAD.encode(signature);
-
-    format!("{header}.{payload_segment}.{signature_segment}")
-}
-
-fn malformed_jwt_segment_count(label: &str, seed: Seed) -> String {
-    let [header, payload, _signature] = oauth_parts(label, seed);
-    format!("{header}.{payload}")
-}
-
-fn bad_base64url_segment(label: &str, seed: Seed) -> String {
-    let [header, _payload, signature] = oauth_parts(label, seed);
-    format!("{header}.{SCANNER_SAFE_INVALID_TOKEN_SEGMENT}.{signature}")
-}
-
-fn invalid_jwt_header_shape(label: &str, seed: Seed) -> String {
-    let [_header, payload, signature] = oauth_parts(label, seed);
-    let header = encode_json(&json!(["not-a-header"]));
-    format!("{header}.{payload}.{signature}")
-}
-
-fn missing_alg(label: &str, seed: Seed) -> String {
-    let [_header, payload, signature] = oauth_parts(label, seed);
-    let header = encode_json(&json!({ "typ": "JWT" }));
-    format!("{header}.{payload}.{signature}")
-}
-
-fn alg_none(label: &str, seed: Seed) -> String {
-    token_with_header_claim(label, seed, "alg", json!("none"))
-}
-
-fn mismatched_kid(label: &str, seed: Seed) -> String {
-    let [_header, payload, signature] = oauth_parts(label, seed);
-    let mut header = jwt_header();
-    header.insert("kid".to_string(), json!("unknown-kid"));
-
-    let mut payload = decode_object(&payload);
-    payload.insert("kid".to_string(), json!("expected-kid"));
-
-    format!(
-        "{}.{}.{}",
-        encode_object(&header),
-        encode_object(&payload),
-        signature
-    )
-}
-
-fn not_yet_valid_claims(label: &str, seed: Seed) -> String {
-    let [_header, payload, signature] = oauth_parts(label, seed);
-    let mut claims = decode_object(&payload);
-    claims.insert("nbf".to_string(), json!(4_000_000_000u64));
-    claims.insert("exp".to_string(), json!(4_100_000_000u64));
-
-    format!(
-        "{}.{}.{}",
-        encode_object(&jwt_header()),
-        encode_object(&claims),
-        signature
-    )
-}
-
-fn token_with_header_claim(label: &str, seed: Seed, claim: &str, value: Value) -> String {
-    let [_header, payload, signature] = oauth_parts(label, seed);
-    let mut header = jwt_header();
-    header.insert(claim.to_string(), value);
-
-    format!("{}.{}.{}", encode_object(&header), payload, signature)
-}
-
-fn token_with_payload_claim(label: &str, seed: Seed, claim: &str, value: Value) -> String {
-    let [_header, payload, signature] = oauth_parts(label, seed);
-    let mut claims = decode_object(&payload);
-    claims.insert(claim.to_string(), value);
-
-    format!(
-        "{}.{}.{}",
-        encode_object(&jwt_header()),
-        encode_object(&claims),
-        signature
-    )
-}
-
-fn malformed_bearer(seed: Seed) -> String {
-    let mut value = generate_bearer_token(seed);
-    value.replace_range(0..1, "!");
-    value
-}
-
-fn near_miss_api_key(_kind: TokenKind, seed: Seed) -> String {
-    let valid = generate_api_key(seed);
-    let suffix = valid.strip_prefix(API_KEY_PREFIX).unwrap_or(&valid);
-
-    format!("{NEAR_MISS_API_KEY_PREFIX}{suffix}")
-}
-
-fn oauth_parts(label: &str, seed: Seed) -> [String; 3] {
-    let token = generate_oauth_access_token(label, seed);
-    let mut parts = token.split('.');
-    let header = parts.next().expect("JWT header segment").to_string();
-    let payload = parts.next().expect("JWT payload segment").to_string();
-    let signature = parts.next().expect("JWT signature segment").to_string();
-    assert!(
-        parts.next().is_none(),
-        "JWT should have exactly three segments"
-    );
-
-    [header, payload, signature]
-}
-
-fn jwt_header() -> Map<String, Value> {
-    Map::from_iter([
-        ("alg".to_string(), json!("RS256")),
-        ("typ".to_string(), json!("JWT")),
-    ])
-}
-
-fn decode_object(segment: &str) -> Map<String, Value> {
-    let bytes = URL_SAFE_NO_PAD
-        .decode(segment)
-        .expect("decode generated JWT JSON segment");
-    let value: Value = serde_json::from_slice(&bytes).expect("parse generated JWT JSON segment");
-    value
-        .as_object()
-        .expect("generated JWT JSON segment should be an object")
-        .clone()
-}
-
-fn encode_object(value: &Map<String, Value>) -> String {
-    encode_json(&Value::Object(value.clone()))
-}
-
-fn encode_json(value: &Value) -> String {
-    let json = serde_json::to_vec(value).expect("serialize token JSON");
-    URL_SAFE_NO_PAD.encode(json)
 }
 
 #[cfg(test)]
