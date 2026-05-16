@@ -230,4 +230,111 @@ mod tests {
             prop_assert_eq!(bytes.len(), len);
         }
     }
+
+    #[test]
+    fn entropy_with_variant_constructor_derives_from_custom_variant() -> TestResult<()> {
+        let fx = Factory::deterministic(require_ok(
+            Seed::from_env_value("entropy-with-variant-ctor"),
+            "must parse seed",
+        )?);
+
+        let good = fx.entropy("svc").bytes(32);
+        let custom = fx.entropy_with_variant("svc", "alt").bytes(32);
+
+        assert_ne!(
+            good, custom,
+            "entropy_with_variant must derive from the variant, not the default"
+        );
+
+        // Calling with the same custom variant on either constructor produces
+        // the same bytes (cache identity is (label, len, variant)).
+        let custom_again = fx.entropy("svc").bytes_with_variant(32, "alt");
+        assert_eq!(custom, custom_again);
+        Ok(())
+    }
+
+    #[test]
+    fn fill_bytes_with_variant_matches_allocating_path() -> TestResult<()> {
+        let fx = Factory::deterministic(require_ok(
+            Seed::from_env_value("entropy-fill-with-variant"),
+            "must parse seed",
+        )?);
+        let fixture = fx.entropy("svc");
+
+        let expected = fixture.bytes_with_variant(40, "alt");
+        let mut actual = [0u8; 40];
+        fixture.fill_bytes_with_variant(&mut actual, "alt");
+
+        assert_eq!(expected.as_slice(), &actual[..]);
+
+        // And differs from the default-variant fill of the same length.
+        let mut default_filled = [0u8; 40];
+        fixture.fill_bytes(&mut default_filled);
+        assert_ne!(actual, default_filled);
+        Ok(())
+    }
+
+    #[test]
+    fn zero_length_request_returns_empty_buffer() -> TestResult<()> {
+        let fx = Factory::deterministic(require_ok(
+            Seed::from_env_value("entropy-zero-len"),
+            "must parse seed",
+        )?);
+        let fixture = fx.entropy("svc");
+
+        let empty = fixture.bytes(0);
+        assert!(empty.is_empty());
+
+        // fill_bytes on a zero-length buffer must be a no-op (and not panic).
+        let mut buf: [u8; 0] = [];
+        fixture.fill_bytes(&mut buf);
+        Ok(())
+    }
+
+    #[test]
+    fn distinct_lengths_produce_distinct_caches() -> TestResult<()> {
+        // The cache spec includes len.to_le_bytes(), so requesting different
+        // lengths from the same (label, variant) must produce independently
+        // derived bytes — not a prefix/extension of the longer buffer.
+        let fx = Factory::deterministic(require_ok(
+            Seed::from_env_value("entropy-len-distinct"),
+            "must parse seed",
+        )?);
+        let fixture = fx.entropy("svc");
+
+        let short = fixture.bytes(16);
+        let long = fixture.bytes(32);
+
+        assert_eq!(short.len(), 16);
+        assert_eq!(long.len(), 32);
+        assert_ne!(
+            short.as_slice(),
+            &long[..16],
+            "different lengths must hit distinct cache entries, not slice the same stream"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn cloned_fixture_handles_share_cache_identity() -> TestResult<()> {
+        let fx = Factory::deterministic(require_ok(
+            Seed::from_env_value("entropy-clone-handle"),
+            "must parse seed",
+        )?);
+        let fixture = fx.entropy("svc");
+        let cloned = fixture.clone();
+
+        assert_eq!(fixture.label(), cloned.label());
+        assert_eq!(fixture.variant(), cloned.variant());
+        assert_eq!(fixture.bytes(48), cloned.bytes(48));
+        Ok(())
+    }
+
+    #[test]
+    fn domain_constant_is_stable_for_the_lifetime_of_v1() {
+        // Changing this constant changes derived outputs. The test exists so
+        // an accidental rename is caught by CI rather than by silent fixture
+        // drift in downstream test suites.
+        assert_eq!(DOMAIN_ENTROPY_FIXTURE, "uselesskey:entropy:fixture");
+    }
 }
