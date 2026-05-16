@@ -56,6 +56,50 @@ mod tests {
         );
     }
 
+    #[test]
+    fn hmac_sha256_long_key_is_hashed_to_block_size() {
+        // RFC 4231 test case 4: 131-byte key is hashed down to 32 bytes
+        // (less than the 64-byte block) before HMAC processing. This drives
+        // the `secret.len() > SHA256_BLOCK_LEN` branch.
+        use sha2::Digest as _;
+        let long_key = [0xaa_u8; 131];
+        let short_key_equivalent = sha2::Sha256::digest(long_key);
+
+        let digest_long = hmac_sha256_hex(&long_key, b"Test With Truncation");
+        let digest_short = hmac_sha256_hex(&short_key_equivalent, b"Test With Truncation");
+
+        // Hashing the key first must produce the same HMAC as passing the
+        // already-hashed key directly.
+        assert_eq!(digest_long, digest_short);
+        assert_eq!(digest_long.len(), 64); // hex of 32 bytes
+    }
+
+    #[test]
+    fn hmac_sha256_handles_empty_inputs() {
+        // HMAC-SHA256 with key="" and msg="" is a known RFC 2104 value.
+        let digest = hmac_sha256_hex(b"", b"");
+        assert_eq!(
+            digest,
+            "b613679a0814d9ec772f95d778c35fc5ff1697c493715653c6c712144292c5ad"
+        );
+    }
+
+    #[test]
+    fn webhook_profile_stable_tag_per_variant() {
+        assert_eq!(
+            stable_spec_bytes(WebhookProfile::GitHub, &WebhookPayloadSpec::Raw("".into()))[..6],
+            *b"github"
+        );
+        assert_eq!(
+            stable_spec_bytes(WebhookProfile::Stripe, &WebhookPayloadSpec::Raw("".into()))[..6],
+            *b"stripe"
+        );
+        assert_eq!(
+            stable_spec_bytes(WebhookProfile::Slack, &WebhookPayloadSpec::Raw("".into()))[..5],
+            *b"slack"
+        );
+    }
+
     fn verify_github(secret: &str, payload: &str, headers: &BTreeMap<String, String>) -> bool {
         let expected = format!(
             "sha256={}",
