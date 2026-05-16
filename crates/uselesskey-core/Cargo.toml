@@ -34,7 +34,7 @@ dashmap = { workspace = true, optional = true }
 rand10.workspace = true
 rand_chacha10.workspace = true
 rand_core10.workspace = true
-spin = { version = "0.10.0", default-features = false, features = ["mutex", "spin_mutex"] }
+spin = { version = "0.11.0", default-features = false, features = ["mutex", "spin_mutex"] }
 tempfile = { workspace = true, optional = true }
 thiserror = { version = "2.0.18", default-features = false }
 
