@@ -98,7 +98,7 @@ If you need every key family, use `all-keys`.
 - Use `uselesskey-cli verify` in CI to prove generated outputs still match the
   manifest.
 - If `build.rs` calls the library directly, use:
-  `uselesskey-cli = { version = "0.7.0", default-features = false }`
+  `uselesskey-cli = { version = "0.9.0", default-features = false }`
   for the common shape-only path.
 - Add `features = ["rsa-materialize"]` only when the build-time path needs RSA
   PKCS#8 fixtures.

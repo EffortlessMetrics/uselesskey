@@ -35,14 +35,14 @@ For shape-only build-time fixtures, depend on the slim library surface:
 
 ```toml
 [build-dependencies]
-uselesskey-cli = { version = "0.7.0", default-features = false }
+uselesskey-cli = { version = "0.9.0", default-features = false }
 ```
 
 For RSA PKCS#8 build-time fixtures, opt into the specialized RSA materialize support:
 
 ```toml
 [build-dependencies]
-uselesskey-cli = { version = "0.7.0", default-features = false, features = ["rsa-materialize"] }
+uselesskey-cli = { version = "0.9.0", default-features = false, features = ["rsa-materialize"] }
 ```
 
 See `crates/materialize-shape-buildrs-example/` for the common shape-only pattern and `crates/materialize-buildrs-example/` for the specialized RSA pattern.
