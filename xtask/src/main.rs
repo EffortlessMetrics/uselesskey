@@ -15,6 +15,7 @@ use owo_colors::OwoColorize;
 use regex::Regex;
 use uselesskey_feature_grid::{BDD_FEATURE_MATRIX, CORE_FEATURE_MATRIX};
 
+mod adoption_regression;
 mod audit_surface;
 mod bundle_proof;
 mod claim_proof;
@@ -102,6 +103,12 @@ enum Cmd {
     },
     /// Run bounded first-run user-path smoke checks.
     UserPathSmoke,
+    /// Run bounded adoption-path regression checks and write receipts.
+    AdoptionRegression {
+        /// Output format.
+        #[arg(long, value_enum, default_value = "human")]
+        format: AdoptionRegressionFormat,
+    },
     /// Run publish dry-runs for crates in dependency order.
     PublishCheck,
     /// Run PR-scoped tests based on git diff.
@@ -506,6 +513,12 @@ enum DoctorFormat {
     Json,
 }
 
+#[derive(Clone, Debug, ValueEnum)]
+enum AdoptionRegressionFormat {
+    Human,
+    Json,
+}
+
 impl From<SpecCheckFormat> for spec_check::OutputFormat {
     fn from(value: SpecCheckFormat) -> Self {
         match value {
@@ -538,6 +551,15 @@ impl From<DoctorFormat> for doctor::OutputFormat {
         match value {
             DoctorFormat::Human => doctor::OutputFormat::Human,
             DoctorFormat::Json => doctor::OutputFormat::Json,
+        }
+    }
+}
+
+impl From<AdoptionRegressionFormat> for adoption_regression::OutputFormat {
+    fn from(value: AdoptionRegressionFormat) -> Self {
+        match value {
+            AdoptionRegressionFormat::Human => adoption_regression::OutputFormat::Human,
+            AdoptionRegressionFormat::Json => adoption_regression::OutputFormat::Json,
         }
     }
 }
@@ -576,6 +598,9 @@ fn main() -> Result<()> {
         Cmd::PublicSurface => public_surface::public_surface_cmd(PUBLISH_CRATES),
         Cmd::ExamplesSmoke { run } => docs_sync::examples_smoke_cmd(run),
         Cmd::UserPathSmoke => user_path_smoke::run(&workspace_root_path()),
+        Cmd::AdoptionRegression { format } => {
+            adoption_regression::run(&workspace_root_path(), format.into())
+        }
         Cmd::PublishCheck => publish_check(),
         Cmd::Pr { with_mutants } => pr(with_mutants),
         Cmd::PrLite { format } => pr_lite(format),
