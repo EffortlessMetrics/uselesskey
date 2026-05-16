@@ -47,6 +47,7 @@ uselesskey-x509 = { path = "../uselesskey-x509", version = "0.9.0" }
 uselesskey-rsa = { path = "../uselesskey-rsa", version = "0.9.0" }
 uselesskey-ecdsa = { path = "../uselesskey-ecdsa", version = "0.9.0" }
 uselesskey-ed25519 = { path = "../uselesskey-ed25519", version = "0.9.0" }
+uselesskey-test-support.workspace = true
 rustls = { version = "0.23", features = ["ring"] }
 hex = "0.4"
 serde.workspace = true

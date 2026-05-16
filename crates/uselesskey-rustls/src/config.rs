@@ -473,6 +473,118 @@ mod tests {
         assert!(!server.is_handshaking());
     }
 
+    // -----------------------------------------------------------------
+    // Default-provider mTLS coverage (no-panic-helper style).
+    //
+    // The non-mTLS default-provider variants (`server_config_rustls`,
+    // `client_config_rustls`) are covered above, but the default-provider
+    // mTLS variants (`server_config_mtls_rustls`,
+    // `client_config_mtls_rustls`) were previously only exercised
+    // indirectly through cross-crate integration tests. These tests pin
+    // those code paths directly and use the `uselesskey-test-support`
+    // no-panic helpers so future migration work need not revisit them.
+    // -----------------------------------------------------------------
+
+    use uselesskey_test_support::{TestResult, ensure, require_ok};
+
+    #[test]
+    fn server_config_mtls_from_chain_default_provider() -> TestResult<()> {
+        install_provider();
+        let fx = super::super::testutil::fx();
+        let chain = fx.x509_chain("mtls-default-server", ChainSpec::new("test.example.com"));
+
+        // Building the config exercises the default-provider mTLS path
+        // including WebPkiClientVerifier::builder. A failure here would
+        // panic on the internal `.expect("valid mTLS server config")`.
+        let cfg = chain.server_config_mtls_rustls();
+
+        // Sanity-check defaults that the builder leaves untouched, to
+        // ensure we're observing a real ServerConfig and not just that
+        // construction didn't panic.
+        ensure!(
+            cfg.alpn_protocols.is_empty(),
+            "default ServerConfig must have no ALPN protocols configured",
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn client_config_mtls_from_chain_default_provider() -> TestResult<()> {
+        install_provider();
+        let fx = super::super::testutil::fx();
+        let chain = fx.x509_chain("mtls-default-client", ChainSpec::new("test.example.com"));
+
+        let cfg = chain.client_config_mtls_rustls();
+
+        ensure!(
+            cfg.alpn_protocols.is_empty(),
+            "default ClientConfig must have no ALPN protocols configured",
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn mtls_default_provider_pair_completes_handshake() -> TestResult<()> {
+        install_provider();
+        let fx = super::super::testutil::fx();
+        let chain = fx.x509_chain("mtls-default-handshake", ChainSpec::new("test.example.com"));
+
+        let server_config = Arc::new(chain.server_config_mtls_rustls());
+        let client_config = Arc::new(chain.client_config_mtls_rustls());
+
+        let server_name: rustls::pki_types::ServerName<'_> = require_ok(
+            "test.example.com".try_into(),
+            "test.example.com must parse as ServerName",
+        )?;
+        let mut server = require_ok(
+            rustls::ServerConnection::new(server_config),
+            "ServerConnection::new",
+        )?;
+        let mut client = require_ok(
+            rustls::ClientConnection::new(client_config, server_name.to_owned()),
+            "ClientConnection::new",
+        )?;
+
+        let mut buf = Vec::new();
+        for iteration in 0..MAX_HANDSHAKE_ITERATIONS {
+            let mut progress = false;
+
+            buf.clear();
+            if client.wants_write() {
+                require_ok(client.write_tls(&mut buf), "client.write_tls")?;
+                if !buf.is_empty() {
+                    require_ok(server.read_tls(&mut &buf[..]), "server.read_tls")?;
+                    require_ok(server.process_new_packets(), "server.process_new_packets")?;
+                    progress = true;
+                }
+            }
+
+            buf.clear();
+            if server.wants_write() {
+                require_ok(server.write_tls(&mut buf), "server.write_tls")?;
+                if !buf.is_empty() {
+                    require_ok(client.read_tls(&mut &buf[..]), "client.read_tls")?;
+                    require_ok(client.process_new_packets(), "client.process_new_packets")?;
+                    progress = true;
+                }
+            }
+
+            if !progress {
+                break;
+            }
+
+            ensure!(
+                iteration < MAX_HANDSHAKE_ITERATIONS - 1,
+                "default-provider mTLS handshake did not complete within {} iterations",
+                MAX_HANDSHAKE_ITERATIONS,
+            );
+        }
+
+        ensure!(!client.is_handshaking(), "client must finish handshaking");
+        ensure!(!server.is_handshaking(), "server must finish handshaking");
+        Ok(())
+    }
+
     #[test]
     fn mtls_roundtrip() {
         let fx = super::super::testutil::fx();
