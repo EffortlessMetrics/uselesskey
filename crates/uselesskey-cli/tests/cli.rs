@@ -77,7 +77,10 @@ fn profile_command_summary_has_copyable_webhook_paths() -> TestResult<()> {
         )
     );
     assert!(out.contains("Verify: uselesskey verify-bundle --path target/uselesskey-webhook"));
-    assert!(out.contains("Proof: cargo xtask claim-proof --claim webhook-contract-pack"));
+    assert!(out.contains("Inspect: uselesskey inspect-bundle --path target/uselesskey-webhook"));
+    assert!(
+        out.contains("Proof/check path: cargo xtask claim-proof --claim webhook-contract-pack")
+    );
     Ok(())
 }
 
@@ -605,6 +608,16 @@ fn inspect_bundle_summarizes_verified_scanner_safe_receipts() -> TestResult<()> 
         .stdout(predicate::str::contains("Verification: ok"))
         .stdout(predicate::str::contains(
             "Receipts: materialization, audit-surface",
+        ))
+        .stdout(predicate::str::contains(
+            "Proof/check path: cargo xtask claim-proof --claim scanner-safe-fixtures",
+        ))
+        .stdout(predicate::str::contains("Generated files:"))
+        .stdout(predicate::str::contains("rsa.jwk.json"))
+        .stdout(predicate::str::contains("Artifact posture:"))
+        .stdout(predicate::str::contains("scanner_safe=yes"))
+        .stdout(predicate::str::contains(
+            "Does not prove: every derived encoded export is safe to commit",
         ));
     Ok(())
 }
@@ -641,6 +654,15 @@ fn inspect_bundle_reports_runtime_material_without_printing_payloads() -> TestRe
     assert!(summary.contains("Symmetric secret material: yes"));
     assert!(summary.contains("Runtime material artifacts: 5"));
     assert!(summary.contains("Verification: ok"));
+    assert!(
+        summary.contains(
+            "Proof/check path: uselesskey verify-bundle --path target/uselesskey-runtime"
+        )
+    );
+    assert!(summary.contains("Generated files:"));
+    assert!(summary.contains("Artifact posture:"));
+    assert!(summary.contains("scanner_safe=no"));
+    assert!(summary.contains("Does not prove: a public contract-pack claim"));
     assert!(!summary.contains("BEGIN PRIVATE KEY"));
     assert!(!summary.contains("uk_test_"));
     Ok(())
