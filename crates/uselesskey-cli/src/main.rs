@@ -589,6 +589,9 @@ fn render_bundle_inspection_summary(
     manifest: &BundleManifest,
     verified_file_count: usize,
 ) -> String {
+    let profile_info = parse_manifest_profile(&manifest.profile)
+        .ok()
+        .map(profile_info);
     let artifact_count = if manifest.artifacts.is_empty() {
         verified_file_count
     } else {
@@ -645,10 +648,46 @@ fn render_bundle_inspection_summary(
             .collect::<Vec<_>>()
             .join(", ")
     };
+    let files = if manifest.files.is_empty() {
+        "none".to_string()
+    } else {
+        manifest
+            .files
+            .iter()
+            .map(|file| format!("- {file}"))
+            .collect::<Vec<_>>()
+            .join("\n")
+    };
+    let artifact_posture = if manifest.artifacts.is_empty() {
+        "none".to_string()
+    } else {
+        manifest
+            .artifacts
+            .iter()
+            .map(|artifact| {
+                format!(
+                    "- {}: scanner_safe={}, kind={}, format={}, description={}",
+                    artifact.path,
+                    yes_no(artifact.scanner_safe),
+                    artifact.kind,
+                    artifact.format,
+                    artifact.description
+                )
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    };
+    let proof_path = profile_info
+        .map(|info| info.proof_command)
+        .unwrap_or("uselesskey verify-bundle --path <bundle-dir>");
+    let boundary = profile_info
+        .map(|info| info.not_proves.join("; "))
+        .unwrap_or_else(|| "production security behavior".to_string());
 
     format!(
         concat!(
             "Bundle profile: {}\n",
+            "Purpose: {}\n",
             "Artifacts: {}\n",
             "Verified files: {}\n",
             "Scanner-safe: {}\n",
@@ -657,15 +696,24 @@ fn render_bundle_inspection_summary(
             "Runtime material artifacts: {}\n",
             "Verification: ok\n",
             "Receipts: {}\n",
+            "Proof/check path: {}\n",
+            "Generated files:\n{}\n",
+            "Artifact posture:\n{}\n",
+            "Does not prove: {}\n",
         ),
         manifest.profile,
+        profile_info.map_or("unknown profile", |info| info.purpose),
         artifact_count,
         verified_file_count,
         yes_no_unknown(scanner_safe),
         yes_no_unknown(private_key_material),
         yes_no_unknown(symmetric_secret_material),
         count_or_unknown(runtime_material_count),
-        receipts
+        receipts,
+        proof_path,
+        files,
+        artifact_posture,
+        boundary
     )
 }
 
@@ -685,6 +733,10 @@ fn yes_no_unknown(value: Option<bool>) -> &'static str {
         Some(false) => "no",
         None => "unknown",
     }
+}
+
+fn yes_no(value: bool) -> &'static str {
+    if value { "yes" } else { "no" }
 }
 
 fn count_or_unknown(value: Option<usize>) -> String {
@@ -718,8 +770,11 @@ fn profile_info(profile: BundleProfile) -> ProfileInfo {
             claim: Some("scanner-safe-fixtures"),
             docs: "docs/how-to/generate-scanner-safe-k8s-secret.md",
             generates: &[
-                "RSA/ECDSA/Ed25519/HMAC public fixture shapes",
-                "token and X.509 fixture shapes",
+                "rsa.jwk.json, ecdsa.jwk.json, ed25519.jwk.json",
+                "hmac.jwk.json invalid symmetric JWK shape",
+                "token.json near-miss token shape",
+                "x509.pem public certificate fixture",
+                "jwk.jwk.json and jwks.jwks.json",
                 "manifest.json",
                 "receipts/materialization.json",
                 "receipts/audit-surface.json",
@@ -748,9 +803,12 @@ fn profile_info(profile: BundleProfile) -> ProfileInfo {
             generates: &[
                 "certs/valid-leaf.pem",
                 "certs/valid-chain.pem",
-                "expired, not-yet-valid, wrong-hostname, and untrusted-root negatives",
+                "certs/negative-expired-leaf.pem",
+                "certs/negative-not-yet-valid.pem",
+                "certs/negative-wrong-hostname.pem",
+                "certs/negative-untrusted-root.pem",
                 "evidence/tls-profile.md",
-                "manifest and receipts",
+                "manifest.json and receipts",
             ],
             proves: &[
                 "documented TLS fixture files are generated",
@@ -774,10 +832,13 @@ fn profile_info(profile: BundleProfile) -> ProfileInfo {
             claim: Some("oidc-jwks-contract-pack"),
             docs: "docs/how-to/test-oidc-jwks-validation.md",
             generates: &[
-                "valid JWKS and RS256 JWT-shaped fixtures",
-                "duplicate-kid and missing-kid JWKS negatives",
-                "alg-none and bad-audience token negatives",
-                "manifest and receipts",
+                "jwks/valid.json",
+                "jwks/negative-duplicate-kid.json",
+                "jwks/negative-missing-kid.json",
+                "tokens/valid-rs256.json",
+                "tokens/negative-alg-none.json",
+                "tokens/negative-bad-audience.json",
+                "manifest.json and receipts",
             ],
             proves: &[
                 "deterministic JWKS and JWT-shaped fixtures are generated",
@@ -802,9 +863,13 @@ fn profile_info(profile: BundleProfile) -> ProfileInfo {
             docs: "docs/how-to/test-webhook-signature-validation.md",
             generates: &[
                 "requests/valid.json",
-                "tampered-body, wrong-secret, stale-timestamp, missing-signature, and malformed-signature negatives",
+                "requests/negative-tampered-body.json",
+                "requests/negative-wrong-secret.json",
+                "requests/negative-stale-timestamp.json",
+                "requests/negative-missing-signature.json",
+                "requests/negative-malformed-signature.json",
                 "evidence/webhook-profile.md",
-                "manifest and receipts",
+                "manifest.json and receipts",
             ],
             proves: &[
                 "deterministic HMAC verifier fixture behavior",
@@ -829,7 +894,10 @@ fn profile_info(profile: BundleProfile) -> ProfileInfo {
             claim: None,
             docs: "README.md",
             generates: &[
-                "general JWK/JWKS/X.509 fixture outputs",
+                "rsa.jwk.json, ecdsa.jwk.json, ed25519.jwk.json",
+                "hmac.jwk.json and token.json runtime material",
+                "x509.pem public certificate fixture",
+                "jwk.jwk.json and jwks.jwks.json",
                 "manifest.json",
                 "receipts/materialization.json",
                 "receipts/audit-surface.json",
@@ -850,7 +918,7 @@ fn profile_info(profile: BundleProfile) -> ProfileInfo {
 fn render_profiles(explain: bool) -> String {
     let mut out = String::new();
     out.push_str("Available uselesskey profiles\n\n");
-    out.push_str("| Profile | Purpose | Proof |\n");
+    out.push_str("| Profile | Purpose | Proof/check path |\n");
     out.push_str("|---|---|---|\n");
     for profile in DISCOVERABLE_PROFILES {
         let info = profile_info(profile);
@@ -861,7 +929,8 @@ fn render_profiles(explain: bool) -> String {
             info.proof_command
         ));
     }
-    out.push_str("\nUse `uselesskey profile <name> --explain` for generated files, boundaries, and copyable commands.\n");
+    out.push_str("\nInstalled users generate, verify, and inspect bundles with `uselesskey bundle`, `uselesskey verify-bundle`, and `uselesskey inspect-bundle`.\n");
+    out.push_str("Use `uselesskey profile <name> --explain` for generated files, boundaries, and copyable commands.\n");
 
     if explain {
         out.push('\n');
@@ -883,7 +952,8 @@ fn render_profile_summary(profile: BundleProfile) -> String {
             "Purpose: {}\n",
             "Generate: uselesskey bundle --profile {} --out {}\n",
             "Verify: uselesskey verify-bundle --path {}\n",
-            "Proof: {}\n",
+            "Inspect: uselesskey inspect-bundle --path {}\n",
+            "Proof/check path: {}\n",
             "Explain: uselesskey profile {} --explain\n",
             "Bundle explain: uselesskey bundle --profile {} --explain\n",
         ),
@@ -891,6 +961,7 @@ fn render_profile_summary(profile: BundleProfile) -> String {
         info.title,
         info.purpose,
         info.profile.manifest_name(),
+        info.profile.output_dir_hint(),
         info.profile.output_dir_hint(),
         info.profile.output_dir_hint(),
         info.proof_command,
@@ -939,6 +1010,7 @@ mod profile_discovery_tests {
         assert!(rendered.contains("tls"));
         assert!(rendered.contains("oidc"));
         assert!(rendered.contains("webhook"));
+        assert!(rendered.contains("Proof/check path"));
         assert!(rendered.contains("claim-proof --claim webhook-contract-pack"));
     }
 
@@ -947,8 +1019,11 @@ mod profile_discovery_tests {
         let rendered = render_profile_explanation(BundleProfile::Webhook);
 
         assert!(rendered.contains("requests/valid.json"));
+        assert!(rendered.contains("requests/negative-stale-timestamp.json"));
         assert!(rendered.contains("wrong-secret"));
         assert!(rendered.contains("missing-signature"));
+        assert!(rendered.contains("Scanner/runtime posture"));
+        assert!(rendered.contains("Proof/check path"));
         assert!(rendered.contains("provider compatibility"));
         assert!(rendered.contains("production secret management"));
     }
