@@ -15,16 +15,18 @@ use core::fmt;
 use dashmap::DashMap;
 #[cfg(not(feature = "std"))]
 use spin::Mutex;
+use spin::Once;
 
 use crate::srp::identity::ArtifactId;
 
 type CacheValue = Arc<dyn Any + Send + Sync>;
+type CacheCell = Arc<Once<CacheValue>>;
 
 #[cfg(feature = "std")]
-type Cache = DashMap<ArtifactId, CacheValue>;
+type Cache = DashMap<ArtifactId, CacheCell>;
 
 #[cfg(not(feature = "std"))]
-type Cache = Mutex<BTreeMap<ArtifactId, CacheValue>>;
+type Cache = Mutex<BTreeMap<ArtifactId, CacheCell>>;
 
 /// Cache keyed by [`ArtifactId`] that stores typed values behind `Arc<dyn Any>`.
 ///
@@ -94,7 +96,29 @@ impl ArtifactCache {
         T: Any + Send + Sync + 'static,
     {
         let value_any: CacheValue = value;
-        let winner = cache_insert_if_absent(&self.inner, id.clone(), value_any);
+        self.insert_cache_value_if_absent(id, || value_any)
+    }
+
+    /// Initialize a typed value if the id is vacant and return the winning cached value.
+    ///
+    /// The initializer runs at most once for a given cache identity, even when
+    /// multiple threads race to populate the same entry. Panics if an existing
+    /// value for the same id has a different concrete type.
+    pub fn insert_if_absent_with_typed<T, F>(&self, id: ArtifactId, init: F) -> Arc<T>
+    where
+        T: Any + Send + Sync + 'static,
+        F: FnOnce() -> T,
+    {
+        self.insert_cache_value_if_absent(id, || Arc::new(init()) as CacheValue)
+    }
+
+    fn insert_cache_value_if_absent<T, F>(&self, id: ArtifactId, init: F) -> Arc<T>
+    where
+        T: Any + Send + Sync + 'static,
+        F: FnOnce() -> CacheValue,
+    {
+        let cell = cache_cell_for(&self.inner, id.clone());
+        let winner = cell.call_once(init).clone();
         downcast_or_panic::<T>(winner, &id)
     }
 }
@@ -137,26 +161,32 @@ fn cache_clear(cache: &Cache) {
 
 #[cfg(feature = "std")]
 fn cache_get(cache: &Cache, id: &ArtifactId) -> Option<CacheValue> {
-    cache.get(id).map(|entry| entry.value().clone())
+    cache
+        .get(id)
+        .and_then(|entry| entry.value().get().cloned())
 }
 
 #[cfg(not(feature = "std"))]
 fn cache_get(cache: &Cache, id: &ArtifactId) -> Option<CacheValue> {
-    cache.lock().get(id).cloned()
+    cache.lock().get(id).and_then(|cell| cell.get().cloned())
 }
 
 #[cfg(feature = "std")]
-fn cache_insert_if_absent(cache: &Cache, id: ArtifactId, value: CacheValue) -> CacheValue {
-    cache.entry(id).or_insert(value).value().clone()
+fn cache_cell_for(cache: &Cache, id: ArtifactId) -> CacheCell {
+    cache
+        .entry(id)
+        .or_insert_with(|| Arc::new(Once::new()))
+        .value()
+        .clone()
 }
 
 #[cfg(not(feature = "std"))]
-fn cache_insert_if_absent(cache: &Cache, id: ArtifactId, value: CacheValue) -> CacheValue {
+fn cache_cell_for(cache: &Cache, id: ArtifactId) -> CacheCell {
     use alloc::collections::btree_map::Entry;
 
     let mut guard = cache.lock();
     match guard.entry(id) {
-        Entry::Vacant(slot) => slot.insert(value).clone(),
+        Entry::Vacant(slot) => slot.insert(Arc::new(Once::new())).clone(),
         Entry::Occupied(slot) => slot.get().clone(),
     }
 }
@@ -221,6 +251,45 @@ mod tests {
 
         assert!(Arc::ptr_eq(&first, &second));
         assert_eq!(*second, 11u32);
+    }
+
+    #[test]
+    fn racing_initializers_for_same_id_run_only_once() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        use std::sync::{Arc as StdArc, Barrier};
+        use std::thread;
+        use std::time::Duration;
+
+        let cache = StdArc::new(ArtifactCache::new());
+        let starts = StdArc::new(AtomicUsize::new(0));
+        let barrier = StdArc::new(Barrier::new(16));
+
+        let handles: Vec<_> = (0..16)
+            .map(|_| {
+                let cache = StdArc::clone(&cache);
+                let starts = StdArc::clone(&starts);
+                let barrier = StdArc::clone(&barrier);
+                thread::spawn(move || {
+                    barrier.wait();
+                    cache.insert_if_absent_with_typed(sample_id(), || {
+                        starts.fetch_add(1, Ordering::SeqCst);
+                        thread::sleep(Duration::from_millis(25));
+                        91u32
+                    })
+                })
+            })
+            .collect();
+
+        for handle in handles {
+            let value = handle.join().expect("worker should not panic");
+            assert_eq!(*value, 91);
+        }
+
+        assert_eq!(
+            starts.load(Ordering::SeqCst),
+            1,
+            "same cache id should not run duplicate expensive initializers"
+        );
     }
 
     #[test]

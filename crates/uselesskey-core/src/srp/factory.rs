@@ -135,15 +135,10 @@ impl Factory {
             DerivationVersion::V1,
         );
 
-        if let Some(entry) = self.inner.cache.get_typed::<T>(&id) {
-            return entry;
-        }
-
-        let seed = self.seed_for(&id);
-        let value = init(seed);
-        let arc: Arc<T> = Arc::new(value);
-
-        self.inner.cache.insert_if_absent_typed(id, arc)
+        self.inner.cache.insert_if_absent_with_typed(id.clone(), || {
+            let seed = self.seed_for(&id);
+            init(seed)
+        })
     }
 
     fn seed_for(&self, id: &ArtifactId) -> Seed {
@@ -239,6 +234,44 @@ mod tests {
         });
 
         assert_eq!(*outer, "outer-42");
+    }
+
+    #[test]
+    fn concurrent_get_or_init_same_identity_runs_initializer_once() {
+        use std::sync::Barrier;
+        use std::thread;
+        use std::time::Duration;
+
+        let fx = Factory::deterministic(Seed::new([9u8; 32]));
+        let starts = Arc::new(AtomicUsize::new(0));
+        let barrier = Arc::new(Barrier::new(16));
+
+        let handles: Vec<_> = (0..16)
+            .map(|_| {
+                let fx = fx.clone();
+                let starts = Arc::clone(&starts);
+                let barrier = Arc::clone(&barrier);
+                thread::spawn(move || {
+                    barrier.wait();
+                    fx.get_or_init("domain:race", "label", b"spec", "good", |_seed| {
+                        starts.fetch_add(1, Ordering::SeqCst);
+                        thread::sleep(Duration::from_millis(25));
+                        1234u64
+                    })
+                })
+            })
+            .collect();
+
+        for handle in handles {
+            let value = handle.join().expect("worker should not panic");
+            assert_eq!(*value, 1234);
+        }
+
+        assert_eq!(
+            starts.load(Ordering::SeqCst),
+            1,
+            "same artifact identity should run the expensive initializer once"
+        );
     }
 
     #[test]

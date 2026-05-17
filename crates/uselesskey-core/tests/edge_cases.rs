@@ -8,6 +8,7 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Barrier};
 use std::thread;
+use std::time::Duration;
 
 use uselesskey_core::{Factory, Mode, Seed};
 
@@ -48,6 +49,7 @@ fn concurrent_get_or_init_same_key_calls_init_once() {
                 bar.wait();
                 let v = fx.get_or_init("domain:conc", "shared", b"spec", "good", |_rng| {
                     count.fetch_add(1, Ordering::SeqCst);
+                    thread::sleep(Duration::from_millis(25));
                     42u64
                 });
                 assert_eq!(*v, 42u64);
@@ -59,10 +61,11 @@ fn concurrent_get_or_init_same_key_calls_init_once() {
         h.join().unwrap();
     }
 
-    // init should be called a small number of times (ideally 1, but DashMap
-    // may race on insert; the important thing is all threads see the same value)
-    let count = init_count.load(Ordering::SeqCst);
-    assert!((1..=8).contains(&count), "init called {count} times");
+    assert_eq!(
+        init_count.load(Ordering::SeqCst),
+        1,
+        "same cache identity should run exactly one initializer"
+    );
 }
 
 // ===========================================================================
