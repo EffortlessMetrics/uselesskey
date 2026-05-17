@@ -199,25 +199,26 @@ pub fn generate_oauth_access_token(label: &str, seed: Seed) -> String {
 }
 
 fn malformed_jwt_segment_count(label: &str, seed: Seed) -> String {
-    let [header, payload, _signature] = oauth_parts(label, seed);
-    format!("{header}.{payload}")
+    let parts = JwtParts::generated(label, seed);
+    format!("{}.{}", parts.header, parts.payload)
 }
 
 fn bad_base64url_segment(label: &str, seed: Seed) -> String {
-    let [header, _payload, signature] = oauth_parts(label, seed);
-    format!("{header}.{SCANNER_SAFE_INVALID_TOKEN_SEGMENT}.{signature}")
+    JwtParts::generated(label, seed)
+        .with_payload_segment(SCANNER_SAFE_INVALID_TOKEN_SEGMENT.to_string())
+        .into_token()
 }
 
 fn invalid_jwt_header_shape(label: &str, seed: Seed) -> String {
-    let [_header, payload, signature] = oauth_parts(label, seed);
-    let header = encode_json(&json!(["not-a-header"]));
-    format!("{header}.{payload}.{signature}")
+    JwtParts::generated(label, seed)
+        .with_header_segment(encode_json(&json!(["not-a-header"])))
+        .into_token()
 }
 
 fn missing_alg(label: &str, seed: Seed) -> String {
-    let [_header, payload, signature] = oauth_parts(label, seed);
-    let header = encode_json(&json!({ "typ": "JWT" }));
-    format!("{header}.{payload}.{signature}")
+    JwtParts::generated(label, seed)
+        .with_header_segment(encode_json(&json!({ "typ": "JWT" })))
+        .into_token()
 }
 
 fn alg_none(label: &str, seed: Seed) -> String {
@@ -225,54 +226,42 @@ fn alg_none(label: &str, seed: Seed) -> String {
 }
 
 fn mismatched_kid(label: &str, seed: Seed) -> String {
-    let [_header, payload, signature] = oauth_parts(label, seed);
     let mut header = jwt_header();
     header.insert("kid".to_string(), json!("unknown-kid"));
 
-    let mut payload = decode_object(&payload);
+    let parts = JwtParts::generated(label, seed);
+    let mut payload = parts.payload_object();
     payload.insert("kid".to_string(), json!("expected-kid"));
 
-    format!(
-        "{}.{}.{}",
-        encode_object(&header),
-        encode_object(&payload),
-        signature
-    )
+    parts.with_header_object(header)
+        .with_payload_object(payload)
+        .into_token()
 }
 
 fn not_yet_valid_claims(label: &str, seed: Seed) -> String {
-    let [_header, payload, signature] = oauth_parts(label, seed);
-    let mut claims = decode_object(&payload);
+    let parts = JwtParts::generated(label, seed);
+    let mut claims = parts.payload_object();
     claims.insert("nbf".to_string(), json!(4_000_000_000u64));
     claims.insert("exp".to_string(), json!(4_100_000_000u64));
 
-    format!(
-        "{}.{}.{}",
-        encode_object(&jwt_header()),
-        encode_object(&claims),
-        signature
-    )
+    parts.with_payload_object(claims).into_token()
 }
 
 fn token_with_header_claim(label: &str, seed: Seed, claim: &str, value: Value) -> String {
-    let [_header, payload, signature] = oauth_parts(label, seed);
     let mut header = jwt_header();
     header.insert(claim.to_string(), value);
 
-    format!("{}.{}.{}", encode_object(&header), payload, signature)
+    JwtParts::generated(label, seed)
+        .with_header_object(header)
+        .into_token()
 }
 
 fn token_with_payload_claim(label: &str, seed: Seed, claim: &str, value: Value) -> String {
-    let [_header, payload, signature] = oauth_parts(label, seed);
-    let mut claims = decode_object(&payload);
+    let parts = JwtParts::generated(label, seed);
+    let mut claims = parts.payload_object();
     claims.insert(claim.to_string(), value);
 
-    format!(
-        "{}.{}.{}",
-        encode_object(&jwt_header()),
-        encode_object(&claims),
-        signature
-    )
+    parts.with_payload_object(claims).into_token()
 }
 
 fn malformed_bearer(seed: Seed) -> String {
@@ -288,18 +277,57 @@ fn near_miss_api_key(_kind: TokenKind, seed: Seed) -> String {
     format!("{NEAR_MISS_API_KEY_PREFIX}{suffix}")
 }
 
-fn oauth_parts(label: &str, seed: Seed) -> [String; 3] {
-    let token = generate_oauth_access_token(label, seed);
-    let mut parts = token.split('.');
-    let header = parts.next().expect("JWT header segment").to_string();
-    let payload = parts.next().expect("JWT payload segment").to_string();
-    let signature = parts.next().expect("JWT signature segment").to_string();
-    assert!(
-        parts.next().is_none(),
-        "JWT should have exactly three segments"
-    );
+#[derive(Debug)]
+struct JwtParts {
+    header: String,
+    payload: String,
+    signature: String,
+}
 
-    [header, payload, signature]
+impl JwtParts {
+    fn generated(label: &str, seed: Seed) -> Self {
+        let token = generate_oauth_access_token(label, seed);
+        let mut parts = token.split('.');
+        let header = parts.next().expect("JWT header segment").to_string();
+        let payload = parts.next().expect("JWT payload segment").to_string();
+        let signature = parts.next().expect("JWT signature segment").to_string();
+        assert!(
+            parts.next().is_none(),
+            "JWT should have exactly three segments"
+        );
+
+        Self {
+            header,
+            payload,
+            signature,
+        }
+    }
+
+    fn with_header_segment(mut self, header: String) -> Self {
+        self.header = header;
+        self
+    }
+
+    fn with_payload_segment(mut self, payload: String) -> Self {
+        self.payload = payload;
+        self
+    }
+
+    fn with_header_object(self, header: Map<String, Value>) -> Self {
+        self.with_header_segment(encode_object(&header))
+    }
+
+    fn with_payload_object(self, payload: Map<String, Value>) -> Self {
+        self.with_payload_segment(encode_object(&payload))
+    }
+
+    fn payload_object(&self) -> Map<String, Value> {
+        decode_object(&self.payload)
+    }
+
+    fn into_token(self) -> String {
+        format!("{}.{}.{}", self.header, self.payload, self.signature)
+    }
 }
 
 fn jwt_header() -> Map<String, Value> {
