@@ -140,6 +140,14 @@ enum Cmd {
         #[arg(long)]
         check: bool,
     },
+    /// Emit GitHub Actions annotations from RIPR review guidance artifacts.
+    RiprAnnotations,
+    /// Generate or validate the coverage evidence receipt.
+    CoverageReceipt {
+        /// Verify the generated coverage receipt instead of writing it.
+        #[arg(long)]
+        check: bool,
+    },
     /// Generate the repo-scoped RIPR test-efficiency report used by ripr+ badge output.
     TestEfficiencyReport,
     /// Run PR-scoped mutation testing explicitly.
@@ -583,6 +591,8 @@ fn main() -> Result<()> {
         Cmd::RiprPr { check } => ripr_pr(check),
         Cmd::RiprReviewComments { check } => ripr_review_comments(check),
         Cmd::RiprPrSummary { check } => ripr_pr_summary(check),
+        Cmd::RiprAnnotations => ripr_annotations(),
+        Cmd::CoverageReceipt { check } => coverage_receipt(check),
         Cmd::TestEfficiencyReport => test_efficiency::test_efficiency_report_cmd(),
         Cmd::MutantsPr {
             changed,
@@ -5792,6 +5802,110 @@ fn json_array_len(value: &serde_json::Value, key: &str) -> usize {
         .get(key)
         .and_then(serde_json::Value::as_array)
         .map_or(0, Vec::len)
+}
+
+fn ripr_annotations() -> Result<()> {
+    let path = workspace_root_path().join(RIPR_REVIEW_DIR).join("comments.json");
+    if !path.exists() {
+        return Ok(());
+    }
+
+    let data: serde_json::Value = read_json_file(&path)?;
+    let comments = data
+        .get("comments")
+        .and_then(serde_json::Value::as_array)
+        .map(Vec::as_slice)
+        .unwrap_or(&[]);
+
+    for item in comments {
+        let file = item
+            .get("path")
+            .or_else(|| item.get("file"))
+            .and_then(json_annotation_scalar);
+        let line = item.get("line").and_then(json_annotation_scalar);
+
+        let (Some(file), Some(line)) = (file, line) else {
+            continue;
+        };
+
+        let title = item
+            .get("title")
+            .and_then(json_annotation_scalar)
+            .unwrap_or_else(|| "RIPR".to_string());
+        let body = item
+            .get("body")
+            .or_else(|| item.get("message"))
+            .and_then(json_annotation_scalar)
+            .unwrap_or_default();
+
+        println!(
+            "::warning file={},line={},title={}::{}",
+            escape_github_annotation_property(&file),
+            escape_github_annotation_property(&line),
+            escape_github_annotation_property(&title),
+            escape_github_annotation_data(&body)
+        );
+    }
+
+    Ok(())
+}
+
+fn json_annotation_scalar(value: &serde_json::Value) -> Option<String> {
+    match value {
+        serde_json::Value::String(value) => Some(value.clone()),
+        serde_json::Value::Number(value) => Some(value.to_string()),
+        _ => None,
+    }
+}
+
+fn escape_github_annotation_data(value: &str) -> String {
+    value
+        .replace('%', "%25")
+        .replace('\r', "%0D")
+        .replace('\n', "%0A")
+}
+
+fn escape_github_annotation_property(value: &str) -> String {
+    escape_github_annotation_data(value)
+        .replace(':', "%3A")
+        .replace(',', "%2C")
+}
+
+fn coverage_receipt(check: bool) -> Result<()> {
+    let workspace_root = workspace_root_path();
+    let receipt_path = workspace_root.join("target/coverage/coverage-receipt.json");
+
+    if check {
+        let receipt: serde_json::Value = read_json_file(&receipt_path)?;
+        if !receipt.is_object() {
+            bail!("{} must contain a JSON object", receipt_path.display());
+        }
+        println!("coverage-receipt: output contract is intact");
+        return Ok(());
+    }
+
+    let receipt = serde_json::json!({
+        "schema_version": 1,
+        "repo": "uselesskey",
+        "lane": "coverage",
+        "flag": "rust-fixtures",
+        "workflow": "Coverage",
+        "artifacts": {
+            "coverage_json": workspace_root.join("coverage.json").exists(),
+            "coverage_text": workspace_root.join("coverage.txt").exists(),
+            "lcov": workspace_root.join("lcov.info").exists(),
+        },
+        "claim_boundary": [
+            "execution_surface_only",
+            "not_crypto_correctness",
+            "not_derivation_stability",
+            "not_mutation_adequacy",
+            "not_publish_preflight",
+        ],
+    });
+    write_json_pretty(&receipt_path, &receipt)?;
+    println!("coverage-receipt: wrote {}", receipt_path.display());
+    Ok(())
 }
 
 fn render_ripr_skipped_markdown(base_ref: &str, reason: &str) -> String {

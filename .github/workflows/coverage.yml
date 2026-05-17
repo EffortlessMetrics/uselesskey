@@ -105,43 +105,10 @@ jobs:
           test -s coverage.txt
 
       - name: Generate coverage receipt
-        run: |
-          set -euo pipefail
-          mkdir -p target/coverage
-          python3 - <<'PYTHON'
-          import json
-          import pathlib
-
-          receipt = {
-              "schema_version": 1,
-              "repo": "uselesskey",
-              "lane": "coverage",
-              "flag": "rust-fixtures",
-              "workflow": "Coverage",
-              "artifacts": {
-                  "coverage_json": pathlib.Path("coverage.json").exists(),
-                  "coverage_text": pathlib.Path("coverage.txt").exists(),
-                  "lcov": pathlib.Path("lcov.info").exists(),
-              },
-              "claim_boundary": [
-                  "execution_surface_only",
-                  "not_crypto_correctness",
-                  "not_derivation_stability",
-                  "not_mutation_adequacy",
-                  "not_publish_preflight",
-              ],
-          }
-          pathlib.Path("target/coverage/coverage-receipt.json").write_text(
-              json.dumps(receipt, indent=2) + "\n",
-              encoding="utf-8",
-          )
-          PYTHON
+        run: cargo xtask coverage-receipt
 
       - name: Validate coverage receipt
-        run: |
-          set -euo pipefail
-          test -s target/coverage/coverage-receipt.json
-          python3 -m json.tool target/coverage/coverage-receipt.json > /dev/null
+        run: cargo xtask coverage-receipt --check
       - name: Detect Codecov token
         id: codecov-token
         env:
