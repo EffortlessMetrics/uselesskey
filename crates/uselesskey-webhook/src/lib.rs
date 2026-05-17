@@ -291,6 +291,132 @@ mod tests {
     }
 
     #[test]
+    fn raw_payload_is_used_verbatim_and_signed_for_each_provider() {
+        let fx = Factory::deterministic(Seed::from_env_value("webhook-raw-payload").unwrap());
+        let raw_payload = "{\"literal\":true,\"label\":\"not rewritten\"}";
+
+        let github = fx.webhook_github(
+            "ignored",
+            WebhookPayloadSpec::Raw(raw_payload.to_string()),
+        );
+        let stripe = fx.webhook_stripe(
+            "ignored",
+            WebhookPayloadSpec::Raw(raw_payload.to_string()),
+        );
+        let slack = fx.webhook_slack(
+            "ignored",
+            WebhookPayloadSpec::Raw(raw_payload.to_string()),
+        );
+
+        assert_eq!(github.payload, raw_payload);
+        assert_eq!(stripe.payload, raw_payload);
+        assert_eq!(slack.payload, raw_payload);
+        assert!(verify_github(&github.secret, &github.payload, &github.headers));
+        assert!(verify_stripe(
+            &stripe.secret,
+            &stripe.payload,
+            &stripe.headers,
+            stripe.timestamp,
+            300
+        ));
+        assert!(verify_slack(
+            &slack.secret,
+            &slack.payload,
+            &slack.headers,
+            slack.timestamp,
+            300
+        ));
+    }
+
+    #[test]
+    fn cache_identity_keeps_profiles_and_payload_specs_separate() {
+        let fx = Factory::deterministic(Seed::from_env_value("webhook-cache-identity").unwrap());
+        let label = "shared-label";
+
+        let github = fx.webhook_github(label, WebhookPayloadSpec::Canonical);
+        let stripe = fx.webhook_stripe(label, WebhookPayloadSpec::Canonical);
+        let slack = fx.webhook_slack(label, WebhookPayloadSpec::Canonical);
+        let raw = fx.webhook_github(
+            label,
+            WebhookPayloadSpec::Raw("{\"raw\":true}".to_string()),
+        );
+
+        assert_eq!(github.profile, WebhookProfile::GitHub);
+        assert_eq!(stripe.profile, WebhookProfile::Stripe);
+        assert_eq!(slack.profile, WebhookProfile::Slack);
+        assert!(github.headers.contains_key("X-Hub-Signature-256"));
+        assert!(stripe.headers.contains_key("Stripe-Signature"));
+        assert!(slack.headers.contains_key("X-Slack-Signature"));
+        assert_ne!(github.secret, stripe.secret);
+        assert_ne!(github.secret, slack.secret);
+        assert_ne!(github.payload, raw.payload);
+        assert_eq!(raw.payload, "{\"raw\":true}");
+    }
+
+    #[test]
+    fn near_miss_variants_record_scenario_and_remain_self_consistent() {
+        let fx = Factory::deterministic(
+            Seed::from_env_value("webhook-nearmiss-scenarios").unwrap(),
+        );
+        let fixture = fx.webhook_slack("alerts", WebhookPayloadSpec::Canonical);
+
+        let stale = fixture.near_miss_stale_timestamp(300);
+        assert_eq!(stale.scenario, NearMissScenario::StaleTimestamp);
+        assert_eq!(stale.profile, WebhookProfile::Slack);
+        assert_eq!(stale.timestamp, fixture.timestamp - 301);
+        assert!(verify_slack(
+            &stale.secret,
+            &stale.payload,
+            &stale.headers,
+            stale.timestamp,
+            300
+        ));
+        assert!(!verify_slack(
+            &fixture.secret,
+            &fixture.payload,
+            &stale.headers,
+            fixture.timestamp,
+            300
+        ));
+
+        let wrong_secret = fixture.near_miss_wrong_secret();
+        assert_eq!(wrong_secret.scenario, NearMissScenario::WrongSecret);
+        assert_ne!(wrong_secret.secret, fixture.secret);
+        assert!(verify_slack(
+            &wrong_secret.secret,
+            &wrong_secret.payload,
+            &wrong_secret.headers,
+            wrong_secret.timestamp,
+            300
+        ));
+        assert!(!verify_slack(
+            &fixture.secret,
+            &wrong_secret.payload,
+            &wrong_secret.headers,
+            wrong_secret.timestamp,
+            300
+        ));
+
+        let tampered = fixture.near_miss_tampered_payload();
+        assert_eq!(tampered.scenario, NearMissScenario::TamperedPayload);
+        assert_ne!(tampered.payload, fixture.payload);
+        assert!(verify_slack(
+            &tampered.secret,
+            &tampered.payload,
+            &tampered.headers,
+            tampered.timestamp,
+            300
+        ));
+        assert!(!verify_slack(
+            &fixture.secret,
+            &fixture.payload,
+            &tampered.headers,
+            tampered.timestamp,
+            300
+        ));
+    }
+
+    #[test]
     fn canonical_payload_escapes_special_characters_in_label() {
         let fx = Factory::deterministic(Seed::from_env_value("webhook-label-escape").unwrap());
         let label = "repo\"line\nbreak\\slash";
