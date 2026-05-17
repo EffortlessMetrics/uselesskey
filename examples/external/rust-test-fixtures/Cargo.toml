@@ -1,0 +1,10 @@
+[package]
+name = "uselesskey-external-rust-test-fixtures"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+uselesskey = { version = "0.9.1", default-features = false, features = ["rsa", "jwk", "token"] }
+
+[workspace]

@@ -15,6 +15,24 @@ const REPORT_JSON: &str = "target/external-adoption-smoke/report.json";
 const REPORT_MD: &str = "target/external-adoption-smoke/report.md";
 
 const CLI_PROFILES: &[&str] = &["scanner-safe", "tls", "oidc", "webhook"];
+const EXTERNAL_EXAMPLES: &[ExternalExample] = &[
+    ExternalExample {
+        name: "rust-test-fixtures",
+        source_dir: "examples/external/rust-test-fixtures",
+    },
+    ExternalExample {
+        name: "webhook-verifier",
+        source_dir: "examples/external/webhook-verifier",
+    },
+    ExternalExample {
+        name: "oidc-jwks-validation",
+        source_dir: "examples/external/oidc-jwks-validation",
+    },
+    ExternalExample {
+        name: "tls-chain-validation",
+        source_dir: "examples/external/tls-chain-validation",
+    },
+];
 const BOUNDARIES: &[&str] = &[
     "external-adoption-smoke proves clean-project user paths, not release readiness",
     "published-version mode is audit/reference evidence, not a release trigger",
@@ -22,6 +40,12 @@ const BOUNDARIES: &[&str] = &[
     "repo-local claim-proof and verification-pack remain separate proof surfaces",
     "generated fixture payloads and temp projects stay under target/external-adoption-smoke/",
 ];
+
+#[derive(Clone, Copy, Debug)]
+struct ExternalExample {
+    name: &'static str,
+    source_dir: &'static str,
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum OutputFormat {
@@ -148,7 +172,7 @@ fn run_matrix(
     receipt: &mut ExternalAdoptionSmokeReceipt,
 ) -> Result<()> {
     let cli_bin = prepare_cli(root, source, work_dir, log_dir, receipt)?;
-    run_rust_test_project(source, work_dir, log_dir, receipt)?;
+    run_external_examples(root, source, work_dir, log_dir, receipt)?;
     run_cli_discovery(&cli_bin, work_dir, log_dir, receipt)?;
     for profile in CLI_PROFILES {
         run_cli_profile(&cli_bin, profile, work_dir, log_dir, receipt)?;
@@ -209,32 +233,50 @@ fn prepare_cli(
     }
 }
 
-fn run_rust_test_project(
+fn run_external_examples(
+    root: &Path,
     source: &SmokeSource,
     work_dir: &Path,
     log_dir: &Path,
     receipt: &mut ExternalAdoptionSmokeReceipt,
 ) -> Result<()> {
-    let project_dir = work_dir.join("rust-test-fixtures");
-    write_rust_test_project(&project_dir, &source.facade_dep)?;
+    for example in EXTERNAL_EXAMPLES {
+        run_external_example(root, source, example, work_dir, log_dir, receipt)?;
+    }
+    Ok(())
+}
+
+fn run_external_example(
+    root: &Path,
+    source: &SmokeSource,
+    example: &ExternalExample,
+    work_dir: &Path,
+    log_dir: &Path,
+    receipt: &mut ExternalAdoptionSmokeReceipt,
+) -> Result<()> {
+    let source_dir = root.join(example.source_dir);
+    let project_dir = work_dir.join(example.name);
+    copy_example_project(&source_dir, &project_dir)
+        .with_context(|| format!("failed to copy {}", source_dir.display()))?;
+    patch_example_dependencies(&project_dir, source)
+        .with_context(|| format!("failed to patch {}", project_dir.display()))?;
+
+    let project_artifact = relative_artifact_from_path(&project_dir);
+    let target_artifact = relative_artifact_from_path(&project_dir.join("target"));
+
     let mut cmd = Command::new("cargo");
     cmd.args(["test", "--quiet"])
         .current_dir(&project_dir)
         .env("CARGO_TARGET_DIR", project_dir.join("target"));
     run_command_step(
         receipt,
-        "rust-test-fixtures",
+        &format!("external-example-{}", example.name),
         cmd,
         &project_dir,
         log_dir,
-        &["target/external-adoption-smoke/work/rust-test-fixtures/"],
+        &[project_artifact.as_str()],
     )?;
-    record_project(
-        receipt,
-        "rust-test-fixtures",
-        &project_dir,
-        &["target/external-adoption-smoke/work/rust-test-fixtures/target/".to_string()],
-    );
+    record_project(receipt, example.name, &project_dir, &[target_artifact]);
     Ok(())
 }
 
@@ -348,68 +390,153 @@ fn run_cli_profile(
     Ok(())
 }
 
-fn write_rust_test_project(project_dir: &Path, dep: &FacadeDependency) -> Result<()> {
-    fs::create_dir_all(project_dir.join("src"))
-        .with_context(|| format!("failed to create {}/src", project_dir.display()))?;
-    let dependency = match dep {
-        FacadeDependency::Path(path) => format!(
-            "uselesskey = {{ path = \"{}\", default-features = false, features = [\"rsa\", \"jwk\", \"token\"] }}",
-            toml_escape(&path.display().to_string())
-        ),
-        FacadeDependency::Version(version) => format!(
-            "uselesskey = {{ version = \"{}\", default-features = false, features = [\"rsa\", \"jwk\", \"token\"] }}",
-            toml_escape(version)
-        ),
-    };
-    fs::write(
-        project_dir.join("Cargo.toml"),
-        format!(
-            r#"[package]
-name = "uselesskey-external-adoption"
-version = "0.0.0"
-edition = "2024"
-publish = false
-
-[dependencies]
-{dependency}
-
-[workspace]
-"#
-        ),
-    )
-    .with_context(|| {
-        format!(
-            "failed to write {}",
-            project_dir.join("Cargo.toml").display()
-        )
-    })?;
-    fs::write(
-        project_dir.join("src/lib.rs"),
-        r#"use uselesskey::{Factory, RsaFactoryExt, RsaSpec, TokenFactoryExt, TokenSpec};
-
-#[test]
-fn deterministic_fixtures_work_from_clean_project() {
-    let fx = Factory::deterministic_from_str("external-adoption-smoke");
-    let rsa = fx.rsa("issuer", RsaSpec::rs256());
-    let rsa_again = fx.rsa("issuer", RsaSpec::rs256());
-    assert_eq!(rsa.kid(), rsa_again.kid());
-
-    let jwk = rsa.public_jwk().to_value();
-    assert_eq!(jwk["kty"], "RSA");
-    assert_eq!(jwk["alg"], "RS256");
-
-    let token = fx.token("api", TokenSpec::api_key());
-    assert!(token.value().starts_with("uk_test_"));
+fn copy_example_project(source_dir: &Path, project_dir: &Path) -> Result<()> {
+    if project_dir.exists() {
+        fs::remove_dir_all(project_dir)
+            .with_context(|| format!("failed to remove {}", project_dir.display()))?;
+    }
+    copy_dir_recursive(source_dir, project_dir)
 }
-"#,
-    )
-    .with_context(|| {
-        format!(
-            "failed to write {}",
-            project_dir.join("src/lib.rs").display()
-        )
-    })?;
+
+fn copy_dir_recursive(source: &Path, destination: &Path) -> Result<()> {
+    fs::create_dir_all(destination)
+        .with_context(|| format!("failed to create {}", destination.display()))?;
+    for entry in
+        fs::read_dir(source).with_context(|| format!("failed to read {}", source.display()))?
+    {
+        let entry =
+            entry.with_context(|| format!("failed to read entry in {}", source.display()))?;
+        let file_type = entry
+            .file_type()
+            .with_context(|| format!("failed to inspect {}", entry.path().display()))?;
+        let target = destination.join(entry.file_name());
+        if file_type.is_dir() {
+            if entry.file_name() == "target" {
+                continue;
+            }
+            copy_dir_recursive(&entry.path(), &target)?;
+        } else if file_type.is_file() {
+            fs::copy(entry.path(), &target).with_context(|| {
+                format!(
+                    "failed to copy {} to {}",
+                    entry.path().display(),
+                    target.display()
+                )
+            })?;
+        }
+    }
     Ok(())
+}
+
+fn patch_example_dependencies(project_dir: &Path, source: &SmokeSource) -> Result<()> {
+    let manifest_path = project_dir.join("Cargo.toml");
+    let mut manifest = fs::read_to_string(&manifest_path)
+        .with_context(|| format!("failed to read {}", manifest_path.display()))?;
+
+    match &source.facade_dep {
+        FacadeDependency::Path(path) => {
+            manifest = patch_dependency_path(&manifest, "uselesskey", path);
+            let Some(crates_dir) = path.parent() else {
+                bail!("failed to find crates dir from {}", path.display());
+            };
+            manifest = patch_dependency_path(
+                &manifest,
+                "uselesskey-rustls",
+                &crates_dir.join("uselesskey-rustls"),
+            );
+        }
+        FacadeDependency::Version(version) => {
+            manifest = patch_dependency_version(&manifest, "uselesskey", version);
+            manifest = patch_dependency_version(&manifest, "uselesskey-rustls", version);
+        }
+    }
+
+    fs::write(&manifest_path, manifest)
+        .with_context(|| format!("failed to write {}", manifest_path.display()))
+}
+
+fn patch_dependency_path(manifest: &str, crate_name: &str, path: &Path) -> String {
+    replace_dependency_line(manifest, crate_name, |line| {
+        let Some((_, rhs)) = line.split_once('=') else {
+            return line.to_string();
+        };
+        let rhs = rhs.trim();
+        if !(rhs.starts_with('{') && rhs.ends_with('}')) {
+            return line.to_string();
+        }
+
+        let inner = rhs.trim_start_matches('{').trim_end_matches('}').trim();
+        let path_part = format!("path = \"{}\"", toml_escape(&path.display().to_string()));
+        let mut parts = vec![path_part];
+        parts.extend(
+            inner
+                .split(',')
+                .map(str::trim)
+                .filter(|part| !part.is_empty() && !part.starts_with("version"))
+                .map(ToString::to_string),
+        );
+
+        format!("{crate_name} = {{ {} }}", parts.join(", "))
+    })
+}
+
+fn patch_dependency_version(manifest: &str, crate_name: &str, version: &str) -> String {
+    replace_dependency_line(manifest, crate_name, |line| {
+        let Some((_, rhs)) = line.split_once('=') else {
+            return line.to_string();
+        };
+        let rhs = rhs.trim();
+        if rhs.starts_with('"') {
+            return format!("{crate_name} = \"{}\"", toml_escape(version));
+        }
+        if !(rhs.starts_with('{') && rhs.ends_with('}')) {
+            return line.to_string();
+        }
+
+        let mut saw_version = false;
+        let mut parts: Vec<String> = rhs
+            .trim_start_matches('{')
+            .trim_end_matches('}')
+            .trim()
+            .split(',')
+            .map(str::trim)
+            .filter(|part| !part.is_empty())
+            .map(|part| {
+                if part.starts_with("version") {
+                    saw_version = true;
+                    format!("version = \"{}\"", toml_escape(version))
+                } else {
+                    part.to_string()
+                }
+            })
+            .collect();
+        if !saw_version {
+            parts.insert(0, format!("version = \"{}\"", toml_escape(version)));
+        }
+
+        format!("{crate_name} = {{ {} }}", parts.join(", "))
+    })
+}
+
+fn replace_dependency_line(
+    manifest: &str,
+    crate_name: &str,
+    replace: impl Fn(&str) -> String,
+) -> String {
+    let prefix = format!("{crate_name} =");
+    let mut output = manifest
+        .lines()
+        .map(|line| {
+            if line.trim_start().starts_with(&prefix) {
+                replace(line)
+            } else {
+                line.to_string()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    output.push('\n');
+    output
 }
 
 fn verify_bundle_shape(bundle_dir: &Path, expected_profile: &str) -> Result<()> {
@@ -730,6 +857,50 @@ mod tests {
     #[test]
     fn external_adoption_profiles_are_bounded() {
         assert_eq!(CLI_PROFILES, ["scanner-safe", "tls", "oidc", "webhook"]);
+    }
+
+    #[test]
+    fn external_adoption_examples_are_bounded() {
+        let names: Vec<&str> = EXTERNAL_EXAMPLES
+            .iter()
+            .map(|example| example.name)
+            .collect();
+        assert_eq!(
+            names,
+            [
+                "rust-test-fixtures",
+                "webhook-verifier",
+                "oidc-jwks-validation",
+                "tls-chain-validation",
+            ]
+        );
+    }
+
+    #[test]
+    fn external_adoption_dependency_patch_switches_versions_to_paths() {
+        let manifest = r#"[dependencies]
+uselesskey = { version = "0.9.1", default-features = false, features = ["rsa"] }
+uselesskey-rustls = { version = "0.9.1", features = ["tls-config", "rustls-ring"] }
+"#;
+
+        let patched = patch_dependency_path(
+            manifest,
+            "uselesskey",
+            Path::new(r#"C:\Code\Rust\uselesskey\crates\uselesskey"#),
+        );
+        let patched = patch_dependency_path(
+            &patched,
+            "uselesskey-rustls",
+            Path::new(r#"C:\Code\Rust\uselesskey\crates\uselesskey-rustls"#),
+        );
+
+        assert!(patched.contains(
+            r#"uselesskey = { path = "C:\\Code\\Rust\\uselesskey\\crates\\uselesskey", default-features = false, features = ["rsa"] }"#
+        ));
+        assert!(patched.contains(
+            r#"uselesskey-rustls = { path = "C:\\Code\\Rust\\uselesskey\\crates\\uselesskey-rustls", features = ["tls-config", "rustls-ring"] }"#
+        ));
+        assert!(!patched.contains("version = \"0.9.1\""));
     }
 
     #[test]
