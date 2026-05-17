@@ -98,48 +98,39 @@ impl SshCertSpec {
     }
 
     pub fn stable_bytes(&self) -> Vec<u8> {
-        fn push_str(buf: &mut Vec<u8>, s: &str) {
-            let len = u32::try_from(s.len()).unwrap_or(u32::MAX);
-            buf.extend_from_slice(&len.to_be_bytes());
-            buf.extend_from_slice(s.as_bytes());
-        }
-
         let mut out = Vec::new();
         out.push(self.cert_type.stable_byte());
         out.extend_from_slice(&self.validity.valid_after.to_be_bytes());
         out.extend_from_slice(&self.validity.valid_before.to_be_bytes());
-
-        out.extend_from_slice(
-            &u32::try_from(self.principals.len())
-                .unwrap_or(u32::MAX)
-                .to_be_bytes(),
-        );
-        for principal in &self.principals {
-            push_str(&mut out, principal);
-        }
-
-        out.extend_from_slice(
-            &u32::try_from(self.critical_options.len())
-                .unwrap_or(u32::MAX)
-                .to_be_bytes(),
-        );
-        for (name, value) in &self.critical_options {
-            push_str(&mut out, name);
-            push_str(&mut out, value);
-        }
-
-        out.extend_from_slice(
-            &u32::try_from(self.extensions.len())
-                .unwrap_or(u32::MAX)
-                .to_be_bytes(),
-        );
-        for (name, value) in &self.extensions {
-            push_str(&mut out, name);
-            push_str(&mut out, value);
-        }
-
+        push_strings(&mut out, &self.principals);
+        push_string_pairs(&mut out, &self.critical_options);
+        push_string_pairs(&mut out, &self.extensions);
         out
     }
+}
+
+fn push_strings(buf: &mut Vec<u8>, values: &[String]) {
+    push_len(buf, values.len());
+    for value in values {
+        push_str(buf, value);
+    }
+}
+
+fn push_string_pairs(buf: &mut Vec<u8>, values: &[(String, String)]) {
+    push_len(buf, values.len());
+    for (name, value) in values {
+        push_str(buf, name);
+        push_str(buf, value);
+    }
+}
+
+fn push_str(buf: &mut Vec<u8>, value: &str) {
+    push_len(buf, value.len());
+    buf.extend_from_slice(value.as_bytes());
+}
+
+fn push_len(buf: &mut Vec<u8>, len: usize) {
+    buf.extend_from_slice(&u32::try_from(len).unwrap_or(u32::MAX).to_be_bytes());
 }
 
 #[cfg(test)]

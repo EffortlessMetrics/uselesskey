@@ -209,15 +209,11 @@ fn bad_base64url_segment(label: &str, seed: Seed) -> String {
 }
 
 fn invalid_jwt_header_shape(label: &str, seed: Seed) -> String {
-    let [_header, payload, signature] = oauth_parts(label, seed);
-    let header = encode_json(&json!(["not-a-header"]));
-    format!("{header}.{payload}.{signature}")
+    token_with_header(label, seed, encode_json(&json!(["not-a-header"])))
 }
 
 fn missing_alg(label: &str, seed: Seed) -> String {
-    let [_header, payload, signature] = oauth_parts(label, seed);
-    let header = encode_json(&json!({ "typ": "JWT" }));
-    format!("{header}.{payload}.{signature}")
+    token_with_header(label, seed, encode_json(&json!({ "typ": "JWT" })))
 }
 
 fn alg_none(label: &str, seed: Seed) -> String {
@@ -225,54 +221,59 @@ fn alg_none(label: &str, seed: Seed) -> String {
 }
 
 fn mismatched_kid(label: &str, seed: Seed) -> String {
-    let [_header, payload, signature] = oauth_parts(label, seed);
-    let mut header = jwt_header();
-    header.insert("kid".to_string(), json!("unknown-kid"));
-
-    let mut payload = decode_object(&payload);
-    payload.insert("kid".to_string(), json!("expected-kid"));
-
-    format!(
-        "{}.{}.{}",
-        encode_object(&header),
-        encode_object(&payload),
-        signature
-    )
+    token_with_header_and_payload(label, seed, |header, claims| {
+        header.insert("kid".to_string(), json!("unknown-kid"));
+        claims.insert("kid".to_string(), json!("expected-kid"));
+    })
 }
 
 fn not_yet_valid_claims(label: &str, seed: Seed) -> String {
-    let [_header, payload, signature] = oauth_parts(label, seed);
-    let mut claims = decode_object(&payload);
-    claims.insert("nbf".to_string(), json!(4_000_000_000u64));
-    claims.insert("exp".to_string(), json!(4_100_000_000u64));
-
-    format!(
-        "{}.{}.{}",
-        encode_object(&jwt_header()),
-        encode_object(&claims),
-        signature
-    )
+    token_with_payload(label, seed, |claims| {
+        claims.insert("nbf".to_string(), json!(4_000_000_000u64));
+        claims.insert("exp".to_string(), json!(4_100_000_000u64));
+    })
 }
 
 fn token_with_header_claim(label: &str, seed: Seed, claim: &str, value: Value) -> String {
-    let [_header, payload, signature] = oauth_parts(label, seed);
-    let mut header = jwt_header();
-    header.insert(claim.to_string(), value);
-
-    format!("{}.{}.{}", encode_object(&header), payload, signature)
+    token_with_header_and_payload(label, seed, |header, _claims| {
+        header.insert(claim.to_string(), value);
+    })
 }
 
 fn token_with_payload_claim(label: &str, seed: Seed, claim: &str, value: Value) -> String {
-    let [_header, payload, signature] = oauth_parts(label, seed);
-    let mut claims = decode_object(&payload);
-    claims.insert(claim.to_string(), value);
+    token_with_payload(label, seed, |claims| {
+        claims.insert(claim.to_string(), value);
+    })
+}
 
-    format!(
-        "{}.{}.{}",
-        encode_object(&jwt_header()),
-        encode_object(&claims),
-        signature
-    )
+fn token_with_header(label: &str, seed: Seed, header: String) -> String {
+    let [_header, payload, signature] = oauth_parts(label, seed);
+    encode_token(&header, &payload, &signature)
+}
+
+fn token_with_payload(
+    label: &str,
+    seed: Seed,
+    mutate: impl FnOnce(&mut Map<String, Value>),
+) -> String {
+    token_with_header_and_payload(label, seed, |_header, claims| mutate(claims))
+}
+
+fn token_with_header_and_payload(
+    label: &str,
+    seed: Seed,
+    mutate: impl FnOnce(&mut Map<String, Value>, &mut Map<String, Value>),
+) -> String {
+    let [_header, payload, signature] = oauth_parts(label, seed);
+    let mut header = jwt_header();
+    let mut claims = decode_object(&payload);
+    mutate(&mut header, &mut claims);
+
+    encode_token(&encode_object(&header), &encode_object(&claims), &signature)
+}
+
+fn encode_token(header: &str, payload: &str, signature: &str) -> String {
+    format!("{header}.{payload}.{signature}")
 }
 
 fn malformed_bearer(seed: Seed) -> String {
