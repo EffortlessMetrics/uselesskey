@@ -6,7 +6,7 @@ use std::time::Instant;
 use anyhow::{Context, Result, bail};
 use serde_json::Value;
 
-use crate::{bundle_proof, git_head_sha, no_blob_gate, user_path_smoke};
+use crate::{bundle_proof, external_adoption_smoke, git_head_sha, no_blob_gate, user_path_smoke};
 
 const OUT_DIR: &str = "target/adoption-regression";
 const BUNDLE_PROOF_DIR: &str = "target/adoption-regression/bundle-proof";
@@ -17,12 +17,19 @@ const BOUNDARIES: &[&str] = &[
     "scanner-safe metadata is checked for fixture sensitivity, not scanner evasion",
     "contract-pack proofs do not prove downstream verifier correctness",
     "generated fixture payloads stay under target/",
+    "clean-project external adoption smoke runs only when --external is passed",
 ];
 
 #[derive(Clone, Copy, Debug)]
 pub enum OutputFormat {
     Human,
     Json,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct RunOptions {
+    pub format: OutputFormat,
+    pub external: bool,
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -46,7 +53,7 @@ struct AdoptionRegressionStep {
     artifacts: Vec<String>,
 }
 
-pub fn run(root: &Path, format: OutputFormat) -> Result<()> {
+pub fn run(root: &Path, options: RunOptions) -> Result<()> {
     let out_dir = root.join(OUT_DIR);
     fs::create_dir_all(&out_dir)
         .with_context(|| format!("failed to create {}", out_dir.display()))?;
@@ -57,17 +64,16 @@ pub fn run(root: &Path, format: OutputFormat) -> Result<()> {
         generated_at: chrono::Utc::now().to_rfc3339(),
         git_sha: git_head_sha().ok(),
         steps: Vec::new(),
-        artifacts: vec![
-            "target/adoption-regression/adoption-regression.json".to_string(),
-            "target/adoption-regression/adoption-regression.md".to_string(),
-            "target/user-path-smoke/".to_string(),
-            "target/adoption-regression/runtime-matrix/".to_string(),
-            "target/adoption-regression/bundle-proof/".to_string(),
-        ],
+        artifacts: receipt_artifacts(options.external),
         boundaries: BOUNDARIES.to_vec(),
     };
 
-    let result = run_steps(root, &mut receipt, matches!(format, OutputFormat::Json));
+    let result = run_steps(
+        root,
+        &mut receipt,
+        matches!(options.format, OutputFormat::Json),
+        options.external,
+    );
     if result.is_ok() {
         receipt.status = "pass".to_string();
     } else {
@@ -75,7 +81,7 @@ pub fn run(root: &Path, format: OutputFormat) -> Result<()> {
     }
 
     write_receipts(&out_dir, &receipt)?;
-    match format {
+    match options.format {
         OutputFormat::Human => print_human(&receipt),
         OutputFormat::Json => println!("{}", serde_json::to_string_pretty(&receipt)?),
     }
@@ -87,6 +93,7 @@ fn run_steps(
     root: &Path,
     receipt: &mut AdoptionRegressionReceipt,
     quiet_stdout: bool,
+    include_external: bool,
 ) -> Result<()> {
     run_step(
         receipt,
@@ -164,8 +171,33 @@ fn run_steps(
         &[],
         || no_blob_step(root, quiet_stdout),
     )?;
+    if include_external {
+        run_step(
+            receipt,
+            "external-adoption-smoke",
+            &["cargo", "xtask", "external-adoption-smoke", "--path", "."],
+            &["target/external-adoption-smoke/"],
+            || external_adoption_smoke_step(root, quiet_stdout),
+        )?;
+    }
 
     Ok(())
+}
+
+fn receipt_artifacts(include_external: bool) -> Vec<String> {
+    let mut artifacts = vec![
+        "target/adoption-regression/adoption-regression.json".to_string(),
+        "target/adoption-regression/adoption-regression.md".to_string(),
+        "target/user-path-smoke/".to_string(),
+        "target/adoption-regression/runtime-matrix/".to_string(),
+        "target/adoption-regression/bundle-proof/".to_string(),
+    ];
+    if include_external {
+        artifacts.push("target/external-adoption-smoke/".to_string());
+        artifacts.push("target/external-adoption-smoke/report.json".to_string());
+        artifacts.push("target/external-adoption-smoke/report.md".to_string());
+    }
+    artifacts
 }
 
 fn user_path_smoke_step(root: &Path, quiet_stdout: bool) -> Result<()> {
@@ -203,6 +235,32 @@ fn no_blob_step(root: &Path, quiet_stdout: bool) -> Result<()> {
         run_command(&mut cmd, true)
     } else {
         no_blob_gate()
+    }
+}
+
+fn external_adoption_smoke_step(root: &Path, quiet_stdout: bool) -> Result<()> {
+    if quiet_stdout {
+        let mut cmd = Command::new("cargo");
+        cmd.args([
+            "xtask",
+            "external-adoption-smoke",
+            "--path",
+            ".",
+            "--format",
+            "json",
+        ])
+        .current_dir(root)
+        .stdin(Stdio::null());
+        run_command(&mut cmd, true)
+    } else {
+        external_adoption_smoke::run(
+            root,
+            external_adoption_smoke::RunOptions {
+                path: Some(root.to_path_buf()),
+                version: None,
+                format: external_adoption_smoke::OutputFormat::Human,
+            },
+        )
     }
 }
 
@@ -453,13 +511,67 @@ mod tests {
 
     #[test]
     fn adoption_regression_artifact_paths_are_target_scoped() {
-        for path in [
-            OUT_DIR,
-            BUNDLE_PROOF_DIR,
-            RUNTIME_MATRIX_DIR,
-            "target/user-path-smoke",
-        ] {
+        for path in receipt_artifacts(true).into_iter().chain([
+            OUT_DIR.to_string(),
+            BUNDLE_PROOF_DIR.to_string(),
+            RUNTIME_MATRIX_DIR.to_string(),
+        ]) {
             assert!(path.starts_with("target/"));
         }
+    }
+
+    #[test]
+    fn adoption_regression_default_artifacts_stay_bounded() {
+        let artifacts = receipt_artifacts(false);
+
+        assert!(artifacts.contains(&"target/user-path-smoke/".to_string()));
+        assert!(
+            !artifacts
+                .iter()
+                .any(|artifact| artifact.starts_with("target/external-adoption-smoke"))
+        );
+    }
+
+    #[test]
+    fn adoption_regression_external_artifacts_include_smoke_receipts() {
+        let artifacts = receipt_artifacts(true);
+
+        assert!(artifacts.contains(&"target/external-adoption-smoke/".to_string()));
+        assert!(artifacts.contains(&"target/external-adoption-smoke/report.json".to_string()));
+        assert!(artifacts.contains(&"target/external-adoption-smoke/report.md".to_string()));
+    }
+
+    #[test]
+    fn adoption_regression_external_step_is_explicit() {
+        let mut receipt = AdoptionRegressionReceipt {
+            schema_version: 1,
+            status: "pass".to_string(),
+            generated_at: "2026-05-16T00:00:00Z".to_string(),
+            git_sha: Some("abc123".to_string()),
+            steps: Vec::new(),
+            artifacts: vec!["target/external-adoption-smoke/".to_string()],
+            boundaries: BOUNDARIES.to_vec(),
+        };
+
+        run_step(
+            &mut receipt,
+            "external-adoption-smoke",
+            &["cargo", "xtask", "external-adoption-smoke", "--path", "."],
+            &["target/external-adoption-smoke/"],
+            || Ok(()),
+        )
+        .expect("external step receipt should record");
+
+        let step = receipt
+            .steps
+            .iter()
+            .find(|step| step.name == "external-adoption-smoke")
+            .expect("external step present");
+        assert_eq!(step.status, "ok");
+        assert_eq!(
+            step.command,
+            ["cargo", "xtask", "external-adoption-smoke", "--path", "."]
+        );
+        assert_eq!(step.artifacts, ["target/external-adoption-smoke/"]);
     }
 }

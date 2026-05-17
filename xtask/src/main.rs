@@ -106,6 +106,9 @@ enum Cmd {
     UserPathSmoke,
     /// Run bounded adoption-path regression checks and write receipts.
     AdoptionRegression {
+        /// Also run clean-project external adoption smoke.
+        #[arg(long)]
+        external: bool,
         /// Output format.
         #[arg(long, value_enum, default_value = "human")]
         format: AdoptionRegressionFormat,
@@ -626,9 +629,13 @@ fn main() -> Result<()> {
         Cmd::PublicSurface => public_surface::public_surface_cmd(PUBLISH_CRATES),
         Cmd::ExamplesSmoke { run } => docs_sync::examples_smoke_cmd(run),
         Cmd::UserPathSmoke => user_path_smoke::run(&workspace_root_path()),
-        Cmd::AdoptionRegression { format } => {
-            adoption_regression::run(&workspace_root_path(), format.into())
-        }
+        Cmd::AdoptionRegression { external, format } => adoption_regression::run(
+            &workspace_root_path(),
+            adoption_regression::RunOptions {
+                format: format.into(),
+                external,
+            },
+        ),
         Cmd::ExternalAdoptionSmoke {
             path,
             version,
@@ -10555,6 +10562,38 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
                 format: ExternalAdoptionSmokeFormat::Json,
             }
         ));
+    }
+
+    #[test]
+    fn adoption_regression_external_flag_is_explicit() {
+        let default = Cli::try_parse_from(["xtask", "adoption-regression"]).unwrap();
+        match default.cmd {
+            Cmd::AdoptionRegression {
+                external, format, ..
+            } => {
+                assert!(!external, "external mode must be opt-in");
+                assert!(matches!(format, AdoptionRegressionFormat::Human));
+            }
+            _ => panic!("expected Cmd::AdoptionRegression"),
+        }
+
+        let external = Cli::try_parse_from([
+            "xtask",
+            "adoption-regression",
+            "--external",
+            "--format",
+            "json",
+        ])
+        .unwrap();
+        match external.cmd {
+            Cmd::AdoptionRegression {
+                external, format, ..
+            } => {
+                assert!(external, "external flag should propagate");
+                assert!(matches!(format, AdoptionRegressionFormat::Json));
+            }
+            _ => panic!("expected Cmd::AdoptionRegression"),
+        }
     }
 
     #[test]
