@@ -233,7 +233,8 @@ fn mismatched_kid(label: &str, seed: Seed) -> String {
     let mut payload = parts.payload_object();
     payload.insert("kid".to_string(), json!("expected-kid"));
 
-    parts.with_header_object(header)
+    parts
+        .with_header_object(header)
         .with_payload_object(payload)
         .into_token()
 }
