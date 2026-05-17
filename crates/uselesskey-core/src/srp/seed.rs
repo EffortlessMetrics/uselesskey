@@ -48,17 +48,22 @@ impl Seed {
     /// - any other string (hashed with BLAKE3)
     pub fn from_env_value(value: &str) -> Result<Self, String> {
         let v = value.trim();
-        let hex = v
-            .strip_prefix("0x")
-            .or_else(|| v.strip_prefix("0X"))
-            .unwrap_or(v);
 
-        if hex.len() == 64 {
+        if let Some(hex) = hex_seed_candidate(v) {
             return parse_hex_32(hex).map(Self);
         }
 
         Ok(Self::from_text(v))
     }
+}
+
+fn hex_seed_candidate(value: &str) -> Option<&str> {
+    let hex = value
+        .strip_prefix("0x")
+        .or_else(|| value.strip_prefix("0X"))
+        .unwrap_or(value);
+
+    (hex.len() == 64).then_some(hex)
 }
 
 impl core::fmt::Debug for Seed {
@@ -264,6 +269,22 @@ mod tests {
     fn from_env_value_65_char_non_hex_uses_blake3() {
         // 65 chars — not 64, so falls through to blake3 hashing.
         let input = "a".repeat(65);
+        let seed = Seed::from_env_value(&input).unwrap();
+        let expected = blake3::hash(input.as_bytes());
+        assert_eq!(seed.bytes(), expected.as_bytes());
+    }
+
+    #[test]
+    fn from_env_value_short_0x_prefixed_string_hashes_original_input() {
+        let input = "0xabc";
+        let seed = Seed::from_env_value(input).unwrap();
+        let expected = blake3::hash(input.as_bytes());
+        assert_eq!(seed.bytes(), expected.as_bytes());
+    }
+
+    #[test]
+    fn from_env_value_invalid_length_0x_prefixed_hex_hashes_original_input() {
+        let input = format!("0x{}", "a".repeat(63));
         let seed = Seed::from_env_value(&input).unwrap();
         let expected = blake3::hash(input.as_bytes());
         assert_eq!(seed.bytes(), expected.as_bytes());
