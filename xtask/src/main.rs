@@ -134,6 +134,12 @@ enum Cmd {
         #[arg(long)]
         check: bool,
     },
+    /// Emit non-blocking GitHub annotations for line-placeable RIPR guidance.
+    RiprAnnotations {
+        /// Path to the RIPR review comments JSON artifact.
+        #[arg(long, default_value = "target/ripr/review/comments.json")]
+        comments: PathBuf,
+    },
     /// Generate the stable PR evidence summary from machine-readable PR artifacts.
     RiprPrSummary {
         /// Verify the generated PR evidence summary instead of writing it.
@@ -582,6 +588,7 @@ fn main() -> Result<()> {
         Cmd::Doctor { format } => doctor::run(&workspace_root_path(), format.into()),
         Cmd::RiprPr { check } => ripr_pr(check),
         Cmd::RiprReviewComments { check } => ripr_review_comments(check),
+        Cmd::RiprAnnotations { comments } => ripr_annotations(&comments),
         Cmd::RiprPrSummary { check } => ripr_pr_summary(check),
         Cmd::TestEfficiencyReport => test_efficiency::test_efficiency_report_cmd(),
         Cmd::MutantsPr {
@@ -5787,6 +5794,79 @@ fn render_ripr_review_markdown(base_ref: &str, json: &serde_json::Value) -> Stri
     )
 }
 
+fn ripr_annotations(comments_path: &Path) -> Result<()> {
+    if !comments_path.exists() {
+        return Ok(());
+    }
+
+    let json: serde_json::Value = read_json_file(comments_path)?;
+    for warning in ripr_annotation_warnings(&json) {
+        println!("{warning}");
+    }
+    Ok(())
+}
+
+fn ripr_annotation_warnings(json: &serde_json::Value) -> Vec<String> {
+    json.get("comments")
+        .and_then(serde_json::Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(ripr_annotation_warning)
+        .collect()
+}
+
+fn ripr_annotation_warning(item: &serde_json::Value) -> Option<String> {
+    let file = item
+        .get("path")
+        .and_then(json_scalar_to_annotation_string)
+        .or_else(|| item.get("file").and_then(json_scalar_to_annotation_string))?;
+    let line = item
+        .get("line")
+        .and_then(json_scalar_to_annotation_string)?;
+    let title = item
+        .get("title")
+        .and_then(json_scalar_to_annotation_string)
+        .unwrap_or_else(|| "RIPR".to_string());
+    let body = item
+        .get("body")
+        .and_then(json_scalar_to_annotation_string)
+        .or_else(|| {
+            item.get("message")
+                .and_then(json_scalar_to_annotation_string)
+        })
+        .unwrap_or_default();
+
+    Some(format!(
+        "::warning file={},line={},title={}::{}",
+        escape_github_annotation_property(&file),
+        escape_github_annotation_property(&line),
+        escape_github_annotation_property(&title),
+        escape_github_annotation_data(&body)
+    ))
+}
+
+fn json_scalar_to_annotation_string(value: &serde_json::Value) -> Option<String> {
+    match value {
+        serde_json::Value::String(value) => Some(value.clone()),
+        serde_json::Value::Number(value) => Some(value.to_string()),
+        serde_json::Value::Bool(value) => Some(value.to_string()),
+        _ => None,
+    }
+}
+
+fn escape_github_annotation_data(value: &str) -> String {
+    value
+        .replace('%', "%25")
+        .replace('\r', "%0D")
+        .replace('\n', "%0A")
+}
+
+fn escape_github_annotation_property(value: &str) -> String {
+    escape_github_annotation_data(value)
+        .replace(':', "%3A")
+        .replace(',', "%2C")
+}
+
 fn json_array_len(value: &serde_json::Value, key: &str) -> usize {
     value
         .get(key)
@@ -7768,6 +7848,41 @@ mod tests {
         assert!(rendered.contains("| changed rust files | 1 |"));
         assert!(rendered.contains("`finding-1` at `crates/example/src/lib.rs:42`"));
         assert!(rendered.contains("ripr does not run mutants"));
+    }
+
+    #[test]
+    fn ripr_annotations_escape_github_command_fields() {
+        let json = serde_json::json!({
+            "comments": [
+                {
+                    "path": "crates/example:one/src/lib.rs",
+                    "line": 42,
+                    "title": "RIPR, advisory",
+                    "body": "percent % and\nnew line"
+                },
+                {
+                    "file": "crates/other/src/lib.rs",
+                    "line": "7",
+                    "message": "fallback message"
+                },
+                {
+                    "path": "crates/missing-line/src/lib.rs",
+                    "body": "ignored"
+                }
+            ]
+        });
+
+        let warnings = ripr_annotation_warnings(&json);
+
+        assert_eq!(warnings.len(), 2);
+        assert_eq!(
+            warnings[0],
+            "::warning file=crates/example%3Aone/src/lib.rs,line=42,title=RIPR%2C advisory::percent %25 and%0Anew line"
+        );
+        assert_eq!(
+            warnings[1],
+            "::warning file=crates/other/src/lib.rs,line=7,title=RIPR::fallback message"
+        );
     }
 
     #[test]

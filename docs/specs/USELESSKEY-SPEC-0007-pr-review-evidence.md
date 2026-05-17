@@ -174,8 +174,8 @@ PR review evidence maps to:
 - `cargo xtask ripr-review-comments` for PR-scoped review guidance;
 - `cargo xtask ripr-review-comments --check` for review artifact validation;
 - `cargo xtask ripr-pr-summary --check` for stable summary contract validation;
-- `scripts/ripr-annotations.py` or equivalent CI logic for non-blocking
-  annotations from `comments[]`;
+- `cargo xtask ripr-annotations` for non-blocking annotations from
+  `comments[]`;
 - `cargo xtask impacted-evidence` for targeted mutation routing;
 - `cargo xtask mutants-pr --changed` when routing requires targeted mutation.
 
