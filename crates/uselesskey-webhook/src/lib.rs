@@ -342,6 +342,177 @@ mod tests {
         );
     }
 
+    #[test]
+    fn hmac_sha256_hashes_keys_larger_than_block_size() {
+        let key = [0xaa_u8; 131];
+        let digest = hmac_sha256_hex(
+            &key,
+            b"Test Using Larger Than Block-Size Key - Hash Key First",
+        );
+
+        assert_eq!(
+            digest,
+            "60e431591ee0b67f0d8a26aacbf5b77f8e0bc6213728c5140546040f0ee37f54"
+        );
+    }
+
+    #[test]
+    fn raw_payload_is_used_verbatim_for_signature_inputs() {
+        let fx = Factory::deterministic(Seed::from_env_value("webhook-raw-payload").unwrap());
+        let raw = "{\"message\":\"keep exact spacing\", \"n\": 1}\n";
+
+        let github = fx.webhook_github("raw", WebhookPayloadSpec::Raw(raw.to_string()));
+        assert_eq!(github.payload, raw);
+        assert_eq!(github.signature_input, raw);
+        assert!(verify_github(&github.secret, raw, &github.headers));
+
+        let stripe = fx.webhook_stripe("raw", WebhookPayloadSpec::Raw(raw.to_string()));
+        assert_eq!(stripe.payload, raw);
+        assert_eq!(
+            stripe.signature_input,
+            format!("{}.{}", stripe.timestamp, raw)
+        );
+        assert!(verify_stripe(
+            &stripe.secret,
+            raw,
+            &stripe.headers,
+            stripe.timestamp,
+            300
+        ));
+
+        let slack = fx.webhook_slack("raw", WebhookPayloadSpec::Raw(raw.to_string()));
+        assert_eq!(slack.payload, raw);
+        assert_eq!(
+            slack.signature_input,
+            format!("v0:{}:{}", slack.timestamp, raw)
+        );
+        assert!(verify_slack(
+            &slack.secret,
+            raw,
+            &slack.headers,
+            slack.timestamp,
+            300
+        ));
+    }
+
+    #[test]
+    fn fixture_cache_identity_includes_profile_label_and_payload_spec() {
+        let fx = Factory::deterministic(Seed::from_env_value("webhook-cache-identity").unwrap());
+
+        let github = fx.webhook_github("repo", WebhookPayloadSpec::Canonical);
+        let github_again = fx.webhook_github("repo", WebhookPayloadSpec::Canonical);
+        assert_eq!(github.secret, github_again.secret);
+        assert_eq!(github.payload, github_again.payload);
+        assert_eq!(github.headers, github_again.headers);
+
+        let different_profile = fx.webhook_stripe("repo", WebhookPayloadSpec::Canonical);
+        assert_ne!(github.secret, different_profile.secret);
+        assert_ne!(github.payload, different_profile.payload);
+
+        let different_label = fx.webhook_github("other-repo", WebhookPayloadSpec::Canonical);
+        assert_ne!(github.secret, different_label.secret);
+        assert_ne!(github.payload, different_label.payload);
+
+        let different_raw = fx.webhook_github(
+            "repo",
+            WebhookPayloadSpec::Raw(r#"{"action":"opened"}"#.to_string()),
+        );
+        assert_ne!(github.secret, different_raw.secret);
+        assert_eq!(different_raw.payload, r#"{"action":"opened"}"#);
+    }
+
+    #[test]
+    fn near_miss_scenarios_are_marked_and_recomputed_for_each_profile() {
+        let fx = Factory::deterministic(Seed::from_env_value("webhook-nearmiss-profiles").unwrap());
+        let fixtures = [
+            fx.webhook_github("repo", WebhookPayloadSpec::Canonical),
+            fx.webhook_stripe("billing", WebhookPayloadSpec::Canonical),
+            fx.webhook_slack("alerts", WebhookPayloadSpec::Canonical),
+        ];
+
+        for fixture in fixtures {
+            let stale = fixture.near_miss_stale_timestamp(300);
+            assert_eq!(stale.scenario, NearMissScenario::StaleTimestamp);
+            assert_eq!(stale.profile, fixture.profile);
+            assert_eq!(stale.payload, fixture.payload);
+            assert_eq!(stale.timestamp, fixture.timestamp - 301);
+
+            let wrong_secret = fixture.near_miss_wrong_secret();
+            assert_eq!(wrong_secret.scenario, NearMissScenario::WrongSecret);
+            assert_eq!(wrong_secret.profile, fixture.profile);
+            assert_eq!(wrong_secret.payload, fixture.payload);
+            assert_ne!(wrong_secret.secret, fixture.secret);
+            assert!(wrong_secret.secret.ends_with("_wrong"));
+
+            let tampered = fixture.near_miss_tampered_payload();
+            assert_eq!(tampered.scenario, NearMissScenario::TamperedPayload);
+            assert_eq!(tampered.profile, fixture.profile);
+            assert_eq!(tampered.secret, fixture.secret);
+            assert_eq!(tampered.payload, format!("{}\n", fixture.payload));
+
+            match fixture.profile {
+                WebhookProfile::GitHub => {
+                    assert!(!verify_github(
+                        &fixture.secret,
+                        &wrong_secret.payload,
+                        &wrong_secret.headers
+                    ));
+                    assert!(!verify_github(
+                        &tampered.secret,
+                        &fixture.payload,
+                        &tampered.headers
+                    ));
+                }
+                WebhookProfile::Stripe => {
+                    assert!(!verify_stripe(
+                        &fixture.secret,
+                        &fixture.payload,
+                        &stale.headers,
+                        fixture.timestamp,
+                        300
+                    ));
+                    assert!(!verify_stripe(
+                        &fixture.secret,
+                        &wrong_secret.payload,
+                        &wrong_secret.headers,
+                        wrong_secret.timestamp,
+                        300
+                    ));
+                    assert!(!verify_stripe(
+                        &tampered.secret,
+                        &fixture.payload,
+                        &tampered.headers,
+                        tampered.timestamp,
+                        300
+                    ));
+                }
+                WebhookProfile::Slack => {
+                    assert!(!verify_slack(
+                        &fixture.secret,
+                        &fixture.payload,
+                        &stale.headers,
+                        fixture.timestamp,
+                        300
+                    ));
+                    assert!(!verify_slack(
+                        &fixture.secret,
+                        &wrong_secret.payload,
+                        &wrong_secret.headers,
+                        wrong_secret.timestamp,
+                        300
+                    ));
+                    assert!(!verify_slack(
+                        &tampered.secret,
+                        &fixture.payload,
+                        &tampered.headers,
+                        tampered.timestamp,
+                        300
+                    ));
+                }
+            }
+        }
+    }
+
     fn assert_lower_hex(value: &str) {
         assert!(
             value
