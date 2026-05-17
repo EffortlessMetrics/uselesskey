@@ -114,6 +114,7 @@ impl Pkcs8SpkiKeyMaterial {
 /// The caller must provide a type with an `inner.material` field containing a
 /// [`Pkcs8SpkiKeyMaterial`] and a `load_variant(&self, &str)` method whose
 /// returned inner value has the same `material` field.
+#[doc(hidden)]
 #[macro_export]
 macro_rules! impl_pkcs8_spki_fixture_accessors {
     () => {
