@@ -44,6 +44,39 @@ During candidate proof, `cargo xtask claim-proof --all-stable` found generated
 #749, and the claim proof passed after the candidate branch rebased on that
 refresh.
 
+## Pre-Tag Proof Status
+
+Pre-tag proof completed on 2026-05-17 after the workspace and copyable snippets
+were bumped to `0.9.1`.
+
+Commands that passed:
+
+```bash
+cargo xtask release-evidence --version 0.9.1 --patch --dry-run --summary
+cargo xtask publish-preflight
+cargo xtask publish-check
+cargo xtask no-blob
+cargo xtask check-no-panic-family
+cargo xtask badges --check
+cargo xtask docs-sync --check
+cargo xtask pr
+git diff --check
+```
+
+`cargo xtask pr` first exposed the local Windows ASAN runtime precondition:
+the fuzz target exited with `STATUS_DLL_NOT_FOUND` because
+`clang_rt.asan_dynamic-x86_64.dll` was not on `PATH`. The rerun passed after
+prepending the Visual Studio MSVC runtime directory:
+
+```powershell
+$env:PATH = "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\bin\Hostx64\x64;$env:PATH"
+cargo xtask pr
+```
+
+The fuzz run also refreshed `fuzz/Cargo.lock` so the fuzz workspace lockfile
+matches the current workspace package versions and existing manifest dependency
+requirements.
+
 ## Patch Scope
 
 v0.9.1 is scoped to:
@@ -65,17 +98,17 @@ migration work, historical no-panic baseline work, or broad dependency churn.
 | Source-of-truth proof | `cargo xtask spec-check --strict` | Specs, plans, active goals, and claim ledgers are parseable and linked. | Passed in candidate proof. |
 | Public claim drift check | `cargo xtask claim-report --check-public-claims` | Public claim index matches `policy/claim-ledger.toml`. | Passed in candidate proof. |
 | Contract-pack registry | `cargo xtask contract-packs --check` | Existing stable contract packs remain registered and bounded. | Passed in candidate proof. |
-| Patch release evidence | `cargo xtask release-evidence --version 0.9.1 --patch --dry-run --summary` | Patch lane carries publish-system and user-path smoke evidence without full minor-release expansion. | Passed in candidate proof. |
+| Patch release evidence | `cargo xtask release-evidence --version 0.9.1 --patch --dry-run --summary` | Patch lane carries publish-system and user-path smoke evidence without full minor-release expansion. | Passed in candidate and pre-tag proof. |
 | Adoption regression | `cargo xtask adoption-regression` and `cargo xtask adoption-regression --format json` | Copied user paths, runtime scanner-safe matrix, webhook profile tests, TLS/OIDC proofs, and no-blob pass. | Passed in candidate proof. |
 | Stable claim proof | `cargo xtask claim-proof --all-stable` | Stable public claims still have whitelisted proof handlers. | Passed in candidate proof after #749 badge refresh. |
 | User-path smoke | `cargo xtask user-path-smoke` | Scanner-safe, TLS, OIDC, and webhook copyable paths still work. | Passed in candidate proof. |
-| No-panic family | `cargo xtask check-no-panic-family` | Stage A.5 new-debt posture remains clean. | Passed in candidate proof. |
+| No-panic family | `cargo xtask check-no-panic-family` | Stage A.5 new-debt posture remains clean. | Passed in candidate and pre-tag proof. |
 | PR-lite local evidence | `cargo +nightly xtask pr-lite` | Local contributor evidence remains bounded and receipt-backed. | Passed in candidate proof. |
-| Full PR gate | `cargo xtask pr` | Fast PR evidence, docs, examples, public-surface, and receipts pass. | Passed in candidate proof. |
-| Publish preflight | `cargo xtask publish-preflight` | Metadata, package, and snippet checks are ready before publish. | Pre-tag only. |
-| Publish dry run | `cargo xtask publish-check` | Publishable crates dry-run in dependency order. | Pre-tag only. |
-| Secret-shaped blob gate | `cargo xtask no-blob` | No committed secret-shaped fixture blobs were introduced. | Pre-tag and audit. |
-| Badge endpoint drift | `cargo xtask badges --check` | Existing generated badge endpoints remain current; v0.9.1 adds no badge. | Pre-tag only. |
+| Full PR gate | `cargo xtask pr` | Fast PR evidence, docs, examples, public-surface, and receipts pass. | Passed in candidate and pre-tag proof. |
+| Publish preflight | `cargo xtask publish-preflight` | Metadata, package, and snippet checks are ready before publish. | Passed in pre-tag proof. |
+| Publish dry run | `cargo xtask publish-check` | Publishable crates dry-run in dependency order. | Passed in pre-tag proof. |
+| Secret-shaped blob gate | `cargo xtask no-blob` | No committed secret-shaped fixture blobs were introduced. | Passed in pre-tag proof; repeat in audit. |
+| Badge endpoint drift | `cargo xtask badges --check` | Existing generated badge endpoints remain current; v0.9.1 adds no badge. | Passed in pre-tag proof. |
 | Post-release crates.io smoke | `cargo xtask cratesio-smoke --version 0.9.1` | External registry install view works after publish. | Post-release audit only. |
 | docs.rs state | `docs/release/post-release-audit-v0.9.1.md` | docs.rs is complete, queued, failed, or not found; queued is not a republish reason. | Post-release audit only. |
 

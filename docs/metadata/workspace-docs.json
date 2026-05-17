@@ -781,7 +781,7 @@
       "minimal_example_command": "cargo run -p uselesskey --example adapter_jsonwebtoken --no-default-features --features rsa,ecdsa,ed25519,hmac"
     }
   ],
-  "release_version": "0.9.0",
+  "release_version": "0.9.1",
   "public_features": [
     "rsa",
     "ecdsa",

@@ -221,7 +221,7 @@ surfaces = [
   "docs/status/PUBLIC_CLAIMS.md",
 ]
 proof_commands = [
-  "cargo xtask cratesio-smoke --version 0.9.0",
+  "cargo xtask cratesio-smoke --version 0.9.1",
 ]
 artifacts = [
   "target/xtask/cratesio-smoke",

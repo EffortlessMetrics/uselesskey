@@ -10,7 +10,7 @@ copyable command first. For a broader task router, see
 Run installed CLI commands as shown below:
 
 ```bash
-cargo install uselesskey-cli --version 0.9.0
+cargo install uselesskey-cli --version 0.9.1
 ```
 
 Inside this workspace, prefix CLI examples with `cargo run -p uselesskey-cli --`.

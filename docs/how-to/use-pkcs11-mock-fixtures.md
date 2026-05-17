@@ -14,8 +14,8 @@ under test consumes; the cryptography is deliberately mock.
 
 ```toml
 [dev-dependencies]
-uselesskey-core = { version = "0.9.0", default-features = false }
-uselesskey-pkcs11-mock = { version = "0.9.0" }
+uselesskey-core = { version = "0.9.1", default-features = false }
+uselesskey-pkcs11-mock = { version = "0.9.1" }
 ```
 
 ```rust
