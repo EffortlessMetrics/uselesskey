@@ -110,16 +110,15 @@ fn truncate_utf8_at_byte_boundary(input: &str, max_bytes: usize) -> String {
 }
 
 fn replace_first_line(pem: &str, replacement: &str) -> String {
+    let sep = line_separator(pem);
     let mut lines = pem.lines();
     let _first = lines.next();
 
     let mut out = String::new();
-    out.push_str(replacement);
-    out.push('\n');
+    push_line(&mut out, replacement, sep);
 
     for l in lines {
-        out.push_str(l);
-        out.push('\n');
+        push_line(&mut out, l, sep);
     }
 
     out
@@ -133,43 +132,47 @@ fn replace_last_line(pem: &str, replacement: &str) -> String {
     let last_idx = all.len() - 1;
     all[last_idx] = replacement;
 
-    let mut out = String::new();
-    for l in all {
-        out.push_str(l);
-        out.push('\n');
-    }
-    out
+    join_lines(&all, line_separator(pem))
 }
 
 fn inject_bad_base64_line(pem: &str) -> String {
+    let sep = line_separator(pem);
     let mut lines: Vec<&str> = pem.lines().collect();
     if lines.len() < 3 {
-        return alloc::format!("{pem}\nTHIS_IS_NOT_BASE64!!!\n");
+        return alloc::format!("{pem}{sep}THIS_IS_NOT_BASE64!!!{sep}");
     }
 
     lines.insert(1, "THIS_IS_NOT_BASE64!!!");
 
+    join_lines(&lines, sep)
+}
+
+fn inject_blank_line(pem: &str) -> String {
+    let sep = line_separator(pem);
+    let mut lines: Vec<&str> = pem.lines().collect();
+    if lines.len() < 3 {
+        return alloc::format!("{pem}{sep}{sep}");
+    }
+    lines.insert(1, "");
+
+    join_lines(&lines, sep)
+}
+
+fn line_separator(input: &str) -> &'static str {
+    if input.contains("\r\n") { "\r\n" } else { "\n" }
+}
+
+fn join_lines(lines: &[&str], sep: &str) -> String {
     let mut out = String::new();
-    for l in lines {
-        out.push_str(l);
-        out.push('\n');
+    for line in lines {
+        push_line(&mut out, line, sep);
     }
     out
 }
 
-fn inject_blank_line(pem: &str) -> String {
-    let mut lines: Vec<&str> = pem.lines().collect();
-    if lines.len() < 3 {
-        return alloc::format!("{pem}\n\n");
-    }
-    lines.insert(1, "");
-
-    let mut out = String::new();
-    for l in lines {
-        out.push_str(l);
-        out.push('\n');
-    }
-    out
+fn push_line(out: &mut String, line: &str, sep: &str) {
+    out.push_str(line);
+    out.push_str(sep);
 }
 
 #[cfg(all(test, feature = "std"))]
@@ -207,6 +210,40 @@ mod tests {
     fn extra_blank_line_short_input_appends_newlines() {
         let out = corrupt_pem("x", CorruptPem::ExtraBlankLine);
         assert_eq!(out, "x\n\n");
+    }
+
+    #[test]
+    fn bad_header_preserves_crlf_line_endings() {
+        let pem = "-----BEGIN TEST-----\r\nAAA=\r\n-----END TEST-----\r\n";
+        let out = corrupt_pem(pem, CorruptPem::BadHeader);
+
+        assert!(out.starts_with("-----BEGIN CORRUPTED KEY-----\r\n"));
+        assert!(!out.contains("-----BEGIN CORRUPTED KEY-----\nAAA="));
+        assert_eq!(out.matches("\r\n").count(), 3);
+    }
+
+    #[test]
+    fn injected_corruptions_preserve_crlf_line_endings() {
+        let pem = "-----BEGIN TEST-----\r\nAAA=\r\n-----END TEST-----\r\n";
+
+        let bad_base64 = corrupt_pem(pem, CorruptPem::BadBase64);
+        assert!(bad_base64.contains("-----BEGIN TEST-----\r\nTHIS_IS_NOT_BASE64!!!\r\nAAA="));
+        assert!(!bad_base64.contains("THIS_IS_NOT_BASE64!!!\nAAA="));
+
+        let blank_line = corrupt_pem(pem, CorruptPem::ExtraBlankLine);
+        assert!(blank_line.contains("-----BEGIN TEST-----\r\n\r\nAAA="));
+        assert!(!blank_line.contains("-----BEGIN TEST-----\n\nAAA="));
+    }
+
+    #[test]
+    fn short_input_corruptions_preserve_crlf_line_endings() {
+        let pem = "line1\r\nline2";
+
+        let bad_base64 = corrupt_pem(pem, CorruptPem::BadBase64);
+        assert_eq!(bad_base64, "line1\r\nline2\r\nTHIS_IS_NOT_BASE64!!!\r\n");
+
+        let blank_line = corrupt_pem(pem, CorruptPem::ExtraBlankLine);
+        assert_eq!(blank_line, "line1\r\nline2\r\n\r\n");
     }
 
     #[test]
