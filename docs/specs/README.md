@@ -47,3 +47,4 @@ public crate-surface cleanup.
 - [USELESSKEY-SPEC-0010: PR-lite evidence ergonomics](USELESSKEY-SPEC-0010-pr-lite-evidence.md)
 - [USELESSKEY-SPEC-0011: Webhook contract pack](USELESSKEY-SPEC-0011-webhook-contract-pack.md)
 - [USELESSKEY-SPEC-0012: CLI proof handoff boundary](USELESSKEY-SPEC-0012-cli-proof-handoff.md)
+- [USELESSKEY-SPEC-0013: External adoption smoke](USELESSKEY-SPEC-0013-external-adoption-smoke.md)
