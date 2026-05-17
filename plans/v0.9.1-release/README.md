@@ -9,3 +9,4 @@ another product pack or broaden the public promise.
 ## Plan Files
 
 - [implementation-plan.md](implementation-plan.md) - PR sequence, proof commands, non-goals, and stop conditions
+- [closeout.md](closeout.md) - Published release identity, audit result, and archived lane state
