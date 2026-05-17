@@ -14,9 +14,35 @@ runtime metadata correction
         -> patch release evidence
 ```
 
-This document is the release-prep proof map. It names the required proof, the
-receipt surface, and the planned v0.9.1 candidate status. Generated receipts
-stay under `target/` unless a later PR explicitly adds a tracked receipt path.
+This document is the release-candidate proof map. It names the required proof,
+the receipt surface, and the v0.9.1 candidate status. Generated receipts stay
+under `target/` unless a later PR explicitly adds a tracked receipt path.
+
+## Candidate Proof Status
+
+Candidate proof completed on 2026-05-17. Generated receipts stayed under
+`target/` and are not committed.
+
+Commands that passed:
+
+```bash
+cargo xtask release-evidence --version 0.9.1 --patch --dry-run --summary
+cargo xtask adoption-regression
+cargo xtask adoption-regression --format json
+cargo xtask claim-proof --all-stable
+cargo xtask user-path-smoke
+cargo xtask check-no-panic-family
+cargo xtask claim-report --check-public-claims
+cargo xtask contract-packs --check
+cargo +nightly xtask pr-lite
+cargo xtask pr
+git diff --check
+```
+
+During candidate proof, `cargo xtask claim-proof --all-stable` found generated
+`ripr+` badge endpoint drift. The badge endpoint refresh landed separately in
+#749, and the claim proof passed after the candidate branch rebased on that
+refresh.
 
 ## Patch Scope
 
@@ -36,16 +62,16 @@ migration work, historical no-panic baseline work, or broad dependency churn.
 
 | Gate | Command or artifact | Patch claim covered | v0.9.1 candidate status |
 | --- | --- | --- | --- |
-| Source-of-truth proof | `cargo xtask spec-check --strict` | Specs, plans, active goals, and claim ledgers are parseable and linked. | Planned. |
-| Public claim drift check | `cargo xtask claim-report --check-public-claims` | Public claim index matches `policy/claim-ledger.toml`. | Planned. |
-| Contract-pack registry | `cargo xtask contract-packs --check` | Existing stable contract packs remain registered and bounded. | Planned. |
-| Patch release evidence | `cargo xtask release-evidence --version 0.9.1 --patch --dry-run --summary` | Patch lane carries publish-system and user-path smoke evidence without full minor-release expansion. | Planned. |
-| Adoption regression | `cargo xtask adoption-regression` and `cargo xtask adoption-regression --format json` | Copied user paths, runtime scanner-safe matrix, webhook profile tests, TLS/OIDC proofs, and no-blob pass. | Planned. |
-| Stable claim proof | `cargo xtask claim-proof --all-stable` | Stable public claims still have whitelisted proof handlers. | Planned. |
-| User-path smoke | `cargo xtask user-path-smoke` | Scanner-safe, TLS, OIDC, and webhook copyable paths still work. | Planned. |
-| No-panic family | `cargo xtask check-no-panic-family` | Stage A.5 new-debt posture remains clean. | Planned. |
-| PR-lite local evidence | `cargo +nightly xtask pr-lite` | Local contributor evidence remains bounded and receipt-backed. | Planned. |
-| Full PR gate | `cargo xtask pr` | Fast PR evidence, docs, examples, public-surface, and receipts pass. | Planned. |
+| Source-of-truth proof | `cargo xtask spec-check --strict` | Specs, plans, active goals, and claim ledgers are parseable and linked. | Passed in candidate proof. |
+| Public claim drift check | `cargo xtask claim-report --check-public-claims` | Public claim index matches `policy/claim-ledger.toml`. | Passed in candidate proof. |
+| Contract-pack registry | `cargo xtask contract-packs --check` | Existing stable contract packs remain registered and bounded. | Passed in candidate proof. |
+| Patch release evidence | `cargo xtask release-evidence --version 0.9.1 --patch --dry-run --summary` | Patch lane carries publish-system and user-path smoke evidence without full minor-release expansion. | Passed in candidate proof. |
+| Adoption regression | `cargo xtask adoption-regression` and `cargo xtask adoption-regression --format json` | Copied user paths, runtime scanner-safe matrix, webhook profile tests, TLS/OIDC proofs, and no-blob pass. | Passed in candidate proof. |
+| Stable claim proof | `cargo xtask claim-proof --all-stable` | Stable public claims still have whitelisted proof handlers. | Passed in candidate proof after #749 badge refresh. |
+| User-path smoke | `cargo xtask user-path-smoke` | Scanner-safe, TLS, OIDC, and webhook copyable paths still work. | Passed in candidate proof. |
+| No-panic family | `cargo xtask check-no-panic-family` | Stage A.5 new-debt posture remains clean. | Passed in candidate proof. |
+| PR-lite local evidence | `cargo +nightly xtask pr-lite` | Local contributor evidence remains bounded and receipt-backed. | Passed in candidate proof. |
+| Full PR gate | `cargo xtask pr` | Fast PR evidence, docs, examples, public-surface, and receipts pass. | Passed in candidate proof. |
 | Publish preflight | `cargo xtask publish-preflight` | Metadata, package, and snippet checks are ready before publish. | Pre-tag only. |
 | Publish dry run | `cargo xtask publish-check` | Publishable crates dry-run in dependency order. | Pre-tag only. |
 | Secret-shaped blob gate | `cargo xtask no-blob` | No committed secret-shaped fixture blobs were introduced. | Pre-tag and audit. |
@@ -73,7 +99,7 @@ cargo xtask no-blob
 
 | Public claim | Surfaces | Required evidence | Artifact or command | v0.9.1 status |
 | --- | --- | --- | --- | --- |
-| Scanner-safe fixtures | README badge, `badges/scanner-safe.json`, `docs/status/PUBLIC_CLAIMS.md`, bundle manifests | Scanner-safe reference, runtime matrix, no-blob gate, generated badge drift check | `cargo xtask claim-proof --claim scanner-safe-fixtures`; `cargo xtask adoption-regression`; `cargo xtask no-blob` | Planned. |
+| Scanner-safe fixtures | README badge, `badges/scanner-safe.json`, `docs/status/PUBLIC_CLAIMS.md`, bundle manifests | Scanner-safe reference, runtime matrix, no-blob gate, generated badge drift check | `cargo xtask claim-proof --claim scanner-safe-fixtures`; `cargo xtask adoption-regression`; `cargo xtask no-blob` | Candidate proof passed. |
 | TLS contract pack | `uselesskey bundle --profile tls`, TLS how-to, contract-pack registry | Existing bundle proof and contract-pack registry row remain valid | `cargo xtask bundle-proof --profile tls --out target/release-evidence/tls`; `cargo xtask claim-proof --claim tls-contract-pack` | Post-release audit repeat. |
 | OIDC/JWKS contract pack | OIDC/JWKS docs and contract-pack registry | Existing bundle proof and contract-pack registry row remain valid | `cargo xtask bundle-proof --profile oidc --out target/release-evidence/oidc`; `cargo xtask claim-proof --claim oidc-jwks-contract-pack` | Post-release audit repeat. |
 | Webhook contract pack | `uselesskey bundle --profile webhook`, webhook how-to, contract-pack registry | Existing bundle proof, claim-proof handler, and verification-pack inclusion remain valid | `cargo xtask bundle-proof --profile webhook --out target/release-evidence/webhook`; `cargo xtask claim-proof --claim webhook-contract-pack` | Post-release audit repeat. |
