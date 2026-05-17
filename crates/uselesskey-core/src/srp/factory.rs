@@ -9,6 +9,13 @@ use alloc::sync::Arc;
 use core::fmt;
 
 #[cfg(feature = "std")]
+use std::collections::BTreeSet;
+#[cfg(feature = "std")]
+use std::sync::{Condvar, Mutex, MutexGuard};
+#[cfg(all(feature = "std", test))]
+use std::time::Duration;
+
+#[cfg(feature = "std")]
 use rand10::TryRng;
 #[cfg(feature = "std")]
 use rand10::rngs::SysRng;
@@ -29,6 +36,72 @@ pub enum Mode {
 struct Inner {
     mode: Mode,
     cache: ArtifactCache,
+    #[cfg(feature = "std")]
+    init_locks: InitLocks,
+}
+
+#[cfg(feature = "std")]
+#[derive(Default)]
+struct InitLocks {
+    active: Mutex<BTreeSet<ArtifactId>>,
+    ready: Condvar,
+}
+
+#[cfg(feature = "std")]
+struct InitGuard<'a> {
+    locks: &'a InitLocks,
+    id: ArtifactId,
+}
+
+#[cfg(feature = "std")]
+impl InitLocks {
+    fn acquire(&self, id: &ArtifactId) -> InitGuard<'_> {
+        let mut active = self.active();
+        loop {
+            if active.insert(id.clone()) {
+                break;
+            }
+
+            #[cfg(test)]
+            {
+                let (next, wait_result) = self
+                    .ready
+                    .wait_timeout(active, Duration::from_secs(2))
+                    .unwrap_or_else(|err| err.into_inner());
+                assert!(
+                    !wait_result.timed_out(),
+                    "timed out waiting for init guard for {id:?}"
+                );
+                active = next;
+            }
+
+            #[cfg(not(test))]
+            {
+                active = self
+                    .ready
+                    .wait(active)
+                    .unwrap_or_else(|err| err.into_inner());
+            }
+        }
+
+        InitGuard {
+            locks: self,
+            id: id.clone(),
+        }
+    }
+
+    fn active(&self) -> MutexGuard<'_, BTreeSet<ArtifactId>> {
+        self.active.lock().unwrap_or_else(|err| err.into_inner())
+    }
+}
+
+#[cfg(feature = "std")]
+impl Drop for InitGuard<'_> {
+    fn drop(&mut self) {
+        let mut active = self.locks.active();
+        active.remove(&self.id);
+        self.locks.ready.notify_all();
+    }
 }
 
 /// A factory for generating and caching test artifacts.
@@ -55,6 +128,8 @@ impl Factory {
             inner: Arc::new(Inner {
                 mode,
                 cache: ArtifactCache::new(),
+                #[cfg(feature = "std")]
+                init_locks: InitLocks::default(),
             }),
         }
     }
@@ -139,6 +214,13 @@ impl Factory {
             return entry;
         }
 
+        #[cfg(feature = "std")]
+        let _init_guard = self.inner.init_locks.acquire(&id);
+
+        if let Some(entry) = self.inner.cache.get_typed::<T>(&id) {
+            return entry;
+        }
+
         let seed = self.seed_for(&id);
         let value = init(seed);
         let arc: Arc<T> = Arc::new(value);
@@ -170,8 +252,9 @@ pub(crate) fn random_seed() -> Seed {
 
 #[cfg(all(test, feature = "std"))]
 mod tests {
-    use super::{Factory, Mode, random_seed};
+    use super::{Factory, InitLocks, Mode, random_seed};
     use crate::Seed;
+    use crate::srp::identity::{ArtifactId, DerivationVersion};
     use std::panic::{AssertUnwindSafe, catch_unwind};
     use std::sync::Arc;
     use std::sync::atomic::{AtomicUsize, Ordering};
@@ -226,6 +309,51 @@ mod tests {
     fn random_seed_has_expected_length() {
         let seed = random_seed();
         assert_eq!(seed.bytes().len(), 32);
+    }
+
+    #[test]
+    fn init_lock_marks_id_active_until_guard_drop() {
+        let locks = InitLocks::default();
+        let id = ArtifactId::new(
+            "domain:init-lock",
+            "label",
+            b"spec",
+            "good",
+            DerivationVersion::V1,
+        );
+
+        let guard = locks.acquire(&id);
+
+        assert!(
+            locks.active().contains(&id),
+            "init guard should mark the artifact identity active"
+        );
+
+        drop(guard);
+
+        assert!(
+            !locks.active().contains(&id),
+            "dropping init guard should clear the active artifact identity"
+        );
+    }
+
+    #[test]
+    fn same_identity_returns_cached_value_without_rerunning_initializer() {
+        let fx = Factory::deterministic(Seed::new([9u8; 32]));
+        let hits = AtomicUsize::new(0);
+
+        let first = fx.get_or_init("domain:concurrent", "label", b"spec", "good", |_seed| {
+            hits.fetch_add(1, Ordering::SeqCst);
+            77u32
+        });
+        let second = fx.get_or_init("domain:concurrent", "label", b"spec", "good", |_seed| {
+            hits.fetch_add(1, Ordering::SeqCst);
+            99u32
+        });
+
+        assert!(Arc::ptr_eq(&first, &second));
+        assert_eq!(*first, 77);
+        assert_eq!(hits.load(Ordering::SeqCst), 1);
     }
 
     #[test]
