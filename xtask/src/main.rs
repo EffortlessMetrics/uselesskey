@@ -134,6 +134,8 @@ enum Cmd {
         #[arg(long)]
         check: bool,
     },
+    /// Emit GitHub Actions annotations from generated RIPR review guidance.
+    RiprAnnotations,
     /// Generate the stable PR evidence summary from machine-readable PR artifacts.
     RiprPrSummary {
         /// Verify the generated PR evidence summary instead of writing it.
@@ -582,6 +584,7 @@ fn main() -> Result<()> {
         Cmd::Doctor { format } => doctor::run(&workspace_root_path(), format.into()),
         Cmd::RiprPr { check } => ripr_pr(check),
         Cmd::RiprReviewComments { check } => ripr_review_comments(check),
+        Cmd::RiprAnnotations => ripr_annotations(),
         Cmd::RiprPrSummary { check } => ripr_pr_summary(check),
         Cmd::TestEfficiencyReport => test_efficiency::test_efficiency_report_cmd(),
         Cmd::MutantsPr {
@@ -5719,6 +5722,75 @@ fn ripr_review_comments(check: bool) -> Result<()> {
     Ok(())
 }
 
+fn ripr_annotations() -> Result<()> {
+    let workspace_root = workspace_root_path();
+    let comments_path = workspace_root.join(RIPR_REVIEW_DIR).join("comments.json");
+    if !comments_path.exists() {
+        return Ok(());
+    }
+
+    let json: serde_json::Value = read_json_file(&comments_path)?;
+    for annotation in render_ripr_github_annotations(&json) {
+        println!("{annotation}");
+    }
+    Ok(())
+}
+
+fn render_ripr_github_annotations(json: &serde_json::Value) -> Vec<String> {
+    json.get("comments")
+        .and_then(serde_json::Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(render_ripr_github_annotation)
+        .collect()
+}
+
+fn render_ripr_github_annotation(item: &serde_json::Value) -> Option<String> {
+    let file = item
+        .get("path")
+        .or_else(|| item.get("file"))
+        .and_then(serde_json::Value::as_str)?;
+    let line = json_scalar_to_string(item.get("line")?)?;
+    let title = item
+        .get("title")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("RIPR");
+    let body = item
+        .get("body")
+        .or_else(|| item.get("message"))
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or_default();
+
+    Some(format!(
+        "::warning file={},line={},title={}::{}",
+        escape_github_annotation_property(file),
+        escape_github_annotation_property(&line),
+        escape_github_annotation_property(title),
+        escape_github_annotation_data(body)
+    ))
+}
+
+fn json_scalar_to_string(value: &serde_json::Value) -> Option<String> {
+    match value {
+        serde_json::Value::String(value) => Some(value.clone()),
+        serde_json::Value::Number(value) => Some(value.to_string()),
+        _ => None,
+    }
+}
+
+fn escape_github_annotation_data(value: &str) -> String {
+    value
+        .replace('%', "%25")
+        .replace('\r', "%0D")
+        .replace('\n', "%0A")
+}
+
+fn escape_github_annotation_property(value: &str) -> String {
+    escape_github_annotation_data(value)
+        .replace(':', "%3A")
+        .replace(',', "%2C")
+}
+
 fn check_ripr_review_contract(out_dir: &Path) -> Result<()> {
     let json_path = out_dir.join("comments.json");
     let markdown_path = out_dir.join("comments.md");
@@ -7736,6 +7808,35 @@ mod tests {
 
         restore_env("XTASK_BASE_REF", prev_xtask);
         restore_env("GITHUB_BASE_REF", prev_gh);
+    }
+
+    #[test]
+    fn ripr_github_annotations_escape_properties_and_data() {
+        let json = serde_json::json!({
+            "comments": [{
+                "path": "crates/example/src/lib.rs",
+                "line": 42,
+                "title": "RIPR: review, please",
+                "body": "100% advisory\ncheck propagation"
+            }, {
+                "file": "crates/example/src/main.rs",
+                "line": "7",
+                "message": "fallback body"
+            }, {
+                "path": "missing-line.rs",
+                "body": "ignored"
+            }]
+        });
+
+        let annotations = render_ripr_github_annotations(&json);
+
+        assert_eq!(
+            annotations,
+            vec![
+                "::warning file=crates/example/src/lib.rs,line=42,title=RIPR%3A review%2C please::100%25 advisory%0Acheck propagation".to_string(),
+                "::warning file=crates/example/src/main.rs,line=7,title=RIPR::fallback body".to_string(),
+            ]
+        );
     }
 
     #[test]
