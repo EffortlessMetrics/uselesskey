@@ -372,6 +372,47 @@ mod tests {
     }
 
     #[test]
+    fn negative_variants_are_cached_independently() {
+        let fx = Factory::deterministic(Seed::from_env_value("token-negative-variants").unwrap());
+        let token = fx.token("issuer", TokenSpec::oauth_access_token());
+
+        let expired = token.negative_value(NegativeToken::ExpiredClaims);
+        let bad_issuer = token.negative_value(NegativeToken::BadIssuer);
+        let bad_audience = token.negative_value(NegativeToken::BadAudience);
+
+        assert_eq!(expired, token.negative_value(NegativeToken::ExpiredClaims));
+        assert_eq!(bad_issuer, token.negative_value(NegativeToken::BadIssuer));
+        assert_eq!(
+            bad_audience,
+            token.negative_value(NegativeToken::BadAudience)
+        );
+        assert_ne!(expired, bad_issuer);
+        assert_ne!(expired, bad_audience);
+        assert_ne!(bad_issuer, bad_audience);
+        assert_ne!(expired, token.value());
+    }
+
+    #[test]
+    fn negative_values_are_deterministic_across_factories() {
+        let seed = Seed::from_env_value("token-negative-cross-factory").unwrap();
+        let fx1 = Factory::deterministic(seed);
+        let fx2 =
+            Factory::deterministic(Seed::from_env_value("token-negative-cross-factory").unwrap());
+
+        let t1 = fx1.token("issuer", TokenSpec::oauth_access_token());
+        let t2 = fx2.token("issuer", TokenSpec::oauth_access_token());
+
+        for variant in [
+            NegativeToken::ExpiredClaims,
+            NegativeToken::BadIssuer,
+            NegativeToken::BadAudience,
+            NegativeToken::MismatchedKid,
+        ] {
+            assert_eq!(t1.negative_value(variant), t2.negative_value(variant));
+        }
+    }
+
+    #[test]
     fn debug_does_not_include_token_value() {
         let fx = Factory::random();
         let token = fx.token("debug-label", TokenSpec::api_key());

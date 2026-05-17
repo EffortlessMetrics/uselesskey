@@ -594,6 +594,67 @@ mod tests {
         assert_eq!(payload["exp"], 4_100_000_000u64);
     }
 
+    #[test]
+    fn negative_expired_claims_only_rewrites_expiration() {
+        let value = generate_negative_token(
+            "svc",
+            TokenKind::OAuthAccessToken,
+            Seed::new([38u8; 32]),
+            NegativeToken::ExpiredClaims,
+        );
+        let parts = jwt_parts(&value);
+        let header = decode_object_segment(parts[0]);
+        let payload = decode_object_segment(parts[1]);
+
+        assert_eq!(parts.len(), 3);
+        assert_eq!(header["alg"], "RS256");
+        assert_eq!(header["typ"], "JWT");
+        assert_eq!(payload["sub"], "svc");
+        assert_eq!(payload["iss"], "uselesskey");
+        assert_eq!(payload["aud"], "tests");
+        assert_eq!(payload["exp"], 1u64);
+    }
+
+    #[test]
+    fn negative_bad_issuer_only_rewrites_issuer() {
+        let value = generate_negative_token(
+            "svc",
+            TokenKind::OAuthAccessToken,
+            Seed::new([39u8; 32]),
+            NegativeToken::BadIssuer,
+        );
+        let parts = jwt_parts(&value);
+        let header = decode_object_segment(parts[0]);
+        let payload = decode_object_segment(parts[1]);
+
+        assert_eq!(parts.len(), 3);
+        assert_eq!(header["alg"], "RS256");
+        assert_eq!(payload["iss"], "wrong-issuer");
+        assert_eq!(payload["sub"], "svc");
+        assert_eq!(payload["aud"], "tests");
+        assert_eq!(payload["exp"], 2_000_000_000u64);
+    }
+
+    #[test]
+    fn negative_bad_audience_only_rewrites_audience() {
+        let value = generate_negative_token(
+            "svc",
+            TokenKind::OAuthAccessToken,
+            Seed::new([40u8; 32]),
+            NegativeToken::BadAudience,
+        );
+        let parts = jwt_parts(&value);
+        let header = decode_object_segment(parts[0]);
+        let payload = decode_object_segment(parts[1]);
+
+        assert_eq!(parts.len(), 3);
+        assert_eq!(header["alg"], "RS256");
+        assert_eq!(payload["aud"], "wrong-audience");
+        assert_eq!(payload["iss"], "uselesskey");
+        assert_eq!(payload["sub"], "svc");
+        assert_eq!(payload["exp"], 2_000_000_000u64);
+    }
+
     fn jwt_parts(value: &str) -> Vec<&str> {
         value.split('.').collect()
     }
