@@ -127,14 +127,14 @@ verifier correctness.
 Patch release evidence records the public claim index:
 
 ```bash
-cargo xtask release-evidence --version 0.8.1 --patch --dry-run --summary
+cargo xtask release-evidence --version <PATCH_VERSION> --patch --dry-run --summary
 ```
 
 Minor release evidence records both public claims and contract-pack registry
 state:
 
 ```bash
-cargo xtask release-evidence --version 0.9.0 --dry-run --summary
+cargo xtask release-evidence --version <MINOR_VERSION> --dry-run --summary
 ```
 
 Non-dry release evidence writes these receipts:

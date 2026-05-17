@@ -65,9 +65,12 @@ Before tagging, make sure the release PR has already:
 - prepared the post-release audit checklist in
   [`docs/release/post-release-audit.md`](../release/post-release-audit.md)
 
-For v0.9.0, use
-[`docs/release/evidence-matrix-v0.9.0.md`](../release/evidence-matrix-v0.9.0.md)
-as the release-specific proof map.
+For version-specific proof maps, use the matching release matrix:
+
+- [`docs/release/evidence-matrix-v0.9.1.md`](../release/evidence-matrix-v0.9.1.md)
+  for the v0.9.1 adoption-confidence patch
+- [`docs/release/evidence-matrix-v0.9.0.md`](../release/evidence-matrix-v0.9.0.md)
+  for the v0.9.0 command-backed fixture-platform release
 
 ## Publish
 
