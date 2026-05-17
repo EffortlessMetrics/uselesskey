@@ -368,7 +368,10 @@ mod tests {
 
         let stripe = fx.webhook_stripe("raw", WebhookPayloadSpec::Raw(raw.to_string()));
         assert_eq!(stripe.payload, raw);
-        assert_eq!(stripe.signature_input, format!("{}.{}", stripe.timestamp, raw));
+        assert_eq!(
+            stripe.signature_input,
+            format!("{}.{}", stripe.timestamp, raw)
+        );
         assert!(verify_stripe(
             &stripe.secret,
             raw,
