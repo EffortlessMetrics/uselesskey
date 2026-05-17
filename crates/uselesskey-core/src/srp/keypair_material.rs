@@ -115,6 +115,73 @@ fn kid_from_bytes(bytes: &[u8]) -> String {
     URL_SAFE_NO_PAD.encode(&digest.as_bytes()[..DEFAULT_KID_PREFIX_BYTES])
 }
 
+/// Implement common PKCS#8/SPKI key material accessor methods for keypair wrappers.
+///
+/// The argument must be an expression that evaluates to a
+/// [`Pkcs8SpkiKeyMaterial`] under `self`, such as `inner.material`.
+#[doc(hidden)]
+#[macro_export]
+macro_rules! impl_pkcs8_spki_key_material_accessors {
+    ($first:ident $(.$rest:ident)+) => {
+        /// PKCS#8 DER-encoded private key bytes.
+        pub fn private_key_pkcs8_der(&self) -> &[u8] {
+            self.$first$(.$rest)+.private_key_pkcs8_der()
+        }
+
+        /// PKCS#8 PEM-encoded private key.
+        pub fn private_key_pkcs8_pem(&self) -> &str {
+            self.$first$(.$rest)+.private_key_pkcs8_pem()
+        }
+
+        /// SPKI DER-encoded public key bytes.
+        pub fn public_key_spki_der(&self) -> &[u8] {
+            self.$first$(.$rest)+.public_key_spki_der()
+        }
+
+        /// SPKI PEM-encoded public key.
+        pub fn public_key_spki_pem(&self) -> &str {
+            self.$first$(.$rest)+.public_key_spki_pem()
+        }
+
+        /// Write the PKCS#8 PEM private key to a tempfile and return the handle.
+        pub fn write_private_key_pkcs8_pem(
+            &self,
+        ) -> Result<$crate::sink::TempArtifact, $crate::Error> {
+            self.$first$(.$rest)+.write_private_key_pkcs8_pem()
+        }
+
+        /// Write the SPKI PEM public key to a tempfile and return the handle.
+        pub fn write_public_key_spki_pem(
+            &self,
+        ) -> Result<$crate::sink::TempArtifact, $crate::Error> {
+            self.$first$(.$rest)+.write_public_key_spki_pem()
+        }
+
+        /// Produce a corrupted variant of the PKCS#8 PEM.
+        pub fn private_key_pkcs8_pem_corrupt(
+            &self,
+            how: $crate::negative::CorruptPem,
+        ) -> String {
+            self.$first$(.$rest)+.private_key_pkcs8_pem_corrupt(how)
+        }
+
+        /// Produce a deterministic corrupted PKCS#8 PEM using a variant string.
+        pub fn private_key_pkcs8_pem_corrupt_deterministic(&self, variant: &str) -> String {
+            self.$first$(.$rest)+.private_key_pkcs8_pem_corrupt_deterministic(variant)
+        }
+
+        /// Produce a truncated variant of the PKCS#8 DER.
+        pub fn private_key_pkcs8_der_truncated(&self, len: usize) -> Vec<u8> {
+            self.$first$(.$rest)+.private_key_pkcs8_der_truncated(len)
+        }
+
+        /// Produce a deterministic corrupted PKCS#8 DER using a variant string.
+        pub fn private_key_pkcs8_der_corrupt_deterministic(&self, variant: &str) -> Vec<u8> {
+            self.$first$(.$rest)+.private_key_pkcs8_der_corrupt_deterministic(variant)
+        }
+    };
+}
+
 #[cfg(test)]
 mod tests {
     use super::Pkcs8SpkiKeyMaterial;
