@@ -9,6 +9,11 @@ use alloc::sync::Arc;
 use core::fmt;
 
 #[cfg(feature = "std")]
+use std::collections::BTreeSet;
+#[cfg(feature = "std")]
+use std::sync::{Condvar, Mutex, MutexGuard};
+
+#[cfg(feature = "std")]
 use rand10::TryRng;
 #[cfg(feature = "std")]
 use rand10::rngs::SysRng;
@@ -29,6 +34,52 @@ pub enum Mode {
 struct Inner {
     mode: Mode,
     cache: ArtifactCache,
+    #[cfg(feature = "std")]
+    init_locks: InitLocks,
+}
+
+#[cfg(feature = "std")]
+#[derive(Default)]
+struct InitLocks {
+    active: Mutex<BTreeSet<ArtifactId>>,
+    ready: Condvar,
+}
+
+#[cfg(feature = "std")]
+struct InitGuard<'a> {
+    locks: &'a InitLocks,
+    id: ArtifactId,
+}
+
+#[cfg(feature = "std")]
+impl InitLocks {
+    fn acquire(&self, id: &ArtifactId) -> InitGuard<'_> {
+        let mut active = self.active();
+        while !active.insert(id.clone()) {
+            active = self
+                .ready
+                .wait(active)
+                .unwrap_or_else(|err| err.into_inner());
+        }
+
+        InitGuard {
+            locks: self,
+            id: id.clone(),
+        }
+    }
+
+    fn active(&self) -> MutexGuard<'_, BTreeSet<ArtifactId>> {
+        self.active.lock().unwrap_or_else(|err| err.into_inner())
+    }
+}
+
+#[cfg(feature = "std")]
+impl Drop for InitGuard<'_> {
+    fn drop(&mut self) {
+        let mut active = self.locks.active();
+        active.remove(&self.id);
+        self.locks.ready.notify_all();
+    }
 }
 
 /// A factory for generating and caching test artifacts.
@@ -55,6 +106,8 @@ impl Factory {
             inner: Arc::new(Inner {
                 mode,
                 cache: ArtifactCache::new(),
+                #[cfg(feature = "std")]
+                init_locks: InitLocks::default(),
             }),
         }
     }
@@ -139,6 +192,13 @@ impl Factory {
             return entry;
         }
 
+        #[cfg(feature = "std")]
+        let _init_guard = self.inner.init_locks.acquire(&id);
+
+        if let Some(entry) = self.inner.cache.get_typed::<T>(&id) {
+            return entry;
+        }
+
         let seed = self.seed_for(&id);
         let value = init(seed);
         let arc: Arc<T> = Arc::new(value);
@@ -173,8 +233,9 @@ mod tests {
     use super::{Factory, Mode, random_seed};
     use crate::Seed;
     use std::panic::{AssertUnwindSafe, catch_unwind};
-    use std::sync::Arc;
     use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::{Arc, Barrier};
+    use std::time::Duration;
 
     fn draw_u64(seed: Seed) -> u64 {
         let mut bytes = [0u8; 8];
@@ -226,6 +287,42 @@ mod tests {
     fn random_seed_has_expected_length() {
         let seed = random_seed();
         assert_eq!(seed.bytes().len(), 32);
+    }
+
+    #[test]
+    fn concurrent_same_identity_runs_initializer_once() {
+        use std::thread;
+
+        let fx = Arc::new(Factory::deterministic(Seed::new([9u8; 32])));
+        let starts = Arc::new(Barrier::new(8));
+        let hits = Arc::new(AtomicUsize::new(0));
+
+        let handles: Vec<_> = (0..8)
+            .map(|_| {
+                let fx = Arc::clone(&fx);
+                let starts = Arc::clone(&starts);
+                let hits = Arc::clone(&hits);
+
+                thread::spawn(move || {
+                    starts.wait();
+                    fx.get_or_init("domain:concurrent", "label", b"spec", "good", |_seed| {
+                        hits.fetch_add(1, Ordering::SeqCst);
+                        thread::sleep(Duration::from_millis(25));
+                        77u32
+                    })
+                })
+            })
+            .collect();
+
+        let values: Vec<_> = handles.into_iter().map(|h| h.join().unwrap()).collect();
+
+        assert_eq!(hits.load(Ordering::SeqCst), 1);
+        assert!(values.iter().all(|value| **value == 77));
+        assert!(
+            values
+                .windows(2)
+                .all(|pair| Arc::ptr_eq(&pair[0], &pair[1]))
+        );
     }
 
     #[test]
