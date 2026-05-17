@@ -36,9 +36,9 @@ Pick the job first; the proof machinery is there when you need it.
 | The smallest feature lane for my test | `docs/how-to/start-here.md` |
 | A deterministic webhook verifier pack | `uselesskey bundle --profile webhook --out target/uselesskey-webhook` |
 | TLS or OIDC/JWKS verifier fixtures | `uselesskey profiles` |
-| Proof for a security/platform reviewer | `cargo xtask verification-pack --out target/uselesskey-verification` |
+| Proof for a security/platform reviewer with a repo checkout | `cargo xtask verification-pack --out target/uselesskey-verification` |
 
-CLI contract packs start with:
+Installed CLI users start with:
 
 ```bash
 cargo install uselesskey-cli --version 0.9.1
@@ -54,8 +54,15 @@ uselesskey bundle --profile webhook --out target/uselesskey-webhook
 uselesskey verify-bundle --path target/uselesskey-webhook
 ```
 
-Public claims are command-backed. For reviewer handoff, generate a
-metadata-only proof bundle:
+Rust test authors start with a dependency snippet:
+
+```toml
+[dev-dependencies]
+uselesskey = { version = "0.9.1", features = ["rsa"] }
+```
+
+Reviewer and maintainer proof is repo-local. From a checkout, public claims are
+command-backed and can be packaged as a metadata-only proof bundle:
 
 ```bash
 cargo xtask verification-pack --out target/uselesskey-verification
@@ -176,6 +183,10 @@ uselesskey = { version = "0.9.1", features = ["rsa", "jwk"] }
 [dev-dependencies]
 uselesskey = { version = "0.9.1", features = ["x509"] }
 ```
+
+The following materialization commands are repo-checkout examples. Installed
+CLI users can run the same subcommands as `uselesskey materialize ...` and
+`uselesskey verify ...`.
 
 ```bash
 # Build-time materialization, shape-only common lane
@@ -400,22 +411,22 @@ The `uselesskey-cli` bundle workflow generates a deterministic directory of fixt
 
 ```bash
 # Generate a scanner-safe fixture bundle (default profile)
-cargo run -p uselesskey-cli -- bundle --profile scanner-safe --out target/uselesskey-bundle
+uselesskey bundle --profile scanner-safe --out target/uselesskey-bundle
 
 # Verify the bundle against its recorded manifest and receipts
-cargo run -p uselesskey-cli -- verify-bundle --path target/uselesskey-bundle
+uselesskey verify-bundle --path target/uselesskey-bundle
 
 # Print a human-readable summary without exposing fixture payloads
-cargo run -p uselesskey-cli -- inspect-bundle --path target/uselesskey-bundle
+uselesskey inspect-bundle --path target/uselesskey-bundle
 
 # Render Kubernetes / Vault payloads from the verified bundle
-cargo run -p uselesskey-cli -- export k8s \
+uselesskey export k8s \
     --bundle-dir target/uselesskey-bundle \
     --name uselesskey-fixtures \
     --namespace tests \
     --out target/uselesskey-bundle/secret.yaml
 
-cargo run -p uselesskey-cli -- export vault-kv-json \
+uselesskey export vault-kv-json \
     --bundle-dir target/uselesskey-bundle \
     --out target/uselesskey-bundle/kv-v2.json
 ```
@@ -423,7 +434,7 @@ cargo run -p uselesskey-cli -- export vault-kv-json \
 The `oidc` profile emits an OIDC/JWKS contract pack with valid JWKS and JWT-shape fixtures plus duplicate-`kid`, missing-`kid`, `alg: none`, and bad-audience negatives:
 
 ```bash
-cargo run -p uselesskey-cli -- bundle --profile oidc --out target/uselesskey-oidc
+uselesskey bundle --profile oidc --out target/uselesskey-oidc
 ```
 
 For the reference manifest, receipts, and payload shapes see [`examples/scanner-safe-bundle/README.md`](examples/scanner-safe-bundle/README.md). For OIDC/JWT validator-test recipes see [`docs/how-to/test-oidc-jwks-validation.md`](docs/how-to/test-oidc-jwks-validation.md) and [`docs/how-to/test-jwt-negative-validation.md`](docs/how-to/test-jwt-negative-validation.md).

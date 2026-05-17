@@ -17,7 +17,7 @@ or cryptographic assurance.
 | test TLS verifier behavior | TLS contract pack | `uselesskey bundle --profile tls --out target/uselesskey-tls` |
 | test OIDC/JWKS validator behavior | OIDC/JWKS contract pack | `uselesskey bundle --profile oidc --out target/uselesskey-oidc` |
 | test webhook signature negatives | webhook contract pack | `uselesskey bundle --profile webhook --out target/uselesskey-webhook` |
-| prove public claims for a reviewer | verification pack | `cargo xtask verification-pack --out target/uselesskey-verification` |
+| prove public claims for a reviewer with a repo checkout | verification pack | `cargo xtask verification-pack --out target/uselesskey-verification` |
 
 Install the CLI when you want bundle commands outside this workspace:
 
@@ -27,11 +27,15 @@ uselesskey profiles
 uselesskey bundle --profile webhook --explain
 ```
 
-Inside the workspace, use:
+Inside this workspace, maintainers may run the same CLI subcommands through
+Cargo while changing the CLI itself:
 
 ```bash
 cargo run -p uselesskey-cli -- bundle --profile webhook --out target/uselesskey-webhook
 ```
+
+Reviewer proof and release evidence use `cargo xtask` from a repo checkout.
+They are not required before a new user gets a working fixture.
 
 ## Rust Test Fixtures
 
@@ -94,9 +98,16 @@ For the product-family view, see
 
 ### TLS
 
+Installed CLI:
+
 ```bash
 uselesskey bundle --profile tls --out target/uselesskey-tls
 uselesskey verify-bundle --path target/uselesskey-tls
+```
+
+Repo-checkout proof:
+
+```bash
 cargo xtask claim-proof --claim tls-contract-pack
 ```
 
@@ -106,9 +117,16 @@ trust-store behavior, or downstream verifier correctness.
 
 ### OIDC/JWKS
 
+Installed CLI:
+
 ```bash
 uselesskey bundle --profile oidc --out target/uselesskey-oidc
 uselesskey verify-bundle --path target/uselesskey-oidc
+```
+
+Repo-checkout proof:
+
+```bash
 cargo xtask claim-report --claim oidc-jwks-contract-pack
 ```
 
@@ -117,9 +135,16 @@ not prove provider compatibility, issuer policy, or production token security.
 
 ### Webhook
 
+Installed CLI:
+
 ```bash
 uselesskey bundle --profile webhook --out target/uselesskey-webhook
 uselesskey verify-bundle --path target/uselesskey-webhook
+```
+
+Repo-checkout proof:
+
+```bash
 cargo xtask claim-proof --claim webhook-contract-pack
 ```
 
@@ -130,7 +155,7 @@ completeness, delivery behavior, or transport security.
 
 ## Reviewer Proof
 
-Build a metadata-only review bundle:
+Build a metadata-only review bundle from a repo checkout:
 
 ```bash
 cargo xtask verification-pack --out target/uselesskey-verification

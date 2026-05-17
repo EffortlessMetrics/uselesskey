@@ -28,20 +28,23 @@ uselesskey-core = "0.9.1"
 
 ## Generate the contract pack
 
-Use the bundle profile when you want filesystem fixtures plus receipts
-that a reviewer can inspect:
+Use the installed CLI when you want filesystem fixtures plus receipts that a
+reviewer can inspect:
 
 ```bash
-cargo run -p uselesskey-cli -- bundle \
+uselesskey bundle \
   --profile webhook \
   --out target/webhook-fixtures
 
-cargo run -p uselesskey-cli -- verify-bundle \
+uselesskey verify-bundle \
   --path target/webhook-fixtures
 
-cargo run -p uselesskey-cli -- inspect-bundle \
+uselesskey inspect-bundle \
   --path target/webhook-fixtures
 ```
+
+From a repo checkout while changing the CLI, prefix those subcommands with
+`cargo run -p uselesskey-cli --`.
 
 The contract pack writes:
 
@@ -60,7 +63,7 @@ Each request fixture records `method`, `path`, `timestamp`, `body`,
 `headers`, `expected_result`, `rejection_class`, and
 `verifier_secret`.
 
-For release-grade evidence that the bundle still reproduces:
+Repo-checkout proof that the bundle still reproduces:
 
 ```bash
 cargo xtask bundle-proof --profile webhook --out target/release-evidence/webhook

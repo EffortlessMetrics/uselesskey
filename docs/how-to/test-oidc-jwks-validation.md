@@ -6,16 +6,19 @@ JWKS contract pack with both valid and negative key-set shapes.
 ## Generate the pack
 
 ```bash
-cargo run -p uselesskey-cli -- bundle \
+uselesskey bundle \
   --profile oidc \
   --out target/oidc-fixtures
 
-cargo run -p uselesskey-cli -- verify-bundle \
+uselesskey verify-bundle \
   --path target/oidc-fixtures
 
-cargo run -p uselesskey-cli -- inspect-bundle \
+uselesskey inspect-bundle \
   --path target/oidc-fixtures
 ```
+
+From a repo checkout while changing the CLI, prefix those subcommands with
+`cargo run -p uselesskey-cli --`.
 
 The profile writes:
 
@@ -82,6 +85,8 @@ under `target/` and verify them in CI instead of committing generated payloads.
   adds runtime signing fixtures and adapter-specific assertions.
 
 ## Evidence
+
+Repo-checkout proof:
 
 ```bash
 cargo xtask bundle-proof --profile oidc --out target/release-evidence/oidc

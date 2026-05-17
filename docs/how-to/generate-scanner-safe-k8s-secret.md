@@ -6,16 +6,19 @@ without committing runtime private key material or symmetric secret material.
 ## Generate and verify the bundle
 
 ```bash
-cargo run -p uselesskey-cli -- bundle \
+uselesskey bundle \
   --profile scanner-safe \
   --out target/uselesskey-bundle
 
-cargo run -p uselesskey-cli -- verify-bundle \
+uselesskey verify-bundle \
   --path target/uselesskey-bundle
 
-cargo run -p uselesskey-cli -- inspect-bundle \
+uselesskey inspect-bundle \
   --path target/uselesskey-bundle
 ```
+
+From a repo checkout while changing the CLI, prefix those subcommands with
+`cargo run -p uselesskey-cli --`.
 
 The inspection step prints the profile, artifact count, scanner-safety posture,
 runtime material count, private/symmetric material flags, exports, verification
@@ -24,13 +27,13 @@ status, and receipt kinds. It does not print fixture payloads.
 ## Export Kubernetes and Vault-shaped payloads
 
 ```bash
-cargo run -p uselesskey-cli -- export k8s \
+uselesskey export k8s \
   --bundle-dir target/uselesskey-bundle \
   --name uselesskey-fixtures \
   --namespace tests \
   --out target/uselesskey-bundle/secret.yaml
 
-cargo run -p uselesskey-cli -- export vault-kv-json \
+uselesskey export vault-kv-json \
   --bundle-dir target/uselesskey-bundle \
   --out target/uselesskey-bundle/kv-v2.json
 ```
@@ -67,6 +70,8 @@ symmetric fixture material.
   usable committed secret material.
 
 ## Evidence
+
+Repo-checkout proof:
 
 ```bash
 cargo xtask bundle-proof --profile scanner-safe --out target/release-evidence/scanner-safe

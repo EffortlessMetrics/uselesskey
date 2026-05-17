@@ -64,7 +64,7 @@ commands = [
 
 [[work_item]]
 id = "installed-cli-docs"
-status = "ready"
+status = "done"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0012"
 plan = "plans/v0.10.0-external-adoption/implementation-plan.md"
@@ -76,7 +76,7 @@ commands = [
 
 [[work_item]]
 id = "clean-project-examples"
-status = "planned"
+status = "ready"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0003"
 plan = "plans/v0.10.0-external-adoption/implementation-plan.md"

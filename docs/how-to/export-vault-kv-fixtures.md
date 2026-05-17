@@ -10,16 +10,19 @@ Vault KV-v2 read response uses.
 ## Generate the bundle
 
 ```bash
-cargo run -p uselesskey-cli -- bundle \
+uselesskey bundle \
   --profile scanner-safe \
   --out target/uselesskey-bundle
 
-cargo run -p uselesskey-cli -- verify-bundle \
+uselesskey verify-bundle \
   --path target/uselesskey-bundle
 
-cargo run -p uselesskey-cli -- inspect-bundle \
+uselesskey inspect-bundle \
   --path target/uselesskey-bundle
 ```
+
+From a repo checkout while changing the CLI, prefix those subcommands with
+`cargo run -p uselesskey-cli --`.
 
 `inspect-bundle` prints the profile, artifact count, scanner-safety
 posture, runtime material count, private/symmetric material flags,
@@ -29,7 +32,7 @@ fixture payloads.
 ## Export to Vault KV-v2 JSON
 
 ```bash
-cargo run -p uselesskey-cli -- export vault-kv-json \
+uselesskey export vault-kv-json \
   --bundle-dir target/uselesskey-bundle \
   --out target/uselesskey-bundle/kv-v2.json
 ```
@@ -124,6 +127,8 @@ for the registry-truth analogue: that doc covers the publish-side
 "don't trust local state, regenerate from upstream" pattern.
 
 ## Evidence
+
+Repo-checkout proof:
 
 ```bash
 cargo xtask bundle-proof --profile scanner-safe --out target/release-evidence/scanner-safe

@@ -23,9 +23,17 @@ uselesskey profile webhook --explain
 uselesskey bundle --profile webhook --explain
 ```
 
+Interface split:
+
+- installed CLI users generate, verify, and inspect bundles with `uselesskey`;
+- Rust test authors use crate dependency snippets in the linked how-to docs;
+- reviewers with a repo checkout use `cargo xtask verification-pack`;
+- maintainers use `cargo xtask claim-proof`, `bundle-proof`, and release
+  evidence commands.
+
 ## Quick Index
 
-| Profile | Use when you need | Generate | Proof |
+| Profile | Use when you need | Installed CLI | Repo-checkout proof |
 | --- | --- | --- | --- |
 | `scanner-safe` | scanner-safe baseline fixtures and export receipts | `uselesskey bundle --profile scanner-safe --out target/uselesskey-bundle` | `cargo xtask claim-proof --claim scanner-safe-fixtures` |
 | `tls` | TLS chain and certificate rejection fixtures | `uselesskey bundle --profile tls --out target/uselesskey-tls` | `cargo xtask claim-proof --claim tls-contract-pack` |
@@ -39,20 +47,15 @@ Vault payload files.
 
 ## Scanner-Safe Baseline
 
-Generate:
+Installed CLI:
 
 ```bash
 uselesskey bundle --profile scanner-safe --out target/uselesskey-bundle
-```
-
-Verify:
-
-```bash
 uselesskey verify-bundle --path target/uselesskey-bundle
 uselesskey inspect-bundle --path target/uselesskey-bundle
 ```
 
-Prove:
+Repo-checkout proof:
 
 ```bash
 cargo xtask claim-proof --claim scanner-safe-fixtures
@@ -78,20 +81,15 @@ Docs:
 
 ## TLS
 
-Generate:
+Installed CLI:
 
 ```bash
 uselesskey bundle --profile tls --out target/uselesskey-tls
-```
-
-Verify:
-
-```bash
 uselesskey verify-bundle --path target/uselesskey-tls
 uselesskey inspect-bundle --path target/uselesskey-tls
 ```
 
-Prove:
+Repo-checkout proof:
 
 ```bash
 cargo xtask claim-proof --claim tls-contract-pack
@@ -119,20 +117,15 @@ Docs:
 
 ## OIDC/JWKS
 
-Generate:
+Installed CLI:
 
 ```bash
 uselesskey bundle --profile oidc --out target/uselesskey-oidc
-```
-
-Verify:
-
-```bash
 uselesskey verify-bundle --path target/uselesskey-oidc
 uselesskey inspect-bundle --path target/uselesskey-oidc
 ```
 
-Prove:
+Repo-checkout proof:
 
 ```bash
 cargo xtask bundle-proof --profile oidc --out target/release-evidence/oidc
@@ -159,20 +152,15 @@ Docs:
 
 ## Webhook
 
-Generate:
+Installed CLI:
 
 ```bash
 uselesskey bundle --profile webhook --out target/uselesskey-webhook
-```
-
-Verify:
-
-```bash
 uselesskey verify-bundle --path target/uselesskey-webhook
 uselesskey inspect-bundle --path target/uselesskey-webhook
 ```
 
-Prove:
+Repo-checkout proof:
 
 ```bash
 cargo xtask claim-proof --claim webhook-contract-pack
@@ -201,7 +189,8 @@ Docs:
 
 ## Reviewer Bundle
 
-When a reviewer needs all public-claim receipts in one metadata-only directory:
+When a reviewer needs all public-claim receipts in one metadata-only directory,
+run this from a repo checkout:
 
 ```bash
 cargo xtask verification-pack --out target/uselesskey-verification

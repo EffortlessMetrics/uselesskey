@@ -9,6 +9,11 @@
 Badges are the front panel. The generated evidence, CI receipts, and release
 artifacts remain the source of truth.
 
+This page is repo-checkout proof documentation. Installed CLI users should use
+`uselesskey profiles`, `uselesskey bundle`, `uselesskey verify-bundle`, and
+`uselesskey inspect-bundle` from the task docs first; `cargo xtask` commands
+here are reviewer, maintainer, and release evidence commands.
+
 For the public claim index and local proof path, see
 [`docs/status/PUBLIC_CLAIMS.md`](status/PUBLIC_CLAIMS.md) and
 [`docs/how-to/verify-uselesskey-public-claims.md`](how-to/verify-uselesskey-public-claims.md).

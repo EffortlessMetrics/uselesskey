@@ -12,16 +12,19 @@ from the bundle seed: re-running it produces byte-identical files.
 ## Generate the bundle
 
 ```bash
-cargo run -p uselesskey-cli -- bundle \
+uselesskey bundle \
   --profile tls \
   --out target/tls-fixtures
 
-cargo run -p uselesskey-cli -- verify-bundle \
+uselesskey verify-bundle \
   --path target/tls-fixtures
 
-cargo run -p uselesskey-cli -- inspect-bundle \
+uselesskey inspect-bundle \
   --path target/tls-fixtures
 ```
+
+From a repo checkout while changing the CLI, prefix those subcommands with
+`cargo run -p uselesskey-cli --`.
 
 The profile writes:
 
@@ -149,7 +152,7 @@ behavior; the rejection paths are the verifier's own.
 
 ## Evidence
 
-For release-grade evidence that the bundle still reproduces:
+Repo-checkout proof that the bundle still reproduces:
 
 ```bash
 cargo xtask bundle-proof --profile tls --out target/release-evidence/tls
