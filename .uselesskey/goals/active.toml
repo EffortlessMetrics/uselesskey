@@ -24,7 +24,7 @@ end_state = [
 
 [[work_item]]
 id = "lane-open"
-status = "ready"
+status = "done"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0005"
 plan = "plans/v0.10.0-external-adoption/implementation-plan.md"
@@ -37,9 +37,9 @@ commands = [
 
 [[work_item]]
 id = "external-adoption-smoke-spec"
-status = "planned"
+status = "done"
 proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0006"
+spec = "USELESSKEY-SPEC-0013"
 plan = "plans/v0.10.0-external-adoption/implementation-plan.md"
 commands = [
   "cargo xtask spec-check --strict",
@@ -50,9 +50,9 @@ commands = [
 
 [[work_item]]
 id = "external-adoption-smoke"
-status = "planned"
+status = "ready"
 proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0006"
+spec = "USELESSKEY-SPEC-0013"
 plan = "plans/v0.10.0-external-adoption/implementation-plan.md"
 commands = [
   "cargo test -p xtask external_adoption_smoke",
@@ -118,7 +118,7 @@ commands = [
 id = "adoption-regression-external-mode"
 status = "planned"
 proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0006"
+spec = "USELESSKEY-SPEC-0013"
 plan = "plans/v0.10.0-external-adoption/implementation-plan.md"
 commands = [
   "cargo test -p xtask adoption_regression",
