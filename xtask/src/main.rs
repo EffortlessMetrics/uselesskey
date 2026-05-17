@@ -134,6 +134,8 @@ enum Cmd {
         #[arg(long)]
         check: bool,
     },
+    /// Emit non-blocking GitHub Actions annotations from ripr review guidance.
+    RiprAnnotations,
     /// Generate the stable PR evidence summary from machine-readable PR artifacts.
     RiprPrSummary {
         /// Verify the generated PR evidence summary instead of writing it.
@@ -582,6 +584,7 @@ fn main() -> Result<()> {
         Cmd::Doctor { format } => doctor::run(&workspace_root_path(), format.into()),
         Cmd::RiprPr { check } => ripr_pr(check),
         Cmd::RiprReviewComments { check } => ripr_review_comments(check),
+        Cmd::RiprAnnotations => ripr_annotations(),
         Cmd::RiprPrSummary { check } => ripr_pr_summary(check),
         Cmd::TestEfficiencyReport => test_efficiency::test_efficiency_report_cmd(),
         Cmd::MutantsPr {
@@ -5719,6 +5722,76 @@ fn ripr_review_comments(check: bool) -> Result<()> {
     Ok(())
 }
 
+fn ripr_annotations() -> Result<()> {
+    let comments_path = workspace_root_path()
+        .join(RIPR_REVIEW_DIR)
+        .join("comments.json");
+    if !comments_path.exists() {
+        return Ok(());
+    }
+
+    let json: serde_json::Value = read_json_file(&comments_path)?;
+    for annotation in ripr_review_annotations(&json) {
+        println!("{annotation}");
+    }
+    Ok(())
+}
+
+fn ripr_review_annotations(json: &serde_json::Value) -> Vec<String> {
+    json.get("comments")
+        .and_then(serde_json::Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(ripr_review_annotation)
+        .collect()
+}
+
+fn ripr_review_annotation(item: &serde_json::Value) -> Option<String> {
+    let file = item
+        .get("path")
+        .or_else(|| item.get("file"))
+        .and_then(serde_json::Value::as_str)?;
+    let line = item.get("line").and_then(github_annotation_line)?;
+    let title = item
+        .get("title")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("RIPR");
+    let body = item
+        .get("body")
+        .or_else(|| item.get("message"))
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("");
+
+    Some(format!(
+        "::warning file={},line={},title={}::{}",
+        escape_github_annotation_property(file),
+        escape_github_annotation_property(&line),
+        escape_github_annotation_property(title),
+        escape_github_annotation_data(body)
+    ))
+}
+
+fn github_annotation_line(line: &serde_json::Value) -> Option<String> {
+    match line {
+        serde_json::Value::Number(number) => Some(number.to_string()).filter(|line| line != "0"),
+        serde_json::Value::String(line) => Some(line.clone()).filter(|line| !line.is_empty()),
+        _ => None,
+    }
+}
+
+fn escape_github_annotation_data(value: &str) -> String {
+    value
+        .replace('%', "%25")
+        .replace('\r', "%0D")
+        .replace('\n', "%0A")
+}
+
+fn escape_github_annotation_property(value: &str) -> String {
+    escape_github_annotation_data(value)
+        .replace(':', "%3A")
+        .replace(',', "%2C")
+}
+
 fn check_ripr_review_contract(out_dir: &Path) -> Result<()> {
     let json_path = out_dir.join("comments.json");
     let markdown_path = out_dir.join("comments.md");
@@ -10577,6 +10650,41 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
         assert!(markdown.contains("- Severe gap routed: `yes`"));
         assert!(markdown.contains("- Routing reason: `no-static-path`"));
         assert!(markdown.contains("Run cargo xtask mutants-pr --crate uselesskey-x509"));
+    }
+
+    #[test]
+    fn ripr_review_annotations_escape_github_command_data() {
+        let json = serde_json::json!({
+            "comments": [
+                {
+                    "path": "crates/uselesskey-core/src/lib.rs",
+                    "line": 42,
+                    "title": "RIPR: review, guidance",
+                    "body": "100% useful\nnext line"
+                },
+                {
+                    "file": "docs/spec.md",
+                    "line": "7",
+                    "message": "fallback message"
+                },
+                {
+                    "path": "missing-line.rs",
+                    "body": "not line-placeable"
+                }
+            ]
+        });
+
+        let annotations = ripr_review_annotations(&json);
+
+        assert_eq!(annotations.len(), 2);
+        assert_eq!(
+            annotations[0],
+            "::warning file=crates/uselesskey-core/src/lib.rs,line=42,title=RIPR%3A review%2C guidance::100%25 useful%0Anext line"
+        );
+        assert_eq!(
+            annotations[1],
+            "::warning file=docs/spec.md,line=7,title=RIPR::fallback message"
+        );
     }
 
     #[test]
