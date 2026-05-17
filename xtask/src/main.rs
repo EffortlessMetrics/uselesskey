@@ -24,6 +24,7 @@ mod contract_packs;
 mod docs_sync;
 mod doctor;
 mod economics;
+mod external_adoption_smoke;
 mod plan;
 mod policy;
 mod pr_bundles;
@@ -108,6 +109,18 @@ enum Cmd {
         /// Output format.
         #[arg(long, value_enum, default_value = "human")]
         format: AdoptionRegressionFormat,
+    },
+    /// Prove clean-project external adoption paths and write receipts.
+    ExternalAdoptionSmoke {
+        /// Use a local workspace or crate path. Pass "." for the current checkout.
+        #[arg(long, conflicts_with = "version")]
+        path: Option<PathBuf>,
+        /// Use a published crates.io version as audit/reference evidence.
+        #[arg(long, conflicts_with = "path")]
+        version: Option<String>,
+        /// Output format.
+        #[arg(long, value_enum, default_value = "human")]
+        format: ExternalAdoptionSmokeFormat,
     },
     /// Run publish dry-runs for crates in dependency order.
     PublishCheck,
@@ -519,6 +532,12 @@ enum AdoptionRegressionFormat {
     Json,
 }
 
+#[derive(Clone, Debug, ValueEnum)]
+enum ExternalAdoptionSmokeFormat {
+    Human,
+    Json,
+}
+
 impl From<SpecCheckFormat> for spec_check::OutputFormat {
     fn from(value: SpecCheckFormat) -> Self {
         match value {
@@ -564,6 +583,15 @@ impl From<AdoptionRegressionFormat> for adoption_regression::OutputFormat {
     }
 }
 
+impl From<ExternalAdoptionSmokeFormat> for external_adoption_smoke::OutputFormat {
+    fn from(value: ExternalAdoptionSmokeFormat) -> Self {
+        match value {
+            ExternalAdoptionSmokeFormat::Human => external_adoption_smoke::OutputFormat::Human,
+            ExternalAdoptionSmokeFormat::Json => external_adoption_smoke::OutputFormat::Json,
+        }
+    }
+}
+
 impl MutationNightlyScope {
     fn as_str(self) -> &'static str {
         match self {
@@ -601,6 +629,18 @@ fn main() -> Result<()> {
         Cmd::AdoptionRegression { format } => {
             adoption_regression::run(&workspace_root_path(), format.into())
         }
+        Cmd::ExternalAdoptionSmoke {
+            path,
+            version,
+            format,
+        } => external_adoption_smoke::run(
+            &workspace_root_path(),
+            external_adoption_smoke::RunOptions {
+                path,
+                version,
+                format: format.into(),
+            },
+        ),
         Cmd::PublishCheck => publish_check(),
         Cmd::Pr { with_mutants } => pr(with_mutants),
         Cmd::PrLite { format } => pr_lite(format),
@@ -10438,6 +10478,83 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
             } => assert!(skip_install_cli),
             _ => panic!("expected Cmd::CratesioSmoke"),
         }
+    }
+
+    #[test]
+    fn external_adoption_smoke_clap_validation() {
+        let parsed = Cli::try_parse_from(["xtask", "external-adoption-smoke"]);
+        assert!(
+            parsed.is_ok(),
+            "bare external-adoption-smoke should parse; runtime guard rejects missing source"
+        );
+        match parsed.unwrap().cmd {
+            Cmd::ExternalAdoptionSmoke {
+                path,
+                version,
+                format,
+            } => {
+                assert!(path.is_none(), "path should default to None");
+                assert!(version.is_none(), "version should default to None");
+                assert!(matches!(format, ExternalAdoptionSmokeFormat::Human));
+                let err = external_adoption_smoke::run(
+                    Path::new("."),
+                    external_adoption_smoke::RunOptions {
+                        path,
+                        version,
+                        format: format.into(),
+                    },
+                )
+                .expect_err("external-adoption-smoke without --path or --version must error");
+                let msg = err.to_string();
+                assert!(
+                    msg.contains("--path") && msg.contains("--version"),
+                    "error must mention both --path and --version: {msg}"
+                );
+            }
+            _ => panic!("expected Cmd::ExternalAdoptionSmoke"),
+        }
+
+        let conflict = Cli::try_parse_from([
+            "xtask",
+            "external-adoption-smoke",
+            "--path",
+            ".",
+            "--version",
+            "0.9.1",
+        ]);
+        assert!(
+            conflict.is_err(),
+            "clap must reject --path + --version together"
+        );
+
+        let ok_path =
+            Cli::try_parse_from(["xtask", "external-adoption-smoke", "--path", "."]).unwrap();
+        assert!(matches!(
+            ok_path.cmd,
+            Cmd::ExternalAdoptionSmoke {
+                path: Some(_),
+                version: None,
+                ..
+            }
+        ));
+
+        let ok_version = Cli::try_parse_from([
+            "xtask",
+            "external-adoption-smoke",
+            "--version",
+            "0.9.1",
+            "--format",
+            "json",
+        ])
+        .unwrap();
+        assert!(matches!(
+            ok_version.cmd,
+            Cmd::ExternalAdoptionSmoke {
+                path: None,
+                version: Some(_),
+                format: ExternalAdoptionSmokeFormat::Json,
+            }
+        ));
     }
 
     #[test]
