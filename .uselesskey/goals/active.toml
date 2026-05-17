@@ -1,97 +1,144 @@
-id = "uselesskey-v0.9.1-release"
-title = "Prepare and cut v0.9.1"
-status = "archived"
+id = "uselesskey-v0.10.0-external-adoption"
+title = "v0.10.0 external adoption and installed-user workflows"
+status = "active"
 owner = "EffortlessMetrics"
 created = "2026-05-17"
 
 objective = """
-Ship v0.9.1 as a narrow adoption-confidence patch. The release publishes the
-scanner-safe runtime JWK/JWKS metadata correction, adoption-regression receipts,
-fixture-confidence coverage, no-panic new-debt restoration, and current
-copyable how-to snippets without changing the product promise.
+Make uselesskey useful from outside the repo. A user should be able to install
+the CLI or add the crate to a clean project, copy documented snippets, generate
+scanner-safe/TLS/OIDC/webhook fixtures, inspect or verify bundles, and
+understand the proof boundary without learning xtask or release machinery.
 """
 
 end_state = [
-  "CHANGELOG.md describes v0.9.1 as a bounded adoption-confidence patch.",
-  "docs/release/evidence-matrix-v0.9.1.md maps the patch release story to proof commands.",
-  "Patch release evidence passes for version 0.9.1.",
-  "v0.9.1 is published through cargo xtask publish, not shipper.",
-  "Post-release audit records GitHub, crates.io, docs.rs, adoption-regression, claim-proof, verification-pack, and bundle-proof state honestly.",
-  "The release lane is archived with closeout and learning records before the next product lane starts.",
+  "Clean-project external adoption smoke exists for local path mode and writes Markdown/JSON receipts.",
+  "Published-version external adoption smoke is available as an audit/reference mode, not a release trigger.",
+  "Installed CLI user docs are clearly separated from repo-local proof and maintainer docs.",
+  "Clean-project examples cover webhook, OIDC/JWKS, TLS, and Rust test fixture adoption paths.",
+  "CLI profile, bundle explain, and inspect output make generated files, scanner-safety, runtime material, proof path, and boundaries clear.",
+  "The installed proof handoff boundary is decided before adding any executable proof command.",
+  "Any external adoption proof remains metadata-aware and does not create provider compatibility or production security claims.",
+  "The lane closes without a version bump, tag, publish, new badge, or new contract pack.",
 ]
 
 [[work_item]]
-id = "release-notes-evidence-matrix"
-status = "done"
+id = "lane-open"
+status = "ready"
 proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0006"
-plan = "plans/v0.9.1-release/implementation-plan.md"
+spec = "USELESSKEY-SPEC-0005"
+plan = "plans/v0.10.0-external-adoption/implementation-plan.md"
 commands = [
   "cargo xtask spec-check --strict",
-  "cargo xtask claim-report --check-public-claims",
-  "cargo xtask contract-packs --check",
   "cargo xtask docs-sync --check",
   "cargo xtask typos",
   "git diff --check",
 ]
 
 [[work_item]]
-id = "release-candidate-proof"
-status = "done"
+id = "external-adoption-smoke-spec"
+status = "planned"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0006"
-plan = "plans/v0.9.1-release/implementation-plan.md"
+plan = "plans/v0.10.0-external-adoption/implementation-plan.md"
 commands = [
-  "cargo xtask release-evidence --version 0.9.1 --patch --dry-run --summary",
-  "cargo xtask adoption-regression",
-  "cargo xtask adoption-regression --format json",
-  "cargo xtask claim-proof --all-stable",
-  "cargo xtask user-path-smoke",
-  "cargo xtask check-no-panic-family",
-  "cargo xtask claim-report --check-public-claims",
-  "cargo xtask contract-packs --check",
-  "cargo +nightly xtask pr-lite",
-  "cargo xtask pr",
-  "git diff --check",
-]
-
-[[work_item]]
-id = "cut-v0.9.1"
-status = "done"
-proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0006"
-plan = "plans/v0.9.1-release/implementation-plan.md"
-commands = [
-  "cargo xtask release-evidence --version 0.9.1 --patch --dry-run --summary",
-  "cargo xtask publish-preflight",
-  "cargo xtask publish-check",
-  "cargo xtask no-blob",
-  "cargo xtask check-no-panic-family",
-  "cargo xtask badges --check",
+  "cargo xtask spec-check --strict",
   "cargo xtask docs-sync --check",
-  "cargo xtask pr",
+  "cargo xtask typos",
   "git diff --check",
-  "cargo xtask publish",
 ]
 
 [[work_item]]
-id = "post-release-audit"
-status = "done"
+id = "external-adoption-smoke"
+status = "planned"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0006"
-plan = "plans/v0.9.1-release/implementation-plan.md"
+plan = "plans/v0.10.0-external-adoption/implementation-plan.md"
 commands = [
-  "cargo xtask cratesio-smoke --version 0.9.1",
+  "cargo test -p xtask external_adoption_smoke",
+  "cargo xtask external-adoption-smoke --path .",
+  "cargo xtask external-adoption-smoke --path . --format json",
+  "cargo xtask pr-lite",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "installed-cli-docs"
+status = "planned"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0012"
+plan = "plans/v0.10.0-external-adoption/implementation-plan.md"
+commands = [
+  "cargo xtask docs-sync --check",
+  "cargo xtask typos",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "clean-project-examples"
+status = "planned"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0003"
+plan = "plans/v0.10.0-external-adoption/implementation-plan.md"
+commands = [
+  "cargo xtask external-adoption-smoke --path .",
+  "cargo xtask docs-sync --check",
+  "cargo xtask typos",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "cli-explain-inspect-polish"
+status = "planned"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0012"
+plan = "plans/v0.10.0-external-adoption/implementation-plan.md"
+commands = [
+  "cargo test -p uselesskey-cli --all-features profile",
+  "cargo xtask external-adoption-smoke --path .",
+  "cargo xtask pr-lite",
+  "cargo xtask pr",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "proof-handoff-boundary"
+status = "planned"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0012"
+plan = "plans/v0.10.0-external-adoption/implementation-plan.md"
+commands = [
+  "cargo xtask spec-check --strict",
+  "cargo xtask docs-sync --check",
+  "cargo xtask typos",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "adoption-regression-external-mode"
+status = "planned"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0006"
+plan = "plans/v0.10.0-external-adoption/implementation-plan.md"
+commands = [
+  "cargo test -p xtask adoption_regression",
   "cargo xtask adoption-regression",
-  "cargo xtask claim-proof --all-stable",
-  "cargo xtask verification-pack --out target/uselesskey-verification",
-  "cargo xtask bundle-proof --profile tls --out target/release-evidence/tls",
-  "cargo xtask bundle-proof --profile oidc --out target/release-evidence/oidc",
-  "cargo xtask bundle-proof --profile webhook --out target/release-evidence/webhook",
-  "cargo xtask no-blob",
-  "cargo xtask check-no-panic-family",
-  "cargo xtask public-surface",
-  "cargo xtask publish-check",
-  "cargo xtask badges --check",
+  "cargo xtask adoption-regression --external",
+  "cargo xtask pr-lite",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "lane-closeout"
+status = "planned"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0005"
+plan = "plans/v0.10.0-external-adoption/implementation-plan.md"
+commands = [
+  "cargo xtask external-adoption-smoke --path .",
+  "cargo xtask adoption-regression",
+  "cargo xtask docs-sync --check",
+  "cargo xtask pr-lite",
+  "cargo xtask pr",
   "git diff --check",
 ]
