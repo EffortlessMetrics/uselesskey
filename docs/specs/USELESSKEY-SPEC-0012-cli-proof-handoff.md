@@ -105,6 +105,17 @@ updated.
   until the proof engine has a safe reusable surface.
 - Reviewer evidence remains metadata-only.
 
+## Current v0.10.0 Buildout Decision
+
+The v0.10.0 external-adoption buildout chooses the explanatory handoff path.
+The installed CLI may generate, verify, inspect, and explain bundles, but it
+does not add `uselesskey prove`.
+
+The durable explanation is
+[`docs/explanation/cli-proof-handoff-boundary.md`](../explanation/cli-proof-handoff-boundary.md).
+Executable claim proof remains in repo-local `cargo xtask claim-proof` and
+metadata-only reviewer bundles remain in `cargo xtask verification-pack`.
+
 ## Acceptance Examples
 
 Acceptable:

@@ -198,6 +198,9 @@ Do not mix these into this lane:
 7. `docs(design): decide installed proof handoff boundary`
    - Decide whether proof remains repo-local or gets a safe installed CLI
      handoff.
+   - Current lane decision: proof execution remains repo-local for v0.10.0
+     buildout. The installed CLI provides proof discovery and bundle
+     inspection, not an executable `prove` command.
    - If the lane chooses an installed command, the target shape is:
 
      ```bash
