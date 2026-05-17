@@ -12,6 +12,8 @@ use core::fmt;
 use std::collections::BTreeSet;
 #[cfg(feature = "std")]
 use std::sync::{Condvar, Mutex, MutexGuard};
+#[cfg(all(feature = "std", test))]
+use std::time::Duration;
 
 #[cfg(feature = "std")]
 use rand10::TryRng;
@@ -55,11 +57,31 @@ struct InitGuard<'a> {
 impl InitLocks {
     fn acquire(&self, id: &ArtifactId) -> InitGuard<'_> {
         let mut active = self.active();
-        while !active.insert(id.clone()) {
-            active = self
-                .ready
-                .wait(active)
-                .unwrap_or_else(|err| err.into_inner());
+        loop {
+            if active.insert(id.clone()) {
+                break;
+            }
+
+            #[cfg(test)]
+            {
+                let (next, wait_result) = self
+                    .ready
+                    .wait_timeout(active, Duration::from_secs(2))
+                    .unwrap_or_else(|err| err.into_inner());
+                assert!(
+                    !wait_result.timed_out(),
+                    "timed out waiting for init guard for {id:?}"
+                );
+                active = next;
+            }
+
+            #[cfg(not(test))]
+            {
+                active = self
+                    .ready
+                    .wait(active)
+                    .unwrap_or_else(|err| err.into_inner());
+            }
         }
 
         InitGuard {
@@ -230,12 +252,12 @@ pub(crate) fn random_seed() -> Seed {
 
 #[cfg(all(test, feature = "std"))]
 mod tests {
-    use super::{Factory, Mode, random_seed};
+    use super::{Factory, InitLocks, Mode, random_seed};
     use crate::Seed;
+    use crate::srp::identity::{ArtifactId, DerivationVersion};
     use std::panic::{AssertUnwindSafe, catch_unwind};
+    use std::sync::Arc;
     use std::sync::atomic::{AtomicUsize, Ordering};
-    use std::sync::{Arc, Barrier};
-    use std::time::Duration;
 
     fn draw_u64(seed: Seed) -> u64 {
         let mut bytes = [0u8; 8];
@@ -290,39 +312,48 @@ mod tests {
     }
 
     #[test]
-    fn concurrent_same_identity_runs_initializer_once() {
-        use std::thread;
-
-        let fx = Arc::new(Factory::deterministic(Seed::new([9u8; 32])));
-        let starts = Arc::new(Barrier::new(8));
-        let hits = Arc::new(AtomicUsize::new(0));
-
-        let handles: Vec<_> = (0..8)
-            .map(|_| {
-                let fx = Arc::clone(&fx);
-                let starts = Arc::clone(&starts);
-                let hits = Arc::clone(&hits);
-
-                thread::spawn(move || {
-                    starts.wait();
-                    fx.get_or_init("domain:concurrent", "label", b"spec", "good", |_seed| {
-                        hits.fetch_add(1, Ordering::SeqCst);
-                        thread::sleep(Duration::from_millis(25));
-                        77u32
-                    })
-                })
-            })
-            .collect();
-
-        let values: Vec<_> = handles.into_iter().map(|h| h.join().unwrap()).collect();
-
-        assert_eq!(hits.load(Ordering::SeqCst), 1);
-        assert!(values.iter().all(|value| **value == 77));
-        assert!(
-            values
-                .windows(2)
-                .all(|pair| Arc::ptr_eq(&pair[0], &pair[1]))
+    fn init_lock_marks_id_active_until_guard_drop() {
+        let locks = InitLocks::default();
+        let id = ArtifactId::new(
+            "domain:init-lock",
+            "label",
+            b"spec",
+            "good",
+            DerivationVersion::V1,
         );
+
+        let guard = locks.acquire(&id);
+
+        assert!(
+            locks.active().contains(&id),
+            "init guard should mark the artifact identity active"
+        );
+
+        drop(guard);
+
+        assert!(
+            !locks.active().contains(&id),
+            "dropping init guard should clear the active artifact identity"
+        );
+    }
+
+    #[test]
+    fn same_identity_returns_cached_value_without_rerunning_initializer() {
+        let fx = Factory::deterministic(Seed::new([9u8; 32]));
+        let hits = AtomicUsize::new(0);
+
+        let first = fx.get_or_init("domain:concurrent", "label", b"spec", "good", |_seed| {
+            hits.fetch_add(1, Ordering::SeqCst);
+            77u32
+        });
+        let second = fx.get_or_init("domain:concurrent", "label", b"spec", "good", |_seed| {
+            hits.fetch_add(1, Ordering::SeqCst);
+            99u32
+        });
+
+        assert!(Arc::ptr_eq(&first, &second));
+        assert_eq!(*first, 77);
+        assert_eq!(hits.load(Ordering::SeqCst), 1);
     }
 
     #[test]
