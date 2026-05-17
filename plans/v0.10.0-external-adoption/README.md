@@ -10,3 +10,4 @@ clean project and installed CLI, not to prepare or cut a release.
 ## Plan Files
 
 - [implementation-plan.md](implementation-plan.md) - PR sequence, proof commands, non-goals, and stop conditions
+- [closeout.md](closeout.md) - Implemented surface, proof, boundaries, and next release-prep handoff

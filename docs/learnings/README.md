@@ -28,3 +28,4 @@ include:
 - [2026-05-first-run-ux.md](2026-05-first-run-ux.md) - first-run UX works when proof rails stay behind task routing
 - [2026-05-adoption-confidence.md](2026-05-adoption-confidence.md) - easy fixture paths need confidence receipts
 - [2026-05-v0.9.1-release.md](2026-05-v0.9.1-release.md) - patch releases earn trust by publishing corrected proof surfaces
+- [2026-05-v0.10.0-external-adoption.md](2026-05-v0.10.0-external-adoption.md) - external adoption needs clean-project proof
