@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-05-17
+
+v0.9.1 is an adoption-confidence patch. It publishes the runtime scanner-safe
+metadata correction for public asymmetric JWK/JWKS outputs, adds
+adoption-regression receipts for copied user paths, and carries fixture and
+adapter confidence coverage that makes v0.9.0's first-run path safer to trust.
+
+This release does not add product claims, profiles, contract packs, README
+badges, provider compatibility promises, or production security assurances.
+
+### Added
+
+- Added `cargo xtask adoption-regression` with Markdown and JSON receipts for
+  copied user-path confidence across user-path smoke, runtime scanner-safe
+  matrix, webhook profile tests, TLS/OIDC bundle proofs, and no-blob checks.
+- Added fixture and adapter confidence coverage for scanner-safe metadata,
+  negative variants, deterministic identity pins, debug/redaction-sensitive
+  output, and copied contract-pack paths.
+
+### Changed
+
+- Refreshed first-run and how-to snippets so current copyable examples point at
+  the v0.9 release line.
+
+### Fixed
+
+- Corrected runtime bundle metadata so public asymmetric RSA/ECDSA/Ed25519
+  JWK/JWKS artifacts are scanner-safe while secret-bearing HMAC, token, and
+  private key outputs remain outside that claim.
+- Restored the no-panic-family new-debt posture after the adoption-confidence
+  coverage and X.509 refactor work.
+
 ## [0.9.0] - 2026-05-14
 
 v0.9.0 is the command-backed fixture-platform release. It turns public

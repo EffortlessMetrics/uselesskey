@@ -1,92 +1,94 @@
-id = "uselesskey-adoption-confidence"
-title = "Adoption correctness and fixture confidence"
-status = "archived"
+id = "uselesskey-v0.9.1-release"
+title = "Prepare and cut v0.9.1"
+status = "active"
 owner = "EffortlessMetrics"
-created = "2026-05-16"
+created = "2026-05-17"
 
 objective = """
-Make the copied user paths correct, well-covered, scanner-safe where claimed,
-and hard to overclaim. Users should be able to generate fixtures, inspect
-manifest/audit metadata, trust scanner-safe labels, run proof, and avoid
-committing generated payloads.
+Ship v0.9.1 as a narrow adoption-confidence patch. The release publishes the
+scanner-safe runtime JWK/JWKS metadata correction, adoption-regression receipts,
+fixture-confidence coverage, no-panic new-debt restoration, and current
+copyable how-to snippets without changing the product promise.
 """
 
 end_state = [
-  "Runtime public JWK/JWKS scanner-safe metadata matches material sensitivity.",
-  "Main fixture families have confidence coverage for deterministic identity, negative variants, public JWK/JWKS shape, or redaction-sensitive behavior where relevant.",
-  "Adapter and contract-pack paths have user-visible confidence coverage.",
-  "cargo xtask adoption-regression summarizes copied user-path correctness.",
-  "cargo xtask check-no-panic-family reports 0 new debt.",
-  "Broad generated refactor drafts are closed or parked outside this lane.",
-  "v0.9.1 patch scope is defined if the scanner-safe fix should be published before the next product lane.",
+  "CHANGELOG.md describes v0.9.1 as a bounded adoption-confidence patch.",
+  "docs/release/evidence-matrix-v0.9.1.md maps the patch release story to proof commands.",
+  "Patch release evidence passes for version 0.9.1.",
+  "v0.9.1 is published through cargo xtask publish, not shipper.",
+  "Post-release audit records GitHub, crates.io, docs.rs, adoption-regression, claim-proof, verification-pack, and bundle-proof state honestly.",
+  "The release lane is archived with closeout and learning records before the next product lane starts.",
 ]
 
 [[work_item]]
-id = "scanner-safe-runtime-metadata"
-status = "done"
-proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0002"
-plan = "plans/adoption-confidence/closeout.md"
-commands = [
-  "cargo test -p uselesskey-cli --all-features",
-  "cargo xtask no-blob",
-  "cargo xtask user-path-smoke",
-  "cargo xtask pr-lite",
-  "cargo xtask pr",
-]
-
-[[work_item]]
-id = "fixture-confidence-matrix"
-status = "done"
-proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0003"
-plan = "plans/adoption-confidence/closeout.md"
-commands = [
-  "cargo test -p uselesskey-token --all-features",
-  "cargo test -p uselesskey-rsa --all-features",
-  "cargo test -p uselesskey-ecdsa --all-features",
-  "cargo test -p uselesskey-pgp",
-  "cargo test -p uselesskey-x509",
-  "cargo xtask check-no-panic-family",
-]
-
-[[work_item]]
-id = "adapter-confidence"
-status = "done"
-proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0003"
-plan = "plans/adoption-confidence/closeout.md"
-commands = [
-  "cargo test -p uselesskey-jsonwebtoken --all-features",
-  "cargo test -p uselesskey-rustls --all-features",
-  "cargo xtask pr-lite",
-]
-
-[[work_item]]
-id = "adoption-regression"
+id = "release-notes-evidence-matrix"
 status = "done"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0006"
-plan = "plans/adoption-confidence/closeout.md"
+plan = "plans/v0.9.1-release/implementation-plan.md"
 commands = [
-  "cargo xtask adoption-regression",
-  "cargo xtask adoption-regression --format json",
-]
-
-[[work_item]]
-id = "lane-closeout"
-status = "done"
-proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0005"
-plan = "plans/adoption-confidence/closeout.md"
-commands = [
-  "cargo xtask adoption-regression",
-  "cargo xtask adoption-regression --format json",
-  "cargo xtask check-no-panic-family",
+  "cargo xtask spec-check --strict",
   "cargo xtask claim-report --check-public-claims",
   "cargo xtask contract-packs --check",
   "cargo xtask docs-sync --check",
+  "cargo xtask typos",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "release-candidate-proof"
+status = "ready"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0006"
+plan = "plans/v0.9.1-release/implementation-plan.md"
+commands = [
+  "cargo xtask release-evidence --version 0.9.1 --patch --dry-run --summary",
+  "cargo xtask adoption-regression",
+  "cargo xtask adoption-regression --format json",
+  "cargo xtask claim-proof --all-stable",
+  "cargo xtask user-path-smoke",
+  "cargo xtask check-no-panic-family",
+  "cargo xtask claim-report --check-public-claims",
+  "cargo xtask contract-packs --check",
   "cargo +nightly xtask pr-lite",
   "cargo xtask pr",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "cut-v0.9.1"
+status = "planned"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0006"
+plan = "plans/v0.9.1-release/implementation-plan.md"
+commands = [
+  "cargo xtask release-evidence --version 0.9.1 --patch --dry-run --summary",
+  "cargo xtask publish-preflight",
+  "cargo xtask publish-check",
+  "cargo xtask no-blob",
+  "cargo xtask check-no-panic-family",
+  "cargo xtask badges --check",
+  "cargo xtask docs-sync --check",
+  "cargo xtask pr",
+  "git diff --check",
+  "cargo xtask publish",
+]
+
+[[work_item]]
+id = "post-release-audit"
+status = "planned"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0006"
+plan = "plans/v0.9.1-release/implementation-plan.md"
+commands = [
+  "cargo xtask cratesio-smoke --version 0.9.1",
+  "cargo xtask adoption-regression",
+  "cargo xtask claim-proof --all-stable",
+  "cargo xtask verification-pack --out target/uselesskey-verification",
+  "cargo xtask bundle-proof --profile tls --out target/release-evidence/tls",
+  "cargo xtask bundle-proof --profile oidc --out target/release-evidence/oidc",
+  "cargo xtask bundle-proof --profile webhook --out target/release-evidence/webhook",
+  "cargo xtask no-blob",
+  "cargo xtask check-no-panic-family",
   "git diff --check",
 ]

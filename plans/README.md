@@ -15,6 +15,7 @@ Plans do not define product truth. Link to proposals for why and specs for what.
 - [v0.9.0-release](v0.9.0-release/README.md) - v0.9.0 release preparation, proof, publish, and audit
 - [first-run-ux](first-run-ux/README.md) - First-run task routing and contract-pack adoption UX
 - [adoption-confidence](adoption-confidence/README.md) - Copied user-path correctness, fixture confidence, and adoption-regression closeout
+- [v0.9.1-release](v0.9.1-release/README.md) - v0.9.1 adoption-confidence patch release
 
 ## Templates
 
