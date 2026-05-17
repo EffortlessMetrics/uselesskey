@@ -594,6 +594,85 @@ mod tests {
         assert_eq!(payload["exp"], 4_100_000_000u64);
     }
 
+    #[test]
+    fn negative_expired_claims_only_replaces_expiration() {
+        let seed = Seed::new([38u8; 32]);
+        let original = generate_oauth_access_token("svc", seed);
+        let value = generate_negative_token(
+            "svc",
+            TokenKind::OAuthAccessToken,
+            seed,
+            NegativeToken::ExpiredClaims,
+        );
+        let original_parts = jwt_parts(&original);
+        let parts = jwt_parts(&value);
+        let payload = decode_object_segment(parts[1]);
+
+        assert_eq!(parts.len(), 3);
+        assert_eq!(parts[0], original_parts[0]);
+        assert_eq!(parts[2], original_parts[2]);
+        assert_eq!(payload["iss"], "uselesskey");
+        assert_eq!(payload["sub"], "svc");
+        assert_eq!(payload["aud"], "tests");
+        assert_eq!(payload["exp"], 1u64);
+    }
+
+    #[test]
+    fn negative_bad_issuer_and_audience_preserve_other_claims() {
+        let seed = Seed::new([39u8; 32]);
+        let issuer = generate_negative_token(
+            "svc",
+            TokenKind::OAuthAccessToken,
+            seed,
+            NegativeToken::BadIssuer,
+        );
+        let audience = generate_negative_token(
+            "svc",
+            TokenKind::OAuthAccessToken,
+            seed,
+            NegativeToken::BadAudience,
+        );
+        let issuer_payload = decode_object_segment(jwt_parts(&issuer)[1]);
+        let audience_payload = decode_object_segment(jwt_parts(&audience)[1]);
+
+        assert_eq!(issuer_payload["iss"], "wrong-issuer");
+        assert_eq!(issuer_payload["aud"], "tests");
+        assert_eq!(issuer_payload["sub"], "svc");
+        assert_eq!(audience_payload["iss"], "uselesskey");
+        assert_eq!(audience_payload["aud"], "wrong-audience");
+        assert_eq!(audience_payload["sub"], "svc");
+    }
+
+    #[test]
+    fn near_miss_api_key_uses_same_suffix_for_all_kinds() {
+        let seed = Seed::new([40u8; 32]);
+        let api = generate_negative_token(
+            "svc",
+            TokenKind::ApiKey,
+            seed,
+            NegativeToken::NearMissApiKey,
+        );
+        let bearer = generate_negative_token(
+            "svc",
+            TokenKind::Bearer,
+            seed,
+            NegativeToken::NearMissApiKey,
+        );
+        let oauth = generate_negative_token(
+            "svc",
+            TokenKind::OAuthAccessToken,
+            seed,
+            NegativeToken::NearMissApiKey,
+        );
+
+        assert_eq!(api, bearer);
+        assert_eq!(api, oauth);
+        assert_eq!(
+            api.strip_prefix(NEAR_MISS_API_KEY_PREFIX),
+            generate_api_key(seed).strip_prefix(API_KEY_PREFIX)
+        );
+    }
+
     fn jwt_parts(value: &str) -> Vec<&str> {
         value.split('.').collect()
     }
