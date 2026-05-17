@@ -73,6 +73,7 @@ Release-candidate proof and public promise evidence.
 
 - [evidence-matrix-v0.9.0.md](release/evidence-matrix-v0.9.0.md) — v0.9.0 command-backed claim, verification-pack, PR-lite, and webhook proof matrix
 - [evidence-matrix-v0.9.1.md](release/evidence-matrix-v0.9.1.md) — v0.9.1 adoption-confidence patch proof matrix
+- [post-release-audit-v0.9.1.md](release/post-release-audit-v0.9.1.md) — v0.9.1 crates.io, docs.rs, adoption-regression, and claim-proof audit
 - [evidence-matrix-v0.7.0.md](release/evidence-matrix-v0.7.0.md) — v0.7.0 public fixture promise evidence matrix
 - [v0.7.0-checklist.md](release/v0.7.0-checklist.md) — Release-governance issue map for v0.7.0 checklist lines
 - [v0.7.0-category-notes.md](release/v0.7.0-category-notes.md) — Release note category map and draft-audit guidance for v0.7.0
