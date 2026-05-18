@@ -544,7 +544,8 @@ fn corrupt_cert_pem_extra_blank_line_on_real_cert() {
     let corrupted = cert.corrupt_cert_pem(CorruptPem::ExtraBlankLine);
     assert_ne!(corrupted, cert.cert_pem());
     // Should have an empty line injected.
-    assert!(corrupted.contains("\n\n"));
+    let normalized = corrupted.replace("\r\n", "\n");
+    assert!(normalized.contains("\n\n"));
 }
 
 #[test]
