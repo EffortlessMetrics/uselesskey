@@ -229,3 +229,33 @@ fn cert_spec_stable_bytes_change_with_validity_and_cert_type() -> TestResult<()>
     ensure!(user.stable_bytes() != host.stable_bytes());
     Ok(())
 }
+
+#[test]
+fn deterministic_key_survives_cache_clear() -> TestResult<()> {
+    let fx = Factory::deterministic_from_str("ssh-cache-clear-key");
+    let before = fx.ssh_key("deploy", SshSpec::ed25519());
+    let before_priv = before.private_key_openssh().to_string();
+    let before_pub = before.authorized_key_line().to_string();
+
+    fx.clear_cache();
+
+    let after = fx.ssh_key("deploy", SshSpec::ed25519());
+    ensure_eq!(after.private_key_openssh(), before_priv.as_str());
+    ensure_eq!(after.authorized_key_line(), before_pub.as_str());
+    Ok(())
+}
+
+#[test]
+fn deterministic_cert_survives_cache_clear() -> TestResult<()> {
+    let fx = Factory::deterministic_from_str("ssh-cache-clear-cert");
+    let spec = SshCertSpec::user(["alice", "ci"], SshValidity::new(1_700_000_010, 1_700_000_999));
+
+    let before = fx.ssh_cert("alice-cert", spec.clone());
+    let cert_before = before.certificate_openssh().to_string();
+
+    fx.clear_cache();
+
+    let after = fx.ssh_cert("alice-cert", spec);
+    ensure_eq!(after.certificate_openssh(), cert_before.as_str());
+    Ok(())
+}
