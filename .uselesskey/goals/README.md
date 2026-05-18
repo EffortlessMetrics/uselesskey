@@ -15,6 +15,8 @@ record history; they should not be treated as active instructions.
 Do not create `active.toml` until the lane has an accepted proposal or spec to
 link to.
 
-When resuming agent work, read
-[`docs/handoffs/agent-bootstrap.md`](../../docs/handoffs/agent-bootstrap.md)
-before acting on older chat context.
+When resuming agent work, read these before acting on older chat context:
+
+1. [`docs/reference/SPEC_SYSTEM.md`](../../docs/reference/SPEC_SYSTEM.md) for the source-of-truth roles and stop conditions.
+2. [`docs/handoffs/agent-bootstrap.md`](../../docs/handoffs/agent-bootstrap.md) for the repo-specific startup order.
+3. `active.toml` for the current lane and proof commands.

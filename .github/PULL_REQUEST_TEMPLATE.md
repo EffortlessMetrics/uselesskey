@@ -1,37 +1,45 @@
-## Description
+## Summary
 
-Please include a summary of the change and which issue is fixed. Please also include relevant motivation and context. List any dependencies that are required for this change.
+What changed?
 
-Fixes # (issue)
+## Source-of-truth links
 
-## Type of change
+Proposal:
+Spec:
+ADR:
+Plan item:
+Active goal:
 
-- [ ] `feat`: New feature
-- [ ] `fix`: Bug fix
-- [ ] `docs`: Documentation update
-- [ ] `style`: Code style (formatting, etc)
-- [ ] `refactor`: Refactoring
-- [ ] `perf`: Performance improvement
-- [ ] `test`: Testing
-- [ ] `chore`: Maintenance
-- [ ] `revert`: Revert change
+## Scope
 
-## DevEx Checklist
+- [ ] Proposal / why
+- [ ] Spec / behavior contract
+- [ ] ADR / durable decision
+- [ ] Plan / sequencing
+- [ ] Active goal / current execution state
+- [ ] Runtime / implementation
+- [ ] Policy ledger
+- [ ] Support-tier update
+- [ ] Generated status / receipt
 
-Run these locally before submitting:
+## Non-goals
 
-- [ ] `cargo xtask gate`: Fmt, check, clippy, and test compile pass.
-- [ ] `cargo xtask typos`: No misspellings.
-- [ ] `cargo xtask bdd`: BDD tests pass (if applicable).
-- [ ] `cargo xtask mutants`: Mutation testing passes (if applicable).
+What this PR explicitly does not do.
 
-## Checklist:
+## Proof
 
-- [ ] My code follows the style guidelines of this project
-- [ ] I have performed a self-review of my own code
-- [ ] I have commented my code, particularly in hard-to-understand areas
-- [ ] I have made corresponding changes to the documentation
-- [ ] My changes generate no new warnings
-- [ ] I have added tests that prove my fix is effective or that my feature works
-- [ ] New and existing unit tests pass locally with my changes
-- [ ] Any dependent changes have been merged and published in downstream modules
+```bash
+# commands run
+```
+
+## Results
+
+What passed? What failed? What could not run?
+
+## Claim boundary
+
+What may be claimed after this PR? What may not be claimed yet?
+
+## Rollback
+
+How can this PR be reverted safely?

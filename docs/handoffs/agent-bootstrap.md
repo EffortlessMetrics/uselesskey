@@ -5,13 +5,15 @@ lane state lives in the repo, not in chat history.
 
 ## Startup Order
 
-1. Read `.uselesskey/goals/active.toml`.
-2. Read the `plan` paths linked from ready or active work items.
-3. Read the linked proposal, specs, and ADRs for the work item.
-4. Run `cargo xtask spec-check --strict` before changing source-of-truth files.
-5. Run `cargo xtask claim-report` when public claims, badges, contract packs, or
+1. Read `AGENTS.md` or `CLAUDE.md`.
+2. Read `docs/reference/SPEC_SYSTEM.md`.
+3. Read `.uselesskey/goals/active.toml`.
+4. Read the `plan` paths linked from ready or active work items.
+5. Read the linked proposal, specs, and ADRs for the work item.
+6. Run `cargo xtask spec-check --strict` before changing source-of-truth files.
+7. Run `cargo xtask claim-report` when public claims, badges, contract packs, or
    release evidence change.
-6. Use chat instructions as current operator intent, but do not treat old chat
+8. Use chat instructions as current operator intent, but do not treat old chat
    prompts as source-of-truth state.
 
 ## PR Body Contract

@@ -19,6 +19,7 @@ Architecture Decision Records (ADRs) capture significant design choices and thei
 Repository operating artifacts are split by job so public claims, proof, and
 agent state do not drift into one document.
 
+- [source-of-truth system](reference/SPEC_SYSTEM.md) - Artifact roles, read order, stop conditions, and claim boundaries
 - [proposals](proposals/README.md) - Why a lane exists, who benefits, and what alternatives were considered
 - [specs](specs/README.md) - What behavior is promised, not promised, and how it is proven
 - [status](status/README.md) - Public claim, support tier, and proof mapping indexes
@@ -93,6 +94,7 @@ Understanding-oriented material on design and direction.
 
 Specifications and formal definitions.
 
+- [SPEC_SYSTEM.md](reference/SPEC_SYSTEM.md) — Repo source-of-truth stack, agent workflow, and stop conditions
 - [dependency-economics.md](reference/dependency-economics.md) — Current lane cost receipts
 - [audit-surface.md](reference/audit-surface.md) — Current audit/island receipts
 - [verification-badges.md](reference/verification-badges.md) — Generated README badge endpoint rules and boundaries

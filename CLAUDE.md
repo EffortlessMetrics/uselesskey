@@ -46,6 +46,27 @@ Path ignores exist but require ongoing maintenance. This crate replaces "securit
 - Preserve derivation stability: bump version if algorithm changes
 - Extension traits for new key types (not monolithic API growth)
 
+## Repo Source-of-Truth Stack
+
+This repo uses a linked source-of-truth stack:
+
+```text
+Roadmap → Proposal → Spec → ADR → Plan → Active goal → PR → Proof
+```
+
+Before changing files for lane or implementation work, read:
+
+1. `docs/reference/SPEC_SYSTEM.md`
+2. `.uselesskey/goals/active.toml`
+3. The linked implementation plan
+4. The linked spec for the selected work item
+5. Any linked ADRs
+
+Work on exactly one ready work item per PR. Do not broaden public claims
+without support/status proof, do not hand-edit generated status, and stop
+instead of guessing when linked source-of-truth files or proof commands are
+missing.
+
 ## Build Commands
 
 ```bash
