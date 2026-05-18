@@ -424,6 +424,41 @@ mod tests {
     }
 
     #[test]
+    fn deterministic_from_str_preserves_verbatim_input() {
+        let trimmed = Factory::deterministic_from_str("seed-value");
+        let padded = Factory::deterministic_from_str("  seed-value  ");
+
+        let a: Arc<u64> = trimmed.get_or_init("domain:str", "lbl", b"sp", "good", draw_u64);
+        let b: Arc<u64> = padded.get_or_init("domain:str", "lbl", b"sp", "good", draw_u64);
+
+        assert_ne!(
+            *a, *b,
+            "deterministic_from_str must hash verbatim input including whitespace"
+        );
+    }
+
+    #[test]
+    fn deterministic_from_env_missing_var_returns_error() {
+        let name = "USELESSKEY_TEST_MISSING_SEED_VAR";
+        let err = Factory::deterministic_from_env(name).expect_err("variable should be missing");
+
+        match err {
+            crate::Error::MissingEnvVar { var } => assert_eq!(var, name),
+            other => panic!("unexpected error for missing env var: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn deterministic_from_env_reads_existing_var() {
+        let fx = Factory::deterministic_from_env("PATH")
+            .expect("PATH should be present in test environment");
+        assert!(
+            matches!(fx.mode(), Mode::Deterministic { .. }),
+            "factory should be deterministic when created from env"
+        );
+    }
+
+    #[test]
     fn different_variants_produce_distinct_entries() {
         let fx = Factory::deterministic(Seed::new([2u8; 32]));
         let a: Arc<u64> = fx.get_or_init("domain:v", "lbl", b"sp", "good", draw_u64);
