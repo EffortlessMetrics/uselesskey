@@ -7,6 +7,13 @@ deterministic JWKS shapes plus key-selection negatives.
 cargo test
 ```
 
+Installed CLI bundle audit path:
+
+```bash
+uselesskey bundle --profile oidc --out target/uselesskey-oidc
+uselesskey audit-bundle --path target/uselesskey-oidc --out target/uselesskey-oidc-audit
+```
+
 This proves fixture shape and negative input generation for validator tests. It
 does not prove OpenID discovery behavior, production signing-key custody, issuer
 policy, or downstream validator correctness.

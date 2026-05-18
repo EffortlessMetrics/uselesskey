@@ -10488,13 +10488,9 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
     }
 
     #[test]
-    fn external_adoption_smoke_clap_validation() {
-        let parsed = Cli::try_parse_from(["xtask", "external-adoption-smoke"]);
-        assert!(
-            parsed.is_ok(),
-            "bare external-adoption-smoke should parse; runtime guard rejects missing source"
-        );
-        match parsed.unwrap().cmd {
+    fn external_adoption_smoke_clap_validation() -> Result<()> {
+        let parsed = Cli::try_parse_from(["xtask", "external-adoption-smoke"])?;
+        match parsed.cmd {
             Cmd::ExternalAdoptionSmoke {
                 path,
                 version,
@@ -10510,15 +10506,20 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
                         version,
                         format: format.into(),
                     },
-                )
-                .expect_err("external-adoption-smoke without --path or --version must error");
+                );
+                let err = match err {
+                    Ok(()) => {
+                        bail!("external-adoption-smoke without --path or --version must error")
+                    }
+                    Err(err) => err,
+                };
                 let msg = err.to_string();
                 assert!(
                     msg.contains("--path") && msg.contains("--version"),
                     "error must mention both --path and --version: {msg}"
                 );
             }
-            _ => panic!("expected Cmd::ExternalAdoptionSmoke"),
+            _ => bail!("expected Cmd::ExternalAdoptionSmoke"),
         }
 
         let conflict = Cli::try_parse_from([
@@ -10534,8 +10535,7 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
             "clap must reject --path + --version together"
         );
 
-        let ok_path =
-            Cli::try_parse_from(["xtask", "external-adoption-smoke", "--path", "."]).unwrap();
+        let ok_path = Cli::try_parse_from(["xtask", "external-adoption-smoke", "--path", "."])?;
         assert!(matches!(
             ok_path.cmd,
             Cmd::ExternalAdoptionSmoke {
@@ -10552,8 +10552,7 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
             "0.9.1",
             "--format",
             "json",
-        ])
-        .unwrap();
+        ])?;
         assert!(matches!(
             ok_version.cmd,
             Cmd::ExternalAdoptionSmoke {
@@ -10562,11 +10561,12 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
                 format: ExternalAdoptionSmokeFormat::Json,
             }
         ));
+        Ok(())
     }
 
     #[test]
-    fn adoption_regression_external_flag_is_explicit() {
-        let default = Cli::try_parse_from(["xtask", "adoption-regression"]).unwrap();
+    fn adoption_regression_external_flag_is_explicit() -> Result<()> {
+        let default = Cli::try_parse_from(["xtask", "adoption-regression"])?;
         match default.cmd {
             Cmd::AdoptionRegression {
                 external, format, ..
@@ -10574,7 +10574,7 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
                 assert!(!external, "external mode must be opt-in");
                 assert!(matches!(format, AdoptionRegressionFormat::Human));
             }
-            _ => panic!("expected Cmd::AdoptionRegression"),
+            _ => bail!("expected Cmd::AdoptionRegression"),
         }
 
         let external = Cli::try_parse_from([
@@ -10583,8 +10583,7 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
             "--external",
             "--format",
             "json",
-        ])
-        .unwrap();
+        ])?;
         match external.cmd {
             Cmd::AdoptionRegression {
                 external, format, ..
@@ -10592,8 +10591,9 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
                 assert!(external, "external flag should propagate");
                 assert!(matches!(format, AdoptionRegressionFormat::Json));
             }
-            _ => panic!("expected Cmd::AdoptionRegression"),
+            _ => bail!("expected Cmd::AdoptionRegression"),
         }
+        Ok(())
     }
 
     #[test]

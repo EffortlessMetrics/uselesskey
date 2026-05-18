@@ -29,3 +29,4 @@ include:
 - [2026-05-adoption-confidence.md](2026-05-adoption-confidence.md) - easy fixture paths need confidence receipts
 - [2026-05-v0.9.1-release.md](2026-05-v0.9.1-release.md) - patch releases earn trust by publishing corrected proof surfaces
 - [2026-05-v0.10.0-external-adoption.md](2026-05-v0.10.0-external-adoption.md) - external adoption needs clean-project proof
+- [2026-05-installed-bundle-audit.md](2026-05-installed-bundle-audit.md) - installed bundles need local audit receipts

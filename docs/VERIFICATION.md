@@ -10,9 +10,10 @@ Badges are the front panel. The generated evidence, CI receipts, and release
 artifacts remain the source of truth.
 
 This page is repo-checkout proof documentation. Installed CLI users should use
-`uselesskey profiles`, `uselesskey bundle`, `uselesskey verify-bundle`, and
-`uselesskey inspect-bundle` from the task docs first; `cargo xtask` commands
-here are reviewer, maintainer, and release evidence commands.
+`uselesskey profiles`, `uselesskey bundle`, `uselesskey verify-bundle`,
+`uselesskey audit-bundle`, and `uselesskey inspect-bundle` from the task docs
+first; `cargo xtask` commands here are reviewer, maintainer, and release
+evidence commands.
 
 For the public claim index and local proof path, see
 [`docs/status/PUBLIC_CLAIMS.md`](status/PUBLIC_CLAIMS.md) and
@@ -107,6 +108,20 @@ shell-evaluate proof-command strings from the ledger. Receipts stay under
 `target/claim-proof/`.
 
 ## Verification Packs
+
+Installed bundle audits are the reviewer handoff for one local generated
+bundle:
+
+```bash
+uselesskey audit-bundle --path target/uselesskey-webhook --out target/uselesskey-webhook-audit
+```
+
+The installed audit proves local bundle consistency and metadata
+classification. It does not prove repo public claims, release readiness,
+provider compatibility, production security, scanner evasion, or downstream
+verifier correctness. Use
+[`docs/how-to/share-installed-bundle-audit.md`](how-to/share-installed-bundle-audit.md)
+for that workflow.
 
 Use `cargo xtask verification-pack` when a reviewer needs a shareable bundle of
 public-claim receipts:

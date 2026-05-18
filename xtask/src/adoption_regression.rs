@@ -542,7 +542,7 @@ mod tests {
     }
 
     #[test]
-    fn adoption_regression_external_step_is_explicit() {
+    fn adoption_regression_external_step_is_explicit() -> Result<()> {
         let mut receipt = AdoptionRegressionReceipt {
             schema_version: 1,
             status: "pass".to_string(),
@@ -559,19 +559,21 @@ mod tests {
             &["cargo", "xtask", "external-adoption-smoke", "--path", "."],
             &["target/external-adoption-smoke/"],
             || Ok(()),
-        )
-        .expect("external step receipt should record");
+        )?;
 
-        let step = receipt
+        let Some(step) = receipt
             .steps
             .iter()
             .find(|step| step.name == "external-adoption-smoke")
-            .expect("external step present");
+        else {
+            bail!("external step present");
+        };
         assert_eq!(step.status, "ok");
         assert_eq!(
             step.command,
             ["cargo", "xtask", "external-adoption-smoke", "--path", "."]
         );
         assert_eq!(step.artifacts, ["target/external-adoption-smoke/"]);
+        Ok(())
     }
 }

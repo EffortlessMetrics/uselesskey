@@ -3,6 +3,11 @@
 Use a verification pack when a security, platform, or release reviewer needs
 the public-claim receipts without reading the whole repository.
 
+If the reviewer only needs to understand one installed CLI-generated bundle,
+use [share-installed-bundle-audit.md](share-installed-bundle-audit.md) instead.
+`uselesskey audit-bundle` proves local bundle consistency; this page covers
+repo public-claim proof from a checkout.
+
 Build the default pack:
 
 ```bash
