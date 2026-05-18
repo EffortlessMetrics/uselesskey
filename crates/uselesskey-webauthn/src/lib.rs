@@ -567,6 +567,36 @@ mod tests {
         );
     }
 
+
+    #[test]
+    fn client_data_json_sets_expected_type_and_cross_origin_false() {
+        let bytes = build_client_data_json("webauthn.get", b"xyz", "login.example.com");
+        let parsed: serde_json::Value = serde_json::from_slice(&bytes).expect("parse clientDataJSON");
+
+        assert_eq!(parsed["type"], "webauthn.get");
+        assert_eq!(parsed["origin"], "https://login.example.com");
+        assert_eq!(parsed["challenge"], base64url(b"xyz"));
+        assert_eq!(parsed["crossOrigin"], false);
+    }
+
+    #[test]
+    fn write_field_uses_u16_prefix_for_max_legacy_length() {
+        let mut out = Vec::new();
+        let value = vec![0xAA; u16::MAX as usize];
+
+        write_field(&mut out, "challenge", &value);
+
+        let marker = b"challenge";
+        let at = out
+            .windows(marker.len())
+            .position(|window| window == marker)
+            .expect("challenge marker present");
+        let len_offset = at + marker.len();
+
+        assert_eq!(&out[len_offset..len_offset + 2], &u16::MAX.to_be_bytes());
+        assert_eq!(out.len(), marker.len() + 2 + value.len());
+    }
+
     fn assert_contains_bytes(haystack: &[u8], needle: &[u8]) {
         assert!(
             haystack
