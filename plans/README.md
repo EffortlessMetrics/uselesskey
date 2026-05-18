@@ -19,6 +19,7 @@ Plans do not define product truth. Link to proposals for why and specs for what.
 - [v0.10.0-external-adoption](v0.10.0-external-adoption/README.md) - External adoption and installed-user workflow buildout
 - [installed-bundle-audit](installed-bundle-audit/README.md) - Installed CLI bundle audit and reviewer handoff
 - [downstream-ci-polish](downstream-ci-polish/README.md) - Downstream CI and installed-user polish
+- [real-workflow-closure](real-workflow-closure/README.md) - Real user workflow closure for negative fixtures, bundle rails, task docs, and public surface discipline
 
 ## Templates
 
