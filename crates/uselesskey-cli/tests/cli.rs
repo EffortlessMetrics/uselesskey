@@ -1070,9 +1070,10 @@ fn audit_bundle_summary_rejects_ci_mode() -> TestResult<()> {
         "--summary",
         "--ci",
     ]);
-    audit.assert().failure().stderr(predicate::str::contains(
-        "audit-bundle --summary cannot be combined with --ci",
-    ));
+    audit
+        .assert()
+        .code(2)
+        .stderr(predicate::str::contains("cannot be used with"));
     Ok(())
 }
 
