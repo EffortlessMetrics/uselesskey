@@ -98,6 +98,8 @@ Specifications and formal definitions.
 
 - [dependency-economics.md](reference/dependency-economics.md) — Current lane cost receipts
 - [audit-surface.md](reference/audit-surface.md) — Current audit/island receipts
+- [bundle-audit-json.md](reference/bundle-audit-json.md) — Stable installed bundle audit JSON contract
+- [bundle-inspect-vs-audit.md](reference/bundle-inspect-vs-audit.md) — When to use quick bundle inspection versus durable audit receipts
 - [verification-badges.md](reference/verification-badges.md) — Generated README badge endpoint rules and boundaries
 - [requirements-v0.3.md](reference/requirements-v0.3.md) — v0.3 acceptance specification
 - [requirements-v0.4.md](reference/requirements-v0.4.md) — v0.4 RNG boundary refactor specification

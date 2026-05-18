@@ -675,6 +675,9 @@ fn inspect_bundle_summarizes_verified_scanner_safe_receipts() -> TestResult<()> 
         .assert()
         .success()
         .stdout(predicate::str::contains("Bundle profile: scanner-safe"))
+        .stdout(predicate::str::contains(
+            "Summary type: quick human bundle summary",
+        ))
         .stdout(predicate::str::contains("Artifacts: 8"))
         .stdout(predicate::str::contains("Verified files: 10"))
         .stdout(predicate::str::contains("Scanner-safe: yes"))
@@ -684,6 +687,9 @@ fn inspect_bundle_summarizes_verified_scanner_safe_receipts() -> TestResult<()> 
         .stdout(predicate::str::contains("Verification: ok"))
         .stdout(predicate::str::contains(
             "Receipts: materialization, audit-surface",
+        ))
+        .stdout(predicate::str::contains(
+            "Durable audit receipt: uselesskey audit-bundle --path <bundle-dir> --out <audit-dir>",
         ))
         .stdout(predicate::str::contains(
             "Proof/check path: cargo xtask claim-proof --claim scanner-safe-fixtures",
@@ -725,11 +731,15 @@ fn inspect_bundle_reports_runtime_material_without_printing_payloads() -> TestRe
     let summary = String::from_utf8(output).test_context("utf-8")?;
 
     assert!(summary.contains("Bundle profile: runtime"));
+    assert!(summary.contains("Summary type: quick human bundle summary"));
     assert!(summary.contains("Scanner-safe: no"));
     assert!(summary.contains("Private key material: yes"));
     assert!(summary.contains("Symmetric secret material: yes"));
     assert!(summary.contains("Runtime material artifacts: 5"));
     assert!(summary.contains("Verification: ok"));
+    assert!(summary.contains(
+        "Durable audit receipt: uselesskey audit-bundle --path <bundle-dir> --out <audit-dir>"
+    ));
     assert!(
         summary.contains(
             "Proof/check path: uselesskey verify-bundle --path target/uselesskey-runtime"
@@ -800,6 +810,9 @@ fn audit_bundle_writes_metadata_only_reviewer_receipts() -> TestResult<()> {
     let audit_md =
         fs::read_to_string(audit_dir.join("bundle-audit.md")).test_context("audit markdown")?;
     assert!(audit_md.contains("Bundle Audit"));
+    assert!(audit_md.contains("durable metadata-only reviewer/CI receipt"));
+    assert!(audit_md.contains("Quick summary: uselesskey inspect-bundle --path <bundle-dir>"));
+    assert!(audit_md.contains("raw generated fixture payloads are not copied"));
     assert!(audit_md.contains("requests/negative-wrong-secret.json"));
     assert!(audit_md.contains("audit-bundle does not prove repo public claims"));
     assert!(audit_md.contains("provider compatibility"));

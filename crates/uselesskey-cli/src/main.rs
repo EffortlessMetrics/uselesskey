@@ -807,6 +807,7 @@ fn render_bundle_inspection_summary(
     format!(
         concat!(
             "Bundle profile: {}\n",
+            "Summary type: quick human bundle summary\n",
             "Purpose: {}\n",
             "Artifacts: {}\n",
             "Verified files: {}\n",
@@ -816,6 +817,7 @@ fn render_bundle_inspection_summary(
             "Runtime material artifacts: {}\n",
             "Verification: ok\n",
             "Receipts: {}\n",
+            "Durable audit receipt: uselesskey audit-bundle --path <bundle-dir> --out <audit-dir>\n",
             "Proof/check path: {}\n",
             "Generated files:\n{}\n",
             "Artifact posture:\n{}\n",
@@ -964,6 +966,11 @@ fn render_bundle_audit_markdown(audit: &BundleAudit) -> String {
     out.push_str(&format!("- Status: {}\n", audit.status));
     out.push_str(&format!("- Bundle: {}\n", audit.bundle_path));
     out.push_str(&format!("- Profile: {}\n", audit.profile));
+    out.push_str("- Receipt type: durable metadata-only reviewer/CI receipt\n");
+    out.push_str("- Quick summary: uselesskey inspect-bundle --path <bundle-dir>\n");
+    out.push_str(
+        "- Payload posture: raw generated fixture payloads are not copied into this receipt\n",
+    );
     out.push_str(&format!(
         "- Manifest: {} (version {})\n",
         audit.manifest_path, audit.manifest_version
