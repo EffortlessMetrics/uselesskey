@@ -2034,6 +2034,47 @@ mod inspect_bundle_tests {
         ));
     }
 
+    #[test]
+    fn negative_failure_class_pins_scanner_safe_token_guard() {
+        let mut scanner_safe_token = record("token", "json", true);
+        scanner_safe_token.path = "token.json".to_string();
+        scanner_safe_token.profile = "scanner-safe".to_string();
+
+        assert_eq!(
+            negative_failure_class(&scanner_safe_token).map(|(class, _)| class),
+            Some("token_near_miss")
+        );
+
+        let mut oidc_token = scanner_safe_token.clone();
+        oidc_token.profile = "oidc".to_string();
+
+        assert_eq!(negative_failure_class(&oidc_token), None);
+    }
+
+    #[test]
+    fn negative_failure_class_pins_tls_taxonomy_classes() {
+        let cases = [
+            ("certs/negative-expired-leaf.pem", "x509_expired_leaf"),
+            (
+                "certs/negative-not-yet-valid.pem",
+                "x509_not_yet_valid_leaf",
+            ),
+            ("certs/negative-wrong-hostname.pem", "x509_wrong_hostname"),
+            ("certs/negative-untrusted-root.pem", "x509_untrusted_root"),
+        ];
+
+        for (path, expected_class) in cases {
+            let mut artifact = record("x509", "pem", true);
+            artifact.path = path.to_string();
+            artifact.profile = "tls".to_string();
+
+            assert_eq!(
+                negative_failure_class(&artifact).map(|(class, _)| class),
+                Some(expected_class)
+            );
+        }
+    }
+
     fn record(kind: &str, format: &str, scanner_safe: bool) -> BundleArtifactRecord {
         BundleArtifactRecord {
             path: format!("{kind}.{format}"),
