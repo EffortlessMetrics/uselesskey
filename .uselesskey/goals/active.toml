@@ -1,24 +1,28 @@
-id = "uselesskey-installed-bundle-audit"
-title = "Installed bundle audit and reviewer handoff"
-status = "archived"
+id = "uselesskey-downstream-ci-polish"
+title = "Downstream CI and installed-user polish"
+status = "active"
 owner = "EffortlessMetrics"
 created = "2026-05-18"
 
 objective = """
-Make installed CLI-generated bundles locally auditable and reviewer-friendly.
-Users should be able to generate scanner-safe/TLS/OIDC/webhook fixtures,
-inspect and verify the bundle, and attach metadata-only audit receipts without
-cloning the repo or learning xtask.
+Make the installed bundle loop boring to run in downstream CI. Users should be
+able to install uselesskey, generate fixtures, verify and inspect bundles, audit
+the bundle with stable JSON/Markdown receipts, fail CI on meaningful drift, and
+understand each failure without learning repo-local proof machinery.
 """
 
 end_state = [
-  "Installed bundle audit behavior and boundaries are specified.",
-  "The installed CLI writes deterministic JSON and Markdown bundle-audit receipts.",
-  "Audit receipts prove local bundle consistency and metadata classification without copying raw fixture payloads.",
-  "Scanner-safe, TLS, OIDC, webhook, and runtime bundles have bounded audit coverage.",
-  "External adoption smoke runs bundle, verify-bundle, audit-bundle, and inspect-bundle for installed-style bundle paths.",
-  "Reviewer handoff and downstream CI docs explain what audit-bundle proves and does not prove.",
-  "The lane closes without a version bump, tag, publish, new badge, or new contract pack.",
+  "Bundle audit JSON has a documented stable schema and reference.",
+  "Installed audit commands expose CI-oriented behavior without shell parsing fragile prose.",
+  "Downstream GitHub Actions recipes show generate, verify, audit, and artifact handoff.",
+  "External adoption smoke can exercise documented downstream CI recipes explicitly.",
+  "Audit failure diagnostics are actionable while preserving stable machine-readable classes.",
+  "Installed CLI doctor covers user-local environment checks without repo-local proof tools.",
+  "Inspect and audit wording clearly separate quick summaries from durable receipts.",
+  "A downstream CI example proves the installed-user audit loop end to end.",
+  "Audit receipt golden tests protect schema shape, boundary language, and metadata-only posture.",
+  "Compact audit summaries keep terminal and CI logs readable.",
+  "The lane closes without release prep, version bump, tag, publish, new contract pack, or provider/security overclaims.",
 ]
 
 [[work_item]]
@@ -26,7 +30,7 @@ id = "lane-open"
 status = "done"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0005"
-plan = "plans/installed-bundle-audit/implementation-plan.md"
+plan = "plans/downstream-ci-polish/implementation-plan.md"
 commands = [
   "cargo xtask spec-check --strict",
   "cargo xtask docs-sync --check",
@@ -35,72 +39,145 @@ commands = [
 ]
 
 [[work_item]]
-id = "installed-bundle-audit-spec"
-status = "done"
+id = "bundle-audit-json-schema"
+status = "ready"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0014"
-plan = "plans/installed-bundle-audit/implementation-plan.md"
-commands = [
-  "cargo xtask spec-check --strict",
-  "cargo xtask docs-sync --check",
-  "cargo xtask typos",
-  "git diff --check",
-]
-
-[[work_item]]
-id = "audit-bundle-cli"
-status = "done"
-proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0014"
-plan = "plans/installed-bundle-audit/implementation-plan.md"
+plan = "plans/downstream-ci-polish/implementation-plan.md"
 commands = [
   "cargo test -p uselesskey-cli --all-features audit_bundle",
-  "cargo xtask external-adoption-smoke --path .",
-  "cargo xtask adoption-regression --external",
-  "cargo xtask no-blob",
-  "cargo xtask pr-lite",
+  "cargo xtask docs-sync --check",
+  "cargo xtask typos",
   "git diff --check",
 ]
 
 [[work_item]]
-id = "external-adoption-audit"
-status = "done"
+id = "audit-bundle-ci-policy"
+status = "planned"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0014"
-plan = "plans/installed-bundle-audit/implementation-plan.md"
+plan = "plans/downstream-ci-polish/implementation-plan.md"
 commands = [
-  "cargo test -p xtask external_adoption_smoke",
-  "cargo xtask external-adoption-smoke --path .",
+  "cargo test -p uselesskey-cli --all-features audit_bundle",
   "cargo xtask external-adoption-smoke --path . --format json",
-  "cargo xtask adoption-regression --external",
-  "cargo xtask pr-lite",
+  "cargo +nightly xtask pr-lite",
   "git diff --check",
 ]
 
 [[work_item]]
-id = "reviewer-handoff-docs"
-status = "done"
+id = "downstream-github-actions-recipes"
+status = "planned"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0014"
-plan = "plans/installed-bundle-audit/implementation-plan.md"
+plan = "plans/downstream-ci-polish/implementation-plan.md"
 commands = [
   "cargo xtask docs-sync --check",
   "cargo xtask typos",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "external-smoke-ci-recipes"
+status = "planned"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0013"
+plan = "plans/downstream-ci-polish/implementation-plan.md"
+commands = [
+  "cargo test -p xtask external_adoption_smoke",
+  "cargo xtask external-adoption-smoke --path . --ci-recipes --format json",
+  "cargo xtask adoption-regression --external",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "audit-failure-diagnostics"
+status = "planned"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0014"
+plan = "plans/downstream-ci-polish/implementation-plan.md"
+commands = [
+  "cargo test -p uselesskey-cli --all-features audit_bundle",
+  "cargo xtask no-blob",
+  "cargo +nightly xtask pr-lite",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "installed-cli-doctor"
+status = "planned"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0012"
+plan = "plans/downstream-ci-polish/implementation-plan.md"
+commands = [
+  "cargo test -p uselesskey-cli --all-features doctor",
+  "cargo run -p uselesskey-cli -- doctor",
+  "cargo run -p uselesskey-cli -- doctor --format json",
+  "cargo +nightly xtask pr-lite",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "inspect-audit-alignment"
+status = "planned"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0014"
+plan = "plans/downstream-ci-polish/implementation-plan.md"
+commands = [
+  "cargo test -p uselesskey-cli --all-features inspect audit_bundle",
+  "cargo xtask external-adoption-smoke --path .",
+  "cargo xtask docs-sync --check",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "downstream-ci-example"
+status = "planned"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0013"
+plan = "plans/downstream-ci-polish/implementation-plan.md"
+commands = [
+  "cargo xtask external-adoption-smoke --path .",
+  "cargo xtask adoption-regression --external",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "audit-receipt-goldens"
+status = "planned"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0014"
+plan = "plans/downstream-ci-polish/implementation-plan.md"
+commands = [
+  "cargo test -p uselesskey-cli --all-features audit_bundle",
+  "cargo xtask no-blob",
+  "cargo +nightly xtask pr-lite",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "audit-bundle-summary"
+status = "planned"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0014"
+plan = "plans/downstream-ci-polish/implementation-plan.md"
+commands = [
+  "cargo test -p uselesskey-cli --all-features audit_bundle",
   "cargo xtask external-adoption-smoke --path .",
   "git diff --check",
 ]
 
 [[work_item]]
 id = "lane-closeout"
-status = "done"
+status = "planned"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0005"
-plan = "plans/installed-bundle-audit/closeout.md"
+plan = "plans/downstream-ci-polish/implementation-plan.md"
 commands = [
-  "cargo xtask external-adoption-smoke --path .",
+  "cargo xtask external-adoption-smoke --path . --format json",
   "cargo xtask adoption-regression --external",
   "cargo xtask claim-report --check-public-claims",
   "cargo xtask contract-packs --check",
+  "cargo xtask check-no-panic-family",
   "cargo xtask docs-sync --check",
   "cargo xtask typos",
   "cargo +nightly xtask pr-lite",
