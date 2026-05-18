@@ -6694,7 +6694,7 @@ fn fuzz_pr() -> Result<()> {
 
     match status {
         Ok(s) if s.success() => {
-            let targets = list_fuzz_targets()?;
+            let targets = ensure_fuzz_target_registry_in_sync()?;
             if targets.is_empty() {
                 return Ok(());
             }
@@ -6738,6 +6738,65 @@ fn list_fuzz_targets() -> Result<Vec<String>> {
     }
     targets.sort();
     Ok(targets)
+}
+
+fn list_manifest_fuzz_targets() -> Result<Vec<String>> {
+    let manifest = workspace_path("fuzz/Cargo.toml");
+    if !manifest.exists() {
+        return Ok(Vec::new());
+    }
+
+    let text = fs::read_to_string(&manifest)
+        .with_context(|| format!("failed to read {}", manifest.display()))?;
+    let doc = text
+        .parse::<toml::Table>()
+        .with_context(|| format!("failed to parse {}", manifest.display()))?;
+
+    let mut targets = Vec::new();
+    if let Some(bins) = doc.get("bin").and_then(toml::Value::as_array) {
+        for bin in bins {
+            if let Some(name) = bin.get("name").and_then(toml::Value::as_str) {
+                targets.push(name.to_string());
+            }
+        }
+    }
+
+    targets.sort();
+    Ok(targets)
+}
+
+fn ensure_fuzz_target_registry_in_sync() -> Result<Vec<String>> {
+    let discovered = list_fuzz_targets()?;
+    let manifest = list_manifest_fuzz_targets()?;
+
+    let discovered_set: std::collections::BTreeSet<_> = discovered.iter().cloned().collect();
+    let manifest_set: std::collections::BTreeSet<_> = manifest.iter().cloned().collect();
+
+    let missing_from_manifest: Vec<_> = discovered_set
+        .difference(&manifest_set)
+        .cloned()
+        .collect();
+    let missing_from_targets: Vec<_> = manifest_set
+        .difference(&discovered_set)
+        .cloned()
+        .collect();
+
+    if !missing_from_manifest.is_empty() || !missing_from_targets.is_empty() {
+        let mut msg = String::from("fuzz target registry is out of sync");
+        if !missing_from_manifest.is_empty() {
+            msg.push_str("
+- missing [[bin]] entries in fuzz/Cargo.toml: ");
+            msg.push_str(&missing_from_manifest.join(", "));
+        }
+        if !missing_from_targets.is_empty() {
+            msg.push_str("
+- missing files in fuzz/fuzz_targets: ");
+            msg.push_str(&missing_from_targets.join(", "));
+        }
+        bail!(msg);
+    }
+
+    Ok(discovered)
 }
 
 fn no_blob_gate() -> Result<()> {
@@ -9941,6 +10000,69 @@ index 1111111..2222222 100644
         let _cwd = CwdGuard::new(dir.path());
         let targets = list_fuzz_targets().expect("list targets");
         assert!(targets.is_empty());
+    }
+
+    #[test]
+    fn ensure_fuzz_target_registry_in_sync_detects_missing_manifest_entry() {
+        let _cwd_lock = CWD_LOCK.lock().unwrap();
+        let dir = tempfile::tempdir().expect("tempdir");
+        let root = dir.path();
+        let fuzz_dir = root.join("fuzz");
+        let targets_dir = fuzz_dir.join("fuzz_targets");
+        fs::create_dir_all(&targets_dir).expect("create fuzz_targets");
+        fs::write(targets_dir.join("only_file.rs"), "fn main() {}
+").expect("write target");
+        fs::write(
+            fuzz_dir.join("Cargo.toml"),
+            r#"[package]
+name="x"
+version="0.0.0"
+
+[[bin]]
+name="different"
+path="fuzz_targets/different.rs"
+"#,
+        )
+        .expect("write manifest");
+
+        let _cwd = CwdGuard::new(root);
+        let err = ensure_fuzz_target_registry_in_sync().expect_err("must fail on mismatch");
+        let msg = format!("{err:#}");
+        assert!(msg.contains("out of sync"), "unexpected error: {msg}");
+    }
+
+    #[test]
+    fn ensure_fuzz_target_registry_in_sync_passes_when_matched() {
+        let _cwd_lock = CWD_LOCK.lock().unwrap();
+        let dir = tempfile::tempdir().expect("tempdir");
+        let root = dir.path();
+        let fuzz_dir = root.join("fuzz");
+        let targets_dir = fuzz_dir.join("fuzz_targets");
+        fs::create_dir_all(&targets_dir).expect("create fuzz_targets");
+        fs::write(targets_dir.join("a.rs"), "fn main() {}
+").expect("write target");
+        fs::write(targets_dir.join("b.rs"), "fn main() {}
+").expect("write target");
+        fs::write(
+            fuzz_dir.join("Cargo.toml"),
+            r#"[package]
+name="x"
+version="0.0.0"
+
+[[bin]]
+name="b"
+path="fuzz_targets/b.rs"
+
+[[bin]]
+name="a"
+path="fuzz_targets/a.rs"
+"#,
+        )
+        .expect("write manifest");
+
+        let _cwd = CwdGuard::new(root);
+        let targets = ensure_fuzz_target_registry_in_sync().expect("must pass");
+        assert_eq!(targets, vec!["a".to_string(), "b".to_string()]);
     }
 
     #[test]
