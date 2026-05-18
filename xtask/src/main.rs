@@ -6699,19 +6699,15 @@ fn fuzz_pr() -> Result<()> {
                 return Ok(());
             }
             let host = host_target_triple()?;
+            let runs = std::env::var("USELESSKEY_FUZZ_PR_RUNS").unwrap_or_else(|_| "1000".to_string());
+            let max_total_time =
+                std::env::var("USELESSKEY_FUZZ_PR_MAX_TOTAL_TIME").unwrap_or_else(|_| "30".to_string());
+
             for target in targets {
                 let mut cmd = Command::new("cargo");
-                cmd.args([
-                    "+nightly",
-                    "fuzz",
-                    "run",
-                    "--target",
-                    &host,
-                    &target,
-                    "--",
-                    "-runs=1000",
-                    "-max_total_time=30",
-                ]);
+                cmd.args(["+nightly", "fuzz", "run", "--target", &host, &target, "--"]);
+                cmd.arg(format!("-runs={runs}"));
+                cmd.arg(format!("-max_total_time={max_total_time}"));
                 run(&mut cmd)?;
             }
             Ok(())
@@ -6721,22 +6717,27 @@ fn fuzz_pr() -> Result<()> {
 }
 
 fn list_fuzz_targets() -> Result<Vec<String>> {
-    let mut targets = Vec::new();
-    let dir = workspace_path("fuzz/fuzz_targets");
-    if !dir.exists() {
-        return Ok(targets);
+    let manifest_path = workspace_path("fuzz/Cargo.toml");
+    if !manifest_path.exists() {
+        return Ok(Vec::new());
     }
-    for entry in fs::read_dir(&dir).context("failed to read fuzz_targets")? {
-        let entry = entry.context("failed to read fuzz_targets entry")?;
-        let path = entry.path();
-        if path.extension().and_then(|s| s.to_str()) != Some("rs") {
-            continue;
-        }
-        if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
-            targets.push(stem.to_string());
-        }
-    }
+
+    let manifest = fs::read_to_string(&manifest_path)
+        .with_context(|| format!("failed to read {}", manifest_path.display()))?;
+    let cargo_manifest: toml::Value = toml::from_str(&manifest)
+        .with_context(|| format!("failed to parse {}", manifest_path.display()))?;
+
+    let mut targets = cargo_manifest
+        .get("bin")
+        .and_then(toml::Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(|entry| entry.get("name").and_then(toml::Value::as_str))
+        .map(ToString::to_string)
+        .collect::<Vec<_>>();
+
     targets.sort();
+    targets.dedup();
     Ok(targets)
 }
 
@@ -9919,15 +9920,24 @@ index 1111111..2222222 100644
     }
 
     #[test]
-    fn list_fuzz_targets_returns_sorted_rs_stems() {
+    fn list_fuzz_targets_reads_manifest_bins() {
         let _cwd_lock = CWD_LOCK.lock().unwrap();
         let dir = tempfile::tempdir().expect("tempdir");
         let root = dir.path();
-        let fuzz_dir = root.join("fuzz").join("fuzz_targets");
-        fs::create_dir_all(&fuzz_dir).expect("create fuzz_targets");
-        fs::write(fuzz_dir.join("b.rs"), "fn main() {}").unwrap();
-        fs::write(fuzz_dir.join("a.rs"), "fn main() {}").unwrap();
-        fs::write(fuzz_dir.join("README.md"), "ignore").unwrap();
+        let fuzz_dir = root.join("fuzz");
+        fs::create_dir_all(&fuzz_dir).expect("create fuzz dir");
+        fs::write(
+            fuzz_dir.join("Cargo.toml"),
+            r#"[[bin]]
+name = "b"
+path = "fuzz_targets/b.rs"
+
+[[bin]]
+name = "a"
+path = "fuzz_targets/a.rs"
+"#,
+        )
+        .unwrap();
 
         let _cwd = CwdGuard::new(root);
         let targets = list_fuzz_targets().expect("list targets");
