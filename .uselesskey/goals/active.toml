@@ -51,9 +51,9 @@ commands = [
 
 [[work_item]]
 id = "negative-fixture-taxonomy-spec"
-status = "ready"
+status = "done"
 proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0005"
+spec = "USELESSKEY-SPEC-0016"
 plan = "plans/real-workflow-closure/implementation-plan.md"
 commands = [
   "cargo xtask spec-check --strict",
@@ -64,9 +64,9 @@ commands = [
 
 [[work_item]]
 id = "jwk-jwks-negative-wave"
-status = "planned"
+status = "ready"
 proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0002"
+spec = "USELESSKEY-SPEC-0016"
 plan = "plans/real-workflow-closure/implementation-plan.md"
 commands = [
   "cargo test -p uselesskey-jwk --all-features",
@@ -79,7 +79,7 @@ commands = [
 id = "token-shape-negatives"
 status = "planned"
 proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0002"
+spec = "USELESSKEY-SPEC-0016"
 plan = "plans/real-workflow-closure/implementation-plan.md"
 commands = [
   "cargo test -p uselesskey-token --all-features",
