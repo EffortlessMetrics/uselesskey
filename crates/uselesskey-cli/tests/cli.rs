@@ -876,12 +876,23 @@ fn audit_bundle_ci_outputs_failure_json_and_exit_1() -> TestResult<()> {
     let assert = audit
         .assert()
         .code(1)
-        .stderr(predicate::str::contains("audit failed: path_escape"));
+        .stderr(predicate::str::contains("audit failed: path_escape"))
+        .stderr(predicate::str::contains(
+            "manifest.json lists a path that escapes the bundle root",
+        ));
     let output = assert.get_output();
     let audit: Value = serde_json::from_slice(&output.stdout).test_context("audit failure json")?;
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("Fix: regenerate the bundle"));
     assert_eq!(audit["status"], "fail");
     assert_eq!(audit["checks"][0]["status"], "fail");
     assert_eq!(audit["checks"][0]["failure_class"], "path_escape");
+    let detail = audit["checks"][0]["detail"]
+        .as_str()
+        .test_context("failure detail")?;
+    assert!(detail.contains("manifest.json lists a path that escapes the bundle root"));
+    assert!(detail.contains("Detail: ../escape.json"));
+    assert!(detail.contains("Fix: regenerate the bundle"));
     assert_eq!(audit["manifest_version"], 0);
     assert!(!String::from_utf8_lossy(&output.stdout).contains("whsec_"));
     Ok(())

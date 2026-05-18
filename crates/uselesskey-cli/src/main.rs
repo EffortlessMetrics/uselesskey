@@ -423,8 +423,17 @@ fn run_audit_bundle(args: AuditBundleArgs) -> Result<()> {
         return run_audit_bundle_ci(args);
     }
 
-    let audit = build_bundle_audit(&args.bundle_dir)
-        .with_context(|| format!("failed to audit bundle {}", args.bundle_dir.display()))?;
+    let audit = match build_bundle_audit(&args.bundle_dir) {
+        Ok(audit) => audit,
+        Err(err) => {
+            let diagnostic = bundle_audit_failure_diagnostic(&err);
+            bail!(
+                "audit failed: {}: {}",
+                diagnostic.failure_class,
+                diagnostic.detail
+            );
+        }
+    };
 
     if let Some(out_dir) = args.out.as_deref() {
         let (json_path, md_path) = write_bundle_audit_receipts(&audit, out_dir)?;
@@ -459,9 +468,14 @@ fn run_audit_bundle_ci(args: AuditBundleArgs) -> Result<()> {
             emit_artifact(&Artifact::Json(json!(audit)), None)
         }
         Err(err) => {
-            let (failure, failure_class) = bundle_audit_failure_json(&args.bundle_dir, &err);
+            let diagnostic = bundle_audit_failure_diagnostic(&err);
+            let failure = bundle_audit_failure_json(&args.bundle_dir, &diagnostic);
             emit_artifact(&Artifact::Json(failure), None)?;
-            bail!("audit failed: {failure_class}");
+            bail!(
+                "audit failed: {}: {}",
+                diagnostic.failure_class,
+                diagnostic.detail
+            );
         }
     }
 }
@@ -1124,50 +1138,45 @@ const BUNDLE_AUDIT_FAILURE_CLASSES: [&str; 11] = [
 
 fn bundle_audit_failure_json(
     bundle_dir: &Path,
-    err: &anyhow::Error,
-) -> (serde_json::Value, String) {
-    let failure_class = bundle_audit_failure_class(err).to_string();
-    let detail = err.to_string();
-    (
-        json!({
-            "version": 1,
-            "status": "fail",
-            "bundle_path": display_path(bundle_dir),
-            "profile": "unknown",
-            "manifest_version": 0,
-            "manifest_path": "manifest.json",
-            "artifact_count": 0,
-            "receipt_count": 0,
-            "scanner_safe_count": 0,
-            "runtime_material_count": 0,
-            "files": [],
-            "artifacts": [],
-            "receipts": [],
-            "missing_files": [],
-            "unexpected_files": [],
-            "checks": [
-                {
-                    "name": "bundle-audit",
-                    "status": "fail",
-                    "failure_class": failure_class.clone(),
-                    "detail": detail,
-                }
-            ],
-            "boundaries": [
-                "audit-bundle proves local bundle consistency and metadata classification",
-                "audit receipts contain metadata only and do not copy generated fixture payloads",
-            ],
-            "does_not_prove": [
-                "repo public claims",
-                "release readiness",
-                "provider compatibility",
-                "production security",
-                "scanner evasion",
-                "downstream verifier correctness",
-            ],
-        }),
-        failure_class,
-    )
+    diagnostic: &BundleAuditFailureDiagnostic,
+) -> serde_json::Value {
+    json!({
+        "version": 1,
+        "status": "fail",
+        "bundle_path": display_path(bundle_dir),
+        "profile": "unknown",
+        "manifest_version": 0,
+        "manifest_path": "manifest.json",
+        "artifact_count": 0,
+        "receipt_count": 0,
+        "scanner_safe_count": 0,
+        "runtime_material_count": 0,
+        "files": [],
+        "artifacts": [],
+        "receipts": [],
+        "missing_files": [],
+        "unexpected_files": [],
+        "checks": [
+            {
+                "name": "bundle-audit",
+                "status": "fail",
+                "failure_class": diagnostic.failure_class,
+                "detail": diagnostic.detail,
+            }
+        ],
+        "boundaries": [
+            "audit-bundle proves local bundle consistency and metadata classification",
+            "audit receipts contain metadata only and do not copy generated fixture payloads",
+        ],
+        "does_not_prove": [
+            "repo public claims",
+            "release readiness",
+            "provider compatibility",
+            "production security",
+            "scanner evasion",
+            "downstream verifier correctness",
+        ],
+    })
 }
 
 fn bundle_audit_failure_class(err: &anyhow::Error) -> &'static str {
@@ -1180,6 +1189,194 @@ fn bundle_audit_failure_class(err: &anyhow::Error) -> &'static str {
         }
     }
     "profile_validation_failed"
+}
+
+struct BundleAuditFailureDiagnostic {
+    failure_class: &'static str,
+    detail: String,
+}
+
+fn bundle_audit_failure_diagnostic(err: &anyhow::Error) -> BundleAuditFailureDiagnostic {
+    let failure_class = bundle_audit_failure_class(err);
+    let context = bundle_audit_failure_context(err, failure_class);
+    let detail = match failure_class {
+        "missing_manifest" => {
+            "manifest.json is missing from the bundle root. Fix: regenerate the bundle or pass the directory created by `uselesskey bundle --out`.".to_string()
+        }
+        "invalid_manifest" => format_with_context(
+            "manifest.json could not be parsed or has an unsupported manifest version",
+            context.as_deref(),
+            "regenerate the bundle with the same uselesskey version or inspect manifest.json for corruption",
+        ),
+        "path_escape" => format_with_context(
+            "manifest.json lists a path that escapes the bundle root",
+            context.as_deref(),
+            "regenerate the bundle or inspect the manifest producer; bundle paths must be relative and contained",
+        ),
+        "missing_artifact" => format_with_context(
+            "manifest.json lists files that are absent from the bundle",
+            context.as_deref(),
+            "regenerate the bundle or restore the missing generated files",
+        ),
+        "unexpected_artifact" => format_with_context(
+            "the bundle contains files that are not listed in manifest.json",
+            context.as_deref(),
+            "remove extra files or regenerate into an empty target directory",
+        ),
+        "missing_receipt" => format_with_context(
+            "a required bundle receipt is missing",
+            context.as_deref(),
+            "regenerate the bundle with a current uselesskey CLI",
+        ),
+        "invalid_receipt" => format_with_context(
+            "a bundle receipt could not be parsed or did not match the expected JSON shape",
+            context.as_deref(),
+            "regenerate the bundle; if the bundle was persisted, inspect receipt corruption",
+        ),
+        "scanner_safe_mismatch" => format_with_context(
+            "audit-surface scanner-safe metadata differs from manifest artifact metadata",
+            context.as_deref(),
+            "regenerate the bundle with the same uselesskey version",
+        ),
+        "runtime_material_mismatch" => format_with_context(
+            "audit-surface runtime-material metadata differs from manifest artifact metadata",
+            context.as_deref(),
+            "regenerate the bundle with the same uselesskey version",
+        ),
+        "unsupported_profile" => format_with_context(
+            "manifest.json names a profile this uselesskey CLI cannot audit",
+            context.as_deref(),
+            "upgrade uselesskey or audit with the CLI version that generated the bundle",
+        ),
+        _ => format_with_context(
+            "profile-specific generated files do not match manifest metadata",
+            context.as_deref(),
+            "regenerate the bundle with the same uselesskey version",
+        ),
+    };
+
+    BundleAuditFailureDiagnostic {
+        failure_class,
+        detail,
+    }
+}
+
+fn bundle_audit_failure_context(err: &anyhow::Error, failure_class: &str) -> Option<String> {
+    let prefix = format!("{failure_class}:");
+    err.chain().find_map(|source| {
+        let message = source.to_string();
+        message
+            .strip_prefix(&prefix)
+            .map(str::trim)
+            .filter(|detail| !detail.is_empty())
+            .map(ToOwned::to_owned)
+    })
+}
+
+fn format_with_context(summary: &str, context: Option<&str>, fix: &str) -> String {
+    match context {
+        Some(context) => format!("{summary}. Detail: {context}. Fix: {fix}."),
+        None => format!("{summary}. Fix: {fix}."),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bundle_audit_failure_diagnostics_are_class_specific() {
+        let cases = [
+            (
+                "missing_manifest",
+                "manifest.json is missing from the bundle root",
+                "pass the directory created by `uselesskey bundle --out`",
+                false,
+            ),
+            (
+                "invalid_manifest",
+                "manifest.json could not be parsed or has an unsupported manifest version",
+                "inspect manifest.json for corruption",
+                true,
+            ),
+            (
+                "path_escape",
+                "manifest.json lists a path that escapes the bundle root",
+                "bundle paths must be relative and contained",
+                true,
+            ),
+            (
+                "missing_artifact",
+                "manifest.json lists files that are absent from the bundle",
+                "restore the missing generated files",
+                true,
+            ),
+            (
+                "unexpected_artifact",
+                "the bundle contains files that are not listed in manifest.json",
+                "regenerate into an empty target directory",
+                true,
+            ),
+            (
+                "missing_receipt",
+                "a required bundle receipt is missing",
+                "regenerate the bundle with a current uselesskey CLI",
+                true,
+            ),
+            (
+                "invalid_receipt",
+                "a bundle receipt could not be parsed or did not match the expected JSON shape",
+                "inspect receipt corruption",
+                true,
+            ),
+            (
+                "scanner_safe_mismatch",
+                "audit-surface scanner-safe metadata differs from manifest artifact metadata",
+                "regenerate the bundle with the same uselesskey version",
+                true,
+            ),
+            (
+                "runtime_material_mismatch",
+                "audit-surface runtime-material metadata differs from manifest artifact metadata",
+                "regenerate the bundle with the same uselesskey version",
+                true,
+            ),
+            (
+                "unsupported_profile",
+                "manifest.json names a profile this uselesskey CLI cannot audit",
+                "audit with the CLI version that generated the bundle",
+                true,
+            ),
+            (
+                "profile_validation_failed",
+                "profile-specific generated files do not match manifest metadata",
+                "regenerate the bundle with the same uselesskey version",
+                true,
+            ),
+        ];
+
+        for (failure_class, summary, fix, includes_context) in cases {
+            let err = anyhow::anyhow!("{failure_class}: sample-context");
+            let diagnostic = bundle_audit_failure_diagnostic(&err);
+            assert_eq!(diagnostic.failure_class, failure_class);
+            assert!(
+                diagnostic.detail.contains(summary),
+                "{failure_class} detail did not contain summary: {}",
+                diagnostic.detail
+            );
+            assert!(
+                diagnostic.detail.contains(fix),
+                "{failure_class} detail did not contain fix: {}",
+                diagnostic.detail
+            );
+            assert_eq!(
+                diagnostic.detail.contains("Detail: sample-context"),
+                includes_context,
+                "{failure_class} context inclusion changed: {}",
+                diagnostic.detail
+            );
+        }
+    }
 }
 
 fn display_path(path: &Path) -> String {

@@ -91,7 +91,7 @@ commands = [
 
 [[work_item]]
 id = "audit-failure-diagnostics"
-status = "ready"
+status = "done"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0014"
 plan = "plans/downstream-ci-polish/implementation-plan.md"
@@ -104,7 +104,7 @@ commands = [
 
 [[work_item]]
 id = "installed-cli-doctor"
-status = "planned"
+status = "ready"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0012"
 plan = "plans/downstream-ci-polish/implementation-plan.md"
