@@ -1,0 +1,200 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://docs.rs/uselesskey-cli/bundle-audit.schema.json",
+  "title": "uselesskey bundle audit receipt",
+  "description": "Metadata-only receipt emitted by `uselesskey audit-bundle --format json` and written to bundle-audit.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "status",
+    "bundle_path",
+    "profile",
+    "manifest_version",
+    "manifest_path",
+    "artifact_count",
+    "receipt_count",
+    "scanner_safe_count",
+    "runtime_material_count",
+    "files",
+    "artifacts",
+    "receipts",
+    "missing_files",
+    "unexpected_files",
+    "checks",
+    "boundaries",
+    "does_not_prove"
+  ],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Bundle audit receipt schema version."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["pass", "fail"],
+      "description": "Overall audit result."
+    },
+    "bundle_path": {
+      "type": "string",
+      "description": "Display path of the audited bundle."
+    },
+    "profile": {
+      "type": "string",
+      "description": "Bundle profile from manifest.json."
+    },
+    "manifest_version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Manifest schema version from manifest.json."
+    },
+    "manifest_path": {
+      "type": "string",
+      "const": "manifest.json",
+      "description": "Path to the audited manifest relative to the bundle root."
+    },
+    "artifact_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "receipt_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "scanner_safe_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "runtime_material_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "files": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Bundle file paths relative to the audited bundle."
+    },
+    "artifacts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/artifact" }
+    },
+    "receipts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/receipt" }
+    },
+    "missing_files": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "unexpected_files": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "checks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/check" }
+    },
+    "boundaries": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Human-readable audit boundaries."
+    },
+    "does_not_prove": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Human-readable statements for out-of-scope claims."
+    }
+  },
+  "$defs": {
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "kind",
+        "format",
+        "scanner_safe",
+        "runtime_material",
+        "description"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Artifact path relative to the audited bundle."
+        },
+        "kind": {
+          "type": "string"
+        },
+        "format": {
+          "type": "string"
+        },
+        "scanner_safe": {
+          "type": "boolean"
+        },
+        "runtime_material": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "kind", "profile", "description"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Receipt path relative to the audited bundle."
+        },
+        "kind": {
+          "type": "string"
+        },
+        "profile": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "status", "failure_class", "detail"],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pass", "fail"]
+        },
+        "failure_class": {
+          "$ref": "#/$defs/failure_class"
+        },
+        "detail": {
+          "type": "string"
+        }
+      }
+    },
+    "failure_class": {
+      "type": "string",
+      "enum": [
+        "missing_manifest",
+        "invalid_manifest",
+        "path_escape",
+        "missing_artifact",
+        "unexpected_artifact",
+        "missing_receipt",
+        "invalid_receipt",
+        "scanner_safe_mismatch",
+        "runtime_material_mismatch",
+        "profile_validation_failed",
+        "unsupported_profile"
+      ]
+    }
+  }
+}
