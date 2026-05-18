@@ -33,6 +33,10 @@ const EXTERNAL_EXAMPLES: &[ExternalExample] = &[
         name: "tls-chain-validation",
         source_dir: "examples/external/tls-chain-validation",
     },
+    ExternalExample {
+        name: "downstream-ci-bundle-audit",
+        source_dir: "examples/external/downstream-ci-bundle-audit",
+    },
 ];
 const BOUNDARIES: &[&str] = &[
     "external-adoption-smoke proves clean-project user paths, not release readiness",
@@ -1015,6 +1019,7 @@ mod tests {
                 "webhook-verifier",
                 "oidc-jwks-validation",
                 "tls-chain-validation",
+                "downstream-ci-bundle-audit",
             ]
         );
     }
