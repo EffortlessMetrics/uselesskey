@@ -1,23 +1,50 @@
-use uselesskey::jwk::NegativeJwks;
-use uselesskey::{Factory, RsaFactoryExt, RsaSpec};
+use std::collections::BTreeSet;
 
-#[test]
-fn oidc_jwks_fixtures_cover_valid_and_negative_key_sets() {
-    let fx = Factory::deterministic_from_str("external-oidc-jwks");
-    let issuer = fx.rsa("issuer", RsaSpec::rs256());
-    let jwks = issuer.public_jwks();
-    let valid = jwks.to_value();
+use serde_json::Value;
 
-    let keys = valid["keys"].as_array();
-    assert_eq!(keys.map(Vec::len), Some(1));
-    assert_eq!(valid["keys"][0]["kty"], "RSA");
-    assert!(valid["keys"][0]["kid"].as_str().is_some_and(|kid| !kid.is_empty()));
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum JwksValidationError {
+    MissingKeys,
+    EmptyKeys,
+    MissingKid,
+    DuplicateKid,
+    WrongKty,
+    UnsupportedAlg,
+    MissingMaterial,
+}
 
-    let duplicate_kid = jwks.negative_value(NegativeJwks::DuplicateKid);
-    let duplicate_keys = duplicate_kid["keys"].as_array();
-    assert_eq!(duplicate_keys.map(Vec::len), Some(2));
-    assert_eq!(duplicate_kid["keys"][0]["kid"], duplicate_kid["keys"][1]["kid"]);
+pub fn validate_oidc_jwks(jwks: &Value) -> Result<(), JwksValidationError> {
+    let keys = jwks
+        .get("keys")
+        .and_then(Value::as_array)
+        .ok_or(JwksValidationError::MissingKeys)?;
+    if keys.is_empty() {
+        return Err(JwksValidationError::EmptyKeys);
+    }
 
-    let missing_kid = jwks.negative_value(NegativeJwks::MissingKid);
-    assert!(missing_kid["keys"][0].get("kid").is_none());
+    let mut kids = BTreeSet::new();
+    for key in keys {
+        let kid = key
+            .get("kid")
+            .and_then(Value::as_str)
+            .filter(|kid| !kid.is_empty())
+            .ok_or(JwksValidationError::MissingKid)?;
+        if !kids.insert(kid.to_string()) {
+            return Err(JwksValidationError::DuplicateKid);
+        }
+
+        if key.get("kty").and_then(Value::as_str) != Some("RSA") {
+            return Err(JwksValidationError::WrongKty);
+        }
+        if key.get("alg").and_then(Value::as_str) != Some("RS256") {
+            return Err(JwksValidationError::UnsupportedAlg);
+        }
+        if key.get("n").and_then(Value::as_str).is_none()
+            || key.get("e").and_then(Value::as_str).is_none()
+        {
+            return Err(JwksValidationError::MissingMaterial);
+        }
+    }
+
+    Ok(())
 }

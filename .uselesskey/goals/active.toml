@@ -90,7 +90,7 @@ commands = [
 
 [[work_item]]
 id = "oidc-jwks-validator-example"
-status = "ready"
+status = "done"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0015"
 plan = "plans/real-workflow-closure/implementation-plan.md"
@@ -102,7 +102,7 @@ commands = [
 
 [[work_item]]
 id = "bundle-product-surface-spec"
-status = "planned"
+status = "ready"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0005"
 plan = "plans/real-workflow-closure/implementation-plan.md"

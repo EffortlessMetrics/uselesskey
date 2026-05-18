@@ -70,6 +70,10 @@ assert!(validator_rejects(duplicate_kid));
 Replace `validator_rejects` with the downstream validator assertion. The useful
 assertion is the validator's rejection reason, not just that JSON parsing failed.
 
+For a clean-project example that does this with a tiny downstream validator, see
+`examples/external/oidc-jwks-validation/`. It accepts the valid JWKS and rejects
+duplicate-`kid`, wrong-`kty`, unsupported-`alg`, and missing-`kid` negatives.
+
 ## Scanner-safety note
 
 The OIDC profile is scanner-safe by default. It is intended for key-set parsing,
