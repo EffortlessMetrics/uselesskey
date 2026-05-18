@@ -38,9 +38,9 @@ commands = [
 
 [[work_item]]
 id = "real-user-workflow-spec"
-status = "ready"
+status = "done"
 proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0005"
+spec = "USELESSKEY-SPEC-0015"
 plan = "plans/real-workflow-closure/implementation-plan.md"
 commands = [
   "cargo xtask spec-check --strict",
@@ -51,7 +51,7 @@ commands = [
 
 [[work_item]]
 id = "negative-fixture-taxonomy-spec"
-status = "planned"
+status = "ready"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0005"
 plan = "plans/real-workflow-closure/implementation-plan.md"
@@ -92,7 +92,7 @@ commands = [
 id = "oidc-jwks-validator-example"
 status = "planned"
 proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0013"
+spec = "USELESSKEY-SPEC-0015"
 plan = "plans/real-workflow-closure/implementation-plan.md"
 commands = [
   "cargo xtask external-adoption-smoke --path .",

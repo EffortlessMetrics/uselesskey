@@ -49,3 +49,4 @@ public crate-surface cleanup.
 - [USELESSKEY-SPEC-0012: CLI proof handoff boundary](USELESSKEY-SPEC-0012-cli-proof-handoff.md)
 - [USELESSKEY-SPEC-0013: External adoption smoke](USELESSKEY-SPEC-0013-external-adoption-smoke.md)
 - [USELESSKEY-SPEC-0014: Installed bundle audit](USELESSKEY-SPEC-0014-installed-bundle-audit.md)
+- [USELESSKEY-SPEC-0015: Real user workflows](USELESSKEY-SPEC-0015-real-user-workflows.md)

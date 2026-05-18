@@ -15,6 +15,7 @@ linked_specs = [
   "USELESSKEY-SPEC-0011",
   "USELESSKEY-SPEC-0013",
   "USELESSKEY-SPEC-0014",
+  "USELESSKEY-SPEC-0015",
 ]
 linked_adrs = [
   "USELESSKEY-ADR-0001",
@@ -61,7 +62,7 @@ This lane covers:
 
 ## Planned Specs
 
-This lane adds the following specs in later PRs:
+This lane adds the following specs:
 
 ```text
 USELESSKEY-SPEC-0015-real-user-workflows.md
@@ -71,8 +72,8 @@ USELESSKEY-SPEC-0018-task-first-docs.md
 USELESSKEY-SPEC-0019-public-surface-discipline.md
 ```
 
-The lane-open PR links only existing specs in front matter. Later spec PRs must
-update this plan and the active goal as each spec lands.
+Later spec PRs must update this plan and the active goal as each remaining spec
+lands.
 
 ## Non-goals
 
