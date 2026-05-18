@@ -17,6 +17,7 @@ or cryptographic assurance.
 | test TLS verifier behavior | TLS contract pack | `uselesskey bundle --profile tls --out target/uselesskey-tls` |
 | test OIDC/JWKS validator behavior | OIDC/JWKS contract pack | `uselesskey bundle --profile oidc --out target/uselesskey-oidc` |
 | test webhook signature negatives | webhook contract pack | `uselesskey bundle --profile webhook --out target/uselesskey-webhook` |
+| share what an installed bundle contains | installed bundle audit | `uselesskey audit-bundle --path target/uselesskey-webhook --out target/uselesskey-webhook-audit` |
 | prove public claims for a reviewer with a repo checkout | verification pack | `cargo xtask verification-pack --out target/uselesskey-verification` |
 
 Install the CLI when you want bundle commands outside this workspace:
@@ -80,6 +81,7 @@ Generate and verify a bundle:
 uselesskey bundle --profile scanner-safe --explain
 uselesskey bundle --profile scanner-safe --out target/uselesskey-bundle
 uselesskey verify-bundle --path target/uselesskey-bundle
+uselesskey audit-bundle --path target/uselesskey-bundle --out target/uselesskey-bundle-audit
 ```
 
 Keep generated payloads under `target/`. Commit metadata, docs, and policy when
@@ -103,6 +105,7 @@ Installed CLI:
 ```bash
 uselesskey bundle --profile tls --out target/uselesskey-tls
 uselesskey verify-bundle --path target/uselesskey-tls
+uselesskey audit-bundle --path target/uselesskey-tls --out target/uselesskey-tls-audit
 ```
 
 Repo-checkout proof:
@@ -122,6 +125,7 @@ Installed CLI:
 ```bash
 uselesskey bundle --profile oidc --out target/uselesskey-oidc
 uselesskey verify-bundle --path target/uselesskey-oidc
+uselesskey audit-bundle --path target/uselesskey-oidc --out target/uselesskey-oidc-audit
 ```
 
 Repo-checkout proof:
@@ -140,6 +144,7 @@ Installed CLI:
 ```bash
 uselesskey bundle --profile webhook --out target/uselesskey-webhook
 uselesskey verify-bundle --path target/uselesskey-webhook
+uselesskey audit-bundle --path target/uselesskey-webhook --out target/uselesskey-webhook-audit
 ```
 
 Repo-checkout proof:
@@ -154,6 +159,18 @@ Does not prove provider compatibility, secret rotation, replay protection
 completeness, delivery behavior, or transport security.
 
 ## Reviewer Proof
+
+Installed users can share a local bundle audit without cloning the repo:
+
+```bash
+uselesskey audit-bundle --path target/uselesskey-webhook --out target/uselesskey-webhook-audit
+```
+
+Attach `bundle-audit.md` and `bundle-audit.json`. This proves local bundle
+consistency and metadata classification only. It does not prove repo public
+claims, release readiness, provider compatibility, production security, or
+downstream verifier correctness. See
+[share-installed-bundle-audit.md](share-installed-bundle-audit.md).
 
 Build a metadata-only review bundle from a repo checkout:
 

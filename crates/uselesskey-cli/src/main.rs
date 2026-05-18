@@ -1,8 +1,9 @@
 #![forbid(unsafe_code)]
 
+use std::collections::BTreeSet;
 use std::fs;
 use std::io::{self, Read, Write};
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 
 use anyhow::{Context, Result, bail};
 use clap::{Parser, Subcommand, ValueEnum};
@@ -38,6 +39,7 @@ enum Commands {
     Bundle(BundleArgs),
     VerifyBundle(VerifyBundleArgs),
     InspectBundle(InspectBundleArgs),
+    AuditBundle(AuditBundleArgs),
     Export(ExportArgs),
     Inspect(InspectArgs),
     Materialize(MaterializeArgs),
@@ -98,6 +100,22 @@ struct InspectBundleArgs {
     bundle_dir: PathBuf,
     #[arg(long)]
     out: Option<PathBuf>,
+}
+
+#[derive(clap::Args, Debug)]
+struct AuditBundleArgs {
+    #[arg(long = "bundle-dir", alias = "path")]
+    bundle_dir: PathBuf,
+    #[arg(long)]
+    out: Option<PathBuf>,
+    #[arg(long, default_value = "markdown")]
+    format: AuditOutputFormat,
+}
+
+#[derive(Clone, Copy, Debug, ValueEnum)]
+enum AuditOutputFormat {
+    Markdown,
+    Json,
 }
 
 #[derive(clap::Args, Debug)]
@@ -269,6 +287,7 @@ fn main() -> Result<()> {
         Commands::Bundle(args) => run_bundle(args),
         Commands::VerifyBundle(args) => run_verify_bundle(args),
         Commands::InspectBundle(args) => run_inspect_bundle(args),
+        Commands::AuditBundle(args) => run_audit_bundle(args),
         Commands::Export(args) => run_export(args),
         Commands::Inspect(args) => run_inspect(args),
         Commands::Materialize(args) => run_materialize(args),
@@ -395,6 +414,41 @@ fn run_inspect_bundle(args: InspectBundleArgs) -> Result<()> {
     let summary = render_bundle_inspection_summary(&manifest, files.len());
 
     emit_artifact(&Artifact::Text(summary), args.out.as_deref())
+}
+
+fn run_audit_bundle(args: AuditBundleArgs) -> Result<()> {
+    let audit = build_bundle_audit(&args.bundle_dir)
+        .with_context(|| format!("failed to audit bundle {}", args.bundle_dir.display()))?;
+
+    if let Some(out_dir) = args.out.as_deref() {
+        fs::create_dir_all(out_dir)
+            .with_context(|| format!("failed to create audit directory {}", out_dir.display()))?;
+        let json_path = out_dir.join("bundle-audit.json");
+        let md_path = out_dir.join("bundle-audit.md");
+        fs::write(&json_path, serde_json::to_vec_pretty(&audit)?)
+            .with_context(|| format!("failed to write {}", json_path.display()))?;
+        fs::write(&md_path, render_bundle_audit_markdown(&audit))
+            .with_context(|| format!("failed to write {}", md_path.display()))?;
+        return emit_artifact(
+            &Artifact::Json(json!({
+                "audit_bundle": {
+                    "status": audit.status,
+                    "bundle_dir": audit.bundle_path,
+                    "out": out_dir,
+                    "json": json_path,
+                    "markdown": md_path,
+                }
+            })),
+            None,
+        );
+    }
+
+    match args.format {
+        AuditOutputFormat::Markdown => {
+            emit_artifact(&Artifact::Text(render_bundle_audit_markdown(&audit)), None)
+        }
+        AuditOutputFormat::Json => emit_artifact(&Artifact::Json(json!(audit)), None),
+    }
 }
 
 fn run_export(args: ExportArgs) -> Result<()> {
@@ -717,6 +771,320 @@ fn render_bundle_inspection_summary(
     )
 }
 
+fn build_bundle_audit(bundle_dir: &Path) -> Result<BundleAudit> {
+    let manifest_path = bundle_dir.join("manifest.json");
+    if !manifest_path.exists() {
+        bail!("missing_manifest: {}", manifest_path.display());
+    }
+    let manifest = load_bundle_manifest(&manifest_path)
+        .with_context(|| format!("invalid_manifest: {}", manifest_path.display()))?;
+    ensure_manifest_paths_safe(&manifest)?;
+    let profile = parse_manifest_profile(&manifest.profile)
+        .map_err(|err| anyhow::anyhow!("unsupported_profile: {err}"))?;
+    let info = profile_info(profile);
+
+    let actual_files = collect_bundle_files(bundle_dir)?;
+    let expected_files = expected_bundle_file_set(&manifest.files);
+    let actual_file_set = actual_files.into_iter().collect::<BTreeSet<_>>();
+    let missing_files = expected_files
+        .difference(&actual_file_set)
+        .cloned()
+        .collect::<Vec<_>>();
+    let unexpected_files = actual_file_set
+        .difference(&expected_files)
+        .cloned()
+        .collect::<Vec<_>>();
+    if !missing_files.is_empty() {
+        bail!("missing_artifact: {}", missing_files.join(", "));
+    }
+    if !unexpected_files.is_empty() {
+        bail!("unexpected_artifact: {}", unexpected_files.join(", "));
+    }
+
+    let receipt_kinds = manifest
+        .receipts
+        .iter()
+        .map(|receipt| receipt.kind.clone())
+        .collect::<BTreeSet<_>>();
+    for required in ["materialization", "audit-surface"] {
+        if !receipt_kinds.contains(required) {
+            bail!("missing_receipt: {required}");
+        }
+    }
+    validate_audit_surface_receipt(bundle_dir, &manifest)?;
+
+    let files = verify_bundle_manifest(bundle_dir, &manifest)
+        .with_context(|| format!("profile_validation_failed: {}", bundle_dir.display()))?;
+
+    let artifacts = manifest
+        .artifacts
+        .iter()
+        .map(|artifact| BundleAuditArtifact {
+            path: artifact.path.clone(),
+            kind: artifact.kind.clone(),
+            format: artifact.format.clone(),
+            scanner_safe: artifact.scanner_safe,
+            runtime_material: !artifact.scanner_safe,
+            description: artifact.description.clone(),
+        })
+        .collect::<Vec<_>>();
+    let scanner_safe_count = artifacts
+        .iter()
+        .filter(|artifact| artifact.scanner_safe)
+        .count();
+    let runtime_material_count = artifacts.len() - scanner_safe_count;
+
+    Ok(BundleAudit {
+        version: 1,
+        status: "pass".to_string(),
+        bundle_path: display_path(bundle_dir),
+        profile: manifest.profile.clone(),
+        manifest_version: manifest.version,
+        manifest_path: "manifest.json".to_string(),
+        artifact_count: artifacts.len(),
+        receipt_count: manifest.receipts.len(),
+        scanner_safe_count,
+        runtime_material_count,
+        files,
+        artifacts,
+        receipts: manifest.receipts.clone(),
+        missing_files,
+        unexpected_files,
+        checks: vec![
+            BundleAuditCheck::pass("manifest", "invalid_manifest", "manifest parsed"),
+            BundleAuditCheck::pass(
+                "path-containment",
+                "path_escape",
+                "manifest paths are relative and contained by the bundle",
+            ),
+            BundleAuditCheck::pass(
+                "artifact-content",
+                "missing_artifact",
+                "manifest artifacts regenerate and verify",
+            ),
+            BundleAuditCheck::pass(
+                "receipts",
+                "missing_receipt",
+                "materialization and audit-surface receipts are present",
+            ),
+            BundleAuditCheck::pass(
+                "scanner-safe-classification",
+                "scanner_safe_mismatch",
+                "audit-surface receipt matches manifest scanner-safe counts",
+            ),
+            BundleAuditCheck::pass(
+                "runtime-material-classification",
+                "runtime_material_mismatch",
+                "audit-surface receipt matches manifest runtime-material counts",
+            ),
+            BundleAuditCheck::pass(
+                "profile-validation",
+                "profile_validation_failed",
+                "profile-specific generated files match the manifest",
+            ),
+        ],
+        boundaries: bundle_audit_boundaries(&info),
+        does_not_prove: info
+            .not_proves
+            .iter()
+            .map(|boundary| (*boundary).to_string())
+            .collect(),
+    })
+}
+
+fn render_bundle_audit_markdown(audit: &BundleAudit) -> String {
+    let mut out = String::new();
+    out.push_str("# uselesskey Bundle Audit\n\n");
+    out.push_str(&format!("- Status: {}\n", audit.status));
+    out.push_str(&format!("- Bundle: {}\n", audit.bundle_path));
+    out.push_str(&format!("- Profile: {}\n", audit.profile));
+    out.push_str(&format!(
+        "- Manifest: {} (version {})\n",
+        audit.manifest_path, audit.manifest_version
+    ));
+    out.push_str(&format!("- Artifacts: {}\n", audit.artifact_count));
+    out.push_str(&format!("- Receipts: {}\n", audit.receipt_count));
+    out.push_str(&format!(
+        "- Scanner-safe artifacts: {}\n",
+        audit.scanner_safe_count
+    ));
+    out.push_str(&format!(
+        "- Runtime material artifacts: {}\n\n",
+        audit.runtime_material_count
+    ));
+
+    out.push_str("## Checks\n\n");
+    out.push_str("| Check | Status | Failure class | Detail |\n");
+    out.push_str("|---|---|---|---|\n");
+    for check in &audit.checks {
+        out.push_str(&format!(
+            "| {} | {} | {} | {} |\n",
+            check.name, check.status, check.failure_class, check.detail
+        ));
+    }
+
+    out.push_str("\n## Artifacts\n\n");
+    out.push_str("| Path | Kind | Format | Scanner-safe | Runtime material |\n");
+    out.push_str("|---|---|---|---|---|\n");
+    for artifact in &audit.artifacts {
+        out.push_str(&format!(
+            "| {} | {} | {} | {} | {} |\n",
+            artifact.path,
+            artifact.kind,
+            artifact.format,
+            yes_no(artifact.scanner_safe),
+            yes_no(artifact.runtime_material)
+        ));
+    }
+
+    out.push_str("\n## Receipts\n\n");
+    for receipt in &audit.receipts {
+        out.push_str(&format!("- {}: {}\n", receipt.kind, receipt.path));
+    }
+
+    out.push_str("\n## Boundaries\n\n");
+    for boundary in &audit.boundaries {
+        out.push_str(&format!("- {boundary}\n"));
+    }
+
+    out.push_str("\n## Does Not Prove\n\n");
+    for boundary in &audit.does_not_prove {
+        out.push_str(&format!("- {boundary}\n"));
+    }
+
+    out
+}
+
+fn ensure_manifest_paths_safe(manifest: &BundleManifest) -> Result<()> {
+    for path in manifest
+        .files
+        .iter()
+        .chain(manifest.artifacts.iter().map(|artifact| &artifact.path))
+        .chain(manifest.receipts.iter().map(|receipt| &receipt.path))
+    {
+        if !is_safe_bundle_relative_path(path) {
+            bail!("path_escape: {path}");
+        }
+    }
+    Ok(())
+}
+
+fn is_safe_bundle_relative_path(path: &str) -> bool {
+    let path = Path::new(path);
+    !path.is_absolute()
+        && path
+            .components()
+            .all(|component| matches!(component, Component::Normal(_) | Component::CurDir))
+}
+
+fn collect_bundle_files(bundle_dir: &Path) -> Result<Vec<String>> {
+    let mut stack = vec![bundle_dir.to_path_buf()];
+    let mut files = Vec::new();
+    while let Some(dir) = stack.pop() {
+        for entry in
+            fs::read_dir(&dir).with_context(|| format!("failed to read {}", dir.display()))?
+        {
+            let entry = entry?;
+            let path = entry.path();
+            let metadata = entry.metadata()?;
+            if metadata.is_dir() {
+                stack.push(path);
+            } else if metadata.is_file() {
+                let relative = path.strip_prefix(bundle_dir).with_context(|| {
+                    format!("failed to make {} relative to bundle", path.display())
+                })?;
+                files.push(display_path(relative));
+            }
+        }
+    }
+    files.sort();
+    Ok(files)
+}
+
+fn expected_bundle_file_set(files: &[String]) -> BTreeSet<String> {
+    files
+        .iter()
+        .cloned()
+        .chain(std::iter::once("manifest.json".to_string()))
+        .collect()
+}
+
+fn validate_audit_surface_receipt(bundle_dir: &Path, manifest: &BundleManifest) -> Result<()> {
+    let receipt_path = bundle_dir.join("receipts/audit-surface.json");
+    let raw = fs::read_to_string(&receipt_path)
+        .with_context(|| format!("missing_receipt: {}", receipt_path.display()))?;
+    let receipt: serde_json::Value =
+        serde_json::from_str(&raw).with_context(|| "invalid_receipt: audit-surface")?;
+    let scanner_safe_count = manifest
+        .artifacts
+        .iter()
+        .filter(|artifact| artifact.scanner_safe)
+        .count();
+    let runtime_material_count = manifest.artifacts.len() - scanner_safe_count;
+    let scanner_safe_all = scanner_safe_count == manifest.artifacts.len();
+
+    let checks = [
+        (
+            "profile",
+            "scanner_safe_mismatch",
+            receipt.get("profile").and_then(serde_json::Value::as_str)
+                == Some(manifest.profile.as_str()),
+        ),
+        (
+            "artifact_count",
+            "scanner_safe_mismatch",
+            receipt
+                .get("artifact_count")
+                .and_then(serde_json::Value::as_u64)
+                == Some(manifest.artifacts.len() as u64),
+        ),
+        (
+            "scanner_safe_count",
+            "scanner_safe_mismatch",
+            receipt
+                .get("scanner_safe_count")
+                .and_then(serde_json::Value::as_u64)
+                == Some(scanner_safe_count as u64),
+        ),
+        (
+            "runtime_material_count",
+            "runtime_material_mismatch",
+            receipt
+                .get("runtime_material_count")
+                .and_then(serde_json::Value::as_u64)
+                == Some(runtime_material_count as u64),
+        ),
+        (
+            "scanner_safe",
+            "scanner_safe_mismatch",
+            receipt
+                .get("scanner_safe")
+                .and_then(serde_json::Value::as_bool)
+                == Some(scanner_safe_all),
+        ),
+    ];
+    for (field, failure_class, matches) in checks {
+        if !matches {
+            bail!("{failure_class}: audit-surface field `{field}`");
+        }
+    }
+    Ok(())
+}
+
+fn bundle_audit_boundaries(info: &ProfileInfo) -> Vec<String> {
+    vec![
+        "audit-bundle proves local bundle consistency and metadata classification".to_string(),
+        "audit-bundle does not prove repo public claims; use cargo xtask claim-proof from a repo checkout".to_string(),
+        "audit-bundle does not prove release readiness; use release-evidence for release proof".to_string(),
+        format!("profile proof/check path: {}", info.proof_command),
+        "audit receipts contain metadata only and do not copy generated fixture payloads".to_string(),
+    ]
+}
+
+fn display_path(path: &Path) -> String {
+    path.display().to_string().replace('\\', "/")
+}
+
 fn bundle_artifact_contains_private_key_material(artifact: &BundleArtifactRecord) -> bool {
     matches!(artifact.kind.as_str(), "rsa" | "ecdsa" | "ed25519")
         && matches!(artifact.format.as_str(), "pem" | "der")
@@ -929,7 +1297,7 @@ fn render_profiles(explain: bool) -> String {
             info.proof_command
         ));
     }
-    out.push_str("\nInstalled users generate, verify, and inspect bundles with `uselesskey bundle`, `uselesskey verify-bundle`, and `uselesskey inspect-bundle`.\n");
+    out.push_str("\nInstalled users generate, verify, audit, and inspect bundles with `uselesskey bundle`, `uselesskey verify-bundle`, `uselesskey audit-bundle`, and `uselesskey inspect-bundle`.\n");
     out.push_str("Use `uselesskey profile <name> --explain` for generated files, boundaries, and copyable commands.\n");
 
     if explain {
@@ -952,6 +1320,7 @@ fn render_profile_summary(profile: BundleProfile) -> String {
             "Purpose: {}\n",
             "Generate: uselesskey bundle --profile {} --out {}\n",
             "Verify: uselesskey verify-bundle --path {}\n",
+            "Audit: uselesskey audit-bundle --path {} --out {}-audit\n",
             "Inspect: uselesskey inspect-bundle --path {}\n",
             "Proof/check path: {}\n",
             "Explain: uselesskey profile {} --explain\n",
@@ -961,6 +1330,8 @@ fn render_profile_summary(profile: BundleProfile) -> String {
         info.title,
         info.purpose,
         info.profile.manifest_name(),
+        info.profile.output_dir_hint(),
+        info.profile.output_dir_hint(),
         info.profile.output_dir_hint(),
         info.profile.output_dir_hint(),
         info.profile.output_dir_hint(),
@@ -2082,7 +2453,7 @@ struct BundleManifest {
     receipts: Vec<BundleReceiptRecord>,
 }
 
-#[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Debug, Clone, Deserialize, Eq, PartialEq, Serialize)]
 struct BundleArtifactRecord {
     path: String,
     kind: String,
@@ -2093,7 +2464,7 @@ struct BundleArtifactRecord {
     description: String,
 }
 
-#[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Debug, Clone, Deserialize, Eq, PartialEq, Serialize)]
 struct BundleReceiptRecord {
     path: String,
     kind: String,
@@ -2103,4 +2474,55 @@ struct BundleReceiptRecord {
 
 fn default_bundle_profile() -> String {
     "runtime".to_string()
+}
+
+#[derive(Debug, Serialize)]
+struct BundleAudit {
+    version: u32,
+    status: String,
+    bundle_path: String,
+    profile: String,
+    manifest_version: u32,
+    manifest_path: String,
+    artifact_count: usize,
+    receipt_count: usize,
+    scanner_safe_count: usize,
+    runtime_material_count: usize,
+    files: Vec<String>,
+    artifacts: Vec<BundleAuditArtifact>,
+    receipts: Vec<BundleReceiptRecord>,
+    missing_files: Vec<String>,
+    unexpected_files: Vec<String>,
+    checks: Vec<BundleAuditCheck>,
+    boundaries: Vec<String>,
+    does_not_prove: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct BundleAuditArtifact {
+    path: String,
+    kind: String,
+    format: String,
+    scanner_safe: bool,
+    runtime_material: bool,
+    description: String,
+}
+
+#[derive(Debug, Serialize)]
+struct BundleAuditCheck {
+    name: String,
+    status: String,
+    failure_class: String,
+    detail: String,
+}
+
+impl BundleAuditCheck {
+    fn pass(name: &str, failure_class: &str, detail: &str) -> Self {
+        Self {
+            name: name.to_string(),
+            status: "pass".to_string(),
+            failure_class: failure_class.to_string(),
+            detail: detail.to_string(),
+        }
+    }
 }

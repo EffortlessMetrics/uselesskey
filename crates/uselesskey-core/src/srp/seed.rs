@@ -275,19 +275,21 @@ mod tests {
     }
 
     #[test]
-    fn from_env_value_short_0x_prefixed_string_hashes_original_input() {
+    fn from_env_value_short_0x_prefixed_string_hashes_original_input() -> Result<(), String> {
         let input = "0xabc";
-        let seed = Seed::from_env_value(input).unwrap();
+        let seed = Seed::from_env_value(input)?;
         let expected = blake3::hash(input.as_bytes());
         assert_eq!(seed.bytes(), expected.as_bytes());
+        Ok(())
     }
 
     #[test]
-    fn from_env_value_invalid_length_0x_prefixed_hex_hashes_original_input() {
+    fn from_env_value_invalid_length_0x_prefixed_hex_hashes_original_input() -> Result<(), String> {
         let input = format!("0x{}", "a".repeat(63));
-        let seed = Seed::from_env_value(&input).unwrap();
+        let seed = Seed::from_env_value(&input)?;
         let expected = blake3::hash(input.as_bytes());
         assert_eq!(seed.bytes(), expected.as_bytes());
+        Ok(())
     }
 
     #[test]

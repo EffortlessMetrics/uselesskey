@@ -357,8 +357,8 @@ mod tests {
     }
 
     #[test]
-    fn raw_payload_is_used_verbatim_for_signature_inputs() {
-        let fx = Factory::deterministic(Seed::from_env_value("webhook-raw-payload").unwrap());
+    fn raw_payload_is_used_verbatim_for_signature_inputs() -> Result<(), String> {
+        let fx = Factory::deterministic(Seed::from_env_value("webhook-raw-payload")?);
         let raw = "{\"message\":\"keep exact spacing\", \"n\": 1}\n";
 
         let github = fx.webhook_github("raw", WebhookPayloadSpec::Raw(raw.to_string()));
@@ -393,11 +393,12 @@ mod tests {
             slack.timestamp,
             300
         ));
+        Ok(())
     }
 
     #[test]
-    fn fixture_cache_identity_includes_profile_label_and_payload_spec() {
-        let fx = Factory::deterministic(Seed::from_env_value("webhook-cache-identity").unwrap());
+    fn fixture_cache_identity_includes_profile_label_and_payload_spec() -> Result<(), String> {
+        let fx = Factory::deterministic(Seed::from_env_value("webhook-cache-identity")?);
 
         let github = fx.webhook_github("repo", WebhookPayloadSpec::Canonical);
         let github_again = fx.webhook_github("repo", WebhookPayloadSpec::Canonical);
@@ -419,11 +420,12 @@ mod tests {
         );
         assert_ne!(github.secret, different_raw.secret);
         assert_eq!(different_raw.payload, r#"{"action":"opened"}"#);
+        Ok(())
     }
 
     #[test]
-    fn near_miss_scenarios_are_marked_and_recomputed_for_each_profile() {
-        let fx = Factory::deterministic(Seed::from_env_value("webhook-nearmiss-profiles").unwrap());
+    fn near_miss_scenarios_are_marked_and_recomputed_for_each_profile() -> Result<(), String> {
+        let fx = Factory::deterministic(Seed::from_env_value("webhook-nearmiss-profiles")?);
         let fixtures = [
             fx.webhook_github("repo", WebhookPayloadSpec::Canonical),
             fx.webhook_stripe("billing", WebhookPayloadSpec::Canonical),
@@ -511,6 +513,7 @@ mod tests {
                 }
             }
         }
+        Ok(())
     }
 
     fn assert_lower_hex(value: &str) {

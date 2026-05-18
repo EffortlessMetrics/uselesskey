@@ -329,11 +329,13 @@ fn run_cli_profile(
     let target_dir = project_dir.join("target");
     let bundle_dir = target_dir.join(format!("uselesskey-{profile}"));
     let inspect_out = target_dir.join(format!("inspect-{profile}.txt"));
+    let audit_dir = target_dir.join(format!("audit-{profile}"));
     fs::create_dir_all(&target_dir)
         .with_context(|| format!("failed to create {}", target_dir.display()))?;
 
     let bundle_artifact = relative_artifact_from_path(&bundle_dir);
     let inspect_artifact = relative_artifact_from_path(&inspect_out);
+    let audit_artifact = relative_artifact_from_path(&audit_dir);
 
     let mut bundle = Command::new(cli_bin);
     bundle
@@ -363,6 +365,22 @@ fn run_cli_profile(
         &[bundle_artifact.as_str()],
     )?;
 
+    let mut audit = Command::new(cli_bin);
+    audit
+        .args(["audit-bundle", "--path"])
+        .arg(&bundle_dir)
+        .args(["--out"])
+        .arg(&audit_dir)
+        .current_dir(&project_dir);
+    run_command_step(
+        receipt,
+        &format!("cli-audit-{profile}"),
+        audit,
+        &project_dir,
+        log_dir,
+        &[bundle_artifact.as_str(), audit_artifact.as_str()],
+    )?;
+
     let mut inspect = Command::new(cli_bin);
     inspect
         .args(["inspect-bundle", "--path"])
@@ -384,7 +402,7 @@ fn run_cli_profile(
         receipt,
         &project_name,
         &project_dir,
-        &[bundle_artifact, inspect_artifact],
+        &[bundle_artifact, audit_artifact, inspect_artifact],
     );
 
     Ok(())
@@ -952,24 +970,47 @@ uselesskey-rustls = { version = "0.9.1", features = ["tls-config", "rustls-ring"
                 outputs: vec![
                     "target/external-adoption-smoke/work/webhook-cli/target/uselesskey-webhook"
                         .to_string(),
+                    "target/external-adoption-smoke/work/webhook-cli/target/audit-webhook"
+                        .to_string(),
                 ],
             }],
-            steps: vec![ExternalAdoptionStep {
-                name: "cli-bundle-webhook".to_string(),
-                command: vec![
-                    "uselesskey".to_string(),
-                    "bundle".to_string(),
-                    "--profile".to_string(),
-                    "webhook".to_string(),
-                ],
-                cwd: ".".to_string(),
-                status: "ok".to_string(),
-                duration_ms: 1,
-                stdout: "target/external-adoption-smoke/logs/stdout.txt".to_string(),
-                stderr: "target/external-adoption-smoke/logs/stderr.txt".to_string(),
-                details: None,
-                artifacts: Vec::new(),
-            }],
+            steps: vec![
+                ExternalAdoptionStep {
+                    name: "cli-bundle-webhook".to_string(),
+                    command: vec![
+                        "uselesskey".to_string(),
+                        "bundle".to_string(),
+                        "--profile".to_string(),
+                        "webhook".to_string(),
+                    ],
+                    cwd: ".".to_string(),
+                    status: "ok".to_string(),
+                    duration_ms: 1,
+                    stdout: "target/external-adoption-smoke/logs/stdout.txt".to_string(),
+                    stderr: "target/external-adoption-smoke/logs/stderr.txt".to_string(),
+                    details: None,
+                    artifacts: Vec::new(),
+                },
+                ExternalAdoptionStep {
+                    name: "cli-audit-webhook".to_string(),
+                    command: vec![
+                        "uselesskey".to_string(),
+                        "audit-bundle".to_string(),
+                        "--path".to_string(),
+                        "target/uselesskey-webhook".to_string(),
+                    ],
+                    cwd: ".".to_string(),
+                    status: "ok".to_string(),
+                    duration_ms: 1,
+                    stdout: "target/external-adoption-smoke/logs/audit-stdout.txt".to_string(),
+                    stderr: "target/external-adoption-smoke/logs/audit-stderr.txt".to_string(),
+                    details: None,
+                    artifacts: vec![
+                        "target/external-adoption-smoke/work/webhook-cli/target/audit-webhook"
+                            .to_string(),
+                    ],
+                },
+            ],
             artifacts: vec![REPORT_JSON.to_string(), REPORT_MD.to_string()],
             boundaries: BOUNDARIES.to_vec(),
         };
@@ -978,5 +1019,6 @@ uselesskey-rustls = { version = "0.9.1", features = ["tls-config", "rustls-ring"
         assert!(markdown.contains("External Adoption Smoke Receipt"));
         assert!(markdown.contains("installed-style CLI smoke does not claim provider"));
         assert!(markdown.contains("cli-bundle-webhook"));
+        assert!(markdown.contains("target/audit-webhook"));
     }
 }

@@ -25,7 +25,7 @@ uselesskey bundle --profile webhook --explain
 
 Interface split:
 
-- installed CLI users generate, verify, and inspect bundles with `uselesskey`;
+- installed CLI users generate, verify, audit, and inspect bundles with `uselesskey`;
 - Rust test authors use crate dependency snippets in the linked how-to docs;
 - reviewers with a repo checkout use `cargo xtask verification-pack`;
 - maintainers use `cargo xtask claim-proof`, `bundle-proof`, and release
@@ -35,10 +35,10 @@ Interface split:
 
 | Profile | Use when you need | Installed CLI | Repo-checkout proof |
 | --- | --- | --- | --- |
-| `scanner-safe` | scanner-safe baseline fixtures and export receipts | `uselesskey bundle --profile scanner-safe --out target/uselesskey-bundle` | `cargo xtask claim-proof --claim scanner-safe-fixtures` |
-| `tls` | TLS chain and certificate rejection fixtures | `uselesskey bundle --profile tls --out target/uselesskey-tls` | `cargo xtask claim-proof --claim tls-contract-pack` |
-| `oidc` | OIDC/JWKS validator fixtures and JWT-shaped negatives | `uselesskey bundle --profile oidc --out target/uselesskey-oidc` | `cargo xtask claim-report --claim oidc-jwks-contract-pack` |
-| `webhook` | HMAC webhook signature positives and negatives | `uselesskey bundle --profile webhook --out target/uselesskey-webhook` | `cargo xtask claim-proof --claim webhook-contract-pack` |
+| `scanner-safe` | scanner-safe baseline fixtures and export receipts | `uselesskey bundle --profile scanner-safe --out target/uselesskey-bundle` then `uselesskey audit-bundle --path target/uselesskey-bundle --out target/uselesskey-bundle-audit` | `cargo xtask claim-proof --claim scanner-safe-fixtures` |
+| `tls` | TLS chain and certificate rejection fixtures | `uselesskey bundle --profile tls --out target/uselesskey-tls` then `uselesskey audit-bundle --path target/uselesskey-tls --out target/uselesskey-tls-audit` | `cargo xtask claim-proof --claim tls-contract-pack` |
+| `oidc` | OIDC/JWKS validator fixtures and JWT-shaped negatives | `uselesskey bundle --profile oidc --out target/uselesskey-oidc` then `uselesskey audit-bundle --path target/uselesskey-oidc --out target/uselesskey-oidc-audit` | `cargo xtask claim-report --claim oidc-jwks-contract-pack` |
+| `webhook` | HMAC webhook signature positives and negatives | `uselesskey bundle --profile webhook --out target/uselesskey-webhook` then `uselesskey audit-bundle --path target/uselesskey-webhook --out target/uselesskey-webhook-audit` | `cargo xtask claim-proof --claim webhook-contract-pack` |
 
 Every generated bundle should stay under `target/` or another ignored build
 directory. Commit docs and receipts only when the repo has an explicit tracked
@@ -52,6 +52,7 @@ Installed CLI:
 ```bash
 uselesskey bundle --profile scanner-safe --out target/uselesskey-bundle
 uselesskey verify-bundle --path target/uselesskey-bundle
+uselesskey audit-bundle --path target/uselesskey-bundle --out target/uselesskey-bundle-audit
 uselesskey inspect-bundle --path target/uselesskey-bundle
 ```
 
@@ -86,6 +87,7 @@ Installed CLI:
 ```bash
 uselesskey bundle --profile tls --out target/uselesskey-tls
 uselesskey verify-bundle --path target/uselesskey-tls
+uselesskey audit-bundle --path target/uselesskey-tls --out target/uselesskey-tls-audit
 uselesskey inspect-bundle --path target/uselesskey-tls
 ```
 
@@ -122,6 +124,7 @@ Installed CLI:
 ```bash
 uselesskey bundle --profile oidc --out target/uselesskey-oidc
 uselesskey verify-bundle --path target/uselesskey-oidc
+uselesskey audit-bundle --path target/uselesskey-oidc --out target/uselesskey-oidc-audit
 uselesskey inspect-bundle --path target/uselesskey-oidc
 ```
 
@@ -157,6 +160,7 @@ Installed CLI:
 ```bash
 uselesskey bundle --profile webhook --out target/uselesskey-webhook
 uselesskey verify-bundle --path target/uselesskey-webhook
+uselesskey audit-bundle --path target/uselesskey-webhook --out target/uselesskey-webhook-audit
 uselesskey inspect-bundle --path target/uselesskey-webhook
 ```
 
@@ -188,6 +192,17 @@ Docs:
 - [`../how-to/test-webhook-signature-validation.md`](../how-to/test-webhook-signature-validation.md)
 
 ## Reviewer Bundle
+
+When a reviewer needs the local installed bundle explained without cloning the
+repo, share the installed audit receipts:
+
+```bash
+uselesskey audit-bundle --path target/uselesskey-webhook --out target/uselesskey-webhook-audit
+```
+
+Attach `bundle-audit.md` and `bundle-audit.json`. This proves local bundle
+consistency and metadata classification only. It does not replace repo public
+claim proof.
 
 When a reviewer needs all public-claim receipts in one metadata-only directory,
 run this from a repo checkout:
