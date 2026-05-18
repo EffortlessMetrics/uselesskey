@@ -737,6 +737,48 @@ fn audit_bundle_writes_metadata_only_reviewer_receipts() -> TestResult<()> {
 }
 
 #[test]
+fn audit_bundle_json_reports_artifact_runtime_material_flags() -> TestResult<()> {
+    let dir = tempdir().test_context("tempdir")?;
+    let bundle_dir = dir.path().join("webhook");
+
+    let mut bundle = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    bundle.args([
+        "bundle",
+        "--profile",
+        "webhook",
+        "--out",
+        bundle_dir.to_str().test_context("utf-8")?,
+    ]);
+    bundle.assert().success();
+
+    let out = run([
+        "audit-bundle",
+        "--path",
+        bundle_dir.to_str().test_context("utf-8")?,
+        "--format",
+        "json",
+    ])?;
+    let audit: Value = serde_json::from_str(&out).test_context("audit json")?;
+    let artifacts = audit["artifacts"]
+        .as_array()
+        .test_context("audit artifacts")?;
+    let request = artifacts
+        .iter()
+        .find(|artifact| artifact["path"] == "requests/valid.json")
+        .test_context("valid request artifact")?;
+    assert_eq!(request["scanner_safe"], false);
+    assert_eq!(request["runtime_material"], true);
+
+    let evidence = artifacts
+        .iter()
+        .find(|artifact| artifact["path"] == "evidence/webhook-profile.md")
+        .test_context("evidence artifact")?;
+    assert_eq!(evidence["scanner_safe"], true);
+    assert_eq!(evidence["runtime_material"], false);
+    Ok(())
+}
+
+#[test]
 fn audit_bundle_json_stdout_reports_scanner_safe_bundle() -> TestResult<()> {
     let dir = tempdir().test_context("tempdir")?;
     let bundle_dir = dir.path().join("scanner-safe");
@@ -765,6 +807,48 @@ fn audit_bundle_json_stdout_reports_scanner_safe_bundle() -> TestResult<()> {
     assert_eq!(audit["runtime_material_count"], 0);
     assert!(out.contains("cargo xtask claim-proof --claim scanner-safe-fixtures"));
     assert!(!out.contains("BEGIN PRIVATE KEY"));
+    Ok(())
+}
+
+#[test]
+fn audit_bundle_reports_path_escape_class() -> TestResult<()> {
+    let dir = tempdir().test_context("tempdir")?;
+    let bundle_dir = dir.path().join("webhook");
+
+    let mut bundle = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    bundle.args([
+        "bundle",
+        "--profile",
+        "webhook",
+        "--out",
+        bundle_dir.to_str().test_context("utf-8")?,
+    ]);
+    bundle.assert().success();
+
+    let manifest_path = bundle_dir.join("manifest.json");
+    let mut manifest: Value =
+        serde_json::from_slice(&fs::read(&manifest_path).test_context("manifest")?)
+            .test_context("manifest json")?;
+    let files = manifest["files"]
+        .as_array_mut()
+        .test_context("manifest files")?;
+    let first_file = files.first_mut().test_context("first manifest file")?;
+    *first_file = serde_json::json!("../escape.json");
+    let manifest_bytes = serde_json::to_vec_pretty(&manifest).test_context("manifest bytes")?;
+    fs::write(&manifest_path, manifest_bytes).test_context("mutate manifest")?;
+
+    let mut audit = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    audit.args([
+        "audit-bundle",
+        "--path",
+        bundle_dir.to_str().test_context("utf-8")?,
+        "--format",
+        "json",
+    ]);
+    audit
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("path_escape"));
     Ok(())
 }
 

@@ -531,7 +531,8 @@ mod x509_negative {
     fn corrupt_cert_pem_extra_blank_line() {
         let c = cert();
         let bad = c.corrupt_cert_pem(CorruptPem::ExtraBlankLine);
-        assert!(bad.contains("\n\n"));
+        let normalized = bad.replace("\r\n", "\n");
+        assert!(normalized.contains("\n\n"));
     }
 
     #[test]
