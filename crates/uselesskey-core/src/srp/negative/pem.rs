@@ -187,6 +187,25 @@ mod tests {
         assert!(out.starts_with("-----BEGIN CORRUPTED KEY-----\n"));
     }
 
+
+    #[test]
+    fn bad_header_on_empty_input_is_single_replacement_line() {
+        let out = corrupt_pem("", CorruptPem::BadHeader);
+        assert_eq!(out, "-----BEGIN CORRUPTED KEY-----\n");
+    }
+
+    #[test]
+    fn truncate_utf8_exact_boundary_keeps_full_character() {
+        let pem = "éx"; // 'é' is two bytes
+        let out = corrupt_pem(pem, CorruptPem::Truncate { bytes: 2 });
+        assert_eq!(out, "é");
+    }
+
+    #[test]
+    fn truncate_utf8_zero_budget_returns_empty() {
+        let out = corrupt_pem("abc", CorruptPem::Truncate { bytes: 0 });
+        assert_eq!(out, "");
+    }
     #[test]
     fn bad_footer_replaces_last_line() {
         let pem = "-----BEGIN TEST-----\nAAA=\n-----END TEST-----\n";
