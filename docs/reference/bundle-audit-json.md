@@ -31,7 +31,7 @@ proof, or scanner-evasion proof.
 | `status` | string | Overall audit result. Current values are `pass` and `fail`. |
 | `bundle_path` | string | Display path of the audited bundle. |
 | `profile` | string | Bundle profile from `manifest.json`. |
-| `manifest_version` | integer | Manifest schema version from `manifest.json`. |
+| `manifest_version` | integer | Manifest schema version from `manifest.json`; failure receipts use `0` when the manifest is unavailable. |
 | `manifest_path` | string | Path to the manifest relative to the bundle root. Currently `manifest.json`. |
 | `artifact_count` | integer | Number of artifacts listed in the audit receipt. |
 | `receipt_count` | integer | Number of receipts listed in the bundle manifest. |
@@ -89,6 +89,10 @@ Each `checks[]` entry has:
 
 Downstream CI should branch on `status`, `profile`, and `failure_class`, not on
 English prose in `detail`, `boundaries`, or `does_not_prove`.
+
+In CI mode, a failed audit emits a receipt with `status: "fail"`, one failing
+check, the relevant stable `failure_class`, and empty artifact/receipt arrays
+when manifest metadata is unavailable.
 
 ## Failure Classes
 

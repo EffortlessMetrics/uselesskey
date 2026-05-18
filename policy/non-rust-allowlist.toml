@@ -253,6 +253,15 @@ generated_by = "cargo xtask docs-sync"
 covered_by = ["cargo xtask docs-sync --check"]
 
 [[allow]]
+glob = "docs/schemas/*.json"
+kind = "published_schema"
+owner = "docs/spec"
+surface = "docs"
+classification = "config"
+reason = "Published JSON schemas document stable machine-readable contracts for downstream users."
+covered_by = ["cargo xtask docs-sync --check", "cargo xtask check-file-policy"]
+
+[[allow]]
 glob = "badges/*.json"
 kind = "generated_badge_endpoint"
 owner = "release/ci"

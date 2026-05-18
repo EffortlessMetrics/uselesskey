@@ -46,8 +46,8 @@
     },
     "manifest_version": {
       "type": "integer",
-      "minimum": 1,
-      "description": "Manifest schema version from manifest.json."
+      "minimum": 0,
+      "description": "Manifest schema version from manifest.json. Failure receipts use 0 when the manifest is unavailable."
     },
     "manifest_path": {
       "type": "string",
