@@ -3,12 +3,15 @@
 Use this recipe when a downstream project wants deterministic fixtures plus a
 metadata-only audit receipt during CI.
 
+For GitHub Actions-specific workflow files, see
+[use-uselesskey-in-github-actions.md](use-uselesskey-in-github-actions.md).
+
 ```yaml
 steps:
   - run: cargo install uselesskey-cli --version 0.9.1
   - run: uselesskey bundle --profile webhook --out target/uselesskey-webhook
   - run: uselesskey verify-bundle --path target/uselesskey-webhook
-  - run: uselesskey audit-bundle --path target/uselesskey-webhook --out target/uselesskey-webhook-audit
+  - run: uselesskey audit-bundle --path target/uselesskey-webhook --out target/uselesskey-webhook-audit --ci
 ```
 
 The audit files are safe reviewer metadata:
@@ -27,7 +30,7 @@ unless your project has a separate reviewed policy for those artifacts.
 Use JSON mode when CI needs a machine-readable decision point:
 
 ```bash
-uselesskey audit-bundle --path target/uselesskey-webhook --format json
+uselesskey audit-bundle --path target/uselesskey-webhook --ci
 ```
 
 Fail CI if the command exits non-zero. A non-zero exit means the local bundle
