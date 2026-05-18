@@ -51,3 +51,4 @@ public crate-surface cleanup.
 - [USELESSKEY-SPEC-0014: Installed bundle audit](USELESSKEY-SPEC-0014-installed-bundle-audit.md)
 - [USELESSKEY-SPEC-0015: Real user workflows](USELESSKEY-SPEC-0015-real-user-workflows.md)
 - [USELESSKEY-SPEC-0016: Negative fixture taxonomy](USELESSKEY-SPEC-0016-negative-fixture-taxonomy.md)
+- [USELESSKEY-SPEC-0017: Bundle product surface](USELESSKEY-SPEC-0017-bundle-product-surface.md)
