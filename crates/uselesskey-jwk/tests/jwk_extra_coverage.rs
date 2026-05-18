@@ -391,14 +391,8 @@ fn taxonomy_stable_ids_match_spec_0016() {
 
     assert_eq!(NegativeJwks::EmptyKeys.stable_id(), "jwks_empty_keys");
     assert_eq!(NegativeJwks::MissingKid.stable_id(), "jwks_missing_kid");
-    assert_eq!(
-        NegativeJwks::DuplicateKid.stable_id(),
-        "jwks_duplicate_kid"
-    );
-    assert_eq!(
-        NegativeJwks::DuplicateKey.stable_id(),
-        "jwks_duplicate_key"
-    );
+    assert_eq!(NegativeJwks::DuplicateKid.stable_id(), "jwks_duplicate_kid");
+    assert_eq!(NegativeJwks::DuplicateKey.stable_id(), "jwks_duplicate_key");
     assert_eq!(
         NegativeJwks::MixedValidInvalid.stable_id(),
         "jwks_mixed_valid_invalid"
