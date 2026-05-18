@@ -1,0 +1,119 @@
+---
+source: crates/uselesskey-cli/tests/cli.rs
+expression: audit
+---
+artifact_count: 7
+artifacts:
+  - description: Webhook valid HMAC request
+    format: json-manifest
+    kind: webhook
+    path: requests/valid.json
+    runtime_material: true
+    scanner_safe: false
+  - description: Webhook negative request with modified body
+    format: json-manifest
+    kind: webhook
+    path: requests/negative-tampered-body.json
+    runtime_material: true
+    scanner_safe: false
+  - description: Webhook negative request signed with the wrong secret
+    format: json-manifest
+    kind: webhook
+    path: requests/negative-wrong-secret.json
+    runtime_material: true
+    scanner_safe: false
+  - description: Webhook negative request outside timestamp tolerance
+    format: json-manifest
+    kind: webhook
+    path: requests/negative-stale-timestamp.json
+    runtime_material: true
+    scanner_safe: false
+  - description: Webhook negative request missing the signature header
+    format: json-manifest
+    kind: webhook
+    path: requests/negative-missing-signature.json
+    runtime_material: true
+    scanner_safe: false
+  - description: Webhook negative request with malformed signature
+    format: json-manifest
+    kind: webhook
+    path: requests/negative-malformed-signature.json
+    runtime_material: true
+    scanner_safe: false
+  - description: Webhook profile verifier expectation evidence
+    format: json-manifest
+    kind: webhook
+    path: evidence/webhook-profile.md
+    runtime_material: false
+    scanner_safe: true
+boundaries:
+  - audit-bundle proves local bundle consistency and metadata classification
+  - audit-bundle does not prove repo public claims; use cargo xtask claim-proof from a repo checkout
+  - audit-bundle does not prove release readiness; use release-evidence for release proof
+  - "profile proof/check path: cargo xtask claim-proof --claim webhook-contract-pack"
+  - audit receipts contain metadata only and do not copy generated fixture payloads
+bundle_path: "<temp>/webhook"
+checks:
+  - detail: manifest parsed
+    failure_class: invalid_manifest
+    name: manifest
+    status: pass
+  - detail: manifest paths are relative and contained by the bundle
+    failure_class: path_escape
+    name: path-containment
+    status: pass
+  - detail: manifest artifacts regenerate and verify
+    failure_class: missing_artifact
+    name: artifact-content
+    status: pass
+  - detail: materialization and audit-surface receipts are present
+    failure_class: missing_receipt
+    name: receipts
+    status: pass
+  - detail: audit-surface receipt matches manifest scanner-safe counts
+    failure_class: scanner_safe_mismatch
+    name: scanner-safe-classification
+    status: pass
+  - detail: audit-surface receipt matches manifest runtime-material counts
+    failure_class: runtime_material_mismatch
+    name: runtime-material-classification
+    status: pass
+  - detail: profile-specific generated files match the manifest
+    failure_class: profile_validation_failed
+    name: profile-validation
+    status: pass
+does_not_prove:
+  - provider compatibility
+  - production secret management
+  - replay protection completeness
+  - delivery retries or transport security
+  - downstream verifier correctness
+files:
+  - requests/valid.json
+  - requests/negative-tampered-body.json
+  - requests/negative-wrong-secret.json
+  - requests/negative-stale-timestamp.json
+  - requests/negative-missing-signature.json
+  - requests/negative-malformed-signature.json
+  - evidence/webhook-profile.md
+  - receipts/materialization.json
+  - receipts/audit-surface.json
+manifest_path: manifest.json
+manifest_version: 1
+missing_files: []
+profile: webhook
+receipt_count: 2
+receipts:
+  - description: deterministic bundle materialization receipt
+    kind: materialization
+    path: receipts/materialization.json
+    profile: webhook
+  - description: scanner-safety and lane metadata receipt
+    kind: audit-surface
+    path: receipts/audit-surface.json
+    profile: webhook
+runtime_material_count: 6
+scanner_safe_count: 1
+status: pass
+unexpected_files: []
+version: 1

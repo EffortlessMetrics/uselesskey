@@ -822,6 +822,69 @@ fn audit_bundle_writes_metadata_only_reviewer_receipts() -> TestResult<()> {
 }
 
 #[test]
+fn audit_bundle_golden_json_preserves_schema_and_boundaries() -> TestResult<()> {
+    let dir = tempdir().test_context("tempdir")?;
+    let bundle_dir = dir.path().join("webhook");
+
+    let mut bundle = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    bundle.args([
+        "bundle",
+        "--profile",
+        "webhook",
+        "--out",
+        bundle_dir.to_str().test_context("utf-8")?,
+    ]);
+    bundle.assert().success();
+
+    let out = run([
+        "audit-bundle",
+        "--path",
+        bundle_dir.to_str().test_context("utf-8")?,
+        "--format",
+        "json",
+    ])?;
+    let audit: Value = serde_json::from_str(&out).test_context("audit json")?;
+    let audit = normalize_snapshot_paths(audit, dir.path());
+
+    assert_yaml_snapshot!("audit_bundle_webhook_json_golden", audit);
+    Ok(())
+}
+
+#[test]
+fn audit_bundle_golden_markdown_preserves_metadata_only_posture() -> TestResult<()> {
+    let dir = tempdir().test_context("tempdir")?;
+    let bundle_dir = dir.path().join("webhook");
+    let audit_dir = dir.path().join("webhook-audit");
+
+    let mut bundle = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    bundle.args([
+        "bundle",
+        "--profile",
+        "webhook",
+        "--out",
+        bundle_dir.to_str().test_context("utf-8")?,
+    ]);
+    bundle.assert().success();
+
+    let mut audit = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    audit.args([
+        "audit-bundle",
+        "--path",
+        bundle_dir.to_str().test_context("utf-8")?,
+        "--out",
+        audit_dir.to_str().test_context("utf-8")?,
+    ]);
+    audit.assert().success();
+
+    let audit_md =
+        fs::read_to_string(audit_dir.join("bundle-audit.md")).test_context("audit markdown")?;
+    let audit_md = normalize_snapshot_text(&audit_md, dir.path());
+
+    assert_snapshot!("audit_bundle_webhook_markdown_golden", audit_md);
+    Ok(())
+}
+
+#[test]
 fn audit_bundle_json_reports_artifact_runtime_material_flags() -> TestResult<()> {
     let dir = tempdir().test_context("tempdir")?;
     let bundle_dir = dir.path().join("webhook");
@@ -861,6 +924,31 @@ fn audit_bundle_json_reports_artifact_runtime_material_flags() -> TestResult<()>
     assert_eq!(evidence["scanner_safe"], true);
     assert_eq!(evidence["runtime_material"], false);
     Ok(())
+}
+
+fn normalize_snapshot_paths(value: Value, temp_root: &std::path::Path) -> Value {
+    match value {
+        Value::Array(values) => Value::Array(
+            values
+                .into_iter()
+                .map(|value| normalize_snapshot_paths(value, temp_root))
+                .collect(),
+        ),
+        Value::Object(entries) => Value::Object(
+            entries
+                .into_iter()
+                .map(|(key, value)| (key, normalize_snapshot_paths(value, temp_root)))
+                .collect(),
+        ),
+        Value::String(value) => Value::String(normalize_snapshot_text(&value, temp_root)),
+        other => other,
+    }
+}
+
+fn normalize_snapshot_text(value: &str, temp_root: &std::path::Path) -> String {
+    let normalized = value.replace('\\', "/");
+    let root = temp_root.to_string_lossy().replace('\\', "/");
+    normalized.replace(&root, "<temp>")
 }
 
 #[test]

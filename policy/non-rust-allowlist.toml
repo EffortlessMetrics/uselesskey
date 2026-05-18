@@ -274,6 +274,15 @@ covered_by = ["cargo xtask badges --check"]
 # === Example reference outputs =============================================
 
 [[allow]]
+glob = "examples/external/downstream-ci-bundle-audit/.github/workflows/*.yml.example"
+kind = "external_example_ci_workflow"
+owner = "cli"
+surface = "examples"
+classification = "docs"
+reason = "Downstream-shaped GitHub Actions workflow example for installed CLI bundle audit. It is inert until copied by a downstream project."
+covered_by = ["cargo xtask external-adoption-smoke --path .", "cargo xtask check-file-policy"]
+
+[[allow]]
 glob = "examples/scanner-safe-bundle/expected/**/*"
 kind = "scanner_safe_bundle_reference"
 owner = "cli"

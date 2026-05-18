@@ -1,0 +1,62 @@
+---
+source: crates/uselesskey-cli/tests/cli.rs
+expression: audit_md
+---
+# uselesskey Bundle Audit
+
+- Status: pass
+- Bundle: <temp>/webhook
+- Profile: webhook
+- Receipt type: durable metadata-only reviewer/CI receipt
+- Quick summary: uselesskey inspect-bundle --path <bundle-dir>
+- Payload posture: raw generated fixture payloads are not copied into this receipt
+- Manifest: manifest.json (version 1)
+- Artifacts: 7
+- Receipts: 2
+- Scanner-safe artifacts: 1
+- Runtime material artifacts: 6
+
+## Checks
+
+| Check | Status | Failure class | Detail |
+|---|---|---|---|
+| manifest | pass | invalid_manifest | manifest parsed |
+| path-containment | pass | path_escape | manifest paths are relative and contained by the bundle |
+| artifact-content | pass | missing_artifact | manifest artifacts regenerate and verify |
+| receipts | pass | missing_receipt | materialization and audit-surface receipts are present |
+| scanner-safe-classification | pass | scanner_safe_mismatch | audit-surface receipt matches manifest scanner-safe counts |
+| runtime-material-classification | pass | runtime_material_mismatch | audit-surface receipt matches manifest runtime-material counts |
+| profile-validation | pass | profile_validation_failed | profile-specific generated files match the manifest |
+
+## Artifacts
+
+| Path | Kind | Format | Scanner-safe | Runtime material |
+|---|---|---|---|---|
+| requests/valid.json | webhook | json-manifest | no | yes |
+| requests/negative-tampered-body.json | webhook | json-manifest | no | yes |
+| requests/negative-wrong-secret.json | webhook | json-manifest | no | yes |
+| requests/negative-stale-timestamp.json | webhook | json-manifest | no | yes |
+| requests/negative-missing-signature.json | webhook | json-manifest | no | yes |
+| requests/negative-malformed-signature.json | webhook | json-manifest | no | yes |
+| evidence/webhook-profile.md | webhook | json-manifest | yes | no |
+
+## Receipts
+
+- materialization: receipts/materialization.json
+- audit-surface: receipts/audit-surface.json
+
+## Boundaries
+
+- audit-bundle proves local bundle consistency and metadata classification
+- audit-bundle does not prove repo public claims; use cargo xtask claim-proof from a repo checkout
+- audit-bundle does not prove release readiness; use release-evidence for release proof
+- profile proof/check path: cargo xtask claim-proof --claim webhook-contract-pack
+- audit receipts contain metadata only and do not copy generated fixture payloads
+
+## Does Not Prove
+
+- provider compatibility
+- production secret management
+- replay protection completeness
+- delivery retries or transport security
+- downstream verifier correctness
