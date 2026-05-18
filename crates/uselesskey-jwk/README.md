@@ -25,6 +25,13 @@ assert_eq!(jwks.keys.len(), 1);
 
 let duplicate = jwks.negative_value(uselesskey_jwk::NegativeJwks::DuplicateKey);
 assert_eq!(duplicate["keys"].as_array().unwrap().len(), 2);
+
+let mixed = jwks.negative_value(uselesskey_jwk::NegativeJwks::MixedValidInvalid);
+assert_eq!(
+    uselesskey_jwk::NegativeJwks::MixedValidInvalid.stable_id(),
+    "jwks_mixed_valid_invalid"
+);
+assert_eq!(mixed["keys"].as_array().unwrap().len(), 2);
 ```
 
 ## License

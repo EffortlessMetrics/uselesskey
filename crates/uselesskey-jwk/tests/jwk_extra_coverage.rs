@@ -6,6 +6,7 @@
 //!   (RSA, EC, OKP, Oct) with branch-focused coverage for representative
 //!   `NegativeJwk` variants and field lookup orders.
 //! - `NegativeJwks::DuplicateKey` on a populated set (the no-empty-source path).
+//! - Taxonomy stable IDs and mixed valid/invalid JWKS shape.
 
 use serde_json::Value;
 use uselesskey_jwk::srp::ordering::{HasKid, KidSorted};
@@ -213,6 +214,9 @@ fn public_ec_negative_variants_all_supported() {
     assert_kid_present(&bad, "ec-pub");
     assert_eq!(bad["x"], SCANNER_INVALID);
 
+    let bad_named = mk().negative_value(NegativeJwk::MalformedBase64url);
+    assert_eq!(bad_named, bad);
+
     let wrong = mk().negative_value(NegativeJwk::WrongKty);
     assert_kid_present(&wrong, "ec-pub");
     assert_eq!(wrong["kty"], "RSA");
@@ -344,4 +348,59 @@ fn negative_jwks_duplicate_key_on_populated_set_repeats_first_entry() -> TestRes
     // The duplicate uses the first key in the set, not the second.
     assert_eq!(keys[0]["kid"], "primary");
     Ok(())
+}
+
+#[test]
+fn negative_jwks_mixed_valid_invalid_keeps_one_valid_and_one_malformed_key() -> TestResult<()> {
+    let jwks = Jwks {
+        keys: vec![AnyJwk::from(rsa_public("valid-key"))],
+    };
+
+    let value = jwks.negative_value(NegativeJwks::MixedValidInvalid);
+    let keys = require_some(value["keys"].as_array(), "keys array")?;
+
+    assert_eq!(keys.len(), 2);
+    assert_eq!(keys[0]["kid"], "valid-key");
+    assert_eq!(keys[0]["n"], "n-value");
+    assert_eq!(keys[1]["kid"], "mixed-invalid");
+    assert_eq!(keys[1]["n"], SCANNER_INVALID);
+    assert_ne!(keys[0], keys[1]);
+    Ok(())
+}
+
+#[test]
+fn taxonomy_stable_ids_match_spec_0016() {
+    assert_eq!(NegativeJwk::MissingKid.stable_id(), "jwk_missing_kid");
+    assert_eq!(
+        NegativeJwk::MalformedField.stable_id(),
+        "jwk_malformed_base64url"
+    );
+    assert_eq!(
+        NegativeJwk::MalformedBase64url.stable_id(),
+        "jwk_malformed_base64url"
+    );
+    assert_eq!(NegativeJwk::WrongKty.stable_id(), "jwk_wrong_kty");
+    assert_eq!(
+        NegativeJwk::UnsupportedAlg.stable_id(),
+        "jwk_unsupported_alg"
+    );
+    assert_eq!(
+        NegativeJwk::MismatchedParameters.stable_id(),
+        "jwk_mismatched_parameters"
+    );
+
+    assert_eq!(NegativeJwks::EmptyKeys.stable_id(), "jwks_empty_keys");
+    assert_eq!(NegativeJwks::MissingKid.stable_id(), "jwks_missing_kid");
+    assert_eq!(
+        NegativeJwks::DuplicateKid.stable_id(),
+        "jwks_duplicate_kid"
+    );
+    assert_eq!(
+        NegativeJwks::DuplicateKey.stable_id(),
+        "jwks_duplicate_key"
+    );
+    assert_eq!(
+        NegativeJwks::MixedValidInvalid.stable_id(),
+        "jwks_mixed_valid_invalid"
+    );
 }
