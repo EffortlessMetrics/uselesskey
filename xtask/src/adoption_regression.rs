@@ -258,6 +258,7 @@ fn external_adoption_smoke_step(root: &Path, quiet_stdout: bool) -> Result<()> {
             external_adoption_smoke::RunOptions {
                 path: Some(root.to_path_buf()),
                 version: None,
+                ci_recipes: false,
                 format: external_adoption_smoke::OutputFormat::Human,
             },
         )

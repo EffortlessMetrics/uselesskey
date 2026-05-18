@@ -15,6 +15,7 @@ const REPORT_JSON: &str = "target/external-adoption-smoke/report.json";
 const REPORT_MD: &str = "target/external-adoption-smoke/report.md";
 
 const CLI_PROFILES: &[&str] = &["scanner-safe", "tls", "oidc", "webhook"];
+const CI_RECIPE_PROFILES: &[&str] = &["webhook", "tls", "oidc"];
 const EXTERNAL_EXAMPLES: &[ExternalExample] = &[
     ExternalExample {
         name: "rust-test-fixtures",
@@ -57,6 +58,7 @@ pub enum OutputFormat {
 pub struct RunOptions {
     pub path: Option<PathBuf>,
     pub version: Option<String>,
+    pub ci_recipes: bool,
     pub format: OutputFormat,
 }
 
@@ -96,6 +98,7 @@ struct ExternalAdoptionSmokeReceipt {
     mode: SmokeMode,
     source: String,
     work_root: String,
+    ci_recipes: bool,
     projects: Vec<ExternalAdoptionProject>,
     steps: Vec<ExternalAdoptionStep>,
     artifacts: Vec<String>,
@@ -142,6 +145,7 @@ pub fn run(root: &Path, options: RunOptions) -> Result<()> {
         mode: source.mode.clone(),
         source: source.label.clone(),
         work_root: relative_artifact(root, &work_dir),
+        ci_recipes: options.ci_recipes,
         projects: Vec::new(),
         steps: Vec::new(),
         artifacts: vec![
@@ -153,7 +157,14 @@ pub fn run(root: &Path, options: RunOptions) -> Result<()> {
         boundaries: BOUNDARIES.to_vec(),
     };
 
-    let result = run_matrix(root, &source, &work_dir, &log_dir, &mut receipt);
+    let result = run_matrix(
+        root,
+        &source,
+        &work_dir,
+        &log_dir,
+        options.ci_recipes,
+        &mut receipt,
+    );
     receipt.status = if result.is_ok() { "pass" } else { "failed" }.to_string();
     write_receipts(&out_dir, &receipt)?;
     match options.format {
@@ -169,6 +180,7 @@ fn run_matrix(
     source: &SmokeSource,
     work_dir: &Path,
     log_dir: &Path,
+    ci_recipes: bool,
     receipt: &mut ExternalAdoptionSmokeReceipt,
 ) -> Result<()> {
     let cli_bin = prepare_cli(root, source, work_dir, log_dir, receipt)?;
@@ -176,6 +188,9 @@ fn run_matrix(
     run_cli_discovery(&cli_bin, work_dir, log_dir, receipt)?;
     for profile in CLI_PROFILES {
         run_cli_profile(&cli_bin, profile, work_dir, log_dir, receipt)?;
+    }
+    if ci_recipes {
+        run_ci_recipes(&cli_bin, work_dir, log_dir, receipt)?;
     }
     Ok(())
 }
@@ -405,6 +420,111 @@ fn run_cli_profile(
         &[bundle_artifact, audit_artifact, inspect_artifact],
     );
 
+    Ok(())
+}
+
+fn run_ci_recipes(
+    cli_bin: &Path,
+    work_dir: &Path,
+    log_dir: &Path,
+    receipt: &mut ExternalAdoptionSmokeReceipt,
+) -> Result<()> {
+    for profile in CI_RECIPE_PROFILES {
+        run_ci_recipe_profile(cli_bin, profile, work_dir, log_dir, receipt)?;
+    }
+    Ok(())
+}
+
+fn run_ci_recipe_profile(
+    cli_bin: &Path,
+    profile: &str,
+    work_dir: &Path,
+    log_dir: &Path,
+    receipt: &mut ExternalAdoptionSmokeReceipt,
+) -> Result<()> {
+    let project_name = format!("ci-recipe-{profile}");
+    let project_dir = work_dir.join(&project_name);
+    let target_dir = project_dir.join("target");
+    let bundle_dir = target_dir.join(format!("uselesskey-{profile}"));
+    let audit_dir = target_dir.join(format!("uselesskey-{profile}-audit"));
+    fs::create_dir_all(&target_dir)
+        .with_context(|| format!("failed to create {}", target_dir.display()))?;
+
+    let bundle_artifact = relative_artifact_from_path(&bundle_dir);
+    let audit_artifact = relative_artifact_from_path(&audit_dir);
+
+    let mut bundle = Command::new(cli_bin);
+    bundle
+        .args(["bundle", "--profile", profile, "--out"])
+        .arg(&bundle_dir)
+        .current_dir(&project_dir);
+    run_command_step(
+        receipt,
+        &format!("ci-recipe-bundle-{profile}"),
+        bundle,
+        &project_dir,
+        log_dir,
+        &[bundle_artifact.as_str()],
+    )?;
+
+    let mut verify = Command::new(cli_bin);
+    verify
+        .args(["verify-bundle", "--path"])
+        .arg(&bundle_dir)
+        .current_dir(&project_dir);
+    run_command_step(
+        receipt,
+        &format!("ci-recipe-verify-{profile}"),
+        verify,
+        &project_dir,
+        log_dir,
+        &[bundle_artifact.as_str()],
+    )?;
+
+    let mut audit = Command::new(cli_bin);
+    audit
+        .args(["audit-bundle", "--path"])
+        .arg(&bundle_dir)
+        .args(["--out"])
+        .arg(&audit_dir)
+        .arg("--ci")
+        .current_dir(&project_dir);
+    run_command_step(
+        receipt,
+        &format!("ci-recipe-audit-{profile}"),
+        audit,
+        &project_dir,
+        log_dir,
+        &[bundle_artifact.as_str(), audit_artifact.as_str()],
+    )?;
+
+    verify_ci_audit_receipt(&audit_dir, profile)?;
+    record_project(
+        receipt,
+        &project_name,
+        &project_dir,
+        &[bundle_artifact, audit_artifact],
+    );
+    Ok(())
+}
+
+fn verify_ci_audit_receipt(audit_dir: &Path, expected_profile: &str) -> Result<()> {
+    let receipt_path = audit_dir.join("bundle-audit.json");
+    let audit = read_json(&receipt_path)?;
+    if audit["status"].as_str() != Some("pass") {
+        bail!(
+            "CI recipe audit status mismatch for {}: {:?}",
+            audit_dir.display(),
+            audit["status"]
+        );
+    }
+    if audit["profile"].as_str() != Some(expected_profile) {
+        bail!(
+            "CI recipe audit profile mismatch for {}: expected {expected_profile}, got {:?}",
+            audit_dir.display(),
+            audit["profile"]
+        );
+    }
     Ok(())
 }
 
@@ -878,6 +998,11 @@ mod tests {
     }
 
     #[test]
+    fn external_adoption_ci_recipe_profiles_are_bounded() {
+        assert_eq!(CI_RECIPE_PROFILES, ["webhook", "tls", "oidc"]);
+    }
+
+    #[test]
     fn external_adoption_examples_are_bounded() {
         let names: Vec<&str> = EXTERNAL_EXAMPLES
             .iter()
@@ -963,6 +1088,7 @@ uselesskey-rustls = { version = "0.9.1", features = ["tls-config", "rustls-ring"
             mode: SmokeMode::Path,
             source: ".".to_string(),
             work_root: WORK_DIR.to_string(),
+            ci_recipes: true,
             projects: vec![ExternalAdoptionProject {
                 name: "webhook-cli".to_string(),
                 path: "target/external-adoption-smoke/work/webhook-cli".to_string(),

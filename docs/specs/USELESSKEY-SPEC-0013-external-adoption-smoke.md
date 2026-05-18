@@ -57,6 +57,18 @@ cargo xtask external-adoption-smoke --path .
 cargo xtask external-adoption-smoke --path . --format json
 ```
 
+Downstream CI recipe mode is explicit and opt-in:
+
+```bash
+cargo xtask external-adoption-smoke --path . --ci-recipes
+cargo xtask external-adoption-smoke --path . --ci-recipes --format json
+```
+
+CI recipe mode must execute the documented generate, verify, and
+`audit-bundle --ci` command sequence for supported downstream CI profiles. It
+must not make default external adoption smoke heavier, and it must keep all
+generated fixture payloads and audit receipts under `target/external-adoption-smoke/`.
+
 Local path mode must create clean temporary projects under the repository's
 `target/external-adoption-smoke/` tree, use the current checkout through path
 dependencies or a local CLI binary, and run only documented user-facing
@@ -83,6 +95,7 @@ target/external-adoption-smoke/report.json
 The receipts must summarize:
 
 - command mode (`path` or `version`);
+- whether CI recipe mode ran;
 - repo path or published version used;
 - temp project paths;
 - snippets or examples exercised;
@@ -153,6 +166,7 @@ The initial command implementation should run:
 cargo test -p xtask external_adoption_smoke
 cargo xtask external-adoption-smoke --path .
 cargo xtask external-adoption-smoke --path . --format json
+cargo xtask external-adoption-smoke --path . --ci-recipes --format json
 cargo xtask pr-lite
 git diff --check
 ```
@@ -172,6 +186,7 @@ This spec is accepted when:
 
 - it defines local path mode for clean-project adoption smoke;
 - it defines published-version mode as audit/reference only;
+- it defines `--ci-recipes` as an explicit downstream CI recipe proof mode;
 - it defines Markdown and JSON receipt paths;
 - it names the initial Rust test, scanner-safe, TLS, OIDC/JWKS, and webhook
   adoption jobs;
@@ -253,6 +268,8 @@ External adoption smoke maps to:
 - `cargo xtask external-adoption-smoke --path .` for current-checkout adoption;
 - `cargo xtask external-adoption-smoke --path . --format json` for
   machine-readable receipts;
+- `cargo xtask external-adoption-smoke --path . --ci-recipes --format json` for
+  downstream CI recipe proof;
 - `cargo xtask external-adoption-smoke --version <published>` for crates.io
   audit/reference smoke;
 - generated clean Cargo projects for documented dependency snippets;

@@ -121,6 +121,9 @@ enum Cmd {
         /// Use a published crates.io version as audit/reference evidence.
         #[arg(long, conflicts_with = "path")]
         version: Option<String>,
+        /// Also run downstream CI recipe commands from the docs.
+        #[arg(long)]
+        ci_recipes: bool,
         /// Output format.
         #[arg(long, value_enum, default_value = "human")]
         format: ExternalAdoptionSmokeFormat,
@@ -639,12 +642,14 @@ fn main() -> Result<()> {
         Cmd::ExternalAdoptionSmoke {
             path,
             version,
+            ci_recipes,
             format,
         } => external_adoption_smoke::run(
             &workspace_root_path(),
             external_adoption_smoke::RunOptions {
                 path,
                 version,
+                ci_recipes,
                 format: format.into(),
             },
         ),
@@ -10494,16 +10499,19 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
             Cmd::ExternalAdoptionSmoke {
                 path,
                 version,
+                ci_recipes,
                 format,
             } => {
                 assert!(path.is_none(), "path should default to None");
                 assert!(version.is_none(), "version should default to None");
+                assert!(!ci_recipes, "ci_recipes should default to false");
                 assert!(matches!(format, ExternalAdoptionSmokeFormat::Human));
                 let err = external_adoption_smoke::run(
                     Path::new("."),
                     external_adoption_smoke::RunOptions {
                         path,
                         version,
+                        ci_recipes,
                         format: format.into(),
                     },
                 );
@@ -10545,6 +10553,20 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
             }
         ));
 
+        let ok_ci_recipes = Cli::try_parse_from([
+            "xtask",
+            "external-adoption-smoke",
+            "--path",
+            ".",
+            "--ci-recipes",
+        ])?;
+        match ok_ci_recipes.cmd {
+            Cmd::ExternalAdoptionSmoke { ci_recipes, .. } => {
+                assert!(ci_recipes, "ci recipe flag should propagate");
+            }
+            _ => bail!("expected Cmd::ExternalAdoptionSmoke"),
+        }
+
         let ok_version = Cli::try_parse_from([
             "xtask",
             "external-adoption-smoke",
@@ -10559,6 +10581,7 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
                 path: None,
                 version: Some(_),
                 format: ExternalAdoptionSmokeFormat::Json,
+                ..
             }
         ));
         Ok(())
