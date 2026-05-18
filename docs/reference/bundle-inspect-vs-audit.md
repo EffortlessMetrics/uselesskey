@@ -30,6 +30,14 @@ It writes `bundle-audit.json` and `bundle-audit.md` when `--out` is provided.
 Those receipts contain bundle metadata, artifact classifications, stable failure
 classes, checks, and boundaries. They do not copy raw fixture payloads.
 
+Use summary mode when a terminal or CI log only needs the compact decision:
+
+```bash
+uselesskey audit-bundle --path target/uselesskey-webhook --summary
+```
+
+`--summary` is human output. Keep `--ci` for machine-readable failure handling.
+
 ## Boundary
 
 `inspect-bundle` is for a human's immediate read. `audit-bundle` is for durable

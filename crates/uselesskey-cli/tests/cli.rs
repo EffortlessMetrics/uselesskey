@@ -981,6 +981,102 @@ fn audit_bundle_ci_outputs_json_on_success() -> TestResult<()> {
 }
 
 #[test]
+fn audit_bundle_summary_outputs_compact_terminal_report() -> TestResult<()> {
+    let dir = tempdir().test_context("tempdir")?;
+    let bundle_dir = dir.path().join("webhook");
+
+    let mut bundle = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    bundle.args([
+        "bundle",
+        "--profile",
+        "webhook",
+        "--out",
+        bundle_dir.to_str().test_context("utf-8")?,
+    ]);
+    bundle.assert().success();
+
+    let out = run([
+        "audit-bundle",
+        "--path",
+        bundle_dir.to_str().test_context("utf-8")?,
+        "--summary",
+    ])?;
+
+    assert!(out.contains("Bundle audit: pass"));
+    assert!(out.contains("Profile: webhook"));
+    assert!(out.contains("Artifacts: 7"));
+    assert!(out.contains("Scanner-safe: 1"));
+    assert!(out.contains("Runtime material: 6"));
+    assert!(out.contains("Receipts: present"));
+    assert!(out.contains("Boundaries: local consistency only"));
+    assert!(!out.contains("requests/valid.json"));
+    assert!(!out.contains("whsec_"));
+    Ok(())
+}
+
+#[test]
+fn audit_bundle_summary_with_out_writes_receipts_and_mentions_output_dir() -> TestResult<()> {
+    let dir = tempdir().test_context("tempdir")?;
+    let bundle_dir = dir.path().join("webhook");
+    let audit_dir = dir.path().join("webhook-audit");
+
+    let mut bundle = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    bundle.args([
+        "bundle",
+        "--profile",
+        "webhook",
+        "--out",
+        bundle_dir.to_str().test_context("utf-8")?,
+    ]);
+    bundle.assert().success();
+
+    let out = run([
+        "audit-bundle",
+        "--path",
+        bundle_dir.to_str().test_context("utf-8")?,
+        "--out",
+        audit_dir.to_str().test_context("utf-8")?,
+        "--summary",
+    ])?;
+
+    assert!(out.contains("Bundle audit: pass"));
+    assert!(out.contains("Audit receipts:"));
+    assert!(out.contains("webhook-audit"));
+    assert!(audit_dir.join("bundle-audit.json").is_file());
+    assert!(audit_dir.join("bundle-audit.md").is_file());
+    Ok(())
+}
+
+#[test]
+fn audit_bundle_summary_rejects_ci_mode() -> TestResult<()> {
+    let dir = tempdir().test_context("tempdir")?;
+    let bundle_dir = dir.path().join("webhook");
+
+    let mut bundle = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    bundle.args([
+        "bundle",
+        "--profile",
+        "webhook",
+        "--out",
+        bundle_dir.to_str().test_context("utf-8")?,
+    ]);
+    bundle.assert().success();
+
+    let mut audit = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    audit.args([
+        "audit-bundle",
+        "--path",
+        bundle_dir.to_str().test_context("utf-8")?,
+        "--summary",
+        "--ci",
+    ]);
+    audit.assert().failure().stderr(predicate::str::contains(
+        "audit-bundle --summary cannot be combined with --ci",
+    ));
+    Ok(())
+}
+
+#[test]
 fn audit_bundle_json_stdout_reports_scanner_safe_bundle() -> TestResult<()> {
     let dir = tempdir().test_context("tempdir")?;
     let bundle_dir = dir.path().join("scanner-safe");

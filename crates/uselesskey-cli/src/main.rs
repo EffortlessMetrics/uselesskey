@@ -114,6 +114,8 @@ struct AuditBundleArgs {
     format: AuditOutputFormat,
     #[arg(long)]
     ci: bool,
+    #[arg(long)]
+    summary: bool,
 }
 
 #[derive(clap::Args, Debug)]
@@ -444,6 +446,10 @@ fn run_inspect_bundle(args: InspectBundleArgs) -> Result<()> {
 }
 
 fn run_audit_bundle(args: AuditBundleArgs) -> Result<()> {
+    if args.ci && args.summary {
+        bail!("audit-bundle --summary cannot be combined with --ci");
+    }
+
     if args.ci {
         return run_audit_bundle_ci(args);
     }
@@ -462,6 +468,12 @@ fn run_audit_bundle(args: AuditBundleArgs) -> Result<()> {
 
     if let Some(out_dir) = args.out.as_deref() {
         let (json_path, md_path) = write_bundle_audit_receipts(&audit, out_dir)?;
+        if args.summary {
+            return emit_artifact(
+                &Artifact::Text(render_bundle_audit_summary(&audit, Some(out_dir))),
+                None,
+            );
+        }
         return emit_artifact(
             &Artifact::Json(json!({
                 "audit_bundle": {
@@ -472,6 +484,13 @@ fn run_audit_bundle(args: AuditBundleArgs) -> Result<()> {
                     "markdown": md_path,
                 }
             })),
+            None,
+        );
+    }
+
+    if args.summary {
+        return emit_artifact(
+            &Artifact::Text(render_bundle_audit_summary(&audit, None)),
             None,
         );
     }
@@ -1025,6 +1044,35 @@ fn render_bundle_audit_markdown(audit: &BundleAudit) -> String {
         out.push_str(&format!("- {boundary}\n"));
     }
 
+    out
+}
+
+fn render_bundle_audit_summary(audit: &BundleAudit, out_dir: Option<&Path>) -> String {
+    let receipts = if audit.receipt_count == 0 {
+        "none"
+    } else {
+        "present"
+    };
+    let mut out = format!(
+        concat!(
+            "Bundle audit: {}\n",
+            "Profile: {}\n",
+            "Artifacts: {}\n",
+            "Scanner-safe: {}\n",
+            "Runtime material: {}\n",
+            "Receipts: {}\n",
+            "Boundaries: local consistency only\n",
+        ),
+        audit.status,
+        audit.profile,
+        audit.artifact_count,
+        audit.scanner_safe_count,
+        audit.runtime_material_count,
+        receipts
+    );
+    if let Some(out_dir) = out_dir {
+        out.push_str(&format!("Audit receipts: {}\n", display_path(out_dir)));
+    }
     out
 }
 
