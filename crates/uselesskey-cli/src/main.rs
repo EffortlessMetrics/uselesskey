@@ -112,7 +112,7 @@ struct AuditBundleArgs {
     out: Option<PathBuf>,
     #[arg(long, default_value = "markdown")]
     format: AuditOutputFormat,
-    #[arg(long)]
+    #[arg(long, conflicts_with = "summary")]
     ci: bool,
     #[arg(long)]
     summary: bool,
