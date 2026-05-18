@@ -337,8 +337,14 @@ enum Cmd {
     /// Run fuzz targets (requires `cargo-fuzz` installed).
     Fuzz {
         /// Name of the fuzz target (e.g. `rsa_pkcs8_pem_parse`).
-        #[arg(long)]
+        #[arg(long, conflicts_with_all = ["all", "list"])]
         target: Option<String>,
+        /// Run every fuzz target declared in fuzz/Cargo.toml.
+        #[arg(long, conflicts_with = "list")]
+        all: bool,
+        /// List fuzz targets declared in fuzz/Cargo.toml and exit.
+        #[arg(long, conflicts_with_all = ["target", "all"])]
+        list: bool,
         /// Extra args passed to `cargo fuzz run`.
         #[arg(last = true)]
         args: Vec<String>,
@@ -724,7 +730,7 @@ fn main() -> Result<()> {
         Cmd::PublishPreflight { allow_dirty } => publish_preflight(allow_dirty),
         Cmd::Publish { from, resume } => publish(from, resume),
         Cmd::Mutants => run_mutants(PUBLISH_CRATES, None),
-        Cmd::Fuzz { target, args } => fuzz(target.as_deref(), &args),
+        Cmd::Fuzz { target, all, list, args } => fuzz(target.as_deref(), all, list, &args),
         Cmd::LintFix { check, no_clippy } => lint_fix(check, no_clippy),
         Cmd::Gate { check: _ } => gate(),
         Cmd::Setup => setup(),
@@ -1164,6 +1170,8 @@ fn feature_matrix_cmd() -> Result<()> {
     }
     result
 }
+
+const DEFAULT_FUZZ_TARGET: &str = "rsa_pkcs8_pem_parse";
 
 const PUBLISH_CRATES: &[&str] = &[
     // True leaf crate (no workspace deps)
@@ -2866,7 +2874,38 @@ fn render_mutation_survivors_markdown(report: &MutationSurvivorLedgerReport) -> 
     md
 }
 
-fn fuzz(target: Option<&str>, extra: &[String]) -> Result<()> {
+fn fuzz(target: Option<&str>, all: bool, list: bool, extra: &[String]) -> Result<()> {
+    let targets = if list || all {
+        list_fuzz_targets()?
+    } else {
+        target
+            .map(|target| vec![target.to_string()])
+            .unwrap_or_else(|| vec![DEFAULT_FUZZ_TARGET.to_string()])
+    };
+
+    if list {
+        for target in targets {
+            println!("{target}");
+        }
+        return Ok(());
+    }
+
+    ensure_cargo_fuzz_available()?;
+    let host = host_target_triple()?;
+    for target in targets {
+        let mut cmd = Command::new("cargo");
+        cmd.args(["+nightly", "fuzz", "run", "--target", &host, &target]);
+
+        for a in extra {
+            cmd.arg(a);
+        }
+
+        run(&mut cmd)?;
+    }
+    Ok(())
+}
+
+fn ensure_cargo_fuzz_available() -> Result<()> {
     let status = Command::new("cargo")
         .args(["fuzz", "--help"])
         .stdout(Stdio::null())
@@ -2874,24 +2913,7 @@ fn fuzz(target: Option<&str>, extra: &[String]) -> Result<()> {
         .status();
 
     match status {
-        Ok(s) if s.success() => {
-            let host = host_target_triple()?;
-            let mut cmd = Command::new("cargo");
-            cmd.args(["+nightly", "fuzz", "run", "--target", &host]);
-
-            if let Some(t) = target {
-                cmd.arg(t);
-            } else {
-                // default target name
-                cmd.arg("rsa_pkcs8_pem_parse");
-            }
-
-            for a in extra {
-                cmd.arg(a);
-            }
-
-            run(&mut cmd)
-        }
+        Ok(s) if s.success() => Ok(()),
         _ => bail!("cargo-fuzz is not installed. Install with: cargo install cargo-fuzz"),
     }
 }
@@ -6686,56 +6708,105 @@ fn record_feature_matrix_skipped(runner: &mut receipt::Runner) {
 }
 
 fn fuzz_pr() -> Result<()> {
-    let status = Command::new("cargo")
-        .args(["fuzz", "--help"])
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status();
-
-    match status {
-        Ok(s) if s.success() => {
-            let targets = list_fuzz_targets()?;
-            if targets.is_empty() {
-                return Ok(());
-            }
-            let host = host_target_triple()?;
-            for target in targets {
-                let mut cmd = Command::new("cargo");
-                cmd.args([
-                    "+nightly",
-                    "fuzz",
-                    "run",
-                    "--target",
-                    &host,
-                    &target,
-                    "--",
-                    "-runs=1000",
-                    "-max_total_time=30",
-                ]);
-                run(&mut cmd)?;
-            }
-            Ok(())
-        }
-        _ => bail!("cargo-fuzz is not installed. Install with: cargo install cargo-fuzz"),
+    ensure_cargo_fuzz_available()?;
+    let targets = list_fuzz_targets()?;
+    if targets.is_empty() {
+        return Ok(());
     }
+
+    let host = host_target_triple()?;
+
+    // Compile every target to catch drift in newly added harnesses, but only run
+    // bounded smoke fuzzing for targets that avoid expensive key-generation loops.
+    let mut build = Command::new("cargo");
+    build.args(["+nightly", "fuzz", "build", "--target", &host]);
+    run(&mut build)?;
+
+    for target in targets.into_iter().filter(|target| is_pr_fuzz_target(target)) {
+        let mut cmd = Command::new("cargo");
+        cmd.args([
+            "+nightly",
+            "fuzz",
+            "run",
+            "--target",
+            &host,
+            &target,
+            "--",
+            "-runs=1000",
+            "-max_total_time=30",
+        ]);
+        run(&mut cmd)?;
+    }
+    Ok(())
+}
+
+fn is_pr_fuzz_target(target: &str) -> bool {
+    !matches!(
+        target,
+        "adapter_rustcrypto_roundtrip"
+            | "adapter_rustls_roundtrip"
+            | "fuzz_factory_stress"
+            | "fuzz_pgp_keygen"
+            | "fuzz_rsa_keygen"
+            | "fuzz_x509_cert"
+            | "x509_chain_build"
+    )
 }
 
 fn list_fuzz_targets() -> Result<Vec<String>> {
-    let mut targets = Vec::new();
-    let dir = workspace_path("fuzz/fuzz_targets");
-    if !dir.exists() {
-        return Ok(targets);
+    let manifest = workspace_path("fuzz/Cargo.toml");
+    if !manifest.exists() {
+        return Ok(Vec::new());
     }
-    for entry in fs::read_dir(&dir).context("failed to read fuzz_targets")? {
-        let entry = entry.context("failed to read fuzz_targets entry")?;
-        let path = entry.path();
-        if path.extension().and_then(|s| s.to_str()) != Some("rs") {
-            continue;
+
+    let manifest_text = fs::read_to_string(&manifest)
+        .with_context(|| format!("failed to read {}", manifest.display()))?;
+    let manifest_value: toml::Value = toml::from_str(&manifest_text)
+        .with_context(|| format!("failed to parse {}", manifest.display()))?;
+
+    let bins = manifest_value
+        .get("bin")
+        .and_then(toml::Value::as_array)
+        .context("fuzz/Cargo.toml does not declare any [[bin]] fuzz targets")?;
+
+    let mut targets = Vec::with_capacity(bins.len());
+    let mut declared_paths = BTreeSet::new();
+    for bin in bins {
+        let name = bin
+            .get("name")
+            .and_then(toml::Value::as_str)
+            .context("fuzz/Cargo.toml [[bin]] entry is missing a string name")?;
+        let path = bin
+            .get("path")
+            .and_then(toml::Value::as_str)
+            .context("fuzz/Cargo.toml [[bin]] entry is missing a string path")?;
+        if !workspace_path("fuzz").join(path).exists() {
+            bail!("fuzz target `{name}` points at missing path fuzz/{path}");
         }
-        if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
-            targets.push(stem.to_string());
+        targets.push(name.to_string());
+        declared_paths.insert(path.to_string());
+    }
+
+    let fuzz_dir = workspace_path("fuzz/fuzz_targets");
+    if fuzz_dir.exists() {
+        for entry in fs::read_dir(&fuzz_dir).context("failed to read fuzz_targets")? {
+            let entry = entry.context("failed to read fuzz_targets entry")?;
+            let path = entry.path();
+            if path.extension().and_then(|s| s.to_str()) != Some("rs") {
+                continue;
+            }
+            let rel_path = format!(
+                "fuzz_targets/{}",
+                path.file_name()
+                    .and_then(|s| s.to_str())
+                    .context("fuzz target filename is not valid UTF-8")?
+            );
+            if !declared_paths.contains(&rel_path) {
+                bail!("fuzz target source fuzz/{rel_path} is not declared in fuzz/Cargo.toml");
+            }
         }
     }
+
     targets.sort();
     Ok(targets)
 }
@@ -9919,7 +9990,7 @@ index 1111111..2222222 100644
     }
 
     #[test]
-    fn list_fuzz_targets_returns_sorted_rs_stems() {
+    fn list_fuzz_targets_returns_sorted_manifest_bins() {
         let _cwd_lock = CWD_LOCK.lock().unwrap();
         let dir = tempfile::tempdir().expect("tempdir");
         let root = dir.path();
@@ -9928,6 +9999,19 @@ index 1111111..2222222 100644
         fs::write(fuzz_dir.join("b.rs"), "fn main() {}").unwrap();
         fs::write(fuzz_dir.join("a.rs"), "fn main() {}").unwrap();
         fs::write(fuzz_dir.join("README.md"), "ignore").unwrap();
+        fs::write(
+            root.join("fuzz").join("Cargo.toml"),
+            r#"
+[[bin]]
+name = "b"
+path = "fuzz_targets/b.rs"
+
+[[bin]]
+name = "a"
+path = "fuzz_targets/a.rs"
+"#,
+        )
+        .unwrap();
 
         let _cwd = CwdGuard::new(root);
         let targets = list_fuzz_targets().expect("list targets");
@@ -9935,12 +10019,48 @@ index 1111111..2222222 100644
     }
 
     #[test]
-    fn list_fuzz_targets_missing_dir_is_empty() {
+    fn list_fuzz_targets_missing_manifest_is_empty() {
         let _cwd_lock = CWD_LOCK.lock().unwrap();
         let dir = tempfile::tempdir().expect("tempdir");
         let _cwd = CwdGuard::new(dir.path());
         let targets = list_fuzz_targets().expect("list targets");
         assert!(targets.is_empty());
+    }
+
+    #[test]
+    fn list_fuzz_targets_rejects_undeclared_source() {
+        let _cwd_lock = CWD_LOCK.lock().unwrap();
+        let dir = tempfile::tempdir().expect("tempdir");
+        let root = dir.path();
+        let fuzz_dir = root.join("fuzz").join("fuzz_targets");
+        fs::create_dir_all(&fuzz_dir).expect("create fuzz_targets");
+        fs::write(fuzz_dir.join("declared.rs"), "fn main() {}").unwrap();
+        fs::write(fuzz_dir.join("missing_manifest.rs"), "fn main() {}").unwrap();
+        fs::write(
+            root.join("fuzz").join("Cargo.toml"),
+            r#"
+[[bin]]
+name = "declared"
+path = "fuzz_targets/declared.rs"
+"#,
+        )
+        .unwrap();
+
+        let _cwd = CwdGuard::new(root);
+        let err = list_fuzz_targets().expect_err("undeclared source should fail");
+        assert!(
+            err.to_string().contains("is not declared in fuzz/Cargo.toml"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn pr_fuzz_target_filter_skips_expensive_keygen_harnesses() {
+        assert!(is_pr_fuzz_target("pem_corrupt"));
+        assert!(is_pr_fuzz_target("adapter_ring_roundtrip"));
+        assert!(!is_pr_fuzz_target("fuzz_rsa_keygen"));
+        assert!(!is_pr_fuzz_target("fuzz_x509_cert"));
+        assert!(!is_pr_fuzz_target("x509_chain_build"));
     }
 
     #[test]
