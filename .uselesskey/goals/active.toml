@@ -156,7 +156,7 @@ commands = [
 
 [[work_item]]
 id = "audit-bundle-summary"
-status = "ready"
+status = "done"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0014"
 plan = "plans/downstream-ci-polish/implementation-plan.md"
@@ -168,7 +168,7 @@ commands = [
 
 [[work_item]]
 id = "lane-closeout"
-status = "planned"
+status = "ready"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0005"
 plan = "plans/downstream-ci-polish/implementation-plan.md"

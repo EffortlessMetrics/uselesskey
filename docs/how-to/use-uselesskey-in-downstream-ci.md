@@ -37,6 +37,13 @@ Fail CI if the command exits non-zero. A non-zero exit means the local bundle
 failed a manifest, containment, receipt, scanner-safe/runtime-material, or
 profile validation check.
 
+For compact human CI logs without changing the machine-readable `--ci` path,
+run summary mode in a separate step:
+
+```bash
+uselesskey audit-bundle --path target/uselesskey-webhook --summary
+```
+
 ## Boundaries
 
 This downstream CI recipe proves local bundle consistency. It does not prove
