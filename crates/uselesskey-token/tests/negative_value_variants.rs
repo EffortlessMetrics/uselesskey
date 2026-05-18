@@ -1,9 +1,10 @@
 //! Integration coverage for `TokenFixture::negative_value` variants.
 //!
-//! `negative_fixtures.rs` exercises 5 of the 12 `NegativeToken` variants at the
+//! `negative_fixtures.rs` exercises 5 of the 13 `NegativeToken` variants at the
 //! public `TokenFixture` layer. The remaining JWT-shaped variants
 //! (`MalformedJwtSegmentCount`, `BadBase64UrlSegment`, `InvalidJwtHeaderShape`,
-//! `MissingAlg`, `AlgNone`, `MismatchedKid`, `NotYetValidClaims`) are only
+//! `MissingAlg`, `AlgNone`, `MissingKid`, `MismatchedKid`,
+//! `NotYetValidClaims`) are only
 //! covered by inline tests against the internal `generate_negative_token`
 //! function. These tests close that gap and additionally verify:
 //!
@@ -123,6 +124,31 @@ fn alg_none_only_changes_alg_field() -> TestResult<()> {
 }
 
 #[test]
+fn missing_kid_drops_header_kid_but_keeps_payload_context() -> TestResult<()> {
+    let fx = Factory::deterministic_from_str("token-neg-missing-kid");
+    let token = fx.token("issuer", TokenSpec::oauth_access_token());
+
+    let value = token.negative_value(NegativeToken::MissingKid);
+    let parts = split_segments(&value);
+    let header = decode_object(parts[0])?;
+    let payload = decode_object(parts[1])?;
+
+    ensure_eq!(parts.len(), 3);
+    ensure_eq!(header.get("alg"), Some(&Value::String("RS256".into())));
+    ensure_eq!(header.get("typ"), Some(&Value::String("JWT".into())));
+    ensure!(
+        !header.contains_key("kid"),
+        "header kid must be absent for missing-kid negative"
+    );
+    ensure_eq!(
+        payload.get("kid"),
+        Some(&Value::String("expected-kid".into()))
+    );
+    ensure!(value != token.value(), "negative value must differ");
+    Ok(())
+}
+
+#[test]
 fn mismatched_kid_puts_different_kid_in_header_and_payload() -> TestResult<()> {
     let fx = Factory::deterministic_from_str("token-neg-mismatched-kid");
     let token = fx.token("issuer", TokenSpec::oauth_access_token());
@@ -171,6 +197,7 @@ fn negative_value_is_deterministic_across_factories_for_all_variants() -> TestRe
         NegativeToken::InvalidJwtHeaderShape,
         NegativeToken::MissingAlg,
         NegativeToken::AlgNone,
+        NegativeToken::MissingKid,
         NegativeToken::MismatchedKid,
         NegativeToken::NotYetValidClaims,
     ];
@@ -196,6 +223,7 @@ fn negative_value_does_not_perturb_positive_token_value() -> TestResult<()> {
         NegativeToken::InvalidJwtHeaderShape,
         NegativeToken::MissingAlg,
         NegativeToken::AlgNone,
+        NegativeToken::MissingKid,
         NegativeToken::MismatchedKid,
         NegativeToken::NotYetValidClaims,
     ];
@@ -253,6 +281,7 @@ fn distinct_negative_variants_yield_distinct_outputs() -> TestResult<()> {
         NegativeToken::InvalidJwtHeaderShape,
         NegativeToken::MissingAlg,
         NegativeToken::AlgNone,
+        NegativeToken::MissingKid,
         NegativeToken::MismatchedKid,
         NegativeToken::NotYetValidClaims,
     ];

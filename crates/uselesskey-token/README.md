@@ -42,9 +42,12 @@ assert!(bearer.authorization_header().starts_with("Bearer "));
 assert_eq!(oauth.value().split('.').count(), 3);
 
 let expired = oauth.negative_value(NegativeToken::ExpiredClaims);
+let missing_kid = oauth.negative_value(NegativeToken::MissingKid);
 let near_miss_api_key = api_key.negative_value(NegativeToken::NearMissApiKey);
 
 assert_eq!(expired.split('.').count(), 3);
+assert_eq!(missing_kid.split('.').count(), 3);
+assert_eq!(NegativeToken::MissingKid.stable_id(), "jwt_missing_kid");
 assert!(near_miss_api_key.starts_with("uk_tset_"));
 assert!(!near_miss_api_key.starts_with("uk_test_"));
 ```
