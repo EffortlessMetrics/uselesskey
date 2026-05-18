@@ -114,6 +114,78 @@ fn bundle_explain_has_copyable_webhook_paths_without_writing_bundle() -> TestRes
 }
 
 #[test]
+fn doctor_text_reports_installed_cli_checks_only() -> TestResult<()> {
+    let dir = tempdir().test_context("tempdir")?;
+    let mut cmd = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    cmd.current_dir(dir.path()).arg("doctor");
+    let output = cmd.assert().success().get_output().stdout.clone();
+    let report = String::from_utf8(output).test_context("doctor text")?;
+
+    assert!(report.contains("uselesskey doctor"));
+    assert!(report.contains("Status: pass"));
+    assert!(report.contains("CLI version:"));
+    assert!(report.contains("target-write-access: pass"));
+    assert!(report.contains("output-path-safety: pass"));
+    assert!(report.contains("known-profiles: pass"));
+    assert!(report.contains("scanner-safe, tls, oidc, webhook, runtime"));
+    assert!(report.contains("installed CLI concerns only"));
+    assert!(report.contains("repo-local workflows"));
+    assert!(!report.contains("cargo xtask"));
+    assert!(!report.contains("claim-ledger"));
+    assert!(!report.contains("release-evidence"));
+    assert!(
+        !dir.path()
+            .join("target/uselesskey-doctor/.write-probe")
+            .exists()
+    );
+    Ok(())
+}
+
+#[test]
+fn doctor_json_reports_known_profiles_and_boundaries() -> TestResult<()> {
+    let dir = tempdir().test_context("tempdir")?;
+    let mut cmd = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    cmd.current_dir(dir.path())
+        .args(["doctor", "--format", "json"]);
+    let output = cmd.assert().success().get_output().stdout.clone();
+    let report: Value = serde_json::from_slice(&output).test_context("doctor json")?;
+    let stdout = String::from_utf8(output).test_context("doctor stdout")?;
+
+    assert_eq!(report["version"], 1);
+    assert_eq!(report["status"], "pass");
+    assert_eq!(report["cli_version"], env!("CARGO_PKG_VERSION"));
+    let profiles = report["known_profiles"]
+        .as_array()
+        .test_context("known profiles")?;
+    for profile in ["scanner-safe", "tls", "oidc", "webhook", "runtime"] {
+        assert!(
+            profiles.iter().any(|value| value.as_str() == Some(profile)),
+            "missing profile {profile}"
+        );
+    }
+    let checks = report["checks"].as_array().test_context("checks")?;
+    for check_name in [
+        "cli-version",
+        "current-directory",
+        "target-write-access",
+        "output-path-safety",
+        "json-output",
+        "known-profiles",
+    ] {
+        assert!(
+            checks
+                .iter()
+                .any(|check| check["name"] == check_name && check["status"] == "pass"),
+            "missing passing check {check_name}"
+        );
+    }
+    assert!(stdout.contains("installed CLI concerns only"));
+    assert!(!stdout.contains("cargo xtask"));
+    assert!(!stdout.contains("claim-ledger"));
+    Ok(())
+}
+
+#[test]
 fn bad_format_for_kind_exits_nonzero() -> TestResult<()> {
     let mut cmd = Command::cargo_bin("uselesskey").test_context("bin exists")?;
     cmd.args([

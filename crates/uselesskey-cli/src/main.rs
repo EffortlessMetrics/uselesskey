@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 
 use std::collections::BTreeSet;
+use std::env;
 use std::fs;
 use std::io::{self, Read, Write};
 use std::path::{Component, Path, PathBuf};
@@ -40,6 +41,7 @@ enum Commands {
     VerifyBundle(VerifyBundleArgs),
     InspectBundle(InspectBundleArgs),
     AuditBundle(AuditBundleArgs),
+    Doctor(DoctorArgs),
     Export(ExportArgs),
     Inspect(InspectArgs),
     Materialize(MaterializeArgs),
@@ -114,9 +116,21 @@ struct AuditBundleArgs {
     ci: bool,
 }
 
+#[derive(clap::Args, Debug)]
+struct DoctorArgs {
+    #[arg(long, default_value = "text")]
+    format: DoctorOutputFormat,
+}
+
 #[derive(Clone, Copy, Debug, ValueEnum)]
 enum AuditOutputFormat {
     Markdown,
+    Json,
+}
+
+#[derive(Clone, Copy, Debug, ValueEnum)]
+enum DoctorOutputFormat {
+    Text,
     Json,
 }
 
@@ -290,10 +304,21 @@ fn main() -> Result<()> {
         Commands::VerifyBundle(args) => run_verify_bundle(args),
         Commands::InspectBundle(args) => run_inspect_bundle(args),
         Commands::AuditBundle(args) => run_audit_bundle(args),
+        Commands::Doctor(args) => run_doctor(args),
         Commands::Export(args) => run_export(args),
         Commands::Inspect(args) => run_inspect(args),
         Commands::Materialize(args) => run_materialize(args),
         Commands::Verify(args) => run_verify(args),
+    }
+}
+
+fn run_doctor(args: DoctorArgs) -> Result<()> {
+    let report = build_doctor_report();
+    match args.format {
+        DoctorOutputFormat::Text => {
+            emit_artifact(&Artifact::Text(render_doctor_report(&report)), None)
+        }
+        DoctorOutputFormat::Json => emit_artifact(&Artifact::Json(json!(report)), None),
     }
 }
 
@@ -1122,6 +1147,171 @@ fn bundle_audit_boundaries(info: &ProfileInfo) -> Vec<String> {
     ]
 }
 
+fn build_doctor_report() -> DoctorReport {
+    let version = env!("CARGO_PKG_VERSION").to_string();
+    let current_dir_result = env::current_dir();
+    let current_dir = current_dir_result
+        .as_ref()
+        .map(|path| display_path(path))
+        .unwrap_or_else(|_| "unknown".to_string());
+    let known_profiles = DISCOVERABLE_PROFILES
+        .iter()
+        .map(|profile| profile.manifest_name().to_string())
+        .collect::<Vec<_>>();
+
+    let mut checks = Vec::new();
+    checks.push(DoctorCheck::pass(
+        "cli-version",
+        format!("uselesskey-cli {version}"),
+    ));
+
+    match &current_dir_result {
+        Ok(path) => checks.push(DoctorCheck::pass(
+            "current-directory",
+            format!("current directory is {}", display_path(path)),
+        )),
+        Err(err) => checks.push(DoctorCheck::fail(
+            "current-directory",
+            format!("failed to read current directory: {err}"),
+        )),
+    }
+
+    checks.push(target_write_access_check(
+        current_dir_result.as_deref().ok(),
+    ));
+    checks.push(output_path_safety_check());
+
+    if serde_json::to_string(&json!({"doctor": "ok"})).is_ok() {
+        checks.push(DoctorCheck::pass(
+            "json-output",
+            "JSON output support is available",
+        ));
+    } else {
+        checks.push(DoctorCheck::fail(
+            "json-output",
+            "failed to serialize a JSON doctor probe",
+        ));
+    }
+
+    if known_profiles.is_empty() {
+        checks.push(DoctorCheck::fail(
+            "known-profiles",
+            "no installed bundle profiles are discoverable",
+        ));
+    } else {
+        checks.push(DoctorCheck::pass(
+            "known-profiles",
+            format!("known profiles: {}", known_profiles.join(", ")),
+        ));
+    }
+
+    let status = if checks.iter().all(|check| check.status == "pass") {
+        "pass"
+    } else {
+        "fail"
+    }
+    .to_string();
+
+    DoctorReport {
+        version: 1,
+        status,
+        cli_version: version,
+        current_dir,
+        known_profiles,
+        checks,
+        boundaries: vec![
+            "doctor checks installed CLI concerns only".to_string(),
+            "public claim proof and release proof remain repo-local workflows".to_string(),
+            "doctor does not inspect or copy generated fixture payloads".to_string(),
+        ],
+    }
+}
+
+fn target_write_access_check(current_dir: Option<&Path>) -> DoctorCheck {
+    let Some(current_dir) = current_dir else {
+        return DoctorCheck::fail(
+            "target-write-access",
+            "current directory is unavailable, so target write access was not checked",
+        );
+    };
+    let probe_dir = current_dir.join("target/uselesskey-doctor");
+    let probe_path = probe_dir.join(".write-probe");
+    let result = fs::create_dir_all(&probe_dir)
+        .and_then(|()| fs::write(&probe_path, b"ok"))
+        .and_then(|()| fs::remove_file(&probe_path));
+
+    match result {
+        Ok(()) => {
+            let _ = fs::remove_dir(&probe_dir);
+            DoctorCheck::pass(
+                "target-write-access",
+                format!(
+                    "can write under {}",
+                    display_path(&current_dir.join("target"))
+                ),
+            )
+        }
+        Err(err) => DoctorCheck::fail(
+            "target-write-access",
+            format!(
+                "failed to write under {}: {err}",
+                display_path(&current_dir.join("target"))
+            ),
+        ),
+    }
+}
+
+fn output_path_safety_check() -> DoctorCheck {
+    let unsafe_hints = DISCOVERABLE_PROFILES
+        .iter()
+        .map(|profile| profile.output_dir_hint())
+        .filter(|hint| !is_safe_default_output_hint(hint))
+        .collect::<Vec<_>>();
+
+    if unsafe_hints.is_empty() {
+        DoctorCheck::pass(
+            "output-path-safety",
+            "default profile output paths are relative target/ paths",
+        )
+    } else {
+        DoctorCheck::fail(
+            "output-path-safety",
+            format!(
+                "unsafe default profile output paths: {}",
+                unsafe_hints.join(", ")
+            ),
+        )
+    }
+}
+
+fn is_safe_default_output_hint(hint: &str) -> bool {
+    is_safe_bundle_relative_path(hint) && hint.starts_with("target/")
+}
+
+fn render_doctor_report(report: &DoctorReport) -> String {
+    let mut out = String::new();
+    out.push_str("uselesskey doctor\n");
+    out.push_str(&format!("Status: {}\n", report.status));
+    out.push_str(&format!("CLI version: {}\n", report.cli_version));
+    out.push_str(&format!("Current directory: {}\n", report.current_dir));
+    out.push_str(&format!(
+        "Known profiles: {}\n",
+        report.known_profiles.join(", ")
+    ));
+    out.push_str("\nChecks:\n");
+    for check in &report.checks {
+        out.push_str(&format!(
+            "- {}: {} - {}\n",
+            check.name, check.status, check.detail
+        ));
+    }
+    out.push_str("\nBoundaries:\n");
+    for boundary in &report.boundaries {
+        out.push_str(&format!("- {boundary}\n"));
+    }
+    out
+}
+
 const BUNDLE_AUDIT_FAILURE_CLASSES: [&str; 11] = [
     "missing_manifest",
     "invalid_manifest",
@@ -1376,6 +1566,14 @@ mod tests {
                 diagnostic.detail
             );
         }
+    }
+
+    #[test]
+    fn default_output_hint_safety_requires_relative_target_paths() {
+        assert!(is_safe_default_output_hint("target/uselesskey-webhook"));
+        assert!(!is_safe_default_output_hint("fixtures/uselesskey-webhook"));
+        assert!(!is_safe_default_output_hint("target/../escape"));
+        assert!(!is_safe_default_output_hint("../target/uselesskey-webhook"));
     }
 }
 
@@ -2821,6 +3019,42 @@ impl BundleAuditCheck {
             status: "pass".to_string(),
             failure_class: failure_class.to_string(),
             detail: detail.to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+struct DoctorReport {
+    version: u32,
+    status: String,
+    cli_version: String,
+    current_dir: String,
+    known_profiles: Vec<String>,
+    checks: Vec<DoctorCheck>,
+    boundaries: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct DoctorCheck {
+    name: String,
+    status: String,
+    detail: String,
+}
+
+impl DoctorCheck {
+    fn pass(name: &str, detail: impl Into<String>) -> Self {
+        Self {
+            name: name.to_string(),
+            status: "pass".to_string(),
+            detail: detail.into(),
+        }
+    }
+
+    fn fail(name: &str, detail: impl Into<String>) -> Self {
+        Self {
+            name: name.to_string(),
+            status: "fail".to_string(),
+            detail: detail.into(),
         }
     }
 }
