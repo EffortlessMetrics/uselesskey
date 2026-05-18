@@ -1630,6 +1630,62 @@ mod tests {
         assert!(!is_safe_default_output_hint("target/../escape"));
         assert!(!is_safe_default_output_hint("../target/uselesskey-webhook"));
     }
+
+
+    #[test]
+    fn helper_formatters_cover_all_branches() {
+        assert_eq!(yes_no_unknown(Some(true)), "yes");
+        assert_eq!(yes_no_unknown(Some(false)), "no");
+        assert_eq!(yes_no_unknown(None), "unknown");
+
+        assert_eq!(yes_no(true), "yes");
+        assert_eq!(yes_no(false), "no");
+
+        assert_eq!(count_or_unknown(Some(3)), "3");
+        assert_eq!(count_or_unknown(None), "unknown");
+    }
+
+    #[test]
+    fn artifact_material_classifiers_follow_scanner_posture() {
+        let rsa_private = BundleArtifactRecord {
+            kind: "rsa".to_string(),
+            format: "pem".to_string(),
+            profile: "runtime".to_string(),
+            lanes: vec!["runtime".to_string()],
+            scanner_safe: false,
+            path: "rsa.pem".to_string(),
+            description: "runtime rsa private key".to_string(),
+        };
+        assert!(bundle_artifact_contains_private_key_material(&rsa_private));
+
+        let rsa_public = BundleArtifactRecord {
+            scanner_safe: true,
+            ..rsa_private.clone()
+        };
+        assert!(!bundle_artifact_contains_private_key_material(&rsa_public));
+
+        let webhook_secret = BundleArtifactRecord {
+            kind: "webhook".to_string(),
+            format: "json".to_string(),
+            profile: "runtime".to_string(),
+            lanes: vec!["runtime".to_string()],
+            scanner_safe: false,
+            path: "webhook.json".to_string(),
+            description: "runtime webhook material".to_string(),
+        };
+        assert!(bundle_artifact_contains_symmetric_secret_material(&webhook_secret));
+
+        let jwk_public = BundleArtifactRecord {
+            kind: "jwk".to_string(),
+            format: "jwk".to_string(),
+            profile: "scanner-safe".to_string(),
+            lanes: vec!["scanner-safe".to_string()],
+            scanner_safe: true,
+            path: "jwk.json".to_string(),
+            description: "scanner-safe jwk".to_string(),
+        };
+        assert!(!bundle_artifact_contains_symmetric_secret_material(&jwk_public));
+    }
 }
 
 fn display_path(path: &Path) -> String {
