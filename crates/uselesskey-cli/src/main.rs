@@ -110,6 +110,8 @@ struct AuditBundleArgs {
     out: Option<PathBuf>,
     #[arg(long, default_value = "markdown")]
     format: AuditOutputFormat,
+    #[arg(long)]
+    ci: bool,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -417,18 +419,15 @@ fn run_inspect_bundle(args: InspectBundleArgs) -> Result<()> {
 }
 
 fn run_audit_bundle(args: AuditBundleArgs) -> Result<()> {
+    if args.ci {
+        return run_audit_bundle_ci(args);
+    }
+
     let audit = build_bundle_audit(&args.bundle_dir)
         .with_context(|| format!("failed to audit bundle {}", args.bundle_dir.display()))?;
 
     if let Some(out_dir) = args.out.as_deref() {
-        fs::create_dir_all(out_dir)
-            .with_context(|| format!("failed to create audit directory {}", out_dir.display()))?;
-        let json_path = out_dir.join("bundle-audit.json");
-        let md_path = out_dir.join("bundle-audit.md");
-        fs::write(&json_path, serde_json::to_vec_pretty(&audit)?)
-            .with_context(|| format!("failed to write {}", json_path.display()))?;
-        fs::write(&md_path, render_bundle_audit_markdown(&audit))
-            .with_context(|| format!("failed to write {}", md_path.display()))?;
+        let (json_path, md_path) = write_bundle_audit_receipts(&audit, out_dir)?;
         return emit_artifact(
             &Artifact::Json(json!({
                 "audit_bundle": {
@@ -449,6 +448,34 @@ fn run_audit_bundle(args: AuditBundleArgs) -> Result<()> {
         }
         AuditOutputFormat::Json => emit_artifact(&Artifact::Json(json!(audit)), None),
     }
+}
+
+fn run_audit_bundle_ci(args: AuditBundleArgs) -> Result<()> {
+    match build_bundle_audit(&args.bundle_dir) {
+        Ok(audit) => {
+            if let Some(out_dir) = args.out.as_deref() {
+                write_bundle_audit_receipts(&audit, out_dir)?;
+            }
+            emit_artifact(&Artifact::Json(json!(audit)), None)
+        }
+        Err(err) => {
+            let (failure, failure_class) = bundle_audit_failure_json(&args.bundle_dir, &err);
+            emit_artifact(&Artifact::Json(failure), None)?;
+            bail!("audit failed: {failure_class}");
+        }
+    }
+}
+
+fn write_bundle_audit_receipts(audit: &BundleAudit, out_dir: &Path) -> Result<(PathBuf, PathBuf)> {
+    fs::create_dir_all(out_dir)
+        .with_context(|| format!("failed to create audit directory {}", out_dir.display()))?;
+    let json_path = out_dir.join("bundle-audit.json");
+    let md_path = out_dir.join("bundle-audit.md");
+    fs::write(&json_path, serde_json::to_vec_pretty(audit)?)
+        .with_context(|| format!("failed to write {}", json_path.display()))?;
+    fs::write(&md_path, render_bundle_audit_markdown(audit))
+        .with_context(|| format!("failed to write {}", md_path.display()))?;
+    Ok((json_path, md_path))
 }
 
 fn run_export(args: ExportArgs) -> Result<()> {
@@ -1079,6 +1106,80 @@ fn bundle_audit_boundaries(info: &ProfileInfo) -> Vec<String> {
         format!("profile proof/check path: {}", info.proof_command),
         "audit receipts contain metadata only and do not copy generated fixture payloads".to_string(),
     ]
+}
+
+const BUNDLE_AUDIT_FAILURE_CLASSES: [&str; 11] = [
+    "missing_manifest",
+    "invalid_manifest",
+    "path_escape",
+    "missing_artifact",
+    "unexpected_artifact",
+    "missing_receipt",
+    "invalid_receipt",
+    "scanner_safe_mismatch",
+    "runtime_material_mismatch",
+    "profile_validation_failed",
+    "unsupported_profile",
+];
+
+fn bundle_audit_failure_json(
+    bundle_dir: &Path,
+    err: &anyhow::Error,
+) -> (serde_json::Value, String) {
+    let failure_class = bundle_audit_failure_class(err).to_string();
+    let detail = err.to_string();
+    (
+        json!({
+            "version": 1,
+            "status": "fail",
+            "bundle_path": display_path(bundle_dir),
+            "profile": "unknown",
+            "manifest_version": 0,
+            "manifest_path": "manifest.json",
+            "artifact_count": 0,
+            "receipt_count": 0,
+            "scanner_safe_count": 0,
+            "runtime_material_count": 0,
+            "files": [],
+            "artifacts": [],
+            "receipts": [],
+            "missing_files": [],
+            "unexpected_files": [],
+            "checks": [
+                {
+                    "name": "bundle-audit",
+                    "status": "fail",
+                    "failure_class": failure_class.clone(),
+                    "detail": detail,
+                }
+            ],
+            "boundaries": [
+                "audit-bundle proves local bundle consistency and metadata classification",
+                "audit receipts contain metadata only and do not copy generated fixture payloads",
+            ],
+            "does_not_prove": [
+                "repo public claims",
+                "release readiness",
+                "provider compatibility",
+                "production security",
+                "scanner evasion",
+                "downstream verifier correctness",
+            ],
+        }),
+        failure_class,
+    )
+}
+
+fn bundle_audit_failure_class(err: &anyhow::Error) -> &'static str {
+    for source in err.chain() {
+        let message = source.to_string();
+        for failure_class in BUNDLE_AUDIT_FAILURE_CLASSES {
+            if message == failure_class || message.starts_with(&format!("{failure_class}:")) {
+                return failure_class;
+            }
+        }
+    }
+    "profile_validation_failed"
 }
 
 fn display_path(path: &Path) -> String {
