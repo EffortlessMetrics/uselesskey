@@ -1,28 +1,26 @@
-id = "uselesskey-downstream-ci-polish"
-title = "Downstream CI and installed-user polish"
-status = "archived"
+id = "uselesskey-real-workflow-closure"
+title = "Real workflow closure"
+status = "active"
 owner = "EffortlessMetrics"
 created = "2026-05-18"
 
 objective = """
-Make the installed bundle loop boring to run in downstream CI. Users should be
-able to install uselesskey, generate fixtures, verify and inspect bundles, audit
-the bundle with stable JSON/Markdown receipts, fail CI on meaningful drift, and
-understand each failure without learning repo-local proof machinery.
+Make uselesskey prove real user workflows, not just repo proof machinery.
+Downstream users should be able to solve deterministic valid/invalid fixture
+jobs for Rust tests, scanner-safe CI/platform bundles, and explicit
+materialization paths without learning the repo operating system.
 """
 
 end_state = [
-  "Bundle audit JSON has a documented stable schema and reference.",
-  "Installed audit commands expose CI-oriented behavior without shell parsing fragile prose.",
-  "Downstream GitHub Actions recipes show generate, verify, audit, and artifact handoff.",
-  "External adoption smoke can exercise documented downstream CI recipes explicitly.",
-  "Audit failure diagnostics are actionable while preserving stable machine-readable classes.",
-  "Installed CLI doctor covers user-local environment checks without repo-local proof tools.",
-  "Inspect and audit wording clearly separate quick summaries from durable receipts.",
-  "A downstream CI example proves the installed-user audit loop end to end.",
-  "Audit receipt golden tests protect schema shape, boundary language, and metadata-only posture.",
-  "Compact audit summaries keep terminal and CI logs readable.",
-  "The lane closes without release prep, version bump, tag, publish, new contract pack, or provider/security overclaims.",
+  "Real user workflows are specified for Rust developers, CI/platform users, and explicit materialization users.",
+  "Negative fixtures are a first-class taxonomy with deterministic shape, scanner-safety posture, downstream failure intent, tests, and task docs.",
+  "JWK/JWKS and token-shape negative fixture gaps are closed through taxonomy-backed implementation.",
+  "An OIDC/JWKS validator example proves a downstream auth-validation workflow with positive and negative cases.",
+  "The bundle product surface has a documented manifest and receipt contract before broad emitter expansion.",
+  "Bundle verification/scanner-safety/negative-coverage receipts are tightened without copying generated payloads.",
+  "Task-first fixture workflow docs route by user job instead of crate layout.",
+  "Public crate promises are audited so public crates have a direct downstream import story or candidate-internal status.",
+  "The lane closes without release prep, version bump, tag, publish, new contract packs, provider/security overclaims, scanner-evasion language, or broad refactors.",
 ]
 
 [[work_item]]
@@ -30,7 +28,7 @@ id = "lane-open"
 status = "done"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0005"
-plan = "plans/downstream-ci-polish/implementation-plan.md"
+plan = "plans/real-workflow-closure/implementation-plan.md"
 commands = [
   "cargo xtask spec-check --strict",
   "cargo xtask docs-sync --check",
@@ -39,102 +37,63 @@ commands = [
 ]
 
 [[work_item]]
-id = "bundle-audit-json-schema"
-status = "done"
+id = "real-user-workflow-spec"
+status = "ready"
 proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0014"
-plan = "plans/downstream-ci-polish/implementation-plan.md"
+spec = "USELESSKEY-SPEC-0005"
+plan = "plans/real-workflow-closure/implementation-plan.md"
 commands = [
-  "cargo test -p uselesskey-cli --all-features audit_bundle",
+  "cargo xtask spec-check --strict",
   "cargo xtask docs-sync --check",
   "cargo xtask typos",
   "git diff --check",
 ]
 
 [[work_item]]
-id = "audit-bundle-ci-policy"
-status = "done"
+id = "negative-fixture-taxonomy-spec"
+status = "planned"
 proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0014"
-plan = "plans/downstream-ci-polish/implementation-plan.md"
+spec = "USELESSKEY-SPEC-0005"
+plan = "plans/real-workflow-closure/implementation-plan.md"
 commands = [
-  "cargo test -p uselesskey-cli --all-features audit_bundle",
-  "cargo xtask external-adoption-smoke --path . --format json",
-  "cargo +nightly xtask pr-lite",
-  "git diff --check",
-]
-
-[[work_item]]
-id = "downstream-github-actions-recipes"
-status = "done"
-proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0014"
-plan = "plans/downstream-ci-polish/implementation-plan.md"
-commands = [
+  "cargo xtask spec-check --strict",
   "cargo xtask docs-sync --check",
   "cargo xtask typos",
   "git diff --check",
 ]
 
 [[work_item]]
-id = "external-smoke-ci-recipes"
-status = "done"
+id = "jwk-jwks-negative-wave"
+status = "planned"
 proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0013"
-plan = "plans/downstream-ci-polish/implementation-plan.md"
+spec = "USELESSKEY-SPEC-0002"
+plan = "plans/real-workflow-closure/implementation-plan.md"
 commands = [
-  "cargo test -p xtask external_adoption_smoke",
-  "cargo xtask external-adoption-smoke --path . --ci-recipes --format json",
-  "cargo xtask adoption-regression --external",
-  "git diff --check",
-]
-
-[[work_item]]
-id = "audit-failure-diagnostics"
-status = "done"
-proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0014"
-plan = "plans/downstream-ci-polish/implementation-plan.md"
-commands = [
-  "cargo test -p uselesskey-cli --all-features audit_bundle",
-  "cargo xtask no-blob",
+  "cargo test -p uselesskey-jwk --all-features",
+  "cargo test -p uselesskey --all-features",
   "cargo +nightly xtask pr-lite",
   "git diff --check",
 ]
 
 [[work_item]]
-id = "installed-cli-doctor"
-status = "done"
+id = "token-shape-negatives"
+status = "planned"
 proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0012"
-plan = "plans/downstream-ci-polish/implementation-plan.md"
+spec = "USELESSKEY-SPEC-0002"
+plan = "plans/real-workflow-closure/implementation-plan.md"
 commands = [
-  "cargo test -p uselesskey-cli --all-features doctor",
-  "cargo run -p uselesskey-cli -- doctor",
-  "cargo run -p uselesskey-cli -- doctor --format json",
+  "cargo test -p uselesskey-token --all-features",
+  "cargo test -p uselesskey --all-features",
   "cargo +nightly xtask pr-lite",
   "git diff --check",
 ]
 
 [[work_item]]
-id = "inspect-audit-alignment"
-status = "done"
-proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0014"
-plan = "plans/downstream-ci-polish/implementation-plan.md"
-commands = [
-  "cargo test -p uselesskey-cli --all-features inspect audit_bundle",
-  "cargo xtask external-adoption-smoke --path .",
-  "cargo xtask docs-sync --check",
-  "git diff --check",
-]
-
-[[work_item]]
-id = "downstream-ci-example"
-status = "done"
+id = "oidc-jwks-validator-example"
+status = "planned"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0013"
-plan = "plans/downstream-ci-polish/implementation-plan.md"
+plan = "plans/real-workflow-closure/implementation-plan.md"
 commands = [
   "cargo xtask external-adoption-smoke --path .",
   "cargo xtask adoption-regression --external",
@@ -142,36 +101,64 @@ commands = [
 ]
 
 [[work_item]]
-id = "audit-receipt-goldens"
-status = "done"
+id = "bundle-product-surface-spec"
+status = "planned"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0005"
+plan = "plans/real-workflow-closure/implementation-plan.md"
+commands = [
+  "cargo xtask spec-check --strict",
+  "cargo xtask docs-sync --check",
+  "cargo xtask typos",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "bundle-manifest-receipts"
+status = "planned"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0014"
-plan = "plans/downstream-ci-polish/implementation-plan.md"
+plan = "plans/real-workflow-closure/implementation-plan.md"
 commands = [
-  "cargo test -p uselesskey-cli --all-features audit_bundle",
+  "cargo test -p uselesskey-cli --all-features bundle verify_bundle audit_bundle",
+  "cargo xtask external-adoption-smoke --path .",
   "cargo xtask no-blob",
   "cargo +nightly xtask pr-lite",
   "git diff --check",
 ]
 
 [[work_item]]
-id = "audit-bundle-summary"
-status = "done"
+id = "task-first-docs-spec-and-guides"
+status = "planned"
 proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0014"
-plan = "plans/downstream-ci-polish/implementation-plan.md"
+spec = "USELESSKEY-SPEC-0005"
+plan = "plans/real-workflow-closure/implementation-plan.md"
 commands = [
-  "cargo test -p uselesskey-cli --all-features audit_bundle",
+  "cargo xtask docs-sync --check",
+  "cargo xtask typos",
   "cargo xtask external-adoption-smoke --path .",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "public-surface-discipline"
+status = "planned"
+proposal = "USELESSKEY-PROP-0001"
+spec = "USELESSKEY-SPEC-0002"
+plan = "plans/real-workflow-closure/implementation-plan.md"
+commands = [
+  "cargo xtask public-surface",
+  "cargo xtask docs-sync --check",
+  "cargo xtask typos",
   "git diff --check",
 ]
 
 [[work_item]]
 id = "lane-closeout"
-status = "done"
+status = "planned"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0005"
-plan = "plans/downstream-ci-polish/closeout.md"
+plan = "plans/real-workflow-closure/implementation-plan.md"
 commands = [
   "cargo xtask external-adoption-smoke --path . --format json",
   "cargo xtask adoption-regression --external",
