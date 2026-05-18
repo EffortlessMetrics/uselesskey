@@ -57,6 +57,9 @@ The contract pack writes:
 - `evidence/webhook-profile.md`
 - `receipts/materialization.json`
 - `receipts/audit-surface.json`
+- `receipts/bundle-verification.json`
+- `receipts/scanner-safety.json`
+- `receipts/negative-coverage.json`
 - `manifest.json`
 
 Each request fixture records `method`, `path`, `timestamp`, `body`,

@@ -30,6 +30,9 @@ The profile writes:
 - `tokens/negative-bad-audience.json`
 - `receipts/materialization.json`
 - `receipts/audit-surface.json`
+- `receipts/bundle-verification.json`
+- `receipts/scanner-safety.json`
+- `receipts/negative-coverage.json`
 
 ## Positive case
 

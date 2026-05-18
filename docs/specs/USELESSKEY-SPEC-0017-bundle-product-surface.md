@@ -82,6 +82,9 @@ target/uselesskey-oidc/
   receipts/
     materialization.json
     audit-surface.json
+    bundle-verification.json
+    scanner-safety.json
+    negative-coverage.json
 ```
 
 Future profile or export work may add directories such as `k8s/`, `vault/`, or
@@ -133,23 +136,19 @@ metadata, and boundaries. Receipts must not copy raw PEM, DER, token, JWK, JWKS,
 webhook body, HMAC key, certificate payload, or generated secret-shaped payload
 contents into reviewer packets.
 
-Current required receipts:
+Required receipts:
 
 | Receipt | Purpose |
 | --- | --- |
 | `receipts/materialization.json` | Records deterministic generation inputs, profile, output format, file list, and artifact metadata. |
 | `receipts/audit-surface.json` | Records scanner-safe, runtime-material, lane, and profile metadata for bundle audit. |
-
-Target receipts for the real workflow closure lane:
-
-| Receipt | Purpose |
-| --- | --- |
 | `receipts/bundle-verification.json` | Records local `verify-bundle` consistency checks and profile validation outcome. |
 | `receipts/scanner-safety.json` | Records scanner-safe classification for each artifact and explains runtime-material boundaries. |
 | `receipts/negative-coverage.json` | Records negative fixture classes present in the bundle and maps them to SPEC-0016 stable IDs. |
 
-The target receipts are not required until the implementation PR for this spec
-lands. This spec defines their shape before broad emitter expansion.
+These receipts are metadata-only. They are required for bundle profiles but do
+not create repo public-claim proof, release evidence, provider compatibility
+proof, production security assurance, or scanner-evasion claims.
 
 ### Negative Fixture Metadata
 

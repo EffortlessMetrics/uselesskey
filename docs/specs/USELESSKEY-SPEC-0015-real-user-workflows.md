@@ -208,6 +208,9 @@ Receipt or smoke path:
 ```text
 target/uselesskey-scanner-safe/receipts/materialization.json
 target/uselesskey-scanner-safe/receipts/audit-surface.json
+target/uselesskey-scanner-safe/receipts/bundle-verification.json
+target/uselesskey-scanner-safe/receipts/scanner-safety.json
+target/uselesskey-scanner-safe/receipts/negative-coverage.json
 ```
 
 Boundary:

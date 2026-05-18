@@ -44,6 +44,9 @@ fn webhook_bundle_emits_expected_layout() -> TestResult<()> {
         "evidence/webhook-profile.md",
         "receipts/materialization.json",
         "receipts/audit-surface.json",
+        "receipts/bundle-verification.json",
+        "receipts/scanner-safety.json",
+        "receipts/negative-coverage.json",
         "manifest.json",
     ] {
         let path = bundle_dir.join(relative);
@@ -82,6 +85,14 @@ fn webhook_bundle_emits_expected_layout() -> TestResult<()> {
     ensure_eq!(audit["profile"], "webhook");
     ensure_eq!(audit["scanner_safe"], false);
     ensure_eq!(audit["runtime_material_count"], 6);
+
+    let negative_coverage = read_json(&bundle_dir.join("receipts/negative-coverage.json"))?;
+    ensure_eq!(negative_coverage["negative_count"], 5);
+    let coverage = require_some(negative_coverage["coverage"].as_array(), "coverage array")?;
+    assert!(coverage.iter().any(|entry| {
+        entry["failure_class"].as_str() == Some("webhook_malformed_signature")
+            && entry["runtime_material"] == true
+    }));
     Ok(())
 }
 
@@ -164,6 +175,9 @@ fn webhook_bundle_is_deterministic_and_verifiable() -> TestResult<()> {
         "evidence/webhook-profile.md",
         "receipts/materialization.json",
         "receipts/audit-surface.json",
+        "receipts/bundle-verification.json",
+        "receipts/scanner-safety.json",
+        "receipts/negative-coverage.json",
         "manifest.json",
     ] {
         let a = require_ok(fs::read(first_dir.join(relative)), "read first")?;

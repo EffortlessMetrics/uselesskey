@@ -57,6 +57,9 @@ requests/negative-missing-signature.json
 requests/negative-malformed-signature.json
 receipts/materialization.json
 receipts/audit-surface.json
+receipts/bundle-verification.json
+receipts/scanner-safety.json
+receipts/negative-coverage.json
 evidence/webhook-profile.md
 ```
 

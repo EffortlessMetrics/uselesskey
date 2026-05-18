@@ -229,6 +229,13 @@ fn bundle_writes_manifest_schema() -> TestResult<()> {
     assert!(bundle_dir.join("receipts/materialization.json").exists());
     assert!(bundle_dir.join("receipts/audit-surface.json").exists());
     assert!(
+        bundle_dir
+            .join("receipts/bundle-verification.json")
+            .exists()
+    );
+    assert!(bundle_dir.join("receipts/scanner-safety.json").exists());
+    assert!(bundle_dir.join("receipts/negative-coverage.json").exists());
+    assert!(
         value["files"]
             .as_array()
             .test_context("array")?
@@ -242,17 +249,38 @@ fn bundle_writes_manifest_schema() -> TestResult<()> {
             .iter()
             .any(|file| file.as_str() == Some("receipts/audit-surface.json"))
     );
+    assert!(
+        value["files"]
+            .as_array()
+            .test_context("array")?
+            .iter()
+            .any(|file| file.as_str() == Some("receipts/bundle-verification.json"))
+    );
+    assert!(
+        value["files"]
+            .as_array()
+            .test_context("array")?
+            .iter()
+            .any(|file| file.as_str() == Some("receipts/scanner-safety.json"))
+    );
+    assert!(
+        value["files"]
+            .as_array()
+            .test_context("array")?
+            .iter()
+            .any(|file| file.as_str() == Some("receipts/negative-coverage.json"))
+    );
     let artifacts = value["artifacts"]
         .as_array()
         .test_context("artifacts array")?;
     assert_eq!(
         artifacts.len(),
-        value["files"].as_array().test_context("array")?.len() - 2
+        value["files"].as_array().test_context("array")?.len() - 5
     );
     let receipts = value["receipts"]
         .as_array()
         .test_context("receipts array")?;
-    assert_eq!(receipts.len(), 2);
+    assert_eq!(receipts.len(), 5);
     assert!(receipts.iter().any(|receipt| {
         receipt["path"].as_str() == Some("receipts/materialization.json")
             && receipt["kind"].as_str() == Some("materialization")
@@ -260,6 +288,18 @@ fn bundle_writes_manifest_schema() -> TestResult<()> {
     assert!(receipts.iter().any(|receipt| {
         receipt["path"].as_str() == Some("receipts/audit-surface.json")
             && receipt["kind"].as_str() == Some("audit-surface")
+    }));
+    assert!(receipts.iter().any(|receipt| {
+        receipt["path"].as_str() == Some("receipts/bundle-verification.json")
+            && receipt["kind"].as_str() == Some("bundle-verification")
+    }));
+    assert!(receipts.iter().any(|receipt| {
+        receipt["path"].as_str() == Some("receipts/scanner-safety.json")
+            && receipt["kind"].as_str() == Some("scanner-safety")
+    }));
+    assert!(receipts.iter().any(|receipt| {
+        receipt["path"].as_str() == Some("receipts/negative-coverage.json")
+            && receipt["kind"].as_str() == Some("negative-coverage")
     }));
     assert!(
         artifacts
@@ -554,6 +594,9 @@ fn bundle_profile_oidc_writes_contract_pack() -> TestResult<()> {
     assert_eq!(manifest["files"][5], "tokens/negative-bad-audience.json");
     assert_eq!(manifest["files"][6], "receipts/materialization.json");
     assert_eq!(manifest["files"][7], "receipts/audit-surface.json");
+    assert_eq!(manifest["files"][8], "receipts/bundle-verification.json");
+    assert_eq!(manifest["files"][9], "receipts/scanner-safety.json");
+    assert_eq!(manifest["files"][10], "receipts/negative-coverage.json");
 
     let artifacts = manifest["artifacts"].as_array().test_context("artifacts")?;
     assert_eq!(artifacts.len(), 6);
@@ -637,6 +680,39 @@ fn bundle_profile_oidc_writes_contract_pack() -> TestResult<()> {
     assert_eq!(audit["artifact_count"], 6);
     assert_eq!(audit["runtime_material_count"], 0);
 
+    let scanner_safety: Value = serde_json::from_slice(
+        &fs::read(bundle_dir.join("receipts/scanner-safety.json"))
+            .test_context("scanner-safety receipt")?,
+    )
+    .test_context("scanner-safety receipt json")?;
+    assert_eq!(scanner_safety["receipt"], "scanner-safety");
+    assert_eq!(scanner_safety["scanner_safe_count"], 6);
+    assert_eq!(scanner_safety["runtime_material_count"], 0);
+
+    let negative_coverage: Value = serde_json::from_slice(
+        &fs::read(bundle_dir.join("receipts/negative-coverage.json"))
+            .test_context("negative coverage receipt")?,
+    )
+    .test_context("negative coverage receipt json")?;
+    assert_eq!(negative_coverage["receipt"], "negative-coverage");
+    assert_eq!(negative_coverage["negative_count"], 4);
+    let coverage = negative_coverage["coverage"]
+        .as_array()
+        .test_context("coverage array")?;
+    for class in [
+        "jwks_duplicate_kid",
+        "jwks_missing_kid",
+        "jwt_alg_none",
+        "jwt_bad_audience",
+    ] {
+        assert!(
+            coverage
+                .iter()
+                .any(|entry| entry["failure_class"].as_str() == Some(class)),
+            "missing negative coverage class {class}"
+        );
+    }
+
     let mut verify = Command::cargo_bin("uselesskey").test_context("bin exists")?;
     verify.args([
         "verify-bundle",
@@ -679,14 +755,14 @@ fn inspect_bundle_summarizes_verified_scanner_safe_receipts() -> TestResult<()> 
             "Summary type: quick human bundle summary",
         ))
         .stdout(predicate::str::contains("Artifacts: 8"))
-        .stdout(predicate::str::contains("Verified files: 10"))
+        .stdout(predicate::str::contains("Verified files: 13"))
         .stdout(predicate::str::contains("Scanner-safe: yes"))
         .stdout(predicate::str::contains("Private key material: no"))
         .stdout(predicate::str::contains("Symmetric secret material: no"))
         .stdout(predicate::str::contains("Runtime material artifacts: 0"))
         .stdout(predicate::str::contains("Verification: ok"))
         .stdout(predicate::str::contains(
-            "Receipts: materialization, audit-surface",
+            "Receipts: materialization, audit-surface, bundle-verification, scanner-safety, negative-coverage",
         ))
         .stdout(predicate::str::contains(
             "Durable audit receipt: uselesskey audit-bundle --path <bundle-dir> --out <audit-dir>",

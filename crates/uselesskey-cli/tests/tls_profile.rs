@@ -39,7 +39,7 @@ fn tls_bundle_emits_expected_layout() {
     let bundle_dir = dir.path().join("tls");
     run_bundle(&bundle_dir);
 
-    // Six certificate fixtures, one evidence doc, two receipts, plus manifest.
+    // Six certificate fixtures, one evidence doc, bundle receipts, plus manifest.
     for relative in [
         "certs/valid-leaf.pem",
         "certs/valid-chain.pem",
@@ -50,6 +50,9 @@ fn tls_bundle_emits_expected_layout() {
         "evidence/tls-profile.md",
         "receipts/materialization.json",
         "receipts/audit-surface.json",
+        "receipts/bundle-verification.json",
+        "receipts/scanner-safety.json",
+        "receipts/negative-coverage.json",
         "manifest.json",
     ] {
         let path = bundle_dir.join(relative);
@@ -151,6 +154,9 @@ fn tls_bundle_is_deterministic_across_runs() {
         "evidence/tls-profile.md",
         "receipts/materialization.json",
         "receipts/audit-surface.json",
+        "receipts/bundle-verification.json",
+        "receipts/scanner-safety.json",
+        "receipts/negative-coverage.json",
         "manifest.json",
     ] {
         let a = fs::read(first_dir.join(relative)).expect("read first");

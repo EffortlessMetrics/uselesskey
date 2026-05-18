@@ -1,5 +1,6 @@
 ---
 source: crates/uselesskey-cli/tests/cli.rs
+assertion_line: 883
 expression: audit_md
 ---
 # uselesskey Bundle Audit
@@ -12,7 +13,7 @@ expression: audit_md
 - Payload posture: raw generated fixture payloads are not copied into this receipt
 - Manifest: manifest.json (version 1)
 - Artifacts: 7
-- Receipts: 2
+- Receipts: 5
 - Scanner-safe artifacts: 1
 - Runtime material artifacts: 6
 
@@ -23,7 +24,7 @@ expression: audit_md
 | manifest | pass | invalid_manifest | manifest parsed |
 | path-containment | pass | path_escape | manifest paths are relative and contained by the bundle |
 | artifact-content | pass | missing_artifact | manifest artifacts regenerate and verify |
-| receipts | pass | missing_receipt | materialization and audit-surface receipts are present |
+| receipts | pass | missing_receipt | bundle product receipts are present |
 | scanner-safe-classification | pass | scanner_safe_mismatch | audit-surface receipt matches manifest scanner-safe counts |
 | runtime-material-classification | pass | runtime_material_mismatch | audit-surface receipt matches manifest runtime-material counts |
 | profile-validation | pass | profile_validation_failed | profile-specific generated files match the manifest |
@@ -44,6 +45,9 @@ expression: audit_md
 
 - materialization: receipts/materialization.json
 - audit-surface: receipts/audit-surface.json
+- bundle-verification: receipts/bundle-verification.json
+- scanner-safety: receipts/scanner-safety.json
+- negative-coverage: receipts/negative-coverage.json
 
 ## Boundaries
 

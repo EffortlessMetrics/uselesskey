@@ -138,7 +138,9 @@ cargo xtask no-blob
 
 `scanner-safe-reference --check` regenerates the bundle under
 `target/scanner-safe-reference/` and diffs `manifest.json`,
-`receipts/audit-surface.json`, and `receipts/materialization.json`
+`receipts/audit-surface.json`, `receipts/bundle-verification.json`,
+`receipts/materialization.json`, `receipts/negative-coverage.json`, and
+`receipts/scanner-safety.json`
 against the committed reference. It also asserts the encoded
 `secret.yaml` and `kv-v2.json` payloads are not committed under
 `examples/scanner-safe-bundle/expected/`.

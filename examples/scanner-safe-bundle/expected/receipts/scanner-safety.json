@@ -1,0 +1,112 @@
+{
+  "artifact_count": 8,
+  "artifacts": [
+    {
+      "description": "public fixture material",
+      "format": "jwk",
+      "kind": "rsa",
+      "lanes": [
+        "runtime",
+        "materialized"
+      ],
+      "path": "rsa.jwk.json",
+      "runtime_material": false,
+      "scanner_safe": true
+    },
+    {
+      "description": "public fixture material",
+      "format": "jwk",
+      "kind": "ecdsa",
+      "lanes": [
+        "runtime",
+        "materialized"
+      ],
+      "path": "ecdsa.jwk.json",
+      "runtime_material": false,
+      "scanner_safe": true
+    },
+    {
+      "description": "public fixture material",
+      "format": "jwk",
+      "kind": "ed25519",
+      "lanes": [
+        "runtime",
+        "materialized"
+      ],
+      "path": "ed25519.jwk.json",
+      "runtime_material": false,
+      "scanner_safe": true
+    },
+    {
+      "description": "scanner-safe symmetric JWK shape with invalid material",
+      "format": "jwk",
+      "kind": "hmac",
+      "lanes": [
+        "runtime",
+        "materialized"
+      ],
+      "path": "hmac.jwk.json",
+      "runtime_material": false,
+      "scanner_safe": true
+    },
+    {
+      "description": "scanner-safe near-miss token shape for parser tests",
+      "format": "json-manifest",
+      "kind": "token",
+      "lanes": [
+        "runtime",
+        "materialized"
+      ],
+      "path": "token.json",
+      "runtime_material": false,
+      "scanner_safe": true
+    },
+    {
+      "description": "public certificate fixture",
+      "format": "pem",
+      "kind": "x509",
+      "lanes": [
+        "runtime",
+        "materialized"
+      ],
+      "path": "x509.pem",
+      "runtime_material": false,
+      "scanner_safe": true
+    },
+    {
+      "description": "public fixture material",
+      "format": "jwk",
+      "kind": "jwk",
+      "lanes": [
+        "runtime",
+        "materialized"
+      ],
+      "path": "jwk.jwk.json",
+      "runtime_material": false,
+      "scanner_safe": true
+    },
+    {
+      "description": "public fixture material",
+      "format": "jwks",
+      "kind": "jwks",
+      "lanes": [
+        "runtime",
+        "materialized"
+      ],
+      "path": "jwks.jwks.json",
+      "runtime_material": false,
+      "scanner_safe": true
+    }
+  ],
+  "boundaries": [
+    "scanner_safe=true means uselesskey classifies the generated artifact as scanner-safe fixture material",
+    "runtime_material=true means keep the generated artifact under an explicit output directory such as target/",
+    "scanner-safety metadata is not scanner evasion, production secret handling, or provider compatibility proof"
+  ],
+  "profile": "scanner-safe",
+  "receipt": "scanner-safety",
+  "runtime_material_count": 0,
+  "scanner_safe": true,
+  "scanner_safe_count": 8,
+  "version": 1
+}

@@ -1,0 +1,72 @@
+{
+  "artifact_count": 8,
+  "boundaries": [
+    "bundle-verification is local bundle consistency metadata, not repo public-claim proof",
+    "verify-bundle does not prove provider compatibility or production security",
+    "this receipt does not copy raw generated fixture payloads"
+  ],
+  "checks": [
+    {
+      "detail": "manifest artifact and receipt paths must stay relative to the bundle root",
+      "failure_class": "path_escape",
+      "name": "manifest-paths"
+    },
+    {
+      "detail": "verify-bundle regenerates profile artifacts and compares bytes",
+      "failure_class": "missing_artifact",
+      "name": "artifact-content"
+    },
+    {
+      "detail": "verify-bundle regenerates metadata-only receipts and compares bytes",
+      "failure_class": "missing_receipt",
+      "name": "receipt-content"
+    },
+    {
+      "detail": "verify-bundle validates the expected profile file set",
+      "failure_class": "profile_validation_failed",
+      "name": "profile-validation"
+    }
+  ],
+  "expected_receipts": [
+    {
+      "description": "deterministic bundle materialization receipt",
+      "kind": "materialization",
+      "path": "receipts/materialization.json"
+    },
+    {
+      "description": "scanner-safety and lane metadata receipt",
+      "kind": "audit-surface",
+      "path": "receipts/audit-surface.json"
+    },
+    {
+      "description": "bundle verification contract receipt",
+      "kind": "bundle-verification",
+      "path": "receipts/bundle-verification.json"
+    },
+    {
+      "description": "per-artifact scanner-safety classification receipt",
+      "kind": "scanner-safety",
+      "path": "receipts/scanner-safety.json"
+    },
+    {
+      "description": "taxonomy-backed negative fixture coverage receipt",
+      "kind": "negative-coverage",
+      "path": "receipts/negative-coverage.json"
+    }
+  ],
+  "fixture_files": [
+    "rsa.jwk.json",
+    "ecdsa.jwk.json",
+    "ed25519.jwk.json",
+    "hmac.jwk.json",
+    "token.json",
+    "x509.pem",
+    "jwk.jwk.json",
+    "jwks.jwks.json"
+  ],
+  "profile": "scanner-safe",
+  "receipt": "bundle-verification",
+  "status": "generated",
+  "verification_command": "uselesskey verify-bundle --path <bundle-dir>",
+  "version": 1
+}
