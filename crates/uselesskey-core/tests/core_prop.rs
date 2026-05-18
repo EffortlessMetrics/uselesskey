@@ -1,5 +1,7 @@
 #![cfg(feature = "std")]
 
+use std::collections::BTreeMap;
+
 use proptest::prelude::*;
 use uselesskey_core::negative::{CorruptPem, corrupt_pem, truncate_der};
 use uselesskey_core::{ArtifactId, DerivationVersion, Factory, Seed};
@@ -15,6 +17,68 @@ fn seed_array<const N: usize>(seed: Seed) -> [u8; N] {
     let mut buf = [0u8; N];
     seed.fill_bytes(&mut buf);
     buf
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+struct CacheOp {
+    domain: &'static str,
+    label: String,
+    spec: Vec<u8>,
+    variant: &'static str,
+}
+
+fn cache_op_strategy() -> impl Strategy<Value = CacheOp> {
+    (
+        prop_oneof![
+            Just("domain:prop:rsa"),
+            Just("domain:prop:ecdsa"),
+            Just("domain:prop:token"),
+        ],
+        // Include punctuation that commonly appears in test fixture labels while
+        // staying readable in shrinking output.
+        "[-_./:a-zA-Z0-9]{1,24}",
+        prop_oneof![
+            Just(spec_bytes(2048, 65537)),
+            Just(spec_bytes(3072, 65537)),
+            Just(spec_bytes(4096, 65537)),
+            prop::collection::vec(any::<u8>(), 0..24),
+        ],
+        prop_oneof![
+            Just("good"),
+            Just("mismatch"),
+            Just("corrupt:pem"),
+            Just("corrupt:der"),
+        ],
+    )
+        .prop_map(|(domain, label, spec, variant)| CacheOp {
+            domain,
+            label,
+            spec,
+            variant,
+        })
+}
+
+fn materialize_ops(seed: Seed, ops: &[CacheOp]) -> BTreeMap<CacheOp, [u8; 32]> {
+    let fx = Factory::deterministic(seed);
+    let mut observed = BTreeMap::new();
+
+    for op in ops {
+        let value = fx.get_or_init(
+            op.domain,
+            &op.label,
+            &op.spec,
+            op.variant,
+            seed_array::<32>,
+        );
+        match observed.get(op) {
+            Some(existing) => assert_eq!(existing, value.as_ref()),
+            None => {
+                observed.insert(op.clone(), *value);
+            }
+        }
+    }
+
+    observed
 }
 
 /// Helper to derive a seed directly using the crate's internal derivation.
@@ -295,6 +359,52 @@ proptest! {
             std::sync::Arc::ptr_eq(&first, &second),
             "cache hit should return the same Arc pointer"
         );
+    }
+
+    /// Arbitrary operation traces are reproducible across factories, cache
+    /// clears, duplicate requests, and request order. This catches regressions
+    /// where determinism accidentally depends on insertion order or cache state
+    /// instead of the full artifact identity tuple.
+    #[test]
+    fn prop_arbitrary_cache_traces_are_order_and_cache_independent(
+        seed_bytes in any::<[u8; 32]>(),
+        ops in prop::collection::vec(cache_op_strategy(), 1..32),
+    ) {
+        let seed = Seed::new(seed_bytes);
+
+        let first_pass = materialize_ops(seed, &ops);
+
+        let fx = Factory::deterministic(seed);
+        for op in &ops {
+            let _ = fx.get_or_init(
+                op.domain,
+                &op.label,
+                &op.spec,
+                op.variant,
+                seed_array::<32>,
+            );
+        }
+        fx.clear_cache();
+
+        // Replaying the exact same trace after a cache clear must produce the
+        // same bytes for every identity.
+        for op in &ops {
+            let value = fx.get_or_init(
+                op.domain,
+                &op.label,
+                &op.spec,
+                op.variant,
+                seed_array::<32>,
+            );
+            prop_assert_eq!(Some(value.as_ref()), first_pass.get(op));
+        }
+
+        // Replaying unique identities in canonical order exercises the same
+        // generated cases without depending on proptest to find a lucky two-key
+        // order-independence example.
+        let canonical_ops: Vec<CacheOp> = first_pass.keys().cloned().collect();
+        let canonical_pass = materialize_ops(seed, &canonical_ops);
+        prop_assert_eq!(first_pass, canonical_pass);
     }
 
     // =========================================================================
