@@ -79,6 +79,13 @@ impl Jwks {
                 let first = first_or_scanner_safe_key(&keys, "duplicate-key");
                 vec![first.clone(), first]
             }
+            NegativeJwks::MixedValidInvalid => {
+                let valid = first_or_scanner_safe_key(&keys, "mixed-valid");
+                let mut invalid = valid.clone();
+                set_string_field(&mut invalid, "kid", "mixed-invalid");
+                let invalid = negative_jwk_value(invalid, NegativeJwk::MalformedBase64url);
+                vec![valid, invalid]
+            }
         };
 
         json!({ "keys": negative_keys })
@@ -99,12 +106,29 @@ pub enum NegativeJwk {
     MissingKid,
     /// Replace one material field with scanner-safe invalid base64url text.
     MalformedField,
+    /// Replace one material field with scanner-safe invalid base64url text.
+    MalformedBase64url,
     /// Replace `kty` with a key type that does not match the material fields.
     WrongKty,
     /// Replace `alg` with an unsupported algorithm name.
     UnsupportedAlg,
     /// Change one material parameter while preserving the metadata shape.
     MismatchedParameters,
+}
+
+impl NegativeJwk {
+    /// Stable taxonomy identifier for manifests, docs, and receipts.
+    pub fn stable_id(self) -> &'static str {
+        match self {
+            NegativeJwk::MissingKid => "jwk_missing_kid",
+            NegativeJwk::MalformedField | NegativeJwk::MalformedBase64url => {
+                "jwk_malformed_base64url"
+            }
+            NegativeJwk::WrongKty => "jwk_wrong_kty",
+            NegativeJwk::UnsupportedAlg => "jwk_unsupported_alg",
+            NegativeJwk::MismatchedParameters => "jwk_mismatched_parameters",
+        }
+    }
 }
 
 /// Negative JWKS shape variants for downstream key-set tests.
@@ -118,6 +142,21 @@ pub enum NegativeJwks {
     DuplicateKid,
     /// Emit the same key twice.
     DuplicateKey,
+    /// Emit one valid key and one malformed key in the same set.
+    MixedValidInvalid,
+}
+
+impl NegativeJwks {
+    /// Stable taxonomy identifier for manifests, docs, and receipts.
+    pub fn stable_id(self) -> &'static str {
+        match self {
+            NegativeJwks::EmptyKeys => "jwks_empty_keys",
+            NegativeJwks::MissingKid => "jwks_missing_kid",
+            NegativeJwks::DuplicateKid => "jwks_duplicate_kid",
+            NegativeJwks::DuplicateKey => "jwks_duplicate_key",
+            NegativeJwks::MixedValidInvalid => "jwks_mixed_valid_invalid",
+        }
+    }
 }
 
 /// RSA public key in JWK format (contains `n` and `e`).
@@ -451,7 +490,7 @@ fn negative_jwk_value(mut value: Value, variant: NegativeJwk) -> Value {
                 obj.remove("kid");
             }
         }
-        NegativeJwk::MalformedField => {
+        NegativeJwk::MalformedField | NegativeJwk::MalformedBase64url => {
             set_first_material_field(
                 &mut value,
                 &["n", "e", "x", "y", "k", "d", "p", "q", "dp", "dq", "qi"],
