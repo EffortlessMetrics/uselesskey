@@ -57,6 +57,17 @@ cargo xtask external-adoption-smoke --path .
 cargo xtask external-adoption-smoke --path . --format json
 ```
 
+Facade/library example mode is explicit and bounded:
+
+```bash
+cargo xtask external-adoption-smoke --path . --library-examples
+cargo xtask external-adoption-smoke --path . --library-examples --format json
+```
+
+Library example mode must run only the clean-project Rust examples that prove
+facade-first adoption. It must not build the installed CLI, run bundle profiles,
+or exercise downstream CI recipes.
+
 Downstream CI recipe mode is explicit and opt-in:
 
 ```bash
@@ -268,6 +279,8 @@ External adoption smoke maps to:
 - `cargo xtask external-adoption-smoke --path .` for current-checkout adoption;
 - `cargo xtask external-adoption-smoke --path . --format json` for
   machine-readable receipts;
+- `cargo xtask external-adoption-smoke --path . --library-examples --format json`
+  for bounded facade-first Rust example proof;
 - `cargo xtask external-adoption-smoke --path . --ci-recipes --format json` for
   downstream CI recipe proof;
 - `cargo xtask external-adoption-smoke --version <published>` for crates.io

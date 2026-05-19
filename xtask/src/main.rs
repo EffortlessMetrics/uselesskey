@@ -124,6 +124,9 @@ enum Cmd {
         /// Also run downstream CI recipe commands from the docs.
         #[arg(long)]
         ci_recipes: bool,
+        /// Run only facade-first clean-project library examples.
+        #[arg(long, conflicts_with = "ci_recipes")]
+        library_examples: bool,
         /// Output format.
         #[arg(long, value_enum, default_value = "human")]
         format: ExternalAdoptionSmokeFormat,
@@ -649,6 +652,7 @@ fn main() -> Result<()> {
             path,
             version,
             ci_recipes,
+            library_examples,
             format,
         } => external_adoption_smoke::run(
             &workspace_root_path(),
@@ -656,6 +660,7 @@ fn main() -> Result<()> {
                 path,
                 version,
                 ci_recipes,
+                library_examples,
                 format: format.into(),
             },
         ),
@@ -10634,11 +10639,16 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
                 path,
                 version,
                 ci_recipes,
+                library_examples,
                 format,
             } => {
                 assert!(path.is_none(), "path should default to None");
                 assert!(version.is_none(), "version should default to None");
                 assert!(!ci_recipes, "ci_recipes should default to false");
+                assert!(
+                    !library_examples,
+                    "library_examples should default to false"
+                );
                 assert!(matches!(format, ExternalAdoptionSmokeFormat::Human));
                 let err = external_adoption_smoke::run(
                     Path::new("."),
@@ -10646,6 +10656,7 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
                         path,
                         version,
                         ci_recipes,
+                        library_examples,
                         format: format.into(),
                     },
                 );
@@ -10700,6 +10711,35 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
             }
             _ => bail!("expected Cmd::ExternalAdoptionSmoke"),
         }
+
+        let ok_library_examples = Cli::try_parse_from([
+            "xtask",
+            "external-adoption-smoke",
+            "--path",
+            ".",
+            "--library-examples",
+        ])?;
+        match ok_library_examples.cmd {
+            Cmd::ExternalAdoptionSmoke {
+                library_examples, ..
+            } => {
+                assert!(library_examples, "library examples flag should propagate");
+            }
+            _ => bail!("expected Cmd::ExternalAdoptionSmoke"),
+        }
+
+        let library_examples_conflict = Cli::try_parse_from([
+            "xtask",
+            "external-adoption-smoke",
+            "--path",
+            ".",
+            "--library-examples",
+            "--ci-recipes",
+        ]);
+        assert!(
+            library_examples_conflict.is_err(),
+            "clap must reject --library-examples + --ci-recipes together"
+        );
 
         let ok_version = Cli::try_parse_from([
             "xtask",

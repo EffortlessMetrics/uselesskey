@@ -161,6 +161,7 @@ Library facade polish is proven by:
 When a PR changes a facade example or external smoke path, it should also run:
 
 ```bash
+cargo xtask external-adoption-smoke --path . --library-examples
 cargo xtask external-adoption-smoke --path .
 cargo test -p xtask external_adoption_smoke
 ```
@@ -209,7 +210,7 @@ Smoke: not run in a clean project
 | Requirement | Evidence |
 | --- | --- |
 | Dependency snippets stay current | `cargo xtask docs-sync --check` |
-| Facade examples compile externally | `cargo xtask external-adoption-smoke --path .` |
+| Facade examples compile externally | `cargo xtask external-adoption-smoke --path . --library-examples` |
 | External smoke stays bounded | `cargo test -p xtask external_adoption_smoke` |
 | Generated payloads are not committed | `cargo xtask no-blob` in `pr-lite` or closeout |
 | Public claims remain separate from examples | `cargo xtask claim-report --check-public-claims` in closeout |
@@ -240,6 +241,7 @@ git diff --check
 Example or smoke changes must also run:
 
 ```bash
+cargo xtask external-adoption-smoke --path . --library-examples
 cargo xtask external-adoption-smoke --path .
 cargo test -p xtask external_adoption_smoke
 ```

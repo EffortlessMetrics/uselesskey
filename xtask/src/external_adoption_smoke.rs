@@ -16,27 +16,38 @@ const REPORT_MD: &str = "target/external-adoption-smoke/report.md";
 
 const CLI_PROFILES: &[&str] = &["scanner-safe", "tls", "oidc", "webhook"];
 const CI_RECIPE_PROFILES: &[&str] = &["webhook", "tls", "oidc"];
+const RUST_TEST_FIXTURES_EXAMPLE: ExternalExample = ExternalExample {
+    name: "rust-test-fixtures",
+    source_dir: "examples/external/rust-test-fixtures",
+};
+const WEBHOOK_VERIFIER_EXAMPLE: ExternalExample = ExternalExample {
+    name: "webhook-verifier",
+    source_dir: "examples/external/webhook-verifier",
+};
+const OIDC_JWKS_VALIDATION_EXAMPLE: ExternalExample = ExternalExample {
+    name: "oidc-jwks-validation",
+    source_dir: "examples/external/oidc-jwks-validation",
+};
+const TLS_CHAIN_VALIDATION_EXAMPLE: ExternalExample = ExternalExample {
+    name: "tls-chain-validation",
+    source_dir: "examples/external/tls-chain-validation",
+};
+const DOWNSTREAM_CI_BUNDLE_AUDIT_EXAMPLE: ExternalExample = ExternalExample {
+    name: "downstream-ci-bundle-audit",
+    source_dir: "examples/external/downstream-ci-bundle-audit",
+};
+const LIBRARY_EXAMPLES: &[ExternalExample] = &[
+    RUST_TEST_FIXTURES_EXAMPLE,
+    WEBHOOK_VERIFIER_EXAMPLE,
+    OIDC_JWKS_VALIDATION_EXAMPLE,
+    TLS_CHAIN_VALIDATION_EXAMPLE,
+];
 const EXTERNAL_EXAMPLES: &[ExternalExample] = &[
-    ExternalExample {
-        name: "rust-test-fixtures",
-        source_dir: "examples/external/rust-test-fixtures",
-    },
-    ExternalExample {
-        name: "webhook-verifier",
-        source_dir: "examples/external/webhook-verifier",
-    },
-    ExternalExample {
-        name: "oidc-jwks-validation",
-        source_dir: "examples/external/oidc-jwks-validation",
-    },
-    ExternalExample {
-        name: "tls-chain-validation",
-        source_dir: "examples/external/tls-chain-validation",
-    },
-    ExternalExample {
-        name: "downstream-ci-bundle-audit",
-        source_dir: "examples/external/downstream-ci-bundle-audit",
-    },
+    RUST_TEST_FIXTURES_EXAMPLE,
+    WEBHOOK_VERIFIER_EXAMPLE,
+    OIDC_JWKS_VALIDATION_EXAMPLE,
+    TLS_CHAIN_VALIDATION_EXAMPLE,
+    DOWNSTREAM_CI_BUNDLE_AUDIT_EXAMPLE,
 ];
 const BOUNDARIES: &[&str] = &[
     "external-adoption-smoke proves clean-project user paths, not release readiness",
@@ -63,6 +74,7 @@ pub struct RunOptions {
     pub path: Option<PathBuf>,
     pub version: Option<String>,
     pub ci_recipes: bool,
+    pub library_examples: bool,
     pub format: OutputFormat,
 }
 
@@ -103,6 +115,7 @@ struct ExternalAdoptionSmokeReceipt {
     source: String,
     work_root: String,
     ci_recipes: bool,
+    library_examples: bool,
     projects: Vec<ExternalAdoptionProject>,
     steps: Vec<ExternalAdoptionStep>,
     artifacts: Vec<String>,
@@ -150,6 +163,7 @@ pub fn run(root: &Path, options: RunOptions) -> Result<()> {
         source: source.label.clone(),
         work_root: relative_artifact(root, &work_dir),
         ci_recipes: options.ci_recipes,
+        library_examples: options.library_examples,
         projects: Vec::new(),
         steps: Vec::new(),
         artifacts: vec![
@@ -167,6 +181,7 @@ pub fn run(root: &Path, options: RunOptions) -> Result<()> {
         &work_dir,
         &log_dir,
         options.ci_recipes,
+        options.library_examples,
         &mut receipt,
     );
     receipt.status = if result.is_ok() { "pass" } else { "failed" }.to_string();
@@ -185,10 +200,16 @@ fn run_matrix(
     work_dir: &Path,
     log_dir: &Path,
     ci_recipes: bool,
+    library_examples: bool,
     receipt: &mut ExternalAdoptionSmokeReceipt,
 ) -> Result<()> {
+    if library_examples {
+        run_external_examples(root, source, LIBRARY_EXAMPLES, work_dir, log_dir, receipt)?;
+        return Ok(());
+    }
+
     let cli_bin = prepare_cli(root, source, work_dir, log_dir, receipt)?;
-    run_external_examples(root, source, work_dir, log_dir, receipt)?;
+    run_external_examples(root, source, EXTERNAL_EXAMPLES, work_dir, log_dir, receipt)?;
     run_cli_discovery(&cli_bin, work_dir, log_dir, receipt)?;
     for profile in CLI_PROFILES {
         run_cli_profile(&cli_bin, profile, work_dir, log_dir, receipt)?;
@@ -255,11 +276,12 @@ fn prepare_cli(
 fn run_external_examples(
     root: &Path,
     source: &SmokeSource,
+    examples: &[ExternalExample],
     work_dir: &Path,
     log_dir: &Path,
     receipt: &mut ExternalAdoptionSmokeReceipt,
 ) -> Result<()> {
-    for example in EXTERNAL_EXAMPLES {
+    for example in examples {
         run_external_example(root, source, example, work_dir, log_dir, receipt)?;
     }
     Ok(())
@@ -910,6 +932,11 @@ fn render_markdown(receipt: &ExternalAdoptionSmokeReceipt) -> String {
     md.push_str(&format!("Status: `{}`\n\n", receipt.status));
     md.push_str(&format!("Mode: `{:?}`\n\n", receipt.mode));
     md.push_str(&format!("Source: `{}`\n\n", receipt.source));
+    md.push_str(&format!(
+        "Library examples only: `{}`\n\n",
+        receipt.library_examples
+    ));
+    md.push_str(&format!("CI recipes: `{}`\n\n", receipt.ci_recipes));
     if let Some(git_sha) = &receipt.git_sha {
         md.push_str(&format!("Git SHA: `{git_sha}`\n\n"));
     }
@@ -1010,6 +1037,23 @@ mod tests {
     }
 
     #[test]
+    fn external_adoption_library_examples_are_bounded() {
+        let names: Vec<&str> = LIBRARY_EXAMPLES
+            .iter()
+            .map(|example| example.name)
+            .collect();
+        assert_eq!(
+            names,
+            [
+                "rust-test-fixtures",
+                "webhook-verifier",
+                "oidc-jwks-validation",
+                "tls-chain-validation",
+            ]
+        );
+    }
+
+    #[test]
     fn external_adoption_examples_are_bounded() {
         let names: Vec<&str> = EXTERNAL_EXAMPLES
             .iter()
@@ -1097,6 +1141,7 @@ uselesskey-rustls = { version = "0.9.1", features = ["tls-config", "rustls-ring"
             source: ".".to_string(),
             work_root: WORK_DIR.to_string(),
             ci_recipes: true,
+            library_examples: false,
             projects: vec![ExternalAdoptionProject {
                 name: "webhook-cli".to_string(),
                 path: "target/external-adoption-smoke/work/webhook-cli".to_string(),

@@ -136,6 +136,8 @@ Do not mix these into this lane:
 
 6. `xtask: smoke facade-first external examples`
    - Extend external adoption smoke only if it stays bounded.
+   - Add an explicit `--library-examples` mode for facade-first clean-project
+     examples so library proof does not require the installed CLI bundle loop.
    - Keep published-version mode as audit/reference, not release prep.
 
 7. `docs(spec): define downstream policy pack`
