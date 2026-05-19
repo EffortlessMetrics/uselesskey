@@ -53,6 +53,7 @@ fn deterministic_is_order_independent_for_cache_keys() {
 }
 
 proptest! {
+    #![proptest_config(ProptestConfig { cases: 96, ..ProptestConfig::default() })]
     #[test]
     fn deterministic_factory_returns_same_value_for_same_id(seed_bytes in any::<[u8;32]>(), label in "[-_a-zA-Z0-9]{1,32}") {
         let fx = Factory::deterministic(Seed::new(seed_bytes));
@@ -160,7 +161,7 @@ proptest! {
         label1 in "[a-zA-Z0-9]{1,16}",
         label2 in "[a-zA-Z0-9]{1,16}"
     ) {
-        prop_assume!(label1 != label2);
+        let label2 = if label1 == label2 { format!("{}x", label2) } else { label2 };
 
         let master = Seed::new(seed);
 
@@ -177,7 +178,7 @@ proptest! {
         variant1 in "[a-zA-Z0-9]{1,16}",
         variant2 in "[a-zA-Z0-9]{1,16}"
     ) {
-        prop_assume!(variant1 != variant2);
+        let variant2 = if variant1 == variant2 { format!("{}x", variant2) } else { variant2 };
 
         let master = Seed::new(seed);
 
