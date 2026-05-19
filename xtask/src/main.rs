@@ -730,7 +730,12 @@ fn main() -> Result<()> {
         Cmd::PublishPreflight { allow_dirty } => publish_preflight(allow_dirty),
         Cmd::Publish { from, resume } => publish(from, resume),
         Cmd::Mutants => run_mutants(PUBLISH_CRATES, None),
-        Cmd::Fuzz { target, all, list, args } => fuzz(target.as_deref(), all, list, &args),
+        Cmd::Fuzz {
+            target,
+            all,
+            list,
+            args,
+        } => fuzz(target.as_deref(), all, list, &args),
         Cmd::LintFix { check, no_clippy } => lint_fix(check, no_clippy),
         Cmd::Gate { check: _ } => gate(),
         Cmd::Setup => setup(),
@@ -6722,7 +6727,10 @@ fn fuzz_pr() -> Result<()> {
     build.args(["+nightly", "fuzz", "build", "--target", &host]);
     run(&mut build)?;
 
-    for target in targets.into_iter().filter(|target| is_pr_fuzz_target(target)) {
+    for target in targets
+        .into_iter()
+        .filter(|target| is_pr_fuzz_target(target))
+    {
         let mut cmd = Command::new("cargo");
         cmd.args([
             "+nightly",
@@ -10049,7 +10057,8 @@ path = "fuzz_targets/declared.rs"
         let _cwd = CwdGuard::new(root);
         let err = list_fuzz_targets().expect_err("undeclared source should fail");
         assert!(
-            err.to_string().contains("is not declared in fuzz/Cargo.toml"),
+            err.to_string()
+                .contains("is not declared in fuzz/Cargo.toml"),
             "unexpected error: {err}"
         );
     }
