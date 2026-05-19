@@ -187,7 +187,6 @@ mod tests {
         assert!(out.starts_with("-----BEGIN CORRUPTED KEY-----\n"));
     }
 
-
     #[test]
     fn bad_header_on_empty_input_is_single_replacement_line() {
         let out = corrupt_pem("", CorruptPem::BadHeader);
