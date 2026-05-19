@@ -462,4 +462,29 @@ mod tests {
             "seed must be redacted in debug output: {dbg}"
         );
     }
+
+    #[test]
+    fn deterministic_from_str_preserves_whitespace() {
+        let exact = Factory::deterministic_from_str(" seed-value ");
+        let trimmed = Factory::deterministic_from_str("seed-value");
+
+        let a: Arc<u64> = exact.get_or_init("domain:text", "label", b"spec", "good", draw_u64);
+        let b: Arc<u64> = trimmed.get_or_init("domain:text", "label", b"spec", "good", draw_u64);
+
+        assert_ne!(
+            *a, *b,
+            "deterministic_from_str should hash the text verbatim, including whitespace"
+        );
+    }
+
+    #[test]
+    fn deterministic_from_str_matches_seed_from_text() {
+        let from_str = Factory::deterministic_from_str("seed-value");
+        let from_seed = Factory::deterministic(Seed::from_text("seed-value"));
+
+        let a: Arc<u64> = from_str.get_or_init("domain:text", "label", b"spec", "good", draw_u64);
+        let b: Arc<u64> = from_seed.get_or_init("domain:text", "label", b"spec", "good", draw_u64);
+
+        assert_eq!(*a, *b);
+    }
 }
