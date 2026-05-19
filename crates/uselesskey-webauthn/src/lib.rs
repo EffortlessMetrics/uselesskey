@@ -567,11 +567,11 @@ mod tests {
         );
     }
 
-
     #[test]
     fn client_data_json_sets_expected_type_and_cross_origin_false() {
         let bytes = build_client_data_json("webauthn.get", b"xyz", "login.example.com");
-        let parsed: serde_json::Value = serde_json::from_slice(&bytes).expect("parse clientDataJSON");
+        let parsed: serde_json::Value =
+            serde_json::from_slice(&bytes).expect("parse clientDataJSON");
 
         assert_eq!(parsed["type"], "webauthn.get");
         assert_eq!(parsed["origin"], "https://login.example.com");
