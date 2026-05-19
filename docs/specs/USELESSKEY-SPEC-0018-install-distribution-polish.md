@@ -84,7 +84,8 @@ This spec does not:
   distribution path;
 - add new contract packs or fixture families;
 - add README badges;
-- make provider compatibility, production security, or scanner-evasion claims;
+- make provider compatibility, production security, or scanner-policy bypass
+  claims;
 - require installed CLI commands to execute `xtask`, release evidence, or
   claim-ledger command strings;
 - redesign the facade API broadly.
@@ -151,7 +152,7 @@ This spec is satisfied when:
   without requiring `xtask`;
 - external adoption smoke proves the documented installed-user path;
 - no doc in this lane implies release readiness, provider compatibility,
-  production security, or scanner evasion.
+  production security, or scanner-policy bypass approval.
 
 ## Boundaries
 
@@ -161,7 +162,7 @@ claim boundary:
 - installed bundle audit proves local bundle consistency, not repo public
   claims;
 - scanner-safe means the project classifies generated material as scanner-safe
-  test fixtures, not scanner evasion;
+  test fixtures, not approval to bypass scanner policy;
 - generated fixtures do not prove production secret handling;
 - TLS/OIDC/webhook fixtures do not prove provider compatibility or production
   security;

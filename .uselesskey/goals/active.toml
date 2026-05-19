@@ -21,7 +21,7 @@ end_state = [
   "External smoke covers the facade examples when bounded.",
   "Downstream policy guidance uses presets and reviewer checklists, not a broad DSL.",
   "Tiny audit-bundle policy controls exist only if they stay simple and stable.",
-  "The lane closes without version bump, tag, publish, release prep, new contract pack, provider/security overclaims, scanner-evasion language, shipper work, broad dependency churn, or installed CLI execution of xtask/claim-ledger commands.",
+  "The lane closes without version bump, tag, publish, release prep, new contract pack, provider/security overclaims, scanner-policy bypass language, shipper work, broad dependency churn, or installed CLI execution of xtask/claim-ledger commands.",
 ]
 
 [[work_item]]
@@ -79,9 +79,9 @@ commands = [
 
 [[work_item]]
 id = "library-facade-polish-spec"
-status = "ready"
+status = "done"
 proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0018"
+spec = "USELESSKEY-SPEC-0019"
 plan = "plans/usability-polish/implementation-plan.md"
 commands = [
   "cargo xtask spec-check --strict",
@@ -92,9 +92,9 @@ commands = [
 
 [[work_item]]
 id = "facade-first-external-examples"
-status = "planned"
+status = "ready"
 proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0018"
+spec = "USELESSKEY-SPEC-0019"
 plan = "plans/usability-polish/implementation-plan.md"
 commands = [
   "cargo xtask external-adoption-smoke --path .",
@@ -106,7 +106,7 @@ commands = [
 id = "external-library-smoke"
 status = "planned"
 proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0018"
+spec = "USELESSKEY-SPEC-0019"
 plan = "plans/usability-polish/implementation-plan.md"
 commands = [
   "cargo test -p xtask external_adoption_smoke",

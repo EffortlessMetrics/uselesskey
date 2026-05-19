@@ -16,6 +16,7 @@ linked_specs = [
   "USELESSKEY-SPEC-0015",
   "USELESSKEY-SPEC-0017",
   "USELESSKEY-SPEC-0018",
+  "USELESSKEY-SPEC-0019",
 ]
 linked_adrs = [
   "USELESSKEY-ADR-0001",
@@ -70,7 +71,7 @@ Do not mix these into this lane:
 - WebAuthn, PKCS#11, Vault/Kubernetes, or other fixture breadth work;
 - provider compatibility claims;
 - production security claims;
-- scanner-evasion language;
+- scanner-policy bypass language;
 - broad policy DSL;
 - broad facade redesign;
 - shipper work;
