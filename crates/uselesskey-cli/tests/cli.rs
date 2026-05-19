@@ -114,6 +114,66 @@ fn bundle_explain_has_copyable_webhook_paths_without_writing_bundle() -> TestRes
 }
 
 #[test]
+fn top_level_help_routes_installed_users_to_self_check_and_audit() -> TestResult<()> {
+    let out = run(["--help"])?;
+
+    assert!(out.contains("Generate deterministic test fixtures"));
+    assert!(out.contains("Start here:"));
+    assert!(out.contains("uselesskey doctor"));
+    assert!(out.contains("uselesskey profiles"));
+    assert!(out.contains("uselesskey audit-bundle --path target/uselesskey-webhook --ci"));
+    assert!(out.contains("Generate a deterministic fixture bundle"));
+    assert!(out.contains("Check installed CLI readiness"));
+    assert!(out.contains("Repo public-claim proof is separate from installed CLI setup."));
+    Ok(())
+}
+
+#[test]
+fn bundle_help_shows_installed_generate_verify_inspect_audit_loop() -> TestResult<()> {
+    let out = run(["bundle", "--help"])?;
+
+    assert!(out.contains("Generate a deterministic fixture bundle"));
+    assert!(out.contains("uselesskey bundle --profile webhook --out target/uselesskey-webhook"));
+    assert!(out.contains("uselesskey verify-bundle --path target/uselesskey-webhook"));
+    assert!(out.contains("uselesskey inspect-bundle --path target/uselesskey-webhook"));
+    assert!(out.contains("uselesskey audit-bundle --path target/uselesskey-webhook --ci"));
+    assert!(out.contains("keep generated payloads under target/"));
+    assert!(out.contains("Explain the profile"));
+    Ok(())
+}
+
+#[test]
+fn audit_bundle_help_explains_ci_receipts_and_boundaries() -> TestResult<()> {
+    let out = run(["audit-bundle", "--help"])?;
+
+    assert!(out.contains("Emit metadata-only bundle audit receipts"));
+    assert!(out.contains("--path <BUNDLE_DIR>"));
+    assert!(out.contains("uselesskey audit-bundle --path target/uselesskey-webhook --out"));
+    assert!(out.contains("uselesskey audit-bundle --path target/uselesskey-webhook --ci"));
+    assert!(out.contains("Emit CI-oriented JSON"));
+    assert!(out.contains("stable audit failure classes"));
+    assert!(out.contains("not prove production security"));
+    assert!(out.contains("provider compatibility"));
+    assert!(out.contains("repo public claims"));
+    Ok(())
+}
+
+#[test]
+fn doctor_help_stays_installed_user_scoped() -> TestResult<()> {
+    let out = run(["doctor", "--help"])?;
+
+    assert!(out.contains("Check installed CLI readiness and safe default output paths"));
+    assert!(out.contains("uselesskey doctor --format json"));
+    assert!(out.contains("Checks installed CLI concerns only"));
+    assert!(out.contains("target write"));
+    assert!(out.contains("known profiles"));
+    assert!(!out.contains("cargo xtask"));
+    assert!(!out.contains("claim-ledger"));
+    assert!(!out.contains("release-evidence"));
+    Ok(())
+}
+
+#[test]
 fn doctor_text_reports_installed_cli_checks_only() -> TestResult<()> {
     let dir = tempdir().test_context("tempdir")?;
     let mut cmd = Command::cargo_bin("uselesskey").test_context("bin exists")?;
@@ -128,6 +188,10 @@ fn doctor_text_reports_installed_cli_checks_only() -> TestResult<()> {
     assert!(report.contains("output-path-safety: pass"));
     assert!(report.contains("known-profiles: pass"));
     assert!(report.contains("scanner-safe, tls, oidc, webhook, runtime"));
+    assert!(report.contains("Next steps:"));
+    assert!(report.contains("uselesskey profiles"));
+    assert!(report.contains("uselesskey bundle --profile webhook --out target/uselesskey-webhook"));
+    assert!(report.contains("uselesskey audit-bundle --path target/uselesskey-webhook --ci"));
     assert!(report.contains("installed CLI concerns only"));
     assert!(report.contains("repo-local workflows"));
     assert!(!report.contains("cargo xtask"));
@@ -177,6 +241,17 @@ fn doctor_json_reports_known_profiles_and_boundaries() -> TestResult<()> {
                 .iter()
                 .any(|check| check["name"] == check_name && check["status"] == "pass"),
             "missing passing check {check_name}"
+        );
+    }
+    let next_steps = report["next_steps"].as_array().test_context("next steps")?;
+    for step in [
+        "uselesskey profiles",
+        "uselesskey bundle --profile webhook --out target/uselesskey-webhook",
+        "uselesskey audit-bundle --path target/uselesskey-webhook --ci",
+    ] {
+        assert!(
+            next_steps.iter().any(|value| value.as_str() == Some(step)),
+            "missing next step {step}"
         );
     }
     assert!(stdout.contains("installed CLI concerns only"));

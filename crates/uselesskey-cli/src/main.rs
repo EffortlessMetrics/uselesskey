@@ -26,7 +26,19 @@ use uselesskey_webhook::{WebhookFactoryExt, WebhookPayloadSpec};
 use uselesskey_x509::{ChainNegative, ChainSpec, X509Chain, X509FactoryExt, X509Spec};
 
 #[derive(Parser, Debug)]
-#[command(name = "uselesskey", about = "Deterministic fixture generation CLI")]
+#[command(
+    name = "uselesskey",
+    about = "Generate deterministic test fixtures with metadata-only audit receipts",
+    after_help = "Start here:
+  uselesskey doctor
+  uselesskey profiles
+  uselesskey bundle --profile webhook --out target/uselesskey-webhook
+  uselesskey audit-bundle --path target/uselesskey-webhook --ci
+
+Boundaries:
+  Installed CLI commands generate, verify, inspect, and audit local fixtures.
+  Repo public-claim proof is separate from installed CLI setup."
+)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -34,17 +46,29 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
+    #[command(about = "Generate one fixture artifact")]
     Generate(GenerateArgs),
+    #[command(about = "List bundle profiles and copyable installed commands")]
     Profiles(ProfilesArgs),
+    #[command(about = "Explain one bundle profile and its proof boundary")]
     Profile(ProfileArgs),
+    #[command(about = "Generate a deterministic fixture bundle")]
     Bundle(BundleArgs),
+    #[command(about = "Check a bundle manifest and listed files")]
     VerifyBundle(VerifyBundleArgs),
+    #[command(about = "Print a quick human summary of bundle metadata")]
     InspectBundle(InspectBundleArgs),
+    #[command(about = "Emit metadata-only bundle audit receipts for reviewers or CI")]
     AuditBundle(AuditBundleArgs),
+    #[command(about = "Check installed CLI readiness and safe default output paths")]
     Doctor(DoctorArgs),
+    #[command(about = "Export generated fixtures into platform-friendly shapes")]
     Export(ExportArgs),
+    #[command(about = "Inspect a materialization manifest")]
     Inspect(InspectArgs),
+    #[command(about = "Materialize fixtures from a reviewed manifest")]
     Materialize(MaterializeArgs),
+    #[command(about = "Verify a materialization manifest")]
     Verify(VerifyArgs),
 }
 
@@ -75,51 +99,89 @@ struct GenerateArgs {
 }
 
 #[derive(clap::Args, Debug)]
+#[command(after_help = "Examples:
+  uselesskey bundle --profile webhook --out target/uselesskey-webhook
+  uselesskey verify-bundle --path target/uselesskey-webhook
+  uselesskey inspect-bundle --path target/uselesskey-webhook
+  uselesskey audit-bundle --path target/uselesskey-webhook --ci
+
+Boundary:
+  bundle writes test fixtures; keep generated payloads under target/ unless
+  your project has reviewed another output path.")]
 struct BundleArgs {
+    /// Deterministic seed for this bundle. This is test input, not a secret.
     #[arg(long, default_value = "uselesskey-bundle-seed")]
     seed: String,
+    /// Stable label used in deterministic artifact identity.
     #[arg(long, default_value = "bundle")]
     label: String,
+    /// Preferred artifact format when the profile supports multiple formats.
     #[arg(long, default_value = "jwk")]
     format: Format,
+    /// Bundle profile to generate.
     #[arg(long, default_value = "scanner-safe")]
     profile: BundleProfile,
+    /// Output directory for the generated bundle.
     #[arg(long)]
     out: Option<PathBuf>,
+    /// Explain the profile, generated files, audit path, and boundary without writing files.
     #[arg(long)]
     explain: bool,
 }
 
 #[derive(clap::Args, Debug)]
 struct VerifyBundleArgs {
-    #[arg(long = "bundle-dir", alias = "path")]
+    /// Bundle directory to verify.
+    #[arg(long = "path", visible_alias = "bundle-dir", value_name = "BUNDLE_DIR")]
     bundle_dir: PathBuf,
 }
 
 #[derive(clap::Args, Debug)]
 struct InspectBundleArgs {
-    #[arg(long = "bundle-dir", alias = "path")]
+    /// Bundle directory to inspect.
+    #[arg(long = "path", visible_alias = "bundle-dir", value_name = "BUNDLE_DIR")]
     bundle_dir: PathBuf,
+    /// Optional path for writing the human summary.
     #[arg(long)]
     out: Option<PathBuf>,
 }
 
 #[derive(clap::Args, Debug)]
+#[command(after_help = "Examples:
+  uselesskey audit-bundle --path target/uselesskey-webhook --out target/uselesskey-webhook-audit
+  uselesskey audit-bundle --path target/uselesskey-webhook --ci
+  uselesskey audit-bundle --path target/uselesskey-webhook --summary
+
+Boundary:
+  audit-bundle checks local bundle consistency and metadata labels. It does
+  not prove production security, provider compatibility, or repo public claims.")]
 struct AuditBundleArgs {
-    #[arg(long = "bundle-dir", alias = "path")]
+    /// Bundle directory to audit. `--bundle-dir` remains available as an alias.
+    #[arg(long = "path", visible_alias = "bundle-dir", value_name = "BUNDLE_DIR")]
     bundle_dir: PathBuf,
+    /// Directory for metadata-only Markdown and JSON audit receipts.
     #[arg(long)]
     out: Option<PathBuf>,
+    /// Output format when writing to stdout.
     #[arg(long, default_value = "markdown")]
     format: AuditOutputFormat,
+    /// Emit CI-oriented JSON and exit non-zero on stable audit failure classes.
     #[arg(long, conflicts_with = "summary")]
     ci: bool,
+    /// Print a compact human summary for terminals or CI logs.
     #[arg(long)]
     summary: bool,
 }
 
 #[derive(clap::Args, Debug)]
+#[command(after_help = "Examples:
+  uselesskey doctor
+  uselesskey doctor --format json
+
+Checks installed CLI concerns only: version, working directory, target write
+access, safe default profile paths, JSON output, and known profiles.")]
 struct DoctorArgs {
+    /// Doctor output format.
     #[arg(long, default_value = "text")]
     format: DoctorOutputFormat,
 }
@@ -1277,6 +1339,11 @@ fn build_doctor_report() -> DoctorReport {
         current_dir,
         known_profiles,
         checks,
+        next_steps: vec![
+            "uselesskey profiles".to_string(),
+            "uselesskey bundle --profile webhook --out target/uselesskey-webhook".to_string(),
+            "uselesskey audit-bundle --path target/uselesskey-webhook --ci".to_string(),
+        ],
         boundaries: vec![
             "doctor checks installed CLI concerns only".to_string(),
             "public claim proof and release proof remain repo-local workflows".to_string(),
@@ -1362,6 +1429,10 @@ fn render_doctor_report(report: &DoctorReport) -> String {
             "- {}: {} - {}\n",
             check.name, check.status, check.detail
         ));
+    }
+    out.push_str("\nNext steps:\n");
+    for step in &report.next_steps {
+        out.push_str(&format!("- {step}\n"));
     }
     out.push_str("\nBoundaries:\n");
     for boundary in &report.boundaries {
@@ -3367,6 +3438,7 @@ struct DoctorReport {
     current_dir: String,
     known_profiles: Vec<String>,
     checks: Vec<DoctorCheck>,
+    next_steps: Vec<String>,
     boundaries: Vec<String>,
 }
 

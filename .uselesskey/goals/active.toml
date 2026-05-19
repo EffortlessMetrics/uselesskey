@@ -65,7 +65,7 @@ commands = [
 
 [[work_item]]
 id = "cli-help-self-check-audit"
-status = "ready"
+status = "done"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0018"
 plan = "plans/usability-polish/implementation-plan.md"
@@ -79,7 +79,7 @@ commands = [
 
 [[work_item]]
 id = "library-facade-polish-spec"
-status = "planned"
+status = "ready"
 proposal = "USELESSKEY-PROP-0001"
 spec = "USELESSKEY-SPEC-0018"
 plan = "plans/usability-polish/implementation-plan.md"
