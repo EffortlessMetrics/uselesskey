@@ -1631,7 +1631,6 @@ mod tests {
         assert!(!is_safe_default_output_hint("../target/uselesskey-webhook"));
     }
 
-
     #[test]
     fn helper_formatters_cover_all_branches() {
         assert_eq!(yes_no_unknown(Some(true)), "yes");
@@ -1673,7 +1672,9 @@ mod tests {
             path: "webhook.json".to_string(),
             description: "runtime webhook material".to_string(),
         };
-        assert!(bundle_artifact_contains_symmetric_secret_material(&webhook_secret));
+        assert!(bundle_artifact_contains_symmetric_secret_material(
+            &webhook_secret
+        ));
 
         let jwk_public = BundleArtifactRecord {
             kind: "jwk".to_string(),
@@ -1684,7 +1685,9 @@ mod tests {
             path: "jwk.json".to_string(),
             description: "scanner-safe jwk".to_string(),
         };
-        assert!(!bundle_artifact_contains_symmetric_secret_material(&jwk_public));
+        assert!(!bundle_artifact_contains_symmetric_secret_material(
+            &jwk_public
+        ));
     }
 }
 
