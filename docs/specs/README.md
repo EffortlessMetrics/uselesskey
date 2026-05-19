@@ -54,3 +54,4 @@ public crate-surface cleanup.
 - [USELESSKEY-SPEC-0017: Bundle product surface](USELESSKEY-SPEC-0017-bundle-product-surface.md)
 - [USELESSKEY-SPEC-0018: Install and distribution polish](USELESSKEY-SPEC-0018-install-distribution-polish.md)
 - [USELESSKEY-SPEC-0019: Library facade polish](USELESSKEY-SPEC-0019-library-facade-polish.md)
+- [USELESSKEY-SPEC-0020: Downstream policy pack](USELESSKEY-SPEC-0020-downstream-policy-pack.md)

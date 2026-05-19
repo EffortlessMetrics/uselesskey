@@ -118,9 +118,9 @@ commands = [
 
 [[work_item]]
 id = "downstream-policy-pack-spec"
-status = "ready"
+status = "done"
 proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0018"
+spec = "USELESSKEY-SPEC-0020"
 plan = "plans/usability-polish/implementation-plan.md"
 commands = [
   "cargo xtask spec-check --strict",
@@ -131,9 +131,9 @@ commands = [
 
 [[work_item]]
 id = "audit-bundle-policy-controls"
-status = "planned"
+status = "ready"
 proposal = "USELESSKEY-PROP-0001"
-spec = "USELESSKEY-SPEC-0018"
+spec = "USELESSKEY-SPEC-0020"
 plan = "plans/usability-polish/implementation-plan.md"
 commands = [
   "cargo test -p uselesskey-cli --all-features audit_bundle",
