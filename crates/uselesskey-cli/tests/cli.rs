@@ -150,6 +150,8 @@ fn audit_bundle_help_explains_ci_receipts_and_boundaries() -> TestResult<()> {
     assert!(out.contains("--path <BUNDLE_DIR>"));
     assert!(out.contains("uselesskey audit-bundle --path target/uselesskey-webhook --out"));
     assert!(out.contains("uselesskey audit-bundle --path target/uselesskey-webhook --ci"));
+    assert!(out.contains("--expect-profile <PROFILE>"));
+    assert!(out.contains("--policy <POLICY>"));
     assert!(out.contains("Emit CI-oriented JSON"));
     assert!(out.contains("stable audit failure classes"));
     assert!(out.contains("not prove production security"));
@@ -1128,6 +1130,82 @@ fn audit_bundle_ci_outputs_json_on_success() -> TestResult<()> {
     assert_eq!(audit["profile"], "webhook");
     assert_eq!(audit["checks"][0]["failure_class"], "invalid_manifest");
     assert!(!out.contains("whsec_"));
+    Ok(())
+}
+
+#[test]
+fn audit_bundle_ci_accepts_strict_policy_and_expected_profile() -> TestResult<()> {
+    let dir = tempdir().test_context("tempdir")?;
+    let bundle_dir = dir.path().join("webhook");
+
+    let mut bundle = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    bundle.args([
+        "bundle",
+        "--profile",
+        "webhook",
+        "--out",
+        bundle_dir.to_str().test_context("utf-8")?,
+    ]);
+    bundle.assert().success();
+
+    let out = run([
+        "audit-bundle",
+        "--path",
+        bundle_dir.to_str().test_context("utf-8")?,
+        "--ci",
+        "--expect-profile",
+        "webhook",
+        "--policy",
+        "strict",
+    ])?;
+    let audit: Value = serde_json::from_str(&out).test_context("audit json")?;
+    assert_eq!(audit["status"], "pass");
+    assert_eq!(audit["profile"], "webhook");
+    assert!(!out.contains("whsec_"));
+    Ok(())
+}
+
+#[test]
+fn audit_bundle_ci_fails_on_expected_profile_mismatch() -> TestResult<()> {
+    let dir = tempdir().test_context("tempdir")?;
+    let bundle_dir = dir.path().join("webhook");
+
+    let mut bundle = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    bundle.args([
+        "bundle",
+        "--profile",
+        "webhook",
+        "--out",
+        bundle_dir.to_str().test_context("utf-8")?,
+    ]);
+    bundle.assert().success();
+
+    let mut audit = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    audit.args([
+        "audit-bundle",
+        "--path",
+        bundle_dir.to_str().test_context("utf-8")?,
+        "--ci",
+        "--expect-profile",
+        "tls",
+    ]);
+    let assert = audit.assert().code(1).stderr(predicate::str::contains(
+        "audit policy failed: profile_validation_failed",
+    ));
+    let output = assert.get_output();
+    let audit: Value = serde_json::from_slice(&output.stdout).test_context("audit failure json")?;
+    assert_eq!(audit["status"], "fail");
+    assert_eq!(audit["profile"], "webhook");
+    assert_eq!(audit["checks"][0]["status"], "fail");
+    assert_eq!(
+        audit["checks"][0]["failure_class"],
+        "profile_validation_failed"
+    );
+    let detail = audit["checks"][0]["detail"]
+        .as_str()
+        .test_context("failure detail")?;
+    assert!(detail.contains("expected profile `tls`, found `webhook`"));
+    assert!(!String::from_utf8_lossy(&output.stdout).contains("whsec_"));
     Ok(())
 }
 
