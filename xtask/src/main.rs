@@ -6757,6 +6757,7 @@ fn is_pr_fuzz_target(target: &str) -> bool {
         "adapter_rustcrypto_roundtrip"
             | "adapter_rustls_roundtrip"
             | "fuzz_factory_stress"
+            | "fuzz_order_independent_identity"
             | "fuzz_pgp_keygen"
             | "fuzz_rsa_keygen"
             | "fuzz_x509_cert"
@@ -10071,6 +10072,7 @@ path = "fuzz_targets/declared.rs"
         assert!(is_pr_fuzz_target("pem_corrupt"));
         assert!(is_pr_fuzz_target("adapter_ring_roundtrip"));
         assert!(!is_pr_fuzz_target("fuzz_rsa_keygen"));
+        assert!(!is_pr_fuzz_target("fuzz_order_independent_identity"));
         assert!(!is_pr_fuzz_target("fuzz_x509_cert"));
         assert!(!is_pr_fuzz_target("x509_chain_build"));
     }
