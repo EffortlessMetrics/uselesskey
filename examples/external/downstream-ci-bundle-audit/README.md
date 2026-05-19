@@ -36,5 +36,6 @@ you want GitHub Actions to run it.
 ## Boundary
 
 This proves local generated bundle consistency in downstream CI. It does not
-prove repo public claims, production security, provider compatibility, scanner
-evasion, release readiness, or downstream verifier correctness.
+prove repo public claims, production security, provider compatibility,
+permission to bypass scanner policy, release readiness, or downstream verifier
+correctness.

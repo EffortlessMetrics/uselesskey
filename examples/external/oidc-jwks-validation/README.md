@@ -3,6 +3,43 @@
 Use this downstream-shaped example when an OIDC or JWT validator test needs
 deterministic JWKS shapes plus key-selection negatives.
 
+User job:
+
+```text
+I need deterministic OIDC/JWKS valid and invalid shapes in Rust tests.
+```
+
+Dependency:
+
+```toml
+[dev-dependencies]
+uselesskey = { version = "0.9.1", default-features = false, features = ["rsa", "jwk"] }
+```
+
+First imports:
+
+```rust
+use uselesskey::jwk::{NegativeJwk, NegativeJwks};
+use uselesskey::{Factory, RsaFactoryExt, RsaSpec};
+```
+
+Positive path:
+
+```text
+Factory::deterministic_from_str("external-oidc-jwks")
+  -> fx.rsa("issuer", RsaSpec::rs256())
+  -> public_jwks() accepted by the example validator
+```
+
+Negative paths:
+
+```text
+NegativeJwks::DuplicateKid  -> duplicate kid rejection
+NegativeJwk::WrongKty       -> wrong kty rejection
+NegativeJwk::UnsupportedAlg -> unsupported alg rejection
+NegativeJwks::MissingKid    -> missing kid rejection
+```
+
 ```bash
 cargo test
 ```
