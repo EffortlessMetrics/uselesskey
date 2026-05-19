@@ -41,12 +41,16 @@ jobs:
           uselesskey audit-bundle \
             --path target/uselesskey-webhook \
             --out target/uselesskey-webhook-audit \
-            --ci
+            --ci \
+            --expect-profile webhook \
+            --policy strict
 ```
 
 `--ci` emits machine-readable audit JSON on stdout and exits non-zero when the
 bundle fails a stable audit class such as `missing_manifest`, `path_escape`,
 `missing_artifact`, `scanner_safe_mismatch`, or `runtime_material_mismatch`.
+`--expect-profile webhook --policy strict` makes the job fail if a reused CI step
+audits the wrong profile or the audit is not clean.
 
 ## TLS and OIDC Fixtures
 
@@ -81,7 +85,9 @@ jobs:
           uselesskey audit-bundle \
             --path target/uselesskey-tls \
             --out target/uselesskey-tls-audit \
-            --ci
+            --ci \
+            --expect-profile tls \
+            --policy strict
 
       - name: Generate OIDC fixtures
         run: uselesskey bundle --profile oidc --out target/uselesskey-oidc
@@ -94,7 +100,9 @@ jobs:
           uselesskey audit-bundle \
             --path target/uselesskey-oidc \
             --out target/uselesskey-oidc-audit \
-            --ci
+            --ci \
+            --expect-profile oidc \
+            --policy strict
 ```
 
 ## Upload Audit Receipts
@@ -148,3 +156,5 @@ Use repo-local proof only when a reviewer needs public-claim evidence:
 cargo xtask verification-pack --out target/uselesskey-verification
 ```
 
+For preset policy names and the reviewer checklist, see
+[use-downstream-policy-pack.md](use-downstream-policy-pack.md).

@@ -35,7 +35,7 @@ Pick the job first; the repo proof machinery is behind links when you need it.
 | use fixtures in Rust tests | facade crate | `uselesskey = { version = "0.9.1", features = ["rsa"] }` |
 | generate deterministic bundles on disk | installed CLI | `uselesskey bundle --profile scanner-safe --out target/uselesskey-bundle` |
 | test webhook, TLS, or OIDC/JWKS verifier paths | contract-pack profiles | `uselesskey profiles` |
-| fail CI on bundle drift | metadata-only audit | `uselesskey audit-bundle --path target/uselesskey-webhook --ci` |
+| fail CI on bundle drift | downstream policy pack | `uselesskey audit-bundle --path target/uselesskey-webhook --ci --expect-profile webhook --policy strict` |
 | share a reviewer packet without cloning the repo | installed bundle audit | `uselesskey audit-bundle --path target/uselesskey-webhook --out target/uselesskey-webhook-audit` |
 | prove repo public claims from a checkout | repo verification pack | `cargo xtask verification-pack --out target/uselesskey-verification` |
 
@@ -57,10 +57,11 @@ uselesskey inspect-bundle --path target/uselesskey-webhook
 uselesskey audit-bundle --path target/uselesskey-webhook --out target/uselesskey-webhook-audit
 ```
 
-Use `--ci` when the audit is part of a downstream CI gate:
+Use `--ci --expect-profile <profile> --policy strict` when the audit is part
+of a downstream CI gate:
 
 ```bash
-uselesskey audit-bundle --path target/uselesskey-webhook --ci
+uselesskey audit-bundle --path target/uselesskey-webhook --ci --expect-profile webhook --policy strict
 ```
 
 Rust test authors start with the facade crate:

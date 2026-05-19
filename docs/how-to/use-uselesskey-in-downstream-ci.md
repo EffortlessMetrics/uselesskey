@@ -11,7 +11,7 @@ steps:
   - run: cargo install uselesskey-cli --version 0.9.1
   - run: uselesskey bundle --profile webhook --out target/uselesskey-webhook
   - run: uselesskey verify-bundle --path target/uselesskey-webhook
-  - run: uselesskey audit-bundle --path target/uselesskey-webhook --out target/uselesskey-webhook-audit --ci
+  - run: uselesskey audit-bundle --path target/uselesskey-webhook --out target/uselesskey-webhook-audit --ci --expect-profile webhook --policy strict
 ```
 
 The audit files are safe reviewer metadata:
@@ -30,12 +30,18 @@ unless your project has a separate reviewed policy for those artifacts.
 Use JSON mode when CI needs a machine-readable decision point:
 
 ```bash
-uselesskey audit-bundle --path target/uselesskey-webhook --ci
+uselesskey audit-bundle \
+  --path target/uselesskey-webhook \
+  --ci \
+  --expect-profile webhook \
+  --policy strict
 ```
 
-Fail CI if the command exits non-zero. A non-zero exit means the local bundle
-failed a manifest, containment, receipt, scanner-safe/runtime-material, or
-profile validation check.
+Fail CI if the command exits non-zero. With `--policy strict`, a non-zero exit
+means the local bundle failed the strict installed-bundle policy: wrong profile,
+non-passing audit status, missing or unexpected files, containment failure,
+receipt drift, scanner-safe/runtime-material mismatch, or profile validation
+failure.
 
 For compact human CI logs without changing the machine-readable `--ci` path,
 run summary mode in a separate step:
@@ -49,6 +55,9 @@ uselesskey audit-bundle --path target/uselesskey-webhook --summary
 This downstream CI recipe proves local bundle consistency. It does not prove
 provider compatibility, production security, repo public claims, scanner
 evasion, or release readiness.
+
+For the preset policy names and reviewer checklist, see
+[use-downstream-policy-pack.md](use-downstream-policy-pack.md).
 
 Use repo-local proof only when a reviewer asks for public-claim receipts:
 
