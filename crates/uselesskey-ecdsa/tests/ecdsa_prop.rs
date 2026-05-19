@@ -7,6 +7,13 @@ mod testutil;
 use proptest::prelude::*;
 
 use uselesskey_core::{Factory, Seed};
+
+#[cfg(feature = "jwk")]
+fn distinct_labels() -> impl Strategy<Value = (String, String)> {
+    ("[a-zA-Z0-9]{1,16}", "[a-zA-Z0-9]{1,16}")
+        .prop_filter("labels must be distinct", |(a, b)| a != b)
+}
+
 use uselesskey_ecdsa::{EcdsaFactoryExt, EcdsaSpec};
 
 proptest! {
@@ -108,11 +115,8 @@ proptest! {
     #[cfg(feature = "jwk")]
     fn different_labels_produce_different_kids(
         seed in any::<[u8; 32]>(),
-        label1 in "[a-zA-Z0-9]{1,16}",
-        label2 in "[a-zA-Z0-9]{1,16}",
+        (label1, label2) in distinct_labels(),
     ) {
-        prop_assume!(label1 != label2);
-
         let fx = Factory::deterministic(Seed::new(seed));
         let k1 = fx.ecdsa(&label1, EcdsaSpec::es256());
         let k2 = fx.ecdsa(&label2, EcdsaSpec::es256());

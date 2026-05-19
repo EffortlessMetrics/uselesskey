@@ -80,6 +80,8 @@ pub enum NegativeToken {
     MissingAlg,
     /// Set the JWT header algorithm to `none`.
     AlgNone,
+    /// Omit `kid` from the JWT header while keeping key-selection context.
+    MissingKid,
     /// Emit different `kid` values in the header and payload.
     MismatchedKid,
     /// Set an already-expired `exp` claim.
@@ -105,6 +107,7 @@ impl NegativeToken {
             Self::InvalidJwtHeaderShape => "invalid_jwt_header_shape",
             Self::MissingAlg => "missing_alg",
             Self::AlgNone => "alg_none",
+            Self::MissingKid => "missing_kid",
             Self::MismatchedKid => "mismatched_kid",
             Self::ExpiredClaims => "expired_claims",
             Self::NotYetValidClaims => "not_yet_valid_claims",
@@ -112,6 +115,25 @@ impl NegativeToken {
             Self::BadAudience => "bad_audience",
             Self::MalformedBearer => "malformed_bearer",
             Self::NearMissApiKey => "near_miss_api_key",
+        }
+    }
+
+    /// Stable taxonomy identifier for docs, manifests, and receipts.
+    pub const fn stable_id(&self) -> &'static str {
+        match self {
+            Self::MalformedJwtSegmentCount => "jwt_bad_segment_count",
+            Self::BadBase64UrlSegment => "jwt_malformed_base64url",
+            Self::InvalidJwtHeaderShape => "jwt_invalid_header_shape",
+            Self::MissingAlg => "jwt_missing_alg",
+            Self::AlgNone => "jwt_alg_none",
+            Self::MissingKid => "jwt_missing_kid",
+            Self::MismatchedKid => "jwt_mismatched_kid",
+            Self::ExpiredClaims => "jwt_expired",
+            Self::NotYetValidClaims => "jwt_not_yet_valid",
+            Self::BadIssuer => "jwt_bad_issuer",
+            Self::BadAudience => "jwt_bad_audience",
+            Self::MalformedBearer => "token_malformed_bearer",
+            Self::NearMissApiKey => "token_near_miss",
         }
     }
 }
@@ -138,6 +160,7 @@ pub fn generate_negative_token(
         NegativeToken::InvalidJwtHeaderShape => invalid_jwt_header_shape(label, seed),
         NegativeToken::MissingAlg => missing_alg(label, seed),
         NegativeToken::AlgNone => alg_none(label, seed),
+        NegativeToken::MissingKid => missing_kid(label, seed),
         NegativeToken::MismatchedKid => mismatched_kid(label, seed),
         NegativeToken::ExpiredClaims => token_with_payload_claim(label, seed, "exp", json!(1u64)),
         NegativeToken::NotYetValidClaims => not_yet_valid_claims(label, seed),
@@ -223,6 +246,14 @@ fn missing_alg(label: &str, seed: Seed) -> String {
 
 fn alg_none(label: &str, seed: Seed) -> String {
     token_with_header_claim(label, seed, "alg", json!("none"))
+}
+
+fn missing_kid(label: &str, seed: Seed) -> String {
+    let parts = JwtParts::generated(label, seed);
+    let mut payload = parts.payload_object();
+    payload.insert("kid".to_string(), json!("expected-kid"));
+
+    parts.with_payload_object(payload).into_token()
 }
 
 fn mismatched_kid(label: &str, seed: Seed) -> String {
@@ -441,6 +472,7 @@ mod tests {
         );
         assert_eq!(NegativeToken::MissingAlg.variant_name(), "missing_alg");
         assert_eq!(NegativeToken::AlgNone.variant_name(), "alg_none");
+        assert_eq!(NegativeToken::MissingKid.variant_name(), "missing_kid");
         assert_eq!(
             NegativeToken::MismatchedKid.variant_name(),
             "mismatched_kid"
@@ -463,6 +495,41 @@ mod tests {
             NegativeToken::NearMissApiKey.variant_name(),
             "near_miss_api_key"
         );
+    }
+
+    #[test]
+    fn negative_token_stable_ids_match_taxonomy() {
+        assert_eq!(
+            NegativeToken::MalformedJwtSegmentCount.stable_id(),
+            "jwt_bad_segment_count"
+        );
+        assert_eq!(
+            NegativeToken::BadBase64UrlSegment.stable_id(),
+            "jwt_malformed_base64url"
+        );
+        assert_eq!(
+            NegativeToken::InvalidJwtHeaderShape.stable_id(),
+            "jwt_invalid_header_shape"
+        );
+        assert_eq!(NegativeToken::MissingAlg.stable_id(), "jwt_missing_alg");
+        assert_eq!(NegativeToken::AlgNone.stable_id(), "jwt_alg_none");
+        assert_eq!(NegativeToken::MissingKid.stable_id(), "jwt_missing_kid");
+        assert_eq!(
+            NegativeToken::MismatchedKid.stable_id(),
+            "jwt_mismatched_kid"
+        );
+        assert_eq!(NegativeToken::ExpiredClaims.stable_id(), "jwt_expired");
+        assert_eq!(
+            NegativeToken::NotYetValidClaims.stable_id(),
+            "jwt_not_yet_valid"
+        );
+        assert_eq!(NegativeToken::BadIssuer.stable_id(), "jwt_bad_issuer");
+        assert_eq!(NegativeToken::BadAudience.stable_id(), "jwt_bad_audience");
+        assert_eq!(
+            NegativeToken::MalformedBearer.stable_id(),
+            "token_malformed_bearer"
+        );
+        assert_eq!(NegativeToken::NearMissApiKey.stable_id(), "token_near_miss");
     }
 
     #[test]
@@ -602,6 +669,26 @@ mod tests {
         assert_eq!(payload["sub"], "svc");
         assert_eq!(payload["kid"], "expected-kid");
         assert_ne!(header["kid"], payload["kid"]);
+    }
+
+    #[test]
+    fn negative_missing_kid_keeps_payload_key_context() {
+        let value = generate_negative_token(
+            "svc",
+            TokenKind::OAuthAccessToken,
+            Seed::new([41u8; 32]),
+            NegativeToken::MissingKid,
+        );
+        let parts = jwt_parts(&value);
+        let header = decode_object_segment(parts[0]);
+        let payload = decode_object_segment(parts[1]);
+
+        assert_eq!(parts.len(), 3);
+        assert_eq!(header["alg"], "RS256");
+        assert_eq!(header["typ"], "JWT");
+        assert!(header.get("kid").is_none());
+        assert_eq!(payload["sub"], "svc");
+        assert_eq!(payload["kid"], "expected-kid");
     }
 
     #[test]

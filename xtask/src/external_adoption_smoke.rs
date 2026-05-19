@@ -700,6 +700,9 @@ fn verify_bundle_shape(bundle_dir: &Path, expected_profile: &str) -> Result<()> 
     for required in [
         "receipts/materialization.json",
         "receipts/audit-surface.json",
+        "receipts/bundle-verification.json",
+        "receipts/scanner-safety.json",
+        "receipts/negative-coverage.json",
     ] {
         if !bundle_dir.join(required).is_file() {
             bail!(

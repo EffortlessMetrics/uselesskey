@@ -1,5 +1,6 @@
 ---
 source: crates/uselesskey-cli/tests/cli.rs
+assertion_line: 849
 expression: audit
 ---
 artifact_count: 7
@@ -66,7 +67,7 @@ checks:
     failure_class: missing_artifact
     name: artifact-content
     status: pass
-  - detail: materialization and audit-surface receipts are present
+  - detail: bundle product receipts are present
     failure_class: missing_receipt
     name: receipts
     status: pass
@@ -98,11 +99,14 @@ files:
   - evidence/webhook-profile.md
   - receipts/materialization.json
   - receipts/audit-surface.json
+  - receipts/bundle-verification.json
+  - receipts/scanner-safety.json
+  - receipts/negative-coverage.json
 manifest_path: manifest.json
 manifest_version: 1
 missing_files: []
 profile: webhook
-receipt_count: 2
+receipt_count: 5
 receipts:
   - description: deterministic bundle materialization receipt
     kind: materialization
@@ -111,6 +115,18 @@ receipts:
   - description: scanner-safety and lane metadata receipt
     kind: audit-surface
     path: receipts/audit-surface.json
+    profile: webhook
+  - description: bundle verification contract receipt
+    kind: bundle-verification
+    path: receipts/bundle-verification.json
+    profile: webhook
+  - description: per-artifact scanner-safety classification receipt
+    kind: scanner-safety
+    path: receipts/scanner-safety.json
+    profile: webhook
+  - description: taxonomy-backed negative fixture coverage receipt
+    kind: negative-coverage
+    path: receipts/negative-coverage.json
     profile: webhook
 runtime_material_count: 6
 scanner_safe_count: 1

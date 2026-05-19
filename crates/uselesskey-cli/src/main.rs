@@ -893,7 +893,10 @@ fn build_bundle_audit(bundle_dir: &Path) -> Result<BundleAudit> {
         .iter()
         .map(|receipt| receipt.kind.clone())
         .collect::<BTreeSet<_>>();
-    for required in ["materialization", "audit-surface"] {
+    for required in bundle_receipt_records(profile)
+        .iter()
+        .map(|receipt| receipt.kind.as_str())
+    {
         if !receipt_kinds.contains(required) {
             bail!("missing_receipt: {required}");
         }
@@ -952,7 +955,7 @@ fn build_bundle_audit(bundle_dir: &Path) -> Result<BundleAudit> {
             BundleAuditCheck::pass(
                 "receipts",
                 "missing_receipt",
-                "materialization and audit-surface receipts are present",
+                "bundle product receipts are present",
             ),
             BundleAuditCheck::pass(
                 "scanner-safe-classification",
@@ -2031,6 +2034,47 @@ mod inspect_bundle_tests {
         ));
     }
 
+    #[test]
+    fn negative_failure_class_pins_scanner_safe_token_guard() {
+        let mut scanner_safe_token = record("token", "json", true);
+        scanner_safe_token.path = "token.json".to_string();
+        scanner_safe_token.profile = "scanner-safe".to_string();
+
+        assert_eq!(
+            negative_failure_class(&scanner_safe_token).map(|(class, _)| class),
+            Some("token_near_miss")
+        );
+
+        let mut oidc_token = scanner_safe_token.clone();
+        oidc_token.profile = "oidc".to_string();
+
+        assert_eq!(negative_failure_class(&oidc_token), None);
+    }
+
+    #[test]
+    fn negative_failure_class_pins_tls_taxonomy_classes() {
+        let cases = [
+            ("certs/negative-expired-leaf.pem", "x509_expired_leaf"),
+            (
+                "certs/negative-not-yet-valid.pem",
+                "x509_not_yet_valid_leaf",
+            ),
+            ("certs/negative-wrong-hostname.pem", "x509_wrong_hostname"),
+            ("certs/negative-untrusted-root.pem", "x509_untrusted_root"),
+        ];
+
+        for (path, expected_class) in cases {
+            let mut artifact = record("x509", "pem", true);
+            artifact.path = path.to_string();
+            artifact.profile = "tls".to_string();
+
+            assert_eq!(
+                negative_failure_class(&artifact).map(|(class, _)| class),
+                Some(expected_class)
+            );
+        }
+    }
+
     fn record(kind: &str, format: &str, scanner_safe: bool) -> BundleArtifactRecord {
         BundleArtifactRecord {
             path: format!("{kind}.{format}"),
@@ -2473,6 +2517,24 @@ fn bundle_receipt_records(profile: BundleProfile) -> Vec<BundleReceiptRecord> {
             profile: profile.manifest_name().to_string(),
             description: "scanner-safety and lane metadata receipt".to_string(),
         },
+        BundleReceiptRecord {
+            path: "receipts/bundle-verification.json".to_string(),
+            kind: "bundle-verification".to_string(),
+            profile: profile.manifest_name().to_string(),
+            description: "bundle verification contract receipt".to_string(),
+        },
+        BundleReceiptRecord {
+            path: "receipts/scanner-safety.json".to_string(),
+            kind: "scanner-safety".to_string(),
+            profile: profile.manifest_name().to_string(),
+            description: "per-artifact scanner-safety classification receipt".to_string(),
+        },
+        BundleReceiptRecord {
+            path: "receipts/negative-coverage.json".to_string(),
+            kind: "negative-coverage".to_string(),
+            profile: profile.manifest_name().to_string(),
+            description: "taxonomy-backed negative fixture coverage receipt".to_string(),
+        },
     ]
 }
 
@@ -2523,7 +2585,167 @@ fn generate_bundle_receipt_artifact(
                 }).collect::<Vec<_>>(),
             })))
         }
+        "bundle-verification" => {
+            let receipts = bundle_receipt_records(profile);
+            Ok(Artifact::Json(json!({
+                "receipt": "bundle-verification",
+                "version": 1,
+                "profile": profile.manifest_name(),
+                "status": "generated",
+                "verification_command": "uselesskey verify-bundle --path <bundle-dir>",
+                "artifact_count": artifacts.len(),
+                "fixture_files": fixture_files,
+                "expected_receipts": receipts.iter().map(|receipt| {
+                    json!({
+                        "path": receipt.path,
+                        "kind": receipt.kind,
+                        "description": receipt.description,
+                    })
+                }).collect::<Vec<_>>(),
+                "checks": [
+                    {
+                        "name": "manifest-paths",
+                        "failure_class": "path_escape",
+                        "detail": "manifest artifact and receipt paths must stay relative to the bundle root",
+                    },
+                    {
+                        "name": "artifact-content",
+                        "failure_class": "missing_artifact",
+                        "detail": "verify-bundle regenerates profile artifacts and compares bytes",
+                    },
+                    {
+                        "name": "receipt-content",
+                        "failure_class": "missing_receipt",
+                        "detail": "verify-bundle regenerates metadata-only receipts and compares bytes",
+                    },
+                    {
+                        "name": "profile-validation",
+                        "failure_class": "profile_validation_failed",
+                        "detail": "verify-bundle validates the expected profile file set",
+                    },
+                ],
+                "boundaries": [
+                    "bundle-verification is local bundle consistency metadata, not repo public-claim proof",
+                    "verify-bundle does not prove provider compatibility or production security",
+                    "this receipt does not copy raw generated fixture payloads",
+                ],
+            })))
+        }
+        "scanner-safety" => {
+            let scanner_safe_count = artifacts
+                .iter()
+                .filter(|artifact| artifact.scanner_safe)
+                .count();
+            Ok(Artifact::Json(json!({
+                "receipt": "scanner-safety",
+                "version": 1,
+                "profile": profile.manifest_name(),
+                "scanner_safe": scanner_safe_count == artifacts.len(),
+                "artifact_count": artifacts.len(),
+                "scanner_safe_count": scanner_safe_count,
+                "runtime_material_count": artifacts.len() - scanner_safe_count,
+                "artifacts": artifacts.iter().map(|artifact| {
+                    json!({
+                        "path": artifact.path,
+                        "kind": artifact.kind,
+                        "format": artifact.format,
+                        "scanner_safe": artifact.scanner_safe,
+                        "runtime_material": !artifact.scanner_safe,
+                        "lanes": artifact.lanes,
+                        "description": artifact.description,
+                    })
+                }).collect::<Vec<_>>(),
+                "boundaries": [
+                    "scanner_safe=true means uselesskey classifies the generated artifact as scanner-safe fixture material",
+                    "runtime_material=true means keep the generated artifact under an explicit output directory such as target/",
+                    "scanner-safety metadata is not scanner evasion, production secret handling, or provider compatibility proof",
+                ],
+            })))
+        }
+        "negative-coverage" => {
+            let coverage = artifacts
+                .iter()
+                .filter_map(negative_coverage_entry)
+                .collect::<Vec<_>>();
+            Ok(Artifact::Json(json!({
+                "receipt": "negative-coverage",
+                "version": 1,
+                "profile": profile.manifest_name(),
+                "negative_count": coverage.len(),
+                "coverage": coverage,
+                "boundaries": [
+                    "negative coverage records generated fixture classes, not downstream verifier correctness",
+                    "failure classes map to USELESSKEY-SPEC-0016 taxonomy IDs",
+                    "this receipt is metadata-only and does not copy generated fixture payloads",
+                ],
+            })))
+        }
         other => bail!("unsupported bundle receipt `{other}`"),
+    }
+}
+
+fn negative_coverage_entry(artifact: &BundleArtifactRecord) -> Option<serde_json::Value> {
+    let (failure_class, expected_failure) = negative_failure_class(artifact)?;
+    Some(json!({
+        "path": artifact.path,
+        "kind": artifact.kind,
+        "failure_class": failure_class,
+        "expected_failure": expected_failure,
+        "scanner_safe": artifact.scanner_safe,
+        "runtime_material": !artifact.scanner_safe,
+        "description": artifact.description,
+    }))
+}
+
+fn negative_failure_class(artifact: &BundleArtifactRecord) -> Option<(&'static str, &'static str)> {
+    match artifact.path.as_str() {
+        "token.json" if artifact.profile == "scanner-safe" => Some((
+            "token_near_miss",
+            "parser or application policy rejects token shape",
+        )),
+        "jwks/negative-duplicate-kid.json" => {
+            Some(("jwks_duplicate_kid", "ambiguous key selection"))
+        }
+        "jwks/negative-missing-kid.json" => {
+            Some(("jwks_missing_kid", "key selection cannot identify the key"))
+        }
+        "tokens/negative-alg-none.json" => {
+            Some(("jwt_alg_none", "verifier policy rejects unsigned algorithm"))
+        }
+        "tokens/negative-bad-audience.json" => {
+            Some(("jwt_bad_audience", "claim validation rejects token"))
+        }
+        "certs/negative-expired-leaf.pem" => {
+            Some(("x509_expired_leaf", "verifier rejects expiration"))
+        }
+        "certs/negative-not-yet-valid.pem" => {
+            Some(("x509_not_yet_valid_leaf", "verifier rejects not-before"))
+        }
+        "certs/negative-wrong-hostname.pem" => {
+            Some(("x509_wrong_hostname", "hostname validation rejects"))
+        }
+        "certs/negative-untrusted-root.pem" => Some((
+            "x509_untrusted_root",
+            "path validation rejects untrusted root",
+        )),
+        "requests/negative-tampered-body.json" => {
+            Some(("webhook_tampered_body", "canonical signature check rejects"))
+        }
+        "requests/negative-wrong-secret.json" => {
+            Some(("webhook_wrong_secret", "signature verification rejects"))
+        }
+        "requests/negative-stale-timestamp.json" => {
+            Some(("webhook_stale_timestamp", "replay-window policy rejects"))
+        }
+        "requests/negative-missing-signature.json" => Some((
+            "webhook_missing_signature",
+            "verifier rejects missing credential",
+        )),
+        "requests/negative-malformed-signature.json" => Some((
+            "webhook_malformed_signature",
+            "parser or verifier rejects signature encoding",
+        )),
+        _ => None,
     }
 }
 

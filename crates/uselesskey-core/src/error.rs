@@ -22,9 +22,10 @@ pub enum Error {
 #[cfg(all(test, feature = "std"))]
 mod tests {
     use super::Error;
+    use std::error::Error as _;
 
     #[test]
-    fn error_messages_are_readable() {
+    fn missing_env_var_message_is_readable() {
         let missing = Error::MissingEnvVar {
             var: "MY_VAR".to_string(),
         };
@@ -32,7 +33,11 @@ mod tests {
             missing.to_string(),
             "environment variable `MY_VAR` is not set"
         );
+        assert!(missing.source().is_none());
+    }
 
+    #[test]
+    fn invalid_seed_message_is_readable() {
         let invalid = Error::InvalidSeed {
             var: "MY_VAR".to_string(),
             message: "bad seed".to_string(),
@@ -41,11 +46,15 @@ mod tests {
             invalid.to_string(),
             "failed to parse seed from environment variable `MY_VAR`: bad seed"
         );
+        assert!(invalid.source().is_none());
+    }
 
-        #[cfg(feature = "std")]
-        {
-            let io_err: Error = std::io::Error::other("io-fail").into();
-            assert_eq!(io_err.to_string(), "io-fail");
-        }
+    #[test]
+    fn io_error_variant_preserves_inner_error() {
+        let inner = std::io::Error::other("io-fail");
+        let io_err: Error = inner.into();
+
+        assert_eq!(io_err.to_string(), "io-fail");
+        assert!(io_err.source().is_none());
     }
 }

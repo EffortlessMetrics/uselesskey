@@ -53,6 +53,7 @@ fn deterministic_is_order_independent_for_cache_keys() {
 }
 
 proptest! {
+    #![proptest_config(ProptestConfig { cases: 96, ..ProptestConfig::default() })]
     #[test]
     fn deterministic_factory_returns_same_value_for_same_id(seed_bytes in any::<[u8;32]>(), label in "[-_a-zA-Z0-9]{1,32}") {
         let fx = Factory::deterministic(Seed::new(seed_bytes));
@@ -132,6 +133,23 @@ proptest! {
         prop_assert_eq!(seed.bytes(), &hex_bytes);
     }
 
+    /// Seed::from_env_value() rejects 64-byte non-hex payloads (with and without prefix).
+    #[test]
+    fn seed_from_env_value_invalid_64_byte_hex_is_err(
+        s in prop::collection::vec(
+            prop_oneof![Just('g'), Just('z'), Just('!'), Just('_')],
+            64,
+        )
+    ) {
+        let raw: String = s.iter().collect();
+        let prefixed = format!("0x{raw}");
+        let upper_prefixed = format!("0X{raw}");
+
+        prop_assert!(Seed::from_env_value(&raw).is_err());
+        prop_assert!(Seed::from_env_value(&prefixed).is_err());
+        prop_assert!(Seed::from_env_value(&upper_prefixed).is_err());
+    }
+
     // =========================================================================
     // Derivation uniqueness tests
     // =========================================================================
@@ -160,7 +178,7 @@ proptest! {
         label1 in "[a-zA-Z0-9]{1,16}",
         label2 in "[a-zA-Z0-9]{1,16}"
     ) {
-        prop_assume!(label1 != label2);
+        let label2 = if label1 == label2 { format!("{}x", label2) } else { label2 };
 
         let master = Seed::new(seed);
 
@@ -177,7 +195,7 @@ proptest! {
         variant1 in "[a-zA-Z0-9]{1,16}",
         variant2 in "[a-zA-Z0-9]{1,16}"
     ) {
-        prop_assume!(variant1 != variant2);
+        let variant2 = if variant1 == variant2 { format!("{}x", variant2) } else { variant2 };
 
         let master = Seed::new(seed);
 
@@ -295,6 +313,15 @@ proptest! {
             std::sync::Arc::ptr_eq(&first, &second),
             "cache hit should return the same Arc pointer"
         );
+
+        fx.clear_cache();
+
+        let third = fx.get_or_init("domain:arc", &label, &spec, "good", seed_array::<32>);
+        prop_assert!(
+            !std::sync::Arc::ptr_eq(&first, &third),
+            "cache clear should force a new Arc allocation"
+        );
+        prop_assert_eq!(*first, *third, "cache clear should not change deterministic value");
     }
 
     // =========================================================================

@@ -336,3 +336,9 @@ name = "adapter_rustcrypto_roundtrip"
 path = "fuzz_targets/adapter_rustcrypto_roundtrip.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "fuzz_order_independent_identity"
+path = "fuzz_targets/fuzz_order_independent_identity.rs"
+test = false
+doc = false

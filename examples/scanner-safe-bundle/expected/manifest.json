@@ -14,7 +14,10 @@
     "jwk.jwk.json",
     "jwks.jwks.json",
     "receipts/materialization.json",
-    "receipts/audit-surface.json"
+    "receipts/audit-surface.json",
+    "receipts/bundle-verification.json",
+    "receipts/scanner-safety.json",
+    "receipts/negative-coverage.json"
   ],
   "artifacts": [
     {
@@ -126,6 +129,24 @@
       "kind": "audit-surface",
       "profile": "scanner-safe",
       "description": "scanner-safety and lane metadata receipt"
+    },
+    {
+      "path": "receipts/bundle-verification.json",
+      "kind": "bundle-verification",
+      "profile": "scanner-safe",
+      "description": "bundle verification contract receipt"
+    },
+    {
+      "path": "receipts/scanner-safety.json",
+      "kind": "scanner-safety",
+      "profile": "scanner-safe",
+      "description": "per-artifact scanner-safety classification receipt"
+    },
+    {
+      "path": "receipts/negative-coverage.json",
+      "kind": "negative-coverage",
+      "profile": "scanner-safe",
+      "description": "taxonomy-backed negative fixture coverage receipt"
     }
   ]
 }

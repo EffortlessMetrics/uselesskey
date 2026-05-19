@@ -1,0 +1,22 @@
+{
+  "boundaries": [
+    "negative coverage records generated fixture classes, not downstream verifier correctness",
+    "failure classes map to USELESSKEY-SPEC-0016 taxonomy IDs",
+    "this receipt is metadata-only and does not copy generated fixture payloads"
+  ],
+  "coverage": [
+    {
+      "description": "scanner-safe near-miss token shape for parser tests",
+      "expected_failure": "parser or application policy rejects token shape",
+      "failure_class": "token_near_miss",
+      "kind": "token",
+      "path": "token.json",
+      "runtime_material": false,
+      "scanner_safe": true
+    }
+  ],
+  "negative_count": 1,
+  "profile": "scanner-safe",
+  "receipt": "negative-coverage",
+  "version": 1
+}

@@ -4322,7 +4322,10 @@ const SCANNER_SAFE_REFERENCE_OUT_DIR: &str = "target/scanner-safe-reference";
 const SCANNER_SAFE_REFERENCE_COMPARED_FILES: &[&str] = &[
     "manifest.json",
     "receipts/audit-surface.json",
+    "receipts/bundle-verification.json",
     "receipts/materialization.json",
+    "receipts/negative-coverage.json",
+    "receipts/scanner-safety.json",
 ];
 const SCANNER_SAFE_REFERENCE_FORBIDDEN_FILES: &[&str] = &["secret.yaml", "kv-v2.json"];
 

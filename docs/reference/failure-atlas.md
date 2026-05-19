@@ -32,6 +32,7 @@ test.
 | `tokens/negative-alg-none.json` | insecure algorithm | validator rejects `alg: none` or refuses unsigned-token policy | `uselesskey bundle --profile oidc` |
 | `tokens/negative-bad-audience.json` | authorization failure | validator rejects the wrong `aud` claim | `uselesskey bundle --profile oidc` |
 | `NegativeToken::AlgNone` | insecure algorithm in Rust tests | validator rejects an unsigned-algorithm header | `uselesskey-token` or facade `token` feature |
+| `NegativeToken::MissingKid` | key identification failure in Rust tests | key-selection code rejects a JWT without a header `kid` | `uselesskey-token` or facade `token` feature |
 | `NegativeToken::BadAudience` | authorization failure in Rust tests | validator rejects a token with the wrong audience | `uselesskey-token` or facade `token` feature |
 | `NegativeToken::NearMissApiKey` | scanner-safe parser test | parser rejects a token-like value that is close to, but not, the real test prefix | `uselesskey-token` or facade `token` feature |
 

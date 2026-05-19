@@ -37,6 +37,9 @@ The profile writes:
 - `evidence/tls-profile.md`
 - `receipts/materialization.json`
 - `receipts/audit-surface.json`
+- `receipts/bundle-verification.json`
+- `receipts/scanner-safety.json`
+- `receipts/negative-coverage.json`
 - `manifest.json`
 
 `inspect-bundle` prints the profile, artifact count, scanner-safety
