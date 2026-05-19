@@ -75,7 +75,10 @@ mod tests {
             let artifact = TempArtifact::new_string("uselesskey-", ".unit.cleanup", "cleanup")
                 .expect("create TempArtifact");
             let path = artifact.path().to_path_buf();
-            assert!(path.exists(), "temp file should exist while artifact is alive");
+            assert!(
+                path.exists(),
+                "temp file should exist while artifact is alive"
+            );
             path
         };
 
