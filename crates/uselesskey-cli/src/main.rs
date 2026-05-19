@@ -1868,57 +1868,67 @@ mod tests {
     }
 
     #[test]
-    fn audit_bundle_policy_rejects_expected_profile_mismatch() {
+    fn audit_bundle_policy_rejects_expected_profile_mismatch() -> Result<()> {
         let audit = audit_bundle_policy_test_audit();
         let args = audit_bundle_policy_test_args(Some("tls"), Some(AuditPolicy::Strict));
-        let diagnostic = bundle_audit_policy_failure(&audit, &args).unwrap();
+        let diagnostic = bundle_audit_policy_failure(&audit, &args)
+            .ok_or_else(|| anyhow::anyhow!("expected profile mismatch failure"))?;
 
         assert_eq!(diagnostic.failure_class, "profile_validation_failed");
         assert!(diagnostic.detail.contains("expected profile `tls`"));
+        Ok(())
     }
 
     #[test]
-    fn audit_bundle_policy_strict_rejects_non_pass_status() {
+    fn audit_bundle_policy_strict_rejects_non_pass_status() -> Result<()> {
         let mut audit = audit_bundle_policy_test_audit();
         audit.status = "fail".to_string();
         let args = audit_bundle_policy_test_args(None, Some(AuditPolicy::Strict));
-        let diagnostic = bundle_audit_policy_failure(&audit, &args).unwrap();
+        let diagnostic = bundle_audit_policy_failure(&audit, &args)
+            .ok_or_else(|| anyhow::anyhow!("expected strict status failure"))?;
 
         assert_eq!(diagnostic.failure_class, "profile_validation_failed");
         assert!(diagnostic.detail.contains("requires audit status `pass`"));
+        Ok(())
     }
 
     #[test]
-    fn audit_bundle_policy_strict_rejects_non_pass_check() {
+    fn audit_bundle_policy_strict_rejects_non_pass_check() -> Result<()> {
         let mut audit = audit_bundle_policy_test_audit();
         audit.checks[0].status = "fail".to_string();
         let args = audit_bundle_policy_test_args(None, Some(AuditPolicy::Strict));
-        let diagnostic = bundle_audit_policy_failure(&audit, &args).unwrap();
+        let diagnostic = bundle_audit_policy_failure(&audit, &args)
+            .ok_or_else(|| anyhow::anyhow!("expected strict check failure"))?;
 
         assert_eq!(diagnostic.failure_class, "profile_validation_failed");
         assert!(diagnostic.detail.contains("requires all checks to pass"));
+        Ok(())
     }
 
     #[test]
-    fn audit_bundle_policy_strict_rejects_missing_files() {
+    fn audit_bundle_policy_strict_rejects_missing_files() -> Result<()> {
         let mut audit = audit_bundle_policy_test_audit();
         audit.missing_files.push("manifest.json".to_string());
         let args = audit_bundle_policy_test_args(None, Some(AuditPolicy::Strict));
-        let diagnostic = bundle_audit_policy_failure(&audit, &args).unwrap();
+        let diagnostic = bundle_audit_policy_failure(&audit, &args)
+            .ok_or_else(|| anyhow::anyhow!("expected strict missing-files failure"))?;
 
         assert_eq!(diagnostic.failure_class, "missing_artifact");
         assert!(diagnostic.detail.contains("missing bundle files"));
+        Ok(())
     }
 
     #[test]
-    fn audit_bundle_policy_strict_rejects_unexpected_files() {
+    fn audit_bundle_policy_strict_rejects_unexpected_files() -> Result<()> {
         let mut audit = audit_bundle_policy_test_audit();
         audit.unexpected_files.push("extra.json".to_string());
         let args = audit_bundle_policy_test_args(None, Some(AuditPolicy::Strict));
-        let diagnostic = bundle_audit_policy_failure(&audit, &args).unwrap();
+        let diagnostic = bundle_audit_policy_failure(&audit, &args)
+            .ok_or_else(|| anyhow::anyhow!("expected strict unexpected-files failure"))?;
 
         assert_eq!(diagnostic.failure_class, "unexpected_artifact");
         assert!(diagnostic.detail.contains("unexpected bundle files"));
+        Ok(())
     }
 
     #[test]

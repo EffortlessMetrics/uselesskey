@@ -47,33 +47,32 @@ mod tests {
     use std::time::Duration;
 
     #[test]
-    fn temp_artifact_string_round_trips_and_debug_mentions_path() {
-        let artifact = TempArtifact::new_string("uselesskey-", ".unit.txt", "hello-world")
-            .expect("create TempArtifact");
+    fn temp_artifact_string_round_trips_and_debug_mentions_path() -> Result<(), crate::Error> {
+        let artifact = TempArtifact::new_string("uselesskey-", ".unit.txt", "hello-world")?;
 
         let dbg = format!("{artifact:?}");
         assert!(dbg.contains("TempArtifact"));
         assert!(dbg.contains(".unit.txt"));
 
-        let text = artifact.read_to_string().expect("read_to_string");
+        let text = artifact.read_to_string()?;
         assert_eq!(text, "hello-world");
+        Ok(())
     }
 
     #[test]
-    fn temp_artifact_bytes_round_trip() {
+    fn temp_artifact_bytes_round_trip() -> Result<(), crate::Error> {
         let bytes = vec![0x01, 0x02, 0x03, 0xFF];
-        let artifact = TempArtifact::new_bytes("uselesskey-", ".unit.bin", &bytes)
-            .expect("create TempArtifact");
+        let artifact = TempArtifact::new_bytes("uselesskey-", ".unit.bin", &bytes)?;
 
-        let read = artifact.read_to_bytes().expect("read_to_bytes");
+        let read = artifact.read_to_bytes()?;
         assert_eq!(read, bytes);
+        Ok(())
     }
 
     #[test]
-    fn temp_artifact_exposes_live_path_and_deletes_on_drop() {
+    fn temp_artifact_exposes_live_path_and_deletes_on_drop() -> Result<(), crate::Error> {
         let path = {
-            let artifact = TempArtifact::new_string("uselesskey-", ".unit.cleanup", "cleanup")
-                .expect("create TempArtifact");
+            let artifact = TempArtifact::new_string("uselesskey-", ".unit.cleanup", "cleanup")?;
             let path = artifact.path().to_path_buf();
             assert!(
                 path.exists(),
@@ -92,13 +91,14 @@ mod tests {
         }
 
         assert!(!path.exists(), "temp file should be deleted after drop");
+        Ok(())
     }
 
     #[test]
-    fn temp_artifact_read_to_string_replaces_invalid_utf8() {
-        let artifact = TempArtifact::new_bytes("uselesskey-", ".unit.utf8", &[0xFF, 0xFE, 0xFD])
-            .expect("create TempArtifact");
-        let text = artifact.read_to_string().expect("read_to_string");
+    fn temp_artifact_read_to_string_replaces_invalid_utf8() -> Result<(), crate::Error> {
+        let artifact = TempArtifact::new_bytes("uselesskey-", ".unit.utf8", &[0xFF, 0xFE, 0xFD])?;
+        let text = artifact.read_to_string()?;
         assert!(text.contains('\u{FFFD}'));
+        Ok(())
     }
 }

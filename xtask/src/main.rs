@@ -10045,14 +10045,16 @@ path = "fuzz_targets/a.rs"
     }
 
     #[test]
-    fn list_fuzz_targets_rejects_undeclared_source() {
-        let _cwd_lock = CWD_LOCK.lock().unwrap();
-        let dir = tempfile::tempdir().expect("tempdir");
+    fn list_fuzz_targets_rejects_undeclared_source() -> Result<()> {
+        let _cwd_lock = CWD_LOCK
+            .lock()
+            .map_err(|err| anyhow::anyhow!("cwd lock poisoned: {err}"))?;
+        let dir = tempfile::tempdir()?;
         let root = dir.path();
         let fuzz_dir = root.join("fuzz").join("fuzz_targets");
-        fs::create_dir_all(&fuzz_dir).expect("create fuzz_targets");
-        fs::write(fuzz_dir.join("declared.rs"), "fn main() {}").unwrap();
-        fs::write(fuzz_dir.join("missing_manifest.rs"), "fn main() {}").unwrap();
+        fs::create_dir_all(&fuzz_dir)?;
+        fs::write(fuzz_dir.join("declared.rs"), "fn main() {}")?;
+        fs::write(fuzz_dir.join("missing_manifest.rs"), "fn main() {}")?;
         fs::write(
             root.join("fuzz").join("Cargo.toml"),
             r#"
@@ -10060,16 +10062,19 @@ path = "fuzz_targets/a.rs"
 name = "declared"
 path = "fuzz_targets/declared.rs"
 "#,
-        )
-        .unwrap();
+        )?;
 
         let _cwd = CwdGuard::new(root);
-        let err = list_fuzz_targets().expect_err("undeclared source should fail");
+        let err = match list_fuzz_targets() {
+            Ok(_) => bail!("undeclared source should fail"),
+            Err(err) => err,
+        };
         assert!(
             err.to_string()
                 .contains("is not declared in fuzz/Cargo.toml"),
             "unexpected error: {err}"
         );
+        Ok(())
     }
 
     #[test]
@@ -10181,12 +10186,14 @@ end_of_record
     }
 
     #[test]
-    fn count_bdd_scenarios_ignores_comments_and_docstrings() {
-        let _cwd_lock = CWD_LOCK.lock().unwrap();
-        let dir = tempfile::tempdir().expect("tempdir");
+    fn count_bdd_scenarios_ignores_comments_and_docstrings() -> Result<()> {
+        let _cwd_lock = CWD_LOCK
+            .lock()
+            .map_err(|err| anyhow::anyhow!("cwd lock poisoned: {err}"))?;
+        let dir = tempfile::tempdir()?;
         let root = dir.path();
         let features_dir = root.join("crates").join("uselesskey-bdd").join("features");
-        fs::create_dir_all(&features_dir).expect("create features dir");
+        fs::create_dir_all(&features_dir)?;
         let feature = features_dir.join("sample.feature");
         fs::write(
             &feature,
@@ -10204,12 +10211,12 @@ end_of_record
       Scenario: not counted
       ```
 "#,
-        )
-        .unwrap();
+        )?;
 
         let _cwd = CwdGuard::new(root);
-        let counts = count_bdd_scenarios().expect("count scenarios");
+        let counts = count_bdd_scenarios()?;
         assert_eq!(counts.get("sample.feature"), Some(&2));
+        Ok(())
     }
 
     #[test]
@@ -10338,8 +10345,8 @@ end_of_record
     }
 
     #[test]
-    fn dependency_version_snippet_errors_accept_matching_versions() {
-        let dir = tempfile::tempdir().expect("tempdir");
+    fn dependency_version_snippet_errors_accept_matching_versions() -> Result<()> {
+        let dir = tempfile::tempdir()?;
         let readme = dir.path().join("README.md");
         fs::write(
             &readme,
@@ -10347,37 +10354,35 @@ end_of_record
 uselesskey = { version = "0.4.1", features = ["rsa"] }
 uselesskey-tonic = "0.4.1"
 "#,
-        )
-        .unwrap();
+        )?;
 
         let versions = BTreeMap::from([
             ("uselesskey".to_string(), "0.4.1".to_string()),
             ("uselesskey-tonic".to_string(), "0.4.1".to_string()),
         ]);
 
-        let errors =
-            collect_dependency_version_snippet_errors(&[readme], &versions).expect("collect");
+        let errors = collect_dependency_version_snippet_errors(&[readme], &versions)?;
         assert!(errors.is_empty(), "unexpected errors: {errors:?}");
+        Ok(())
     }
 
     #[test]
-    fn dependency_version_snippet_errors_report_mismatches() {
-        let dir = tempfile::tempdir().expect("tempdir");
+    fn dependency_version_snippet_errors_report_mismatches() -> Result<()> {
+        let dir = tempfile::tempdir()?;
         let readme = dir.path().join("README.md");
         fs::write(
             &readme,
             r#"[dev-dependencies]
 uselesskey = { version = "0.4.0", features = ["rsa"] }
 "#,
-        )
-        .unwrap();
+        )?;
 
         let versions = BTreeMap::from([("uselesskey".to_string(), "0.4.1".to_string())]);
 
-        let errors =
-            collect_dependency_version_snippet_errors(&[readme], &versions).expect("collect");
+        let errors = collect_dependency_version_snippet_errors(&[readme], &versions)?;
         assert_eq!(errors.len(), 1);
         assert!(errors[0].contains("expected `0.4.1`"), "got: {}", errors[0]);
+        Ok(())
     }
 
     #[test]
@@ -10439,8 +10444,8 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
     }
 
     #[test]
-    fn resolve_start_index_resume_from_state_file() {
-        let dir = tempfile::tempdir().expect("tempdir");
+    fn resolve_start_index_resume_from_state_file() -> Result<()> {
+        let dir = tempfile::tempdir()?;
         let state_path = dir.path().join("publish-state.json");
         let state = PublishState {
             timestamp: 1234567890,
@@ -10459,8 +10464,8 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
                 },
             ],
         };
-        let json = serde_json::to_string_pretty(&state).unwrap();
-        fs::write(&state_path, &json).unwrap();
+        let json = serde_json::to_string_pretty(&state)?;
+        fs::write(&state_path, &json)?;
 
         // We can't easily test resume with the hardcoded path,
         // but we can test the serde and state logic directly.
@@ -10470,6 +10475,7 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
             .iter()
             .position(|c| c.status != "published" && c.status != "already_published");
         assert_eq!(first_pending, Some(2));
+        Ok(())
     }
 
     #[test]
@@ -10544,7 +10550,7 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
     ///   - mutual-exclusion (`--version X --path .`) errors
     ///   - happy paths (`--version X` alone, `--path .` alone) parse cleanly
     #[test]
-    fn cratesio_smoke_clap_validation() {
+    fn cratesio_smoke_clap_validation() -> Result<()> {
         // Bare invocation must surface a non-zero parse error. Without a
         // `required = true` we fall back to the runtime guard inside
         // `cratesio_smoke`. Parse should still succeed at the clap layer.
@@ -10553,7 +10559,7 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
             parsed.is_ok(),
             "bare `cratesio-smoke` should parse (runtime guard fires later)"
         );
-        match parsed.unwrap().cmd {
+        match parsed?.cmd {
             Cmd::CratesioSmoke {
                 version,
                 path,
@@ -10566,15 +10572,17 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
                     "skip_install_cli should default to false"
                 );
                 // The runtime guard must reject the empty case.
-                let err = cratesio_smoke(version, path, skip_install_cli)
-                    .expect_err("cratesio_smoke without --version or --path must error");
+                let err = match cratesio_smoke(version, path, skip_install_cli) {
+                    Ok(_) => bail!("cratesio_smoke without --version or --path must error"),
+                    Err(err) => err,
+                };
                 let msg = err.to_string();
                 assert!(
                     msg.contains("--version") && msg.contains("--path"),
                     "error must mention both --version and --path: {msg}"
                 );
             }
-            _ => panic!("expected Cmd::CratesioSmoke"),
+            _ => bail!("expected Cmd::CratesioSmoke"),
         }
 
         // Mutual exclusion: clap should reject `--version X --path Y`.
@@ -10592,8 +10600,7 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
         );
 
         // Happy path: `--version 0.7.1` alone parses.
-        let ok_version =
-            Cli::try_parse_from(["xtask", "cratesio-smoke", "--version", "0.7.1"]).unwrap();
+        let ok_version = Cli::try_parse_from(["xtask", "cratesio-smoke", "--version", "0.7.1"])?;
         assert!(matches!(
             ok_version.cmd,
             Cmd::CratesioSmoke {
@@ -10604,7 +10611,7 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
         ));
 
         // Happy path: `--path .` alone parses.
-        let ok_path = Cli::try_parse_from(["xtask", "cratesio-smoke", "--path", "."]).unwrap();
+        let ok_path = Cli::try_parse_from(["xtask", "cratesio-smoke", "--path", "."])?;
         assert!(matches!(
             ok_path.cmd,
             Cmd::CratesioSmoke {
@@ -10621,14 +10628,14 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
             "--path",
             ".",
             "--skip-install-cli",
-        ])
-        .unwrap();
+        ])?;
         match ok_skip.cmd {
             Cmd::CratesioSmoke {
                 skip_install_cli, ..
             } => assert!(skip_install_cli),
-            _ => panic!("expected Cmd::CratesioSmoke"),
+            _ => bail!("expected Cmd::CratesioSmoke"),
         }
+        Ok(())
     }
 
     #[test]
