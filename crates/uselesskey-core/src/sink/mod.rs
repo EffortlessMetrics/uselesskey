@@ -43,6 +43,8 @@ impl TempArtifact {
 #[cfg(test)]
 mod tests {
     use super::TempArtifact;
+    use std::thread;
+    use std::time::Duration;
 
     #[test]
     fn temp_artifact_string_round_trips_and_debug_mentions_path() {
@@ -65,5 +67,38 @@ mod tests {
 
         let read = artifact.read_to_bytes().expect("read_to_bytes");
         assert_eq!(read, bytes);
+    }
+
+    #[test]
+    fn temp_artifact_exposes_live_path_and_deletes_on_drop() {
+        let path = {
+            let artifact = TempArtifact::new_string("uselesskey-", ".unit.cleanup", "cleanup")
+                .expect("create TempArtifact");
+            let path = artifact.path().to_path_buf();
+            assert!(
+                path.exists(),
+                "temp file should exist while artifact is alive"
+            );
+            path
+        };
+
+        let mut attempts = 0;
+        loop {
+            thread::sleep(Duration::from_millis(10));
+            attempts += 1;
+            if !path.exists() || attempts >= 5 {
+                break;
+            }
+        }
+
+        assert!(!path.exists(), "temp file should be deleted after drop");
+    }
+
+    #[test]
+    fn temp_artifact_read_to_string_replaces_invalid_utf8() {
+        let artifact = TempArtifact::new_bytes("uselesskey-", ".unit.utf8", &[0xFF, 0xFE, 0xFD])
+            .expect("create TempArtifact");
+        let text = artifact.read_to_string().expect("read_to_string");
+        assert!(text.contains('\u{FFFD}'));
     }
 }
