@@ -248,7 +248,10 @@ fn deterministic_key_survives_cache_clear() -> TestResult<()> {
 #[test]
 fn deterministic_cert_survives_cache_clear() -> TestResult<()> {
     let fx = Factory::deterministic_from_str("ssh-cache-clear-cert");
-    let spec = SshCertSpec::user(["alice", "ci"], SshValidity::new(1_700_000_010, 1_700_000_999));
+    let spec = SshCertSpec::user(
+        ["alice", "ci"],
+        SshValidity::new(1_700_000_010, 1_700_000_999),
+    );
 
     let before = fx.ssh_cert("alice-cert", spec.clone());
     let cert_before = before.certificate_openssh().to_string();
