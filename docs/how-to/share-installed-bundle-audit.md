@@ -35,6 +35,32 @@ Do not attach generated request payloads, PEM/DER material, token files,
 Kubernetes Secret YAML, Vault JSON, or other raw fixture payloads unless your
 review process explicitly asks for them.
 
+## Reviewer Checklist
+
+Attach the metadata-only receipts, then record:
+
+- the generated profile, such as `webhook`, `tls`, `oidc`, or `scanner-safe`;
+- the command used to verify the bundle;
+- the command used to audit the bundle;
+- whether `bundle-audit.json` reports `status: "pass"`;
+- whether every `checks[]` entry reports `status: "pass"`;
+- whether generated fixture payloads stayed under `target/` or another ignored
+  output directory;
+- the explicit "does not prove" boundary below.
+
+For CI jobs, prefer the strict policy preset:
+
+```bash
+uselesskey audit-bundle \
+  --path target/uselesskey-webhook \
+  --ci \
+  --expect-profile webhook \
+  --policy strict
+```
+
+For the full downstream policy preset list, see
+[use-downstream-policy-pack.md](use-downstream-policy-pack.md).
+
 ## JSON for CI
 
 ```bash

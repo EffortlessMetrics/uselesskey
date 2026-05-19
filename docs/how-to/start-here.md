@@ -17,6 +17,7 @@ or cryptographic assurance.
 | test TLS verifier behavior | TLS contract pack | `uselesskey bundle --profile tls --out target/uselesskey-tls` |
 | test OIDC/JWKS validator behavior | OIDC/JWKS contract pack | `uselesskey bundle --profile oidc --out target/uselesskey-oidc` |
 | test webhook signature negatives | webhook contract pack | `uselesskey bundle --profile webhook --out target/uselesskey-webhook` |
+| fail CI on installed bundle drift | downstream policy pack | `uselesskey audit-bundle --path target/uselesskey-webhook --ci --expect-profile webhook --policy strict` |
 | share what an installed bundle contains | installed bundle audit | `uselesskey audit-bundle --path target/uselesskey-webhook --out target/uselesskey-webhook-audit` |
 | prove public claims for a reviewer with a repo checkout | verification pack | `cargo xtask verification-pack --out target/uselesskey-verification` |
 
@@ -171,6 +172,8 @@ consistency and metadata classification only. It does not prove repo public
 claims, release readiness, provider compatibility, production security, or
 downstream verifier correctness. See
 [share-installed-bundle-audit.md](share-installed-bundle-audit.md).
+For CI policy presets and the reviewer checklist, see
+[use-downstream-policy-pack.md](use-downstream-policy-pack.md).
 
 Build a metadata-only review bundle from a repo checkout:
 
