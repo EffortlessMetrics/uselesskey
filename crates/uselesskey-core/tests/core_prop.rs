@@ -63,13 +63,7 @@ fn materialize_ops(seed: Seed, ops: &[CacheOp]) -> BTreeMap<CacheOp, [u8; 32]> {
     let mut observed = BTreeMap::new();
 
     for op in ops {
-        let value = fx.get_or_init(
-            op.domain,
-            &op.label,
-            &op.spec,
-            op.variant,
-            seed_array::<32>,
-        );
+        let value = fx.get_or_init(op.domain, &op.label, &op.spec, op.variant, seed_array::<32>);
         match observed.get(op) {
             Some(existing) => assert_eq!(existing, value.as_ref()),
             None => {
