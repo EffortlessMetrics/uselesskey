@@ -150,6 +150,8 @@ struct InspectBundleArgs {
 #[command(after_help = "Examples:
   uselesskey audit-bundle --path target/uselesskey-webhook --out target/uselesskey-webhook-audit
   uselesskey audit-bundle --path target/uselesskey-webhook --ci
+  uselesskey audit-bundle --path target/uselesskey-webhook --ci --expect-profile webhook
+  uselesskey audit-bundle --path target/uselesskey-webhook --ci --policy strict
   uselesskey audit-bundle --path target/uselesskey-webhook --summary
 
 Boundary:
@@ -168,6 +170,12 @@ struct AuditBundleArgs {
     /// Emit CI-oriented JSON and exit non-zero on stable audit failure classes.
     #[arg(long, conflicts_with = "summary")]
     ci: bool,
+    /// Require the audited manifest profile to match the CI job's expected profile.
+    #[arg(long, value_name = "PROFILE")]
+    expect_profile: Option<String>,
+    /// Apply a built-in audit policy preset.
+    #[arg(long, value_enum)]
+    policy: Option<AuditPolicy>,
     /// Print a compact human summary for terminals or CI logs.
     #[arg(long)]
     summary: bool,
@@ -190,6 +198,11 @@ struct DoctorArgs {
 enum AuditOutputFormat {
     Markdown,
     Json,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
+enum AuditPolicy {
+    Strict,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -527,6 +540,13 @@ fn run_audit_bundle(args: AuditBundleArgs) -> Result<()> {
             );
         }
     };
+    if let Some(diagnostic) = bundle_audit_policy_failure(&audit, &args) {
+        bail!(
+            "audit policy failed: {}: {}",
+            diagnostic.failure_class,
+            diagnostic.detail
+        );
+    }
 
     if let Some(out_dir) = args.out.as_deref() {
         let (json_path, md_path) = write_bundle_audit_receipts(&audit, out_dir)?;
@@ -568,6 +588,15 @@ fn run_audit_bundle(args: AuditBundleArgs) -> Result<()> {
 fn run_audit_bundle_ci(args: AuditBundleArgs) -> Result<()> {
     match build_bundle_audit(&args.bundle_dir) {
         Ok(audit) => {
+            if let Some(diagnostic) = bundle_audit_policy_failure(&audit, &args) {
+                let failure = bundle_audit_policy_failure_json(&audit, &diagnostic);
+                emit_artifact(&Artifact::Json(failure), None)?;
+                bail!(
+                    "audit policy failed: {}: {}",
+                    diagnostic.failure_class,
+                    diagnostic.detail
+                );
+            }
             if let Some(out_dir) = args.out.as_deref() {
                 write_bundle_audit_receipts(&audit, out_dir)?;
             }
@@ -1496,6 +1525,97 @@ fn bundle_audit_failure_json(
             "downstream verifier correctness",
         ],
     })
+}
+
+fn bundle_audit_policy_failure_json(
+    audit: &BundleAudit,
+    diagnostic: &BundleAuditFailureDiagnostic,
+) -> serde_json::Value {
+    json!({
+        "version": audit.version,
+        "status": "fail",
+        "bundle_path": &audit.bundle_path,
+        "profile": &audit.profile,
+        "manifest_version": audit.manifest_version,
+        "manifest_path": &audit.manifest_path,
+        "artifact_count": audit.artifact_count,
+        "receipt_count": audit.receipt_count,
+        "scanner_safe_count": audit.scanner_safe_count,
+        "runtime_material_count": audit.runtime_material_count,
+        "files": &audit.files,
+        "artifacts": &audit.artifacts,
+        "receipts": &audit.receipts,
+        "missing_files": &audit.missing_files,
+        "unexpected_files": &audit.unexpected_files,
+        "checks": [
+            {
+                "name": "bundle-audit-policy",
+                "status": "fail",
+                "failure_class": diagnostic.failure_class,
+                "detail": diagnostic.detail,
+            }
+        ],
+        "boundaries": &audit.boundaries,
+        "does_not_prove": &audit.does_not_prove,
+    })
+}
+
+fn bundle_audit_policy_failure(
+    audit: &BundleAudit,
+    args: &AuditBundleArgs,
+) -> Option<BundleAuditFailureDiagnostic> {
+    if let Some(expected) = args.expect_profile.as_deref()
+        && audit.profile != expected
+    {
+        return Some(BundleAuditFailureDiagnostic {
+            failure_class: "profile_validation_failed",
+            detail: format!(
+                "expected profile `{expected}`, found `{}`. Fix: audit the matching bundle or update --expect-profile for this CI job.",
+                audit.profile
+            ),
+        });
+    }
+
+    if args.policy == Some(AuditPolicy::Strict) {
+        if audit.status != "pass" {
+            return Some(BundleAuditFailureDiagnostic {
+                failure_class: "profile_validation_failed",
+                detail: format!(
+                    "strict policy requires audit status `pass`, found `{}`. Fix: regenerate and audit the bundle.",
+                    audit.status
+                ),
+            });
+        }
+        if let Some(check) = audit.checks.iter().find(|check| check.status != "pass") {
+            return Some(BundleAuditFailureDiagnostic {
+                failure_class: "profile_validation_failed",
+                detail: format!(
+                    "strict policy requires all checks to pass; `{}` was `{}`. Fix: regenerate and audit the bundle.",
+                    check.name, check.status
+                ),
+            });
+        }
+        if !audit.missing_files.is_empty() {
+            return Some(BundleAuditFailureDiagnostic {
+                failure_class: "missing_artifact",
+                detail: format!(
+                    "strict policy found missing bundle files: {}. Fix: regenerate the bundle.",
+                    audit.missing_files.join(", ")
+                ),
+            });
+        }
+        if !audit.unexpected_files.is_empty() {
+            return Some(BundleAuditFailureDiagnostic {
+                failure_class: "unexpected_artifact",
+                detail: format!(
+                    "strict policy found unexpected bundle files: {}. Fix: remove extra files or regenerate into an empty target directory.",
+                    audit.unexpected_files.join(", ")
+                ),
+            });
+        }
+    }
+
+    None
 }
 
 fn bundle_audit_failure_class(err: &anyhow::Error) -> &'static str {

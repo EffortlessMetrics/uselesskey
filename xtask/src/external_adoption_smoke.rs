@@ -513,6 +513,8 @@ fn run_ci_recipe_profile(
         .arg(&bundle_dir)
         .args(["--out"])
         .arg(&audit_dir)
+        .args(["--expect-profile", profile])
+        .args(["--policy", "strict"])
         .arg("--ci")
         .current_dir(&project_dir);
     run_command_step(
