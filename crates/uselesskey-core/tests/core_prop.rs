@@ -133,6 +133,23 @@ proptest! {
         prop_assert_eq!(seed.bytes(), &hex_bytes);
     }
 
+    /// Seed::from_env_value() rejects 64-byte non-hex payloads (with and without prefix).
+    #[test]
+    fn seed_from_env_value_invalid_64_byte_hex_is_err(
+        s in prop::collection::vec(
+            prop_oneof![Just('g'), Just('z'), Just('!'), Just('_')],
+            64,
+        )
+    ) {
+        let raw: String = s.iter().collect();
+        let prefixed = format!("0x{raw}");
+        let upper_prefixed = format!("0X{raw}");
+
+        prop_assert!(Seed::from_env_value(&raw).is_err());
+        prop_assert!(Seed::from_env_value(&prefixed).is_err());
+        prop_assert!(Seed::from_env_value(&upper_prefixed).is_err());
+    }
+
     // =========================================================================
     // Derivation uniqueness tests
     // =========================================================================
@@ -296,6 +313,15 @@ proptest! {
             std::sync::Arc::ptr_eq(&first, &second),
             "cache hit should return the same Arc pointer"
         );
+
+        fx.clear_cache();
+
+        let third = fx.get_or_init("domain:arc", &label, &spec, "good", seed_array::<32>);
+        prop_assert!(
+            !std::sync::Arc::ptr_eq(&first, &third),
+            "cache clear should force a new Arc allocation"
+        );
+        prop_assert_eq!(*first, *third, "cache clear should not change deterministic value");
     }
 
     // =========================================================================
