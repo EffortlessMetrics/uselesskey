@@ -77,7 +77,7 @@ uselesskey-rustls = { path = "crates/uselesskey-rustls", version = "0.9.1" }
 blake3 = "1.8.5"
 
 # concurrency-friendly cache
-dashmap = "6.1.0"
+dashmap = "6.2.1"
 
 # RNG — workspace-wide line (all crates except rsa/pgp/x509 blocked islands)
 rand10 = { package = "rand", version = "0.10.1", default-features = false }
