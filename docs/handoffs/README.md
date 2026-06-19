@@ -25,3 +25,9 @@ Use [the handoff template](../templates/handoff.md). A handoff should include:
 - Known blockers
 - Next safe action
 - Explicit non-goals
+
+## Release Handoffs
+
+- [2026-06-19-v0-10-adoption-handoff.md](2026-06-19-v0-10-adoption-handoff.md)
+  imports the `uselesskey-swarm` v0.10 release-adoption packet into the source
+  repo and preserves the source release authority boundary.
