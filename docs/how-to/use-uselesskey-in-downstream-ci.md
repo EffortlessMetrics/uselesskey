@@ -8,7 +8,7 @@ For GitHub Actions-specific workflow files, see
 
 ```yaml
 steps:
-  - run: cargo install uselesskey-cli --version 0.9.1
+  - run: cargo install uselesskey-cli --version 0.10.0
   - run: uselesskey bundle --profile webhook --out target/uselesskey-webhook
   - run: uselesskey verify-bundle --path target/uselesskey-webhook
   - run: uselesskey audit-bundle --path target/uselesskey-webhook --out target/uselesskey-webhook-audit --ci --expect-profile webhook --policy strict

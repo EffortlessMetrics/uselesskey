@@ -11,8 +11,8 @@ or cryptographic assurance.
 
 | I need to... | Start with | Copy this |
 | --- | --- | --- |
-| use fake RSA/JWK fixtures in Rust tests | facade crate | `uselesskey = { version = "0.9.1", features = ["rsa", "jwk"] }` |
-| use token-shaped strings without keygen | token lane | `uselesskey = { version = "0.9.1", default-features = false, features = ["token"] }` |
+| use fake RSA/JWK fixtures in Rust tests | facade crate | `uselesskey = { version = "0.10.0", features = ["rsa", "jwk"] }` |
+| use token-shaped strings without keygen | token lane | `uselesskey = { version = "0.10.0", default-features = false, features = ["token"] }` |
 | generate a deterministic scanner-safe bundle | CLI scanner-safe profile | `uselesskey bundle --profile scanner-safe --out target/uselesskey-bundle` |
 | test TLS verifier behavior | TLS contract pack | `uselesskey bundle --profile tls --out target/uselesskey-tls` |
 | test OIDC/JWKS validator behavior | OIDC/JWKS contract pack | `uselesskey bundle --profile oidc --out target/uselesskey-oidc` |
@@ -24,7 +24,7 @@ or cryptographic assurance.
 Install the CLI when you want bundle commands outside this workspace:
 
 ```bash
-cargo install uselesskey-cli --version 0.9.1
+cargo install uselesskey-cli --version 0.10.0
 uselesskey profiles
 uselesskey bundle --profile webhook --explain
 ```
@@ -45,7 +45,7 @@ Add the smallest feature set that preserves your test semantics:
 
 ```toml
 [dev-dependencies]
-uselesskey = { version = "0.9.1", features = ["rsa", "jwk"] }
+uselesskey = { version = "0.10.0", features = ["rsa", "jwk"] }
 ```
 
 Then generate fixtures at runtime:

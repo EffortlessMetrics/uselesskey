@@ -74,7 +74,7 @@ The primary snippet pattern is:
 
 ```toml
 [dev-dependencies]
-uselesskey = { version = "0.9.1", default-features = false, features = ["rsa"] }
+uselesskey = { version = "0.10.0", default-features = false, features = ["rsa"] }
 ```
 
 ```rust
@@ -186,7 +186,7 @@ Good facade-first example:
 
 ```text
 Job: test a JWT verifier with deterministic RSA/JWKS fixtures
-Dependency: uselesskey = { version = "0.9.1", default-features = false, features = ["rsa", "jwk"] }
+Dependency: uselesskey = { version = "0.10.0", default-features = false, features = ["rsa", "jwk"] }
 Imports: Factory, RsaFactoryExt, RsaSpec
 Positive: valid public JWK/JWKS accepted by the test verifier
 Negative: duplicate kid or wrong-kty fixture rejected by the test verifier

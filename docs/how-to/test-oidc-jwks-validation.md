@@ -55,7 +55,7 @@ For Rust tests that do not need files, use the public fixture surface directly:
 
 ```toml
 [dev-dependencies]
-uselesskey = { version = "0.9.1", default-features = false, features = ["rsa", "jwk"] }
+uselesskey = { version = "0.10.0", default-features = false, features = ["rsa", "jwk"] }
 ```
 
 ```rust
