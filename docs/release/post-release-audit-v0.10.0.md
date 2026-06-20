@@ -16,6 +16,9 @@ v0.10.0 is published and externally verifiable.
 - All intended publish crates are visible on crates.io at `0.10.0`.
 - docs.rs reports `doc_status: true` for `uselesskey 0.10.0`.
 - Published-version CLI and facade smokes passed from fresh Cargo state.
+- The tag-triggered Release workflow was cancelled during its dry-run step after
+  quality gate and publish preflight passed. It was not the publish authority
+  for this release gate.
 
 ## Release Identity
 
@@ -143,11 +146,16 @@ The tag-triggered Release workflow started after `v0.10.0` was pushed.
 - Run: <https://github.com/EffortlessMetrics/uselesskey/actions/runs/27864843530>
 - Event: tag push for `v0.10.0`
 - Head SHA: `5ea65e1cc6309042731cf4ec91cb39f00a91253a`
-- Status at audit drafting: `in_progress`
+- Conclusion: `cancelled`
+- Completed successful steps: quality gate and publish preflight.
+- Cancelled step: `cargo xtask publish-check`.
+- Skipped jobs after cancellation: publish and release.
 
-This audit records the explicit local release gate as the publish authority. If
-the tag-triggered workflow later reports a concrete defect, handle that as a
-post-publication corrective-release decision.
+The log recorded `The operation was canceled` during the dry-run step and did
+not emit a package defect before cancellation. This audit records the explicit
+local release gate as the publish authority. A future concrete defect in release
+automation or published artifacts remains a post-publication corrective-release
+decision.
 
 ## Claim Boundaries
 
