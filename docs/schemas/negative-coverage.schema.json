@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://effortlessmetrics.github.io/uselesskey/schemas/negative-coverage.schema.json",
+  "title": "uselesskey negative coverage receipt",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["receipt", "version", "profile", "negative_count", "coverage", "boundaries"],
+  "properties": {
+    "receipt": {
+      "const": "negative-coverage"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "schema_version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Reserved alias for future receipt schema versions."
+    },
+    "profile": {
+      "type": "string",
+      "enum": ["scanner-safe", "tls", "oidc", "webhook", "runtime"]
+    },
+    "negative_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "coverage": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/coverage_entry"
+      }
+    },
+    "negative_classes": {
+      "type": "array",
+      "description": "Optional future alias for coverage entries.",
+      "items": {
+        "$ref": "#/$defs/coverage_entry"
+      }
+    },
+    "boundaries": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    }
+  },
+  "$defs": {
+    "relative_path": {
+      "type": "string",
+      "minLength": 1,
+      "not": {
+        "anyOf": [
+          { "pattern": "^[A-Za-z]:" },
+          { "pattern": "^/" },
+          { "pattern": "^\\\\" },
+          { "pattern": "(^|[\\\\/])($|[\\\\/])" },
+          { "pattern": "(^|[\\\\/])\\.\\.($|[\\\\/])" },
+          { "pattern": "[\\u0000-\\u001F\\u007F]" }
+        ]
+      }
+    },
+    "coverage_entry": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "path",
+        "kind",
+        "failure_class",
+        "expected_failure",
+        "scanner_safe",
+        "runtime_material",
+        "description"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/relative_path"
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "failure_class": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$",
+          "description": "SPEC-0016 stable failure-class ID."
+        },
+        "stable_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$",
+          "description": "Optional alias for failure_class in future receipts."
+        },
+        "expected_failure": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scanner_safe": {
+          "type": "boolean"
+        },
+        "runtime_material": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

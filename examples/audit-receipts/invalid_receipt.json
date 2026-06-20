@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "status": "fail",
+  "bundle_path": "target/uselesskey-audit-examples/invalid_receipt",
+  "profile": "unknown",
+  "manifest_version": 0,
+  "manifest_path": "manifest.json",
+  "artifact_count": 0,
+  "receipt_count": 0,
+  "scanner_safe_count": 0,
+  "runtime_material_count": 0,
+  "files": [],
+  "artifacts": [],
+  "receipts": [],
+  "missing_files": [],
+  "unexpected_files": [],
+  "checks": [
+    {
+      "name": "bundle-audit",
+      "status": "fail",
+      "failure_class": "invalid_receipt",
+      "detail": "A required receipt exists but cannot be parsed or reconciled."
+    }
+  ],
+  "boundaries": [
+    "Metadata-only failure receipt example for CI policy branching.",
+    "No fixture payloads or runtime material are included."
+  ],
+  "does_not_prove": [
+    "production security",
+    "provider compatibility",
+    "downstream verifier correctness",
+    "release readiness"
+  ]
+}

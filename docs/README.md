@@ -74,6 +74,10 @@ Validation lanes and the claim boundaries behind them.
 Release-candidate proof and public promise evidence.
 
 - [v0.10.0-release-notes.md](release/v0.10.0-release-notes.md) - v0.10.0 source-candidate release notes and explicit non-claims
+- [v0.10-command-ledger.md](release/v0.10-command-ledger.md) - v0.10.0 release-facing command ledger with proof expectations and boundaries
+- [v0.10-receipt-contract.md](release/v0.10-receipt-contract.md) - bundle audit receipt contract and fail-closed CI consumer boundary
+- [v0.10-adoption-proof-inventory.md](release/v0.10-adoption-proof-inventory.md) - adoption proof inventory for CLI, facade, schema, and package checks
+- [v0.10.0-package-dry-run.md](release/v0.10.0-package-dry-run.md) - package dry-run proof boundary for the v0.10.0 candidate
 
 - [evidence-matrix-v0.9.0.md](release/evidence-matrix-v0.9.0.md) — v0.9.0 command-backed claim, verification-pack, PR-lite, and webhook proof matrix
 - [evidence-matrix-v0.9.1.md](release/evidence-matrix-v0.9.1.md) — v0.9.1 adoption-confidence patch proof matrix

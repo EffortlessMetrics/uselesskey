@@ -72,7 +72,7 @@
     },
     "files": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": { "$ref": "#/$defs/relative_path" },
       "description": "Bundle file paths relative to the audited bundle."
     },
     "artifacts": {
@@ -85,11 +85,11 @@
     },
     "missing_files": {
       "type": "array",
-      "items": { "type": "string" }
+      "items": { "$ref": "#/$defs/relative_path" }
     },
     "unexpected_files": {
       "type": "array",
-      "items": { "type": "string" }
+      "items": { "$ref": "#/$defs/relative_path" }
     },
     "checks": {
       "type": "array",
@@ -107,6 +107,20 @@
     }
   },
   "$defs": {
+    "relative_path": {
+      "type": "string",
+      "minLength": 1,
+      "not": {
+        "anyOf": [
+          { "pattern": "^[A-Za-z]:" },
+          { "pattern": "^/" },
+          { "pattern": "^\\\\" },
+          { "pattern": "(^|[\\\\/])($|[\\\\/])" },
+          { "pattern": "(^|[\\\\/])\\.\\.($|[\\\\/])" },
+          { "pattern": "[\\u0000-\\u001F\\u007F]" }
+        ]
+      }
+    },
     "artifact": {
       "type": "object",
       "additionalProperties": false,
@@ -120,7 +134,7 @@
       ],
       "properties": {
         "path": {
-          "type": "string",
+          "$ref": "#/$defs/relative_path",
           "description": "Artifact path relative to the audited bundle."
         },
         "kind": {
@@ -146,7 +160,7 @@
       "required": ["path", "kind", "profile", "description"],
       "properties": {
         "path": {
-          "type": "string",
+          "$ref": "#/$defs/relative_path",
           "description": "Receipt path relative to the audited bundle."
         },
         "kind": {
