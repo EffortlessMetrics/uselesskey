@@ -19,7 +19,7 @@ Use `uselesskey` as a `dev-dependency`, then opt into only the fixture families 
 
 ```toml
 [dev-dependencies]
-uselesskey = { version = "0.9.1", default-features = false, features = ["rsa", "jwk"] }
+uselesskey = { version = "0.10.0", default-features = false, features = ["rsa", "jwk"] }
 ```
 
 ### Minimal feature examples
@@ -27,21 +27,21 @@ uselesskey = { version = "0.9.1", default-features = false, features = ["rsa", "
 ```toml
 # token-only tests
 [dev-dependencies]
-uselesskey = { version = "0.9.1", default-features = false, features = ["token"] }
+uselesskey = { version = "0.10.0", default-features = false, features = ["token"] }
 ```
 
 ```toml
 # TLS chain + rustls adapter
 [dev-dependencies]
-uselesskey = { version = "0.9.1", default-features = false, features = ["x509"] }
-uselesskey-rustls = { version = "0.9.1", features = ["tls-config", "rustls-ring"] }
+uselesskey = { version = "0.10.0", default-features = false, features = ["x509"] }
+uselesskey-rustls = { version = "0.10.0", features = ["tls-config", "rustls-ring"] }
 ```
 
 ```toml
 # JWT signing and verification helpers
 [dev-dependencies]
-uselesskey = { version = "0.9.1", default-features = false, features = ["rsa", "hmac", "jwk"] }
-uselesskey-jsonwebtoken = { version = "0.9.1" }
+uselesskey = { version = "0.10.0", default-features = false, features = ["rsa", "hmac", "jwk"] }
+uselesskey-jsonwebtoken = { version = "0.10.0" }
 ```
 
 > Prefer adapter crates (`uselesskey-rustls`, `uselesskey-jsonwebtoken`, etc.) over broad feature bundles to keep compile and dependency surface small.

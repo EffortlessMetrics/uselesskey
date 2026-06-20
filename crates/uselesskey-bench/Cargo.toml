@@ -18,8 +18,8 @@ serde_json.workspace = true
 tempfile.workspace = true
 uselesskey = { path = "../uselesskey", features = ["full"] }
 uselesskey-cli.workspace = true
-uselesskey-pkcs11-mock = { path = "../uselesskey-pkcs11-mock", version = "0.9.1" }
-uselesskey-webauthn = { path = "../uselesskey-webauthn", version = "0.9.1" }
+uselesskey-pkcs11-mock = { path = "../uselesskey-pkcs11-mock", version = "0.10.0" }
+uselesskey-webauthn = { path = "../uselesskey-webauthn", version = "0.10.0" }
 
 [dev-dependencies]
 serde_json.workspace = true

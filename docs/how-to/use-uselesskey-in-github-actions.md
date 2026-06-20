@@ -28,7 +28,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
 
       - name: Install uselesskey CLI
-        run: cargo install uselesskey-cli --version 0.9.1 --locked
+        run: cargo install uselesskey-cli --version 0.10.0 --locked
 
       - name: Generate webhook fixtures
         run: uselesskey bundle --profile webhook --out target/uselesskey-webhook
@@ -72,7 +72,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
 
       - name: Install uselesskey CLI
-        run: cargo install uselesskey-cli --version 0.9.1 --locked
+        run: cargo install uselesskey-cli --version 0.10.0 --locked
 
       - name: Generate TLS fixtures
         run: uselesskey bundle --profile tls --out target/uselesskey-tls

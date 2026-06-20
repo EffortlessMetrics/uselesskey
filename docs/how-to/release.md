@@ -67,6 +67,9 @@ Before tagging, make sure the release PR has already:
 
 For version-specific proof maps, use the matching release matrix:
 
+- [`docs/release/v0.10.0-release-notes.md`](../release/v0.10.0-release-notes.md)
+  for the v0.10.0 source-candidate release notes and non-claims
+
 - [`docs/release/evidence-matrix-v0.9.1.md`](../release/evidence-matrix-v0.9.1.md)
   for the v0.9.1 adoption-confidence patch
 - [`docs/release/evidence-matrix-v0.9.0.md`](../release/evidence-matrix-v0.9.0.md)

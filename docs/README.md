@@ -73,6 +73,8 @@ Validation lanes and the claim boundaries behind them.
 
 Release-candidate proof and public promise evidence.
 
+- [v0.10.0-release-notes.md](release/v0.10.0-release-notes.md) - v0.10.0 source-candidate release notes and explicit non-claims
+
 - [evidence-matrix-v0.9.0.md](release/evidence-matrix-v0.9.0.md) — v0.9.0 command-backed claim, verification-pack, PR-lite, and webhook proof matrix
 - [evidence-matrix-v0.9.1.md](release/evidence-matrix-v0.9.1.md) — v0.9.1 adoption-confidence patch proof matrix
 - [post-release-audit-v0.9.1.md](release/post-release-audit-v0.9.1.md) — v0.9.1 crates.io, docs.rs, adoption-regression, and claim-proof audit

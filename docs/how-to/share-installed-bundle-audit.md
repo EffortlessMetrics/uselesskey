@@ -10,7 +10,7 @@ assurance.
 ## Generate a Bundle
 
 ```bash
-cargo install uselesskey-cli --version 0.9.1
+cargo install uselesskey-cli --version 0.10.0
 uselesskey bundle --profile webhook --out target/uselesskey-webhook
 uselesskey verify-bundle --path target/uselesskey-webhook
 uselesskey inspect-bundle --path target/uselesskey-webhook

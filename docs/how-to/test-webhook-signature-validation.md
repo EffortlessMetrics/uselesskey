@@ -14,7 +14,7 @@ should enforce.
 
 ```toml
 [dev-dependencies]
-uselesskey = { version = "0.9.1", default-features = false, features = ["webhook"] }
+uselesskey = { version = "0.10.0", default-features = false, features = ["webhook"] }
 ```
 
 Or depend on `uselesskey-webhook` directly if you only need this
@@ -22,8 +22,8 @@ surface:
 
 ```toml
 [dev-dependencies]
-uselesskey-webhook = "0.9.1"
-uselesskey-core = "0.9.1"
+uselesskey-webhook = "0.10.0"
+uselesskey-core = "0.10.0"
 ```
 
 ## Generate the contract pack

@@ -22,7 +22,7 @@
 //!
 //! ```toml
 //! [dev-dependencies]
-//! uselesskey = { version = "0.9.1", default-features = false, features = ["token"] }
+//! uselesskey = { version = "0.10.0", default-features = false, features = ["token"] }
 //! ```
 //!
 //! ```
@@ -42,7 +42,7 @@
 //!
 //! ```toml
 //! [dev-dependencies]
-//! uselesskey = { version = "0.9.1", default-features = false, features = ["entropy"] }
+//! uselesskey = { version = "0.10.0", default-features = false, features = ["entropy"] }
 //! ```
 //!
 //! ```

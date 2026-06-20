@@ -13,8 +13,8 @@ Dependencies:
 
 ```toml
 [dev-dependencies]
-uselesskey = { version = "0.9.1", default-features = false, features = ["x509"] }
-uselesskey-rustls = { version = "0.9.1", features = ["tls-config", "rustls-ring"] }
+uselesskey = { version = "0.10.0", default-features = false, features = ["x509"] }
+uselesskey-rustls = { version = "0.10.0", features = ["tls-config", "rustls-ring"] }
 ```
 
 First imports:

@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-06-19
+
+v0.10.0 is the release-adoption and installed-workflow release. It makes the
+CLI and facade paths easier to use from clean downstream projects, adds a
+metadata-only bundle audit contract for reviewers and CI, and records the
+source handoff for package-proven release evidence.
+
+This release does not claim production security, provider compatibility,
+scanner-policy approval, downstream verifier correctness, or publication until
+the explicit release gate has completed.
+
+### Added
+
+- Added installed-user bundle audit flows that write `bundle-audit.json` and
+  `bundle-audit.md`, keep generated fixture payloads out of reviewer packets,
+  and expose stable `failure_class` values for CI branching.
+- Added downstream CI recipes and policy presets for generating, verifying,
+  auditing, and uploading metadata-only bundle audit evidence.
+- Added clean-project external adoption smoke for CLI recipes and facade
+  examples, including downstream-shaped webhook, OIDC/JWKS, TLS, and Rust test
+  fixture examples.
+- Added taxonomy-backed negative JWK/JWKS and token fixtures for validator
+  failure-path tests.
+- Added the v0.10 source handoff record that pins the swarm handoff SHA,
+  command ledger, receipt contract, package-proof boundary, deferred source
+  PRs, non-claims, and rollback path.
+
+### Changed
+
+- Refreshed workspace crate versions, internal path dependency constraints,
+  lockfile state, and copyable install/dependency snippets for the v0.10.0
+  source candidate.
+- Reworked README, Start Here, feature-choice, and task-focused docs around
+  user jobs instead of repo-internal crate discovery.
+- Improved installed CLI help, `doctor`, `profiles`, `inspect-bundle`, and
+  `audit-bundle` wording so terminal summaries stay separate from durable
+  machine-readable receipts.
+
+### Fixed
+
+- Returned usage errors for conflicting audit modes.
+- Improved audit-bundle failure diagnostics while preserving stable machine
+  failure classes.
+- Strengthened deterministic, cache, PEM corruption, WebAuthn, SSH, CLI, and
+  fuzz coverage around the release-adoption surface.
+
 ## [0.9.1] - 2026-05-17
 
 v0.9.1 is an adoption-confidence patch. It publishes the runtime scanner-safe
@@ -660,7 +706,9 @@ Repository organised into four layers:
 - **Determinism regression** — hardcoded expected-value snapshots ensure
   derivation stability across releases
 
-[Unreleased]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.9.1...v0.10.0
+[0.9.1]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/EffortlessMetrics/uselesskey/compare/v0.7.0...v0.7.1

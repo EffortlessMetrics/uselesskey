@@ -21,7 +21,7 @@ approval.
 Generate, verify, inspect, and audit one profile per output directory:
 
 ```bash
-cargo install uselesskey-cli --version 0.9.1 --locked
+cargo install uselesskey-cli --version 0.10.0 --locked
 uselesskey bundle --profile webhook --out target/uselesskey-webhook
 uselesskey verify-bundle --path target/uselesskey-webhook
 uselesskey inspect-bundle --path target/uselesskey-webhook

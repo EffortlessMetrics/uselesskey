@@ -13,7 +13,7 @@ Dependency:
 
 ```toml
 [dev-dependencies]
-uselesskey = { version = "0.9.1", default-features = false, features = ["webhook"] }
+uselesskey = { version = "0.10.0", default-features = false, features = ["webhook"] }
 ```
 
 First imports:

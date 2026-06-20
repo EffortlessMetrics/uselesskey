@@ -1076,8 +1076,8 @@ mod tests {
     #[test]
     fn external_adoption_dependency_patch_switches_versions_to_paths() {
         let manifest = r#"[dependencies]
-uselesskey = { version = "0.9.1", default-features = false, features = ["rsa"] }
-uselesskey-rustls = { version = "0.9.1", features = ["tls-config", "rustls-ring"] }
+uselesskey = { version = "0.10.0", default-features = false, features = ["rsa"] }
+uselesskey-rustls = { version = "0.10.0", features = ["tls-config", "rustls-ring"] }
 "#;
 
         let patched = patch_dependency_path(
@@ -1097,7 +1097,7 @@ uselesskey-rustls = { version = "0.9.1", features = ["tls-config", "rustls-ring"
         assert!(patched.contains(
             r#"uselesskey-rustls = { path = "C:\\Code\\Rust\\uselesskey\\crates\\uselesskey-rustls", features = ["tls-config", "rustls-ring"] }"#
         ));
-        assert!(!patched.contains("version = \"0.9.1\""));
+        assert!(!patched.contains("version = \""));
     }
 
     #[test]
