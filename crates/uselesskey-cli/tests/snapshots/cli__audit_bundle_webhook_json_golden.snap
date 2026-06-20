@@ -49,7 +49,7 @@ artifacts:
     scanner_safe: true
 boundaries:
   - audit-bundle proves local bundle consistency and metadata classification
-  - audit-bundle does not prove repo public claims; use cargo xtask claim-proof from a repo checkout
+  - audit-bundle is not standalone proof for broader repo public claims; use cargo xtask claim-proof from a repo checkout
   - audit-bundle does not prove release readiness; use release-evidence for release proof
   - "profile proof/check path: cargo xtask claim-proof --claim webhook-contract-pack"
   - audit receipts contain metadata only and do not copy generated fixture payloads
@@ -59,7 +59,7 @@ checks:
     failure_class: invalid_manifest
     name: manifest
     status: pass
-  - detail: manifest paths are relative and contained by the bundle
+  - detail: manifest paths are safe relative paths contained by the bundle
     failure_class: path_escape
     name: path-containment
     status: pass

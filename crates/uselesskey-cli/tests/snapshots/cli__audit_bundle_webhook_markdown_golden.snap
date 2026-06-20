@@ -1,6 +1,6 @@
 ---
 source: crates/uselesskey-cli/tests/cli.rs
-assertion_line: 883
+assertion_line: 1195
 expression: audit_md
 ---
 # uselesskey Bundle Audit
@@ -9,7 +9,7 @@ expression: audit_md
 - Bundle: <temp>/webhook
 - Profile: webhook
 - Receipt type: durable metadata-only reviewer/CI receipt
-- Quick summary: uselesskey inspect-bundle --path <bundle-dir>
+- Quick summary: uselesskey inspect-bundle <bundle-dir>
 - Payload posture: raw generated fixture payloads are not copied into this receipt
 - Manifest: manifest.json (version 1)
 - Artifacts: 7
@@ -22,7 +22,7 @@ expression: audit_md
 | Check | Status | Failure class | Detail |
 |---|---|---|---|
 | manifest | pass | invalid_manifest | manifest parsed |
-| path-containment | pass | path_escape | manifest paths are relative and contained by the bundle |
+| path-containment | pass | path_escape | manifest paths are safe relative paths contained by the bundle |
 | artifact-content | pass | missing_artifact | manifest artifacts regenerate and verify |
 | receipts | pass | missing_receipt | bundle product receipts are present |
 | scanner-safe-classification | pass | scanner_safe_mismatch | audit-surface receipt matches manifest scanner-safe counts |
@@ -52,7 +52,7 @@ expression: audit_md
 ## Boundaries
 
 - audit-bundle proves local bundle consistency and metadata classification
-- audit-bundle does not prove repo public claims; use cargo xtask claim-proof from a repo checkout
+- audit-bundle is not standalone proof for broader repo public claims; use cargo xtask claim-proof from a repo checkout
 - audit-bundle does not prove release readiness; use release-evidence for release proof
 - profile proof/check path: cargo xtask claim-proof --claim webhook-contract-pack
 - audit receipts contain metadata only and do not copy generated fixture payloads

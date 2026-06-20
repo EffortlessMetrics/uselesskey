@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://effortlessmetrics.github.io/uselesskey/schemas/bundle-manifest.schema.json",
+  "title": "uselesskey bundle manifest",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["version", "profile", "label", "seed", "format", "files", "artifacts", "receipts"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Bundle manifest schema version. Current manifests use version=1."
+    },
+    "schema_version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Reserved alias for a future manifest schema field; version remains canonical for current bundles."
+    },
+    "profile": {
+      "$ref": "#/$defs/profile"
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1
+    },
+    "seed": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Seed identity or seed label used by bundle generation. This is not a secret payload."
+    },
+    "format": {
+      "type": "string",
+      "enum": ["pem", "der", "jwk", "jwks", "json-manifest", "bundle-dir"]
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/relative_path"
+      },
+      "uniqueItems": true
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/artifact"
+      }
+    },
+    "receipts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/receipt"
+      }
+    }
+  },
+  "$defs": {
+    "profile": {
+      "type": "string",
+      "enum": ["scanner-safe", "tls", "oidc", "webhook", "runtime"]
+    },
+    "relative_path": {
+      "type": "string",
+      "minLength": 1,
+      "not": {
+        "anyOf": [
+          { "pattern": "^[A-Za-z]:" },
+          { "pattern": "^/" },
+          { "pattern": "^\\\\" },
+          { "pattern": "(^|[\\\\/])($|[\\\\/])" },
+          { "pattern": "(^|[\\\\/])\\.\\.($|[\\\\/])" },
+          { "pattern": "[\\u0000-\\u001F\\u007F]" }
+        ]
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["path", "kind", "format", "profile", "lanes", "scanner_safe", "description"],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/relative_path"
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "format": {
+          "type": "string",
+          "minLength": 1
+        },
+        "profile": {
+          "$ref": "#/$defs/profile"
+        },
+        "lanes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["scanner-safe", "runtime", "materialized"]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "scanner_safe": {
+          "type": "boolean"
+        },
+        "runtime_material": {
+          "type": "boolean",
+          "description": "Optional explicit runtime-material label. Current audit may derive this from scanner_safe."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["valid", "negative", "evidence", "metadata"]
+        },
+        "failure_class": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$",
+          "description": "SPEC-0016 stable negative fixture ID when the artifact is a negative fixture."
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "receipt": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["path", "kind", "profile", "description"],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/relative_path"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "materialization",
+            "audit-surface",
+            "bundle-verification",
+            "scanner-safety",
+            "negative-coverage"
+          ]
+        },
+        "profile": {
+          "$ref": "#/$defs/profile"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

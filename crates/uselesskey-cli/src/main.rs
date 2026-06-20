@@ -7,7 +7,7 @@ use std::io::{self, Read, Write};
 use std::path::{Component, Path, PathBuf};
 
 use anyhow::{Context, Result, bail};
-use clap::{Parser, Subcommand, ValueEnum};
+use clap::{ArgGroup, Parser, Subcommand, ValueEnum};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use uselesskey_cli::{
@@ -33,7 +33,7 @@ use uselesskey_x509::{ChainNegative, ChainSpec, X509Chain, X509FactoryExt, X509S
   uselesskey doctor
   uselesskey profiles
   uselesskey bundle --profile webhook --out target/uselesskey-webhook
-  uselesskey audit-bundle --path target/uselesskey-webhook --ci
+  uselesskey audit-bundle target/uselesskey-webhook --ci --out target/uselesskey-webhook-audit
 
 Boundaries:
   Installed CLI commands generate, verify, inspect, and audit local fixtures.
@@ -101,9 +101,9 @@ struct GenerateArgs {
 #[derive(clap::Args, Debug)]
 #[command(after_help = "Examples:
   uselesskey bundle --profile webhook --out target/uselesskey-webhook
-  uselesskey verify-bundle --path target/uselesskey-webhook
-  uselesskey inspect-bundle --path target/uselesskey-webhook
-  uselesskey audit-bundle --path target/uselesskey-webhook --ci
+  uselesskey verify-bundle target/uselesskey-webhook
+  uselesskey inspect-bundle target/uselesskey-webhook
+  uselesskey audit-bundle target/uselesskey-webhook --ci --out target/uselesskey-webhook-audit
 
 Boundary:
   bundle writes test fixtures; keep generated payloads under target/ unless
@@ -130,17 +130,33 @@ struct BundleArgs {
 }
 
 #[derive(clap::Args, Debug)]
+#[command(group(
+    ArgGroup::new("verify_bundle_input")
+        .required(true)
+        .args(["bundle_dir", "path"])
+))]
 struct VerifyBundleArgs {
     /// Bundle directory to verify.
+    #[arg(value_name = "BUNDLE_DIR")]
+    bundle_dir: Option<PathBuf>,
+    /// Bundle directory to verify. `--bundle-dir` remains available as an alias.
     #[arg(long = "path", visible_alias = "bundle-dir", value_name = "BUNDLE_DIR")]
-    bundle_dir: PathBuf,
+    path: Option<PathBuf>,
 }
 
 #[derive(clap::Args, Debug)]
+#[command(group(
+    ArgGroup::new("inspect_bundle_input")
+        .required(true)
+        .args(["bundle_dir", "path"])
+))]
 struct InspectBundleArgs {
     /// Bundle directory to inspect.
+    #[arg(value_name = "BUNDLE_DIR")]
+    bundle_dir: Option<PathBuf>,
+    /// Bundle directory to inspect. `--bundle-dir` remains available as an alias.
     #[arg(long = "path", visible_alias = "bundle-dir", value_name = "BUNDLE_DIR")]
-    bundle_dir: PathBuf,
+    path: Option<PathBuf>,
     /// Optional path for writing the human summary.
     #[arg(long)]
     out: Option<PathBuf>,
@@ -148,19 +164,32 @@ struct InspectBundleArgs {
 
 #[derive(clap::Args, Debug)]
 #[command(after_help = "Examples:
-  uselesskey audit-bundle --path target/uselesskey-webhook --out target/uselesskey-webhook-audit
-  uselesskey audit-bundle --path target/uselesskey-webhook --ci
-  uselesskey audit-bundle --path target/uselesskey-webhook --ci --expect-profile webhook
-  uselesskey audit-bundle --path target/uselesskey-webhook --ci --policy strict
-  uselesskey audit-bundle --path target/uselesskey-webhook --summary
+  uselesskey audit-bundle target/uselesskey-webhook --out target/uselesskey-webhook-audit
+  uselesskey audit-bundle target/uselesskey-webhook --ci --out target/uselesskey-webhook-audit
+  uselesskey audit-bundle target/uselesskey-webhook --ci --expect-profile webhook --policy strict --out target/uselesskey-webhook-audit
+  uselesskey audit-bundle target/uselesskey-webhook --summary
 
 Boundary:
   audit-bundle checks local bundle consistency and metadata labels. It does
-  not prove production security, provider compatibility, or repo public claims.")]
+  not prove production security, provider compatibility, or broader repo public
+  claims by itself.
+
+CI:
+  Combine --ci with --out to keep bundle-audit.json and bundle-audit.md as
+  uploadable metadata-only receipts for passing audits and stable policy
+  failures.")]
+#[command(group(
+    ArgGroup::new("audit_bundle_input")
+        .required(true)
+        .args(["bundle_dir", "path"])
+))]
 struct AuditBundleArgs {
+    /// Bundle directory to audit.
+    #[arg(value_name = "BUNDLE_DIR")]
+    bundle_dir: Option<PathBuf>,
     /// Bundle directory to audit. `--bundle-dir` remains available as an alias.
     #[arg(long = "path", visible_alias = "bundle-dir", value_name = "BUNDLE_DIR")]
-    bundle_dir: PathBuf,
+    path: Option<PathBuf>,
     /// Directory for metadata-only Markdown and JSON audit receipts.
     #[arg(long)]
     out: Option<PathBuf>,
@@ -179,6 +208,144 @@ struct AuditBundleArgs {
     /// Print a compact human summary for terminals or CI logs.
     #[arg(long)]
     summary: bool,
+}
+
+impl VerifyBundleArgs {
+    fn bundle_dir(&self) -> Result<&Path> {
+        self.bundle_dir
+            .as_deref()
+            .or(self.path.as_deref())
+            .context("clap requires a bundle directory")
+    }
+}
+
+impl InspectBundleArgs {
+    fn bundle_dir(&self) -> Result<&Path> {
+        self.bundle_dir
+            .as_deref()
+            .or(self.path.as_deref())
+            .context("clap requires a bundle directory")
+    }
+}
+
+impl AuditBundleArgs {
+    fn bundle_dir(&self) -> Result<&Path> {
+        self.bundle_dir
+            .as_deref()
+            .or(self.path.as_deref())
+            .context("clap requires a bundle directory")
+    }
+}
+
+#[cfg(test)]
+mod bundle_input_arg_tests {
+    use super::*;
+
+    #[test]
+    fn verify_bundle_accepts_positional_path_and_aliases() -> Result<()> {
+        for argv in [
+            vec!["uselesskey", "verify-bundle", "target/uselesskey-oidc"],
+            vec![
+                "uselesskey",
+                "verify-bundle",
+                "--path",
+                "target/uselesskey-oidc",
+            ],
+            vec![
+                "uselesskey",
+                "verify-bundle",
+                "--bundle-dir",
+                "target/uselesskey-oidc",
+            ],
+        ] {
+            let cli = Cli::try_parse_from(argv)?;
+            let Commands::VerifyBundle(args) = cli.command else {
+                bail!("expected verify-bundle command");
+            };
+
+            assert_eq!(args.bundle_dir()?, Path::new("target/uselesskey-oidc"));
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn inspect_bundle_accepts_positional_path_and_aliases() -> Result<()> {
+        for argv in [
+            vec!["uselesskey", "inspect-bundle", "target/uselesskey-oidc"],
+            vec![
+                "uselesskey",
+                "inspect-bundle",
+                "--path",
+                "target/uselesskey-oidc",
+            ],
+            vec![
+                "uselesskey",
+                "inspect-bundle",
+                "--bundle-dir",
+                "target/uselesskey-oidc",
+            ],
+        ] {
+            let cli = Cli::try_parse_from(argv)?;
+            let Commands::InspectBundle(args) = cli.command else {
+                bail!("expected inspect-bundle command");
+            };
+
+            assert_eq!(args.bundle_dir()?, Path::new("target/uselesskey-oidc"));
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn audit_bundle_accepts_path_aliases_with_ci_policy_flags() -> Result<()> {
+        for argv in [
+            vec![
+                "uselesskey",
+                "audit-bundle",
+                "target/uselesskey-oidc",
+                "--ci",
+                "--expect-profile",
+                "oidc",
+                "--policy",
+                "strict",
+            ],
+            vec![
+                "uselesskey",
+                "audit-bundle",
+                "--path",
+                "target/uselesskey-oidc",
+                "--ci",
+                "--expect-profile",
+                "oidc",
+                "--policy",
+                "strict",
+            ],
+            vec![
+                "uselesskey",
+                "audit-bundle",
+                "--bundle-dir",
+                "target/uselesskey-oidc",
+                "--ci",
+                "--expect-profile",
+                "oidc",
+                "--policy",
+                "strict",
+            ],
+        ] {
+            let cli = Cli::try_parse_from(argv)?;
+            let Commands::AuditBundle(args) = cli.command else {
+                bail!("expected audit-bundle command");
+            };
+
+            assert_eq!(args.bundle_dir()?, Path::new("target/uselesskey-oidc"));
+            assert!(args.ci);
+            assert_eq!(args.expect_profile.as_deref(), Some("oidc"));
+            assert_eq!(args.policy, Some(AuditPolicy::Strict));
+        }
+
+        Ok(())
+    }
 }
 
 #[derive(clap::Args, Debug)]
@@ -489,17 +656,18 @@ fn run_bundle(args: BundleArgs) -> Result<()> {
 }
 
 fn run_verify_bundle(args: VerifyBundleArgs) -> Result<()> {
-    let manifest_path = args.bundle_dir.join("manifest.json");
+    let bundle_dir = args.bundle_dir()?.to_path_buf();
+    let manifest_path = bundle_dir.join("manifest.json");
     let manifest = load_bundle_manifest(&manifest_path)
         .with_context(|| format!("invalid bundle manifest {}", manifest_path.display()))?;
-    let files = verify_bundle_manifest(&args.bundle_dir, &manifest)
-        .with_context(|| format!("failed to verify bundle {}", args.bundle_dir.display()))?;
+    let files = verify_bundle_manifest(&bundle_dir, &manifest)
+        .with_context(|| format!("failed to verify bundle {}", bundle_dir.display()))?;
 
     emit_artifact(
         &Artifact::Json(json!({
             "verify_bundle": {
                 "status": "ok",
-                "bundle_dir": args.bundle_dir,
+                "bundle_dir": bundle_dir,
                 "manifest": manifest_path,
                 "count": files.len(),
                 "files": files,
@@ -510,11 +678,12 @@ fn run_verify_bundle(args: VerifyBundleArgs) -> Result<()> {
 }
 
 fn run_inspect_bundle(args: InspectBundleArgs) -> Result<()> {
-    let manifest_path = args.bundle_dir.join("manifest.json");
+    let bundle_dir = args.bundle_dir()?.to_path_buf();
+    let manifest_path = bundle_dir.join("manifest.json");
     let manifest = load_bundle_manifest(&manifest_path)
         .with_context(|| format!("invalid bundle manifest {}", manifest_path.display()))?;
-    let files = verify_bundle_manifest(&args.bundle_dir, &manifest)
-        .with_context(|| format!("failed to verify bundle {}", args.bundle_dir.display()))?;
+    let files = verify_bundle_manifest(&bundle_dir, &manifest)
+        .with_context(|| format!("failed to verify bundle {}", bundle_dir.display()))?;
     let summary = render_bundle_inspection_summary(&manifest, files.len());
 
     emit_artifact(&Artifact::Text(summary), args.out.as_deref())
@@ -529,7 +698,8 @@ fn run_audit_bundle(args: AuditBundleArgs) -> Result<()> {
         return run_audit_bundle_ci(args);
     }
 
-    let audit = match build_bundle_audit(&args.bundle_dir) {
+    let bundle_dir = args.bundle_dir()?.to_path_buf();
+    let audit = match build_bundle_audit(&bundle_dir) {
         Ok(audit) => audit,
         Err(err) => {
             let diagnostic = bundle_audit_failure_diagnostic(&err);
@@ -586,11 +756,15 @@ fn run_audit_bundle(args: AuditBundleArgs) -> Result<()> {
 }
 
 fn run_audit_bundle_ci(args: AuditBundleArgs) -> Result<()> {
-    match build_bundle_audit(&args.bundle_dir) {
+    let bundle_dir = args.bundle_dir()?.to_path_buf();
+    match build_bundle_audit(&bundle_dir) {
         Ok(audit) => {
             if let Some(diagnostic) = bundle_audit_policy_failure(&audit, &args) {
-                let failure = bundle_audit_policy_failure_json(&audit, &diagnostic);
-                emit_artifact(&Artifact::Json(failure), None)?;
+                let failure = bundle_audit_policy_failure_receipt(&audit, &diagnostic);
+                if let Some(out_dir) = args.out.as_deref() {
+                    write_bundle_audit_receipts(&failure, out_dir)?;
+                }
+                emit_artifact(&Artifact::Json(json!(failure)), None)?;
                 bail!(
                     "audit policy failed: {}: {}",
                     diagnostic.failure_class,
@@ -604,8 +778,11 @@ fn run_audit_bundle_ci(args: AuditBundleArgs) -> Result<()> {
         }
         Err(err) => {
             let diagnostic = bundle_audit_failure_diagnostic(&err);
-            let failure = bundle_audit_failure_json(&args.bundle_dir, &diagnostic);
-            emit_artifact(&Artifact::Json(failure), None)?;
+            let failure = bundle_audit_failure_receipt(&bundle_dir, &diagnostic);
+            if let Some(out_dir) = args.out.as_deref() {
+                write_bundle_audit_receipts(&failure, out_dir)?;
+            }
+            emit_artifact(&Artifact::Json(json!(failure)), None)?;
             bail!(
                 "audit failed: {}: {}",
                 diagnostic.failure_class,
@@ -727,6 +904,7 @@ fn load_bundle_manifest(path: &Path) -> Result<BundleManifest> {
 }
 
 fn verify_bundle_manifest(bundle_dir: &Path, manifest: &BundleManifest) -> Result<Vec<String>> {
+    ensure_manifest_paths_safe(manifest)?;
     let format = parse_manifest_format(&manifest.format)?;
     let profile = parse_manifest_profile(&manifest.profile)?;
     let fx = Factory::deterministic_from_str(&manifest.seed);
@@ -749,13 +927,13 @@ fn verify_bundle_manifest(bundle_dir: &Path, manifest: &BundleManifest) -> Resul
                 path.display()
             );
         }
-        expected_files.push(file_name);
         expected_artifacts.push(bundle_artifact_record(
             entry,
             bundle_format,
-            expected_files.last().expect("just pushed"),
+            &file_name,
             profile,
         ));
+        expected_files.push(file_name);
     }
     let fixture_files = expected_files.clone();
     let mut expected_receipts = Vec::new();
@@ -909,7 +1087,7 @@ fn render_bundle_inspection_summary(
     };
     let proof_path = profile_info
         .map(|info| info.proof_command)
-        .unwrap_or("uselesskey verify-bundle --path <bundle-dir>");
+        .unwrap_or("uselesskey verify-bundle <bundle-dir>");
     let boundary = profile_info
         .map(|info| info.not_proves.join("; "))
         .unwrap_or_else(|| "production security behavior".to_string());
@@ -927,7 +1105,7 @@ fn render_bundle_inspection_summary(
             "Runtime material artifacts: {}\n",
             "Verification: ok\n",
             "Receipts: {}\n",
-            "Durable audit receipt: uselesskey audit-bundle --path <bundle-dir> --out <audit-dir>\n",
+            "Durable audit receipt: uselesskey audit-bundle <bundle-dir> --out <audit-dir>\n",
             "Proof/check path: {}\n",
             "Generated files:\n{}\n",
             "Artifact posture:\n{}\n",
@@ -1036,7 +1214,7 @@ fn build_bundle_audit(bundle_dir: &Path) -> Result<BundleAudit> {
             BundleAuditCheck::pass(
                 "path-containment",
                 "path_escape",
-                "manifest paths are relative and contained by the bundle",
+                "manifest paths are safe relative paths contained by the bundle",
             ),
             BundleAuditCheck::pass(
                 "artifact-content",
@@ -1076,17 +1254,21 @@ fn build_bundle_audit(bundle_dir: &Path) -> Result<BundleAudit> {
 fn render_bundle_audit_markdown(audit: &BundleAudit) -> String {
     let mut out = String::new();
     out.push_str("# uselesskey Bundle Audit\n\n");
-    out.push_str(&format!("- Status: {}\n", audit.status));
-    out.push_str(&format!("- Bundle: {}\n", audit.bundle_path));
-    out.push_str(&format!("- Profile: {}\n", audit.profile));
+    out.push_str(&format!("- Status: {}\n", markdown_inline(&audit.status)));
+    out.push_str(&format!(
+        "- Bundle: {}\n",
+        markdown_inline(&audit.bundle_path)
+    ));
+    out.push_str(&format!("- Profile: {}\n", markdown_inline(&audit.profile)));
     out.push_str("- Receipt type: durable metadata-only reviewer/CI receipt\n");
-    out.push_str("- Quick summary: uselesskey inspect-bundle --path <bundle-dir>\n");
+    out.push_str("- Quick summary: uselesskey inspect-bundle <bundle-dir>\n");
     out.push_str(
         "- Payload posture: raw generated fixture payloads are not copied into this receipt\n",
     );
     out.push_str(&format!(
         "- Manifest: {} (version {})\n",
-        audit.manifest_path, audit.manifest_version
+        markdown_inline(&audit.manifest_path),
+        audit.manifest_version
     ));
     out.push_str(&format!("- Artifacts: {}\n", audit.artifact_count));
     out.push_str(&format!("- Receipts: {}\n", audit.receipt_count));
@@ -1105,7 +1287,10 @@ fn render_bundle_audit_markdown(audit: &BundleAudit) -> String {
     for check in &audit.checks {
         out.push_str(&format!(
             "| {} | {} | {} | {} |\n",
-            check.name, check.status, check.failure_class, check.detail
+            markdown_table_cell(&check.name),
+            markdown_table_cell(&check.status),
+            markdown_table_cell(&check.failure_class),
+            markdown_table_cell(&check.detail)
         ));
     }
 
@@ -1115,9 +1300,9 @@ fn render_bundle_audit_markdown(audit: &BundleAudit) -> String {
     for artifact in &audit.artifacts {
         out.push_str(&format!(
             "| {} | {} | {} | {} | {} |\n",
-            artifact.path,
-            artifact.kind,
-            artifact.format,
+            markdown_table_cell(&artifact.path),
+            markdown_table_cell(&artifact.kind),
+            markdown_table_cell(&artifact.format),
             yes_no(artifact.scanner_safe),
             yes_no(artifact.runtime_material)
         ));
@@ -1125,20 +1310,42 @@ fn render_bundle_audit_markdown(audit: &BundleAudit) -> String {
 
     out.push_str("\n## Receipts\n\n");
     for receipt in &audit.receipts {
-        out.push_str(&format!("- {}: {}\n", receipt.kind, receipt.path));
+        out.push_str(&format!(
+            "- {}: {}\n",
+            markdown_inline(&receipt.kind),
+            markdown_inline(&receipt.path)
+        ));
     }
 
     out.push_str("\n## Boundaries\n\n");
     for boundary in &audit.boundaries {
-        out.push_str(&format!("- {boundary}\n"));
+        out.push_str(&format!("- {}\n", markdown_inline(boundary)));
     }
 
     out.push_str("\n## Does Not Prove\n\n");
     for boundary in &audit.does_not_prove {
-        out.push_str(&format!("- {boundary}\n"));
+        out.push_str(&format!("- {}\n", markdown_inline(boundary)));
     }
 
     out
+}
+
+fn markdown_inline(value: &str) -> String {
+    let mut escaped = String::new();
+    for ch in value.chars() {
+        match ch {
+            '&' => escaped.push_str("&amp;"),
+            '<' => escaped.push_str("&lt;"),
+            '>' => escaped.push_str("&gt;"),
+            '\r' | '\n' => escaped.push(' '),
+            _ => escaped.push(ch),
+        }
+    }
+    escaped
+}
+
+fn markdown_table_cell(value: &str) -> String {
+    markdown_inline(value).replace('|', r"\|")
 }
 
 fn render_bundle_audit_summary(audit: &BundleAudit, out_dir: Option<&Path>) -> String {
@@ -1178,18 +1385,44 @@ fn ensure_manifest_paths_safe(manifest: &BundleManifest) -> Result<()> {
         .chain(manifest.receipts.iter().map(|receipt| &receipt.path))
     {
         if !is_safe_bundle_relative_path(path) {
-            bail!("path_escape: {path}");
+            bail!("path_escape: {}", bundle_manifest_path_context(path));
         }
     }
     Ok(())
 }
 
 fn is_safe_bundle_relative_path(path: &str) -> bool {
+    if path.is_empty() || path.chars().any(|ch| ch.is_control()) {
+        return false;
+    }
+    if has_windows_absolute_or_drive_prefix(path) {
+        return false;
+    }
+    if path.split(['/', '\\']).any(str::is_empty) {
+        return false;
+    }
+
     let path = Path::new(path);
     !path.is_absolute()
         && path
             .components()
             .all(|component| matches!(component, Component::Normal(_) | Component::CurDir))
+}
+
+fn has_windows_absolute_or_drive_prefix(path: &str) -> bool {
+    let bytes = path.as_bytes();
+    path.starts_with('\\')
+        || bytes
+            .get(..2)
+            .is_some_and(|prefix| prefix[0].is_ascii_alphabetic() && prefix[1] == b':')
+}
+
+fn bundle_manifest_path_context(path: &str) -> String {
+    if path.is_empty() {
+        "<empty>".to_string()
+    } else {
+        path.escape_default().to_string()
+    }
 }
 
 fn collect_bundle_files(bundle_dir: &Path) -> Result<Vec<String>> {
@@ -1286,13 +1519,21 @@ fn validate_audit_surface_receipt(bundle_dir: &Path, manifest: &BundleManifest) 
     Ok(())
 }
 
+const BUNDLE_AUDIT_LOCAL_BOUNDARY: &str =
+    "audit-bundle proves local bundle consistency and metadata classification";
+const BUNDLE_AUDIT_REPO_CLAIM_BOUNDARY: &str = "audit-bundle is not standalone proof for broader repo public claims; use cargo xtask claim-proof from a repo checkout";
+const BUNDLE_AUDIT_RELEASE_BOUNDARY: &str =
+    "audit-bundle does not prove release readiness; use release-evidence for release proof";
+const BUNDLE_AUDIT_METADATA_ONLY_BOUNDARY: &str =
+    "audit receipts contain metadata only and do not copy generated fixture payloads";
+
 fn bundle_audit_boundaries(info: &ProfileInfo) -> Vec<String> {
     vec![
-        "audit-bundle proves local bundle consistency and metadata classification".to_string(),
-        "audit-bundle does not prove repo public claims; use cargo xtask claim-proof from a repo checkout".to_string(),
-        "audit-bundle does not prove release readiness; use release-evidence for release proof".to_string(),
+        BUNDLE_AUDIT_LOCAL_BOUNDARY.to_string(),
+        BUNDLE_AUDIT_REPO_CLAIM_BOUNDARY.to_string(),
+        BUNDLE_AUDIT_RELEASE_BOUNDARY.to_string(),
         format!("profile proof/check path: {}", info.proof_command),
-        "audit receipts contain metadata only and do not copy generated fixture payloads".to_string(),
+        BUNDLE_AUDIT_METADATA_ONLY_BOUNDARY.to_string(),
     ]
 }
 
@@ -1371,7 +1612,7 @@ fn build_doctor_report() -> DoctorReport {
         next_steps: vec![
             "uselesskey profiles".to_string(),
             "uselesskey bundle --profile webhook --out target/uselesskey-webhook".to_string(),
-            "uselesskey audit-bundle --path target/uselesskey-webhook --ci".to_string(),
+            "uselesskey audit-bundle target/uselesskey-webhook --ci --out target/uselesskey-webhook-audit".to_string(),
         ],
         boundaries: vec![
             "doctor checks installed CLI concerns only".to_string(),
@@ -1484,80 +1725,76 @@ const BUNDLE_AUDIT_FAILURE_CLASSES: [&str; 11] = [
     "unsupported_profile",
 ];
 
-fn bundle_audit_failure_json(
+fn bundle_audit_failure_receipt(
     bundle_dir: &Path,
     diagnostic: &BundleAuditFailureDiagnostic,
-) -> serde_json::Value {
-    json!({
-        "version": 1,
-        "status": "fail",
-        "bundle_path": display_path(bundle_dir),
-        "profile": "unknown",
-        "manifest_version": 0,
-        "manifest_path": "manifest.json",
-        "artifact_count": 0,
-        "receipt_count": 0,
-        "scanner_safe_count": 0,
-        "runtime_material_count": 0,
-        "files": [],
-        "artifacts": [],
-        "receipts": [],
-        "missing_files": [],
-        "unexpected_files": [],
-        "checks": [
-            {
-                "name": "bundle-audit",
-                "status": "fail",
-                "failure_class": diagnostic.failure_class,
-                "detail": diagnostic.detail,
-            }
+) -> BundleAudit {
+    BundleAudit {
+        version: 1,
+        status: "fail".to_string(),
+        bundle_path: display_path(bundle_dir),
+        profile: "unknown".to_string(),
+        manifest_version: 0,
+        manifest_path: "manifest.json".to_string(),
+        artifact_count: 0,
+        receipt_count: 0,
+        scanner_safe_count: 0,
+        runtime_material_count: 0,
+        files: vec![],
+        artifacts: vec![],
+        receipts: vec![],
+        missing_files: vec![],
+        unexpected_files: vec![],
+        checks: vec![BundleAuditCheck::fail(
+            "bundle-audit",
+            diagnostic.failure_class,
+            &diagnostic.detail,
+        )],
+        boundaries: vec![
+            BUNDLE_AUDIT_LOCAL_BOUNDARY.to_string(),
+            BUNDLE_AUDIT_REPO_CLAIM_BOUNDARY.to_string(),
+            BUNDLE_AUDIT_RELEASE_BOUNDARY.to_string(),
+            BUNDLE_AUDIT_METADATA_ONLY_BOUNDARY.to_string(),
         ],
-        "boundaries": [
-            "audit-bundle proves local bundle consistency and metadata classification",
-            "audit receipts contain metadata only and do not copy generated fixture payloads",
+        does_not_prove: vec![
+            "broader repo public claims by itself".to_string(),
+            "release readiness".to_string(),
+            "provider compatibility".to_string(),
+            "production security".to_string(),
+            "scanner evasion".to_string(),
+            "downstream verifier correctness".to_string(),
         ],
-        "does_not_prove": [
-            "repo public claims",
-            "release readiness",
-            "provider compatibility",
-            "production security",
-            "scanner evasion",
-            "downstream verifier correctness",
-        ],
-    })
+    }
 }
 
-fn bundle_audit_policy_failure_json(
+fn bundle_audit_policy_failure_receipt(
     audit: &BundleAudit,
     diagnostic: &BundleAuditFailureDiagnostic,
-) -> serde_json::Value {
-    json!({
-        "version": audit.version,
-        "status": "fail",
-        "bundle_path": &audit.bundle_path,
-        "profile": &audit.profile,
-        "manifest_version": audit.manifest_version,
-        "manifest_path": &audit.manifest_path,
-        "artifact_count": audit.artifact_count,
-        "receipt_count": audit.receipt_count,
-        "scanner_safe_count": audit.scanner_safe_count,
-        "runtime_material_count": audit.runtime_material_count,
-        "files": &audit.files,
-        "artifacts": &audit.artifacts,
-        "receipts": &audit.receipts,
-        "missing_files": &audit.missing_files,
-        "unexpected_files": &audit.unexpected_files,
-        "checks": [
-            {
-                "name": "bundle-audit-policy",
-                "status": "fail",
-                "failure_class": diagnostic.failure_class,
-                "detail": diagnostic.detail,
-            }
-        ],
-        "boundaries": &audit.boundaries,
-        "does_not_prove": &audit.does_not_prove,
-    })
+) -> BundleAudit {
+    BundleAudit {
+        version: audit.version,
+        status: "fail".to_string(),
+        bundle_path: audit.bundle_path.clone(),
+        profile: audit.profile.clone(),
+        manifest_version: audit.manifest_version,
+        manifest_path: audit.manifest_path.clone(),
+        artifact_count: audit.artifact_count,
+        receipt_count: audit.receipt_count,
+        scanner_safe_count: audit.scanner_safe_count,
+        runtime_material_count: audit.runtime_material_count,
+        files: audit.files.clone(),
+        artifacts: audit.artifacts.clone(),
+        receipts: audit.receipts.clone(),
+        missing_files: audit.missing_files.clone(),
+        unexpected_files: audit.unexpected_files.clone(),
+        checks: vec![BundleAuditCheck::fail(
+            "bundle-audit-policy",
+            diagnostic.failure_class,
+            &diagnostic.detail,
+        )],
+        boundaries: audit.boundaries.clone(),
+        does_not_prove: audit.does_not_prove.clone(),
+    }
 }
 
 fn bundle_audit_policy_failure(
@@ -1648,9 +1885,9 @@ fn bundle_audit_failure_diagnostic(err: &anyhow::Error) -> BundleAuditFailureDia
             "regenerate the bundle with the same uselesskey version or inspect manifest.json for corruption",
         ),
         "path_escape" => format_with_context(
-            "manifest.json lists a path that escapes the bundle root",
+            "manifest.json lists an unsafe bundle path",
             context.as_deref(),
-            "regenerate the bundle or inspect the manifest producer; bundle paths must be relative and contained",
+            "regenerate the bundle or inspect the manifest producer; bundle paths must be safe relative paths contained by the bundle",
         ),
         "missing_artifact" => format_with_context(
             "manifest.json lists files that are absent from the bundle",
@@ -1740,8 +1977,8 @@ mod tests {
             ),
             (
                 "path_escape",
-                "manifest.json lists a path that escapes the bundle root",
-                "bundle paths must be relative and contained",
+                "manifest.json lists an unsafe bundle path",
+                "bundle paths must be safe relative paths contained by the bundle",
                 true,
             ),
             (
@@ -1822,7 +2059,8 @@ mod tests {
         policy: Option<AuditPolicy>,
     ) -> AuditBundleArgs {
         AuditBundleArgs {
-            bundle_dir: PathBuf::from("target/uselesskey-webhook"),
+            bundle_dir: Some(PathBuf::from("target/uselesskey-webhook")),
+            path: None,
             out: None,
             format: AuditOutputFormat::Markdown,
             ci: true,
@@ -1857,6 +2095,70 @@ mod tests {
             boundaries: vec!["audit-bundle proves local bundle consistency only".to_string()],
             does_not_prove: vec!["production security".to_string()],
         }
+    }
+
+    #[test]
+    fn bundle_audit_markdown_escapes_bundle_metadata() {
+        let audit = BundleAudit {
+            version: 1,
+            status: "pass".to_string(),
+            bundle_path: "target/uselesskey-webhook<script>alert(1)</script>\n## forged-heading"
+                .to_string(),
+            profile: "webhook".to_string(),
+            manifest_version: 1,
+            manifest_path: "manifest.json".to_string(),
+            artifact_count: 1,
+            receipt_count: 1,
+            scanner_safe_count: 0,
+            runtime_material_count: 1,
+            files: vec![],
+            artifacts: vec![BundleAuditArtifact {
+                path: "requests/<valid>|request.json".to_string(),
+                kind: "webhook|request".to_string(),
+                format: "json|manifest".to_string(),
+                scanner_safe: false,
+                runtime_material: true,
+                description: "runtime webhook request".to_string(),
+            }],
+            receipts: vec![BundleReceiptRecord {
+                path: "receipts/audit-surface.json<img src=x onerror=alert(1)>\n- forged receipt"
+                    .to_string(),
+                kind: "audit|surface".to_string(),
+                profile: "webhook".to_string(),
+                description: "audit surface".to_string(),
+            }],
+            missing_files: vec![],
+            unexpected_files: vec![],
+            checks: vec![BundleAuditCheck::pass(
+                "profile|validation",
+                "profile_validation_failed",
+                "detail|with <b>html</b> & table separator\nand forged row",
+            )],
+            boundaries: vec!["audit receipts contain metadata only\nand stay local".to_string()],
+            does_not_prove: vec!["production security\nor provider compatibility".to_string()],
+        };
+
+        let markdown = render_bundle_audit_markdown(&audit);
+
+        assert!(markdown.contains(
+            "- Bundle: target/uselesskey-webhook&lt;script&gt;alert(1)&lt;/script&gt; ## forged-heading"
+        ));
+        assert!(!markdown.contains("\n## forged-heading"));
+        assert!(markdown.contains(
+            "| profile\\|validation | pass | profile_validation_failed | detail\\|with &lt;b&gt;html&lt;/b&gt; &amp; table separator and forged row |"
+        ));
+        assert!(markdown.contains(
+            "| requests/&lt;valid&gt;\\|request.json | webhook\\|request | json\\|manifest | no | yes |"
+        ));
+        assert!(markdown.contains(
+            "- audit|surface: receipts/audit-surface.json&lt;img src=x onerror=alert(1)&gt; - forged receipt"
+        ));
+        assert!(!markdown.contains("\n- forged receipt"));
+        assert!(!markdown.contains("<script>"));
+        assert!(!markdown.contains("<img"));
+        assert!(!markdown.contains("<b>html</b>"));
+        assert!(markdown.contains("- audit receipts contain metadata only and stay local"));
+        assert!(markdown.contains("- production security or provider compatibility"));
     }
 
     #[test]
@@ -1937,6 +2239,72 @@ mod tests {
         assert!(!is_safe_default_output_hint("fixtures/uselesskey-webhook"));
         assert!(!is_safe_default_output_hint("target/../escape"));
         assert!(!is_safe_default_output_hint("../target/uselesskey-webhook"));
+    }
+
+    #[test]
+    fn bundle_relative_path_safety_rejects_control_characters() {
+        assert!(is_safe_bundle_relative_path("receipts/audit-surface.json"));
+        assert!(!is_safe_bundle_relative_path(""));
+        assert!(!is_safe_bundle_relative_path(
+            "receipts/audit-surface\n.json"
+        ));
+        assert!(!is_safe_bundle_relative_path(
+            "receipts/audit-surface\r.json"
+        ));
+        assert!(!is_safe_bundle_relative_path(
+            "receipts/audit-surface\t.json"
+        ));
+    }
+
+    #[test]
+    fn bundle_relative_path_safety_rejects_absolute_and_parent_paths() {
+        assert!(is_safe_bundle_relative_path("receipts/audit-surface.json"));
+        assert!(is_safe_bundle_relative_path(
+            "./receipts/audit-surface.json"
+        ));
+        assert!(!is_safe_bundle_relative_path("../escape.json"));
+        assert!(!is_safe_bundle_relative_path("receipts/../escape.json"));
+        assert!(!is_safe_bundle_relative_path("/tmp/secret.pem"));
+        assert!(!is_safe_bundle_relative_path(r"\secret.pem"));
+        assert!(!is_safe_bundle_relative_path(r"\\server\share\secret.pem"));
+    }
+
+    #[test]
+    fn bundle_relative_path_safety_rejects_empty_components() {
+        assert!(!is_safe_bundle_relative_path(
+            "receipts//audit-surface.json"
+        ));
+        assert!(!is_safe_bundle_relative_path(
+            "receipts/audit-surface.json/"
+        ));
+        assert!(!is_safe_bundle_relative_path(r"receipts\"));
+        assert!(!is_safe_bundle_relative_path(
+            r"receipts\\audit-surface.json"
+        ));
+    }
+
+    #[test]
+    fn bundle_relative_path_safety_rejects_windows_drive_prefixes() {
+        assert!(!is_safe_bundle_relative_path(r"C:\secret.pem"));
+        assert!(!is_safe_bundle_relative_path("C:/secret.pem"));
+        assert!(!is_safe_bundle_relative_path("C:secret.pem"));
+    }
+
+    #[test]
+    fn bundle_manifest_path_context_is_display_safe() {
+        assert_eq!(bundle_manifest_path_context(""), "<empty>");
+        assert_eq!(
+            bundle_manifest_path_context("receipts/audit-surface\n.json"),
+            "receipts/audit-surface\\n.json"
+        );
+        assert_eq!(
+            bundle_manifest_path_context("receipts/audit-surface\r.json"),
+            "receipts/audit-surface\\r.json"
+        );
+        assert_eq!(
+            bundle_manifest_path_context("receipts/audit-surface\t.json"),
+            "receipts/audit-surface\\t.json"
+        );
     }
 
     #[test]
@@ -2176,7 +2544,7 @@ fn profile_info(profile: BundleProfile) -> ProfileInfo {
             purpose: "general runtime fixture bundle for local experimentation",
             required_feature: "uselesskey-cli default features",
             scanner_posture: "may include runtime fixture material; keep generated payloads under target/",
-            proof_command: "uselesskey verify-bundle --path target/uselesskey-runtime",
+            proof_command: "uselesskey verify-bundle target/uselesskey-runtime",
             claim: None,
             docs: "README.md",
             generates: &[
@@ -2215,7 +2583,7 @@ fn render_profiles(explain: bool) -> String {
             info.proof_command
         ));
     }
-    out.push_str("\nInstalled users generate, verify, audit, and inspect bundles with `uselesskey bundle`, `uselesskey verify-bundle`, `uselesskey audit-bundle`, and `uselesskey inspect-bundle`.\n");
+    out.push_str("\nInstalled users generate, verify, inspect, and audit bundles with `uselesskey bundle`, `uselesskey verify-bundle`, `uselesskey inspect-bundle`, and `uselesskey audit-bundle`.\n");
     out.push_str("Use `uselesskey profile <name> --explain` for generated files, boundaries, and copyable commands.\n");
 
     if explain {
@@ -2237,9 +2605,10 @@ fn render_profile_summary(profile: BundleProfile) -> String {
             "Title: {}\n",
             "Purpose: {}\n",
             "Generate: uselesskey bundle --profile {} --out {}\n",
-            "Verify: uselesskey verify-bundle --path {}\n",
-            "Audit: uselesskey audit-bundle --path {} --out {}-audit\n",
-            "Inspect: uselesskey inspect-bundle --path {}\n",
+            "Verify: uselesskey verify-bundle {}\n",
+            "Inspect: uselesskey inspect-bundle {}\n",
+            "Audit: uselesskey audit-bundle {} --out {}-audit\n",
+            "CI audit: uselesskey audit-bundle {} --ci --expect-profile {} --policy strict --out {}-audit\n",
             "Proof/check path: {}\n",
             "Explain: uselesskey profile {} --explain\n",
             "Bundle explain: uselesskey bundle --profile {} --explain\n",
@@ -2252,6 +2621,9 @@ fn render_profile_summary(profile: BundleProfile) -> String {
         info.profile.output_dir_hint(),
         info.profile.output_dir_hint(),
         info.profile.output_dir_hint(),
+        info.profile.output_dir_hint(),
+        info.profile.output_dir_hint(),
+        info.profile.manifest_name(),
         info.profile.output_dir_hint(),
         info.proof_command,
         info.profile.manifest_name(),
@@ -2956,7 +3328,7 @@ fn generate_bundle_receipt_artifact(
                 "version": 1,
                 "profile": profile.manifest_name(),
                 "status": "generated",
-                "verification_command": "uselesskey verify-bundle --path <bundle-dir>",
+                "verification_command": "uselesskey verify-bundle <bundle-dir>",
                 "artifact_count": artifacts.len(),
                 "fixture_files": fixture_files,
                 "expected_receipts": receipts.iter().map(|receipt| {
@@ -3613,7 +3985,7 @@ fn default_bundle_profile() -> String {
     "runtime".to_string()
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 struct BundleAudit {
     version: u32,
     status: String,
@@ -3635,7 +4007,7 @@ struct BundleAudit {
     does_not_prove: Vec<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 struct BundleAuditArtifact {
     path: String,
     kind: String,
@@ -3645,7 +4017,7 @@ struct BundleAuditArtifact {
     description: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 struct BundleAuditCheck {
     name: String,
     status: String,
@@ -3658,6 +4030,15 @@ impl BundleAuditCheck {
         Self {
             name: name.to_string(),
             status: "pass".to_string(),
+            failure_class: failure_class.to_string(),
+            detail: detail.to_string(),
+        }
+    }
+
+    fn fail(name: &str, failure_class: &str, detail: &str) -> Self {
+        Self {
+            name: name.to_string(),
+            status: "fail".to_string(),
             failure_class: failure_class.to_string(),
             detail: detail.to_string(),
         }

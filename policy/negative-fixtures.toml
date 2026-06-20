@@ -1,0 +1,546 @@
+schema_version = "1.0"
+owner = "EffortlessMetrics"
+updated = "2026-05-21"
+
+# Source-of-truth artifact id: USELESSKEY-POLICY-negative-fixtures
+
+# This ledger maps USELESSKEY-SPEC-0016 taxonomy IDs to their implementation
+# state. It is intentionally about product availability, not roadmap desire.
+
+[[negative]]
+stable_id = "jwk_missing_kid"
+family = "jwk"
+status = "implemented"
+owner_crate = "uselesskey-jwk"
+public_surface = "NegativeJwk::MissingKid"
+docs = ["docs/reference/failure-atlas.md", "docs/how-to/test-oidc-jwks-validation.md"]
+tests = ["cargo test -p uselesskey-jwk --all-features"]
+scanner_safe = true
+runtime_material = false
+bundle_exposed = false
+claim = "oidc-jwks-contract-pack"
+does_not_prove = ["provider compatibility", "production token security", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "jwk_wrong_kty"
+family = "jwk"
+status = "implemented"
+owner_crate = "uselesskey-jwk"
+public_surface = "NegativeJwk::WrongKty"
+docs = ["docs/reference/failure-atlas.md"]
+tests = ["cargo test -p uselesskey-jwk --all-features"]
+scanner_safe = true
+runtime_material = false
+bundle_exposed = false
+claim = "oidc-jwks-contract-pack"
+does_not_prove = ["provider compatibility", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "jwk_unsupported_alg"
+family = "jwk"
+status = "implemented"
+owner_crate = "uselesskey-jwk"
+public_surface = "NegativeJwk::UnsupportedAlg"
+docs = ["docs/reference/failure-atlas.md"]
+tests = ["cargo test -p uselesskey-jwk --all-features"]
+scanner_safe = true
+runtime_material = false
+bundle_exposed = false
+claim = "oidc-jwks-contract-pack"
+does_not_prove = ["provider compatibility", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "jwk_malformed_base64url"
+family = "jwk"
+status = "implemented"
+owner_crate = "uselesskey-jwk"
+public_surface = "NegativeJwk::MalformedBase64url"
+aliases = ["NegativeJwk::MalformedField"]
+docs = ["docs/reference/failure-atlas.md"]
+tests = ["cargo test -p uselesskey-jwk --all-features"]
+scanner_safe = true
+runtime_material = false
+bundle_exposed = false
+claim = "oidc-jwks-contract-pack"
+does_not_prove = ["provider compatibility", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "jwk_mismatched_parameters"
+family = "jwk"
+status = "implemented"
+owner_crate = "uselesskey-jwk"
+public_surface = "NegativeJwk::MismatchedParameters"
+docs = ["docs/reference/failure-atlas.md"]
+tests = ["cargo test -p uselesskey-jwk --all-features"]
+scanner_safe = true
+runtime_material = false
+bundle_exposed = false
+claim = "oidc-jwks-contract-pack"
+does_not_prove = ["provider compatibility", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "jwks_empty_keys"
+family = "jwks"
+status = "implemented"
+owner_crate = "uselesskey-jwk"
+public_surface = "NegativeJwks::EmptyKeys"
+docs = ["docs/reference/failure-atlas.md"]
+tests = ["cargo test -p uselesskey-jwk --all-features"]
+scanner_safe = true
+runtime_material = false
+bundle_exposed = false
+claim = "oidc-jwks-contract-pack"
+does_not_prove = ["provider compatibility", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "jwks_missing_kid"
+family = "jwks"
+status = "implemented"
+owner_crate = "uselesskey-jwk"
+public_surface = "NegativeJwks::MissingKid"
+docs = ["docs/reference/failure-atlas.md", "docs/how-to/test-oidc-jwks-validation.md"]
+tests = [
+  "cargo test -p uselesskey-jwk --all-features",
+  "cargo test -p uselesskey-cli --all-features bundle",
+]
+scanner_safe = true
+runtime_material = false
+bundle_exposed = true
+bundle_profiles = ["oidc"]
+claim = "oidc-jwks-contract-pack"
+does_not_prove = ["provider compatibility", "full OpenID provider behavior", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "jwks_duplicate_kid"
+family = "jwks"
+status = "implemented"
+owner_crate = "uselesskey-jwk"
+public_surface = "NegativeJwks::DuplicateKid"
+docs = ["docs/reference/failure-atlas.md", "docs/how-to/test-oidc-jwks-validation.md"]
+tests = [
+  "cargo test -p uselesskey-jwk --all-features",
+  "cargo test -p uselesskey-cli --all-features bundle",
+]
+scanner_safe = true
+runtime_material = false
+bundle_exposed = true
+bundle_profiles = ["oidc"]
+claim = "oidc-jwks-contract-pack"
+does_not_prove = ["provider compatibility", "full OpenID provider behavior", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "jwks_duplicate_key"
+family = "jwks"
+status = "implemented"
+owner_crate = "uselesskey-jwk"
+public_surface = "NegativeJwks::DuplicateKey"
+docs = ["docs/reference/failure-atlas.md"]
+tests = ["cargo test -p uselesskey-jwk --all-features"]
+scanner_safe = true
+runtime_material = false
+bundle_exposed = false
+claim = "oidc-jwks-contract-pack"
+does_not_prove = ["provider compatibility", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "jwks_mixed_valid_invalid"
+family = "jwks"
+status = "implemented"
+owner_crate = "uselesskey-jwk"
+public_surface = "NegativeJwks::MixedValidInvalid"
+docs = ["docs/reference/failure-atlas.md"]
+tests = ["cargo test -p uselesskey-jwk --all-features"]
+scanner_safe = true
+runtime_material = false
+bundle_exposed = false
+claim = "oidc-jwks-contract-pack"
+does_not_prove = ["provider compatibility", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "jwt_bad_segment_count"
+family = "jwt_token"
+status = "implemented"
+owner_crate = "uselesskey-token"
+public_surface = "NegativeToken::MalformedJwtSegmentCount"
+docs = ["docs/reference/failure-atlas.md", "docs/how-to/test-jwt-negative-validation.md"]
+tests = ["cargo test -p uselesskey-token --all-features"]
+scanner_safe = true
+runtime_material = false
+bundle_exposed = false
+claim = "jwt-token-negative-fixtures"
+does_not_prove = ["provider compatibility", "production token security", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "jwt_malformed_base64url"
+family = "jwt_token"
+status = "implemented"
+owner_crate = "uselesskey-token"
+public_surface = "NegativeToken::BadBase64UrlSegment"
+docs = ["docs/reference/failure-atlas.md", "docs/how-to/test-jwt-negative-validation.md"]
+tests = ["cargo test -p uselesskey-token --all-features"]
+scanner_safe = true
+runtime_material = false
+bundle_exposed = false
+claim = "jwt-token-negative-fixtures"
+does_not_prove = ["provider compatibility", "production token security", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "jwt_invalid_header_shape"
+family = "jwt_token"
+status = "implemented"
+owner_crate = "uselesskey-token"
+public_surface = "NegativeToken::InvalidJwtHeaderShape"
+docs = ["docs/reference/failure-atlas.md", "docs/how-to/test-jwt-negative-validation.md"]
+tests = ["cargo test -p uselesskey-token --all-features"]
+scanner_safe = true
+runtime_material = false
+bundle_exposed = false
+claim = "jwt-token-negative-fixtures"
+does_not_prove = ["provider compatibility", "production token security", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "jwt_missing_alg"
+family = "jwt_token"
+status = "implemented"
+owner_crate = "uselesskey-token"
+public_surface = "NegativeToken::MissingAlg"
+docs = ["docs/reference/failure-atlas.md", "docs/how-to/test-jwt-negative-validation.md"]
+tests = ["cargo test -p uselesskey-token --all-features"]
+scanner_safe = true
+runtime_material = false
+bundle_exposed = false
+claim = "jwt-token-negative-fixtures"
+does_not_prove = ["provider compatibility", "production token security", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "jwt_alg_none"
+family = "jwt_token"
+status = "implemented"
+owner_crate = "uselesskey-token"
+public_surface = "NegativeToken::AlgNone"
+docs = [
+  "docs/reference/failure-atlas.md",
+  "docs/how-to/test-jwt-negative-validation.md",
+  "docs/how-to/test-oidc-jwks-validation.md",
+]
+tests = [
+  "cargo test -p uselesskey-token --all-features",
+  "cargo test -p uselesskey-cli --all-features bundle",
+]
+scanner_safe = true
+runtime_material = false
+bundle_exposed = true
+bundle_profiles = ["oidc"]
+claim = "oidc-jwks-contract-pack"
+does_not_prove = ["provider compatibility", "production token security", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "jwt_missing_kid"
+family = "jwt_token"
+status = "implemented"
+owner_crate = "uselesskey-token"
+public_surface = "NegativeToken::MissingKid"
+docs = ["docs/reference/failure-atlas.md", "docs/how-to/test-jwt-negative-validation.md"]
+tests = ["cargo test -p uselesskey-token --all-features"]
+scanner_safe = true
+runtime_material = false
+bundle_exposed = false
+claim = "jwt-token-negative-fixtures"
+does_not_prove = ["provider compatibility", "production token security", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "jwt_mismatched_kid"
+family = "jwt_token"
+status = "implemented"
+owner_crate = "uselesskey-token"
+public_surface = "NegativeToken::MismatchedKid"
+docs = ["docs/reference/failure-atlas.md", "docs/how-to/test-jwt-negative-validation.md"]
+tests = ["cargo test -p uselesskey-token --all-features"]
+scanner_safe = true
+runtime_material = false
+bundle_exposed = false
+claim = "jwt-token-negative-fixtures"
+does_not_prove = ["provider compatibility", "production token security", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "jwt_expired"
+family = "jwt_token"
+status = "implemented"
+owner_crate = "uselesskey-token"
+public_surface = "NegativeToken::ExpiredClaims"
+docs = ["docs/reference/failure-atlas.md", "docs/how-to/test-jwt-negative-validation.md"]
+tests = ["cargo test -p uselesskey-token --all-features"]
+scanner_safe = true
+runtime_material = false
+bundle_exposed = false
+claim = "jwt-token-negative-fixtures"
+does_not_prove = ["provider compatibility", "production token security", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "jwt_not_yet_valid"
+family = "jwt_token"
+status = "implemented"
+owner_crate = "uselesskey-token"
+public_surface = "NegativeToken::NotYetValidClaims"
+docs = ["docs/reference/failure-atlas.md", "docs/how-to/test-jwt-negative-validation.md"]
+tests = ["cargo test -p uselesskey-token --all-features"]
+scanner_safe = true
+runtime_material = false
+bundle_exposed = false
+claim = "jwt-token-negative-fixtures"
+does_not_prove = ["provider compatibility", "production token security", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "jwt_bad_issuer"
+family = "jwt_token"
+status = "implemented"
+owner_crate = "uselesskey-token"
+public_surface = "NegativeToken::BadIssuer"
+docs = ["docs/reference/failure-atlas.md", "docs/how-to/test-jwt-negative-validation.md"]
+tests = ["cargo test -p uselesskey-token --all-features"]
+scanner_safe = true
+runtime_material = false
+bundle_exposed = false
+claim = "jwt-token-negative-fixtures"
+does_not_prove = ["provider compatibility", "production token security", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "jwt_bad_audience"
+family = "jwt_token"
+status = "implemented"
+owner_crate = "uselesskey-token"
+public_surface = "NegativeToken::BadAudience"
+docs = [
+  "docs/reference/failure-atlas.md",
+  "docs/how-to/test-jwt-negative-validation.md",
+  "docs/how-to/test-oidc-jwks-validation.md",
+]
+tests = [
+  "cargo test -p uselesskey-token --all-features",
+  "cargo test -p uselesskey-cli --all-features bundle",
+]
+scanner_safe = true
+runtime_material = false
+bundle_exposed = true
+bundle_profiles = ["oidc"]
+claim = "oidc-jwks-contract-pack"
+does_not_prove = ["provider compatibility", "production token security", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "token_malformed_bearer"
+family = "jwt_token"
+status = "implemented"
+owner_crate = "uselesskey-token"
+public_surface = "NegativeToken::MalformedBearer"
+docs = ["docs/reference/failure-atlas.md", "docs/how-to/test-jwt-negative-validation.md"]
+tests = ["cargo test -p uselesskey-token --all-features"]
+scanner_safe = true
+runtime_material = false
+bundle_exposed = false
+claim = "jwt-token-negative-fixtures"
+does_not_prove = ["provider compatibility", "production token security", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "token_near_miss"
+family = "jwt_token"
+status = "implemented"
+owner_crate = "uselesskey-token"
+public_surface = "NegativeToken::NearMissApiKey"
+docs = ["docs/reference/failure-atlas.md", "docs/how-to/test-jwt-negative-validation.md"]
+tests = [
+  "cargo test -p uselesskey-token --all-features",
+  "cargo test -p uselesskey-cli --all-features bundle",
+]
+scanner_safe = true
+runtime_material = false
+bundle_exposed = true
+bundle_profiles = ["scanner-safe"]
+claim = "scanner-safe-fixtures"
+does_not_prove = ["scanner evasion", "production token security", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "webhook_near_miss_signature"
+family = "webhook"
+status = "accepted_planned"
+owner_crate = "uselesskey-webhook"
+reason = "Accepted taxonomy class; current bundle exposes concrete tampered/wrong-secret/stale/missing/malformed request classes first."
+scanner_safe = false
+runtime_material = true
+bundle_exposed = false
+claim = "webhook-contract-pack"
+does_not_prove = ["provider compatibility", "production secret management", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "webhook_tampered_body"
+family = "webhook"
+status = "implemented"
+owner_crate = "uselesskey-webhook"
+public_surface = "uselesskey bundle --profile webhook"
+docs = ["docs/reference/failure-atlas.md", "docs/how-to/test-webhook-signature-validation.md"]
+tests = ["cargo test -p uselesskey-cli --all-features webhook"]
+scanner_safe = false
+runtime_material = true
+bundle_exposed = true
+bundle_profiles = ["webhook"]
+claim = "webhook-contract-pack"
+does_not_prove = ["provider compatibility", "production secret management", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "webhook_wrong_secret"
+family = "webhook"
+status = "implemented"
+owner_crate = "uselesskey-webhook"
+public_surface = "uselesskey bundle --profile webhook"
+docs = ["docs/reference/failure-atlas.md", "docs/how-to/test-webhook-signature-validation.md"]
+tests = ["cargo test -p uselesskey-cli --all-features webhook"]
+scanner_safe = false
+runtime_material = true
+bundle_exposed = true
+bundle_profiles = ["webhook"]
+claim = "webhook-contract-pack"
+does_not_prove = ["provider compatibility", "production secret management", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "webhook_stale_timestamp"
+family = "webhook"
+status = "implemented"
+owner_crate = "uselesskey-webhook"
+public_surface = "uselesskey bundle --profile webhook"
+docs = ["docs/reference/failure-atlas.md", "docs/how-to/test-webhook-signature-validation.md"]
+tests = ["cargo test -p uselesskey-cli --all-features webhook"]
+scanner_safe = false
+runtime_material = true
+bundle_exposed = true
+bundle_profiles = ["webhook"]
+claim = "webhook-contract-pack"
+does_not_prove = ["provider compatibility", "production secret management", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "webhook_missing_signature"
+family = "webhook"
+status = "implemented"
+owner_crate = "uselesskey-webhook"
+public_surface = "uselesskey bundle --profile webhook"
+docs = ["docs/reference/failure-atlas.md", "docs/how-to/test-webhook-signature-validation.md"]
+tests = ["cargo test -p uselesskey-cli --all-features webhook"]
+scanner_safe = false
+runtime_material = true
+bundle_exposed = true
+bundle_profiles = ["webhook"]
+claim = "webhook-contract-pack"
+does_not_prove = ["provider compatibility", "production secret management", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "webhook_malformed_signature"
+family = "webhook"
+status = "implemented"
+owner_crate = "uselesskey-webhook"
+public_surface = "uselesskey bundle --profile webhook"
+docs = ["docs/reference/failure-atlas.md", "docs/how-to/test-webhook-signature-validation.md"]
+tests = ["cargo test -p uselesskey-cli --all-features webhook"]
+scanner_safe = false
+runtime_material = true
+bundle_exposed = true
+bundle_profiles = ["webhook"]
+claim = "webhook-contract-pack"
+does_not_prove = ["provider compatibility", "production secret management", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "webhook_malformed_canonical_payload"
+family = "webhook"
+status = "accepted_planned"
+owner_crate = "uselesskey-webhook"
+reason = "Accepted taxonomy class; not exposed by the current webhook bundle profile."
+scanner_safe = false
+runtime_material = true
+bundle_exposed = false
+claim = "webhook-contract-pack"
+does_not_prove = ["provider compatibility", "production secret management", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "x509_expired_leaf"
+family = "x509_tls"
+status = "implemented"
+owner_crate = "uselesskey-x509"
+public_surface = "ChainNegative::ExpiredLeaf"
+docs = ["docs/reference/failure-atlas.md", "docs/how-to/test-tls-chain-validation.md"]
+tests = ["cargo test -p uselesskey-x509 --all-features", "cargo test -p uselesskey-cli --all-features tls"]
+scanner_safe = true
+runtime_material = false
+bundle_exposed = true
+bundle_profiles = ["tls"]
+claim = "tls-contract-pack"
+does_not_prove = ["production PKI", "browser trust-store behavior", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "x509_not_yet_valid_leaf"
+family = "x509_tls"
+status = "implemented"
+owner_crate = "uselesskey-x509"
+public_surface = "ChainNegative::NotYetValidLeaf"
+docs = ["docs/reference/failure-atlas.md", "docs/how-to/test-tls-chain-validation.md"]
+tests = ["cargo test -p uselesskey-x509 --all-features", "cargo test -p uselesskey-cli --all-features tls"]
+scanner_safe = true
+runtime_material = false
+bundle_exposed = true
+bundle_profiles = ["tls"]
+claim = "tls-contract-pack"
+does_not_prove = ["production PKI", "browser trust-store behavior", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "x509_wrong_hostname"
+family = "x509_tls"
+status = "implemented"
+owner_crate = "uselesskey-x509"
+public_surface = "ChainNegative::HostnameMismatch"
+docs = ["docs/reference/failure-atlas.md", "docs/how-to/test-tls-chain-validation.md"]
+tests = ["cargo test -p uselesskey-x509 --all-features", "cargo test -p uselesskey-cli --all-features tls"]
+scanner_safe = true
+runtime_material = false
+bundle_exposed = true
+bundle_profiles = ["tls"]
+claim = "tls-contract-pack"
+does_not_prove = ["production PKI", "browser trust-store behavior", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "x509_untrusted_root"
+family = "x509_tls"
+status = "implemented"
+owner_crate = "uselesskey-x509"
+public_surface = "ChainNegative::UnknownCa"
+docs = ["docs/reference/failure-atlas.md", "docs/how-to/test-tls-chain-validation.md"]
+tests = ["cargo test -p uselesskey-x509 --all-features", "cargo test -p uselesskey-cli --all-features tls"]
+scanner_safe = true
+runtime_material = false
+bundle_exposed = true
+bundle_profiles = ["tls"]
+claim = "tls-contract-pack"
+does_not_prove = ["production PKI", "browser trust-store behavior", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "x509_revoked_leaf"
+family = "x509_tls"
+status = "implemented"
+owner_crate = "uselesskey-x509"
+public_surface = "ChainNegative::RevokedLeaf"
+docs = ["docs/reference/failure-atlas.md", "docs/how-to/test-tls-chain-validation.md"]
+tests = ["cargo test -p uselesskey-x509 --all-features"]
+scanner_safe = true
+runtime_material = false
+bundle_exposed = false
+claim = "tls-contract-pack"
+does_not_prove = ["production PKI", "browser trust-store behavior", "downstream verifier correctness"]
+
+[[negative]]
+stable_id = "x509_invalid_key_usage"
+family = "x509_tls"
+status = "implemented"
+owner_crate = "uselesskey-x509"
+public_surface = "X509Negative::WrongKeyUsage"
+docs = ["docs/reference/failure-atlas.md", "docs/how-to/test-tls-chain-validation.md"]
+tests = ["cargo test -p uselesskey-x509 --all-features"]
+scanner_safe = true
+runtime_material = false
+bundle_exposed = false
+claim = "tls-contract-pack"
+does_not_prove = ["production PKI", "browser trust-store behavior", "downstream verifier correctness"]

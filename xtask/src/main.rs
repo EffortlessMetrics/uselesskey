@@ -15,9 +15,11 @@ use owo_colors::OwoColorize;
 use regex::Regex;
 use uselesskey_feature_grid::{BDD_FEATURE_MATRIX, CORE_FEATURE_MATRIX};
 
+mod adoption_command_ledger;
 mod adoption_regression;
 mod audit_surface;
 mod bundle_proof;
+mod bundle_schema;
 mod claim_proof;
 mod claim_report;
 mod contract_packs;
@@ -28,9 +30,11 @@ mod external_adoption_smoke;
 mod plan;
 mod policy;
 mod pr_bundles;
+mod proof_commands;
 mod public_surface;
 mod receipt;
 mod spec_check;
+mod target_output;
 mod test_efficiency;
 mod user_path_smoke;
 mod verification_pack;
@@ -234,6 +238,14 @@ enum Cmd {
         #[arg(long)]
         out: Option<PathBuf>,
     },
+    /// Generate bundle profiles and validate manifest/negative-coverage schema contracts.
+    CheckBundleSchemas {
+        /// Output directory for generated bundles and schema-check receipts.
+        #[arg(long, default_value = "target/bundle-schema-check")]
+        out: PathBuf,
+    },
+    /// Validate committed bundle-audit failure receipt examples.
+    CheckAuditReceipts,
     /// Verify the committed scanner-safe-bundle reference outputs.
     ScannerSafeReference {
         /// Compare regenerated outputs against the committed reference; do not write.
@@ -255,6 +267,8 @@ enum Cmd {
         #[arg(long, value_enum, default_value = "human")]
         format: SpecCheckFormat,
     },
+    /// Validate canonical release command ownership rows for adoption closure.
+    CheckAdoptionCommandLedger,
     /// Index public claim-ledger entries and proof commands for users and reviewers.
     ClaimReport {
         /// Output format.
@@ -693,6 +707,8 @@ fn main() -> Result<()> {
             patch,
         } => release_evidence(&version, &out, dry_run, summary, patch),
         Cmd::BundleProof { profile, out } => bundle_proof::run(&profile, out.as_deref()),
+        Cmd::CheckBundleSchemas { out } => bundle_schema::check(&out),
+        Cmd::CheckAuditReceipts => bundle_schema::check_audit_receipts(),
         Cmd::ScannerSafeReference { check } => {
             if check {
                 scanner_safe_reference_check()
@@ -704,6 +720,7 @@ fn main() -> Result<()> {
         Cmd::SpecCheck { strict, format } => {
             spec_check::run(&workspace_root_path(), strict, format.into())
         }
+        Cmd::CheckAdoptionCommandLedger => adoption_command_ledger::run(&workspace_root_path()),
         Cmd::ClaimReport {
             format,
             claim,
@@ -1271,10 +1288,10 @@ const MUTATION_SURVIVOR_CLASSIFICATIONS: &[&str] = &["equivalent", "accepted-ris
 /// failure (see PR #565: `uselesskey-core-seed` was listed before its owner
 /// `uselesskey-core`).
 ///
-/// `publish-check` uses `cargo package --no-verify` for its dry-runs, which
-/// resolves workspace deps against local paths and therefore does NOT catch this
-/// class of bug. This function closes that gap by inspecting `cargo metadata`
-/// and asserting that every (crate, workspace-dep) pair where both are in
+/// `publish-check` uses native `cargo publish --dry-run`, but dependency-order
+/// mistakes can still be obscured once dry-run skips unpublished workspace
+/// siblings. This function closes that gap by inspecting `cargo metadata` and
+/// asserting that every (crate, workspace-dep) pair where both are in
 /// `PUBLISH_CRATES` has the dep listed earlier.
 ///
 /// Dependency kinds considered: normal, dev, and build (cargo metadata's `kind`
@@ -1950,7 +1967,7 @@ fn run_publish_preflight(runner: &mut receipt::Runner, allow_dirty: bool) -> Res
         let step_name = format!("preflight:package:{name}");
         if let Err(e) = runner.step(&step_name, None, || {
             let mut cmd = Command::new("cargo");
-            cmd.args(["package", "--no-verify", "-p", name]);
+            cmd.args(["package", "--no-verify", "--exclude-lockfile", "-p", name]);
             if allow_dirty {
                 cmd.arg("--allow-dirty");
             }
@@ -1965,7 +1982,7 @@ fn run_publish_preflight(runner: &mut receipt::Runner, allow_dirty: bool) -> Res
                 eprintln!("  [warn] {name}: skipped (workspace dep not yet on crates.io)");
                 return Ok(());
             }
-            bail!("cargo package --no-verify -p {name} failed:\n{stderr}");
+            bail!("cargo package --no-verify --exclude-lockfile -p {name} failed:\n{stderr}");
         }) && first_err.is_none()
         {
             first_err = Some(e);
@@ -11127,6 +11144,16 @@ uselesskey = { version = "0.4.0", features = ["rsa"] }
                 assert!(explain);
             }
             _ => bail!("expected mutants-pr command"),
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn check_adoption_command_ledger_command_parses() -> Result<()> {
+        let parsed = Cli::try_parse_from(["xtask", "check-adoption-command-ledger"])?;
+        match parsed.cmd {
+            Cmd::CheckAdoptionCommandLedger => {}
+            _ => bail!("expected check-adoption-command-ledger command"),
         }
         Ok(())
     }

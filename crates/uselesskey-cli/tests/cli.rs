@@ -62,6 +62,7 @@ fn profiles_command_lists_copyable_contract_pack_paths() -> TestResult<()> {
 
     assert!(out.contains("Available uselesskey profiles"));
     assert!(out.contains("uselesskey profile <name> --explain"));
+    assert!(out.contains("Installed users generate, verify, inspect, and audit bundles"));
     assert!(out.contains("claim-proof --claim webhook-contract-pack"));
     Ok(())
 }
@@ -76,14 +77,24 @@ fn profile_command_summary_has_copyable_webhook_paths() -> TestResult<()> {
             "Generate: uselesskey bundle --profile webhook --out target/uselesskey-webhook"
         )
     );
-    assert!(out.contains("Verify: uselesskey verify-bundle --path target/uselesskey-webhook"));
+    assert!(out.contains("Verify: uselesskey verify-bundle target/uselesskey-webhook"));
+    assert!(out.contains("Inspect: uselesskey inspect-bundle target/uselesskey-webhook"));
     assert!(out.contains(
-        "Audit: uselesskey audit-bundle --path target/uselesskey-webhook --out target/uselesskey-webhook-audit"
+        "Audit: uselesskey audit-bundle target/uselesskey-webhook --out target/uselesskey-webhook-audit"
     ));
-    assert!(out.contains("Inspect: uselesskey inspect-bundle --path target/uselesskey-webhook"));
+    assert!(out.contains(
+        "CI audit: uselesskey audit-bundle target/uselesskey-webhook --ci --expect-profile webhook --policy strict --out target/uselesskey-webhook-audit"
+    ));
     assert!(
         out.contains("Proof/check path: cargo xtask claim-proof --claim webhook-contract-pack")
     );
+    let verify = out.find("Verify:").test_context("Verify line")?;
+    let inspect = out.find("Inspect:").test_context("Inspect line")?;
+    let audit = out.find("Audit:").test_context("Audit line")?;
+    let ci_audit = out.find("CI audit:").test_context("CI audit line")?;
+    assert!(verify < inspect);
+    assert!(inspect < audit);
+    assert!(audit < ci_audit);
     Ok(())
 }
 
@@ -106,7 +117,15 @@ fn bundle_explain_has_copyable_webhook_paths_without_writing_bundle() -> TestRes
             "Generate: uselesskey bundle --profile webhook --out target/uselesskey-webhook"
         )
     );
-    assert!(out.contains("Audit: uselesskey audit-bundle --path target/uselesskey-webhook"));
+    assert!(out.contains("Audit: uselesskey audit-bundle target/uselesskey-webhook"));
+    assert!(out.contains(
+        "CI audit: uselesskey audit-bundle target/uselesskey-webhook --ci --expect-profile webhook --policy strict --out target/uselesskey-webhook-audit"
+    ));
+    let verify = out.find("Verify:").test_context("Verify line")?;
+    let inspect = out.find("Inspect:").test_context("Inspect line")?;
+    let audit = out.find("Audit:").test_context("Audit line")?;
+    assert!(verify < inspect);
+    assert!(inspect < audit);
     assert!(out.contains("Does not prove"));
     assert!(out.contains("provider compatibility"));
     assert!(!bundle_dir.exists());
@@ -121,7 +140,9 @@ fn top_level_help_routes_installed_users_to_self_check_and_audit() -> TestResult
     assert!(out.contains("Start here:"));
     assert!(out.contains("uselesskey doctor"));
     assert!(out.contains("uselesskey profiles"));
-    assert!(out.contains("uselesskey audit-bundle --path target/uselesskey-webhook --ci"));
+    assert!(out.contains(
+        "uselesskey audit-bundle target/uselesskey-webhook --ci --out target/uselesskey-webhook-audit"
+    ));
     assert!(out.contains("Generate a deterministic fixture bundle"));
     assert!(out.contains("Check installed CLI readiness"));
     assert!(out.contains("Repo public-claim proof is separate from installed CLI setup."));
@@ -134,9 +155,11 @@ fn bundle_help_shows_installed_generate_verify_inspect_audit_loop() -> TestResul
 
     assert!(out.contains("Generate a deterministic fixture bundle"));
     assert!(out.contains("uselesskey bundle --profile webhook --out target/uselesskey-webhook"));
-    assert!(out.contains("uselesskey verify-bundle --path target/uselesskey-webhook"));
-    assert!(out.contains("uselesskey inspect-bundle --path target/uselesskey-webhook"));
-    assert!(out.contains("uselesskey audit-bundle --path target/uselesskey-webhook --ci"));
+    assert!(out.contains("uselesskey verify-bundle target/uselesskey-webhook"));
+    assert!(out.contains("uselesskey inspect-bundle target/uselesskey-webhook"));
+    assert!(out.contains(
+        "uselesskey audit-bundle target/uselesskey-webhook --ci --out target/uselesskey-webhook-audit"
+    ));
     assert!(out.contains("keep generated payloads under target/"));
     assert!(out.contains("Explain the profile"));
     Ok(())
@@ -148,16 +171,39 @@ fn audit_bundle_help_explains_ci_receipts_and_boundaries() -> TestResult<()> {
 
     assert!(out.contains("Emit metadata-only bundle audit receipts"));
     assert!(out.contains("--path <BUNDLE_DIR>"));
-    assert!(out.contains("uselesskey audit-bundle --path target/uselesskey-webhook --out"));
-    assert!(out.contains("uselesskey audit-bundle --path target/uselesskey-webhook --ci"));
+    assert_help_contains_command(
+        &out,
+        "uselesskey audit-bundle target/uselesskey-webhook --out",
+    );
+    assert_help_contains_command(
+        &out,
+        "uselesskey audit-bundle target/uselesskey-webhook --ci --out target/uselesskey-webhook-audit",
+    );
+    assert_help_contains_command(
+        &out,
+        "uselesskey audit-bundle target/uselesskey-webhook --ci --expect-profile webhook --policy strict --out target/uselesskey-webhook-audit",
+    );
     assert!(out.contains("--expect-profile <PROFILE>"));
     assert!(out.contains("--policy <POLICY>"));
-    assert!(out.contains("Emit CI-oriented JSON"));
-    assert!(out.contains("stable audit failure classes"));
+    assert!(out.contains("uploadable metadata-only receipts"));
+    assert_help_contains_text(&out, "stable audit failure classes");
     assert!(out.contains("not prove production security"));
     assert!(out.contains("provider compatibility"));
-    assert!(out.contains("repo public claims"));
+    assert!(out.contains("broader repo public"));
     Ok(())
+}
+
+fn assert_help_contains_command(out: &str, command: &str) {
+    assert_help_contains_text(out, command);
+}
+
+fn assert_help_contains_text(out: &str, expected: &str) {
+    let normalized_out = out.split_whitespace().collect::<Vec<_>>().join(" ");
+    let normalized_expected = expected.split_whitespace().collect::<Vec<_>>().join(" ");
+    assert!(
+        normalized_out.contains(&normalized_expected),
+        "missing help text `{expected}` in:\n{out}"
+    );
 }
 
 #[test]
@@ -193,7 +239,9 @@ fn doctor_text_reports_installed_cli_checks_only() -> TestResult<()> {
     assert!(report.contains("Next steps:"));
     assert!(report.contains("uselesskey profiles"));
     assert!(report.contains("uselesskey bundle --profile webhook --out target/uselesskey-webhook"));
-    assert!(report.contains("uselesskey audit-bundle --path target/uselesskey-webhook --ci"));
+    assert!(report.contains(
+        "uselesskey audit-bundle target/uselesskey-webhook --ci --out target/uselesskey-webhook-audit"
+    ));
     assert!(report.contains("installed CLI concerns only"));
     assert!(report.contains("repo-local workflows"));
     assert!(!report.contains("cargo xtask"));
@@ -249,7 +297,7 @@ fn doctor_json_reports_known_profiles_and_boundaries() -> TestResult<()> {
     for step in [
         "uselesskey profiles",
         "uselesskey bundle --profile webhook --out target/uselesskey-webhook",
-        "uselesskey audit-bundle --path target/uselesskey-webhook --ci",
+        "uselesskey audit-bundle target/uselesskey-webhook --ci --out target/uselesskey-webhook-audit",
     ] {
         assert!(
             next_steps.iter().any(|value| value.as_str() == Some(step)),
@@ -804,6 +852,66 @@ fn bundle_profile_oidc_writes_contract_pack() -> TestResult<()> {
 }
 
 #[test]
+fn bundle_read_commands_accept_positional_bundle_dir_and_keep_flag_forms() -> TestResult<()> {
+    let dir = tempdir().test_context("tempdir")?;
+    let bundle_dir = dir.path().join("bundle");
+    let bundle_dir = bundle_dir.to_str().test_context("utf-8")?;
+
+    let mut bundle = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    bundle.args(["bundle", "--profile", "scanner-safe", "--out", bundle_dir]);
+    bundle.assert().success();
+
+    let mut verify_positional = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    verify_positional.args(["verify-bundle", bundle_dir]);
+    verify_positional
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("\"status\": \"ok\""));
+
+    let mut inspect_positional = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    inspect_positional.args(["inspect-bundle", bundle_dir]);
+    inspect_positional
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Bundle profile: scanner-safe"));
+
+    let mut audit_positional = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    audit_positional.args(["audit-bundle", bundle_dir, "--summary"]);
+    audit_positional
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Bundle audit: pass"));
+
+    let mut verify_flag = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    verify_flag.args(["verify-bundle", "--path", bundle_dir]);
+    verify_flag
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("\"status\": \"ok\""));
+
+    let mut inspect_alias = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    inspect_alias.args(["inspect-bundle", "--bundle-dir", bundle_dir]);
+    inspect_alias
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Bundle profile: scanner-safe"));
+
+    Ok(())
+}
+
+#[test]
+fn bundle_read_commands_reject_duplicate_bundle_dir_inputs() -> TestResult<()> {
+    for command in ["verify-bundle", "inspect-bundle", "audit-bundle"] {
+        let mut cmd = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+        cmd.args([command, "target/one", "--path", "target/two"]);
+        cmd.assert().failure().stderr(predicate::str::contains(
+            "the argument '[BUNDLE_DIR]' cannot be used with '--path <BUNDLE_DIR>'",
+        ));
+    }
+    Ok(())
+}
+
+#[test]
 fn inspect_bundle_summarizes_verified_scanner_safe_receipts() -> TestResult<()> {
     let dir = tempdir().test_context("tempdir")?;
     let bundle_dir = dir.path().join("bundle");
@@ -842,7 +950,7 @@ fn inspect_bundle_summarizes_verified_scanner_safe_receipts() -> TestResult<()> 
             "Receipts: materialization, audit-surface, bundle-verification, scanner-safety, negative-coverage",
         ))
         .stdout(predicate::str::contains(
-            "Durable audit receipt: uselesskey audit-bundle --path <bundle-dir> --out <audit-dir>",
+            "Durable audit receipt: uselesskey audit-bundle <bundle-dir> --out <audit-dir>",
         ))
         .stdout(predicate::str::contains(
             "Proof/check path: cargo xtask claim-proof --claim scanner-safe-fixtures",
@@ -890,13 +998,13 @@ fn inspect_bundle_reports_runtime_material_without_printing_payloads() -> TestRe
     assert!(summary.contains("Symmetric secret material: yes"));
     assert!(summary.contains("Runtime material artifacts: 5"));
     assert!(summary.contains("Verification: ok"));
-    assert!(summary.contains(
-        "Durable audit receipt: uselesskey audit-bundle --path <bundle-dir> --out <audit-dir>"
-    ));
     assert!(
         summary.contains(
-            "Proof/check path: uselesskey verify-bundle --path target/uselesskey-runtime"
+            "Durable audit receipt: uselesskey audit-bundle <bundle-dir> --out <audit-dir>"
         )
+    );
+    assert!(
+        summary.contains("Proof/check path: uselesskey verify-bundle target/uselesskey-runtime")
     );
     assert!(summary.contains("Generated files:"));
     assert!(summary.contains("Artifact posture:"));
@@ -964,13 +1072,112 @@ fn audit_bundle_writes_metadata_only_reviewer_receipts() -> TestResult<()> {
         fs::read_to_string(audit_dir.join("bundle-audit.md")).test_context("audit markdown")?;
     assert!(audit_md.contains("Bundle Audit"));
     assert!(audit_md.contains("durable metadata-only reviewer/CI receipt"));
-    assert!(audit_md.contains("Quick summary: uselesskey inspect-bundle --path <bundle-dir>"));
+    assert!(audit_md.contains("Quick summary: uselesskey inspect-bundle <bundle-dir>"));
     assert!(audit_md.contains("raw generated fixture payloads are not copied"));
     assert!(audit_md.contains("requests/negative-wrong-secret.json"));
-    assert!(audit_md.contains("audit-bundle does not prove repo public claims"));
+    assert!(
+        audit_md.contains("audit-bundle is not standalone proof for broader repo public claims")
+    );
     assert!(audit_md.contains("provider compatibility"));
     assert!(!audit_md.contains("whsec_"));
     assert!(!audit_md.contains("BEGIN PRIVATE KEY"));
+    Ok(())
+}
+
+#[test]
+fn audit_bundle_receipts_do_not_copy_runtime_payloads() -> TestResult<()> {
+    let dir = tempdir().test_context("tempdir")?;
+    let profiles = ["webhook", "runtime", "tls", "oidc"];
+    let mut runtime_payloads_checked = 0usize;
+
+    for profile in profiles {
+        let bundle_dir = dir.path().join(format!("{profile}-bundle"));
+        let audit_dir = dir.path().join(format!("{profile}-audit"));
+
+        let mut bundle = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+        bundle.args([
+            "bundle",
+            "--profile",
+            profile,
+            "--out",
+            bundle_dir.to_str().test_context("utf-8")?,
+        ]);
+        bundle.assert().success();
+
+        let mut audit = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+        audit.args([
+            "audit-bundle",
+            "--path",
+            bundle_dir.to_str().test_context("utf-8")?,
+            "--out",
+            audit_dir.to_str().test_context("utf-8")?,
+        ]);
+        audit.assert().success();
+
+        assert_eq!(
+            audit_receipt_files(&audit_dir)?,
+            vec![
+                "bundle-audit.json".to_string(),
+                "bundle-audit.md".to_string()
+            ]
+        );
+
+        let audit_json =
+            fs::read(audit_dir.join("bundle-audit.json")).test_context("audit json")?;
+        let audit_md = fs::read(audit_dir.join("bundle-audit.md")).test_context("audit md")?;
+        let mut audit_bytes = audit_json.clone();
+        audit_bytes.extend_from_slice(&audit_md);
+        let audit_text = String::from_utf8_lossy(&audit_bytes);
+
+        let manifest: Value = serde_json::from_slice(
+            &fs::read(bundle_dir.join("manifest.json")).test_context("manifest")?,
+        )
+        .test_context("manifest json")?;
+        let artifacts = manifest["artifacts"]
+            .as_array()
+            .test_context("manifest artifacts")?;
+        for artifact in artifacts {
+            if artifact["scanner_safe"].as_bool() != Some(false) {
+                continue;
+            }
+            let relative = artifact["path"]
+                .as_str()
+                .test_context("artifact relative path")?;
+            let payload = fs::read(bundle_dir.join(relative))
+                .test_context(format!("runtime payload {profile}:{relative}"))?;
+            if payload.len() < 32 {
+                continue;
+            }
+            runtime_payloads_checked += 1;
+            assert!(
+                !contains_bytes(&audit_bytes, &payload),
+                "audit receipt copied raw payload bytes for {profile}:{relative}"
+            );
+            if let Ok(payload_text) = String::from_utf8(payload) {
+                let payload_text = payload_text.trim();
+                if payload_text.len() >= 32 {
+                    assert!(
+                        !audit_text.contains(payload_text),
+                        "audit receipt copied raw payload text for {profile}:{relative}"
+                    );
+                    let escaped_payload =
+                        serde_json::to_string(payload_text).test_context("escape payload")?;
+                    let escaped_payload = escaped_payload
+                        .trim_start_matches('"')
+                        .trim_end_matches('"');
+                    assert!(
+                        !audit_text.contains(escaped_payload),
+                        "audit receipt copied escaped payload text for {profile}:{relative}"
+                    );
+                }
+            }
+        }
+    }
+
+    assert!(
+        runtime_payloads_checked > 0,
+        "test should inspect at least one runtime-material payload"
+    );
     Ok(())
 }
 
@@ -1079,6 +1286,46 @@ fn audit_bundle_json_reports_artifact_runtime_material_flags() -> TestResult<()>
     Ok(())
 }
 
+fn audit_receipt_files(audit_dir: &std::path::Path) -> TestResult<Vec<String>> {
+    fn collect(
+        root: &std::path::Path,
+        dir: &std::path::Path,
+        files: &mut Vec<String>,
+    ) -> TestResult<()> {
+        for entry in fs::read_dir(dir).test_context("audit dir")? {
+            let entry = entry.test_context("audit dir entry")?;
+            let path = entry.path();
+            let metadata = entry.metadata().test_context("audit entry metadata")?;
+            if metadata.is_dir() {
+                collect(root, &path, files)?;
+            } else if metadata.is_file() {
+                files.push(
+                    path.strip_prefix(root)
+                        .map_err(|err| err.to_string())
+                        .test_context("audit relative path")?
+                        .display()
+                        .to_string()
+                        .replace('\\', "/"),
+                );
+            }
+        }
+        Ok(())
+    }
+
+    let mut files = Vec::new();
+    collect(audit_dir, audit_dir, &mut files)?;
+    files.sort();
+    Ok(files)
+}
+
+fn contains_bytes(haystack: &[u8], needle: &[u8]) -> bool {
+    !needle.is_empty()
+        && needle.len() <= haystack.len()
+        && haystack
+            .windows(needle.len())
+            .any(|window| window == needle)
+}
+
 fn normalize_snapshot_paths(value: Value, temp_root: &std::path::Path) -> Value {
     match value {
         Value::Array(values) => Value::Array(
@@ -1166,6 +1413,58 @@ fn audit_bundle_ci_accepts_strict_policy_and_expected_profile() -> TestResult<()
 }
 
 #[test]
+fn audit_bundle_ci_writes_metadata_only_receipts_when_out_is_set() -> TestResult<()> {
+    let dir = tempdir().test_context("tempdir")?;
+    let bundle_dir = dir.path().join("webhook");
+    let audit_dir = dir.path().join("webhook-audit");
+
+    let mut bundle = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    bundle.args([
+        "bundle",
+        "--profile",
+        "webhook",
+        "--out",
+        bundle_dir.to_str().test_context("utf-8")?,
+    ]);
+    bundle.assert().success();
+
+    let out = run([
+        "audit-bundle",
+        "--path",
+        bundle_dir.to_str().test_context("utf-8")?,
+        "--ci",
+        "--expect-profile",
+        "webhook",
+        "--policy",
+        "strict",
+        "--out",
+        audit_dir.to_str().test_context("utf-8")?,
+    ])?;
+    let audit: Value = serde_json::from_str(&out).test_context("audit json")?;
+    assert_eq!(audit["status"], "pass");
+    assert_eq!(audit["profile"], "webhook");
+    assert_eq!(
+        audit_receipt_files(&audit_dir)?,
+        vec![
+            "bundle-audit.json".to_string(),
+            "bundle-audit.md".to_string()
+        ]
+    );
+
+    let audit_json =
+        fs::read(audit_dir.join("bundle-audit.json")).test_context("audit json receipt")?;
+    let audit_md =
+        fs::read(audit_dir.join("bundle-audit.md")).test_context("audit markdown receipt")?;
+    let mut receipt_bytes = audit_json;
+    receipt_bytes.extend_from_slice(&audit_md);
+    let receipt_text = String::from_utf8_lossy(&receipt_bytes);
+    assert!(!out.contains("whsec_"));
+    assert!(!receipt_text.contains("whsec_"));
+    assert!(!receipt_text.contains("BEGIN PRIVATE KEY"));
+    Ok(())
+}
+
+#[test]
 fn audit_bundle_ci_fails_on_expected_profile_mismatch() -> TestResult<()> {
     let dir = tempdir().test_context("tempdir")?;
     let bundle_dir = dir.path().join("webhook");
@@ -1206,6 +1505,220 @@ fn audit_bundle_ci_fails_on_expected_profile_mismatch() -> TestResult<()> {
         .test_context("failure detail")?;
     assert!(detail.contains("expected profile `tls`, found `webhook`"));
     assert!(!String::from_utf8_lossy(&output.stdout).contains("whsec_"));
+    Ok(())
+}
+
+#[test]
+fn audit_bundle_ci_failure_writes_metadata_only_receipts_when_out_is_set() -> TestResult<()> {
+    let dir = tempdir().test_context("tempdir")?;
+    let bundle_dir = dir.path().join("webhook");
+    let audit_dir = dir.path().join("webhook-audit");
+
+    let mut bundle = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    bundle.args([
+        "bundle",
+        "--profile",
+        "webhook",
+        "--out",
+        bundle_dir.to_str().test_context("utf-8")?,
+    ]);
+    bundle.assert().success();
+
+    let mut audit = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    audit.args([
+        "audit-bundle",
+        "--path",
+        bundle_dir.to_str().test_context("utf-8")?,
+        "--ci",
+        "--expect-profile",
+        "tls",
+        "--out",
+        audit_dir.to_str().test_context("utf-8")?,
+    ]);
+    let assert = audit.assert().code(1).stderr(predicate::str::contains(
+        "audit policy failed: profile_validation_failed",
+    ));
+    let output = assert.get_output();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let audit: Value = serde_json::from_slice(&output.stdout).test_context("audit failure json")?;
+    assert_eq!(audit["status"], "fail");
+    assert_eq!(audit["profile"], "webhook");
+    assert_eq!(
+        audit["checks"][0]["failure_class"],
+        "profile_validation_failed"
+    );
+    assert_eq!(
+        audit_receipt_files(&audit_dir)?,
+        vec![
+            "bundle-audit.json".to_string(),
+            "bundle-audit.md".to_string()
+        ]
+    );
+
+    let receipt_json =
+        fs::read_to_string(audit_dir.join("bundle-audit.json")).test_context("audit json")?;
+    let receipt_md =
+        fs::read_to_string(audit_dir.join("bundle-audit.md")).test_context("audit markdown")?;
+    let receipt: Value = serde_json::from_str(&receipt_json).test_context("receipt json")?;
+    assert_eq!(receipt["status"], "fail");
+    assert_eq!(
+        receipt["checks"][0]["failure_class"],
+        "profile_validation_failed"
+    );
+    assert!(receipt_md.contains("profile_validation_failed"));
+    assert!(!stdout.contains("whsec_"));
+    assert!(!receipt_json.contains("whsec_"));
+    assert!(!receipt_md.contains("whsec_"));
+    assert!(!receipt_json.contains("BEGIN PRIVATE KEY"));
+    assert!(!receipt_md.contains("BEGIN PRIVATE KEY"));
+    Ok(())
+}
+
+#[test]
+fn audit_bundle_ci_failure_json_reports_missing_manifest() -> TestResult<()> {
+    let dir = tempdir().test_context("tempdir")?;
+    let bundle_dir = dir.path().join("missing-manifest");
+    fs::create_dir_all(&bundle_dir).test_context("bundle dir")?;
+
+    let mut audit = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    audit.args([
+        "audit-bundle",
+        "--path",
+        bundle_dir.to_str().test_context("utf-8")?,
+        "--ci",
+    ]);
+    let assert = audit
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains("audit failed: missing_manifest"));
+    let output = assert.get_output();
+    let audit: Value = serde_json::from_slice(&output.stdout).test_context("audit failure json")?;
+
+    assert_eq!(audit["status"], "fail");
+    assert_eq!(audit["profile"], "unknown");
+    assert_eq!(audit["checks"][0]["status"], "fail");
+    assert_eq!(audit["checks"][0]["failure_class"], "missing_manifest");
+    let detail = audit["checks"][0]["detail"]
+        .as_str()
+        .test_context("failure detail")?;
+    assert!(detail.contains("manifest.json is missing"));
+    assert!(detail.contains("Fix:"));
+    assert_eq!(
+        audit["artifacts"]
+            .as_array()
+            .test_context("artifacts")?
+            .len(),
+        0
+    );
+    assert_eq!(
+        audit["receipts"].as_array().test_context("receipts")?.len(),
+        0
+    );
+    assert!(
+        audit["does_not_prove"]
+            .as_array()
+            .test_context("does_not_prove")?
+            .iter()
+            .any(|value| value == "downstream verifier correctness")
+    );
+    Ok(())
+}
+
+#[test]
+fn audit_bundle_ci_build_failure_writes_metadata_only_receipts_when_out_is_set() -> TestResult<()> {
+    let dir = tempdir().test_context("tempdir")?;
+    let bundle_dir = dir.path().join("missing-manifest");
+    let audit_dir = dir.path().join("missing-manifest-audit");
+    fs::create_dir_all(&bundle_dir).test_context("bundle dir")?;
+
+    let mut audit = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    audit.args([
+        "audit-bundle",
+        "--path",
+        bundle_dir.to_str().test_context("utf-8")?,
+        "--ci",
+        "--out",
+        audit_dir.to_str().test_context("utf-8")?,
+    ]);
+    let assert = audit
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains("audit failed: missing_manifest"));
+    let output = assert.get_output();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let audit: Value = serde_json::from_slice(&output.stdout).test_context("audit failure json")?;
+    assert_eq!(audit["status"], "fail");
+    assert_eq!(audit["profile"], "unknown");
+    assert_eq!(audit["checks"][0]["failure_class"], "missing_manifest");
+    assert_eq!(
+        audit_receipt_files(&audit_dir)?,
+        vec![
+            "bundle-audit.json".to_string(),
+            "bundle-audit.md".to_string()
+        ]
+    );
+
+    let receipt_json =
+        fs::read_to_string(audit_dir.join("bundle-audit.json")).test_context("audit json")?;
+    let receipt_md =
+        fs::read_to_string(audit_dir.join("bundle-audit.md")).test_context("audit markdown")?;
+    let receipt: Value = serde_json::from_str(&receipt_json).test_context("receipt json")?;
+    assert_eq!(receipt["status"], "fail");
+    assert_eq!(receipt["profile"], "unknown");
+    assert_eq!(receipt["checks"][0]["failure_class"], "missing_manifest");
+    assert!(receipt_md.contains("missing_manifest"));
+    assert!(!stdout.contains("whsec_"));
+    assert!(!receipt_json.contains("whsec_"));
+    assert!(!receipt_md.contains("whsec_"));
+    assert!(!receipt_json.contains("BEGIN PRIVATE KEY"));
+    assert!(!receipt_md.contains("BEGIN PRIVATE KEY"));
+    Ok(())
+}
+
+#[test]
+fn audit_bundle_ci_failure_json_reports_unsupported_profile() -> TestResult<()> {
+    let dir = tempdir().test_context("tempdir")?;
+    let bundle_dir = dir.path().join("bundle");
+
+    let mut bundle = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    bundle.args([
+        "bundle",
+        "--out",
+        bundle_dir.to_str().test_context("utf-8")?,
+    ]);
+    bundle.assert().success();
+
+    let manifest_path = bundle_dir.join("manifest.json");
+    let mut manifest: Value =
+        serde_json::from_slice(&fs::read(&manifest_path).test_context("manifest")?)
+            .test_context("manifest json")?;
+    manifest["profile"] = serde_json::json!("future-profile");
+    let manifest_bytes = serde_json::to_vec_pretty(&manifest).test_context("manifest bytes")?;
+    fs::write(&manifest_path, manifest_bytes).test_context("mutate manifest")?;
+
+    let mut audit = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    audit.args([
+        "audit-bundle",
+        "--path",
+        bundle_dir.to_str().test_context("utf-8")?,
+        "--ci",
+    ]);
+    let assert = audit.assert().code(1).stderr(predicate::str::contains(
+        "audit failed: unsupported_profile",
+    ));
+    let output = assert.get_output();
+    let audit: Value = serde_json::from_slice(&output.stdout).test_context("audit failure json")?;
+
+    assert_eq!(audit["status"], "fail");
+    assert_eq!(audit["profile"], "unknown");
+    assert_eq!(audit["checks"][0]["status"], "fail");
+    assert_eq!(audit["checks"][0]["failure_class"], "unsupported_profile");
+    let detail = audit["checks"][0]["detail"]
+        .as_str()
+        .test_context("failure detail")?;
+    assert!(detail.contains("profile this uselesskey CLI cannot audit"));
+    assert!(detail.contains("Fix:"));
+    assert!(!String::from_utf8_lossy(&output.stdout).contains("uk_test_"));
     Ok(())
 }
 
@@ -1377,7 +1890,7 @@ fn audit_bundle_ci_outputs_failure_json_and_exit_1() -> TestResult<()> {
         .code(1)
         .stderr(predicate::str::contains("audit failed: path_escape"))
         .stderr(predicate::str::contains(
-            "manifest.json lists a path that escapes the bundle root",
+            "manifest.json lists an unsafe bundle path",
         ));
     let output = assert.get_output();
     let audit: Value = serde_json::from_slice(&output.stdout).test_context("audit failure json")?;
@@ -1386,12 +1899,27 @@ fn audit_bundle_ci_outputs_failure_json_and_exit_1() -> TestResult<()> {
     assert_eq!(audit["status"], "fail");
     assert_eq!(audit["checks"][0]["status"], "fail");
     assert_eq!(audit["checks"][0]["failure_class"], "path_escape");
+    let boundaries = audit["boundaries"]
+        .as_array()
+        .test_context("failure boundaries")?;
+    assert!(boundaries.iter().any(|boundary| {
+        boundary.as_str()
+            == Some(
+                "audit-bundle is not standalone proof for broader repo public claims; use cargo xtask claim-proof from a repo checkout",
+            )
+    }));
+    assert!(boundaries.iter().any(|boundary| {
+        boundary.as_str()
+            == Some(
+                "audit-bundle does not prove release readiness; use release-evidence for release proof",
+            )
+    }));
     let detail = audit["checks"][0]["detail"]
         .as_str()
         .test_context("failure detail")?;
-    assert!(detail.contains("manifest.json lists a path that escapes the bundle root"));
+    assert!(detail.contains("manifest.json lists an unsafe bundle path"));
     assert!(detail.contains("Detail: ../escape.json"));
-    assert!(detail.contains("Fix: regenerate the bundle"));
+    assert!(detail.contains("safe relative paths contained by the bundle"));
     assert_eq!(audit["manifest_version"], 0);
     assert!(!String::from_utf8_lossy(&output.stdout).contains("whsec_"));
     Ok(())
@@ -1440,6 +1968,58 @@ fn audit_bundle_reports_path_escape_class() -> TestResult<()> {
 }
 
 #[test]
+fn audit_bundle_path_escape_diagnostic_escapes_control_characters() -> TestResult<()> {
+    let dir = tempdir().test_context("tempdir")?;
+    let bundle_dir = dir.path().join("webhook");
+
+    let mut bundle = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    bundle.args([
+        "bundle",
+        "--profile",
+        "webhook",
+        "--out",
+        bundle_dir.to_str().test_context("utf-8")?,
+    ]);
+    bundle.assert().success();
+
+    let manifest_path = bundle_dir.join("manifest.json");
+    let mut manifest: Value =
+        serde_json::from_slice(&fs::read(&manifest_path).test_context("manifest")?)
+            .test_context("manifest json")?;
+    let files = manifest["files"]
+        .as_array_mut()
+        .test_context("manifest files")?;
+    let first_file = files.first_mut().test_context("first manifest file")?;
+    *first_file = serde_json::json!("receipts/audit-surface\n.json");
+    let manifest_bytes = serde_json::to_vec_pretty(&manifest).test_context("manifest bytes")?;
+    fs::write(&manifest_path, manifest_bytes).test_context("mutate manifest")?;
+
+    let mut audit = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    audit.args([
+        "audit-bundle",
+        "--path",
+        bundle_dir.to_str().test_context("utf-8")?,
+        "--ci",
+    ]);
+    let assert = audit
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains("audit failed: path_escape"))
+        .stderr(predicate::str::contains("receipts/audit-surface\\n.json"));
+    let output = assert.get_output();
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(!stderr.contains("receipts/audit-surface\n.json"));
+
+    let audit: Value = serde_json::from_slice(&output.stdout).test_context("audit failure json")?;
+    let detail = audit["checks"][0]["detail"]
+        .as_str()
+        .test_context("failure detail")?;
+    assert!(detail.contains("receipts/audit-surface\\n.json"));
+    assert!(!detail.contains("receipts/audit-surface\n.json"));
+    Ok(())
+}
+
+#[test]
 fn audit_bundle_fails_on_unexpected_bundle_file() -> TestResult<()> {
     let dir = tempdir().test_context("tempdir")?;
     let bundle_dir = dir.path().join("bundle");
@@ -1465,6 +2045,108 @@ fn audit_bundle_fails_on_unexpected_bundle_file() -> TestResult<()> {
         .assert()
         .failure()
         .stderr(predicate::str::contains("unexpected_artifact"));
+    Ok(())
+}
+
+#[test]
+fn audit_bundle_ci_reports_unexpected_artifact_class() -> TestResult<()> {
+    let dir = tempdir().test_context("tempdir")?;
+    let bundle_dir = dir.path().join("webhook");
+
+    let mut bundle = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    bundle.args([
+        "bundle",
+        "--profile",
+        "webhook",
+        "--out",
+        bundle_dir.to_str().test_context("utf-8")?,
+    ]);
+    bundle.assert().success();
+
+    fs::write(bundle_dir.join("extra.json"), "{}").test_context("extra file")?;
+
+    let mut audit = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    audit.args([
+        "audit-bundle",
+        "--path",
+        bundle_dir.to_str().test_context("utf-8")?,
+        "--ci",
+    ]);
+    let assert = audit
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains(
+            "audit failed: unexpected_artifact",
+        ))
+        .stderr(predicate::str::contains(
+            "the bundle contains files that are not listed in manifest.json",
+        ));
+    let output = assert.get_output();
+    let audit: Value = serde_json::from_slice(&output.stdout).test_context("audit failure json")?;
+    assert_eq!(audit["status"], "fail");
+    assert_eq!(audit["profile"], "unknown");
+    assert_eq!(audit["checks"][0]["status"], "fail");
+    assert_eq!(audit["checks"][0]["failure_class"], "unexpected_artifact");
+    let detail = audit["checks"][0]["detail"]
+        .as_str()
+        .test_context("failure detail")?;
+    assert!(detail.contains("extra.json"));
+    assert!(!String::from_utf8_lossy(&output.stdout).contains("whsec_"));
+    Ok(())
+}
+
+#[test]
+fn audit_bundle_ci_reports_missing_artifact_class() -> TestResult<()> {
+    let dir = tempdir().test_context("tempdir")?;
+    let bundle_dir = dir.path().join("webhook");
+
+    let mut bundle = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    bundle.args([
+        "bundle",
+        "--profile",
+        "webhook",
+        "--out",
+        bundle_dir.to_str().test_context("utf-8")?,
+    ]);
+    bundle.assert().success();
+
+    let manifest_path = bundle_dir.join("manifest.json");
+    let manifest: Value =
+        serde_json::from_slice(&fs::read(&manifest_path).test_context("manifest")?)
+            .test_context("manifest json")?;
+    let missing_file = manifest["files"]
+        .as_array()
+        .test_context("manifest files")?
+        .first()
+        .and_then(Value::as_str)
+        .test_context("first manifest file")?;
+    fs::remove_file(bundle_dir.join(missing_file)).test_context("remove manifest artifact")?;
+
+    let mut audit = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    audit.args([
+        "audit-bundle",
+        "--path",
+        bundle_dir.to_str().test_context("utf-8")?,
+        "--ci",
+    ]);
+    let assert = audit
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains("audit failed: missing_artifact"))
+        .stderr(predicate::str::contains(
+            "manifest.json lists files that are absent",
+        ));
+    let output = assert.get_output();
+    let audit: Value = serde_json::from_slice(&output.stdout).test_context("audit failure json")?;
+    assert_eq!(audit["status"], "fail");
+    assert_eq!(audit["profile"], "unknown");
+    assert_eq!(audit["checks"][0]["status"], "fail");
+    assert_eq!(audit["checks"][0]["failure_class"], "missing_artifact");
+    let detail = audit["checks"][0]["detail"]
+        .as_str()
+        .test_context("failure detail")?;
+    assert!(detail.contains(missing_file));
+    assert!(!String::from_utf8_lossy(&output.stdout).contains("whsec_"));
     Ok(())
 }
 
@@ -1503,6 +2185,203 @@ fn audit_bundle_reports_runtime_material_mismatch_class() -> TestResult<()> {
         .assert()
         .failure()
         .stderr(predicate::str::contains("runtime_material_mismatch"));
+    Ok(())
+}
+
+#[test]
+fn audit_bundle_ci_reports_scanner_safe_mismatch_class() -> TestResult<()> {
+    let dir = tempdir().test_context("tempdir")?;
+    let bundle_dir = dir.path().join("webhook");
+
+    let mut bundle = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    bundle.args([
+        "bundle",
+        "--profile",
+        "webhook",
+        "--out",
+        bundle_dir.to_str().test_context("utf-8")?,
+    ]);
+    bundle.assert().success();
+
+    let receipt_path = bundle_dir.join("receipts/audit-surface.json");
+    let mut receipt: Value =
+        serde_json::from_slice(&fs::read(&receipt_path).test_context("audit receipt")?)
+            .test_context("audit receipt json")?;
+    receipt["scanner_safe_count"] = serde_json::json!(999);
+    let receipt_bytes = serde_json::to_vec_pretty(&receipt).test_context("receipt bytes")?;
+    fs::write(&receipt_path, receipt_bytes).test_context("mutate audit receipt")?;
+
+    let mut audit = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    audit.args([
+        "audit-bundle",
+        "--path",
+        bundle_dir.to_str().test_context("utf-8")?,
+        "--ci",
+    ]);
+    let assert = audit
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains(
+            "audit failed: scanner_safe_mismatch",
+        ))
+        .stderr(predicate::str::contains(
+            "audit-surface scanner-safe metadata differs",
+        ));
+    let output = assert.get_output();
+    let audit: Value = serde_json::from_slice(&output.stdout).test_context("audit failure json")?;
+    assert_eq!(audit["status"], "fail");
+    assert_eq!(audit["profile"], "unknown");
+    assert_eq!(audit["checks"][0]["status"], "fail");
+    assert_eq!(audit["checks"][0]["failure_class"], "scanner_safe_mismatch");
+    let detail = audit["checks"][0]["detail"]
+        .as_str()
+        .test_context("failure detail")?;
+    assert!(detail.contains("scanner_safe_count"));
+    assert!(!String::from_utf8_lossy(&output.stdout).contains("whsec_"));
+    Ok(())
+}
+
+#[test]
+fn audit_bundle_ci_reports_runtime_material_mismatch_class() -> TestResult<()> {
+    let dir = tempdir().test_context("tempdir")?;
+    let bundle_dir = dir.path().join("webhook");
+
+    let mut bundle = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    bundle.args([
+        "bundle",
+        "--profile",
+        "webhook",
+        "--out",
+        bundle_dir.to_str().test_context("utf-8")?,
+    ]);
+    bundle.assert().success();
+
+    let receipt_path = bundle_dir.join("receipts/audit-surface.json");
+    let mut receipt: Value =
+        serde_json::from_slice(&fs::read(&receipt_path).test_context("audit receipt")?)
+            .test_context("audit receipt json")?;
+    receipt["runtime_material_count"] = serde_json::json!(0);
+    let receipt_bytes = serde_json::to_vec_pretty(&receipt).test_context("receipt bytes")?;
+    fs::write(&receipt_path, receipt_bytes).test_context("mutate audit receipt")?;
+
+    let mut audit = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    audit.args([
+        "audit-bundle",
+        "--path",
+        bundle_dir.to_str().test_context("utf-8")?,
+        "--ci",
+    ]);
+    let assert = audit
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains(
+            "audit failed: runtime_material_mismatch",
+        ))
+        .stderr(predicate::str::contains(
+            "audit-surface runtime-material metadata differs",
+        ));
+    let output = assert.get_output();
+    let audit: Value = serde_json::from_slice(&output.stdout).test_context("audit failure json")?;
+    assert_eq!(audit["status"], "fail");
+    assert_eq!(audit["profile"], "unknown");
+    assert_eq!(audit["checks"][0]["status"], "fail");
+    assert_eq!(
+        audit["checks"][0]["failure_class"],
+        "runtime_material_mismatch"
+    );
+    let detail = audit["checks"][0]["detail"]
+        .as_str()
+        .test_context("failure detail")?;
+    assert!(detail.contains("runtime_material_count"));
+    assert!(!String::from_utf8_lossy(&output.stdout).contains("whsec_"));
+    Ok(())
+}
+
+#[test]
+fn audit_bundle_ci_reports_invalid_receipt_class() -> TestResult<()> {
+    let dir = tempdir().test_context("tempdir")?;
+    let bundle_dir = dir.path().join("webhook");
+
+    let mut bundle = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    bundle.args([
+        "bundle",
+        "--profile",
+        "webhook",
+        "--out",
+        bundle_dir.to_str().test_context("utf-8")?,
+    ]);
+    bundle.assert().success();
+
+    let receipt_path = bundle_dir.join("receipts/audit-surface.json");
+    fs::write(&receipt_path, "{not-json").test_context("mutate audit receipt")?;
+
+    let mut audit = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    audit.args([
+        "audit-bundle",
+        "--path",
+        bundle_dir.to_str().test_context("utf-8")?,
+        "--ci",
+    ]);
+    let assert = audit
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains("audit failed: invalid_receipt"))
+        .stderr(predicate::str::contains(
+            "a bundle receipt could not be parsed",
+        ));
+    let output = assert.get_output();
+    let audit: Value = serde_json::from_slice(&output.stdout).test_context("audit failure json")?;
+    assert_eq!(audit["status"], "fail");
+    assert_eq!(audit["checks"][0]["status"], "fail");
+    assert_eq!(audit["checks"][0]["failure_class"], "invalid_receipt");
+    assert!(!String::from_utf8_lossy(&output.stdout).contains("whsec_"));
+    Ok(())
+}
+
+#[test]
+fn audit_bundle_ci_reports_missing_receipt_class() -> TestResult<()> {
+    let dir = tempdir().test_context("tempdir")?;
+    let bundle_dir = dir.path().join("webhook");
+
+    let mut bundle = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    bundle.args([
+        "bundle",
+        "--profile",
+        "webhook",
+        "--out",
+        bundle_dir.to_str().test_context("utf-8")?,
+    ]);
+    bundle.assert().success();
+
+    let manifest_path = bundle_dir.join("manifest.json");
+    let mut manifest: Value =
+        serde_json::from_slice(&fs::read(&manifest_path).test_context("manifest")?)
+            .test_context("manifest json")?;
+    manifest["receipts"] = serde_json::json!([]);
+    let manifest_bytes = serde_json::to_vec_pretty(&manifest).test_context("manifest bytes")?;
+    fs::write(&manifest_path, manifest_bytes).test_context("mutate manifest")?;
+
+    let mut audit = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    audit.args([
+        "audit-bundle",
+        "--path",
+        bundle_dir.to_str().test_context("utf-8")?,
+        "--ci",
+    ]);
+    let assert = audit
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains("audit failed: missing_receipt"))
+        .stderr(predicate::str::contains(
+            "a required bundle receipt is missing",
+        ));
+    let output = assert.get_output();
+    let audit: Value = serde_json::from_slice(&output.stdout).test_context("audit failure json")?;
+    assert_eq!(audit["status"], "fail");
+    assert_eq!(audit["profile"], "unknown");
+    assert_eq!(audit["checks"][0]["status"], "fail");
+    assert_eq!(audit["checks"][0]["failure_class"], "missing_receipt");
+    assert!(!String::from_utf8_lossy(&output.stdout).contains("whsec_"));
     Ok(())
 }
 
@@ -1612,6 +2491,51 @@ fn verify_bundle_accepts_generated_bundle_and_detects_mismatch() -> TestResult<(
         .assert()
         .failure()
         .stderr(predicate::str::contains("content mismatch"));
+    Ok(())
+}
+
+#[test]
+fn bundle_verify_and_inspect_reject_path_escape_class() -> TestResult<()> {
+    let dir = tempdir().test_context("tempdir")?;
+    let bundle_dir = dir.path().join("bundle");
+
+    let mut bundle = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+    bundle.args([
+        "bundle",
+        "--profile",
+        "scanner-safe",
+        "--out",
+        bundle_dir.to_str().test_context("utf-8")?,
+    ]);
+    bundle.assert().success();
+
+    let manifest_path = bundle_dir.join("manifest.json");
+    let mut manifest: Value =
+        serde_json::from_slice(&fs::read(&manifest_path).test_context("read manifest")?)
+            .test_context("manifest json")?;
+    let files = manifest["files"]
+        .as_array_mut()
+        .test_context("manifest files")?;
+    let first_file = files.first_mut().test_context("first manifest file")?;
+    *first_file = serde_json::json!("../escape.json");
+    fs::write(
+        &manifest_path,
+        serde_json::to_vec_pretty(&manifest).test_context("serialize manifest")?,
+    )
+    .test_context("mutate manifest")?;
+
+    for command in ["verify-bundle", "inspect-bundle"] {
+        let mut cmd = Command::cargo_bin("uselesskey").test_context("bin exists")?;
+        cmd.args([
+            command,
+            "--path",
+            bundle_dir.to_str().test_context("utf-8")?,
+        ]);
+        cmd.assert()
+            .failure()
+            .stderr(predicate::str::contains("path_escape"))
+            .stderr(predicate::str::contains("../escape.json"));
+    }
     Ok(())
 }
 

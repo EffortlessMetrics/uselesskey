@@ -1,0 +1,56 @@
+name: uselesskey fixture contracts
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  bundle-verify-audit:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [scanner-safe, oidc, webhook, tls]
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install uselesskey CLI
+        run: cargo install uselesskey-cli --version 0.9.1 --locked
+
+      - name: Check installed CLI
+        run: uselesskey doctor --format json
+
+      - name: Generate fixture bundle
+        run: |
+          uselesskey bundle \
+            --profile "${{ matrix.profile }}" \
+            --out "target/uselesskey-${{ matrix.profile }}"
+
+      - name: Verify fixture bundle
+        run: uselesskey verify-bundle "target/uselesskey-${{ matrix.profile }}"
+
+      - name: Inspect fixture bundle
+        run: uselesskey inspect-bundle "target/uselesskey-${{ matrix.profile }}"
+
+      - name: Audit fixture bundle
+        run: |
+          uselesskey audit-bundle \
+            "target/uselesskey-${{ matrix.profile }}" \
+            --ci \
+            --expect-profile "${{ matrix.profile }}" \
+            --policy strict \
+            --out "target/uselesskey-${{ matrix.profile }}-audit"
+
+      - name: Upload metadata-only audit receipts
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: "uselesskey-${{ matrix.profile }}-audit"
+          path: |
+            target/uselesskey-${{ matrix.profile }}-audit/bundle-audit.json
+            target/uselesskey-${{ matrix.profile }}-audit/bundle-audit.md
+          if-no-files-found: error
