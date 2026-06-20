@@ -112,6 +112,17 @@ The manifest must record:
   audit rule;
 - receipt links.
 
+The JSON schema for this contract is:
+
+```text
+docs/schemas/bundle-manifest.schema.json
+```
+
+That schema is intentionally tolerant of additive fields, but it locks the
+stable product surface that downstream CI and docs can rely on: relative paths,
+profile, artifact list, receipt list, scanner-safe classification, and optional
+negative failure-class metadata.
+
 Artifact paths and receipt paths must be relative to the bundle root. They must
 not escape the bundle directory, contain absolute paths, or depend on the
 developer's local checkout path.
@@ -149,6 +160,15 @@ Required receipts:
 These receipts are metadata-only. They are required for bundle profiles but do
 not create repo public-claim proof, release evidence, provider compatibility
 proof, production security assurance, or scanner-evasion claims.
+
+The negative coverage receipt schema is:
+
+```text
+docs/schemas/negative-coverage.schema.json
+```
+
+Downstream CI must branch on stable IDs in `failure_class`, not on English
+descriptions or Markdown text.
 
 ### Negative Fixture Metadata
 
@@ -264,6 +284,8 @@ git diff --check
 This spec is accepted when:
 
 - it defines bundle directory, manifest, artifact, and receipt contracts;
+- it records JSON schema paths for bundle manifests and negative-coverage
+  receipts;
 - it names existing bundle profiles and their user jobs;
 - it defines current receipts and target receipts before implementation;
 - it maps negative fixture metadata to SPEC-0016 stable IDs;
