@@ -1,0 +1,114 @@
+id = "uselesskey-v0.10.0-release"
+title = "Prepare and cut v0.10.0"
+status = "archived"
+owner = "EffortlessMetrics"
+created = "2026-06-20"
+
+objective = """
+Carry the v0.10 release-adoption handoff from `uselesskey-swarm` into the
+source repository, prepare and prove the source candidate, publish and tag the
+package-proven candidate SHA, and record the post-release evidence without
+moving release authority out of `EffortlessMetrics/uselesskey`.
+"""
+
+end_state = [
+  "The swarm handoff is imported into source and pinned to the exact swarm commit.",
+  "The v0.10.0 source candidate updates versions, docs, snippets, release notes, and metadata coherently.",
+  "Package, adoption, schema, receipt, claim, CLI, and full-workspace proof is recorded before publication.",
+  "Crates are published, tag v0.10.0 is pushed, and the GitHub release targets the package-proven candidate SHA.",
+  "Published-version CLI, facade, registry, and docs.rs verification is recorded.",
+  "Release authority remains in EffortlessMetrics/uselesskey; uselesskey-swarm remains a handoff input only.",
+]
+
+[[work_item]]
+id = "import-handoff"
+status = "done"
+proposal = ""
+spec = "USELESSKEY-SPEC-0013"
+plan = "docs/handoffs/2026-06-19-v0-10-adoption-handoff.md"
+commands = [
+  "cargo xtask spec-check --strict",
+  "cargo xtask docs-sync --check",
+  "cargo xtask typos",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "prepare-candidate"
+status = "done"
+proposal = ""
+spec = "USELESSKEY-SPEC-0018"
+plan = "docs/release/v0.10.0-release-notes.md"
+commands = [
+  "cargo xtask spec-check --strict",
+  "cargo xtask docs-sync --check",
+  "cargo xtask typos",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "prove-packaged-adoption"
+status = "done"
+proposal = ""
+spec = "USELESSKEY-SPEC-0013"
+plan = "docs/release/v0.10.0-package-dry-run.md"
+commands = [
+  "cargo xtask publish-preflight",
+  "cargo xtask publish-check",
+  "cargo xtask no-blob",
+  "cargo xtask check-bundle-schemas",
+  "cargo xtask check-audit-receipts",
+  "cargo xtask check-adoption-command-ledger",
+  "cargo xtask external-adoption-smoke --path . --ci-recipes --format json",
+  "cargo xtask external-adoption-smoke --path . --library-examples",
+  "cargo xtask adoption-regression --external",
+  "cargo test -p uselesskey-cli --all-features audit_bundle",
+  "cargo test --workspace --all-features --locked",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "record-candidate-evidence"
+status = "done"
+proposal = ""
+spec = "USELESSKEY-SPEC-0013"
+plan = "docs/release/v0.10.0-candidate-evidence.md"
+commands = [
+  "cargo xtask spec-check --strict",
+  "cargo xtask docs-sync --check",
+  "cargo xtask typos",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "cut-v0.10.0"
+status = "done"
+proposal = ""
+spec = "USELESSKEY-SPEC-0013"
+plan = "docs/release/post-release-audit-v0.10.0.md"
+commands = [
+  "cargo xtask publish-preflight",
+  "cargo xtask publish-check",
+  "cargo xtask no-blob",
+  "cargo xtask doctor --format json",
+  "cargo xtask publish",
+  "cargo xtask publish --from uselesskey-hmac",
+  "cargo xtask external-adoption-smoke --version 0.10.0 --ci-recipes --format json",
+  "cargo xtask external-adoption-smoke --version 0.10.0 --library-examples",
+  "cargo xtask cratesio-smoke --version 0.10.0",
+  "git diff --check",
+]
+
+[[work_item]]
+id = "post-release-audit"
+status = "done"
+proposal = ""
+spec = "USELESSKEY-SPEC-0013"
+plan = "docs/release/post-release-audit-v0.10.0.md"
+commands = [
+  "cargo xtask claim-report --check-public-claims",
+  "cargo xtask spec-check --strict",
+  "cargo xtask docs-sync --check",
+  "cargo xtask typos",
+  "git diff --check",
+]

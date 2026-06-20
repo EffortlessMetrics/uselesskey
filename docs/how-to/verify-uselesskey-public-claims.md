@@ -200,10 +200,10 @@ security, or downstream verifier correctness.
 For the current published release:
 
 ```bash
-cargo xtask cratesio-smoke --version 0.9.1
+cargo xtask cratesio-smoke --version 0.10.0
 ```
 
-For a future release, replace `0.9.1` with the version under review.
+For a future release, replace `0.10.0` with the version under review.
 
 This proves an external crates.io install path for that version. It does not
 prove every downstream feature combination, docs.rs completion, or future

@@ -31,3 +31,6 @@ Use [the handoff template](../templates/handoff.md). A handoff should include:
 - [2026-06-19-v0-10-adoption-handoff.md](2026-06-19-v0-10-adoption-handoff.md)
   imports the `uselesskey-swarm` v0.10 release-adoption packet into the source
   repo and preserves the source release authority boundary.
+- [2026-06-20-v0.10.0-release-closeout.md](2026-06-20-v0.10.0-release-closeout.md)
+  closes the v0.10.0 source release gate after publication, tag creation,
+  registry verification, and published-version smoke.
