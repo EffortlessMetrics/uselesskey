@@ -290,3 +290,36 @@ surface = "examples"
 classification = "test"
 reason = "Scanner-safe bundle reference outputs (manifest, payload shapes, receipts) used by examples/scanner-safe-bundle/README.md to demonstrate deterministic generator stability. Shape-only — never real secret material."
 covered_by = ["examples/scanner-safe-bundle/README.md", "manual review"]
+
+[[allow]]
+glob = "examples/audit-receipts/*.json"
+kind = "audit_receipt_example"
+owner = "cli"
+surface = "examples"
+classification = "test"
+reason = "Committed metadata-only bundle-audit failure receipt examples for stable failure-class handling. They contain only paths, counts, failure classes, and claim boundaries."
+covered_by = ["cargo xtask check-audit-receipts", "cargo xtask check-file-policy"]
+
+[[allow]]
+glob = "examples/ci/*.sh"
+kind = "ci_receipt_consumer"
+owner = "cli"
+surface = "examples"
+classification = "tooling"
+reason = "Portable fail-closed CI consumer examples for bundle-audit JSON receipts."
+covered_by = [
+  "bash examples/ci/consume-bundle-audit.sh target/uselesskey-webhook-audit/bundle-audit.json",
+  "cargo xtask check-file-policy",
+]
+
+[[allow]]
+glob = "examples/external/ci-recipes/*.yml.example"
+kind = "external_ci_recipe"
+owner = "cli"
+surface = "examples"
+classification = "docs"
+reason = "Downstream-shaped inert CI recipe examples for installed CLI bundle verification and metadata-only audit receipts."
+covered_by = [
+  "cargo xtask external-adoption-smoke --path . --ci-recipes --format json",
+  "cargo xtask check-file-policy",
+]

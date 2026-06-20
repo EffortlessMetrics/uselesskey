@@ -21,7 +21,9 @@ linked_specs = [
   "USELESSKEY-SPEC-0015",
 ]
 support_tier_impact = []
-policy_impact = []
+policy_impact = [
+  "policy/negative-fixtures.toml",
+]
 +++
 
 # USELESSKEY-SPEC-0016: Negative Fixture Taxonomy
@@ -79,6 +81,35 @@ negative-malformed-signature
 Implementation PRs may add only a subset of this taxonomy. They must not imply
 that unimplemented taxonomy classes already exist.
 
+## Implementation State
+
+The taxonomy is broader than the currently implemented product surface. The
+machine-readable implementation ledger is:
+
+```text
+policy/negative-fixtures.toml
+```
+
+The human status mirror is:
+
+```text
+docs/status/negative-fixture-matrix.md
+```
+
+Those files distinguish:
+
+| Status | Meaning |
+| --- | --- |
+| `implemented` | The class has an owner crate or CLI bundle surface, tests, and docs/status mapping. |
+| `accepted_planned` | The taxonomy class is accepted, but implementation is intentionally deferred. |
+| `deferred` | The class is useful but not part of the current product lane or support surface. |
+| `out_of_scope` | The class would overclaim provider compatibility, production security, or scanner-evasion behavior. |
+
+Implementation PRs must update the ledger and status mirror when they add,
+defer, rename, or expose a negative class. Docs may describe the broad taxonomy,
+but user-facing how-tos, bundle receipts, and examples must only present
+`implemented` classes as available product behavior.
+
 ## Family Taxonomy
 
 ### JWK
@@ -117,6 +148,7 @@ JWKS negatives cover set-level key discovery failures.
 | Class | Stable ID | Shape | Expected downstream failure |
 | --- | --- | --- | --- |
 | empty keys | `jwks_empty_keys` | `{ "keys": [] }` | no usable verification key |
+| missing `kid` | `jwks_missing_kid` | key-set member without `kid` | key selection cannot identify the key |
 | duplicate `kid` | `jwks_duplicate_kid` | two distinct public keys with the same `kid` | ambiguous key selection |
 | duplicate key | `jwks_duplicate_key` | repeated equivalent public key entry | policy rejects duplicate material |
 | mixed valid/invalid set | `jwks_mixed_valid_invalid` | valid key plus malformed or policy-invalid key | parser or policy surfaces bad set member |
@@ -145,12 +177,16 @@ JWT and token negatives cover parser, header, claim, and policy failures.
 | --- | --- | --- | --- |
 | bad segment count | `jwt_bad_segment_count` | fewer or more than three JWT segments | parser rejects token shape |
 | malformed base64url | `jwt_malformed_base64url` | invalid base64url in header, payload, or signature | parser rejects segment encoding |
+| invalid header shape | `jwt_invalid_header_shape` | decodable JWT header that is not a header object | parser or validator rejects header type |
+| missing `alg` | `jwt_missing_alg` | JWT header without `alg` | verifier policy cannot select an algorithm |
 | `alg: none` | `jwt_alg_none` | JWT header with `alg` set to `none` | verifier policy rejects unsigned algorithm |
 | missing `kid` | `jwt_missing_kid` | signed-looking token with no header `kid` | key selection cannot identify verification key |
+| mismatched `kid` | `jwt_mismatched_kid` | header and payload carry different key IDs | key-selection or policy check rejects inconsistent identity |
 | expired claims | `jwt_expired` | `exp` before validation time | claim validation rejects token |
 | not-yet-valid claims | `jwt_not_yet_valid` | future `nbf` | claim validation rejects token |
 | bad audience | `jwt_bad_audience` | `aud` does not match expected audience | claim validation rejects token |
 | bad issuer | `jwt_bad_issuer` | `iss` does not match expected issuer | claim validation rejects token |
+| malformed bearer | `token_malformed_bearer` | bearer-shaped value with invalid base64url/token syntax | parser rejects bearer token format |
 | near-miss bearer/API token | `token_near_miss` | scanner-safe token-shaped string that fails prefix or format policy | parser or application policy rejects token |
 
 Scanner-safety posture:
@@ -250,6 +286,26 @@ failure-class boundary. A shared malformed-base64url helper is acceptable. A
 generic "broken string" helper that hides whether the failure is header, claim,
 key, or signature related is not acceptable.
 
+## Stable Failure-Class Lifecycle
+
+Stable failure classes are product contracts once they appear in public docs,
+bundle manifests, audit JSON, receipts, examples, or public APIs such as
+`stable_id()`.
+
+Lifecycle rules:
+
+- stable IDs are append-only once documented;
+- removing or renaming a stable ID requires a compatibility note and migration
+  path;
+- display labels, descriptions, and Markdown headings may change, but stable IDs
+  must not change silently;
+- bundle manifests, negative-coverage receipts, audit JSON, and downstream CI
+  docs must use stable IDs rather than prose labels for machine decisions;
+- docs may group stable IDs, but must not alias two distinct behaviors to one
+  stable ID;
+- aliases in code must map to an existing stable ID only when they intentionally
+  expose the same downstream failure class.
+
 ## Manifest and Receipt Mapping
 
 When a negative fixture appears in a bundle, metadata should include:
@@ -315,6 +371,8 @@ This spec is accepted when:
   named classes;
 - each class records a stable ID, fixture shape, expected downstream failure,
   and scanner-safety posture;
+- the implementation ledger and status matrix distinguish implemented,
+  accepted/planned, deferred, and out-of-scope classes;
 - cross-family rules preserve deterministic identity, metadata-only receipts,
   and task-first docs;
 - non-goals prevent provider compatibility, production security, scanner

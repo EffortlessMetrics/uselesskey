@@ -21,3 +21,5 @@ check exist.
 ## Index
 
 - [PUBLIC_CLAIMS.md](PUBLIC_CLAIMS.md) - Public claim to proof-command and boundary map
+- [negative-fixture-matrix.md](negative-fixture-matrix.md) - Negative fixture stable ID implementation state
+- [public-surface-matrix.md](public-surface-matrix.md) - Compact public crate promise matrix

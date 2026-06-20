@@ -55,3 +55,5 @@ public crate-surface cleanup.
 - [USELESSKEY-SPEC-0018: Install and distribution polish](USELESSKEY-SPEC-0018-install-distribution-polish.md)
 - [USELESSKEY-SPEC-0019: Library facade polish](USELESSKEY-SPEC-0019-library-facade-polish.md)
 - [USELESSKEY-SPEC-0020: Downstream policy pack](USELESSKEY-SPEC-0020-downstream-policy-pack.md)
+- [USELESSKEY-SPEC-0021: Material classification](USELESSKEY-SPEC-0021-material-classification.md)
+- [USELESSKEY-SPEC-0022: Task-first workflow docs](USELESSKEY-SPEC-0022-task-first-docs.md)
