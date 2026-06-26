@@ -3921,9 +3921,9 @@ checksum = "6980e8d7511241f8acf4aebddbb1ff938df5eebe98691418c4468d0b72a96a67"
 
 [[package]]
 name = "spin"
-version = "0.11.0"
+version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "783f3f6f6b01e295a669edfc402133a5f2553d1f0e81284b3ba4594e80bdd4a2"
+checksum = "bd5231412d905519dca6a5deb0327d407be68d6c941feec004533401d3a0a715"
 
 [[package]]
 name = "spki"
@@ -4731,7 +4731,7 @@ dependencies = [
  "rand_core 0.10.1",
  "rstest",
  "serde",
- "spin 0.11.0",
+ "spin 0.12.1",
  "tempfile",
  "thiserror",
  "uselesskey-test-support",
