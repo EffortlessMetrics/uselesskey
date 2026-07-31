@@ -62,7 +62,7 @@ jobs:
           cache-on-failure: true
 
       - name: Install tools
-        uses: taiki-e/install-action@v2
+        uses: taiki-e/install-action@v2.85.3
         with:
           tool: cargo-fuzz,cargo-mutants,typos-cli,cargo-deny
 
@@ -260,7 +260,7 @@ jobs:
           cache-on-failure: true
 
       - name: Install tools
-        uses: taiki-e/install-action@v2
+        uses: taiki-e/install-action@v2.85.3
         with:
           tool: cargo-fuzz,cargo-mutants,typos-cli,cargo-deny
 
