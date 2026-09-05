@@ -1,0 +1,39 @@
+name: Bootstrap consolidated Rust dependency wave v2
+
+on:
+  pull_request:
+    types: [opened]
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deny
+
+      - name: Remove redundant explicit spin update
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('.github/bootstrap/run-rust-dependency-wave.py')
+          text = path.read_text(encoding='utf-8')
+          line = '    ("spin@0.11.0", "0.12.3"),\n'
+          assert text.count(line) == 1
+          path.write_text(text.replace(line, '', 1), encoding='utf-8')
+          PY
+
+      - name: Generate and verify dependency wave
+        run: python .github/bootstrap/run-rust-dependency-wave.py
