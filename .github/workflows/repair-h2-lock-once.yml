@@ -26,18 +26,17 @@ jobs:
       - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
       - uses: dtolnay/rust-toolchain@1.95.0
         with:
           components: rustfmt
       - uses: taiki-e/install-action@v2
         with:
           tool: cargo-deny
-      - name: Regenerate the affected h2 entry only
+      - name: Regenerate and verify the explicitly reviewed lock delta
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD:Cargo.lock)" = "$(git rev-parse be795d63a3c7735d59ba7c9a2a00211fd794d7f7:Cargo.lock)"
+          test "$(git rev-parse HEAD:Cargo.lock)" = cbd960ace71049e5132e4b64af2a73922b000304
           cargo update -p h2 --precise 0.4.16
           git diff -- Cargo.lock
           python3 - <<'PY'
@@ -50,8 +49,6 @@ jobs:
           updated = tomllib.loads(pathlib.Path('Cargo.lock').read_text())
           before = [p for p in original['package'] if p['name'] == 'h2']
           after = [p for p in updated['package'] if p['name'] == 'h2']
-          print('Original h2:', before, flush=True)
-          print('Updated h2:', after, flush=True)
           if len(before) != 1 or len(after) != 1:
               raise SystemExit('expected one h2 entry')
           if before[0]['version'] != '0.4.13' or after[0]['version'] != '0.4.16':
@@ -60,11 +57,45 @@ jobs:
               raise SystemExit('checksum differs from verified registry record')
           before[0]['version'] = after[0]['version']
           before[0]['checksum'] = after[0]['checksum']
+          # Cargo's exact additional resolver delta, inspected in run 33944301730.
+          # These package versions already exist; no package/version is added or removed.
+          edges = {
+              ('anstyle-query', '1.1.5'): '0.60.2',
+              ('anstyle-wincon', '3.0.11'): '0.60.2',
+              ('errno', '0.3.14'): '0.52.0',
+              ('rustix', '1.1.4'): '0.52.0',
+              ('socket2', '0.6.3'): '0.60.2',
+              ('tempfile', '3.27.0'): '0.52.0',
+              ('terminal_size', '0.4.4'): '0.60.2',
+              ('winapi-util', '0.1.11'): '0.52.0',
+          }
+          for identity, target in edges.items():
+              entries = [p for p in original['package']
+                         if (p['name'], p['version']) == identity]
+              if len(entries) != 1 or entries[0]['dependencies'].count('windows-sys 0.61.2') != 1:
+                  raise SystemExit(f'unexpected original Windows edge: {identity}')
+              entries[0]['dependencies'] = [
+                  f'windows-sys {target}' if dep == 'windows-sys 0.61.2' else dep
+                  for dep in entries[0]['dependencies']
+              ]
           if original != updated:
-              raise SystemExit('Cargo changed more than the approved h2 version/checksum')
-          print('Only h2 version/checksum changed:', after[0])
+              raise SystemExit('Cargo changed more than h2 and the eight reviewed Windows edges')
           PY
-          cargo metadata --locked --no-deps --format-version 1 > /dev/null
+          cargo metadata --locked --all-features --format-version 1 > "$RUNNER_TEMP/audit-metadata.json"
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          metadata = json.loads((Path(os.environ['RUNNER_TEMP']) / 'audit-metadata.json').read_text())
+          owners = {'anstyle-query', 'anstyle-wincon', 'errno', 'rustix', 'socket2',
+                    'tempfile', 'terminal_size', 'winapi-util'}
+          for package in metadata['packages']:
+              if package['name'] in owners:
+                  for dependency in package['dependencies']:
+                      if dependency['name'] == 'windows-sys':
+                          print(package['name'], package['version'], 'windows-sys requirement:',
+                                dependency['req'], 'target:', dependency['target'])
+          PY
           cargo fmt --all -- --check
           git diff --check
       - name: Verify advisory blockers are resolved
@@ -79,5 +110,5 @@ jobs:
           git rm -- .github/workflows/repair-h2-lock-once.yml
           git diff --cached --check
           git diff --cached --stat
-          git commit -m "fix(deps): resolve h2 empty-frame advisory"
+          git commit -m "fix(deps): resolve h2 advisory and reconcile Windows lock edges"
           git push origin HEAD:refs/heads/fix/ci-audit-dependency-floor
