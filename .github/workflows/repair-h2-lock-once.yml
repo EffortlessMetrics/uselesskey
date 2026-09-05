@@ -39,9 +39,9 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD:Cargo.lock)" = "$(git rev-parse be795d63a3c7735d59ba7c9a2a00211fd794d7f7:Cargo.lock)"
           cargo update -p h2 --precise 0.4.16
+          git diff -- Cargo.lock
           python3 - <<'PY'
           import pathlib
-          import re
           import subprocess
           import tomllib
 
@@ -50,12 +50,14 @@ jobs:
           updated = tomllib.loads(pathlib.Path('Cargo.lock').read_text())
           before = [p for p in original['package'] if p['name'] == 'h2']
           after = [p for p in updated['package'] if p['name'] == 'h2']
+          print('Original h2:', before, flush=True)
+          print('Updated h2:', after, flush=True)
           if len(before) != 1 or len(after) != 1:
               raise SystemExit('expected one h2 entry')
           if before[0]['version'] != '0.4.13' or after[0]['version'] != '0.4.16':
               raise SystemExit('unexpected h2 versions')
-          if not re.fullmatch(r'[0-9a-f]{64}', after[0]['checksum']):
-              raise SystemExit('invalid registry checksum')
+          if after[0]['checksum'] != 'a9f37a958b41b3b19ee2707c06439c0e9e547e847223eb791ecb0cb821c65e27':
+              raise SystemExit('checksum differs from verified registry record')
           before[0]['version'] = after[0]['version']
           before[0]['checksum'] = after[0]['checksum']
           if original != updated:
