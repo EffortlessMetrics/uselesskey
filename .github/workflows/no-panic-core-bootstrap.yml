@@ -34,25 +34,174 @@ jobs:
           set -euo pipefail
           test "$(git hash-object crates/uselesskey-core/src/srp/seed.rs)" = "fbb35c896f74ea61f690e926fcdfa4f8f4d8f9a1"
           test "$(git hash-object crates/uselesskey-core/src/srp/sink.rs)" = "020501764f3c10c5a9306bdd6f03a9ef972a1250"
+          test "$(git hash-object xtask/src/adoption_command_ledger.rs)" = "5acd7f6659c6938298681d1d3fa838e8b4281595"
+          test "$(git hash-object xtask/src/target_output.rs)" = "3e14cbe32811cf02f477d7ae010b90b956010c49"
           grep -F '[summary]' policy/no-panic-baseline.toml
           grep -F 'total = 3466' policy/no-panic-baseline.toml
 
-      - name: Apply reviewed source patch
+      - name: Apply reviewed core source patch
         shell: bash
         run: |
           set -euo pipefail
           base64 --decode .github/bootstrap/no-panic-core.patch.gz.b64 | gzip --decompress > /tmp/no-panic-core.patch
           git apply --check /tmp/no-panic-core.patch
           git apply /tmp/no-panic-core.patch
+
+      - name: Remove untracked xtask panic-family debt
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_exact(path: str, replacements: list[tuple[str, str]]) -> None:
+              target = Path(path)
+              content = target.read_text(encoding='utf-8')
+              for old, new in replacements:
+                  count = content.count(old)
+                  assert count == 1, f'{path}: expected one occurrence, found {count}: {old!r}'
+                  content = content.replace(old, new, 1)
+              target.write_text(content, encoding='utf-8')
+
+          replace_exact(
+              'xtask/src/adoption_command_ledger.rs',
+              [
+                  (
+                      '        let header = columns.as_ref().expect("headers found");',
+                      '        let Some(header) = columns.as_ref() else {\n            continue;\n        };',
+                  ),
+                  (
+                      '    let re = Regex::new(pattern).expect("valid inline-code regex");',
+                      '    let Ok(re) = Regex::new(pattern) else {\n        return Vec::new();\n    };',
+                  ),
+                  (
+                      '    let re = Regex::new(r"\\[[^\\]]+\\]\\(([^)]+)\\)").expect("valid markdown link regex");',
+                      '    let Ok(re) = Regex::new(r"\\[[^\\]]+\\]\\(([^)]+)\\)") else {\n        return paths;\n    };',
+                  ),
+                  (
+                      '    let placeholder = Regex::new(r"<[^>]+>").expect("valid placeholder regex");',
+                      '    let Ok(placeholder) = Regex::new(r"<[^>]+>") else {\n        return Vec::new();\n    };',
+                  ),
+              ],
+          )
+
+          replace_exact(
+              'xtask/src/target_output.rs',
+              [
+                  (
+                      '''        fs::create_dir_all(
+            stale_path
+                .parent()
+                .expect("target path must have a parent for test setup"),
+        )?;''',
+                      '''        let parent = stale_path
+            .parent()
+            .ok_or_else(|| anyhow::anyhow!("target path must have a parent for test setup"))?;
+        fs::create_dir_all(parent)?;''',
+                  ),
+                  (
+                      '''    #[test]
+    fn target_output_lock_classifies_command_mismatch_as_stale() {
+        let metadata = OutputLockMetadata {
+            command_name: "other-command".to_string(),
+            pid: 1,
+            created_at: 0,
+        };
+
+        let status = classify_existing_lock(metadata, "test-command").expect("classify");
+        match status {
+            LockStatus::Stale(reason) => assert!(reason.contains("command mismatch")),
+            _ => panic!("expected stale status for command mismatch"),
+        }
+    }''',
+                      '''    #[test]
+    fn target_output_lock_classifies_command_mismatch_as_stale() -> Result<()> {
+        let metadata = OutputLockMetadata {
+            command_name: "other-command".to_string(),
+            pid: 1,
+            created_at: 0,
+        };
+
+        let status = classify_existing_lock(metadata, "test-command")?;
+        match status {
+            LockStatus::Stale(reason) => assert!(reason.contains("command mismatch")),
+            _ => bail!("expected stale status for command mismatch"),
+        }
+        Ok(())
+    }''',
+                  ),
+                  (
+                      '''    #[test]
+    fn target_output_lock_classifies_unknown_owner_as_stale_after_age() {
+        let metadata = OutputLockMetadata {
+            command_name: "test-command".to_string(),
+            pid: 1234,
+            created_at: 0,
+        };
+
+        let status = classify_existing_lock_with_state(
+            metadata,
+            ProcessState::Unknown("unit test".to_string()),
+        );
+        match status {
+            LockStatus::Stale(reason) => assert!(
+                reason.contains("stale by age"),
+                "expected stale-by-age reason, got {reason:?}"
+            ),
+            _ => panic!("expected stale status for old unknown-owner metadata"),
+        }
+    }''',
+                      '''    #[test]
+    fn target_output_lock_classifies_unknown_owner_as_stale_after_age() -> Result<()> {
+        let metadata = OutputLockMetadata {
+            command_name: "test-command".to_string(),
+            pid: 1234,
+            created_at: 0,
+        };
+
+        let status = classify_existing_lock_with_state(
+            metadata,
+            ProcessState::Unknown("unit test".to_string()),
+        );
+        match status {
+            LockStatus::Stale(reason) => assert!(
+                reason.contains("stale by age"),
+                "expected stale-by-age reason, got {reason:?}"
+            ),
+            _ => bail!("expected stale status for old unknown-owner metadata"),
+        }
+        Ok(())
+    }''',
+                  ),
+                  (
+                      '''            tx.send(())
+                .expect("lock waiter can report successful acquisition");''',
+                      '''            tx.send(())
+                .context("lock waiter could not report successful acquisition")?;''',
+                  ),
+                  (
+                      '''        waiter
+            .join()
+            .expect("lock waiter thread panicked while acquiring output lock")?;''',
+                      '''        match waiter.join() {
+            Ok(result) => result?,
+            Err(_) => bail!("lock waiter thread panicked while acquiring output lock"),
+        }''',
+                  ),
+              ],
+          )
+          PY
           cargo fmt --all
           cargo fmt --all -- --check
 
-      - name: Verify focused core behavior
+      - name: Verify focused behavior and lints
         shell: bash
         run: |
           set -euo pipefail
           cargo test -p uselesskey-core --all-features --locked
           cargo clippy -p uselesskey-core --all-targets --all-features --locked -- -D warnings
+          cargo test -p xtask --locked
+          cargo clippy -p xtask --all-targets --locked -- -D warnings
 
       - name: Refresh guarded no-panic baseline
         shell: bash
@@ -120,6 +269,8 @@ jobs:
               'crates/uselesskey-core/src/srp/seed.rs',
               'crates/uselesskey-core/src/srp/sink.rs',
               'policy/no-panic-baseline.toml',
+              'xtask/src/adoption_command_ledger.rs',
+              'xtask/src/target_output.rs',
           }
           changed = set(subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines())
           assert changed == expected, (changed, expected)
@@ -136,6 +287,8 @@ jobs:
           git config user.email "git@effortlesssteven.com"
           git add crates/uselesskey-core/src/srp/seed.rs \
                   crates/uselesskey-core/src/srp/sink.rs \
-                  policy/no-panic-baseline.toml
-          git commit -m "test(core): reduce historical panic-family baseline"
+                  policy/no-panic-baseline.toml \
+                  xtask/src/adoption_command_ledger.rs \
+                  xtask/src/target_output.rs
+          git commit -m "test: reduce historical panic-family baseline"
           git push origin "HEAD:${BRANCH_NAME}"
