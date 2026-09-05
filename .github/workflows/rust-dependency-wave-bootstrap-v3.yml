@@ -1,0 +1,32 @@
+name: Bootstrap consolidated Rust dependency wave v3
+
+on:
+  pull_request:
+    types: [opened]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rust-dependency-wave-bootstrap-v3
+  cancel-in-progress: false
+
+jobs:
+  bootstrap:
+    if: github.actor != 'github-actions[bot]' && github.event.pull_request.head.ref == 'build/consolidated-rust-dependency-wave-bootstrap-v3'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deny
+
+      - name: Generate and verify dependency wave
+        run: python .github/bootstrap/run-rust-dependency-wave.py
