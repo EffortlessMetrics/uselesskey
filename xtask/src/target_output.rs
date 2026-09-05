@@ -476,11 +476,10 @@ mod tests {
     fn target_output_remove_lock_directory_removes_file_path() -> Result<()> {
         let root = tempfile::tempdir()?;
         let stale_path = root.path().join("target/test-command.lock");
-        fs::create_dir_all(
-            stale_path
-                .parent()
-                .expect("target path must have a parent for test setup"),
-        )?;
+        let parent = stale_path
+            .parent()
+            .ok_or_else(|| anyhow::anyhow!("target path must have a parent for test setup"))?;
+        fs::create_dir_all(parent)?;
         fs::write(&stale_path, b"stale lock file")?;
         let mut permissions = fs::metadata(&stale_path)?.permissions();
         permissions.set_readonly(true);
@@ -492,22 +491,23 @@ mod tests {
     }
 
     #[test]
-    fn target_output_lock_classifies_command_mismatch_as_stale() {
+    fn target_output_lock_classifies_command_mismatch_as_stale() -> Result<()> {
         let metadata = OutputLockMetadata {
             command_name: "other-command".to_string(),
             pid: 1,
             created_at: 0,
         };
 
-        let status = classify_existing_lock(metadata, "test-command").expect("classify");
+        let status = classify_existing_lock(metadata, "test-command")?;
         match status {
             LockStatus::Stale(reason) => assert!(reason.contains("command mismatch")),
-            _ => panic!("expected stale status for command mismatch"),
+            _ => bail!("expected stale status for command mismatch"),
         }
+        Ok(())
     }
 
     #[test]
-    fn target_output_lock_classifies_unknown_owner_as_stale_after_age() {
+    fn target_output_lock_classifies_unknown_owner_as_stale_after_age() -> Result<()> {
         let metadata = OutputLockMetadata {
             command_name: "test-command".to_string(),
             pid: 1234,
@@ -523,8 +523,9 @@ mod tests {
                 reason.contains("stale by age"),
                 "expected stale-by-age reason, got {reason:?}"
             ),
-            _ => panic!("expected stale status for old unknown-owner metadata"),
+            _ => bail!("expected stale status for old unknown-owner metadata"),
         }
+        Ok(())
     }
 
     #[test]
@@ -538,7 +539,7 @@ mod tests {
             let _second_lock =
                 acquire_lock(&root_for_waiter, "target/test-command.lock", "test-command")?;
             tx.send(())
-                .expect("lock waiter can report successful acquisition");
+                .context("lock waiter could not report successful acquisition")?;
             Ok(())
         });
 
@@ -553,9 +554,10 @@ mod tests {
         drop(first_lock);
         rx.recv_timeout(Duration::from_secs(5))
             .context("second target output lock did not acquire after release")?;
-        waiter
-            .join()
-            .expect("lock waiter thread panicked while acquiring output lock")?;
+        match waiter.join() {
+            Ok(result) => result?,
+            Err(_) => bail!("lock waiter thread panicked while acquiring output lock"),
+        }
         Ok(())
     }
 }
