@@ -169,40 +169,56 @@ mod tests {
     use super::*;
     use std::thread;
     use std::time::Duration;
+    use uselesskey_test_support::{TestResult, ensure, ensure_eq, require_ok};
 
     #[test]
-    fn new_bytes_round_trip() {
+    fn new_bytes_round_trip() -> TestResult<()> {
         let data = vec![1u8, 2, 3, 4, 5];
-        let temp = TempArtifact::new_bytes("uk-test-", ".bin", &data).unwrap();
+        let temp = require_ok(
+            TempArtifact::new_bytes("uk-test-", ".bin", &data),
+            "create byte artifact",
+        )?;
 
-        let read_back = temp.read_to_bytes().unwrap();
-        assert_eq!(read_back, data);
+        let read_back = require_ok(temp.read_to_bytes(), "read artifact bytes")?;
+        ensure_eq!(read_back, data);
+        Ok(())
     }
 
     #[test]
-    fn new_string_round_trip() {
+    fn new_string_round_trip() -> TestResult<()> {
         let text = "hello temp";
-        let temp = TempArtifact::new_string("uk-test-", ".txt", text).unwrap();
+        let temp = require_ok(
+            TempArtifact::new_string("uk-test-", ".txt", text),
+            "create string artifact",
+        )?;
 
-        let read_back = temp.read_to_string().unwrap();
-        assert_eq!(read_back, text);
+        let read_back = require_ok(temp.read_to_string(), "read artifact text")?;
+        ensure_eq!(read_back, text);
+        Ok(())
     }
 
     #[test]
-    fn read_to_string_replaces_invalid_utf8() {
+    fn read_to_string_replaces_invalid_utf8() -> TestResult<()> {
         let bytes = [0xff, 0xfe, 0xfd];
-        let temp = TempArtifact::new_bytes("uk-test-", ".bin", &bytes).unwrap();
+        let temp = require_ok(
+            TempArtifact::new_bytes("uk-test-", ".bin", &bytes),
+            "create non-UTF-8 artifact",
+        )?;
 
-        let read_back = temp.read_to_string().unwrap();
-        assert!(read_back.contains('\u{FFFD}'));
+        let read_back = require_ok(temp.read_to_string(), "read artifact text")?;
+        ensure!(read_back.contains('\u{FFFD}'));
+        Ok(())
     }
 
     #[test]
-    fn tempfile_deleted_on_drop() {
+    fn tempfile_deleted_on_drop() -> TestResult<()> {
         let path = {
-            let temp = TempArtifact::new_string("uk-test-", ".txt", "cleanup").unwrap();
+            let temp = require_ok(
+                TempArtifact::new_string("uk-test-", ".txt", "cleanup"),
+                "create cleanup artifact",
+            )?;
             let path = temp.path().to_path_buf();
-            assert!(path.exists());
+            ensure!(path.exists());
             path
         };
 
@@ -215,13 +231,59 @@ mod tests {
             }
         }
 
-        assert!(!path.exists(), "tempfile should be deleted on drop");
+        ensure!(!path.exists(), "tempfile should be deleted on drop");
+        Ok(())
     }
 
     #[test]
-    fn debug_includes_type_name() {
-        let temp = TempArtifact::new_string("uk-test-", ".txt", "dbg").unwrap();
+    fn debug_includes_type_name() -> TestResult<()> {
+        let temp = require_ok(
+            TempArtifact::new_string("uk-test-", ".txt", "dbg"),
+            "create debug artifact",
+        )?;
         let dbg = format!("{:?}", temp);
-        assert!(dbg.contains("TempArtifact"));
+        ensure!(dbg.contains("TempArtifact"));
+        Ok(())
+    }
+
+    #[test]
+    fn empty_bytes_round_trip() -> TestResult<()> {
+        let temp = require_ok(
+            TempArtifact::new_bytes("uk-test-", ".bin", &[]),
+            "create empty artifact",
+        )?;
+        ensure!(require_ok(temp.read_to_bytes(), "read empty bytes")?.is_empty());
+        ensure_eq!(require_ok(temp.read_to_string(), "read empty text")?, "");
+        Ok(())
+    }
+
+    #[test]
+    fn debug_does_not_include_material() -> TestResult<()> {
+        let material = "test-only-material-must-not-appear-in-debug";
+        let temp = require_ok(
+            TempArtifact::new_string("uk-test-", ".txt", material),
+            "create redaction artifact",
+        )?;
+        let debug = format!("{temp:?}");
+        ensure!(debug.contains("TempArtifact"));
+        ensure!(
+            !debug.contains(material),
+            "debug output must not expose material"
+        );
+        Ok(())
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn tempfile_permissions_are_owner_read_write_only() -> TestResult<()> {
+        use std::os::unix::fs::PermissionsExt;
+
+        let temp = require_ok(
+            TempArtifact::new_bytes("uk-test-", ".bin", b"test-only"),
+            "create permission-check artifact",
+        )?;
+        let metadata = require_ok(fs::metadata(temp.path()), "read artifact permissions")?;
+        ensure_eq!(metadata.permissions().mode() & 0o777, 0o600);
+        Ok(())
     }
 }

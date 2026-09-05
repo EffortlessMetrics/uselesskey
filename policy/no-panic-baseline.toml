@@ -12,18 +12,18 @@
 # Reset:   `cargo xtask no-panic baseline --reset`
 
 schema_version = "1.0"
-generated_at = "2026-05-16"
+generated_at = "2026-09-05"
 generated_by = "cargo xtask no-panic baseline"
 
 [summary]
-total = 3466
+total = 3422
 
 [summary.by_family]
-expect = 2074
+expect = 2059
 get_unwrap = 1
-panic_macro = 112
+panic_macro = 110
 unreachable = 4
-unwrap = 1275
+unwrap = 1248
 
 [[entry]]
 path = "crates/materialize-buildrs-example/build.rs"
@@ -2610,14 +2610,6 @@ snippet = 'let rendered = String::from_utf8(bytes).expect("                     
 count = 1
 
 [[entry]]
-path = "crates/uselesskey-cli/src/main.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'expected_files.last().expect("           "),'
-count = 1
-
-[[entry]]
 path = "crates/uselesskey-cli/tests/export_targets.rs"
 family = "expect"
 selector_kind = "method_call"
@@ -2898,30 +2890,6 @@ snippet = 'serde_json::from_slice(&fs::read(bundle_dir.join("             ")).ex
 count = 1
 
 [[entry]]
-path = "crates/uselesskey-core/src/sink/mod.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                   ");'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core/src/sink/mod.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let read = artifact.read_to_bytes().expect("             ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core/src/sink/mod.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let text = artifact.read_to_string().expect("              ");'
-count = 1
-
-[[entry]]
 path = "crates/uselesskey-core/src/srp/cache.rs"
 family = "expect"
 selector_kind = "method_call"
@@ -3015,134 +2983,6 @@ family = "unreachable"
 selector_kind = "macro"
 selector_callee = "unreachable"
 snippet = "unreachable!()"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core/src/srp/seed.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_ne!(seed, Seed::from_env_value(&text).unwrap());"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core/src/srp/seed.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "assert_ne!(seed, Seed::from_env_value(text).unwrap());"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core/src/srp/seed.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let result = parse_hex_32(&hex).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core/src/srp/seed.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let seed = Seed::from_env_value("                            ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core/src/srp/seed.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let seed = Seed::from_env_value("   ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core/src/srp/seed.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let seed = Seed::from_env_value(&format!("         ")).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core/src/srp/seed.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let seed = Seed::from_env_value(&hex).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core/src/srp/seed.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let seed = Seed::from_env_value(&input).unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core/src/srp/seed.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let seed = Seed::from_env_value(hex).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core/src/srp/sink.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let read_back = temp.read_to_bytes().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core/src/srp/sink.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let read_back = temp.read_to_string().unwrap();"
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-core/src/srp/sink.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_bytes("        ", "    ", &bytes).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core/src/srp/sink.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_bytes("        ", "    ", &data).unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core/src/srp/sink.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("        ", "    ", "       ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core/src/srp/sink.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("        ", "    ", "   ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-core/src/srp/sink.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let temp = TempArtifact::new_string("        ", "    ", text).unwrap();'
 count = 1
 
 [[entry]]
@@ -10446,14 +10286,6 @@ path = "crates/uselesskey-webauthn/src/lib.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
-snippet = '.expect("                        ");'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-webauthn/src/lib.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
 snippet = 'into_writer(&map, &mut out).expect("                               ");'
 count = 1
 
@@ -15294,14 +15126,6 @@ path = "xtask/src/main.rs"
 family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
-snippet = 'collect_dependency_version_snippet_errors(&[readme], &versions).expect("       ");'
-count = 2
-
-[[entry]]
-path = "xtask/src/main.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
 snippet = 'env::set_current_dir(path).expect("               ");'
 count = 1
 
@@ -15311,7 +15135,7 @@ family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
 snippet = 'fs::create_dir_all(&features_dir).expect("                   ");'
-count = 2
+count = 1
 
 [[entry]]
 path = "xtask/src/main.rs"
@@ -15423,7 +15247,7 @@ family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
 snippet = 'let counts = count_bdd_scenarios().expect("               ");'
-count = 2
+count = 1
 
 [[entry]]
 path = "xtask/src/main.rs"
@@ -15431,7 +15255,7 @@ family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
 snippet = 'let dir = tempfile::tempdir().expect("       ");'
-count = 21
+count = 17
 
 [[entry]]
 path = "xtask/src/main.rs"
@@ -15547,14 +15371,6 @@ count = 1
 
 [[entry]]
 path = "xtask/src/main.rs"
-family = "panic_macro"
-selector_kind = "macro"
-selector_callee = "panic"
-snippet = '_ => panic!("                           "),'
-count = 2
-
-[[entry]]
-path = "xtask/src/main.rs"
 family = "unwrap"
 selector_kind = "method_call"
 selector_callee = "unwrap"
@@ -15567,15 +15383,7 @@ family = "unwrap"
 selector_kind = "method_call"
 selector_callee = "unwrap"
 snippet = ".unwrap();"
-count = 14
-
-[[entry]]
-path = "xtask/src/main.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'Cli::try_parse_from(["     ", "              ", "         ", "     "]).unwrap();'
-count = 1
+count = 11
 
 [[entry]]
 path = "xtask/src/main.rs"
@@ -15710,14 +15518,6 @@ path = "xtask/src/main.rs"
 family = "unwrap"
 selector_kind = "method_call"
 selector_callee = "unwrap"
-snippet = "fs::write(&state_path, &json).unwrap();"
-count = 1
-
-[[entry]]
-path = "xtask/src/main.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
 snippet = 'fs::write(&yes, "                                             ").unwrap();'
 count = 1
 
@@ -15823,7 +15623,7 @@ family = "unwrap"
 selector_kind = "method_call"
 selector_callee = "unwrap"
 snippet = "let _cwd_lock = CWD_LOCK.lock().unwrap();"
-count = 9
+count = 8
 
 [[entry]]
 path = "xtask/src/main.rs"
@@ -15902,22 +15702,6 @@ path = "xtask/src/main.rs"
 family = "unwrap"
 selector_kind = "method_call"
 selector_callee = "unwrap"
-snippet = "let json = serde_json::to_string_pretty(&state).unwrap();"
-count = 1
-
-[[entry]]
-path = "xtask/src/main.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let ok_path = Cli::try_parse_from(["     ", "              ", "      ", " "]).unwrap();'
-count = 1
-
-[[entry]]
-path = "xtask/src/main.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
 snippet = "let parsed: PublishState = serde_json::from_str(&json).unwrap();"
 count = 1
 
@@ -15935,14 +15719,6 @@ family = "unwrap"
 selector_kind = "method_call"
 selector_callee = "unwrap"
 snippet = "let w = wait.unwrap();"
-count = 1
-
-[[entry]]
-path = "xtask/src/main.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "match parsed.unwrap().cmd {"
 count = 1
 
 [[entry]]
