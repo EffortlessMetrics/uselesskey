@@ -1,0 +1,30 @@
+name: Bootstrap verified core no-panic burndown v3
+
+on:
+  pull_request:
+    types: [opened]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: no-panic-core-bootstrap-v3
+  cancel-in-progress: false
+
+jobs:
+  bootstrap:
+    if: github.actor != 'github-actions[bot]' && github.event.pull_request.head.ref == 'chore/no-panic-core-test-burndown-bootstrap-v3'
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Generate and verify real five-file candidate
+        run: python .github/bootstrap/run-no-panic-core.py
