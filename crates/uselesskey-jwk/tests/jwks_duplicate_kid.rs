@@ -4,8 +4,8 @@
 
 use serde_json::{Value, json};
 use uselesskey_jwk::{
-    AnyJwk, EcPrivateJwk, EcPublicJwk, Jwks, NegativeJwks, OctJwk, OkpPrivateJwk,
-    OkpPublicJwk, PrivateJwk, PublicJwk, RsaPrivateJwk, RsaPublicJwk,
+    AnyJwk, EcPrivateJwk, EcPublicJwk, Jwks, NegativeJwks, OctJwk, OkpPrivateJwk, OkpPublicJwk,
+    PrivateJwk, PublicJwk, RsaPrivateJwk, RsaPublicJwk,
 };
 use uselesskey_test_support::{TestResult, ensure, ensure_eq, require_some};
 
@@ -119,11 +119,7 @@ fn pair(value: &Value) -> TestResult<(&Value, &Value)> {
     Ok((first, second))
 }
 
-fn check_duplicate_kid(
-    source: AnyJwk,
-    field: &str,
-    replacement: &str,
-) -> TestResult<()> {
+fn check_duplicate_kid(source: AnyJwk, field: &str, replacement: &str) -> TestResult<()> {
     let jwks = Jwks { keys: vec![source] };
     let original = jwks.to_value();
     let first_source = require_some(jwks.keys.first(), "source key is missing")?;
@@ -131,8 +127,11 @@ fn check_duplicate_kid(
     require_some(expected_first.as_object_mut(), "source is not an object")?
         .insert("kid".into(), json!("duplicate-kid"));
     let mut expected_second = expected_first.clone();
-    require_some(expected_second.as_object_mut(), "expected key is not an object")?
-        .insert(field.into(), json!(replacement));
+    require_some(
+        expected_second.as_object_mut(),
+        "expected key is not an object",
+    )?
+    .insert(field.into(), json!(replacement));
 
     let result = jwks.negative_value(NegativeJwks::DuplicateKid);
     let (first, second) = pair(&result)?;

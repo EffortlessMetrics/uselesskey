@@ -67,12 +67,20 @@ impl Jwks {
             NegativeJwks::DuplicateKid => {
                 let mut first = first_or_scanner_safe_key(&keys, "duplicate-kid");
                 set_string_field(&mut first, "kid", "duplicate-kid");
+                let material_fields = ["n", "x", "k", "d", "e", "y", "p", "q", "dp", "dq", "qi"];
+                // Preserve existing fixture bytes unless the replacement would be a no-op.
+                let replacement = if material_fields
+                    .iter()
+                    .find_map(|field| first.get(*field))
+                    .and_then(Value::as_str)
+                    == Some(SCANNER_SAFE_MISMATCHED_MATERIAL)
+                {
+                    "AAAB"
+                } else {
+                    SCANNER_SAFE_MISMATCHED_MATERIAL
+                };
                 let mut second = first.clone();
-                set_first_material_field(
-                    &mut second,
-                    &["n", "x", "k", "d", "e", "y", "p", "q", "dp", "dq", "qi"],
-                    SCANNER_SAFE_MISMATCHED_MATERIAL,
-                );
+                set_first_material_field(&mut second, &material_fields, replacement);
                 vec![first, second]
             }
             NegativeJwks::DuplicateKey => {
