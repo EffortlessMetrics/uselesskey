@@ -1,9 +1,8 @@
 name: Bootstrap core no-panic burndown
 
 on:
-  push:
-    branches:
-      - chore/no-panic-core-test-burndown-bootstrap
+  pull_request:
+    types: [opened]
 
 permissions:
   contents: write
@@ -14,14 +13,14 @@ concurrency:
 
 jobs:
   bootstrap:
-    if: github.actor != 'github-actions[bot]'
+    if: github.event.pull_request.head.ref == 'chore/no-panic-core-test-burndown-bootstrap'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - name: Check out branch
         uses: actions/checkout@v6
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
 
       - name: Install Rust
@@ -132,7 +131,7 @@ jobs:
       - name: Commit generated source and baseline state
         shell: bash
         env:
-          BRANCH_NAME: ${{ github.ref_name }}
+          BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
         run: |
           set -euo pipefail
           git config user.name "EffortlessSteven"
