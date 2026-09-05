@@ -1,0 +1,144 @@
+name: Bootstrap core no-panic burndown
+
+on:
+  push:
+    branches:
+      - chore/no-panic-core-test-burndown-bootstrap
+
+permissions:
+  contents: write
+
+concurrency:
+  group: no-panic-core-bootstrap
+  cancel-in-progress: false
+
+jobs:
+  bootstrap:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Verify live source anchors
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object crates/uselesskey-core/src/srp/seed.rs)" = "fbb35c896f74ea61f690e926fcdfa4f8f4d8f9a1"
+          test "$(git hash-object crates/uselesskey-core/src/srp/sink.rs)" = "020501764f3c10c5a9306bdd6f03a9ef972a1250"
+          grep -F '[summary]' policy/no-panic-baseline.toml
+          grep -F 'total = 3466' policy/no-panic-baseline.toml
+
+      - name: Apply reviewed source patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 --decode .github/bootstrap/no-panic-core.patch.gz.b64 | gzip --decompress > /tmp/no-panic-core.patch
+          git apply --check /tmp/no-panic-core.patch
+          git apply /tmp/no-panic-core.patch
+          cargo fmt --all -- --check
+
+      - name: Verify focused core behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test -p uselesskey-core --all-features --locked
+          cargo clippy -p uselesskey-core --all-targets --all-features --locked -- -D warnings
+
+      - name: Refresh guarded no-panic baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp policy/no-panic-baseline.toml /tmp/no-panic-baseline.before.toml
+          cargo xtask no-panic baseline
+          cargo xtask check-no-panic-family
+
+      - name: Prove the baseline only shrank by the reviewed core findings
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from __future__ import annotations
+
+          from collections import Counter
+          from pathlib import Path
+          import tomllib
+
+          before_path = Path('/tmp/no-panic-baseline.before.toml')
+          after_path = Path('policy/no-panic-baseline.toml')
+          before = tomllib.loads(before_path.read_text(encoding='utf-8'))
+          after = tomllib.loads(after_path.read_text(encoding='utf-8'))
+
+          def identity(entry: dict[str, object]) -> tuple[tuple[str, str], ...]:
+              return tuple(sorted((key, str(value)) for key, value in entry.items() if key != 'count'))
+
+          def entries(document: dict[str, object]) -> Counter[tuple[tuple[str, str], ...]]:
+              result: Counter[tuple[tuple[str, str], ...]] = Counter()
+              for entry in document.get('entry', []):
+                  result[identity(entry)] += int(entry['count'])
+              return result
+
+          before_total = int(before['summary']['total'])
+          after_total = int(after['summary']['total'])
+          assert before_total == 3466, before_total
+          assert after_total == 3448, after_total
+
+          before_entries = entries(before)
+          after_entries = entries(after)
+          added = after_entries - before_entries
+          removed = before_entries - after_entries
+          assert not added, f'baseline refresh added or increased findings: {added}'
+          assert sum(removed.values()) == 18, removed
+
+          allowed_paths = {
+              'crates/uselesskey-core/src/srp/seed.rs',
+              'crates/uselesskey-core/src/srp/sink.rs',
+          }
+          for record, count in removed.items():
+              fields = dict(record)
+              assert fields.get('path') in allowed_paths, (fields, count)
+              assert fields.get('family') == 'unwrap', (fields, count)
+
+          assert sum(after_entries.values()) == after_total
+          PY
+
+          git diff --check
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess
+
+          expected = {
+              '.github/bootstrap/no-panic-core.patch.gz.b64',
+              'crates/uselesskey-core/src/srp/seed.rs',
+              'crates/uselesskey-core/src/srp/sink.rs',
+              'policy/no-panic-baseline.toml',
+          }
+          changed = set(subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines())
+          # The payload is tracked but unchanged; only the source and baseline should differ.
+          expected.remove('.github/bootstrap/no-panic-core.patch.gz.b64')
+          assert changed == expected, (changed, expected)
+          assert Path('.github/bootstrap/no-panic-core.patch.gz.b64').is_file()
+          PY
+
+      - name: Commit generated source and baseline state
+        shell: bash
+        env:
+          BRANCH_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          git config user.name "EffortlessSteven"
+          git config user.email "git@effortlesssteven.com"
+          git add crates/uselesskey-core/src/srp/seed.rs \
+                  crates/uselesskey-core/src/srp/sink.rs \
+                  policy/no-panic-baseline.toml
+          git commit -m "test(core): reduce historical panic-family baseline"
+          git push origin "HEAD:${BRANCH_NAME}"
