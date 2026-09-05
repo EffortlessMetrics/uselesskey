@@ -1,0 +1,122 @@
+name: Repair JWKS collision once
+
+# Temporary branch-only red/green proof. Removed by the repair commit.
+on:
+  pull_request:
+    types: [opened, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: repair-jwks-collision-once
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: >-
+      github.repository == 'EffortlessMetrics/uselesskey' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'fix/jwks-duplicate-kid-collision'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    env:
+      CARGO_TERM_COLOR: never
+      CARGO_INCREMENTAL: 0
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: dtolnay/rust-toolchain@1.95.0
+        with:
+          components: rustfmt, clippy
+      - name: Compile regression tests against unchanged production source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:crates/uselesskey-jwk/src/srp/shape.rs)" = 768cb35065f88abe0e22620ec9ab1e65e4cdc4e0
+          cargo test -p uselesskey-jwk --all-features --locked --test jwks_duplicate_kid --no-run
+      - name: Require the two collision regressions to fail before the fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          cargo test -p uselesskey-jwk --all-features --locked --test jwks_duplicate_kid > "$RUNNER_TEMP/jwks-red.log" 2>&1
+          status=$?
+          set -e
+          cat "$RUNNER_TEMP/jwks-red.log"
+          test "$status" -eq 101
+          grep -F 'test duplicate_kid_empty_input_has_distinct_material ... FAILED' "$RUNNER_TEMP/jwks-red.log"
+          grep -F 'test duplicate_kid_sentinel_collision_is_distinct_for_every_shape ... FAILED' "$RUNNER_TEMP/jwks-red.log"
+          grep -F '2 passed; 2 failed;' "$RUNNER_TEMP/jwks-red.log"
+      - name: Apply the collision-only correction
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          from textwrap import indent, dedent
+
+          path = Path('crates/uselesskey-jwk/src/srp/shape.rs')
+          source = path.read_text()
+          before = indent(dedent('''\
+          let mut second = first.clone();
+          set_first_material_field(
+              &mut second,
+              &["n", "x", "k", "d", "e", "y", "p", "q", "dp", "dq", "qi"],
+              SCANNER_SAFE_MISMATCHED_MATERIAL,
+          );
+          vec![first, second]
+          '''), ' ' * 16)
+          after = indent(dedent('''\
+          let material_fields = ["n", "x", "k", "d", "e", "y", "p", "q", "dp", "dq", "qi"];
+          // Preserve existing fixture bytes unless the replacement would be a no-op.
+          let replacement = if material_fields
+              .iter()
+              .find_map(|field| first.get(*field))
+              .and_then(Value::as_str)
+              == Some(SCANNER_SAFE_MISMATCHED_MATERIAL)
+          {
+              "AAAB"
+          } else {
+              SCANNER_SAFE_MISMATCHED_MATERIAL
+          };
+          let mut second = first.clone();
+          set_first_material_field(&mut second, &material_fields, replacement);
+          vec![first, second]
+          '''), ' ' * 16)
+          if source.count(before) != 1:
+              raise SystemExit('production snippet moved; stop for review')
+          path.write_text(source.replace(before, after, 1))
+          PY
+          cargo fmt -p uselesskey-jwk
+          cargo fmt --all -- --check
+          git diff --check
+      - name: Require all owner tests to pass after the fix
+        run: cargo test -p uselesskey-jwk --all-features --locked
+      - name: Check owner Clippy without weakening lint policy
+        run: cargo clippy -p uselesskey-jwk --all-targets --all-features --locked -- -D warnings
+      - name: Commit only the reviewed source and tests and remove this workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import subprocess
+          expected = {
+              'crates/uselesskey-jwk/src/srp/shape.rs',
+              'crates/uselesskey-jwk/tests/jwks_duplicate_kid.rs',
+          }
+          changed = set(subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines())
+          if not changed.issubset(expected) or 'crates/uselesskey-jwk/src/srp/shape.rs' not in changed:
+              raise SystemExit(f'unexpected changed paths: {changed}')
+          PY
+          git config user.name EffortlessSteven
+          git config user.email git@effortlesssteven.com
+          git add -- crates/uselesskey-jwk/src/srp/shape.rs crates/uselesskey-jwk/tests/jwks_duplicate_kid.rs
+          git rm -- .github/workflows/repair-jwks-collision-once.yml
+          git diff --cached --check
+          git diff --cached --stat
+          git commit -m "fix(jwk): keep duplicate-kid fixtures distinct on material collisions"
+          git push origin HEAD:refs/heads/fix/jwks-duplicate-kid-collision
