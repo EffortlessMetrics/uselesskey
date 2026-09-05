@@ -1,0 +1,80 @@
+name: Repair h2 lock once
+
+# Temporary branch-only repair; removed by the generated commit.
+on:
+  pull_request:
+    types: [synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: repair-h2-lock-once
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: >-
+      github.repository == 'EffortlessMetrics/uselesskey' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'fix/ci-audit-dependency-floor'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: dtolnay/rust-toolchain@1.95.0
+        with:
+          components: rustfmt
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deny
+      - name: Regenerate the affected h2 entry only
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:Cargo.lock)" = "$(git rev-parse be795d63a3c7735d59ba7c9a2a00211fd794d7f7:Cargo.lock)"
+          cargo update -p h2 --precise 0.4.16
+          python3 - <<'PY'
+          import pathlib
+          import re
+          import subprocess
+          import tomllib
+
+          original = tomllib.loads(subprocess.check_output(
+              ['git', 'show', 'HEAD:Cargo.lock'], text=True))
+          updated = tomllib.loads(pathlib.Path('Cargo.lock').read_text())
+          before = [p for p in original['package'] if p['name'] == 'h2']
+          after = [p for p in updated['package'] if p['name'] == 'h2']
+          if len(before) != 1 or len(after) != 1:
+              raise SystemExit('expected one h2 entry')
+          if before[0]['version'] != '0.4.13' or after[0]['version'] != '0.4.16':
+              raise SystemExit('unexpected h2 versions')
+          if not re.fullmatch(r'[0-9a-f]{64}', after[0]['checksum']):
+              raise SystemExit('invalid registry checksum')
+          before[0]['version'] = after[0]['version']
+          before[0]['checksum'] = after[0]['checksum']
+          if original != updated:
+              raise SystemExit('Cargo changed more than the approved h2 version/checksum')
+          print('Only h2 version/checksum changed:', after[0])
+          PY
+          cargo metadata --locked --no-deps --format-version 1 > /dev/null
+          cargo fmt --all -- --check
+          git diff --check
+      - name: Verify advisory blockers are resolved
+        run: cargo deny check advisories
+      - name: Commit the repair and remove this workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name EffortlessSteven
+          git config user.email git@effortlesssteven.com
+          git add -- Cargo.lock
+          git rm -- .github/workflows/repair-h2-lock-once.yml
+          git diff --cached --check
+          git diff --cached --stat
+          git commit -m "fix(deps): resolve h2 empty-frame advisory"
+          git push origin HEAD:refs/heads/fix/ci-audit-dependency-floor
