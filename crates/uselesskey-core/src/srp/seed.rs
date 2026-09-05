@@ -103,118 +103,138 @@ fn parse_hex_32(hex: &str) -> Result<[u8; 32], String> {
 #[cfg(all(test, feature = "std"))]
 mod tests {
     use super::{Seed, parse_hex_32};
+    use uselesskey_test_support::{TestResult, ensure, ensure_eq, require_ok, require_some};
 
     #[test]
-    fn seed_debug_is_redacted() {
+    fn seed_debug_is_redacted() -> TestResult<()> {
         let seed = Seed::new([7u8; 32]);
-        assert_eq!(format!("{:?}", seed), "Seed(**redacted**)");
+        ensure_eq!(format!("{:?}", seed), "Seed(**redacted**)");
+        Ok(())
     }
 
     #[test]
-    fn parse_hex_32_rejects_wrong_length() {
-        let err = parse_hex_32("abcd").unwrap_err();
-        assert!(err.contains("expected 64 hex chars"));
+    fn parse_hex_32_rejects_wrong_length() -> TestResult<()> {
+        let err = require_some(parse_hex_32("abcd").err(), "short hex must fail")?;
+        ensure!(err.contains("expected 64 hex chars"));
+        Ok(())
     }
 
     #[test]
-    fn parse_hex_32_rejects_invalid_char() {
+    fn parse_hex_32_rejects_invalid_char() -> TestResult<()> {
         let mut s = "0".repeat(64);
         s.replace_range(10..11, "g");
 
-        let err = parse_hex_32(&s).unwrap_err();
-        assert!(err.contains("invalid hex char"));
+        let err = require_some(parse_hex_32(&s).err(), "invalid high nibble must fail")?;
+        ensure!(err.contains("invalid hex char"));
+        Ok(())
     }
 
     #[test]
-    fn seed_from_env_value_parses_hex_with_prefix_and_whitespace() {
+    fn seed_from_env_value_parses_hex_with_prefix_and_whitespace() -> TestResult<()> {
         let hex = "0x0000000000000000000000000000000000000000000000000000000000000001";
-        let seed = Seed::from_env_value(&format!("  {hex}  ")).unwrap();
-        assert_eq!(seed.bytes()[31], 1);
-        assert!(seed.bytes()[..31].iter().all(|b| *b == 0));
+        let seed = require_ok(Seed::from_env_value(&format!("  {hex}  ")), "prefixed hex")?;
+        ensure_eq!(seed.bytes()[31], 1);
+        ensure!(seed.bytes()[..31].iter().all(|b| *b == 0));
+        Ok(())
     }
 
     #[test]
-    fn seed_from_env_value_parses_uppercase_0x_prefix() {
+    fn seed_from_env_value_parses_uppercase_0x_prefix() -> TestResult<()> {
         let hex = "0X0000000000000000000000000000000000000000000000000000000000000001";
-        let seed = Seed::from_env_value(hex).unwrap();
-        assert_eq!(seed.bytes()[31], 1);
-        assert!(seed.bytes()[..31].iter().all(|b| *b == 0));
+        let seed = require_ok(Seed::from_env_value(hex), "uppercase prefix")?;
+        ensure_eq!(seed.bytes()[31], 1);
+        ensure!(seed.bytes()[..31].iter().all(|b| *b == 0));
+        Ok(())
     }
 
     #[test]
-    fn seed_from_env_value_parses_uppercase_hex() {
+    fn seed_from_env_value_parses_uppercase_hex() -> TestResult<()> {
         let hex = "F".repeat(64);
-        let seed = Seed::from_env_value(&hex).unwrap();
-        assert!(seed.bytes().iter().all(|b| *b == 0xFF));
+        let seed = require_ok(Seed::from_env_value(&hex), "uppercase hex")?;
+        ensure!(seed.bytes().iter().all(|b| *b == 0xFF));
+        Ok(())
     }
 
     #[test]
-    fn string_seed_is_hashed_with_blake3() {
-        let seed = Seed::from_env_value("  deterministic-seed-value  ").unwrap();
+    fn string_seed_is_hashed_with_blake3() -> TestResult<()> {
+        let seed = require_ok(
+            Seed::from_env_value("  deterministic-seed-value  "),
+            "trimmed text seed",
+        )?;
         let expected = blake3::hash("deterministic-seed-value".as_bytes());
-        assert_eq!(seed.bytes(), expected.as_bytes());
+        ensure_eq!(seed.bytes(), expected.as_bytes());
+        Ok(())
     }
 
     #[test]
-    fn from_text_hashes_verbatim_input() {
+    fn from_text_hashes_verbatim_input() -> TestResult<()> {
         let text = "  deterministic-seed-value  ";
         let seed = Seed::from_text(text);
         let expected = blake3::hash(text.as_bytes());
-        assert_eq!(seed.bytes(), expected.as_bytes());
-        assert_ne!(seed, Seed::from_env_value(text).unwrap());
+        ensure_eq!(seed.bytes(), expected.as_bytes());
+        let env_seed = require_ok(Seed::from_env_value(text), "trimmed text seed")?;
+        ensure!(seed != env_seed);
+        Ok(())
     }
 
     #[test]
-    fn from_text_does_not_parse_hex_shaped_strings() {
+    fn from_text_does_not_parse_hex_shaped_strings() -> TestResult<()> {
         let text = "ab".repeat(32);
         let seed = Seed::from_text(&text);
         let expected = blake3::hash(text.as_bytes());
-        assert_eq!(seed.bytes(), expected.as_bytes());
-        assert_ne!(seed, Seed::from_env_value(&text).unwrap());
+        ensure_eq!(seed.bytes(), expected.as_bytes());
+        let env_seed = require_ok(Seed::from_env_value(&text), "hex seed")?;
+        ensure!(seed != env_seed);
+        Ok(())
     }
 
     #[test]
-    fn parse_hex_32_lowercase_valid() {
+    fn parse_hex_32_lowercase_valid() -> TestResult<()> {
         let hex = "aa".repeat(32);
-        let result = parse_hex_32(&hex).unwrap();
-        assert!(result.iter().all(|b| *b == 0xAA));
+        let result = require_ok(parse_hex_32(&hex), "lowercase hex")?;
+        ensure!(result.iter().all(|b| *b == 0xAA));
+        Ok(())
     }
 
     #[test]
-    fn parse_hex_32_mixed_case_valid() {
+    fn parse_hex_32_mixed_case_valid() -> TestResult<()> {
         let hex = "aAbBcCdDeEfF".repeat(5);
         // 60 chars — pad to 64
         let hex = format!("{hex}0000");
-        assert_eq!(hex.len(), 64);
-        assert!(parse_hex_32(&hex).is_ok());
+        ensure_eq!(hex.len(), 64);
+        ensure!(parse_hex_32(&hex).is_ok());
+        Ok(())
     }
 
     #[test]
-    fn parse_hex_32_invalid_lo_nibble() {
+    fn parse_hex_32_invalid_lo_nibble() -> TestResult<()> {
         // Valid hi nibble, invalid lo nibble at position 1
         let mut hex = "0".repeat(64);
         hex.replace_range(1..2, "z");
-        let err = parse_hex_32(&hex).unwrap_err();
-        assert!(err.contains("invalid hex char: z"));
+        let err = require_some(parse_hex_32(&hex).err(), "invalid low nibble must fail")?;
+        ensure!(err.contains("invalid hex char: z"));
+        Ok(())
     }
 
     #[test]
-    fn seed_equality_and_clone() {
+    fn seed_equality_and_clone() -> TestResult<()> {
         let a = Seed::new([42u8; 32]);
         let b = a;
-        assert_eq!(a, b);
-        assert_eq!(a.bytes(), b.bytes());
+        ensure_eq!(a, b);
+        ensure_eq!(a.bytes(), b.bytes());
+        Ok(())
     }
 
     #[test]
-    fn seed_inequality() {
+    fn seed_inequality() -> TestResult<()> {
         let a = Seed::new([1u8; 32]);
         let b = Seed::new([2u8; 32]);
-        assert_ne!(a, b);
+        ensure!(a != b);
+        Ok(())
     }
 
     #[test]
-    fn seed_hash_consistent() {
+    fn seed_hash_consistent() -> TestResult<()> {
         use core::hash::{Hash, Hasher};
         let seed = Seed::new([99u8; 32]);
 
@@ -224,11 +244,12 @@ mod tests {
 
         let mut h2 = std::collections::hash_map::DefaultHasher::new();
         seed.hash(&mut h2);
-        assert_eq!(hash1, h2.finish());
+        ensure_eq!(hash1, h2.finish());
+        Ok(())
     }
 
     #[test]
-    fn fill_bytes_is_seed_stable() {
+    fn fill_bytes_is_seed_stable() -> TestResult<()> {
         let seed = Seed::new([7u8; 32]);
         let mut a = [0u8; 16];
         let mut b = [0u8; 16];
@@ -236,66 +257,122 @@ mod tests {
         seed.fill_bytes(&mut a);
         seed.fill_bytes(&mut b);
 
-        assert_eq!(a, b);
+        ensure_eq!(a, b);
+        Ok(())
     }
 
     #[test]
-    fn fill_bytes_overwrites_destination_buffer() {
+    fn fill_bytes_overwrites_destination_buffer() -> TestResult<()> {
         let seed = Seed::new([7u8; 32]);
         let mut out = [0xAA; 16];
 
         seed.fill_bytes(&mut out);
 
-        assert_ne!(out, [0xAA; 16]);
+        ensure!(out != [0xAA; 16]);
+        Ok(())
     }
 
     #[test]
-    fn from_env_value_short_string_uses_blake3() {
-        let seed = Seed::from_env_value("abc").unwrap();
+    fn from_env_value_short_string_uses_blake3() -> TestResult<()> {
+        let seed = require_ok(Seed::from_env_value("abc"), "short text seed")?;
         let expected = blake3::hash(b"abc");
-        assert_eq!(seed.bytes(), expected.as_bytes());
+        ensure_eq!(seed.bytes(), expected.as_bytes());
+        Ok(())
     }
 
     #[test]
-    fn from_env_value_63_char_non_hex_uses_blake3() {
+    fn from_env_value_63_char_non_hex_uses_blake3() -> TestResult<()> {
         // 63 chars — not 64, so falls through to blake3 hashing.
         let input = "a".repeat(63);
-        let seed = Seed::from_env_value(&input).unwrap();
+        let seed = require_ok(Seed::from_env_value(&input), "non-hex-length text seed")?;
         let expected = blake3::hash(input.as_bytes());
-        assert_eq!(seed.bytes(), expected.as_bytes());
+        ensure_eq!(seed.bytes(), expected.as_bytes());
+        Ok(())
     }
 
     #[test]
-    fn from_env_value_65_char_non_hex_uses_blake3() {
+    fn from_env_value_65_char_non_hex_uses_blake3() -> TestResult<()> {
         // 65 chars — not 64, so falls through to blake3 hashing.
         let input = "a".repeat(65);
-        let seed = Seed::from_env_value(&input).unwrap();
+        let seed = require_ok(Seed::from_env_value(&input), "non-hex-length text seed")?;
         let expected = blake3::hash(input.as_bytes());
-        assert_eq!(seed.bytes(), expected.as_bytes());
+        ensure_eq!(seed.bytes(), expected.as_bytes());
+        Ok(())
     }
 
     #[test]
-    fn from_env_value_short_0x_prefixed_string_hashes_original_input() -> Result<(), String> {
+    fn from_env_value_short_0x_prefixed_string_hashes_original_input() -> TestResult<()> {
         let input = "0xabc";
-        let seed = Seed::from_env_value(input)?;
+        let seed = require_ok(Seed::from_env_value(input), "short prefixed text seed")?;
         let expected = blake3::hash(input.as_bytes());
-        assert_eq!(seed.bytes(), expected.as_bytes());
+        ensure_eq!(seed.bytes(), expected.as_bytes());
         Ok(())
     }
 
     #[test]
-    fn from_env_value_invalid_length_0x_prefixed_hex_hashes_original_input() -> Result<(), String> {
+    fn from_env_value_invalid_length_0x_prefixed_hex_hashes_original_input() -> TestResult<()> {
         let input = format!("0x{}", "a".repeat(63));
-        let seed = Seed::from_env_value(&input)?;
+        let seed = require_ok(Seed::from_env_value(&input), "prefixed text seed")?;
         let expected = blake3::hash(input.as_bytes());
-        assert_eq!(seed.bytes(), expected.as_bytes());
+        ensure_eq!(seed.bytes(), expected.as_bytes());
         Ok(())
     }
 
     #[test]
-    fn from_env_value_64_char_invalid_hex_returns_error() {
+    fn from_env_value_64_char_invalid_hex_returns_error() -> TestResult<()> {
         // 64 chars but not valid hex — parse_hex_32 error path.
         let input = "g".repeat(64);
-        assert!(Seed::from_env_value(&input).is_err());
+        ensure!(Seed::from_env_value(&input).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn parse_hex_32_rejects_invalid_nibbles_at_every_position() -> TestResult<()> {
+        for position in 0..64 {
+            let mut hex = "0".repeat(64);
+            hex.replace_range(position..position + 1, "g");
+            let err = require_some(
+                parse_hex_32(&hex).err(),
+                format!("invalid nibble at position {position} must fail"),
+            )?;
+            ensure_eq!(err, "invalid hex char: g", "position {position}");
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn from_env_value_prefixed_invalid_hex_returns_error() -> TestResult<()> {
+        for prefix in ["0x", "0X"] {
+            let input = format!("  {prefix}{}g  ", "0".repeat(63));
+            let err = require_some(
+                Seed::from_env_value(&input).err(),
+                "prefixed invalid hex must not fall back to hashing",
+            )?;
+            ensure_eq!(err, "invalid hex char: g");
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn from_env_value_64_byte_non_ascii_input_returns_error() -> TestResult<()> {
+        // Dispatch is byte-length based. Non-ASCII bytes must be rejected as
+        // invalid hex, not sliced at a UTF-8 boundary or silently hashed.
+        let input = "é".repeat(32);
+        ensure_eq!(input.len(), 64);
+        let err = require_some(
+            Seed::from_env_value(&input).err(),
+            "64-byte non-ASCII input must fail hex parsing",
+        )?;
+        ensure!(err.starts_with("invalid hex char:"));
+        Ok(())
+    }
+
+    #[test]
+    fn from_env_value_whitespace_only_hashes_empty_text() -> TestResult<()> {
+        let input = " \t\n ";
+        let seed = require_ok(Seed::from_env_value(input), "whitespace-only text seed")?;
+        ensure_eq!(seed.bytes(), blake3::hash(b"").as_bytes());
+        ensure!(seed != Seed::from_text(input));
+        Ok(())
     }
 }

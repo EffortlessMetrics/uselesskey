@@ -322,7 +322,9 @@ fn read_rows(root: &Path) -> Result<Vec<CommandLedgerRow>> {
             continue;
         }
 
-        let header = columns.as_ref().expect("headers found");
+        let Some(header) = columns.as_ref() else {
+            continue;
+        };
         let get = |name: &str| -> String {
             let idx = *header
                 .get(&normalize_header_name(name))
@@ -386,7 +388,9 @@ fn strip_inline_code(value: &str) -> String {
 fn extract_code_segments(value: &str) -> Vec<String> {
     let mut values = Vec::new();
     let pattern = r"`([^`]*)`";
-    let re = Regex::new(pattern).expect("valid inline-code regex");
+    let Ok(re) = Regex::new(pattern) else {
+        return Vec::new();
+    };
     for captures in re.captures_iter(value) {
         let value = captures
             .get(1)
@@ -412,7 +416,9 @@ fn extract_code_segments(value: &str) -> Vec<String> {
 
 fn extract_markdown_or_code_paths(value: &str) -> Vec<String> {
     let mut paths = Vec::new();
-    let re = Regex::new(r"\[[^\]]+\]\(([^)]+)\)").expect("valid markdown link regex");
+    let Ok(re) = Regex::new(r"\[[^\]]+\]\(([^)]+)\)") else {
+        return paths;
+    };
     for capture in re.captures_iter(value) {
         let path = capture
             .get(1)
@@ -513,7 +519,9 @@ fn command_matches(content: &str, command: &str) -> bool {
 }
 
 fn command_tokens(command: &str) -> Vec<String> {
-    let placeholder = Regex::new(r"<[^>]+>").expect("valid placeholder regex");
+    let Ok(placeholder) = Regex::new(r"<[^>]+>") else {
+        return Vec::new();
+    };
     let mut tokens = Vec::new();
 
     for token in command.split_whitespace() {
