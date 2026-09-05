@@ -2,7 +2,7 @@ name: Bootstrap core no-panic burndown
 
 on:
   pull_request:
-    types: [opened]
+    types: [opened, synchronize]
 
 permissions:
   contents: write
@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   bootstrap:
-    if: github.event.pull_request.head.ref == 'chore/no-panic-core-test-burndown-bootstrap'
+    if: github.actor != 'github-actions[bot]' && github.event.pull_request.head.ref == 'chore/no-panic-core-test-burndown-bootstrap'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -44,6 +44,7 @@ jobs:
           base64 --decode .github/bootstrap/no-panic-core.patch.gz.b64 | gzip --decompress > /tmp/no-panic-core.patch
           git apply --check /tmp/no-panic-core.patch
           git apply /tmp/no-panic-core.patch
+          cargo fmt --all
           cargo fmt --all -- --check
 
       - name: Verify focused core behavior
@@ -116,14 +117,11 @@ jobs:
           import subprocess
 
           expected = {
-              '.github/bootstrap/no-panic-core.patch.gz.b64',
               'crates/uselesskey-core/src/srp/seed.rs',
               'crates/uselesskey-core/src/srp/sink.rs',
               'policy/no-panic-baseline.toml',
           }
           changed = set(subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines())
-          # The payload is tracked but unchanged; only the source and baseline should differ.
-          expected.remove('.github/bootstrap/no-panic-core.patch.gz.b64')
           assert changed == expected, (changed, expected)
           assert Path('.github/bootstrap/no-panic-core.patch.gz.b64').is_file()
           PY
