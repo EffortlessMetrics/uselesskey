@@ -1,0 +1,31 @@
+name: Bootstrap core no-panic burndown v2
+
+on:
+  pull_request:
+    types: [opened]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: no-panic-core-bootstrap-v2
+  cancel-in-progress: false
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out candidate branch
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Generate and verify real candidate
+        run: python .github/bootstrap/run-no-panic-core.py
