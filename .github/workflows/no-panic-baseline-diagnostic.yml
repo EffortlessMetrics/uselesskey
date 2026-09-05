@@ -1,0 +1,36 @@
+name: Diagnose no-panic baseline delta
+
+on:
+  pull_request:
+    types: [opened]
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Reproduce and print the exact removed baseline identities
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('.github/bootstrap/run-no-panic-core.py')
+          text = path.read_text(encoding='utf-8')
+          old = 'assert int(after["summary"]["total"]) == 3448'
+          assert text.count(old) == 1
+          text = text.replace(old, 'print(f"AFTER_TOTAL={after[\"summary\"][\"total\"]}")', 1)
+          path.write_text(text, encoding='utf-8')
+          PY
+          python .github/bootstrap/run-no-panic-core.py
