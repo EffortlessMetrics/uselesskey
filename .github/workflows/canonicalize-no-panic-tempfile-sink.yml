@@ -1,0 +1,161 @@
+name: Canonicalize tempfile sink no-panic helpers
+
+on:
+  push:
+    branches: [control/canonicalize-no-panic-tempfile-sink]
+    paths:
+      - .github/workflows/canonicalize-no-panic-tempfile-sink.yml
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  canonicalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: EffortlessMetrics/uselesskey
+      PR: '892'
+      TARGET_BRANCH: test/no-panic-tempfile-sink
+      TARGET_FILE: crates/uselesskey/tests/tempfile_sink.rs
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: test/no-panic-tempfile-sink
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Wait for a structurally complete open candidate
+        id: state
+        shell: bash
+        run: |
+          set -euo pipefail
+          for _ in $(seq 1 80); do
+            state="$(gh api "repos/${REPO}/pulls/${PR}" --jq .state 2>/dev/null || true)"
+            merged="$(gh api "repos/${REPO}/pulls/${PR}" --jq .merged 2>/dev/null || true)"
+            if [[ "$state" == "closed" && "$merged" == "true" ]]; then
+              echo 'apply=false' >> "$GITHUB_OUTPUT"
+              echo 'reason=already-merged' >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            git fetch origin main "${TARGET_BRANCH}" --force >/dev/null 2>&1 || true
+            mapfile -t changed < <(git diff --name-only origin/main..."origin/${TARGET_BRANCH}" | sort)
+            if [[ "${changed[*]-}" == "crates/uselesskey/tests/tempfile_sink.rs policy/no-panic-baseline.toml" ]]; then
+              git checkout -B "${TARGET_BRANCH}" "origin/${TARGET_BRANCH}"
+              if grep -q '^type TestResult<T = ()> = Result<T, String>;' "${TARGET_FILE}"; then
+                echo 'apply=true' >> "$GITHUB_OUTPUT"
+                echo 'reason=local-adapter-present' >> "$GITHUB_OUTPUT"
+              else
+                echo 'apply=false' >> "$GITHUB_OUTPUT"
+                echo 'reason=already-canonical-or-different' >> "$GITHUB_OUTPUT"
+              fi
+              exit 0
+            fi
+            sleep 15
+          done
+          echo 'apply=false' >> "$GITHUB_OUTPUT"
+          echo 'reason=candidate-not-ready' >> "$GITHUB_OUTPUT"
+
+      - name: Trial the repository test-support contract
+        if: steps.state.outputs.apply == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          old_sha="$(git rev-parse HEAD)"
+          cp "${TARGET_FILE}" /tmp/tempfile_sink.local.rs
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('crates/uselesskey/tests/tempfile_sink.rs')
+          text = path.read_text(encoding='utf-8')
+          local = '''type TestResult<T = ()> = Result<T, String>;
+
+trait TestContext<T> {
+    fn test_context(self, context: impl std::fmt::Display) -> TestResult<T>;
+}
+
+impl<T, E: std::fmt::Debug> TestContext<T> for Result<T, E> {
+    fn test_context(self, context: impl std::fmt::Display) -> TestResult<T> {
+        self.map_err(|error| format!("{context}: {error:?}"))
+    }
+}
+
+impl<T> TestContext<T> for Option<T> {
+    fn test_context(self, context: impl std::fmt::Display) -> TestResult<T> {
+        self.ok_or_else(|| context.to_string())
+    }
+}
+
+'''
+          canonical = '''use uselesskey_test_support::{TestResult, require_ok, require_some};
+
+trait TestContext<T> {
+    fn test_context(self, context: impl std::fmt::Display) -> TestResult<T>;
+}
+
+impl<T, E: std::fmt::Display> TestContext<T> for Result<T, E> {
+    fn test_context(self, context: impl std::fmt::Display) -> TestResult<T> {
+        require_ok(self, context)
+    }
+}
+
+impl<T> TestContext<T> for Option<T> {
+    fn test_context(self, context: impl std::fmt::Display) -> TestResult<T> {
+        require_some(self, context)
+    }
+}
+
+'''
+          if text.count(local) != 1:
+              raise SystemExit('expected local adapter prelude exactly once')
+          text = text.replace(local, canonical, 1)
+          text = text.replace(
+              '.map_err(|_| format!("thread panicked at {}:{}", file!(), line!()))??',
+              '.pipe(|joined| require_ok(joined.map_err(|_| "thread panicked"), concat!("thread join failed at ", file!(), ":", line!())))??',
+          )
+          # Avoid a new extension trait solely for the join expression: rewrite
+          # the temporary pipe form into an immediately invoked closure.
+          text = text.replace(
+              '.pipe(|joined| require_ok(joined.map_err(|_| "thread panicked"), concat!("thread join failed at ", file!(), ":", line!())))??',
+              '.map_err(|_| "thread panicked").test_context(concat!("thread join failed at ", file!(), ":", line!()))??',
+          )
+          path.write_text(text, encoding='utf-8')
+          PY
+          cargo fmt --all
+          if cargo fmt --all -- --check \
+             && cargo test -p uselesskey --test tempfile_sink --all-features \
+             && cargo clippy -p uselesskey --test tempfile_sink --all-features -- -D warnings \
+             && cargo xtask check-no-panic-family \
+             && git diff --check; then
+            git config user.name EffortlessSteven
+            git config user.email git@effortlesssteven.com
+            git add "${TARGET_FILE}"
+            git commit -m "test: reuse canonical fallible test helpers" \
+              -m "Route tempfile-sink Result and Option context through uselesskey-test-support while retaining explicit double propagation for thread panic and in-thread test errors. Focused tests, Clippy, and the semantic no-panic checker pass."
+            git push --force-with-lease="refs/heads/${TARGET_BRANCH}:${old_sha}" origin "HEAD:${TARGET_BRANCH}"
+            echo canonical > /tmp/canonicalization-result.txt
+          else
+            cp /tmp/tempfile_sink.local.rs "${TARGET_FILE}"
+            echo local-adapter-retained > /tmp/canonicalization-result.txt
+          fi
+
+      - name: Record no-op outcome
+        if: steps.state.outputs.apply != 'true'
+        shell: bash
+        run: printf '%s\n' '${{ steps.state.outputs.reason }}' > /tmp/canonicalization-result.txt
+
+      - name: Upload canonicalization receipt
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: no-panic-tempfile-canonicalization-${{ github.sha }}
+          path: /tmp/canonicalization-result.txt
+          if-no-files-found: warn
+          retention-days: 30
