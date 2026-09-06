@@ -1,0 +1,240 @@
+name: Repair tempfile sink no-panic candidate
+
+on:
+  push:
+    branches: [control/repair-no-panic-tempfile-sink]
+    paths:
+      - .github/workflows/repair-no-panic-tempfile-sink.yml
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: EffortlessMetrics/uselesskey
+      PR: '892'
+      TARGET_BRANCH: test/no-panic-tempfile-sink
+      TARGET_FILE: crates/uselesskey/tests/tempfile_sink.rs
+      BASELINE_FILE: policy/no-panic-baseline.toml
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Wait for earlier writers and determine whether repair is needed
+        id: need
+        shell: bash
+        run: |
+          set -euo pipefail
+          sleep 180
+          pr_state="$(gh api "repos/${REPO}/pulls/${PR}" --jq .state 2>/dev/null || true)"
+          merged="$(gh api "repos/${REPO}/pulls/${PR}" --jq .merged 2>/dev/null || true)"
+          if [[ "$pr_state" == "closed" && "$merged" == "true" ]]; then
+            echo 'repair=false' >> "$GITHUB_OUTPUT"
+            echo 'reason=already-merged' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git fetch origin main "${TARGET_BRANCH}" --force
+          mapfile -t changed < <(git diff --name-only origin/main..."origin/${TARGET_BRANCH}" | sort)
+          total="$(git show "origin/${TARGET_BRANCH}:${BASELINE_FILE}" 2>/dev/null | python -c 'import sys,tomllib; print(tomllib.loads(sys.stdin.read())["summary"]["total"])' 2>/dev/null || true)"
+          if [[ "${changed[*]-}" == "${TARGET_FILE} ${BASELINE_FILE}" && "$total" == "3351" ]] && \
+             ! git show "origin/${TARGET_BRANCH}:${TARGET_FILE}" | grep -Eq '\.unwrap[[:space:]]*\([[:space:]]*\)'; then
+            echo 'repair=false' >> "$GITHUB_OUTPUT"
+            echo 'reason=exact-candidate-present' >> "$GITHUB_OUTPUT"
+          else
+            echo 'repair=true' >> "$GITHUB_OUTPUT"
+            echo 'reason=target-not-exact' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Search historical refs for a test-equivalent candidate
+        if: steps.need.outputs.repair == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin '+refs/heads/*:refs/remotes/origin/*' --force
+          git reset --hard origin/main
+          python - <<'PY'
+          from __future__ import annotations
+
+          import difflib
+          import json
+          import re
+          import subprocess
+          from pathlib import Path
+
+          path = 'crates/uselesskey/tests/tempfile_sink.rs'
+          current = Path(path).read_text(encoding='utf-8')
+          test_re = re.compile(r'#\s*\[\s*test\s*\][\s\S]{0,300}?\bfn\s+([A-Za-z0-9_]+)\s*\(')
+          panic_patterns = {
+              'unwrap': re.compile(r'\.unwrap\s*\(\s*\)'),
+              'expect': re.compile(r'\.expect\s*\('),
+              'panic': re.compile(r'\bpanic!\s*\('),
+              'unreachable': re.compile(r'\bunreachable!\s*\('),
+          }
+          current_tests = test_re.findall(current)
+          current_assertions = len(re.findall(r'\b(?:assert|assert_eq|assert_ne|ensure|ensure_eq)!', current))
+          current_panics = {name: len(pattern.findall(current)) for name, pattern in panic_patterns.items()}
+          if current_panics['unwrap'] != 71:
+              raise SystemExit(f'current main has {current_panics["unwrap"]} unwraps, expected 71')
+
+          refs = subprocess.check_output(
+              ['git', 'for-each-ref', '--format=%(refname)', 'refs/remotes/origin'], text=True
+          ).splitlines()
+          candidates = []
+          seen = set()
+          for ref in refs:
+              if ref in {'refs/remotes/origin/main', 'refs/remotes/origin/HEAD'}:
+                  continue
+              try:
+                  content = subprocess.check_output(['git', 'show', f'{ref}:{path}'], text=True, stderr=subprocess.DEVNULL)
+              except subprocess.CalledProcessError:
+                  continue
+              digest = __import__('hashlib').sha256(content.encode()).hexdigest()
+              if digest in seen:
+                  continue
+              seen.add(digest)
+              if panic_patterns['unwrap'].search(content):
+                  continue
+              if test_re.findall(content) != current_tests:
+                  continue
+              assertion_count = len(re.findall(r'\b(?:assert|assert_eq|assert_ne|ensure|ensure_eq)!', content))
+              if assertion_count < current_assertions:
+                  continue
+              candidate_panics = {name: len(pattern.findall(content)) for name, pattern in panic_patterns.items()}
+              if any(candidate_panics[name] > current_panics[name] for name in ('expect', 'panic', 'unreachable')):
+                  continue
+              similarity = difflib.SequenceMatcher(None, current, content, autojunk=False).ratio()
+              candidates.append({
+                  'ref': ref,
+                  'similarity': similarity,
+                  'assertions': assertion_count,
+                  'panics': candidate_panics,
+                  'content': content,
+              })
+
+          candidates.sort(key=lambda row: (-row['similarity'], row['ref']))
+          Path('target').mkdir(exist_ok=True)
+          Path('target/tempfile-candidate-index.json').write_text(
+              json.dumps([{k: v for k, v in row.items() if k != 'content'} for row in candidates], indent=2) + '\n',
+              encoding='utf-8',
+          )
+          if not candidates:
+              raise SystemExit('no historical ref contains a test-equivalent zero-unwrap candidate')
+
+          for index, candidate in enumerate(candidates[:12], start=1):
+              subprocess.run(['git', 'reset', '--hard', 'origin/main'], check=True, stdout=subprocess.DEVNULL)
+              Path(path).write_text(candidate['content'], encoding='utf-8')
+              fmt = subprocess.run(['cargo', 'fmt', '--all'], text=True, capture_output=True)
+              if fmt.returncode != 0:
+                  continue
+              test = subprocess.run(
+                  ['cargo', 'test', '-p', 'uselesskey', '--test', 'tempfile_sink', '--all-features'],
+                  text=True,
+                  capture_output=True,
+              )
+              if test.returncode != 0:
+                  continue
+              clippy = subprocess.run(
+                  ['cargo', 'clippy', '-p', 'uselesskey', '--test', 'tempfile_sink', '--all-features', '--', '-D', 'warnings'],
+                  text=True,
+                  capture_output=True,
+              )
+              if clippy.returncode != 0:
+                  continue
+              Path('target/tempfile-candidate-selected.json').write_text(
+                  json.dumps({
+                      'ref': candidate['ref'],
+                      'similarity': candidate['similarity'],
+                      'candidate_number': index,
+                      'assertions': candidate['assertions'],
+                      'panics': candidate['panics'],
+                  }, indent=2, sort_keys=True) + '\n',
+                  encoding='utf-8',
+              )
+              break
+          else:
+              raise SystemExit('historical zero-unwrap candidates did not pass current focused tests and Clippy')
+          PY
+
+      - name: Regenerate and verify the refusing baseline
+        if: steps.need.outputs.repair == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp "${BASELINE_FILE}" /tmp/no-panic-baseline.before.toml
+          cargo xtask no-panic baseline
+          cargo xtask check-no-panic-family
+          python - <<'PY'
+          from __future__ import annotations
+          import json
+          import tomllib
+          from pathlib import Path
+
+          before = tomllib.loads(Path('/tmp/no-panic-baseline.before.toml').read_text())
+          after = tomllib.loads(Path('policy/no-panic-baseline.toml').read_text())
+          def identities(doc):
+              return {
+                  (row['path'], row['family'], row.get('selector_kind', ''), row.get('selector_callee', ''), row['snippet']): int(row['count'])
+                  for row in doc.get('entry', [])
+              }
+          old = identities(before)
+          new = identities(after)
+          assert int(before['summary']['total']) == 3422
+          assert int(after['summary']['total']) == 3351
+          assert all(count <= old.get(key, 0) for key, count in new.items())
+          removed = [(key, count - new.get(key, 0)) for key, count in old.items() if count > new.get(key, 0)]
+          assert sum(count for _, count in removed) == 71
+          assert all(key[0] == 'crates/uselesskey/tests/tempfile_sink.rs' for key, _ in removed)
+          Path('target/tempfile-baseline-repair.json').write_text(
+              json.dumps({'before': 3422, 'after': 3351, 'removed': 71, 'added_or_increased': 0}, indent=2) + '\n'
+          )
+          PY
+          cargo fmt --all -- --check
+          cargo test -p uselesskey --test tempfile_sink --all-features
+          cargo clippy -p uselesskey --test tempfile_sink --all-features -- -D warnings
+          git diff --check
+
+      - name: Replace the target branch only with the passing two-file candidate
+        if: steps.need.outputs.repair == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/bootstrap-no-panic-tempfile-sink.yml
+          mapfile -t changed < <(git diff --name-only origin/main | sort)
+          expected=(
+            crates/uselesskey/tests/tempfile_sink.rs
+            policy/no-panic-baseline.toml
+          )
+          [[ "${changed[*]}" == "${expected[*]}" ]]
+          old_target_sha="$(git rev-parse "origin/${TARGET_BRANCH}")"
+          git config user.name EffortlessSteven
+          git config user.email git@effortlesssteven.com
+          git add "${TARGET_FILE}" "${BASELINE_FILE}"
+          git commit -m "test: remove tempfile sink panic-family debt" \
+            -m "Apply the current-tree-compatible historical test conversion that removes all 71 tempfile-sink unwrap sites while preserving the test and assertion inventory. Refresh the no-panic baseline through the normal refusing command from 3,422 to 3,351 findings with no added or increased identity."
+          git push --force-with-lease="refs/heads/${TARGET_BRANCH}:${old_target_sha}" origin "HEAD:${TARGET_BRANCH}"
+
+      - name: Upload watchdog evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: no-panic-tempfile-watchdog-${{ github.sha }}
+          path: |
+            target/tempfile-candidate-index.json
+            target/tempfile-candidate-selected.json
+            target/tempfile-baseline-repair.json
+          if-no-files-found: warn
+          retention-days: 30
