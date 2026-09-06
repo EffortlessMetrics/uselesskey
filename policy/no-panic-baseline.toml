@@ -16,10 +16,10 @@ generated_at = "2026-09-06"
 generated_by = "cargo xtask no-panic baseline"
 
 [summary]
-total = 3351
+total = 3334
 
 [summary.by_family]
-expect = 2059
+expect = 2042
 get_unwrap = 1
 panic_macro = 110
 unreachable = 4
@@ -2607,134 +2607,6 @@ family = "expect"
 selector_kind = "method_call"
 selector_callee = "expect"
 snippet = 'let rendered = String::from_utf8(bytes).expect("                     ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-cli/tests/export_targets.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                                 ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-cli/tests/export_targets.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = '.expect("                         ")'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-cli/tests/export_targets.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'fs::read_to_string("                            ").expect("                        ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-cli/tests/export_targets.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'fs::read_to_string("                            ").expect("                       ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-cli/tests/export_targets.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'fs::read_to_string("                          ").expect("                            ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-cli/tests/export_targets.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'fs::read_to_string("                          ").expect("                         ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-cli/tests/export_targets.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'fs::read_to_string("                       ").expect("                          ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-cli/tests/export_targets.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'fs::read_to_string(env_root.join("             ")).expect("              "),'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-cli/tests/export_targets.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'fs::read_to_string(flat_root.join("          ")).expect("                "),'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-cli/tests/export_targets.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let env_written = uselesskey_cli::export_envdir(&env_root, &artifacts).expect("             ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-cli/tests/export_targets.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let parsed: Value = serde_json::from_str(&vault_json).expect("                          ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-cli/tests/export_targets.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let temp = tempdir().expect("       ");'
-count = 2
-
-[[entry]]
-path = "crates/uselesskey-cli/tests/export_targets.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let vault_json = render_vault_kv_json(&artifacts).expect("                           ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-cli/tests/export_targets.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'let written = fs::read_to_string(&path).expect("                             ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-cli/tests/export_targets.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'manifest.write_json(&path).expect("                     ");'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-cli/tests/export_targets.rs"
-family = "expect"
-selector_kind = "method_call"
-selector_callee = "expect"
-snippet = 'uselesskey_cli::export_flat_files(&flat_root, &artifacts).expect("                ");'
 count = 1
 
 [[entry]]
