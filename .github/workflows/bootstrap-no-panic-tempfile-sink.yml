@@ -1,0 +1,414 @@
+name: Bootstrap tempfile sink no-panic slice
+
+on:
+  push:
+    branches: [test/no-panic-tempfile-sink]
+    paths:
+      - .github/workflows/bootstrap-no-panic-tempfile-sink.yml
+
+permissions:
+  contents: write
+
+jobs:
+  transform:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: test/no-panic-tempfile-sink
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Convert the exact 71-site integration-test cluster
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --quiet 'tree-sitter==0.25.2' 'tree-sitter-rust==0.24.0'
+          python - <<'PY'
+          from __future__ import annotations
+
+          import json
+          import re
+          from dataclasses import dataclass
+          from pathlib import Path
+
+          from tree_sitter import Language, Parser
+          import tree_sitter_rust
+
+          PATH = Path('crates/uselesskey/tests/tempfile_sink.rs')
+          source = PATH.read_text(encoding='utf-8')
+          raw = source.encode('utf-8')
+
+          language = Language(tree_sitter_rust.language())
+          parser = Parser(language)
+          tree = parser.parse(raw)
+
+          @dataclass(frozen=True)
+          class Edit:
+              start: int
+              end: int
+              text: str
+              reason: str
+
+          def text(node) -> str:
+              return raw[node.start_byte:node.end_byte].decode('utf-8')
+
+          def walk(node):
+              yield node
+              for child in node.children:
+                  yield from walk(child)
+
+          def nearest(node, kind: str):
+              current = node.parent
+              while current is not None:
+                  if current.type == kind:
+                      return current
+                  current = current.parent
+              return None
+
+          def nearest_callable(node):
+              current = node.parent
+              while current is not None:
+                  if current.type in {'closure_expression', 'function_item'}:
+                      return current
+                  current = current.parent
+              return None
+
+          def preceding_attributes(fn_node) -> str:
+              start = max(0, fn_node.start_byte - 400)
+              prefix = raw[start:fn_node.start_byte].decode('utf-8')
+              boundary = max(prefix.rfind('\n}'), prefix.rfind('\n;'))
+              return prefix[boundary + 1:]
+
+          call_nodes = []
+          for node in walk(tree.root_node):
+              if node.type != 'call_expression':
+                  continue
+              snippet = text(node).rstrip()
+              if re.search(r'\.unwrap\s*\(\s*\)\s*$', snippet):
+                  call_nodes.append(node)
+
+          if len(call_nodes) != 71:
+              raise SystemExit(f'expected exactly 71 unwrap calls in {PATH}, found {len(call_nodes)}')
+
+          callables = {}
+          for call in call_nodes:
+              owner = nearest_callable(call)
+              if owner is None:
+                  raise SystemExit(f'unowned unwrap at {call.start_point}')
+              if owner.type == 'function_item':
+                  attrs = preceding_attributes(owner)
+                  if not re.search(r'#\s*\[\s*test\s*\]', attrs):
+                      name = owner.child_by_field_name('name')
+                      raise SystemExit(
+                          f'unwrap occurs outside a test or closure in '
+                          f'{text(name) if name else owner.start_point}'
+                      )
+              callables[(owner.start_byte, owner.end_byte)] = owner
+
+          # Every spawned closure is made fallible, including closures whose only
+          # panic channel is the parent-side JoinHandle::join().unwrap().
+          spawn_closures = {}
+          for node in walk(tree.root_node):
+              if node.type != 'closure_expression':
+                  continue
+              parent = node.parent
+              while parent is not None and parent.type in {
+                  'arguments', 'parenthesized_expression'
+              }:
+                  parent = parent.parent
+              if parent is None or parent.type != 'call_expression':
+                  continue
+              function = parent.child_by_field_name('function')
+              if function is None:
+                  continue
+              function_text = text(function).replace(' ', '')
+              if function_text.endswith('spawn') or function_text.endswith('spawn_scoped'):
+                  spawn_closures[(node.start_byte, node.end_byte)] = node
+
+          edits: list[Edit] = []
+
+          def add_edit(start: int, end: int, replacement: str, reason: str) -> None:
+              edits.append(Edit(start, end, replacement, reason))
+
+          join_unwraps = 0
+          for call in call_nodes:
+              snippet = text(call)
+              match = re.search(r'\.unwrap\s*\(\s*\)\s*$', snippet)
+              assert match is not None
+              receiver = snippet[:match.start()]
+              start = call.start_byte
+              end = call.end_byte
+              if re.search(r'\.join\s*\(\s*\)\s*$', receiver):
+                  join_unwraps += 1
+                  replacement = (
+                      receiver
+                      + '.map_err(|_| format!('
+                      + '"thread panicked at {}:{}", file!(), line!()))??'
+                  )
+              else:
+                  replacement = (
+                      receiver
+                      + '.test_context(concat!('
+                      + '"test operation failed at ", file!(), ":", line!()))?'
+                  )
+              add_edit(start, end, replacement, 'replace unwrap')
+
+          # All direct thread-spawn closures return Result so parent-side joins
+          # can propagate both a thread panic and an in-thread test failure.
+          for closure in spawn_closures.values():
+              body = closure.child_by_field_name('body')
+              if body is None:
+                  raise SystemExit(f'closure without body at {closure.start_point}')
+              returns = [
+                  node for node in walk(body)
+                  if node.type == 'return_expression'
+                  and nearest(node, 'closure_expression') == closure
+              ]
+              if returns:
+                  raise SystemExit(
+                      f'explicit return inside spawned closure at {closure.start_point}; '
+                      'requires a reviewed manual conversion'
+                  )
+
+              # Insert the explicit fallible output immediately before the body.
+              add_edit(body.start_byte, body.start_byte, ' -> TestResult<()> ', 'closure output')
+              if body.type == 'block':
+                  inner = raw[body.start_byte + 1:body.end_byte - 1].decode('utf-8')
+                  if inner.strip():
+                      tail = inner.rstrip()
+                      last = tail[-1]
+                      separator = '' if last in {';', '}'} else ';'
+                  else:
+                      separator = ''
+                  add_edit(
+                      body.end_byte - 1,
+                      body.end_byte - 1,
+                      f'{separator}\n            Ok(())\n        ',
+                      'closure success',
+                  )
+              else:
+                  add_edit(body.start_byte, body.start_byte, '{ Ok(', 'closure body open')
+                  add_edit(body.end_byte, body.end_byte, ') }', 'closure body close')
+
+          # Convert each affected #[test] function to Result and preserve all
+          # existing assertions. The only semantic change is error propagation.
+          test_functions = {
+              key: node
+              for key, node in callables.items()
+              if node.type == 'function_item'
+          }
+          for fn_node in test_functions.values():
+              body = fn_node.child_by_field_name('body')
+              if body is None or body.type != 'block':
+                  raise SystemExit(f'test function without block at {fn_node.start_point}')
+              header = raw[fn_node.start_byte:body.start_byte].decode('utf-8')
+              if '->' in header:
+                  raise SystemExit(
+                      f'affected test already has an explicit return type at {fn_node.start_point}'
+                  )
+              add_edit(body.start_byte, body.start_byte, ' -> TestResult<()> ', 'test output')
+
+              # Bare returns become successful early returns. Ignore returns in
+              # nested closures because those closures own their own result.
+              for node in walk(body):
+                  if node.type != 'return_expression':
+                      continue
+                  if nearest(node, 'closure_expression') is not None:
+                      continue
+                  value = node.child_by_field_name('value')
+                  if value is None:
+                      add_edit(node.start_byte, node.end_byte, 'return Ok(())', 'bare return')
+                  else:
+                      raise SystemExit(
+                          f'value return inside unit test at {node.start_point}; '
+                          'requires a reviewed manual conversion'
+                      )
+
+              inner = raw[body.start_byte + 1:body.end_byte - 1].decode('utf-8')
+              tail = inner.rstrip()
+              separator = '' if not tail or tail[-1] in {';', '}'} else ';'
+              add_edit(
+                  body.end_byte - 1,
+                  body.end_byte - 1,
+                  f'{separator}\n    Ok(())\n',
+                  'test success',
+              )
+
+          # Reject overlapping replacements; insertions at the same boundary are
+          # ordered deterministically below.
+          replacements = sorted((e for e in edits if e.start != e.end), key=lambda e: e.start)
+          for left, right in zip(replacements, replacements[1:]):
+              if left.end > right.start:
+                  raise SystemExit(
+                      f'overlapping edits: {left.reason} {left.start}:{left.end} and '
+                      f'{right.reason} {right.start}:{right.end}'
+                  )
+
+          transformed = raw
+          for edit in sorted(edits, key=lambda e: (e.start, e.end, e.reason), reverse=True):
+              transformed = transformed[:edit.start] + edit.text.encode('utf-8') + transformed[edit.end:]
+
+          prelude = '''type TestResult<T = ()> = Result<T, String>;
+
+trait TestContext<T> {
+    fn test_context(self, context: impl std::fmt::Display) -> TestResult<T>;
+}
+
+impl<T, E: std::fmt::Debug> TestContext<T> for Result<T, E> {
+    fn test_context(self, context: impl std::fmt::Display) -> TestResult<T> {
+        self.map_err(|error| format!("{context}: {error:?}"))
+    }
+}
+
+impl<T> TestContext<T> for Option<T> {
+    fn test_context(self, context: impl std::fmt::Display) -> TestResult<T> {
+        self.ok_or_else(|| context.to_string())
+    }
+}
+
+'''
+          transformed_text = transformed.decode('utf-8')
+          if 'trait TestContext<T>' in transformed_text or 'type TestResult<' in transformed_text:
+              raise SystemExit('unexpected pre-existing local test result/context helper')
+          transformed_text = prelude + transformed_text
+
+          if re.search(r'\.unwrap\s*\(\s*\)', transformed_text):
+              raise SystemExit('unwrap call remained after conversion')
+
+          PATH.write_text(transformed_text, encoding='utf-8')
+          Path('target').mkdir(exist_ok=True)
+          Path('target/no-panic-tempfile-transform.json').write_text(
+              json.dumps(
+                  {
+                      'path': str(PATH),
+                      'removed_unwrap_calls': len(call_nodes),
+                      'join_unwrap_calls': join_unwraps,
+                      'affected_test_functions': len(test_functions),
+                      'spawn_closures_made_fallible': len(spawn_closures),
+                  },
+                  indent=2,
+                  sort_keys=True,
+              ) + '\n',
+              encoding='utf-8',
+          )
+          PY
+
+      - name: Format and run focused owner verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo fmt --all
+          cargo fmt --all -- --check
+          cargo test -p uselesskey --test tempfile_sink --all-features
+          cargo clippy -p uselesskey --test tempfile_sink --all-features -- -D warnings
+          git diff --check
+
+      - name: Refresh the baseline without absorbing debt
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp policy/no-panic-baseline.toml /tmp/no-panic-baseline.before.toml
+          cargo xtask no-panic baseline
+          cargo xtask check-no-panic-family
+          python - <<'PY'
+          from __future__ import annotations
+
+          import json
+          import tomllib
+          from pathlib import Path
+
+          before = tomllib.loads(Path('/tmp/no-panic-baseline.before.toml').read_text())
+          after = tomllib.loads(Path('policy/no-panic-baseline.toml').read_text())
+
+          def identities(doc):
+              return {
+                  (
+                      row['path'],
+                      row['family'],
+                      row.get('selector_kind', ''),
+                      row.get('selector_callee', ''),
+                      row['snippet'],
+                  ): int(row['count'])
+                  for row in doc.get('entry', [])
+              }
+
+          before_total = int(before['summary']['total'])
+          after_total = int(after['summary']['total'])
+          if before_total != 3422:
+              raise SystemExit(f'expected starting total 3422, found {before_total}')
+          if after_total != 3351:
+              raise SystemExit(f'expected final total 3351, found {after_total}')
+
+          old = identities(before)
+          new = identities(after)
+          increased = [
+              {'identity': key, 'before': old.get(key, 0), 'after': count}
+              for key, count in new.items()
+              if count > old.get(key, 0)
+          ]
+          if increased:
+              raise SystemExit(f'baseline added or increased identities: {increased[:5]}')
+
+          removed = sum(old.values()) - sum(new.values())
+          if removed != 71:
+              raise SystemExit(f'expected 71 removed findings, found {removed}')
+
+          transform = json.loads(
+              Path('target/no-panic-tempfile-transform.json').read_text(encoding='utf-8')
+          )
+          receipt = {
+              **transform,
+              'baseline_before': before_total,
+              'baseline_after': after_total,
+              'baseline_removed': removed,
+              'baseline_identity_additions_or_increases': 0,
+              'checker_mode': 'no-new-debt',
+              'new_debt': 0,
+          }
+          Path('target/no-panic-tempfile-sink-receipt.json').write_text(
+              json.dumps(receipt, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          print(json.dumps(receipt, indent=2, sort_keys=True))
+          PY
+          git diff --check
+
+      - name: Commit only the reviewed source and policy movement
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/bootstrap-no-panic-tempfile-sink.yml
+          mapfile -t changed < <(git diff --name-only origin/main | sort)
+          printf '%s\n' "${changed[@]}"
+          expected=(
+            crates/uselesskey/tests/tempfile_sink.rs
+            policy/no-panic-baseline.toml
+          )
+          if [[ "${changed[*]}" != "${expected[*]}" ]]; then
+            echo "unexpected changed-file set" >&2
+            exit 1
+          fi
+          git config user.name EffortlessSteven
+          git config user.email git@effortlesssteven.com
+          git add crates/uselesskey/tests/tempfile_sink.rs policy/no-panic-baseline.toml
+          git commit -m "test: remove tempfile sink panic-family debt" \
+            -m "Convert the 71 historical unwrap sites in the tempfile-sink integration suite into contextual Result propagation, including both in-thread failures and JoinHandle panics. Refresh the no-panic baseline through the normal refusing command from 3,422 to 3,351 findings without adding or increasing an identity."
+          git push origin HEAD:test/no-panic-tempfile-sink
+
+      - name: Upload exact-slice receipt
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: no-panic-tempfile-sink-${{ github.sha }}
+          path: |
+            target/no-panic-tempfile-transform.json
+            target/no-panic-tempfile-sink-receipt.json
+          if-no-files-found: warn
+          retention-days: 30
