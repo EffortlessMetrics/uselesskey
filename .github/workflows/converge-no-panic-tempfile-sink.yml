@@ -1,0 +1,257 @@
+name: Converge tempfile sink no-panic merge
+
+on:
+  push:
+    branches: [control/converge-no-panic-tempfile-sink]
+    paths:
+      - .github/workflows/converge-no-panic-tempfile-sink.yml
+
+permissions:
+  actions: read
+  checks: read
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  converge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: EffortlessMetrics/uselesskey
+      PR: '892'
+      TARGET_BRANCH: test/no-panic-tempfile-sink
+      TARGET_FILE: crates/uselesskey/tests/tempfile_sink.rs
+      BASELINE_FILE: policy/no-panic-baseline.toml
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Bind to a stable final PR head or the existing merge
+        id: bind
+        shell: bash
+        run: |
+          set -euo pipefail
+          previous=''
+          stable=0
+          for _ in $(seq 1 180); do
+            pr="$(gh api "repos/${REPO}/pulls/${PR}" 2>/dev/null || true)"
+            state="$(jq -r '.state // empty' <<<"$pr")"
+            merged="$(jq -r '.merged // false' <<<"$pr")"
+            if [[ "$state" == "closed" && "$merged" == "true" ]]; then
+              echo 'already_merged=true' >> "$GITHUB_OUTPUT"
+              echo "merge_sha=$(jq -r .merge_commit_sha <<<"$pr")" >> "$GITHUB_OUTPUT"
+              echo "head_sha=$(jq -r .head.sha <<<"$pr")" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            head="$(jq -r '.head.sha // empty' <<<"$pr")"
+            ref="$(jq -r '.head.ref // empty' <<<"$pr")"
+            if [[ "$state" != "open" || "$ref" != "$TARGET_BRANCH" || -z "$head" ]]; then
+              previous=''
+              stable=0
+              sleep 15
+              continue
+            fi
+            if [[ "$head" == "$previous" ]]; then
+              stable=$((stable + 1))
+            else
+              previous="$head"
+              stable=0
+            fi
+            if (( stable >= 8 )); then
+              git fetch origin main "$TARGET_BRANCH" --force
+              remote="$(git rev-parse "origin/${TARGET_BRANCH}")"
+              [[ "$remote" == "$head" ]] || { stable=0; sleep 15; continue; }
+              mapfile -t changed < <(git diff --name-only origin/main..."origin/${TARGET_BRANCH}" | sort)
+              [[ "${changed[*]-}" == "${TARGET_FILE} ${BASELINE_FILE}" ]] || { stable=0; sleep 15; continue; }
+              git show "origin/${TARGET_BRANCH}:${TARGET_FILE}" > /tmp/tempfile_sink.rs
+              git show "origin/${TARGET_BRANCH}:${BASELINE_FILE}" > /tmp/no-panic-baseline.toml
+              if grep -Eq '\.unwrap[[:space:]]*\([[:space:]]*\)' /tmp/tempfile_sink.rs; then
+                stable=0
+                sleep 15
+                continue
+              fi
+              total="$(python - <<'PY'
+          import tomllib
+          from pathlib import Path
+          print(tomllib.loads(Path('/tmp/no-panic-baseline.toml').read_text())['summary']['total'])
+          PY
+              )"
+              [[ "$total" == '3351' ]] || { stable=0; sleep 15; continue; }
+              echo 'already_merged=false' >> "$GITHUB_OUTPUT"
+              echo "head_sha=${head}" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            sleep 15
+          done
+          echo 'no stable exact candidate emerged' >&2
+          exit 1
+
+      - name: Verify the stable source and policy partition
+        if: steps.bind.outputs.already_merged != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          head='${{ steps.bind.outputs.head_sha }}'
+          git fetch origin main "$head" --force
+          git checkout --detach "$head"
+          python - <<'PY'
+          from __future__ import annotations
+          import re
+          import subprocess
+          import tomllib
+          from pathlib import Path
+
+          path = 'crates/uselesskey/tests/tempfile_sink.rs'
+          old_source = subprocess.check_output(['git', 'show', f'origin/main:{path}'], text=True)
+          new_source = Path(path).read_text(encoding='utf-8')
+          unwrap = re.compile(r'\.unwrap\s*\(\s*\)')
+          assert len(unwrap.findall(old_source)) == 71
+          assert not unwrap.search(new_source)
+
+          test_re = re.compile(r'#\s*\[\s*test\s*\][\s\S]{0,300}?\bfn\s+([A-Za-z0-9_]+)\s*\(')
+          assert test_re.findall(old_source) == test_re.findall(new_source)
+
+          before = tomllib.loads(subprocess.check_output(
+              ['git', 'show', 'origin/main:policy/no-panic-baseline.toml'], text=True
+          ))
+          after = tomllib.loads(Path('policy/no-panic-baseline.toml').read_text())
+          def ids(doc):
+              return {
+                  (r['path'], r['family'], r.get('selector_kind', ''), r.get('selector_callee', ''), r['snippet']): int(r['count'])
+                  for r in doc.get('entry', [])
+              }
+          old, new = ids(before), ids(after)
+          assert int(before['summary']['total']) == 3422
+          assert int(after['summary']['total']) == 3351
+          assert all(count <= old.get(key, 0) for key, count in new.items())
+          removed = [(key, count - new.get(key, 0)) for key, count in old.items() if count > new.get(key, 0)]
+          assert sum(n for _, n in removed) == 71
+          assert all(key[0] == path for key, _ in removed)
+
+          diff = subprocess.check_output(['git', 'diff', '--unified=0', 'origin/main...HEAD', '--', path], text=True)
+          assert not [
+              line for line in diff.splitlines()
+              if line.startswith('-') and not line.startswith('---')
+              and re.search(r'\b(assert|ensure|assert_snapshot|assert_yaml_snapshot)[_!]', line)
+          ]
+          PY
+          cargo fmt --all -- --check
+          cargo test -p uselesskey --test tempfile_sink --all-features
+          cargo clippy -p uselesskey --test tempfile_sink --all-features -- -D warnings
+          cargo xtask check-no-panic-family
+          git diff --check origin/main...HEAD
+
+      - name: Require successful normal CI on the stable head
+        if: steps.bind.outputs.already_merged != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          head='${{ steps.bind.outputs.head_sha }}'
+          for _ in $(seq 1 180); do
+            runs="$(gh api "repos/${REPO}/actions/runs?head_sha=${head}&event=pull_request&per_page=50")"
+            status="$(jq -r '[.workflow_runs[] | select(.name == "CI")] | sort_by(.created_at) | last | .status // empty' <<<"$runs")"
+            conclusion="$(jq -r '[.workflow_runs[] | select(.name == "CI")] | sort_by(.created_at) | last | .conclusion // empty' <<<"$runs")"
+            if [[ "$status" == 'completed' ]]; then
+              [[ "$conclusion" == 'success' ]]
+              exit 0
+            fi
+            sleep 15
+          done
+          echo 'normal exact-head CI did not complete' >&2
+          exit 1
+
+      - name: Require a clean settled review state
+        if: steps.bind.outputs.already_merged != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sleep 180
+          expected='${{ steps.bind.outputs.head_sha }}'
+          current="$(gh api "repos/${REPO}/pulls/${PR}" --jq .head.sha)"
+          [[ "$current" == "$expected" ]]
+          review="$(gh api graphql \
+            -f owner='EffortlessMetrics' -f name='uselesskey' -F number="${PR}" \
+            -f query='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100){nodes{isResolved comments(first:20){nodes{author{login}body url}}}}reviews(first:100){nodes{state author{login}}}}}}')"
+          unresolved="$(jq '[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)] | length' <<<"$review")"
+          requested="$(jq '[.data.repository.pullRequest.reviews.nodes[] | select(.state == "CHANGES_REQUESTED")] | length' <<<"$review")"
+          [[ "$unresolved" == '0' && "$requested" == '0' ]]
+
+      - name: Exact-SHA squash merge, tolerating a concurrent successful controller
+        id: merge
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ '${{ steps.bind.outputs.already_merged }}' == 'true' ]]; then
+            echo "merge_sha=${{ steps.bind.outputs.merge_sha }}" >> "$GITHUB_OUTPUT"
+            echo 'performed=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          head='${{ steps.bind.outputs.head_sha }}'
+          set +e
+          payload="$(gh api --method PUT "repos/${REPO}/pulls/${PR}/merge" \
+            -f sha="$head" -f merge_method='squash' \
+            -f commit_title='test: remove tempfile sink panic-family debt (#892)' \
+            -f commit_message='Remove all 71 historical unwrap sites from the tempfile-sink integration suite while preserving its test and assertion inventory. Propagate operation failures, in-thread errors, and JoinHandle panics through fallible test helpers, then refresh the no-panic baseline through the normal refusing command from 3,422 to 3,351 findings with no added or increased identity. Exact-head focused gates, normal CI, independent source/policy review, and the settled review state passed.' 2>/tmp/merge-error)"
+          rc=$?
+          set -e
+          if [[ $rc -eq 0 && "$(jq -r .merged <<<"$payload")" == 'true' ]]; then
+            echo "merge_sha=$(jq -r .sha <<<"$payload")" >> "$GITHUB_OUTPUT"
+            echo 'performed=true' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          pr="$(gh api "repos/${REPO}/pulls/${PR}")"
+          if [[ "$(jq -r .merged <<<"$pr")" == 'true' ]]; then
+            echo "merge_sha=$(jq -r .merge_commit_sha <<<"$pr")" >> "$GITHUB_OUTPUT"
+            echo 'performed=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          cat /tmp/merge-error >&2
+          exit 1
+
+      - name: Verify exact post-merge main CI
+        shell: bash
+        run: |
+          set -euo pipefail
+          merge='${{ steps.merge.outputs.merge_sha }}'
+          [[ -n "$merge" && "$merge" != 'null' ]]
+          for _ in $(seq 1 180); do
+            runs="$(gh api "repos/${REPO}/actions/runs?head_sha=${merge}&event=push&per_page=50")"
+            status="$(jq -r '[.workflow_runs[] | select(.name == "CI")] | sort_by(.created_at) | last | .status // empty' <<<"$runs")"
+            conclusion="$(jq -r '[.workflow_runs[] | select(.name == "CI")] | sort_by(.created_at) | last | .conclusion // empty' <<<"$runs")"
+            if [[ "$status" == 'completed' ]]; then
+              [[ "$conclusion" == 'success' ]]
+              exit 0
+            fi
+            sleep 15
+          done
+          echo 'post-merge main CI did not complete' >&2
+          exit 1
+
+      - name: Record the movement once
+        shell: bash
+        run: |
+          set -euo pipefail
+          merge='${{ steps.merge.outputs.merge_sha }}'
+          comments="$(gh api "repos/${REPO}/issues/575/comments?per_page=100")"
+          if ! jq -e --arg merge "$merge" '.[] | select(.body | contains($merge))' <<<"$comments" >/dev/null; then
+            gh issue comment 575 --repo "${REPO}" --body "Merged #892 as \`${merge}\`. This bounded integration-test slice removed 71 historical \`unwrap\` findings from \`crates/uselesskey/tests/tempfile_sink.rs\`, preserved the test and assertion inventory, and moved the normal refusing baseline from 3,422 to 3,351 total findings. The resulting partition is 15 allowlisted and 3,336 baselined, with zero new debt, zero stale baseline identities, zero expired entries, and no identity added or increased. #575 remains open for the historical-baseline campaign; this does not earn blocking mode or the Clippy-deny stage."
+          fi
+          printf '{"pr":892,"head_sha":"%s","merge_sha":"%s","baseline_before":3422,"baseline_after":3351,"removed":71,"normal_ci":"success","post_merge_ci":"success"}\n' \
+            '${{ steps.bind.outputs.head_sha }}' "$merge" > /tmp/convergence.json
+
+      - name: Upload convergence receipt
+        uses: actions/upload-artifact@v6
+        with:
+          name: no-panic-tempfile-convergence-${{ github.sha }}
+          path: /tmp/convergence.json
+          retention-days: 30
