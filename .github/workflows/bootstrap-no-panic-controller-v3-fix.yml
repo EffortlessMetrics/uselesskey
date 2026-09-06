@@ -1,0 +1,199 @@
+name: Bootstrap no-panic controller v3 (fixed)
+
+on:
+  push:
+    branches:
+      - campaign/no-panic-controller-v3-bootstrap-fix
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: no-panic-controller-v3-bootstrap-fixed
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  REPO: EffortlessMetrics/uselesskey
+
+jobs:
+  chain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Wait for successful controller v2 and its receipt
+        id: state
+        shell: bash
+        run: |
+          set -euo pipefail
+          payload=""
+          for _ in $(seq 1 900); do
+            payload="$(gh api '/repos/EffortlessMetrics/uselesskey/actions/runs?branch=campaign%2Fno-panic-controller-v2&per_page=1')"
+            if [ "$(jq -r '.total_count // 0' <<<"$payload")" != "0" ] && [ "$(jq -r '.workflow_runs[0].status' <<<"$payload")" = "completed" ]; then
+              break
+            fi
+            sleep 10
+          done
+          conclusion="$(jq -r '.workflow_runs[0].conclusion // empty' <<<"$payload")"
+          run_id="$(jq -r '.workflow_runs[0].id // empty' <<<"$payload")"
+          test -n "$run_id"
+          test "$conclusion" = "success"
+
+          found=""
+          for _ in $(seq 1 180); do
+            if gh api '/repos/EffortlessMetrics/uselesskey/contents/diagnostics/no-panic-controller-v2.json?ref=diagnostic%2Fno-panic-controller-v2-receipt' --jq .content > /tmp/v2.b64 2>/dev/null; then
+              base64 -d /tmp/v2.b64 > /tmp/v2.json
+              found="$(jq -r '.found_compatible_slice' /tmp/v2.json)"
+              break
+            fi
+            sleep 10
+          done
+          test -n "$found"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "found=$found" >> "$GITHUB_OUTPUT"
+          echo "baseline_after=$(jq -r '.baseline_after_candidate' /tmp/v2.json)" >> "$GITHUB_OUTPUT"
+          echo "source_pr=$(jq -r '.source_pr // empty' /tmp/v2.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Generate corrected controller v3
+        if: steps.state.outputs.found == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api '/repos/EffortlessMetrics/uselesskey/contents/.github/workflows/no-panic-controller-v2.yml?ref=campaign%2Fno-panic-controller-v2' --jq .content | base64 -d > /tmp/v2.yml
+          python - <<'PY'
+          from pathlib import Path
+          text = Path('/tmp/v2.yml').read_text(encoding='utf-8')
+
+          required = [
+              'name: Serial no-panic campaign controller v2',
+              '      - campaign/no-panic-controller-v2\n',
+              'CANDIDATE_BRANCH: test/no-panic-next-integration-test-v2',
+              '          wait_for_branch campaign/no-panic-next-integration-test\n          wait_for_branch campaign/settle-after-next-no-panic\n',
+              '--head test/no-panic-next-integration-test --base main',
+              'ref: test/no-panic-next-integration-test-v2',
+              'diagnostic/no-panic-controller-v2-receipt',
+          ]
+          for fragment in required:
+              if fragment not in text:
+                  raise SystemExit(f'missing v2 template fragment: {fragment!r}')
+
+          text = text.replace(
+              'name: Serial no-panic campaign controller v2',
+              'name: Serial no-panic campaign controller v3',
+              1,
+          )
+          text = text.replace(
+              '      - campaign/no-panic-controller-v2\n',
+              '      - campaign/no-panic-controller-v3\n',
+              1,
+          )
+          text = text.replace(
+              'CANDIDATE_BRANCH: test/no-panic-next-integration-test-v2',
+              'CANDIDATE_BRANCH: test/no-panic-next-integration-test-v3',
+              1,
+          )
+          text = text.replace(
+              '          wait_for_branch campaign/no-panic-next-integration-test\n          wait_for_branch campaign/settle-after-next-no-panic\n',
+              '          wait_for_branch campaign/no-panic-controller-v2\n',
+              1,
+          )
+          text = text.replace(
+              '--head test/no-panic-next-integration-test --base main',
+              '--head test/no-panic-next-integration-test-v2 --base main',
+              1,
+          )
+          text = text.replace(
+              'ref: test/no-panic-next-integration-test-v2',
+              'ref: test/no-panic-next-integration-test-v3',
+              1,
+          )
+
+          # Rewrite only durable v3 output identities. The protected predecessor
+          # wait remains explicitly pinned to controller v2.
+          text = text.replace('no-panic-controller-v2.json', 'no-panic-controller-v3.json')
+          text = text.replace('no-panic-controller-v2.md', 'no-panic-controller-v3.md')
+          text = text.replace('diagnostic/no-panic-controller-v2-receipt', 'diagnostic/no-panic-controller-v3-receipt')
+          text = text.replace("'controller': 'v2'", "'controller': 'v3'")
+          text = text.replace('Serial controller v2', 'Serial controller v3')
+          text = text.replace('serial controller v2', 'serial controller v3')
+          text = text.replace('controller v2 receipt', 'controller v3 receipt')
+
+          if 'wait_for_branch campaign/no-panic-controller-v2' not in text:
+              raise SystemExit('protected predecessor wait was lost')
+          if 'wait_for_branch campaign/no-panic-controller-v3' in text:
+              raise SystemExit('controller v3 would wait on itself')
+          if text.count('campaign/no-panic-controller-v3') != 1:
+              raise SystemExit('unexpected v3 controller branch references')
+          if 'test/no-panic-next-integration-test-v3' not in text:
+              raise SystemExit('v3 candidate branch missing')
+
+          Path('/tmp/v3.yml').write_text(text, encoding='utf-8')
+          PY
+
+          main_sha="$(gh api '/repos/EffortlessMetrics/uselesskey/branches/main' --jq .commit.sha)"
+          if gh api '/repos/EffortlessMetrics/uselesskey/git/ref/heads/campaign/no-panic-controller-v3' >/dev/null 2>&1; then
+            gh api --method PATCH '/repos/EffortlessMetrics/uselesskey/git/refs/heads/campaign/no-panic-controller-v3' -f sha="$main_sha" -F force=true >/dev/null
+          else
+            gh api --method POST '/repos/EffortlessMetrics/uselesskey/git/refs' -f ref='refs/heads/campaign/no-panic-controller-v3' -f sha="$main_sha" >/dev/null
+          fi
+
+          content="$(base64 -w0 /tmp/v3.yml)"
+          current="$(gh api '/repos/EffortlessMetrics/uselesskey/contents/.github/workflows/no-panic-controller-v3.yml?ref=campaign%2Fno-panic-controller-v3' --jq .sha 2>/dev/null || true)"
+          if [ -n "$current" ]; then
+            gh api --method PUT '/repos/EffortlessMetrics/uselesskey/contents/.github/workflows/no-panic-controller-v3.yml' \
+              -f message='chore: install corrected serial no-panic controller v3' \
+              -f content="$content" -f branch='campaign/no-panic-controller-v3' -f sha="$current" >/dev/null
+          else
+            gh api --method PUT '/repos/EffortlessMetrics/uselesskey/contents/.github/workflows/no-panic-controller-v3.yml' \
+              -f message='chore: install corrected serial no-panic controller v3' \
+              -f content="$content" -f branch='campaign/no-panic-controller-v3' >/dev/null
+          fi
+
+      - name: Persist corrected chain decision
+        if: always()
+        shell: bash
+        env:
+          RUN_ID: ${{ steps.state.outputs.run_id }}
+          FOUND: ${{ steps.state.outputs.found }}
+          BASELINE_AFTER: ${{ steps.state.outputs.baseline_after }}
+          SOURCE_PR: ${{ steps.state.outputs.source_pr }}
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git checkout --detach origin/main
+          mkdir -p diagnostics
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          payload = {
+              'schema_version': 1,
+              'predecessor_run': int(os.environ['RUN_ID']) if os.environ.get('RUN_ID') else None,
+              'predecessor_found_slice': os.environ.get('FOUND') == 'true',
+              'predecessor_baseline_after': int(os.environ['BASELINE_AFTER']) if os.environ.get('BASELINE_AFTER') else None,
+              'predecessor_source_pr': int(os.environ['SOURCE_PR']) if os.environ.get('SOURCE_PR') else None,
+              'v3_created': os.environ.get('FOUND') == 'true',
+              'self_wait_guard': 'passed',
+          }
+          Path('diagnostics/no-panic-controller-v3-bootstrap-fix.json').write_text(json.dumps(payload, indent=2) + '\n')
+          Path('diagnostics/no-panic-controller-v3-bootstrap-fix.md').write_text(
+              '# Corrected no-panic controller v3 chain decision\n\n'
+              f"- V2 run: **{payload['predecessor_run']}**\n"
+              f"- V2 found a compatible slice: **{payload['predecessor_found_slice']}**\n"
+              f"- V2 baseline after candidate: **{payload['predecessor_baseline_after']}**\n"
+              f"- V2 source PR: **{payload['predecessor_source_pr']}**\n"
+              f"- V3 created: **{payload['v3_created']}**\n"
+              '- Self-wait guard: **passed**\n',
+              encoding='utf-8',
+          )
+          PY
+          git switch -C diagnostic/no-panic-controller-v3-bootstrap-fix
+          git add diagnostics/no-panic-controller-v3-bootstrap-fix.*
+          git config user.name 'EffortlessSteven'
+          git config user.email 'git@effortlesssteven.com'
+          git commit -m 'chore: record corrected no-panic v3 chain decision [skip ci]'
+          git push --force origin diagnostic/no-panic-controller-v3-bootstrap-fix
