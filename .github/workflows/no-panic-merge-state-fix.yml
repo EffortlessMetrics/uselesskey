@@ -1,0 +1,97 @@
+name: Repair no-panic controller merge-state checks
+
+on:
+  push:
+    branches:
+      - campaign/no-panic-merge-state-fix
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: no-panic-merge-state-fix
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  REPO: EffortlessMetrics/uselesskey
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Patch and retrigger affected controller branches
+        shell: bash
+        run: |
+          set -euo pipefail
+          patch_workflow() {
+            local branch="$1"
+            local path="$2"
+            local encoded_branch="${branch//\//%2F}"
+            local response="/tmp/$(echo "$branch" | tr '/' '_').json"
+            local source="${response%.json}.yml"
+            local patched="${response%.json}.patched.yml"
+
+            gh api "/repos/$REPO/contents/$path?ref=$encoded_branch" > "$response"
+            jq -r .content "$response" | base64 -d > "$source"
+            blob_sha="$(jq -r .sha "$response")"
+
+            python - "$source" "$patched" "$branch" <<'PY'
+          from pathlib import Path
+          import sys
+          source_path, output_path, branch = sys.argv[1:]
+          text = Path(source_path).read_text(encoding='utf-8')
+          before = text
+          old = '--json merged --jq .merged'
+          new = '--json mergedAt --jq \'if .mergedAt == null then "false" else "true" end\''
+          occurrences = text.count(old)
+          if occurrences == 0:
+              raise SystemExit(f'{branch}: expected at least one obsolete merged-field check')
+          text = text.replace(old, new)
+          text = text.replace('  cancel-in-progress: false\n', '  cancel-in-progress: true\n', 1)
+          if '--json merged --jq .merged' in text:
+              raise SystemExit(f'{branch}: obsolete merged-field check remains')
+          if 'cancel-in-progress: true' not in text:
+              raise SystemExit(f'{branch}: stale-run cancellation was not enabled')
+          if text == before:
+              raise SystemExit(f'{branch}: patch made no change')
+          Path(output_path).write_text(text, encoding='utf-8')
+          print(f'{branch}: replaced {occurrences} merge-state check(s)')
+          PY
+
+            content="$(base64 -w0 "$patched")"
+            gh api --method PUT "/repos/$REPO/contents/$path" \
+              -f message='chore: use mergedAt for controller merge receipts' \
+              -f content="$content" -f branch="$branch" -f sha="$blob_sha" >/dev/null
+          }
+
+          patch_workflow campaign/no-panic-controller-v2 .github/workflows/no-panic-controller-v2.yml
+          patch_workflow campaign/no-panic-continuation-arbiter .github/workflows/no-panic-continuation-arbiter.yml
+          patch_workflow campaign/no-panic-specialized-tests-v1 .github/workflows/no-panic-specialized-tests-v1.yml
+
+      - name: Cancel superseded runs after patched pushes are visible
+        shell: bash
+        run: |
+          set -euo pipefail
+          sleep 10
+          for branch in \
+            campaign/no-panic-controller-v2 \
+            campaign/no-panic-continuation-arbiter \
+            campaign/no-panic-specialized-tests-v1
+          do
+            encoded="${branch//\//%2F}"
+            payload="$(gh api "/repos/$REPO/actions/runs?branch=$encoded&per_page=20")"
+            latest_id="$(jq -r '.workflow_runs[0].id // empty' <<<"$payload")"
+            while IFS=$'\t' read -r id status; do
+              [ -n "$id" ] || continue
+              [ "$id" = "$latest_id" ] && continue
+              case "$status" in
+                queued|in_progress|waiting|requested)
+                  gh api --method POST "/repos/$REPO/actions/runs/$id/cancel" >/dev/null 2>&1 || true
+                  echo "cancelled superseded $branch run $id"
+                  ;;
+              esac
+            done < <(jq -r '.workflow_runs[] | [.id, .status] | @tsv' <<<"$payload")
+          done
