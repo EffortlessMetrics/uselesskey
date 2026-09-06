@@ -1,0 +1,452 @@
+name: Arbitrate no-panic continuation campaign
+
+on:
+  push:
+    branches:
+      - campaign/no-panic-continuation-arbiter
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: no-panic-continuation-arbiter
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  REPO: EffortlessMetrics/uselesskey
+
+jobs:
+  arbitrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Wait for all serial controllers
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/no-panic-runs
+
+          wait_branch() {
+            local branch="$1"
+            local required="$2"
+            local encoded="${branch//\//%2F}"
+            local payload=""
+            for _ in $(seq 1 1260); do
+              payload="$(gh api "/repos/$REPO/actions/runs?branch=$encoded&per_page=5")"
+              count="$(jq -r '.total_count // 0' <<<"$payload")"
+              if [ "$count" = "0" ]; then
+                if [ "$required" = "false" ]; then
+                  printf '%s\n' "$payload" > "/tmp/no-panic-runs/${branch//\//__}.json"
+                  return 0
+                fi
+              else
+                status="$(jq -r '.workflow_runs[0].status' <<<"$payload")"
+                if [ "$status" = "completed" ]; then
+                  printf '%s\n' "$payload" > "/tmp/no-panic-runs/${branch//\//__}.json"
+                  jq -r '.workflow_runs[0] | "\(.head_branch): \(.conclusion) (run \(.id), attempt \(.run_attempt))"' <<<"$payload"
+                  return 0
+                fi
+              fi
+              sleep 10
+            done
+            echo "timed out waiting for $branch" >&2
+            return 1
+          }
+
+          wait_branch campaign/no-panic-next-integration-test true
+          wait_branch campaign/settle-after-next-no-panic true
+          wait_branch campaign/no-panic-controller-v2 true
+          wait_branch campaign/no-panic-controller-v2-watch true
+          wait_branch campaign/no-panic-controller-v3-bootstrap-fix true
+          wait_branch campaign/no-panic-controller-v3-cancel-stale true
+
+          # V3 is conditional: its corrected bootstrap creates it only when v2
+          # found and merged another bounded slice.
+          wait_branch campaign/no-panic-controller-v3 false
+
+      - name: Reconcile any surviving bounded no-panic pull requests
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          verify_and_merge() {
+            local pr="$1"
+            local head_sha path crate_dir package test_target removed
+            head_sha="$(gh pr view "$pr" --repo "$REPO" --json headRefOid --jq .headRefOid)"
+            git fetch origin main
+            git fetch origin "pull/$pr/head:refs/remotes/origin/arbiter-pr-$pr"
+            git checkout --detach "$head_sha"
+
+            mapfile -t files < <(git diff --name-only origin/main...HEAD | sort)
+            if [ "${#files[@]}" -ne 2 ]; then
+              echo "PR #$pr is not a two-file no-panic candidate: ${files[*]}" >&2
+              return 1
+            fi
+            if [ "${files[1]}" != "policy/no-panic-baseline.toml" ]; then
+              echo "PR #$pr lacks the canonical baseline file" >&2
+              return 1
+            fi
+            path="${files[0]}"
+            case "$path" in crates/*/tests/*.rs) ;; *) echo "unexpected candidate path: $path" >&2; return 1 ;; esac
+            crate_dir="${path%%/tests/*}"
+            package="$(python - "$crate_dir/Cargo.toml" <<'PY'
+          import sys, tomllib
+          with open(sys.argv[1], 'rb') as handle:
+              print(tomllib.load(handle)['package']['name'])
+          PY
+          )"
+            test_target="$(basename "$path" .rs)"
+
+            removed="$(python - "$path" <<'PY'
+          import subprocess, sys, tomllib
+          from pathlib import Path
+          path = sys.argv[1]
+          source = Path(path).read_text(encoding='utf-8')
+          if '.unwrap()' in source or '.expect(' in source:
+              raise SystemExit('candidate source still contains unwrap/expect calls')
+          before = tomllib.loads(subprocess.check_output(
+              ['git', 'show', 'origin/main:policy/no-panic-baseline.toml'], text=True
+          ))
+          after = tomllib.loads(Path('policy/no-panic-baseline.toml').read_text())
+          def identities(doc):
+              return {
+                  (r['path'], r['family'], r['selector_kind'], r['selector_callee'], r['snippet']): int(r['count'])
+                  for r in doc.get('entry', [])
+              }
+          old, new = identities(before), identities(after)
+          added = set(new) - set(old)
+          increased = {key for key in set(old) & set(new) if new[key] > old[key]}
+          if added or increased:
+              raise SystemExit(f'baseline regression: added={list(added)[:3]} increased={list(increased)[:3]}')
+          removed = sum(old.values()) - sum(new.values())
+          if removed <= 0:
+              raise SystemExit('candidate does not reduce the baseline')
+          if any(key[0] == path for key in new):
+              raise SystemExit(f'{path} remains represented')
+          print(removed)
+          PY
+          )"
+
+            cargo fmt --all -- --check
+            cargo test -p "$package" --test "$test_target" --all-features
+            cargo clippy -p "$package" --test "$test_target" --all-features -- -D warnings
+            cargo xtask check-no-panic-family
+            cargo xtask pr
+            git diff --check origin/main...HEAD
+
+            test "$(gh pr view "$pr" --repo "$REPO" --json headRefOid --jq .headRefOid)" = "$head_sha"
+            gh pr merge "$pr" --repo "$REPO" --squash --match-head-commit "$head_sha" \
+              --subject "test: remove historical panic debt from $test_target (#$pr)" \
+              --body "Arbiter reconciliation: remove $removed historical panic-family slots from $path. Exact-head focused tests, Clippy, semantic policy checks, the full PR gate, and diff hygiene passed; the refusing refresh added or increased no identity."
+
+            for _ in $(seq 1 120); do
+              if [ "$(gh pr view "$pr" --repo "$REPO" --json merged --jq .merged)" = "true" ]; then
+                break
+              fi
+              sleep 5
+            done
+            test "$(gh pr view "$pr" --repo "$REPO" --json merged --jq .merged)" = "true"
+          }
+
+          for head in \
+            test/no-panic-next-integration-test \
+            test/no-panic-next-integration-test-v2 \
+            test/no-panic-next-integration-test-v3
+          do
+            pr="$(gh pr list --repo "$REPO" --head "$head" --base main --state open --json number --jq '.[0].number // empty')"
+            if [ -n "$pr" ]; then
+              verify_and_merge "$pr"
+            fi
+          done
+
+      - name: Reconcile or regenerate public badge endpoints
+        id: badge
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          reconcile_open_badge_pr() {
+            local pr="$1" head_sha
+            head_sha="$(gh pr view "$pr" --repo "$REPO" --json headRefOid --jq .headRefOid)"
+            git fetch origin main
+            git fetch origin "pull/$pr/head:refs/remotes/origin/arbiter-badge-$pr"
+            git checkout --detach "$head_sha"
+            mapfile -t files < <(git diff --name-only origin/main...HEAD | sort)
+            test "${#files[@]}" -gt 0
+            for path in "${files[@]}"; do
+              case "$path" in badges/*.json) ;; *) echo "non-badge file in PR #$pr: $path" >&2; return 1 ;; esac
+            done
+            cargo xtask badges
+            git diff --exit-code
+            git diff --check origin/main...HEAD
+            test "$(gh pr view "$pr" --repo "$REPO" --json headRefOid --jq .headRefOid)" = "$head_sha"
+            gh pr merge "$pr" --repo "$REPO" --squash --match-head-commit "$head_sha" \
+              --subject "badge: refresh public endpoints (#$pr)" \
+              --body "Arbiter reconciliation: the exact head contains generated badge JSON only, and a fresh generator pass is clean."
+            echo "$pr"
+          }
+
+          badge_pr="$(gh pr list --repo "$REPO" --head automation/badge-endpoints --base main --state open --json number --jq '.[0].number // empty')"
+          if [ -n "$badge_pr" ]; then
+            reconcile_open_badge_pr "$badge_pr" >/tmp/arbiter-badge-pr
+          fi
+
+          git fetch origin main
+          git checkout --detach origin/main
+          cargo xtask badges
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "pr=$(cat /tmp/arbiter-badge-pr 2>/dev/null || true)" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          python - <<'PY'
+          import subprocess
+          files = subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines()
+          bad = [p for p in files if not p.startswith('badges/') or not p.endswith('.json')]
+          if not files or bad:
+              raise SystemExit(f'unexpected generated files: files={files}, bad={bad}')
+          PY
+          first="$(git diff | sha256sum | cut -d' ' -f1)"
+          cargo xtask badges
+          test "$first" = "$(git diff | sha256sum | cut -d' ' -f1)"
+          git diff --check
+
+          git config user.name "EffortlessSteven"
+          git config user.email "git@effortlesssteven.com"
+          git add badges
+          git commit -m "badge: refresh public endpoints"
+          head_sha="$(git rev-parse HEAD)"
+          git push --force origin HEAD:automation/badge-endpoints
+          pr="$(gh pr list --repo "$REPO" --head automation/badge-endpoints --base main --state open --json number --jq '.[0].number // empty')"
+          if [ -z "$pr" ]; then
+            gh pr create --repo "$REPO" --head automation/badge-endpoints --base main \
+              --title "badge: refresh public endpoints" \
+              --body "Generated twice from the final serial no-panic campaign tree. The second pass is byte-stable and this pull request contains generated badge JSON only."
+            pr="$(gh pr list --repo "$REPO" --head automation/badge-endpoints --base main --state open --json number --jq '.[0].number')"
+          fi
+          test "$(gh pr view "$pr" --repo "$REPO" --json headRefOid --jq .headRefOid)" = "$head_sha"
+          cargo xtask badges
+          git diff --exit-code
+          gh pr merge "$pr" --repo "$REPO" --squash --match-head-commit "$head_sha" \
+            --subject "badge: refresh public endpoints (#$pr)" \
+            --body "Regenerate public Shields endpoints from the final serial no-panic campaign tree. Repeated generation was byte-stable and only generated badge JSON changed."
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "pr=$pr" >> "$GITHUB_OUTPUT"
+
+      - name: Prove monotonic baseline history after PR 892
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git checkout --detach origin/main
+          start_sha="$(gh pr view 892 --repo "$REPO" --json mergeCommit --jq .mergeCommit.oid)"
+          test -n "$start_sha"
+          git merge-base --is-ancestor "$start_sha" HEAD
+          : > /tmp/no-panic-transitions.jsonl
+
+          while read -r commit; do
+            [ -n "$commit" ] || continue
+            parent="$(git rev-parse "$commit^")"
+            python - "$parent" "$commit" <<'PY'
+          import json, subprocess, sys, tomllib
+          parent, commit = sys.argv[1:]
+          path = 'policy/no-panic-baseline.toml'
+          before = tomllib.loads(subprocess.check_output(['git', 'show', f'{parent}:{path}'], text=True))
+          after = tomllib.loads(subprocess.check_output(['git', 'show', f'{commit}:{path}'], text=True))
+          def identities(doc):
+              return {
+                  (r['path'], r['family'], r['selector_kind'], r['selector_callee'], r['snippet']): int(r['count'])
+                  for r in doc.get('entry', [])
+              }
+          old, new = identities(before), identities(after)
+          added = sorted(set(new) - set(old))
+          increased = sorted(key for key in set(old) & set(new) if new[key] > old[key])
+          if added or increased:
+              raise SystemExit(f'{commit} regressed baseline identities: added={added[:3]} increased={increased[:3]}')
+          before_total = sum(old.values())
+          after_total = sum(new.values())
+          if after_total > before_total:
+              raise SystemExit(f'{commit} increased total {before_total}->{after_total}')
+          print(json.dumps({
+              'commit': commit,
+              'parent': parent,
+              'before': before_total,
+              'after': after_total,
+              'removed': before_total - after_total,
+              'added_identities': 0,
+              'increased_identities': 0,
+          }))
+          PY
+          done < <(git rev-list --first-parent --reverse "$start_sha..HEAD" -- policy/no-panic-baseline.toml) >> /tmp/no-panic-transitions.jsonl
+
+      - name: Verify final exact-main policy and generate ranked boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git checkout --detach origin/main
+          cargo fmt --all -- --check
+          cargo xtask check-no-panic-family
+          cargo xtask badges
+          git diff --exit-code
+          cargo xtask no-panic propose
+
+          issue_state="$(gh issue view 575 --repo "$REPO" --json state --jq .state)"
+          test "$issue_state" = "OPEN"
+          controlled_open="$(gh pr list --repo "$REPO" --state open --limit 100 --json headRefName --jq '[.[] | select(.headRefName == "automation/badge-endpoints" or (.headRefName | startswith("test/no-panic-next-integration-test")))] | length')"
+          test "$controlled_open" = "0"
+
+      - name: Publish consolidated continuation receipt
+        shell: bash
+        env:
+          BADGE_CHANGED: ${{ steps.badge.outputs.changed }}
+          BADGE_PR: ${{ steps.badge.outputs.pr }}
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git checkout --detach origin/main
+          mkdir -p diagnostics
+          cp /tmp/no-panic-runs/*.json /tmp/ 2>/dev/null || true
+          gh pr list --repo "$REPO" --state all --limit 100 --json number,title,state,mergedAt,headRefName,headRefOid,baseRefName,mergeCommit > /tmp/no-panic-prs.json
+          gh issue view 575 --repo "$REPO" --json number,title,state,url,updatedAt > /tmp/no-panic-issue.json
+
+          python - <<'PY'
+          from collections import Counter, defaultdict
+          from pathlib import Path
+          import glob, json, os, subprocess, tomllib
+
+          baseline = tomllib.loads(Path('policy/no-panic-baseline.toml').read_text())
+          proposal = tomllib.loads(Path('target/policy-proposed/no-panic-proposed-allowlist.toml').read_text())
+          rows = proposal.get('allow', [])
+          by_path = Counter()
+          family_by_path = defaultdict(Counter)
+          for row in rows:
+              count = int(row.get('count', 1))
+              path = row['path']
+              family = row['family']
+              by_path[path] += count
+              family_by_path[path][family] += count
+
+          ranked = []
+          for path, findings in sorted(by_path.items(), key=lambda item: (-item[1], item[0])):
+              if '/tests/' in path:
+                  surface = 'integration_test'
+              elif '/src/' in path:
+                  source = Path(path).read_text(encoding='utf-8', errors='replace') if Path(path).exists() else ''
+                  surface = 'src_with_tests' if '#[cfg(test)]' in source or '#[test]' in source else 'production_or_support'
+              else:
+                  surface = 'other'
+              ranked.append({
+                  'path': path,
+                  'findings': findings,
+                  'families': dict(sorted(family_by_path[path].items())),
+                  'surface': surface,
+              })
+
+          transitions = []
+          transition_path = Path('/tmp/no-panic-transitions.jsonl')
+          if transition_path.exists():
+              transitions = [json.loads(line) for line in transition_path.read_text().splitlines() if line.strip()]
+
+          runs = []
+          for path in sorted(glob.glob('/tmp/campaign__*.json')):
+              document = json.loads(Path(path).read_text())
+              latest = (document.get('workflow_runs') or [None])[0]
+              if latest:
+                  runs.append({
+                      'branch': latest.get('head_branch'),
+                      'run_id': latest.get('id'),
+                      'status': latest.get('status'),
+                      'conclusion': latest.get('conclusion'),
+                      'attempt': latest.get('run_attempt'),
+                      'head_sha': latest.get('head_sha'),
+                  })
+
+          all_prs = json.loads(Path('/tmp/no-panic-prs.json').read_text())
+          relevant_prs = [
+              pr for pr in all_prs
+              if pr.get('headRefName') == 'automation/badge-endpoints'
+              or (pr.get('headRefName') or '').startswith('test/no-panic-next-integration-test')
+              or pr.get('number') == 892
+          ]
+          issue = json.loads(Path('/tmp/no-panic-issue.json').read_text())
+          main_sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+
+          payload = {
+              'schema_version': 1,
+              'main_sha': main_sha,
+              'baseline_summary': baseline['summary'],
+              'allowlist_count': len(tomllib.loads(Path('policy/no-panic-allowlist.toml').read_text()).get('allow', [])),
+              'post_892_transitions': transitions,
+              'controller_runs': runs,
+              'relevant_pull_requests': relevant_prs,
+              'badge_reconciled_in_arbiter': os.environ.get('BADGE_CHANGED') == 'true',
+              'arbiter_badge_pr': int(os.environ['BADGE_PR']) if os.environ.get('BADGE_PR') else None,
+              'issue_575': issue,
+              'represented_findings_from_proposal': sum(by_path.values()),
+              'unique_proposal_identities': len(rows),
+              'ranked_paths': ranked,
+          }
+          Path('diagnostics/no-panic-continuation-final.json').write_text(json.dumps(payload, indent=2) + '\n')
+
+          lines = [
+              '# No-panic continuation campaign: consolidated receipt', '',
+              f"- Final main: `{main_sha}`",
+              f"- Baseline findings: **{baseline['summary']['total']:,}**",
+              f"- Proposal-represented findings: **{payload['represented_findings_from_proposal']:,}**",
+              f"- Unique semantic identities: **{payload['unique_proposal_identities']:,}**",
+              f"- Issue #575: **{issue['state']}**",
+              f"- Arbiter generated a badge change: **{payload['badge_reconciled_in_arbiter']}**",
+              '', '## Monotonic baseline transitions after #892', '',
+              '| Commit | Before | After | Removed |', '|---|---:|---:|---:|',
+          ]
+          if transitions:
+              for row in transitions:
+                  lines.append(f"| `{row['commit'][:12]}` | {row['before']:,} | {row['after']:,} | {row['removed']:,} |")
+          else:
+              lines.append('| — | 3,351 | 3,351 | 0 |')
+
+          lines.extend(['', '## Controller runs', '', '| Branch | Run | Conclusion | Attempt |', '|---|---:|---|---:|'])
+          for run in runs:
+              lines.append(f"| `{run['branch']}` | {run['run_id']} | {run['conclusion']} | {run['attempt']} |")
+
+          lines.extend(['', '## Relevant pull requests', '', '| PR | Head | State | Merged | Title |', '|---:|---|---|---|---|'])
+          for pr in sorted(relevant_prs, key=lambda row: row['number']):
+              lines.append(f"| #{pr['number']} | `{pr['headRefName']}` | {pr['state']} | {pr.get('mergedAt') or '—'} | {pr['title']} |")
+
+          lines.extend(['', '## Largest remaining owned clusters', '', '| Rank | Surface | Path | Findings | Families |', '|---:|---|---|---:|---|'])
+          for index, row in enumerate(ranked[:50], 1):
+              families = ', '.join(f"{name}={count}" for name, count in row['families'].items())
+              lines.append(f"| {index} | `{row['surface']}` | `{row['path']}` | {row['findings']} | {families} |")
+          Path('diagnostics/no-panic-continuation-final.md').write_text('\n'.join(lines) + '\n')
+          PY
+
+          git switch -C diagnostic/no-panic-continuation-final
+          git add diagnostics/no-panic-continuation-final.json diagnostics/no-panic-continuation-final.md
+          git config user.name "EffortlessSteven"
+          git config user.email "git@effortlesssteven.com"
+          git commit -m "chore: record consolidated no-panic continuation receipt [skip ci]"
+          git push --force origin diagnostic/no-panic-continuation-final
+
+          final_total="$(python - <<'PY'
+          import tomllib
+          from pathlib import Path
+          print(tomllib.loads(Path('policy/no-panic-baseline.toml').read_text())['summary']['total'])
+          PY
+          )"
+          gh issue comment 575 --repo "$REPO" --body "Continuation arbiter completed on exact main. The historical baseline now represents $final_total findings. Every baseline transition after #892 is identity-monotonic (no identity added or increased), all controlled source and badge PRs are settled, the semantic checker and badge generator are clean, and the next ranked boundary is recorded on branch diagnostic/no-panic-continuation-final. Issue #575 remains open; no reset or policy-stage promotion occurred."
