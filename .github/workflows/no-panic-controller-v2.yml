@@ -1,0 +1,689 @@
+name: Serial no-panic campaign controller v2
+
+on:
+  push:
+    branches:
+      - campaign/no-panic-controller-v2
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: read
+
+concurrency:
+  group: no-panic-serial-controller
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  REPO: EffortlessMetrics/uselesskey
+  CANDIDATE_BRANCH: test/no-panic-next-integration-test-v2
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    outputs:
+      found: ${{ steps.candidate.outputs.found }}
+      path: ${{ steps.candidate.outputs.path }}
+      findings: ${{ steps.candidate.outputs.findings }}
+      package: ${{ steps.candidate.outputs.package }}
+      test_target: ${{ steps.candidate.outputs.test_target }}
+      before_total: ${{ steps.candidate.outputs.before_total }}
+      after_total: ${{ steps.candidate.outputs.after_total }}
+      pr: ${{ steps.candidate.outputs.pr }}
+      head_sha: ${{ steps.candidate.outputs.head_sha }}
+      attempts_b64: ${{ steps.candidate.outputs.attempts_b64 }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Wait for predecessor campaigns
+        shell: bash
+        run: |
+          set -euo pipefail
+          wait_for_branch() {
+            local branch="$1"
+            local encoded="${branch//\//%2F}"
+            for _ in $(seq 1 360); do
+              payload="$(gh api "/repos/$REPO/actions/runs?branch=$encoded&per_page=1")"
+              count="$(jq -r '.total_count // 0' <<<"$payload")"
+              if [ "$count" = "0" ]; then
+                return 0
+              fi
+              status="$(jq -r '.workflow_runs[0].status' <<<"$payload")"
+              if [ "$status" = "completed" ]; then
+                jq -r '.workflow_runs[0] | "predecessor \(.head_branch): \(.conclusion) (run \(.id))"' <<<"$payload"
+                return 0
+              fi
+              sleep 10
+            done
+            echo "timed out waiting for $branch" >&2
+            return 1
+          }
+          wait_for_branch campaign/no-panic-next-integration-test
+          wait_for_branch campaign/settle-after-next-no-panic
+
+      - name: Reconcile predecessor no-panic pull request
+        shell: bash
+        run: |
+          set -euo pipefail
+          pr="$(gh pr list --repo "$REPO" --head test/no-panic-next-integration-test --base main --state open --json number --jq '.[0].number // empty')"
+          if [ -z "$pr" ]; then
+            exit 0
+          fi
+
+          head_sha="$(gh pr view "$pr" --repo "$REPO" --json headRefOid --jq .headRefOid)"
+          git fetch origin "pull/$pr/head:refs/remotes/origin/predecessor-pr"
+          git fetch origin main
+          git checkout --detach "$head_sha"
+
+          mapfile -t files < <(git diff --name-only origin/main...HEAD | sort)
+          if [ "${#files[@]}" -ne 2 ] || [ "${files[1]}" != "policy/no-panic-baseline.toml" ]; then
+            echo "predecessor PR #$pr is not a bounded two-file no-panic slice" >&2
+            exit 1
+          fi
+          path="${files[0]}"
+          case "$path" in
+            crates/*/tests/*.rs) ;;
+            *) echo "unexpected predecessor source path: $path" >&2; exit 1 ;;
+          esac
+
+          crate_dir="${path%%/tests/*}"
+          package="$(python - "$crate_dir/Cargo.toml" <<'PY'
+          import sys, tomllib
+          with open(sys.argv[1], 'rb') as handle:
+              print(tomllib.load(handle)['package']['name'])
+          PY
+          )"
+          test_target="$(basename "$path" .rs)"
+
+          python - "$path" <<'PY'
+          import subprocess, sys, tomllib
+          from pathlib import Path
+          path = sys.argv[1]
+          source = Path(path).read_text(encoding='utf-8')
+          if '.unwrap()' in source or '.expect(' in source:
+              raise SystemExit('predecessor source still contains panic-family method calls')
+          before = tomllib.loads(subprocess.check_output(
+              ['git', 'show', 'origin/main:policy/no-panic-baseline.toml'], text=True
+          ))
+          after = tomllib.loads(Path('policy/no-panic-baseline.toml').read_text())
+          def identities(doc):
+              return {
+                  (row['path'], row['family'], row['selector_kind'], row['selector_callee'], row['snippet']): int(row['count'])
+                  for row in doc.get('entry', [])
+              }
+          old, new = identities(before), identities(after)
+          if set(new) - set(old):
+              raise SystemExit('predecessor baseline added identities')
+          if any(new[key] > old[key] for key in set(old) & set(new)):
+              raise SystemExit('predecessor baseline increased identities')
+          removed = sum(old.values()) - sum(new.values())
+          if removed <= 0:
+              raise SystemExit('predecessor baseline did not decrease')
+          if any(key[0] == path for key in new):
+              raise SystemExit('predecessor path remains represented')
+          print(f'predecessor PR #{sys.argv[1]} removes {removed} historical slots')
+          PY
+
+          cargo fmt --all -- --check
+          cargo test -p "$package" --test "$test_target" --all-features
+          cargo clippy -p "$package" --test "$test_target" --all-features -- -D warnings
+          cargo xtask check-no-panic-family
+          cargo xtask pr
+          git diff --check origin/main...HEAD
+
+          test "$(gh pr view "$pr" --repo "$REPO" --json headRefOid --jq .headRefOid)" = "$head_sha"
+          gh pr merge "$pr" --repo "$REPO" --squash --match-head-commit "$head_sha" \
+            --subject "test: remove historical panic debt (#$pr)" \
+            --body "Reconciled and independently verified by the serial no-panic controller. The pull request contains one integration-test owner plus the refusing baseline refresh; focused tests, Clippy, semantic policy checks, the full PR gate, and diff hygiene passed."
+
+          for _ in $(seq 1 60); do
+            git fetch origin main
+            if git merge-base --is-ancestor "$head_sha" origin/main 2>/dev/null || [ "$(gh pr view "$pr" --repo "$REPO" --json merged --jq .merged)" = "true" ]; then
+              break
+            fi
+            sleep 5
+          done
+
+      - name: Reconcile predecessor generated badge pull request
+        shell: bash
+        run: |
+          set -euo pipefail
+          pr="$(gh pr list --repo "$REPO" --head automation/badge-endpoints --base main --state open --json number --jq '.[0].number // empty')"
+          if [ -z "$pr" ]; then
+            exit 0
+          fi
+          head_sha="$(gh pr view "$pr" --repo "$REPO" --json headRefOid --jq .headRefOid)"
+          git fetch origin "pull/$pr/head:refs/remotes/origin/predecessor-badge"
+          git fetch origin main
+          git checkout --detach "$head_sha"
+          mapfile -t files < <(git diff --name-only origin/main...HEAD | sort)
+          test "${#files[@]}" -gt 0
+          for path in "${files[@]}"; do
+            case "$path" in badges/*.json) ;; *) echo "non-badge file in PR #$pr: $path" >&2; exit 1 ;; esac
+          done
+          cargo xtask badges
+          git diff --exit-code
+          git diff --check origin/main...HEAD
+          test "$(gh pr view "$pr" --repo "$REPO" --json headRefOid --jq .headRefOid)" = "$head_sha"
+          gh pr merge "$pr" --repo "$REPO" --squash --match-head-commit "$head_sha" \
+            --subject "badge: refresh public endpoints (#$pr)" \
+            --body "Reconciled from the settled no-panic tree. The exact head contains generated badge JSON only and a fresh generator pass is clean."
+
+      - name: Select and build the next compatible slice
+        id: candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git checkout --detach origin/main
+          base_sha="$(git rev-parse HEAD)"
+          before_total="$(python - <<'PY'
+          import tomllib
+          from pathlib import Path
+          print(tomllib.loads(Path('policy/no-panic-baseline.toml').read_text())['summary']['total'])
+          PY
+          )"
+
+          cargo xtask check-no-panic-family
+          cargo xtask no-panic propose
+
+          python - <<'PY'
+          from collections import Counter, defaultdict
+          from pathlib import Path
+          import tomllib
+
+          proposal = tomllib.loads(Path('target/policy-proposed/no-panic-proposed-allowlist.toml').read_text())
+          counts = Counter()
+          families = defaultdict(set)
+          for row in proposal.get('allow', []):
+              count = int(row.get('count', 1))
+              counts[row['path']] += count
+              families[row['path']].add(row['family'])
+
+          ranked = []
+          for path, findings in counts.items():
+              parts = Path(path).parts
+              if len(parts) != 4 or parts[0] != 'crates' or parts[2] != 'tests' or not path.endswith('.rs'):
+                  continue
+              if findings < 5 or not families[path].issubset({'unwrap', 'expect'}):
+                  continue
+              source = Path(path)
+              manifest = Path(parts[0]) / parts[1] / 'Cargo.toml'
+              if not source.is_file() or not manifest.is_file():
+                  continue
+              source_text = source.read_text(encoding='utf-8')
+              manifest_text = manifest.read_text(encoding='utf-8')
+              if 'uselesskey-test-support' not in manifest_text:
+                  continue
+              if 'TestResult' in source_text or 'trait TestContext' in source_text:
+                  continue
+              if '#[tokio::test]' in source_text or '#[rstest]' in source_text:
+                  continue
+              ranked.append((findings, path))
+
+          ranked.sort(key=lambda item: (-item[0], item[1]))
+          Path('/tmp/candidates.tsv').write_text(
+              ''.join(f'{findings}\t{path}\n' for findings, path in ranked),
+              encoding='utf-8',
+          )
+          print('\n'.join(f'{findings:4d} {path}' for findings, path in ranked[:30]))
+          PY
+
+          : > /tmp/attempts.tsv
+          chosen_path=""
+          chosen_findings=""
+          chosen_package=""
+          chosen_test=""
+
+          while IFS=$'\t' read -r findings path; do
+            [ -n "$path" ] || continue
+            git reset --hard "$base_sha" >/dev/null
+            git clean -fd >/dev/null
+            crate_dir="${path%%/tests/*}"
+            package="$(python - "$crate_dir/Cargo.toml" <<'PY'
+          import sys, tomllib
+          with open(sys.argv[1], 'rb') as handle:
+              print(tomllib.load(handle)['package']['name'])
+          PY
+          )"
+            test_target="$(basename "$path" .rs)"
+            export CANDIDATE_PATH="$path"
+
+            if ! python - <<'PY'
+          from pathlib import Path
+          import os, re
+
+          path = Path(os.environ['CANDIDATE_PATH'])
+          text = path.read_text(encoding='utf-8')
+          original = text
+          expect_pattern = re.compile(r'\.expect\(\s*"((?:[^"\\]|\\.)*)"\s*\)', re.DOTALL)
+          literal_expects = len(expect_pattern.findall(text))
+          supported = text.count('.unwrap()') + literal_expects
+          if supported == 0:
+              raise SystemExit('no supported calls')
+          if text.count('.expect(') != literal_expects:
+              raise SystemExit('unsupported non-literal expect')
+
+          helper = '''use uselesskey_test_support::{TestResult, require_ok, require_some};
+
+          trait TestContext<T> {
+              fn test_context(self, message: impl std::fmt::Display) -> TestResult<T>;
+          }
+
+          impl<T, E: std::fmt::Display> TestContext<T> for std::result::Result<T, E> {
+              fn test_context(self, message: impl std::fmt::Display) -> TestResult<T> {
+                  require_ok(self, message)
+              }
+          }
+
+          impl<T> TestContext<T> for Option<T> {
+              fn test_context(self, message: impl std::fmt::Display) -> TestResult<T> {
+                  require_some(self, message)
+              }
+          }
+
+          '''.replace('          ', '')
+          lines = text.splitlines(keepends=True)
+          insert_at = 0
+          while insert_at < len(lines):
+              stripped = lines[insert_at].strip()
+              if stripped.startswith('//!') or stripped.startswith('#!') or stripped == '':
+                  insert_at += 1
+              else:
+                  break
+          text = ''.join(lines[:insert_at]) + helper + ''.join(lines[insert_at:])
+
+          signature = re.compile(r'((?:#\[[^\n]+\]\n)+)(fn\s+([A-Za-z0-9_]+)\(\))\s*\{', re.MULTILINE)
+          names = []
+          def replace_signature(match):
+              attrs, sig, name = match.group(1), match.group(2), match.group(3)
+              if '#[test]' not in attrs:
+                  return match.group(0)
+              names.append(name)
+              return f'{attrs}{sig} -> TestResult<()> {{'
+          text = signature.sub(replace_signature, text)
+          if not names:
+              raise SystemExit('no plain tests')
+
+          def matching_brace(source, opening):
+              depth = 0
+              block = 0
+              i = opening
+              while i < len(source):
+                  if block:
+                      if source.startswith('/*', i): block += 1; i += 2; continue
+                      if source.startswith('*/', i): block -= 1; i += 2; continue
+                      i += 1; continue
+                  if source.startswith('//', i):
+                      end = source.find('\n', i + 2)
+                      i = len(source) if end < 0 else end + 1
+                      continue
+                  if source.startswith('/*', i): block = 1; i += 2; continue
+                  raw = re.match(r'(?:b?r)(?P<h>#{0,16})"', source[i:])
+                  if raw:
+                      delim = '"' + raw.group('h')
+                      end = source.find(delim, i + raw.end())
+                      if end < 0: raise SystemExit('unterminated raw string')
+                      i = end + len(delim); continue
+                  if source.startswith('b"', i) or source[i] == '"':
+                      i += 2 if source.startswith('b"', i) else 1
+                      while i < len(source):
+                          if source[i] == '\\': i += 2; continue
+                          if source[i] == '"': i += 1; break
+                          i += 1
+                      continue
+                  if source[i] == "'" and i + 2 < len(source):
+                      end = i + 1
+                      end += 2 if source[end] == '\\' else 1
+                      if end < len(source) and source[end] == "'": i = end + 1; continue
+                  if source[i] == '{': depth += 1
+                  elif source[i] == '}':
+                      depth -= 1
+                      if depth == 0: return i
+                  i += 1
+              raise SystemExit('unmatched brace')
+
+          ranges = []
+          for name in names:
+              marker = f'fn {name}() -> TestResult<()> {{'
+              start = text.find(marker)
+              if start < 0: raise SystemExit(f'missing transformed test {name}')
+              opening = text.find('{', start)
+              ranges.append((opening, matching_brace(text, opening)))
+
+          for opening, closing in reversed(ranges):
+              body = text[opening + 1:closing]
+              body = re.sub(r'\.join\(\)\s*\.unwrap\(\)', '.join().ok().test_context("worker thread completed")?', body)
+              body = expect_pattern.sub(lambda m: f'.test_context("{m.group(1)}")?', body)
+              body = body.replace('.unwrap()', '.test_context("test operation")?')
+              replacement = body if body.rstrip().endswith('Ok(())') else body.rstrip() + '\n    Ok(())\n'
+              text = text[:opening + 1] + replacement + text[closing:]
+
+          if '.unwrap()' in text or '.expect(' in text:
+              raise SystemExit('panic-family calls remain')
+          if text == original:
+              raise SystemExit('no change')
+          path.write_text(text, encoding='utf-8')
+          PY
+            then
+              printf '%s\t%s\ttransform\n' "$findings" "$path" >> /tmp/attempts.tsv
+              continue
+            fi
+
+            if ! cargo fmt --all; then
+              printf '%s\t%s\tfmt\n' "$findings" "$path" >> /tmp/attempts.tsv
+              continue
+            fi
+            if [ "$(git diff --name-only | sort)" != "$path" ]; then
+              printf '%s\t%s\tdiff-boundary\n' "$findings" "$path" >> /tmp/attempts.tsv
+              continue
+            fi
+            if ! cargo test -p "$package" --test "$test_target" --all-features; then
+              printf '%s\t%s\ttest\n' "$findings" "$path" >> /tmp/attempts.tsv
+              continue
+            fi
+            if ! cargo clippy -p "$package" --test "$test_target" --all-features -- -D warnings; then
+              printf '%s\t%s\tclippy\n' "$findings" "$path" >> /tmp/attempts.tsv
+              continue
+            fi
+
+            chosen_path="$path"
+            chosen_findings="$findings"
+            chosen_package="$package"
+            chosen_test="$test_target"
+            printf '%s\t%s\tselected\n' "$findings" "$path" >> /tmp/attempts.tsv
+            break
+          done < /tmp/candidates.tsv
+
+          attempts_b64="$(base64 -w0 /tmp/attempts.tsv)"
+          echo "attempts_b64=$attempts_b64" >> "$GITHUB_OUTPUT"
+          echo "before_total=$before_total" >> "$GITHUB_OUTPUT"
+
+          if [ -z "$chosen_path" ]; then
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "path=" >> "$GITHUB_OUTPUT"
+            echo "findings=0" >> "$GITHUB_OUTPUT"
+            echo "package=" >> "$GITHUB_OUTPUT"
+            echo "test_target=" >> "$GITHUB_OUTPUT"
+            echo "after_total=$before_total" >> "$GITHUB_OUTPUT"
+            echo "pr=" >> "$GITHUB_OUTPUT"
+            echo "head_sha=$base_sha" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          export CHOSEN_PATH="$chosen_path"
+          export CHOSEN_FINDINGS="$chosen_findings"
+          cargo xtask no-panic baseline
+          cargo xtask check-no-panic-family
+
+          after_total="$(python - <<'PY'
+          import tomllib
+          from pathlib import Path
+          print(tomllib.loads(Path('policy/no-panic-baseline.toml').read_text())['summary']['total'])
+          PY
+          )"
+          python - <<'PY'
+          from pathlib import Path
+          import os, subprocess, tomllib
+          path = os.environ['CHOSEN_PATH']
+          expected = int(os.environ['CHOSEN_FINDINGS'])
+          before = tomllib.loads(subprocess.check_output(['git', 'show', 'HEAD:policy/no-panic-baseline.toml'], text=True))
+          after = tomllib.loads(Path('policy/no-panic-baseline.toml').read_text())
+          def identities(doc):
+              return {(r['path'], r['family'], r['selector_kind'], r['selector_callee'], r['snippet']): int(r['count']) for r in doc.get('entry', [])}
+          old, new = identities(before), identities(after)
+          if set(new) - set(old): raise SystemExit('refresh added identity')
+          if any(new[k] > old[k] for k in set(old) & set(new)): raise SystemExit('refresh increased identity')
+          removed = sum(old.values()) - sum(new.values())
+          if removed != expected: raise SystemExit(f'expected {expected} removed, got {removed}')
+          if any(k[0] == path for k in new): raise SystemExit(f'{path} remains represented')
+          PY
+
+          cargo xtask pr
+          cargo fmt --all -- --check
+          git diff --check
+          expected_files="$(printf '%s\n%s\n' "$chosen_path" policy/no-panic-baseline.toml | sort)"
+          test "$(git diff --name-only | sort)" = "$expected_files"
+
+          git config user.name "EffortlessSteven"
+          git config user.email "git@effortlesssteven.com"
+          git add "$chosen_path" policy/no-panic-baseline.toml
+          git commit -m "test: remove historical panic debt from $chosen_test"
+          head_sha="$(git rev-parse HEAD)"
+          git push --force origin "HEAD:$CANDIDATE_BRANCH"
+
+          pr="$(gh pr list --repo "$REPO" --head "$CANDIDATE_BRANCH" --base main --state open --json number --jq '.[0].number // empty')"
+          body="Advances #575 with a machine-ranked integration-test slice. Owner: \`$chosen_path\`. Historical findings removed: **$chosen_findings**. The normal refusing refresh moves the baseline from **$before_total** to **$after_total** without adding or increasing an identity. Focused all-features tests, focused Clippy with \`-D warnings\`, the semantic no-panic check, the full PR gate, and diff hygiene passed before push. Policy mode and lint stage are unchanged."
+          if [ -z "$pr" ]; then
+            gh pr create --repo "$REPO" --head "$CANDIDATE_BRANCH" --base main \
+              --title "test: remove historical panic debt from $chosen_test" --body "$body"
+            pr="$(gh pr list --repo "$REPO" --head "$CANDIDATE_BRANCH" --base main --state open --json number --jq '.[0].number')"
+          else
+            gh pr edit "$pr" --repo "$REPO" --title "test: remove historical panic debt from $chosen_test" --body "$body"
+          fi
+
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          echo "path=$chosen_path" >> "$GITHUB_OUTPUT"
+          echo "findings=$chosen_findings" >> "$GITHUB_OUTPUT"
+          echo "package=$chosen_package" >> "$GITHUB_OUTPUT"
+          echo "test_target=$chosen_test" >> "$GITHUB_OUTPUT"
+          echo "after_total=$after_total" >> "$GITHUB_OUTPUT"
+          echo "pr=$pr" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
+
+  verify-and-merge:
+    needs: prepare
+    if: needs.prepare.outputs.found == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: test/no-panic-next-integration-test-v2
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Independent exact-head verification and merge
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ needs.prepare.outputs.head_sha }}"
+          git fetch origin main
+          test "$(git rev-list --count origin/main..HEAD)" -eq 1
+          expected="$(printf '%s\n%s\n' '${{ needs.prepare.outputs.path }}' policy/no-panic-baseline.toml | sort)"
+          test "$(git diff --name-only origin/main...HEAD | sort)" = "$expected"
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess, tomllib
+          path = '${{ needs.prepare.outputs.path }}'
+          expected = int('${{ needs.prepare.outputs.findings }}')
+          source = Path(path).read_text(encoding='utf-8')
+          if '.unwrap()' in source or '.expect(' in source:
+              raise SystemExit('panic-family method remains in candidate source')
+          before = tomllib.loads(subprocess.check_output(['git', 'show', 'origin/main:policy/no-panic-baseline.toml'], text=True))
+          after = tomllib.loads(Path('policy/no-panic-baseline.toml').read_text())
+          if before['summary']['total'] - after['summary']['total'] != expected:
+              raise SystemExit('baseline summary does not match claimed reduction')
+          if any(row['path'] == path for row in after.get('entry', [])):
+              raise SystemExit('candidate path remains in baseline')
+          PY
+          cargo fmt --all -- --check
+          cargo test -p "${{ needs.prepare.outputs.package }}" --test "${{ needs.prepare.outputs.test_target }}" --all-features
+          cargo clippy -p "${{ needs.prepare.outputs.package }}" --test "${{ needs.prepare.outputs.test_target }}" --all-features -- -D warnings
+          cargo xtask check-no-panic-family
+          cargo xtask pr
+          git diff --check origin/main...HEAD
+
+          pr="${{ needs.prepare.outputs.pr }}"
+          head_sha="${{ needs.prepare.outputs.head_sha }}"
+          test "$(gh pr view "$pr" --repo "$REPO" --json headRefOid --jq .headRefOid)" = "$head_sha"
+          gh pr merge "$pr" --repo "$REPO" --squash --match-head-commit "$head_sha" \
+            --subject "test: remove historical panic debt from ${{ needs.prepare.outputs.test_target }} (#$pr)" \
+            --body "Remove ${{ needs.prepare.outputs.findings }} historical panic-family slots from ${{ needs.prepare.outputs.path }}. Two exact-head runners passed the focused all-features tests, focused Clippy, semantic no-panic checks, the full PR gate, and diff hygiene; the refusing refresh added or increased no identity."
+
+  settle-and-report:
+    needs: [prepare, verify-and-merge]
+    if: always() && needs.prepare.result == 'success' && (needs.verify-and-merge.result == 'success' || needs.verify-and-merge.result == 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Settle generated badge state
+        id: badge
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ needs.prepare.outputs.found }}" = "true" ]; then
+            pr="${{ needs.prepare.outputs.pr }}"
+            for _ in $(seq 1 120); do
+              merged="$(gh pr view "$pr" --repo "$REPO" --json merged --jq .merged)"
+              [ "$merged" = "true" ] && break
+              sleep 5
+            done
+            test "$merged" = "true"
+          fi
+
+          git fetch origin main
+          git checkout --detach origin/main
+          cargo xtask badges
+          if git diff --quiet; then
+            echo "badge_changed=false" >> "$GITHUB_OUTPUT"
+            echo "badge_pr=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          python - <<'PY'
+          import subprocess
+          files = subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines()
+          bad = [p for p in files if not p.startswith('badges/') or not p.endswith('.json')]
+          if not files or bad:
+              raise SystemExit(f'unexpected generated files: files={files}, bad={bad}')
+          PY
+          first="$(git diff | sha256sum | cut -d' ' -f1)"
+          cargo xtask badges
+          test "$first" = "$(git diff | sha256sum | cut -d' ' -f1)"
+          git diff --check
+          git config user.name "EffortlessSteven"
+          git config user.email "git@effortlesssteven.com"
+          git add badges
+          git commit -m "badge: refresh public endpoints"
+          badge_sha="$(git rev-parse HEAD)"
+          git push --force origin HEAD:automation/badge-endpoints
+          badge_pr="$(gh pr list --repo "$REPO" --head automation/badge-endpoints --base main --state open --json number --jq '.[0].number // empty')"
+          if [ -z "$badge_pr" ]; then
+            gh pr create --repo "$REPO" --head automation/badge-endpoints --base main \
+              --title "badge: refresh public endpoints" \
+              --body "Regenerated twice from the settled no-panic campaign tree. The second pass is byte-stable and the pull request contains generated badge JSON only."
+            badge_pr="$(gh pr list --repo "$REPO" --head automation/badge-endpoints --base main --state open --json number --jq '.[0].number')"
+          fi
+          test "$(gh pr view "$badge_pr" --repo "$REPO" --json headRefOid --jq .headRefOid)" = "$badge_sha"
+          cargo xtask badges
+          git diff --exit-code
+          gh pr merge "$badge_pr" --repo "$REPO" --squash --match-head-commit "$badge_sha" \
+            --subject "badge: refresh public endpoints (#$badge_pr)" \
+            --body "Regenerate public Shields endpoints from the settled no-panic tree. Repeated generation was byte-stable and only generated badge JSON changed."
+          echo "badge_changed=true" >> "$GITHUB_OUTPUT"
+          echo "badge_pr=$badge_pr" >> "$GITHUB_OUTPUT"
+
+      - name: Persist durable campaign receipt
+        shell: bash
+        env:
+          FOUND: ${{ needs.prepare.outputs.found }}
+          PATH_SELECTED: ${{ needs.prepare.outputs.path }}
+          FINDINGS: ${{ needs.prepare.outputs.findings }}
+          PACKAGE: ${{ needs.prepare.outputs.package }}
+          TEST_TARGET: ${{ needs.prepare.outputs.test_target }}
+          BEFORE_TOTAL: ${{ needs.prepare.outputs.before_total }}
+          AFTER_TOTAL: ${{ needs.prepare.outputs.after_total }}
+          SOURCE_PR: ${{ needs.prepare.outputs.pr }}
+          SOURCE_SHA: ${{ needs.prepare.outputs.head_sha }}
+          ATTEMPTS_B64: ${{ needs.prepare.outputs.attempts_b64 }}
+          BADGE_CHANGED: ${{ steps.badge.outputs.badge_changed }}
+          BADGE_PR: ${{ steps.badge.outputs.badge_pr }}
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git checkout --detach origin/main
+          final_main="$(git rev-parse HEAD)"
+          final_total="$(python - <<'PY'
+          import tomllib
+          from pathlib import Path
+          print(tomllib.loads(Path('policy/no-panic-baseline.toml').read_text())['summary']['total'])
+          PY
+          )"
+          mkdir -p diagnostics
+          python - <<'PY'
+          import base64, json, os
+          from pathlib import Path
+          attempts = base64.b64decode(os.environ.get('ATTEMPTS_B64', '') or b'').decode('utf-8', errors='replace')
+          rows = []
+          for line in attempts.splitlines():
+              parts = line.split('\t')
+              if len(parts) == 3:
+                  rows.append({'findings': int(parts[0]), 'path': parts[1], 'result': parts[2]})
+          payload = {
+              'schema_version': 1,
+              'controller': 'v2',
+              'found_compatible_slice': os.environ['FOUND'] == 'true',
+              'selected_path': os.environ.get('PATH_SELECTED') or None,
+              'findings_removed': int(os.environ.get('FINDINGS') or 0),
+              'package': os.environ.get('PACKAGE') or None,
+              'test_target': os.environ.get('TEST_TARGET') or None,
+              'baseline_before': int(os.environ['BEFORE_TOTAL']),
+              'baseline_after_candidate': int(os.environ['AFTER_TOTAL']),
+              'source_pr': int(os.environ['SOURCE_PR']) if os.environ.get('SOURCE_PR') else None,
+              'source_head_sha': os.environ.get('SOURCE_SHA') or None,
+              'badge_changed': os.environ.get('BADGE_CHANGED') == 'true',
+              'badge_pr': int(os.environ['BADGE_PR']) if os.environ.get('BADGE_PR') else None,
+              'attempts': rows,
+          }
+          Path('diagnostics/no-panic-controller-v2.json').write_text(json.dumps(payload, indent=2) + '\n')
+          lines = [
+              '# No-panic serial controller v2 receipt', '',
+              f"- Compatible slice found: **{payload['found_compatible_slice']}**",
+              f"- Selected owner: `{payload['selected_path']}`" if payload['selected_path'] else '- Selected owner: none',
+              f"- Findings removed: **{payload['findings_removed']}**",
+              f"- Baseline movement: **{payload['baseline_before']:,} → {payload['baseline_after_candidate']:,}**",
+              f"- Source PR: **#{payload['source_pr']}**" if payload['source_pr'] else '- Source PR: none',
+              f"- Generated badge change: **{payload['badge_changed']}**",
+              f"- Badge PR: **#{payload['badge_pr']}**" if payload['badge_pr'] else '- Badge PR: none',
+              '', '## Candidate attempts', '',
+              '| Findings | Path | Result |', '|---:|---|---|',
+          ]
+          for row in rows:
+              lines.append(f"| {row['findings']} | `{row['path']}` | `{row['result']}` |")
+          Path('diagnostics/no-panic-controller-v2.md').write_text('\n'.join(lines) + '\n')
+          PY
+          git switch -C diagnostic/no-panic-controller-v2-receipt
+          git add diagnostics/no-panic-controller-v2.json diagnostics/no-panic-controller-v2.md
+          git commit -m "chore: record no-panic controller v2 receipt [skip ci]"
+          git push --force origin diagnostic/no-panic-controller-v2-receipt
+
+          if [ "$FOUND" = "true" ]; then
+            gh issue comment 575 --repo "$REPO" --body "Serial controller v2 merged #$SOURCE_PR: removed $FINDINGS historical panic-family slots from $PATH_SELECTED. The refusing baseline moved from $BEFORE_TOTAL to $AFTER_TOTAL with no identity added or increased. Generated badge reconciliation changed=$BADGE_CHANGED. Issue #575 remains open; no baseline reset or policy-stage promotion was performed."
+          else
+            gh issue comment 575 --repo "$REPO" --body "Serial controller v2 found no remaining integration-test owner that passed the bounded generic conversion contract. The baseline remains at $BEFORE_TOTAL. Candidate failures are recorded on branch diagnostic/no-panic-controller-v2-receipt; the next slice requires an owned/manual transformation rather than broader mechanical rewriting. No baseline reset or policy-stage promotion was performed."
+          fi
