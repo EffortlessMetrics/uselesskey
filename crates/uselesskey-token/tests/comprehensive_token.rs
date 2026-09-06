@@ -9,6 +9,7 @@ use base64::Engine as _;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 
 use uselesskey_core::{Factory, Seed};
+use uselesskey_test_support::{TestResult, require_ok, require_some};
 use uselesskey_token::{TokenFactoryExt, TokenSpec};
 
 use testutil::fx;
@@ -90,32 +91,53 @@ fn bearer_length_is_43() {
 }
 
 #[test]
-fn bearer_decodes_to_32_bytes() {
+fn bearer_decodes_to_32_bytes() -> TestResult<()> {
     let fx = fx();
     let tok = fx.token("len-bearer-decode", TokenSpec::bearer());
-    let decoded = URL_SAFE_NO_PAD.decode(tok.value()).unwrap();
+    let decoded = require_ok(URL_SAFE_NO_PAD.decode(tok.value()), "decode bearer token")?;
     assert_eq!(decoded.len(), 32);
+    Ok(())
 }
 
 #[test]
-fn oauth_signature_segment_decodes_to_32_bytes() {
+fn oauth_signature_segment_decodes_to_32_bytes() -> TestResult<()> {
     let fx = fx();
     let tok = fx.token("len-oauth-sig", TokenSpec::oauth_access_token());
-    let sig = tok.value().split('.').nth(2).unwrap();
-    let decoded = URL_SAFE_NO_PAD.decode(sig).unwrap();
+    let sig = require_some(
+        tok.value().split('.').nth(2),
+        "OAuth signature segment missing",
+    )?;
+    let decoded = require_ok(
+        URL_SAFE_NO_PAD.decode(sig),
+        "decode OAuth signature segment",
+    )?;
     assert_eq!(decoded.len(), 32);
+    Ok(())
 }
 
 #[test]
-fn oauth_jti_decodes_to_16_bytes() {
+fn oauth_jti_decodes_to_16_bytes() -> TestResult<()> {
     let fx = fx();
     let tok = fx.token("len-oauth-jti", TokenSpec::oauth_access_token());
-    let payload_segment = tok.value().split('.').nth(1).unwrap();
-    let payload_bytes = URL_SAFE_NO_PAD.decode(payload_segment).unwrap();
-    let claims: serde_json::Value = serde_json::from_slice(&payload_bytes).unwrap();
-    let jti = claims["jti"].as_str().unwrap();
-    let jti_decoded = URL_SAFE_NO_PAD.decode(jti).unwrap();
+    let payload_segment = require_some(
+        tok.value().split('.').nth(1),
+        "OAuth payload segment missing",
+    )?;
+    let payload_bytes = require_ok(
+        URL_SAFE_NO_PAD.decode(payload_segment),
+        "decode OAuth payload segment",
+    )?;
+    let claims: serde_json::Value = require_ok(
+        serde_json::from_slice(&payload_bytes),
+        "parse OAuth claims JSON",
+    )?;
+    let jti = require_some(
+        claims["jti"].as_str(),
+        "OAuth jti claim missing or not a string",
+    )?;
+    let jti_decoded = require_ok(URL_SAFE_NO_PAD.decode(jti), "decode OAuth jti claim")?;
     assert_eq!(jti_decoded.len(), 16);
+    Ok(())
 }
 
 // =========================================================================
@@ -123,16 +145,20 @@ fn oauth_jti_decodes_to_16_bytes() {
 // =========================================================================
 
 #[test]
-fn api_key_suffix_only_alphanumeric() {
+fn api_key_suffix_only_alphanumeric() -> TestResult<()> {
     let fx = fx();
     for label in ["cs-a", "cs-b", "cs-c", "cs-d", "cs-e"] {
         let tok = fx.token(label, TokenSpec::api_key());
-        let suffix = tok.value().strip_prefix("uk_test_").unwrap();
+        let suffix = require_some(
+            tok.value().strip_prefix("uk_test_"),
+            format_args!("label={label}: API-key prefix missing"),
+        )?;
         assert!(
             suffix.chars().all(|c| c.is_ascii_alphanumeric()),
             "label={label}: suffix has non-alphanumeric chars: {suffix}"
         );
     }
+    Ok(())
 }
 
 #[test]
@@ -168,14 +194,20 @@ fn oauth_segments_only_base64url_chars() {
 // =========================================================================
 
 #[test]
-fn same_seed_same_label_same_spec_produces_identical_tokens() {
+fn same_seed_same_label_same_spec_produces_identical_tokens() -> TestResult<()> {
     for spec in [
         TokenSpec::api_key(),
         TokenSpec::bearer(),
         TokenSpec::oauth_access_token(),
     ] {
-        let seed1 = Seed::from_env_value("det-same").unwrap();
-        let seed2 = Seed::from_env_value("det-same").unwrap();
+        let seed1 = require_ok(
+            Seed::from_env_value("det-same"),
+            "parse first deterministic seed",
+        )?;
+        let seed2 = require_ok(
+            Seed::from_env_value("det-same"),
+            "parse second deterministic seed",
+        )?;
         let fx1 = Factory::deterministic(seed1);
         let fx2 = Factory::deterministic(seed2);
 
@@ -188,17 +220,24 @@ fn same_seed_same_label_same_spec_produces_identical_tokens() {
             spec
         );
     }
+    Ok(())
 }
 
 #[test]
-fn different_seeds_produce_different_tokens_all_specs() {
+fn different_seeds_produce_different_tokens_all_specs() -> TestResult<()> {
     for spec in [
         TokenSpec::api_key(),
         TokenSpec::bearer(),
         TokenSpec::oauth_access_token(),
     ] {
-        let fx1 = Factory::deterministic(Seed::from_env_value("det-diff-a").unwrap());
-        let fx2 = Factory::deterministic(Seed::from_env_value("det-diff-b").unwrap());
+        let fx1 = Factory::deterministic(require_ok(
+            Seed::from_env_value("det-diff-a"),
+            "parse first distinct deterministic seed",
+        )?);
+        let fx2 = Factory::deterministic(require_ok(
+            Seed::from_env_value("det-diff-b"),
+            "parse second distinct deterministic seed",
+        )?);
 
         let t1 = fx1.token("det-label", spec);
         let t2 = fx2.token("det-label", spec);
@@ -209,17 +248,24 @@ fn different_seeds_produce_different_tokens_all_specs() {
             spec
         );
     }
+    Ok(())
 }
 
 #[test]
-fn determinism_with_variant_across_factories() {
+fn determinism_with_variant_across_factories() -> TestResult<()> {
     for spec in [
         TokenSpec::api_key(),
         TokenSpec::bearer(),
         TokenSpec::oauth_access_token(),
     ] {
-        let fx1 = Factory::deterministic(Seed::from_env_value("det-var").unwrap());
-        let fx2 = Factory::deterministic(Seed::from_env_value("det-var").unwrap());
+        let fx1 = Factory::deterministic(require_ok(
+            Seed::from_env_value("det-var"),
+            "parse first variant deterministic seed",
+        )?);
+        let fx2 = Factory::deterministic(require_ok(
+            Seed::from_env_value("det-var"),
+            "parse second variant deterministic seed",
+        )?);
 
         let t1 = fx1.token_with_variant("svc", spec, "v2");
         let t2 = fx2.token_with_variant("svc", spec, "v2");
@@ -230,6 +276,7 @@ fn determinism_with_variant_across_factories() {
             spec
         );
     }
+    Ok(())
 }
 
 #[test]
@@ -268,13 +315,16 @@ fn different_specs_differ_for_same_label() {
 // =========================================================================
 
 #[test]
-fn token_value_stable_after_cache_clear_all_specs() {
+fn token_value_stable_after_cache_clear_all_specs() -> TestResult<()> {
     for spec in [
         TokenSpec::api_key(),
         TokenSpec::bearer(),
         TokenSpec::oauth_access_token(),
     ] {
-        let fx = Factory::deterministic(Seed::from_env_value("kid-stable").unwrap());
+        let fx = Factory::deterministic(require_ok(
+            Seed::from_env_value("kid-stable"),
+            "parse cache-stability deterministic seed",
+        )?);
 
         let val1 = fx.token("stable", spec).value().to_string();
         fx.clear_cache();
@@ -285,27 +335,48 @@ fn token_value_stable_after_cache_clear_all_specs() {
             spec
         );
     }
+    Ok(())
 }
 
 #[test]
-fn oauth_jti_stable_across_factories() {
+fn oauth_jti_stable_across_factories() -> TestResult<()> {
     let seed_val = "jti-stable-seed";
-    let fx1 = Factory::deterministic(Seed::from_env_value(seed_val).unwrap());
-    let fx2 = Factory::deterministic(Seed::from_env_value(seed_val).unwrap());
+    let fx1 = Factory::deterministic(require_ok(
+        Seed::from_env_value(seed_val),
+        "parse first jti-stability seed",
+    )?);
+    let fx2 = Factory::deterministic(require_ok(
+        Seed::from_env_value(seed_val),
+        "parse second jti-stability seed",
+    )?);
 
     let t1 = fx1.token("jti-svc", TokenSpec::oauth_access_token());
     let t2 = fx2.token("jti-svc", TokenSpec::oauth_access_token());
 
-    let jti1 = extract_jti(t1.value());
-    let jti2 = extract_jti(t2.value());
+    let jti1 = extract_jti(t1.value())?;
+    let jti2 = extract_jti(t2.value())?;
     assert_eq!(jti1, jti2, "jti must be stable across factories");
+    Ok(())
 }
 
-fn extract_jti(token_value: &str) -> String {
-    let payload_segment = token_value.split('.').nth(1).unwrap();
-    let payload_bytes = URL_SAFE_NO_PAD.decode(payload_segment).unwrap();
-    let claims: serde_json::Value = serde_json::from_slice(&payload_bytes).unwrap();
-    claims["jti"].as_str().unwrap().to_string()
+fn extract_jti(token_value: &str) -> TestResult<String> {
+    let payload_segment = require_some(
+        token_value.split('.').nth(1),
+        "OAuth payload segment missing",
+    )?;
+    let payload_bytes = require_ok(
+        URL_SAFE_NO_PAD.decode(payload_segment),
+        "decode OAuth payload segment",
+    )?;
+    let claims: serde_json::Value = require_ok(
+        serde_json::from_slice(&payload_bytes),
+        "parse OAuth claims JSON",
+    )?;
+    Ok(require_some(
+        claims["jti"].as_str(),
+        "OAuth jti claim missing or not a string",
+    )?
+    .to_string())
 }
 
 // =========================================================================
@@ -433,24 +504,43 @@ fn all_specs_produce_structurally_distinct_tokens() {
 // =========================================================================
 
 #[test]
-fn oauth_header_has_exactly_alg_and_typ() {
+fn oauth_header_has_exactly_alg_and_typ() -> TestResult<()> {
     let fx = fx();
     let tok = fx.token("oauth-hdr-exact", TokenSpec::oauth_access_token());
-    let header_segment = tok.value().split('.').next().unwrap();
-    let header_bytes = URL_SAFE_NO_PAD.decode(header_segment).unwrap();
-    let header: serde_json::Value = serde_json::from_slice(&header_bytes).unwrap();
+    let header_segment = require_some(
+        tok.value().split('.').next(),
+        "OAuth header segment missing",
+    )?;
+    let header_bytes = require_ok(
+        URL_SAFE_NO_PAD.decode(header_segment),
+        "decode OAuth header segment",
+    )?;
+    let header: serde_json::Value = require_ok(
+        serde_json::from_slice(&header_bytes),
+        "parse OAuth header JSON",
+    )?;
 
     assert_eq!(header["alg"], "RS256");
     assert_eq!(header["typ"], "JWT");
+    Ok(())
 }
 
 #[test]
-fn oauth_payload_has_all_expected_claims() {
+fn oauth_payload_has_all_expected_claims() -> TestResult<()> {
     let fx = fx();
     let tok = fx.token("oauth-claims-full", TokenSpec::oauth_access_token());
-    let payload_segment = tok.value().split('.').nth(1).unwrap();
-    let payload_bytes = URL_SAFE_NO_PAD.decode(payload_segment).unwrap();
-    let claims: serde_json::Value = serde_json::from_slice(&payload_bytes).unwrap();
+    let payload_segment = require_some(
+        tok.value().split('.').nth(1),
+        "OAuth payload segment missing",
+    )?;
+    let payload_bytes = require_ok(
+        URL_SAFE_NO_PAD.decode(payload_segment),
+        "decode OAuth payload segment",
+    )?;
+    let claims: serde_json::Value = require_ok(
+        serde_json::from_slice(&payload_bytes),
+        "parse OAuth claims JSON",
+    )?;
 
     assert_eq!(claims["iss"], "uselesskey");
     assert_eq!(claims["sub"], "oauth-claims-full");
@@ -458,18 +548,32 @@ fn oauth_payload_has_all_expected_claims() {
     assert_eq!(claims["scope"], "fixture.read");
     assert!(claims["exp"].is_number());
     assert!(claims["jti"].is_string());
+    Ok(())
 }
 
 #[test]
-fn oauth_exp_is_in_the_future() {
+fn oauth_exp_is_in_the_future() -> TestResult<()> {
     let fx = fx();
     let tok = fx.token("oauth-exp", TokenSpec::oauth_access_token());
-    let payload_segment = tok.value().split('.').nth(1).unwrap();
-    let payload_bytes = URL_SAFE_NO_PAD.decode(payload_segment).unwrap();
-    let claims: serde_json::Value = serde_json::from_slice(&payload_bytes).unwrap();
+    let payload_segment = require_some(
+        tok.value().split('.').nth(1),
+        "OAuth payload segment missing",
+    )?;
+    let payload_bytes = require_ok(
+        URL_SAFE_NO_PAD.decode(payload_segment),
+        "decode OAuth payload segment",
+    )?;
+    let claims: serde_json::Value = require_ok(
+        serde_json::from_slice(&payload_bytes),
+        "parse OAuth claims JSON",
+    )?;
 
-    let exp = claims["exp"].as_u64().unwrap();
+    let exp = require_some(
+        claims["exp"].as_u64(),
+        "OAuth exp claim missing or not an integer",
+    )?;
     assert!(exp > 1_700_000_000, "exp should be well in the future");
+    Ok(())
 }
 
 // =========================================================================
