@@ -1,0 +1,494 @@
+name: Run next bounded no-panic integration-test slice
+
+on:
+  push:
+    branches:
+      - campaign/no-panic-next-integration-test
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: no-panic-next-integration-test
+  cancel-in-progress: false
+
+env:
+  REPO: EffortlessMetrics/uselesskey
+  CANDIDATE_BRANCH: test/no-panic-next-integration-test
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    outputs:
+      path: ${{ steps.build.outputs.path }}
+      findings: ${{ steps.build.outputs.findings }}
+      package: ${{ steps.build.outputs.package }}
+      test_target: ${{ steps.build.outputs.test_target }}
+      pr: ${{ steps.build.outputs.pr }}
+      head_sha: ${{ steps.build.outputs.head_sha }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Rank bounded integration-test candidates
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import tomllib
+          from pathlib import Path
+
+          baseline = tomllib.loads(Path('policy/no-panic-baseline.toml').read_text())
+          if baseline['summary']['total'] != 3351:
+              raise SystemExit(f"expected post-tempfile total 3351, got {baseline['summary']}")
+          if baseline['summary']['by_family']['unwrap'] != 1177:
+              raise SystemExit(f"expected post-tempfile unwrap total 1177, got {baseline['summary']}")
+          PY
+          cargo xtask check-no-panic-family
+          cargo xtask no-panic propose
+          python - <<'PY'
+          from collections import Counter, defaultdict
+          from pathlib import Path
+          import tomllib
+
+          proposal = tomllib.loads(
+              Path('target/policy-proposed/no-panic-proposed-allowlist.toml').read_text()
+          )
+          counts = Counter()
+          families = defaultdict(set)
+          for row in proposal.get('allow', []):
+              path = row['path']
+              count = int(row.get('count', 1))
+              counts[path] += count
+              families[path].add(row['family'])
+
+          candidates = []
+          for path, count in counts.items():
+              parts = Path(path).parts
+              if len(parts) != 4 or parts[0] != 'crates' or parts[2] != 'tests':
+                  continue
+              if not path.endswith('.rs'):
+                  continue
+              if not families[path].issubset({'unwrap', 'expect'}):
+                  continue
+              source = Path(path)
+              manifest = Path(parts[0]) / parts[1] / 'Cargo.toml'
+              if not source.is_file() or not manifest.is_file():
+                  continue
+              manifest_text = manifest.read_text(encoding='utf-8')
+              source_text = source.read_text(encoding='utf-8')
+              if 'uselesskey-test-support' not in manifest_text:
+                  continue
+              if 'TestResult' in source_text or 'trait TestContext' in source_text:
+                  continue
+              if '#[tokio::test]' in source_text or '#[rstest]' in source_text:
+                  continue
+              if count < 5:
+                  continue
+              candidates.append((count, path))
+
+          candidates.sort(key=lambda item: (-item[0], item[1]))
+          if not candidates:
+              raise SystemExit('no bounded integration-test candidate found')
+          with open('/tmp/no-panic-candidates.tsv', 'w', encoding='utf-8') as handle:
+              for count, path in candidates[:40]:
+                  handle.write(f'{count}\t{path}\n')
+          print('\n'.join(f'{count:4d} {path}' for count, path in candidates[:20]))
+          PY
+
+      - name: Build first compatible candidate
+        id: build
+        shell: bash
+        run: |
+          set -euo pipefail
+          base_sha="$(git rev-parse HEAD)"
+          chosen_path=""
+          chosen_findings=""
+          chosen_package=""
+          chosen_test=""
+
+          while IFS=$'\t' read -r findings path; do
+            git reset --hard "$base_sha" >/dev/null
+            git clean -fd >/dev/null
+
+            crate_dir="${path%%/tests/*}"
+            package="$(python - "$crate_dir/Cargo.toml" <<'PY'
+          import sys, tomllib
+          with open(sys.argv[1], 'rb') as handle:
+              print(tomllib.load(handle)['package']['name'])
+          PY
+          )"
+            test_target="$(basename "$path" .rs)"
+            export CANDIDATE_PATH="$path"
+
+            if ! python - <<'PY'
+          from pathlib import Path
+          import os
+          import re
+
+          path = Path(os.environ['CANDIDATE_PATH'])
+          text = path.read_text(encoding='utf-8')
+          original = text
+
+          expect_pattern = re.compile(
+              r'\.expect\(\s*"((?:[^"\\]|\\.)*)"\s*\)',
+              re.DOTALL,
+          )
+          expected_calls = text.count('.unwrap()') + len(expect_pattern.findall(text))
+          if expected_calls == 0:
+              raise SystemExit('no supported unwrap/expect calls')
+          if text.count('.expect(') != len(expect_pattern.findall(text)):
+              raise SystemExit('contains a non-literal or unsupported expect call')
+
+          helper = '''use uselesskey_test_support::{TestResult, require_ok, require_some};
+
+          trait TestContext<T> {
+              fn test_context(self, message: impl std::fmt::Display) -> TestResult<T>;
+          }
+
+          impl<T, E: std::fmt::Display> TestContext<T> for std::result::Result<T, E> {
+              fn test_context(self, message: impl std::fmt::Display) -> TestResult<T> {
+                  require_ok(self, message)
+              }
+          }
+
+          impl<T> TestContext<T> for Option<T> {
+              fn test_context(self, message: impl std::fmt::Display) -> TestResult<T> {
+                  require_some(self, message)
+              }
+          }
+
+          '''.replace('          ', '')
+
+          lines = text.splitlines(keepends=True)
+          insert_at = 0
+          while insert_at < len(lines):
+              stripped = lines[insert_at].strip()
+              if stripped.startswith('//!') or stripped.startswith('#!') or stripped == '':
+                  insert_at += 1
+                  continue
+              break
+          text = ''.join(lines[:insert_at]) + helper + ''.join(lines[insert_at:])
+
+          signature = re.compile(
+              r'((?:#\[[^\n]+\]\n)+)(fn\s+([A-Za-z0-9_]+)\(\))\s*\{',
+              re.MULTILINE,
+          )
+          test_names = []
+
+          def replace_signature(match):
+              attrs, sig, name = match.group(1), match.group(2), match.group(3)
+              if '#[test]' not in attrs:
+                  return match.group(0)
+              test_names.append(name)
+              return f'{attrs}{sig} -> TestResult<()> {{'
+
+          text = signature.sub(replace_signature, text)
+          if not test_names:
+              raise SystemExit('no plain #[test] functions found')
+
+          def matching_brace(source, opening):
+              depth = 0
+              block_comments = 0
+              i = opening
+              n = len(source)
+              while i < n:
+                  if block_comments:
+                      if source.startswith('/*', i):
+                          block_comments += 1
+                          i += 2
+                          continue
+                      if source.startswith('*/', i):
+                          block_comments -= 1
+                          i += 2
+                          continue
+                      i += 1
+                      continue
+                  if source.startswith('//', i):
+                      newline = source.find('\n', i + 2)
+                      i = n if newline < 0 else newline + 1
+                      continue
+                  if source.startswith('/*', i):
+                      block_comments = 1
+                      i += 2
+                      continue
+                  raw = re.match(r'(?:b?r)(?P<hashes>#{0,16})"', source[i:])
+                  if raw:
+                      delimiter = '"' + raw.group('hashes')
+                      end = source.find(delimiter, i + raw.end())
+                      if end < 0:
+                          raise SystemExit('unterminated raw string')
+                      i = end + len(delimiter)
+                      continue
+                  if source.startswith('b"', i) or source[i] == '"':
+                      i += 2 if source.startswith('b"', i) else 1
+                      while i < n:
+                          if source[i] == '\\':
+                              i += 2
+                              continue
+                          if source[i] == '"':
+                              i += 1
+                              break
+                          i += 1
+                      continue
+                  if source[i] == "'" and i + 2 < n:
+                      end = i + 1
+                      if source[end] == '\\':
+                          end += 2
+                      else:
+                          end += 1
+                      if end < n and source[end] == "'":
+                          i = end + 1
+                          continue
+                  if source[i] == '{':
+                      depth += 1
+                  elif source[i] == '}':
+                      depth -= 1
+                      if depth == 0:
+                          return i
+                  i += 1
+              raise SystemExit('unmatched test brace')
+
+          ranges = []
+          for name in test_names:
+              marker = f'fn {name}() -> TestResult<()> {{'
+              start = text.find(marker)
+              if start < 0:
+                  raise SystemExit(f'missing transformed test {name}')
+              opening = text.find('{', start)
+              closing = matching_brace(text, opening)
+              ranges.append((opening, closing, name))
+
+          for opening, closing, name in reversed(ranges):
+              body = text[opening + 1:closing]
+              body = re.sub(
+                  r'\.join\(\)\s*\.unwrap\(\)',
+                  '.join().ok().test_context("worker thread completed")?',
+                  body,
+              )
+              body = expect_pattern.sub(
+                  lambda m: f'.test_context("{m.group(1)}")?',
+                  body,
+              )
+              body = body.replace(
+                  '.unwrap()', '.test_context("test operation")?'
+              )
+              if body.rstrip().endswith('Ok(())'):
+                  replacement = body
+              else:
+                  replacement = body.rstrip() + '\n    Ok(())\n'
+              text = text[:opening + 1] + replacement + text[closing:]
+
+          if '.unwrap()' in text or '.expect(' in text:
+              raise SystemExit('supported panic-family calls remain outside plain tests')
+          if text == original:
+              raise SystemExit('transformation made no change')
+          path.write_text(text, encoding='utf-8')
+          print(f'transformed {expected_calls} calls in {len(test_names)} tests')
+          PY
+            then
+              continue
+            fi
+
+            if ! cargo fmt --all; then
+              continue
+            fi
+            changed="$(git diff --name-only | sort)"
+            if [ "$changed" != "$path" ]; then
+              continue
+            fi
+            if ! cargo test -p "$package" --test "$test_target" --all-features; then
+              continue
+            fi
+            if ! cargo clippy -p "$package" --test "$test_target" --all-features -- -D warnings; then
+              continue
+            fi
+
+            chosen_path="$path"
+            chosen_findings="$findings"
+            chosen_package="$package"
+            chosen_test="$test_target"
+            break
+          done < /tmp/no-panic-candidates.tsv
+
+          test -n "$chosen_path"
+          export CHOSEN_PATH="$chosen_path"
+          export CHOSEN_FINDINGS="$chosen_findings"
+
+          cargo xtask no-panic baseline
+          cargo xtask check-no-panic-family
+
+          python - <<'PY'
+          from pathlib import Path
+          import os
+          import subprocess
+          import tomllib
+
+          path = os.environ['CHOSEN_PATH']
+          expected_removed = int(os.environ['CHOSEN_FINDINGS'])
+          before = tomllib.loads(
+              subprocess.check_output(
+                  ['git', 'show', 'HEAD:policy/no-panic-baseline.toml'], text=True
+              )
+          )
+          after = tomllib.loads(
+              Path('policy/no-panic-baseline.toml').read_text(encoding='utf-8')
+          )
+
+          def identities(doc):
+              return {
+                  (
+                      row['path'], row['family'], row['selector_kind'],
+                      row['selector_callee'], row['snippet'],
+                  ): int(row['count'])
+                  for row in doc.get('entry', [])
+              }
+
+          old = identities(before)
+          new = identities(after)
+          added = set(new) - set(old)
+          increased = {key for key in set(old) & set(new) if new[key] > old[key]}
+          removed = sum(old.values()) - sum(new.values())
+          if added or increased:
+              raise SystemExit(
+                  f'refresh added/increased identities: added={list(added)[:3]} '
+                  f'increased={list(increased)[:3]}'
+              )
+          if removed != expected_removed:
+              raise SystemExit(
+                  f'expected {expected_removed} removed slots for {path}, got {removed}'
+              )
+          if any(key[0] == path for key in new):
+              raise SystemExit(f'{path} remains represented after refresh')
+          print(
+              f'baseline {before["summary"]["total"]} -> '
+              f'{after["summary"]["total"]}; removed={removed}'
+          )
+          PY
+
+          cargo xtask pr
+          cargo fmt --all -- --check
+          git diff --check
+          changed="$(git diff --name-only | sort)"
+          expected="$(printf '%s\n%s\n' "$chosen_path" policy/no-panic-baseline.toml | sort)"
+          test "$changed" = "$expected"
+
+          git config user.name "EffortlessSteven"
+          git config user.email "git@effortlesssteven.com"
+          git add "$chosen_path" policy/no-panic-baseline.toml
+          git commit -m "test: remove historical panic debt from $chosen_test"
+          head_sha="$(git rev-parse HEAD)"
+          git push --force origin "HEAD:$CANDIDATE_BRANCH"
+
+          pr="$(gh pr list --repo "$REPO" --head "$CANDIDATE_BRANCH" --base main --state open --json number --jq '.[0].number // empty')"
+          body_file="$(mktemp)"
+          cat > "$body_file" <<EOF
+          Advances #575 with the next machine-ranked, bounded integration-test slice.
+
+          - owner: \`$chosen_path\`;
+          - historical findings removed: **$chosen_findings**;
+          - change: plain integration tests now return \`TestResult<()>\` and convert setup/extraction failures into contextual test errors;
+          - baseline authority: normal refusing refresh only;
+          - policy mode and lint stage: unchanged.
+
+          The branch passed its focused all-features test target, focused Clippy with \`-D warnings\`, the semantic no-panic check, the full \`cargo xtask pr\` gate, and diff hygiene before push. A second fresh-runner gate replays those checks before merge.
+          EOF
+          if [ -z "$pr" ]; then
+            gh pr create --repo "$REPO" --head "$CANDIDATE_BRANCH" --base main \
+              --title "test: remove historical panic debt from $chosen_test" \
+              --body-file "$body_file"
+            pr="$(gh pr list --repo "$REPO" --head "$CANDIDATE_BRANCH" --base main --state open --json number --jq '.[0].number')"
+          else
+            gh pr edit "$pr" --repo "$REPO" \
+              --title "test: remove historical panic debt from $chosen_test" \
+              --body-file "$body_file"
+          fi
+
+          echo "path=$chosen_path" >> "$GITHUB_OUTPUT"
+          echo "findings=$chosen_findings" >> "$GITHUB_OUTPUT"
+          echo "package=$chosen_package" >> "$GITHUB_OUTPUT"
+          echo "test_target=$chosen_test" >> "$GITHUB_OUTPUT"
+          echo "pr=$pr" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
+
+  independent-review-and-merge:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: test/no-panic-next-integration-test
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Independent exact-head review
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ needs.build.outputs.head_sha }}"
+          git fetch origin main
+          test "$(git rev-list --count origin/main..HEAD)" -eq 1
+          files="$(git diff --name-only origin/main...HEAD | sort)"
+          expected="$(printf '%s\n%s\n' '${{ needs.build.outputs.path }}' policy/no-panic-baseline.toml | sort)"
+          test "$files" = "$expected"
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess, tomllib
+          path = '${{ needs.build.outputs.path }}'
+          findings = int('${{ needs.build.outputs.findings }}')
+          source = Path(path).read_text(encoding='utf-8')
+          if '.unwrap()' in source or '.expect(' in source:
+              raise SystemExit('panic-family method remains in reviewed source')
+          before = tomllib.loads(
+              subprocess.check_output(
+                  ['git', 'show', 'origin/main:policy/no-panic-baseline.toml'], text=True
+              )
+          )
+          after = tomllib.loads(Path('policy/no-panic-baseline.toml').read_text())
+          if before['summary']['total'] - after['summary']['total'] != findings:
+              raise SystemExit('baseline summary does not match claimed reduction')
+          if any(row['path'] == path for row in after.get('entry', [])):
+              raise SystemExit('reviewed path remains in baseline')
+          PY
+          cargo fmt --all -- --check
+          cargo test -p "${{ needs.build.outputs.package }}" \
+            --test "${{ needs.build.outputs.test_target }}" --all-features
+          cargo clippy -p "${{ needs.build.outputs.package }}" \
+            --test "${{ needs.build.outputs.test_target }}" --all-features -- -D warnings
+          cargo xtask check-no-panic-family
+          cargo xtask pr
+          git diff --check origin/main...HEAD
+
+      - name: Merge exact reviewed head
+        shell: bash
+        run: |
+          set -euo pipefail
+          pr="${{ needs.build.outputs.pr }}"
+          head_sha="${{ needs.build.outputs.head_sha }}"
+          test "$(gh pr view "$pr" --repo "$REPO" --json headRefOid --jq .headRefOid)" = "$head_sha"
+          gh pr merge "$pr" --repo "$REPO" --squash \
+            --match-head-commit "$head_sha" \
+            --subject "test: remove historical panic debt from ${{ needs.build.outputs.test_target }} (#$pr)" \
+            --body "Remove ${{ needs.build.outputs.findings }} historical panic-family slots from ${{ needs.build.outputs.path }}. Two independent exact-head runners passed the focused all-features tests, focused Clippy, semantic no-panic checks, the full PR gate, and diff hygiene; the refusing refresh added or increased no identity."
+          gh issue comment 575 --repo "$REPO" --body "Merged #$pr: removed ${{ needs.build.outputs.findings }} historical panic-family slots from ${{ needs.build.outputs.path }} through a normal refusing baseline refresh. Two independent exact-head gates passed. Issue #575 remains open; the policy mode and lint stage are unchanged."
