@@ -1,0 +1,135 @@
+name: Inventory current no-panic baseline
+
+on:
+  push:
+    branches:
+      - diagnostic/no-panic-inventory-2026-09-06
+
+permissions:
+  contents: read
+
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+
+      - name: Generate semantic no-panic evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo xtask check-no-panic-family
+          cargo xtask no-panic propose
+
+      - name: Build inventory receipts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from __future__ import annotations
+
+          import json
+          import tomllib
+          from collections import Counter
+          from pathlib import Path
+
+          proposal_path = Path("target/policy-proposed/no-panic-proposed-allowlist.toml")
+          baseline_path = Path("policy/no-panic-baseline.toml")
+          report_dir = Path("target/no-panic-inventory")
+          report_dir.mkdir(parents=True, exist_ok=True)
+
+          proposal = tomllib.loads(proposal_path.read_text(encoding="utf-8"))
+          baseline = tomllib.loads(baseline_path.read_text(encoding="utf-8"))
+          entries = proposal.get("allow") or proposal.get("entry") or []
+
+          by_path: Counter[str] = Counter()
+          by_family: Counter[str] = Counter()
+          by_surface: Counter[str] = Counter()
+          normalized = []
+
+          for entry in entries:
+              count = int(entry.get("count", 1))
+              path = str(entry.get("path", "<unknown>"))
+              family = str(entry.get("family", "<unknown>"))
+              surface = "test-file" if (
+                  path.startswith("tests/")
+                  or "/tests/" in path
+                  or path.endswith("_test.rs")
+                  or path.endswith("_tests.rs")
+              ) else "source-or-inline-test"
+              by_path[path] += count
+              by_family[family] += count
+              by_surface[surface] += count
+              normalized.append({
+                  "path": path,
+                  "family": family,
+                  "count": count,
+                  "surface": surface,
+                  "selector_kind": entry.get("selector_kind"),
+                  "selector_callee": entry.get("selector_callee"),
+                  "snippet": entry.get("snippet"),
+              })
+
+          inventory = {
+              "head_sha": "${{ github.sha }}",
+              "baseline_summary": baseline.get("summary", {}),
+              "proposal_entry_count": len(entries),
+              "represented_findings": sum(item["count"] for item in normalized),
+              "path_count": len(by_path),
+              "by_family": dict(by_family.most_common()),
+              "by_surface": dict(by_surface.most_common()),
+              "top_paths": [
+                  {"path": path, "findings": count}
+                  for path, count in by_path.most_common(100)
+              ],
+              "entries": normalized,
+          }
+          (report_dir / "inventory.json").write_text(
+              json.dumps(inventory, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+
+          lines = [
+              "# Current no-panic inventory",
+              "",
+              f"- Head: `${{ github.sha }}`",
+              f"- Represented findings: **{inventory['represented_findings']:,}**",
+              f"- Proposal identities: **{inventory['proposal_entry_count']:,}**",
+              f"- Rust paths: **{inventory['path_count']:,}**",
+              "",
+              "## Families",
+              "",
+              "| Family | Findings |",
+              "|---|---:|",
+          ]
+          lines.extend(f"| `{family}` | {count:,} |" for family, count in by_family.most_common())
+          lines.extend([
+              "",
+              "## Largest paths",
+              "",
+              "| Path | Findings |",
+              "|---|---:|",
+          ])
+          lines.extend(f"| `{path}` | {count:,} |" for path, count in by_path.most_common(100))
+          (report_dir / "inventory.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+          PY
+
+      - name: Upload inventory
+        uses: actions/upload-artifact@v6
+        with:
+          name: no-panic-inventory-${{ github.sha }}
+          path: |
+            target/no-panic.json
+            target/no-panic.md
+            target/policy-proposed/no-panic-proposed-allowlist.toml
+            target/no-panic-inventory/inventory.json
+            target/no-panic-inventory/inventory.md
+          if-no-files-found: error
+          retention-days: 14
