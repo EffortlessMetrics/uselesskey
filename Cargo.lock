@@ -4594,6 +4594,7 @@ dependencies = [
  "uselesskey-rsa",
  "uselesskey-rustls",
  "uselesskey-ssh",
+ "uselesskey-test-support",
  "uselesskey-token",
  "uselesskey-webhook",
  "uselesskey-x509",
