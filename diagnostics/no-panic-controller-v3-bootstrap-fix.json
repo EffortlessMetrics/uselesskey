@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "predecessor_run": null,
+  "predecessor_found_slice": false,
+  "predecessor_baseline_after": null,
+  "predecessor_source_pr": null,
+  "v3_created": false,
+  "self_wait_guard": "passed"
+}
