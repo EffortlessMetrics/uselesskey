@@ -1,0 +1,482 @@
+name: No-panic fixed serial controller 1
+
+on:
+  push:
+    branches:
+      - campaign/no-panic-fixed-1
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: no-panic-fixed-1
+  cancel-in-progress: true
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  REPO: EffortlessMetrics/uselesskey
+  CANDIDATE_BRANCH: test/no-panic-fixed-1
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    outputs:
+      found: ${{ steps.candidate.outputs.found }}
+      path: ${{ steps.candidate.outputs.path }}
+      findings: ${{ steps.candidate.outputs.findings }}
+      package: ${{ steps.candidate.outputs.package }}
+      test_target: ${{ steps.candidate.outputs.test_target }}
+      before_total: ${{ steps.candidate.outputs.before_total }}
+      after_total: ${{ steps.candidate.outputs.after_total }}
+      pr: ${{ steps.candidate.outputs.pr }}
+      head_sha: ${{ steps.candidate.outputs.head_sha }}
+      attempts_b64: ${{ steps.candidate.outputs.attempts_b64 }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Preserve branch-local campaign helper
+        shell: bash
+        run: |
+          cp .github/scripts/no_panic_integration_campaign.py /tmp/no_panic_integration_campaign.py
+          chmod +x /tmp/no_panic_integration_campaign.py
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Wait for predecessor control planes to quiesce
+        shell: bash
+        run: |
+          set -euo pipefail
+          wait_branch() {
+            local branch="$1"
+            local encoded="${branch//\//%2F}"
+            local payload=""
+            for _ in $(seq 1 720); do
+              payload="$(gh api "/repos/$REPO/actions/runs?branch=$encoded&per_page=1")"
+              if [ "$(jq -r '.total_count // 0' <<<"$payload")" = "0" ]; then
+                return 0
+              fi
+              if [ "$(jq -r '.workflow_runs[0].status' <<<"$payload")" = "completed" ]; then
+                jq -r '.workflow_runs[0] | "\(.head_branch): \(.conclusion) (run \(.id))"' <<<"$payload"
+                return 0
+              fi
+              sleep 10
+            done
+            echo "timed out waiting for $branch" >&2
+            return 1
+          }
+          wait_branch campaign/no-panic-next-integration-test
+          wait_branch campaign/settle-after-next-no-panic
+          wait_branch campaign/no-panic-controller-v2
+          wait_branch campaign/no-panic-merge-state-fix
+
+      - name: Reconcile surviving predecessor source PR
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t prs < <(
+            gh pr list --repo "$REPO" --state open --base main --limit 100 \
+              --json number,headRefName \
+              --jq '.[] | select(.headRefName == "test/no-panic-next-integration-test" or .headRefName == "test/no-panic-next-integration-test-v2") | .number'
+          )
+          if [ "${#prs[@]}" -gt 1 ]; then
+            echo "multiple predecessor source PRs require explicit ordering: ${prs[*]}" >&2
+            exit 1
+          fi
+          if [ "${#prs[@]}" -eq 0 ]; then
+            exit 0
+          fi
+
+          pr="${prs[0]}"
+          head_sha="$(gh pr view "$pr" --repo "$REPO" --json headRefOid --jq .headRefOid)"
+          git fetch origin main
+          git fetch origin "pull/$pr/head:refs/remotes/origin/predecessor-$pr"
+          git checkout --detach "$head_sha"
+          mapfile -t files < <(git diff --name-only origin/main...HEAD | sort)
+          test "${#files[@]}" -eq 2
+          test "${files[1]}" = "policy/no-panic-baseline.toml"
+          path="${files[0]}"
+          case "$path" in crates/*/tests/*.rs) ;; *) echo "unexpected predecessor path: $path" >&2; exit 1 ;; esac
+          crate_dir="${path%%/tests/*}"
+          package="$(python /tmp/no_panic_integration_campaign.py package --manifest "$crate_dir/Cargo.toml")"
+          test_target="$(basename "$path" .rs)"
+
+          python /tmp/no_panic_integration_campaign.py check-baseline --before-ref origin/main --path "$path" > /tmp/predecessor-baseline.json
+          cargo fmt --all -- --check
+          cargo test -p "$package" --test "$test_target" --all-features
+          cargo clippy -p "$package" --test "$test_target" --all-features -- -D warnings
+          cargo xtask check-no-panic-family
+          cargo xtask pr
+          git diff --check origin/main...HEAD
+          test "$(gh pr view "$pr" --repo "$REPO" --json headRefOid --jq .headRefOid)" = "$head_sha"
+          removed="$(jq -r .removed /tmp/predecessor-baseline.json)"
+          gh pr merge "$pr" --repo "$REPO" --squash --match-head-commit "$head_sha" \
+            --subject "test: remove historical panic debt from $test_target (#$pr)" \
+            --body "Fixed-controller reconciliation: remove $removed historical panic-family slots from $path. Exact-head focused tests, Clippy, semantic policy checks, the full PR gate, and diff hygiene passed; no baseline identity was added or increased."
+          for _ in $(seq 1 120); do
+            merged="$(gh pr view "$pr" --repo "$REPO" --json mergedAt --jq 'if .mergedAt == null then "false" else "true" end')"
+            [ "$merged" = "true" ] && exit 0
+            sleep 5
+          done
+          echo "predecessor PR #$pr did not reach merged state" >&2
+          exit 1
+
+      - name: Reconcile surviving generated badge PR
+        shell: bash
+        run: |
+          set -euo pipefail
+          pr="$(gh pr list --repo "$REPO" --head automation/badge-endpoints --base main --state open --json number --jq '.[0].number // empty')"
+          if [ -z "$pr" ]; then
+            exit 0
+          fi
+          head_sha="$(gh pr view "$pr" --repo "$REPO" --json headRefOid --jq .headRefOid)"
+          git fetch origin main
+          git fetch origin "pull/$pr/head:refs/remotes/origin/predecessor-badge-$pr"
+          git checkout --detach "$head_sha"
+          mapfile -t files < <(git diff --name-only origin/main...HEAD | sort)
+          test "${#files[@]}" -gt 0
+          for path in "${files[@]}"; do
+            case "$path" in badges/*.json) ;; *) echo "unexpected badge PR file: $path" >&2; exit 1 ;; esac
+          done
+          cargo xtask badges
+          git diff --exit-code
+          git diff --check origin/main...HEAD
+          test "$(gh pr view "$pr" --repo "$REPO" --json headRefOid --jq .headRefOid)" = "$head_sha"
+          gh pr merge "$pr" --repo "$REPO" --squash --match-head-commit "$head_sha" \
+            --subject "badge: refresh public endpoints (#$pr)" \
+            --body "Fixed-controller reconciliation: generated badge JSON only, with a clean repeated generator pass."
+
+      - name: Build next bounded integration owner
+        id: candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git checkout --detach origin/main
+          base_sha="$(git rev-parse HEAD)"
+          before_total="$(python - <<'PY'
+          import tomllib
+          from pathlib import Path
+          print(tomllib.loads(Path('policy/no-panic-baseline.toml').read_text())['summary']['total'])
+          PY
+          )"
+          cargo xtask check-no-panic-family
+          cargo xtask no-panic propose
+          python /tmp/no_panic_integration_campaign.py rank --output /tmp/candidates.json --minimum 3
+          : > /tmp/attempts.tsv
+
+          chosen_path=""
+          chosen_findings=""
+          chosen_package=""
+          chosen_test=""
+          chosen_after=""
+
+          count="$(jq length /tmp/candidates.json)"
+          for index in $(seq 0 $((count - 1))); do
+            path="$(jq -r ".[$index].path" /tmp/candidates.json)"
+            findings="$(jq -r ".[$index].findings" /tmp/candidates.json)"
+            crate_dir="$(jq -r ".[$index].crate_dir" /tmp/candidates.json)"
+            test_target="$(jq -r ".[$index].test_target" /tmp/candidates.json)"
+            package="$(python /tmp/no_panic_integration_campaign.py package --manifest "$crate_dir/Cargo.toml")"
+
+            git reset --hard "$base_sha" >/dev/null
+            git clean -fd >/dev/null
+            if ! python /tmp/no_panic_integration_campaign.py transform --path "$path"; then
+              printf '%s\t%s\ttransform\n' "$findings" "$path" >> /tmp/attempts.tsv
+              continue
+            fi
+            if ! cargo fmt --all; then
+              printf '%s\t%s\tfmt\n' "$findings" "$path" >> /tmp/attempts.tsv
+              continue
+            fi
+            if [ "$(git diff --name-only | sort)" != "$path" ]; then
+              printf '%s\t%s\tdiff-boundary\n' "$findings" "$path" >> /tmp/attempts.tsv
+              continue
+            fi
+            if ! cargo test -p "$package" --test "$test_target" --all-features; then
+              printf '%s\t%s\ttest\n' "$findings" "$path" >> /tmp/attempts.tsv
+              continue
+            fi
+            if ! cargo clippy -p "$package" --test "$test_target" --all-features -- -D warnings; then
+              printf '%s\t%s\tclippy\n' "$findings" "$path" >> /tmp/attempts.tsv
+              continue
+            fi
+            if ! cargo xtask no-panic baseline; then
+              printf '%s\t%s\tbaseline-refresh\n' "$findings" "$path" >> /tmp/attempts.tsv
+              continue
+            fi
+            if ! cargo xtask check-no-panic-family; then
+              printf '%s\t%s\tsemantic-check\n' "$findings" "$path" >> /tmp/attempts.tsv
+              continue
+            fi
+            if ! python /tmp/no_panic_integration_campaign.py check-baseline --before-ref "$base_sha" --path "$path" --expected "$findings" > /tmp/baseline.json; then
+              printf '%s\t%s\tidentity-partition\n' "$findings" "$path" >> /tmp/attempts.tsv
+              continue
+            fi
+            if ! cargo xtask pr; then
+              printf '%s\t%s\tfull-pr-gate\n' "$findings" "$path" >> /tmp/attempts.tsv
+              continue
+            fi
+            if ! cargo fmt --all -- --check || ! git diff --check; then
+              printf '%s\t%s\tfinal-hygiene\n' "$findings" "$path" >> /tmp/attempts.tsv
+              continue
+            fi
+            expected_files="$(printf '%s\n%s\n' "$path" policy/no-panic-baseline.toml | sort)"
+            if [ "$(git diff --name-only | sort)" != "$expected_files" ]; then
+              printf '%s\t%s\tfinal-boundary\n' "$findings" "$path" >> /tmp/attempts.tsv
+              continue
+            fi
+
+            chosen_path="$path"
+            chosen_findings="$findings"
+            chosen_package="$package"
+            chosen_test="$test_target"
+            chosen_after="$(jq -r .after /tmp/baseline.json)"
+            printf '%s\t%s\tselected\n' "$findings" "$path" >> /tmp/attempts.tsv
+            break
+          done
+
+          echo "attempts_b64=$(base64 -w0 /tmp/attempts.tsv)" >> "$GITHUB_OUTPUT"
+          echo "before_total=$before_total" >> "$GITHUB_OUTPUT"
+          if [ -z "$chosen_path" ]; then
+            git reset --hard "$base_sha" >/dev/null
+            git clean -fd >/dev/null
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "path=" >> "$GITHUB_OUTPUT"
+            echo "findings=0" >> "$GITHUB_OUTPUT"
+            echo "package=" >> "$GITHUB_OUTPUT"
+            echo "test_target=" >> "$GITHUB_OUTPUT"
+            echo "after_total=$before_total" >> "$GITHUB_OUTPUT"
+            echo "pr=" >> "$GITHUB_OUTPUT"
+            echo "head_sha=$base_sha" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git config user.name "EffortlessSteven"
+          git config user.email "git@effortlesssteven.com"
+          git add "$chosen_path" policy/no-panic-baseline.toml
+          git commit -m "test: remove historical panic debt from $chosen_test"
+          head_sha="$(git rev-parse HEAD)"
+          git push --force origin "HEAD:$CANDIDATE_BRANCH"
+
+          pr="$(gh pr list --repo "$REPO" --head "$CANDIDATE_BRANCH" --base main --state open --json number --jq '.[0].number // empty')"
+          body="Advances #575 with an externally controlled bounded integration-test slice. Owner: \`$chosen_path\`; historical findings removed: **$chosen_findings**; baseline: **$before_total → $chosen_after**. The normal refusing refresh added or increased no identity and removed no foreign owner. Focused all-features tests, focused Clippy with \`-D warnings\`, the semantic checker, the full PR gate, and diff hygiene passed before push."
+          if [ -z "$pr" ]; then
+            gh pr create --repo "$REPO" --head "$CANDIDATE_BRANCH" --base main \
+              --title "test: remove historical panic debt from $chosen_test" --body "$body"
+            pr="$(gh pr list --repo "$REPO" --head "$CANDIDATE_BRANCH" --base main --state open --json number --jq '.[0].number')"
+          else
+            gh pr edit "$pr" --repo "$REPO" --title "test: remove historical panic debt from $chosen_test" --body "$body"
+          fi
+
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          echo "path=$chosen_path" >> "$GITHUB_OUTPUT"
+          echo "findings=$chosen_findings" >> "$GITHUB_OUTPUT"
+          echo "package=$chosen_package" >> "$GITHUB_OUTPUT"
+          echo "test_target=$chosen_test" >> "$GITHUB_OUTPUT"
+          echo "after_total=$chosen_after" >> "$GITHUB_OUTPUT"
+          echo "pr=$pr" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
+
+  independent-review-and-merge:
+    needs: prepare
+    if: needs.prepare.outputs.found == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: test/no-panic-fixed-1
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Load campaign helper from controller branch
+        shell: bash
+        run: |
+          git fetch origin campaign/no-panic-fixed-1
+          git show origin/campaign/no-panic-fixed-1:.github/scripts/no_panic_integration_campaign.py > /tmp/no_panic_integration_campaign.py
+          chmod +x /tmp/no_panic_integration_campaign.py
+
+      - name: Independently verify and merge exact head
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ needs.prepare.outputs.head_sha }}"
+          git fetch origin main
+          test "$(git rev-list --count origin/main..HEAD)" -eq 1
+          expected="$(printf '%s\n%s\n' '${{ needs.prepare.outputs.path }}' policy/no-panic-baseline.toml | sort)"
+          test "$(git diff --name-only origin/main...HEAD | sort)" = "$expected"
+          python /tmp/no_panic_integration_campaign.py check-baseline \
+            --before-ref origin/main --path "${{ needs.prepare.outputs.path }}" \
+            --expected "${{ needs.prepare.outputs.findings }}"
+          cargo fmt --all -- --check
+          cargo test -p "${{ needs.prepare.outputs.package }}" --test "${{ needs.prepare.outputs.test_target }}" --all-features
+          cargo clippy -p "${{ needs.prepare.outputs.package }}" --test "${{ needs.prepare.outputs.test_target }}" --all-features -- -D warnings
+          cargo xtask check-no-panic-family
+          cargo xtask pr
+          git diff --check origin/main...HEAD
+
+          pr="${{ needs.prepare.outputs.pr }}"
+          head_sha="${{ needs.prepare.outputs.head_sha }}"
+          test "$(gh pr view "$pr" --repo "$REPO" --json headRefOid --jq .headRefOid)" = "$head_sha"
+          gh pr merge "$pr" --repo "$REPO" --squash --match-head-commit "$head_sha" \
+            --subject "test: remove historical panic debt from ${{ needs.prepare.outputs.test_target }} (#$pr)" \
+            --body "Remove ${{ needs.prepare.outputs.findings }} historical panic-family slots from ${{ needs.prepare.outputs.path }}. Two exact-head runners passed focused tests, Clippy, semantic no-panic checks, the full PR gate, and diff hygiene; the refusing refresh added or increased no identity and removed no foreign owner."
+
+  settle-and-report:
+    needs: [prepare, independent-review-and-merge]
+    if: always() && needs.prepare.result == 'success' && (needs.independent-review-and-merge.result == 'success' || needs.independent-review-and-merge.result == 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Wait for source merge and settle badge endpoints
+        id: badge
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ needs.prepare.outputs.found }}" = "true" ]; then
+            pr="${{ needs.prepare.outputs.pr }}"
+            merged=false
+            for _ in $(seq 1 120); do
+              merged="$(gh pr view "$pr" --repo "$REPO" --json mergedAt --jq 'if .mergedAt == null then "false" else "true" end')"
+              [ "$merged" = "true" ] && break
+              sleep 5
+            done
+            test "$merged" = "true"
+          fi
+
+          git fetch origin main
+          git checkout --detach origin/main
+          cargo xtask badges
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "pr=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          python - <<'PY'
+          import subprocess
+          files = subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines()
+          bad = [path for path in files if not path.startswith('badges/') or not path.endswith('.json')]
+          if not files or bad:
+              raise SystemExit(f'unexpected generated files: {files}')
+          PY
+          first="$(git diff | sha256sum | cut -d' ' -f1)"
+          cargo xtask badges
+          test "$first" = "$(git diff | sha256sum | cut -d' ' -f1)"
+          git diff --check
+          git config user.name "EffortlessSteven"
+          git config user.email "git@effortlesssteven.com"
+          git add badges
+          git commit -m "badge: refresh public endpoints"
+          badge_sha="$(git rev-parse HEAD)"
+          git push --force origin HEAD:automation/badge-endpoints
+          badge_pr="$(gh pr list --repo "$REPO" --head automation/badge-endpoints --base main --state open --json number --jq '.[0].number // empty')"
+          if [ -z "$badge_pr" ]; then
+            gh pr create --repo "$REPO" --head automation/badge-endpoints --base main \
+              --title "badge: refresh public endpoints" \
+              --body "Generated twice from the fixed no-panic controller tree. The second pass is byte-stable and the pull request contains generated badge JSON only."
+            badge_pr="$(gh pr list --repo "$REPO" --head automation/badge-endpoints --base main --state open --json number --jq '.[0].number')"
+          fi
+          test "$(gh pr view "$badge_pr" --repo "$REPO" --json headRefOid --jq .headRefOid)" = "$badge_sha"
+          cargo xtask badges
+          git diff --exit-code
+          gh pr merge "$badge_pr" --repo "$REPO" --squash --match-head-commit "$badge_sha" \
+            --subject "badge: refresh public endpoints (#$badge_pr)" \
+            --body "Regenerate public Shields endpoints from the fixed no-panic controller tree. Repeated generation was byte-stable and only generated badge JSON changed."
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "pr=$badge_pr" >> "$GITHUB_OUTPUT"
+
+      - name: Persist fixed-controller receipt
+        shell: bash
+        env:
+          FOUND: ${{ needs.prepare.outputs.found }}
+          PATH_SELECTED: ${{ needs.prepare.outputs.path }}
+          FINDINGS: ${{ needs.prepare.outputs.findings }}
+          PACKAGE: ${{ needs.prepare.outputs.package }}
+          TEST_TARGET: ${{ needs.prepare.outputs.test_target }}
+          BEFORE_TOTAL: ${{ needs.prepare.outputs.before_total }}
+          AFTER_TOTAL: ${{ needs.prepare.outputs.after_total }}
+          SOURCE_PR: ${{ needs.prepare.outputs.pr }}
+          SOURCE_SHA: ${{ needs.prepare.outputs.head_sha }}
+          ATTEMPTS_B64: ${{ needs.prepare.outputs.attempts_b64 }}
+          BADGE_CHANGED: ${{ steps.badge.outputs.changed }}
+          BADGE_PR: ${{ steps.badge.outputs.pr }}
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git checkout --detach origin/main
+          mkdir -p diagnostics
+          python - <<'PY'
+          import base64, json, os
+          from pathlib import Path
+          attempts = base64.b64decode(os.environ.get('ATTEMPTS_B64', '') or b'').decode('utf-8', errors='replace')
+          rows = []
+          for line in attempts.splitlines():
+              parts = line.split('\t')
+              if len(parts) == 3:
+                  rows.append({'findings': int(parts[0]), 'path': parts[1], 'result': parts[2]})
+          payload = {
+              'schema_version': 1,
+              'controller': 'fixed-1',
+              'found_compatible_slice': os.environ['FOUND'] == 'true',
+              'selected_path': os.environ.get('PATH_SELECTED') or None,
+              'findings_removed': int(os.environ.get('FINDINGS') or 0),
+              'package': os.environ.get('PACKAGE') or None,
+              'test_target': os.environ.get('TEST_TARGET') or None,
+              'baseline_before': int(os.environ['BEFORE_TOTAL']),
+              'baseline_after_candidate': int(os.environ['AFTER_TOTAL']),
+              'source_pr': int(os.environ['SOURCE_PR']) if os.environ.get('SOURCE_PR') else None,
+              'source_head_sha': os.environ.get('SOURCE_SHA') or None,
+              'badge_changed': os.environ.get('BADGE_CHANGED') == 'true',
+              'badge_pr': int(os.environ['BADGE_PR']) if os.environ.get('BADGE_PR') else None,
+              'attempts': rows,
+          }
+          Path('diagnostics/no-panic-fixed-1.json').write_text(json.dumps(payload, indent=2) + '\n')
+          lines = [
+              '# No-panic fixed serial controller 1', '',
+              f"- Compatible slice found: **{payload['found_compatible_slice']}**",
+              f"- Selected owner: `{payload['selected_path']}`" if payload['selected_path'] else '- Selected owner: none',
+              f"- Findings removed: **{payload['findings_removed']}**",
+              f"- Baseline movement: **{payload['baseline_before']:,} → {payload['baseline_after_candidate']:,}**",
+              f"- Source PR: **#{payload['source_pr']}**" if payload['source_pr'] else '- Source PR: none',
+              f"- Badge PR: **#{payload['badge_pr']}**" if payload['badge_pr'] else '- Badge PR: none',
+              '', '## Candidate attempts', '', '| Findings | Path | Result |', '|---:|---|---|',
+          ]
+          for row in rows:
+              lines.append(f"| {row['findings']} | `{row['path']}` | `{row['result']}` |")
+          Path('diagnostics/no-panic-fixed-1.md').write_text('\n'.join(lines) + '\n')
+          PY
+          git switch -C diagnostic/no-panic-fixed-1
+          git add diagnostics/no-panic-fixed-1.*
+          git config user.name "EffortlessSteven"
+          git config user.email "git@effortlesssteven.com"
+          git commit -m "chore: record no-panic fixed controller 1 [skip ci]"
+          git push --force origin diagnostic/no-panic-fixed-1
+
+          if [ "$FOUND" = "true" ]; then
+            gh issue comment 575 --repo "$REPO" --body "Fixed serial controller 1 merged #$SOURCE_PR: removed $FINDINGS historical panic-family slots from $PATH_SELECTED. The refusing baseline moved from $BEFORE_TOTAL to $AFTER_TOTAL with no identity added or increased and no foreign owner removed. Badge reconciliation changed=$BADGE_CHANGED. #575 remains open; no reset or policy-stage promotion occurred."
+          else
+            gh issue comment 575 --repo "$REPO" --body "Fixed serial controller 1 found no remaining plain integration-test owner that passed the bounded conversion contract. Attempts are recorded on diagnostic/no-panic-fixed-1. The next lane must use the specialized test-function or manual production workflow; no reset or policy-stage promotion occurred."
+          fi
