@@ -1,0 +1,146 @@
+name: Watch no-panic controller v2
+
+on:
+  push:
+    branches:
+      - campaign/no-panic-controller-v2-watch
+
+permissions:
+  actions: write
+  contents: write
+  pull-requests: read
+  issues: read
+
+concurrency:
+  group: no-panic-controller-v2-watch
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  REPO: EffortlessMetrics/uselesskey
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Wait, retry failed jobs once, and classify
+        id: status
+        shell: bash
+        run: |
+          set -euo pipefail
+          latest_run() {
+            gh api "/repos/$REPO/actions/runs?branch=campaign%2Fno-panic-controller-v2&per_page=1"
+          }
+          payload=""
+          for _ in $(seq 1 720); do
+            payload="$(latest_run)"
+            count="$(jq -r '.total_count // 0' <<<"$payload")"
+            if [ "$count" != "0" ] && [ "$(jq -r '.workflow_runs[0].status' <<<"$payload")" = "completed" ]; then
+              break
+            fi
+            sleep 10
+          done
+          run_id="$(jq -r '.workflow_runs[0].id // empty' <<<"$payload")"
+          conclusion="$(jq -r '.workflow_runs[0].conclusion // empty' <<<"$payload")"
+          test -n "$run_id"
+          test -n "$conclusion"
+          first_conclusion="$conclusion"
+
+          if [ "$conclusion" = "failure" ]; then
+            attempt="$(jq -r '.workflow_runs[0].run_attempt // 1' <<<"$payload")"
+            if [ "$attempt" = "1" ]; then
+              gh api --method POST "/repos/$REPO/actions/runs/$run_id/rerun-failed-jobs"
+              for _ in $(seq 1 720); do
+                payload="$(latest_run)"
+                if [ "$(jq -r '.workflow_runs[0].status' <<<"$payload")" = "completed" ] && [ "$(jq -r '.workflow_runs[0].run_attempt // 1' <<<"$payload")" -gt 1 ]; then
+                  break
+                fi
+                sleep 10
+              done
+              run_id="$(jq -r '.workflow_runs[0].id' <<<"$payload")"
+              conclusion="$(jq -r '.workflow_runs[0].conclusion' <<<"$payload")"
+            fi
+          fi
+
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "first_conclusion=$first_conclusion" >> "$GITHUB_OUTPUT"
+          echo "conclusion=$conclusion" >> "$GITHUB_OUTPUT"
+          echo "attempt=$(jq -r '.workflow_runs[0].run_attempt // 1' <<<"$payload")" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$(jq -r '.workflow_runs[0].head_sha' <<<"$payload")" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "$payload" > /tmp/controller-run.json
+
+      - name: Capture controller result and repository state
+        shell: bash
+        env:
+          RUN_ID: ${{ steps.status.outputs.run_id }}
+          FIRST_CONCLUSION: ${{ steps.status.outputs.first_conclusion }}
+          CONCLUSION: ${{ steps.status.outputs.conclusion }}
+          ATTEMPT: ${{ steps.status.outputs.attempt }}
+          CONTROLLER_SHA: ${{ steps.status.outputs.head_sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p diagnostics
+          gh api "/repos/$REPO/actions/runs/$RUN_ID/jobs?per_page=100" > diagnostics/no-panic-controller-v2-jobs.json
+          gh api "/repos/$REPO/pulls?state=open&per_page=100" > diagnostics/no-panic-controller-v2-open-prs.json
+          gh api "/repos/$REPO/branches/main" > diagnostics/no-panic-controller-v2-main.json
+          if [ "$CONCLUSION" != "success" ]; then
+            gh run view "$RUN_ID" --repo "$REPO" --log-failed > diagnostics/no-panic-controller-v2-failed.log 2>&1 || true
+          fi
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          jobs = json.loads(Path('diagnostics/no-panic-controller-v2-jobs.json').read_text())
+          main = json.loads(Path('diagnostics/no-panic-controller-v2-main.json').read_text())
+          prs = json.loads(Path('diagnostics/no-panic-controller-v2-open-prs.json').read_text())
+          payload = {
+              'schema_version': 1,
+              'run_id': int(os.environ['RUN_ID']),
+              'controller_head_sha': os.environ['CONTROLLER_SHA'],
+              'first_conclusion': os.environ['FIRST_CONCLUSION'],
+              'final_conclusion': os.environ['CONCLUSION'],
+              'run_attempt': int(os.environ['ATTEMPT']),
+              'main_sha': main['commit']['sha'],
+              'open_prs': [
+                  {'number': pr['number'], 'title': pr['title'], 'head': pr['head']['ref'], 'head_sha': pr['head']['sha']}
+                  for pr in prs
+              ],
+              'jobs': [
+                  {'id': job['id'], 'name': job['name'], 'status': job['status'], 'conclusion': job['conclusion']}
+                  for job in jobs.get('jobs', [])
+              ],
+          }
+          Path('diagnostics/no-panic-controller-v2-watch.json').write_text(json.dumps(payload, indent=2) + '\n')
+          lines = [
+              '# No-panic controller v2 watchdog', '',
+              f"- Run: **{payload['run_id']}**",
+              f"- First conclusion: **{payload['first_conclusion']}**",
+              f"- Final conclusion: **{payload['final_conclusion']}**",
+              f"- Attempt: **{payload['run_attempt']}**",
+              f"- Main SHA: `{payload['main_sha']}`", '',
+              '## Jobs', '', '| Job | Status | Conclusion |', '|---|---|---|',
+          ]
+          for job in payload['jobs']:
+              lines.append(f"| {job['name']} | {job['status']} | {job['conclusion']} |")
+          lines.extend(['', '## Open pull requests', '', '| PR | Head | Title |', '|---:|---|---|'])
+          for pr in payload['open_prs']:
+              lines.append(f"| #{pr['number']} | `{pr['head']}` | {pr['title']} |")
+          Path('diagnostics/no-panic-controller-v2-watch.md').write_text('\n'.join(lines) + '\n')
+          PY
+
+          git switch -C diagnostic/no-panic-controller-v2-watch
+          git add diagnostics/no-panic-controller-v2-*
+          git config user.name "EffortlessSteven"
+          git config user.email "git@effortlesssteven.com"
+          git commit -m "chore: record no-panic controller v2 watchdog receipt [skip ci]"
+          git push --force origin diagnostic/no-panic-controller-v2-watch
+
+      - name: Require successful controller
+        shell: bash
+        run: |
+          test "${{ steps.status.outputs.conclusion }}" = "success"
