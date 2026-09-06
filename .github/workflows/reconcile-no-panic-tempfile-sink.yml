@@ -1,0 +1,443 @@
+name: Reconcile tempfile sink no-panic slice
+
+on:
+  push:
+    branches: [control/no-panic-tempfile-sink]
+    paths:
+      - .github/workflows/reconcile-no-panic-tempfile-sink.yml
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: write
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: EffortlessMetrics/uselesskey
+      TARGET_BRANCH: test/no-panic-tempfile-sink
+      TARGET_FILE: crates/uselesskey/tests/tempfile_sink.rs
+      BASELINE_FILE: policy/no-panic-baseline.toml
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: test/no-panic-tempfile-sink
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Wait for the bootstrap writer to settle
+        shell: bash
+        run: |
+          set -euo pipefail
+          for _ in $(seq 1 80); do
+            active="$(gh api "repos/${REPO}/actions/runs?branch=${TARGET_BRANCH}&per_page=50" --jq '[.workflow_runs[] | select(.name == "Bootstrap tempfile sink no-panic slice" and .status != "completed")] | length')"
+            if [[ "$active" == "0" ]]; then
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "bootstrap writer did not settle" >&2
+          exit 1
+
+      - name: Reconcile or rebuild the exact candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main "${TARGET_BRANCH}" --force
+          git checkout -B "${TARGET_BRANCH}" "origin/${TARGET_BRANCH}"
+          old_target_sha="$(git rev-parse HEAD)"
+
+          candidate_is_exact() {
+            mapfile -t changed < <(git diff --name-only origin/main...HEAD | sort)
+            [[ "${changed[*]-}" == "${TARGET_FILE} ${BASELINE_FILE}" ]] || return 1
+            ! grep -Eq '\.unwrap[[:space:]]*\([[:space:]]*\)' "${TARGET_FILE}" || return 1
+            python - <<'PY'
+          import tomllib
+          from pathlib import Path
+          doc = tomllib.loads(Path('policy/no-panic-baseline.toml').read_text(encoding='utf-8'))
+          raise SystemExit(0 if int(doc['summary']['total']) == 3351 else 1)
+          PY
+          }
+
+          if candidate_is_exact; then
+            echo "existing target branch satisfies the structural contract"
+          else
+            echo "rebuilding target branch from canonical main"
+            git reset --hard origin/main
+            python -m pip install --disable-pip-version-check --quiet 'tree-sitter==0.25.2' 'tree-sitter-rust==0.24.0'
+            python - <<'PY'
+          from __future__ import annotations
+
+          import json
+          import re
+          from dataclasses import dataclass
+          from pathlib import Path
+
+          from tree_sitter import Language, Parser
+          import tree_sitter_rust
+
+          path = Path('crates/uselesskey/tests/tempfile_sink.rs')
+          source = path.read_text(encoding='utf-8')
+          raw = source.encode('utf-8')
+          parser = Parser(Language(tree_sitter_rust.language()))
+          tree = parser.parse(raw)
+
+          @dataclass(frozen=True)
+          class Edit:
+              start: int
+              end: int
+              replacement: str
+              reason: str
+
+          def node_text(node) -> str:
+              return raw[node.start_byte:node.end_byte].decode('utf-8')
+
+          def walk(node):
+              yield node
+              for child in node.children:
+                  yield from walk(child)
+
+          def nearest(node, kinds):
+              current = node.parent
+              while current is not None:
+                  if current.type in kinds:
+                      return current
+                  current = current.parent
+              return None
+
+          def attributes_before(fn_node) -> str:
+              start = max(0, fn_node.start_byte - 500)
+              prefix = raw[start:fn_node.start_byte].decode('utf-8')
+              boundary = max(prefix.rfind('\n}'), prefix.rfind('\n;'))
+              return prefix[boundary + 1:]
+
+          unwrap_calls = []
+          for node in walk(tree.root_node):
+              if node.type != 'call_expression':
+                  continue
+              if re.search(r'\.unwrap\s*\(\s*\)\s*$', node_text(node).rstrip()):
+                  unwrap_calls.append(node)
+          if len(unwrap_calls) != 71:
+              raise SystemExit(f'expected 71 unwrap calls, found {len(unwrap_calls)}')
+
+          test_functions = {}
+          for node in walk(tree.root_node):
+              if node.type != 'function_item':
+                  continue
+              if re.search(r'#\s*\[\s*test\s*\]', attributes_before(node)):
+                  test_functions[(node.start_byte, node.end_byte)] = node
+
+          spawn_closures = {}
+          for node in walk(tree.root_node):
+              if node.type != 'closure_expression':
+                  continue
+              parent = node.parent
+              while parent is not None and parent.type in {'arguments', 'parenthesized_expression'}:
+                  parent = parent.parent
+              if parent is None or parent.type != 'call_expression':
+                  continue
+              function = parent.child_by_field_name('function')
+              if function is None:
+                  continue
+              function_text = re.sub(r'\s+', '', node_text(function))
+              if function_text.endswith('spawn') or function_text.endswith('spawn_scoped'):
+                  spawn_closures[(node.start_byte, node.end_byte)] = node
+
+          for call in unwrap_calls:
+              owner = nearest(call, {'function_item', 'closure_expression'})
+              if owner is None:
+                  raise SystemExit(f'unowned unwrap at {call.start_point}')
+              if owner.type == 'function_item' and (owner.start_byte, owner.end_byte) not in test_functions:
+                  name = owner.child_by_field_name('name')
+                  raise SystemExit(
+                      'unwrap outside an annotated test function: '
+                      + (node_text(name) if name is not None else str(owner.start_point))
+                  )
+
+          edits: list[Edit] = []
+          def add(start, end, replacement, reason):
+              edits.append(Edit(start, end, replacement, reason))
+
+          join_unwraps = 0
+          for call in unwrap_calls:
+              snippet = node_text(call)
+              match = re.search(r'\.unwrap\s*\(\s*\)\s*$', snippet)
+              assert match is not None
+              receiver = snippet[:match.start()]
+              if re.search(r'\.join\s*\(\s*\)\s*$', receiver):
+                  join_unwraps += 1
+                  replacement = receiver + '.map_err(|_| format!("thread panicked at {}:{}", file!(), line!()))??'
+              else:
+                  replacement = receiver + '.test_context(concat!("test operation failed at ", file!(), ":", line!()))?'
+              add(call.start_byte, call.end_byte, replacement, 'unwrap')
+
+          def direct_returns(body, closure=None):
+              found = []
+              for node in walk(body):
+                  if node.type != 'return_expression':
+                      continue
+                  nearest_closure = nearest(node, {'closure_expression'})
+                  if closure is None:
+                      if nearest_closure is None:
+                          found.append(node)
+                  elif nearest_closure == closure:
+                      found.append(node)
+              return found
+
+          def wrap_callable_body(body, indent: str, output: str, owner, reason_prefix: str):
+              if body.type != 'block':
+                  add(body.start_byte, body.start_byte, '{ Ok(', reason_prefix + ' body open')
+                  add(body.end_byte, body.end_byte, ') }', reason_prefix + ' body close')
+                  return
+
+              children = list(body.named_children)
+              tail = children[-1] if children else None
+              has_tail_value = False
+              if tail is not None:
+                  trailing = raw[tail.end_byte:body.end_byte - 1].decode('utf-8').strip()
+                  statement_types = {
+                      'expression_statement', 'let_declaration', 'const_item', 'static_item',
+                      'function_item', 'struct_item', 'enum_item', 'type_item', 'use_declaration',
+                      'mod_item', 'macro_definition'
+                  }
+                  has_tail_value = trailing == '' and tail.type not in statement_types
+
+              if has_tail_value:
+                  add(tail.start_byte, tail.start_byte, 'Ok(', reason_prefix + ' tail open')
+                  add(tail.end_byte, tail.end_byte, ')', reason_prefix + ' tail close')
+              else:
+                  inner = raw[body.start_byte + 1:body.end_byte - 1].decode('utf-8').rstrip()
+                  separator = '' if not inner or inner[-1] in {';', '}'} else ';'
+                  add(body.end_byte - 1, body.end_byte - 1, f'{separator}\n{indent}Ok(())\n', reason_prefix + ' success')
+
+          for closure in spawn_closures.values():
+              body = closure.child_by_field_name('body')
+              if body is None:
+                  raise SystemExit(f'spawn closure has no body at {closure.start_point}')
+              children = list(body.named_children) if body.type == 'block' else [body]
+              tail = children[-1] if children else None
+              tail_is_value = False
+              if body.type != 'block':
+                  tail_is_value = True
+              elif tail is not None:
+                  trailing = raw[tail.end_byte:body.end_byte - 1].decode('utf-8').strip()
+                  tail_is_value = trailing == '' and tail.type not in {
+                      'expression_statement', 'let_declaration', 'const_item', 'static_item',
+                      'function_item', 'struct_item', 'enum_item', 'type_item', 'use_declaration',
+                      'mod_item', 'macro_definition'
+                  }
+              output = 'TestResult<_>' if tail_is_value else 'TestResult<()>'
+              add(body.start_byte, body.start_byte, f' -> {output} ', 'spawn output')
+
+              for ret in direct_returns(body, closure):
+                  ret_text = node_text(ret)
+                  payload = ret_text[len('return'):].strip().rstrip(';').strip()
+                  replacement = 'return Ok(())' if not payload else f'return Ok({payload})'
+                  if ret_text.rstrip().endswith(';'):
+                      replacement += ';'
+                  add(ret.start_byte, ret.end_byte, replacement, 'spawn return')
+              wrap_callable_body(body, '            ', output, closure, 'spawn')
+
+          for fn_node in test_functions.values():
+              body = fn_node.child_by_field_name('body')
+              if body is None or body.type != 'block':
+                  raise SystemExit(f'test function has no block at {fn_node.start_point}')
+              header = raw[fn_node.start_byte:body.start_byte].decode('utf-8')
+              if '->' in header:
+                  continue
+              add(body.start_byte, body.start_byte, ' -> TestResult<()> ', 'test output')
+              for ret in direct_returns(body):
+                  ret_text = node_text(ret)
+                  payload = ret_text[len('return'):].strip().rstrip(';').strip()
+                  if payload:
+                      raise SystemExit(f'value return in unit test at {ret.start_point}')
+                  replacement = 'return Ok(())'
+                  if ret_text.rstrip().endswith(';'):
+                      replacement += ';'
+                  add(ret.start_byte, ret.end_byte, replacement, 'test return')
+              wrap_callable_body(body, '    ', 'TestResult<()>', fn_node, 'test')
+
+          replacements = sorted((e for e in edits if e.start != e.end), key=lambda e: e.start)
+          for left, right in zip(replacements, replacements[1:]):
+              if left.end > right.start:
+                  raise SystemExit(f'overlapping replacements: {left} / {right}')
+
+          transformed = raw
+          for edit in sorted(edits, key=lambda e: (e.start, e.end, e.reason), reverse=True):
+              transformed = transformed[:edit.start] + edit.replacement.encode('utf-8') + transformed[edit.end:]
+
+          prelude = '''type TestResult<T = ()> = Result<T, String>;
+
+trait TestContext<T> {
+    fn test_context(self, context: impl std::fmt::Display) -> TestResult<T>;
+}
+
+impl<T, E: std::fmt::Debug> TestContext<T> for Result<T, E> {
+    fn test_context(self, context: impl std::fmt::Display) -> TestResult<T> {
+        self.map_err(|error| format!("{context}: {error:?}"))
+    }
+}
+
+impl<T> TestContext<T> for Option<T> {
+    fn test_context(self, context: impl std::fmt::Display) -> TestResult<T> {
+        self.ok_or_else(|| context.to_string())
+    }
+}
+
+'''
+          transformed_text = prelude + transformed.decode('utf-8')
+          if re.search(r'\.unwrap\s*\(\s*\)', transformed_text):
+              raise SystemExit('unwrap remained after transformation')
+          path.write_text(transformed_text, encoding='utf-8')
+          Path('target').mkdir(exist_ok=True)
+          Path('target/no-panic-tempfile-transform.json').write_text(
+              json.dumps({
+                  'removed_unwrap_calls': len(unwrap_calls),
+                  'test_functions_preserved': len(test_functions),
+                  'spawn_closures_made_fallible': len(spawn_closures),
+                  'join_unwraps_propagated': join_unwraps,
+              }, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          PY
+
+            cargo fmt --all
+            cp "${BASELINE_FILE}" /tmp/no-panic-baseline.before.toml
+            cargo xtask no-panic baseline
+            rm -f .github/workflows/bootstrap-no-panic-tempfile-sink.yml
+            git config user.name EffortlessSteven
+            git config user.email git@effortlesssteven.com
+            git add "${TARGET_FILE}" "${BASELINE_FILE}"
+            git commit -m "test: remove tempfile sink panic-family debt" \
+              -m "Convert all 71 historical unwrap sites in the tempfile-sink integration suite into contextual Result propagation, including in-thread failures and JoinHandle panics. Refresh the no-panic baseline through the normal refusing command from 3,422 to 3,351 findings without adding or increasing an identity."
+            git push --force-with-lease="refs/heads/${TARGET_BRANCH}:${old_target_sha}" origin "HEAD:${TARGET_BRANCH}"
+          fi
+
+      - name: Independently review source and baseline movement
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main "${TARGET_BRANCH}" --force
+          git checkout -B "${TARGET_BRANCH}" "origin/${TARGET_BRANCH}"
+          python - <<'PY'
+          from __future__ import annotations
+
+          import re
+          import subprocess
+          import tomllib
+          from pathlib import Path
+
+          target = Path('crates/uselesskey/tests/tempfile_sink.rs')
+          baseline = Path('policy/no-panic-baseline.toml')
+          old_source = subprocess.check_output(
+              ['git', 'show', 'origin/main:crates/uselesskey/tests/tempfile_sink.rs'],
+              text=True,
+          )
+          new_source = target.read_text(encoding='utf-8')
+          old_baseline = tomllib.loads(subprocess.check_output(
+              ['git', 'show', 'origin/main:policy/no-panic-baseline.toml'], text=True
+          ))
+          new_baseline = tomllib.loads(baseline.read_text(encoding='utf-8'))
+
+          unwrap_pattern = re.compile(r'\.unwrap\s*\(\s*\)')
+          if len(unwrap_pattern.findall(old_source)) != 71:
+              raise SystemExit('canonical main no longer has the expected 71-site cluster')
+          if unwrap_pattern.search(new_source):
+              raise SystemExit('candidate retains an unwrap call')
+
+          test_pattern = re.compile(r'#\s*\[\s*test\s*\][\s\S]{0,300}?\bfn\s+([A-Za-z0-9_]+)\s*\(')
+          old_tests = test_pattern.findall(old_source)
+          new_tests = test_pattern.findall(new_source)
+          if old_tests != new_tests:
+              raise SystemExit(f'test inventory changed: before={old_tests}, after={new_tests}')
+
+          diff = subprocess.check_output(
+              ['git', 'diff', '--unified=0', 'origin/main...HEAD', '--', str(target)],
+              text=True,
+          )
+          removed_assertions = [
+              line for line in diff.splitlines()
+              if line.startswith('-') and not line.startswith('---')
+              and re.search(r'\b(assert|ensure|assert_snapshot|assert_yaml_snapshot)[_!]', line)
+          ]
+          if removed_assertions:
+              raise SystemExit(f'assertions were deleted or weakened: {removed_assertions[:10]}')
+
+          def identities(doc):
+              return {
+                  (
+                      row['path'], row['family'], row.get('selector_kind', ''),
+                      row.get('selector_callee', ''), row['snippet']
+                  ): int(row['count'])
+                  for row in doc.get('entry', [])
+              }
+
+          old = identities(old_baseline)
+          new = identities(new_baseline)
+          before_total = int(old_baseline['summary']['total'])
+          after_total = int(new_baseline['summary']['total'])
+          if (before_total, after_total) != (3422, 3351):
+              raise SystemExit(f'unexpected total movement: {before_total} -> {after_total}')
+          increased = [(key, old.get(key, 0), count) for key, count in new.items() if count > old.get(key, 0)]
+          if increased:
+              raise SystemExit(f'baseline additions/increases: {increased[:10]}')
+          removed = [(key, count - new.get(key, 0)) for key, count in old.items() if count > new.get(key, 0)]
+          if sum(count for _, count in removed) != 71:
+              raise SystemExit(f'baseline removed {sum(count for _, count in removed)} findings, expected 71')
+          wrong_paths = [(key, count) for key, count in removed if key[0] != str(target)]
+          if wrong_paths:
+              raise SystemExit(f'baseline movement escaped target file: {wrong_paths[:10]}')
+          PY
+
+          mapfile -t changed < <(git diff --name-only origin/main...HEAD | sort)
+          expected=(
+            crates/uselesskey/tests/tempfile_sink.rs
+            policy/no-panic-baseline.toml
+          )
+          [[ "${changed[*]}" == "${expected[*]}" ]]
+          git diff --check origin/main...HEAD
+
+      - name: Run exact-head owner gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo fmt --all -- --check
+          cargo test -p uselesskey --test tempfile_sink --all-features
+          cargo clippy -p uselesskey --test tempfile_sink --all-features -- -D warnings
+          cargo xtask check-no-panic-family
+          git diff --check origin/main...HEAD
+
+      - name: Ensure the pull request points at the verified head
+        shell: bash
+        run: |
+          set -euo pipefail
+          head_sha="$(git rev-parse HEAD)"
+          pr_number="$(gh pr list --repo "${REPO}" --head "${TARGET_BRANCH}" --state open --json number --jq '.[0].number // empty')"
+          if [[ -z "$pr_number" ]]; then
+            gh pr create --repo "${REPO}" --head "${TARGET_BRANCH}" --base main \
+              --title "test: remove tempfile sink panic-family debt" \
+              --body "Advances #575 with the 71-site tempfile-sink integration-test baseline reduction. The final diff is limited to the test file and the normal refusing baseline refresh."
+            pr_number="$(gh pr list --repo "${REPO}" --head "${TARGET_BRANCH}" --state open --json number --jq '.[0].number')"
+          fi
+          pr_head="$(gh api "repos/${REPO}/pulls/${pr_number}" --jq .head.sha)"
+          [[ "$pr_head" == "$head_sha" ]]
+          printf '{"pr_number":%s,"head_sha":"%s","baseline_before":3422,"baseline_after":3351,"removed":71}\n' \
+            "$pr_number" "$head_sha" > target/no-panic-tempfile-reconcile.json
+
+      - name: Upload reconciliation receipt
+        uses: actions/upload-artifact@v6
+        with:
+          name: no-panic-tempfile-reconcile-${{ github.sha }}
+          path: |
+            target/no-panic-tempfile-transform.json
+            target/no-panic-tempfile-reconcile.json
+          if-no-files-found: warn
+          retention-days: 30
