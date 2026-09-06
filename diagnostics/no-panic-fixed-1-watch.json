@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "run_id": 34065780309,
+  "head_sha": "b54ddd777b795a828e03a236a294b502bbe873b4",
+  "first_conclusion": "failure",
+  "final_conclusion": "failure",
+  "attempt": 2,
+  "main_sha": "4c307ab159743472679087898a80a900d70c2109",
+  "jobs": [
+    {
+      "id": 101575881700,
+      "name": "prepare",
+      "status": "completed",
+      "conclusion": "failure"
+    },
+    {
+      "id": 101577322705,
+      "name": "independent-review-and-merge",
+      "status": "completed",
+      "conclusion": "skipped"
+    },
+    {
+      "id": 101577323150,
+      "name": "settle-and-report",
+      "status": "completed",
+      "conclusion": "skipped"
+    }
+  ],
+  "controlled_open_prs": [
+    {
+      "number": 895,
+      "title": "test: remove historical panic debt from export_targets",
+      "head": "test/no-panic-next-integration-test",
+      "head_sha": "b78fb0ca7fe51123967be44ff48277711dd83d13"
+    },
+    {
+      "number": 894,
+      "title": "test: remove tempfile sink panic-family debt",
+      "head": "test/no-panic-tempfile-sink",
+      "head_sha": "ae9a2c1808d47bd253eeefca5bfcf9bada39fb11"
+    },
+    {
+      "number": 893,
+      "title": "test: remove token comprehensive panic debt",
+      "head": "test/no-panic-token-comprehensive",
+      "head_sha": "2b41d0a390113c956abfa543d129a7d4e0ec8e4c"
+    }
+  ]
+}
