@@ -1,0 +1,182 @@
+name: Finalize no-panic tempfile-sink slice
+
+on:
+  push:
+    branches:
+      - test/no-panic-tempfile-sink
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Install NASM for aws-lc-rs
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes nasm
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+
+      - name: Apply the reviewed source patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 --decode .github/bootstrap/no-panic-tempfile-sink.patch.gz.b64 \
+            | gzip --decompress > /tmp/no-panic-tempfile-sink.patch
+          echo "1f92c95a22109728d0e68b1fc7e6847c6f4242529cd2386faeac0db3bc9709f5  /tmp/no-panic-tempfile-sink.patch" \
+            | sha256sum --check --strict
+          git apply --check /tmp/no-panic-tempfile-sink.patch
+          git apply /tmp/no-panic-tempfile-sink.patch
+
+      - name: Format and verify the owned integration-test slice
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo fmt --all
+          cargo test -p uselesskey --test tempfile_sink --all-features
+          cargo clippy -p uselesskey --test tempfile_sink --all-features -- -D warnings
+
+      - name: Refresh the baseline without absorbing debt
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp policy/no-panic-baseline.toml /tmp/no-panic-baseline-before.toml
+          cargo xtask no-panic baseline
+          cargo xtask check-no-panic-family
+          cargo xtask no-panic propose
+
+      - name: Prove the exact 71-finding reduction
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from __future__ import annotations
+
+          import tomllib
+          from collections import Counter
+          from pathlib import Path
+
+          target = "crates/uselesskey/tests/tempfile_sink.rs"
+          before_path = Path("/tmp/no-panic-baseline-before.toml")
+          after_path = Path("policy/no-panic-baseline.toml")
+          source_path = Path(target)
+
+          before = tomllib.loads(before_path.read_text(encoding="utf-8"))
+          after = tomllib.loads(after_path.read_text(encoding="utf-8"))
+
+          def represented(entries):
+              return sum(int(entry.get("count", 1)) for entry in entries)
+
+          def identity(entry):
+              return (
+                  str(entry.get("path", "")),
+                  str(entry.get("family", "")),
+                  str(entry.get("selector_kind", "")),
+                  str(entry.get("selector_callee", "")),
+                  str(entry.get("snippet", "")),
+              )
+
+          before_entries = before.get("entry", [])
+          after_entries = after.get("entry", [])
+          target_before = [entry for entry in before_entries if entry.get("path") == target]
+          target_after = [entry for entry in after_entries if entry.get("path") == target]
+
+          removed = represented(target_before)
+          if removed != 71:
+              raise SystemExit(f"expected 71 represented target findings before refresh, found {removed}")
+          if target_after:
+              raise SystemExit(f"target still has {represented(target_after)} baselined findings")
+
+          before_total = int(before["summary"]["total"])
+          after_total = int(after["summary"]["total"])
+          if after_total != before_total - removed:
+              raise SystemExit(
+                  f"unexpected baseline total movement: before={before_total} after={after_total} removed={removed}"
+              )
+
+          expected_after = Counter()
+          for entry in before_entries:
+              if entry.get("path") != target:
+                  expected_after[identity(entry)] += int(entry.get("count", 1))
+          actual_after = Counter()
+          for entry in after_entries:
+              actual_after[identity(entry)] += int(entry.get("count", 1))
+          if actual_after != expected_after:
+              added = actual_after - expected_after
+              missing = expected_after - actual_after
+              raise SystemExit(
+                  f"baseline moved outside the owned target: added={dict(added)} missing={dict(missing)}"
+              )
+
+          source = source_path.read_text(encoding="utf-8")
+          forbidden = [token for token in (".unwrap()", ".expect(", "panic!(") if token in source]
+          if forbidden:
+              raise SystemExit(f"panic-family calls remain in target: {forbidden}")
+
+          proposal = tomllib.loads(
+              Path("target/policy-proposed/no-panic-proposed-allowlist.toml").read_text(encoding="utf-8")
+          )
+          proposal_entries = proposal.get("allow") or proposal.get("entry") or []
+          remaining = [entry for entry in proposal_entries if entry.get("path") == target]
+          if remaining:
+              raise SystemExit(f"semantic scanner still reports target findings: {remaining}")
+
+          print(
+              f"verified: {target} removed {removed} findings; "
+              f"baseline {before_total} -> {after_total}; no unrelated identity moved"
+          )
+          PY
+
+      - name: Commit only the reviewed slice
+        shell: bash
+        env:
+          BASE_SHA: 16039e622f32ae29a67bd855b9c4e926d62fab12
+        run: |
+          set -euo pipefail
+          rm .github/workflows/bootstrap-no-panic-tempfile-sink.yml
+          rm .github/bootstrap/no-panic-tempfile-sink.patch.gz.b64
+          git diff --check
+
+          python - <<'PY'
+          import os
+          import subprocess
+
+          expected_required = {
+              "crates/uselesskey/Cargo.toml",
+              "crates/uselesskey/tests/tempfile_sink.rs",
+              "policy/no-panic-baseline.toml",
+          }
+          allowed = expected_required | {"Cargo.lock"}
+          changed = set(
+              subprocess.check_output(
+                  ["git", "diff", "--name-only", os.environ["BASE_SHA"]],
+                  text=True,
+              ).splitlines()
+          )
+          missing = expected_required - changed
+          unexpected = changed - allowed
+          if missing or unexpected:
+              raise SystemExit(f"unexpected final path set: missing={sorted(missing)} unexpected={sorted(unexpected)}")
+          print("final paths:", *sorted(changed), sep="\n- ")
+          PY
+
+          git config user.name "EffortlessSteven"
+          git config user.email "git@effortlesssteven.com"
+          git add -A
+          git commit -m "test: remove tempfile sink panic debt"
+          git push origin HEAD:test/no-panic-tempfile-sink
