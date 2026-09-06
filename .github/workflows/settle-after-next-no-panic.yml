@@ -1,0 +1,169 @@
+name: Settle generated state after next no-panic slice
+
+on:
+  push:
+    branches:
+      - campaign/settle-after-next-no-panic
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: settle-after-next-no-panic
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  REPO: EffortlessMetrics/uselesskey
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    outputs:
+      changed: ${{ steps.badges.outputs.changed }}
+      pr: ${{ steps.badges.outputs.pr }}
+      head_sha: ${{ steps.badges.outputs.head_sha }}
+      campaign_conclusion: ${{ steps.wait.outputs.conclusion }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Wait for the bounded campaign to finish
+        id: wait
+        shell: bash
+        run: |
+          set -euo pipefail
+          conclusion=""
+          for _ in $(seq 1 360); do
+            payload="$(gh api "/repos/$REPO/actions/runs?branch=campaign%2Fno-panic-next-integration-test&per_page=1")"
+            status="$(jq -r '.workflow_runs[0].status // "missing"' <<<"$payload")"
+            conclusion="$(jq -r '.workflow_runs[0].conclusion // ""' <<<"$payload")"
+            if [ "$status" = "completed" ]; then
+              break
+            fi
+            sleep 10
+          done
+          test -n "$conclusion"
+          echo "conclusion=$conclusion" >> "$GITHUB_OUTPUT"
+          echo "campaign conclusion: $conclusion"
+
+      - name: Check out the resulting main tree
+        shell: bash
+        run: |
+          git fetch origin main
+          git checkout --detach origin/main
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Regenerate and stage public badge endpoints
+        id: badges
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo xtask badges
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "pr=" >> "$GITHUB_OUTPUT"
+            echo "head_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          python - <<'PY'
+          import subprocess
+          changed = subprocess.check_output(
+              ['git', 'diff', '--name-only'], text=True
+          ).splitlines()
+          if not changed:
+              raise SystemExit('badge generator reported no changed files')
+          bad = [path for path in changed if not path.startswith('badges/') or not path.endswith('.json')]
+          if bad:
+              raise SystemExit(f'unexpected generated files: {bad}')
+          PY
+          before="$(git diff | sha256sum | cut -d' ' -f1)"
+          cargo xtask badges
+          after="$(git diff | sha256sum | cut -d' ' -f1)"
+          test "$before" = "$after"
+          git diff --check
+
+          git config user.name "EffortlessSteven"
+          git config user.email "git@effortlesssteven.com"
+          git add badges
+          git commit -m "badge: refresh public endpoints"
+          head_sha="$(git rev-parse HEAD)"
+          git push --force origin HEAD:automation/badge-endpoints
+
+          pr="$(gh pr list --repo "$REPO" --head automation/badge-endpoints --base main --state open --json number --jq '.[0].number // empty')"
+          if [ -z "$pr" ]; then
+            gh pr create --repo "$REPO" --head automation/badge-endpoints --base main \
+              --title "badge: refresh public endpoints" \
+              --body $'Refreshes generated Shields endpoint JSON under `badges/`.\n\nGenerated twice from the settled `main` tree with `cargo xtask badges`; the second pass was byte-stable.'
+            pr="$(gh pr list --repo "$REPO" --head automation/badge-endpoints --base main --state open --json number --jq '.[0].number')"
+          fi
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "pr=$pr" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
+
+  verify-and-merge-badges:
+    needs: prepare
+    if: needs.prepare.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: automation/badge-endpoints
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Independent generated-state check
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ needs.prepare.outputs.head_sha }}"
+          git fetch origin main
+          test "$(git rev-list --count origin/main..HEAD)" -eq 1
+          python - <<'PY'
+          import subprocess
+          files = subprocess.check_output(
+              ['git', 'diff', '--name-only', 'origin/main...HEAD'], text=True
+          ).splitlines()
+          if not files:
+              raise SystemExit('empty badge pull request')
+          bad = [path for path in files if not path.startswith('badges/') or not path.endswith('.json')]
+          if bad:
+              raise SystemExit(f'non-badge files in generated PR: {bad}')
+          PY
+          cargo xtask badges
+          git diff --exit-code
+          git diff --check origin/main...HEAD
+
+      - name: Merge exact generated head
+        shell: bash
+        run: |
+          set -euo pipefail
+          pr="${{ needs.prepare.outputs.pr }}"
+          head_sha="${{ needs.prepare.outputs.head_sha }}"
+          test "$(gh pr view "$pr" --repo "$REPO" --json headRefOid --jq .headRefOid)" = "$head_sha"
+          gh pr merge "$pr" --repo "$REPO" --squash \
+            --match-head-commit "$head_sha" \
+            --subject "badge: refresh public endpoints (#$pr)" \
+            --body "Regenerate the public Shields endpoints from the settled no-panic campaign tree. Two independent generator passes were byte-stable and the pull request contains only generated badge JSON."
+
+  record:
+    needs: [prepare, verify-and-merge-badges]
+    if: always() && needs.prepare.result == 'success' && (needs.verify-and-merge-badges.result == 'success' || needs.verify-and-merge-badges.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Record settlement state
+        shell: bash
+        run: |
+          gh issue comment 575 --repo "$REPO" --body "Bounded follow-on campaign conclusion: ${{ needs.prepare.outputs.campaign_conclusion }}. Generated badge endpoints were reconciled against the resulting main tree (changed=${{ needs.prepare.outputs.changed }}). The historical no-panic campaign remains open; no baseline reset or policy-stage promotion was performed."
