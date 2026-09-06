@@ -1,0 +1,129 @@
+name: Inventory no-panic baseline after tempfile slice
+
+on:
+  push:
+    branches:
+      - diagnostic/no-panic-inventory-after-tempfile
+
+permissions:
+  contents: write
+
+concurrency:
+  group: no-panic-inventory-after-tempfile
+  cancel-in-progress: false
+
+jobs:
+  inventory:
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Generate current semantic inventory
+        shell: bash
+        run: |
+          python - <<'PY'
+          import tomllib
+          from pathlib import Path
+          baseline = tomllib.loads(Path('policy/no-panic-baseline.toml').read_text())
+          if baseline['summary']['total'] != 3351:
+              raise SystemExit(f"expected post-tempfile baseline total 3351, got {baseline['summary']}")
+          if baseline['summary']['by_family']['unwrap'] != 1177:
+              raise SystemExit(f"expected post-tempfile unwrap total 1177, got {baseline['summary']}")
+          PY
+          cargo xtask check-no-panic-family
+          cargo xtask no-panic propose
+
+      - name: Build ranked inventory receipts
+        shell: bash
+        run: |
+          python - <<'PY'
+          from collections import Counter, defaultdict
+          from pathlib import Path
+          import json
+          import tomllib
+
+          proposal_path = Path('target/policy-proposed/no-panic-proposed-allowlist.toml')
+          proposal = tomllib.loads(proposal_path.read_text(encoding='utf-8'))
+          rows = proposal.get('allow', [])
+
+          by_path = Counter()
+          by_family = Counter()
+          family_by_path = defaultdict(Counter)
+          for row in rows:
+              count = int(row.get('count', 1))
+              path = row['path']
+              family = row['family']
+              by_path[path] += count
+              by_family[family] += count
+              family_by_path[path][family] += count
+
+          ranked = [
+              {
+                  'path': path,
+                  'findings': findings,
+                  'families': dict(sorted(family_by_path[path].items())),
+              }
+              for path, findings in sorted(
+                  by_path.items(), key=lambda item: (-item[1], item[0])
+              )
+          ]
+          payload = {
+              'schema_version': 1,
+              'source_sha': '${{ github.sha }}',
+              'total_unique_identities': len(rows),
+              'represented_findings': sum(by_path.values()),
+              'files': len(by_path),
+              'by_family': dict(sorted(by_family.items())),
+              'ranked_paths': ranked,
+          }
+
+          out_dir = Path('diagnostics')
+          out_dir.mkdir(exist_ok=True)
+          json_path = out_dir / 'no-panic-inventory-after-tempfile.json'
+          md_path = out_dir / 'no-panic-inventory-after-tempfile.md'
+          json_path.write_text(json.dumps(payload, indent=2) + '\n', encoding='utf-8')
+
+          lines = [
+              '# No-panic inventory after tempfile sink slice',
+              '',
+              f"Source: `${{ github.sha }}`",
+              '',
+              f"- Represented findings: **{payload['represented_findings']:,}**",
+              f"- Unique identities: **{payload['total_unique_identities']:,}**",
+              f"- Rust files: **{payload['files']:,}**",
+              '',
+              '| Rank | Path | Findings | Families |',
+              '|---:|---|---:|---|',
+          ]
+          for idx, row in enumerate(ranked[:50], 1):
+              families = ', '.join(f"{k}={v}" for k, v in row['families'].items())
+              lines.append(f"| {idx} | `{row['path']}` | {row['findings']} | {families} |")
+          md_path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+          print('\n'.join(lines[:20]))
+          PY
+
+      - name: Upload inventory receipt
+        uses: actions/upload-artifact@v7
+        with:
+          name: no-panic-inventory-after-tempfile-${{ github.sha }}
+          path: diagnostics/no-panic-inventory-after-tempfile.*
+          retention-days: 14
+
+      - name: Persist ranked inventory on diagnostic branch
+        shell: bash
+        run: |
+          git config user.name "EffortlessSteven"
+          git config user.email "git@effortlesssteven.com"
+          git add diagnostics/no-panic-inventory-after-tempfile.json diagnostics/no-panic-inventory-after-tempfile.md
+          git commit -m "chore: record post-tempfile no-panic inventory [skip ci]"
+          git push origin HEAD:diagnostic/no-panic-inventory-after-tempfile
