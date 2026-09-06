@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "run_id": 34064965258,
+  "controller_head_sha": "71c1e852759b736020291101d1bb338d57a97f33",
+  "first_conclusion": "failure",
+  "final_conclusion": "failure",
+  "run_attempt": 2,
+  "main_sha": "4c307ab159743472679087898a80a900d70c2109",
+  "open_prs": [
+    {
+      "number": 895,
+      "title": "test: remove historical panic debt from export_targets",
+      "head": "test/no-panic-next-integration-test",
+      "head_sha": "b78fb0ca7fe51123967be44ff48277711dd83d13"
+    },
+    {
+      "number": 894,
+      "title": "test: remove tempfile sink panic-family debt",
+      "head": "test/no-panic-tempfile-sink",
+      "head_sha": "ae9a2c1808d47bd253eeefca5bfcf9bada39fb11"
+    },
+    {
+      "number": 893,
+      "title": "test: remove token comprehensive panic debt",
+      "head": "test/no-panic-token-comprehensive",
+      "head_sha": "2b41d0a390113c956abfa543d129a7d4e0ec8e4c"
+    }
+  ],
+  "jobs": [
+    {
+      "id": 101574475009,
+      "name": "prepare",
+      "status": "completed",
+      "conclusion": "failure"
+    },
+    {
+      "id": 101575504023,
+      "name": "verify-and-merge",
+      "status": "completed",
+      "conclusion": "skipped"
+    },
+    {
+      "id": 101575504268,
+      "name": "settle-and-report",
+      "status": "completed",
+      "conclusion": "skipped"
+    }
+  ]
+}
