@@ -16,14 +16,14 @@ generated_at = "2026-09-06"
 generated_by = "cargo xtask no-panic baseline"
 
 [summary]
-total = 3351
+total = 3319
 
 [summary.by_family]
 expect = 2059
 get_unwrap = 1
 panic_macro = 110
 unreachable = 4
-unwrap = 1177
+unwrap = 1145
 
 [[entry]]
 path = "crates/materialize-buildrs-example/build.rs"
@@ -9559,198 +9559,6 @@ family = "unwrap"
 selector_kind = "method_call"
 selector_callee = "unwrap"
 snippet = "let payload_segment = tok.value().split('.').nth(1).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-token/tests/comprehensive_token.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'claims["   "].as_str().unwrap().to_string()'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-token/tests/comprehensive_token.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let claims: serde_json::Value = serde_json::from_slice(&payload_bytes).unwrap();"
-count = 4
-
-[[entry]]
-path = "crates/uselesskey-token/tests/comprehensive_token.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let decoded = URL_SAFE_NO_PAD.decode(sig).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-token/tests/comprehensive_token.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let decoded = URL_SAFE_NO_PAD.decode(tok.value()).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-token/tests/comprehensive_token.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let exp = claims["   "].as_u64().unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-token/tests/comprehensive_token.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let fx = Factory::deterministic(Seed::from_env_value("          ").unwrap());'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-token/tests/comprehensive_token.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let fx1 = Factory::deterministic(Seed::from_env_value("          ").unwrap());'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-token/tests/comprehensive_token.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let fx1 = Factory::deterministic(Seed::from_env_value("       ").unwrap());'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-token/tests/comprehensive_token.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let fx1 = Factory::deterministic(Seed::from_env_value(seed_val).unwrap());"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-token/tests/comprehensive_token.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let fx2 = Factory::deterministic(Seed::from_env_value("          ").unwrap());'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-token/tests/comprehensive_token.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let fx2 = Factory::deterministic(Seed::from_env_value("       ").unwrap());'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-token/tests/comprehensive_token.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let fx2 = Factory::deterministic(Seed::from_env_value(seed_val).unwrap());"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-token/tests/comprehensive_token.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let header: serde_json::Value = serde_json::from_slice(&header_bytes).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-token/tests/comprehensive_token.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let header_bytes = URL_SAFE_NO_PAD.decode(header_segment).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-token/tests/comprehensive_token.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let header_segment = tok.value().split('.').next().unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-token/tests/comprehensive_token.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let jti = claims["   "].as_str().unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-token/tests/comprehensive_token.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let jti_decoded = URL_SAFE_NO_PAD.decode(jti).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-token/tests/comprehensive_token.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let payload_bytes = URL_SAFE_NO_PAD.decode(payload_segment).unwrap();"
-count = 4
-
-[[entry]]
-path = "crates/uselesskey-token/tests/comprehensive_token.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let payload_segment = tok.value().split('.').nth(1).unwrap();"
-count = 3
-
-[[entry]]
-path = "crates/uselesskey-token/tests/comprehensive_token.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let payload_segment = token_value.split('.').nth(1).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-token/tests/comprehensive_token.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let seed1 = Seed::from_env_value("        ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-token/tests/comprehensive_token.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let seed2 = Seed::from_env_value("        ").unwrap();'
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-token/tests/comprehensive_token.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = "let sig = tok.value().split('.').nth(2).unwrap();"
-count = 1
-
-[[entry]]
-path = "crates/uselesskey-token/tests/comprehensive_token.rs"
-family = "unwrap"
-selector_kind = "method_call"
-selector_callee = "unwrap"
-snippet = 'let suffix = tok.value().strip_prefix("        ").unwrap();'
 count = 1
 
 [[entry]]
