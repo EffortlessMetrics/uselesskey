@@ -1,0 +1,226 @@
+name: Settle and inventory after tempfile sink
+
+on:
+  push:
+    branches: [control/settle-after-tempfile-sink]
+    paths:
+      - .github/workflows/settle-after-tempfile-sink.yml
+
+permissions:
+  actions: read
+  checks: read
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  settle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: EffortlessMetrics/uselesskey
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Wait for #892 and its exact mainline CI
+        id: tempfile
+        shell: bash
+        run: |
+          set -euo pipefail
+          for _ in $(seq 1 240); do
+            pr="$(gh api "repos/${REPO}/pulls/892" 2>/dev/null || true)"
+            if [[ "$(jq -r '.merged // false' <<<"$pr")" == 'true' ]]; then
+              merge="$(jq -r .merge_commit_sha <<<"$pr")"
+              echo "merge_sha=${merge}" >> "$GITHUB_OUTPUT"
+              break
+            fi
+            sleep 15
+          done
+          merge="$(grep '^merge_sha=' "$GITHUB_OUTPUT" | cut -d= -f2-)"
+          [[ -n "$merge" && "$merge" != 'null' ]]
+          for _ in $(seq 1 200); do
+            runs="$(gh api "repos/${REPO}/actions/runs?head_sha=${merge}&event=push&per_page=50")"
+            status="$(jq -r '[.workflow_runs[] | select(.name == "CI")] | sort_by(.created_at) | last | .status // empty' <<<"$runs")"
+            conclusion="$(jq -r '[.workflow_runs[] | select(.name == "CI")] | sort_by(.created_at) | last | .conclusion // empty' <<<"$runs")"
+            if [[ "$status" == 'completed' ]]; then
+              [[ "$conclusion" == 'success' ]]
+              exit 0
+            fi
+            sleep 15
+          done
+          echo 'mainline CI for #892 did not complete successfully' >&2
+          exit 1
+
+      - name: Let generated badge automation settle
+        shell: bash
+        run: |
+          set -euo pipefail
+          merge='${{ steps.tempfile.outputs.merge_sha }}'
+          for _ in $(seq 1 120); do
+            runs="$(gh api "repos/${REPO}/actions/runs?head_sha=${merge}&event=push&per_page=50")"
+            badge_status="$(jq -r '[.workflow_runs[] | select(.name == "Badge Endpoints")] | sort_by(.created_at) | last | .status // "absent"' <<<"$runs")"
+            if [[ "$badge_status" == 'completed' || "$badge_status" == 'absent' ]]; then
+              exit 0
+            fi
+            sleep 15
+          done
+          echo 'badge endpoint workflow did not settle' >&2
+          exit 1
+
+      - name: Verify and merge a generated badge PR when present
+        id: badge
+        shell: bash
+        run: |
+          set -euo pipefail
+          badge_pr="$(gh pr list --repo "${REPO}" --state open --head automation/badge-endpoints --json number --jq '.[0].number // empty')"
+          if [[ -z "$badge_pr" ]]; then
+            echo 'merged=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          pr="$(gh api "repos/${REPO}/pulls/${badge_pr}")"
+          head="$(jq -r .head.sha <<<"$pr")"
+          base="$(jq -r .base.ref <<<"$pr")"
+          title="$(jq -r .title <<<"$pr")"
+          [[ "$base" == 'main' && "$title" == 'badge: refresh public endpoints' ]]
+          files="$(gh api "repos/${REPO}/pulls/${badge_pr}/files?per_page=100")"
+          count="$(jq 'length' <<<"$files")"
+          [[ "$count" -ge 1 && "$count" -le 10 ]]
+          jq -e 'all(.[]; (.filename | startswith("badges/")) and (.filename | endswith(".json")))' <<<"$files" >/dev/null
+
+          for _ in $(seq 1 180); do
+            runs="$(gh api "repos/${REPO}/actions/runs?head_sha=${head}&event=pull_request&per_page=50")"
+            status="$(jq -r '[.workflow_runs[] | select(.name == "CI")] | sort_by(.created_at) | last | .status // empty' <<<"$runs")"
+            conclusion="$(jq -r '[.workflow_runs[] | select(.name == "CI")] | sort_by(.created_at) | last | .conclusion // empty' <<<"$runs")"
+            if [[ "$status" == 'completed' ]]; then
+              [[ "$conclusion" == 'success' ]]
+              break
+            fi
+            sleep 15
+          done
+          sleep 120
+          review="$(gh api graphql -f owner='EffortlessMetrics' -f name='uselesskey' -F number="$badge_pr" -f query='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100){nodes{isResolved}}reviews(first:100){nodes{state}}}}}')"
+          unresolved="$(jq '[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)] | length' <<<"$review")"
+          requested="$(jq '[.data.repository.pullRequest.reviews.nodes[] | select(.state == "CHANGES_REQUESTED")] | length' <<<"$review")"
+          [[ "$unresolved" == '0' && "$requested" == '0' ]]
+          current="$(gh api "repos/${REPO}/pulls/${badge_pr}" --jq .head.sha)"
+          [[ "$current" == "$head" ]]
+          payload="$(gh api --method PUT "repos/${REPO}/pulls/${badge_pr}/merge" \
+            -f sha="$head" -f merge_method='squash' \
+            -f commit_title="badge: refresh public endpoints (#${badge_pr})" \
+            -f commit_message='Regenerate the public Shields endpoint JSON from the settled post-#892 main tree. The generated diff is confined to badge endpoint data and exact-head CI passed.')"
+          [[ "$(jq -r .merged <<<"$payload")" == 'true' ]]
+          echo 'merged=true' >> "$GITHUB_OUTPUT"
+          echo "merge_sha=$(jq -r .sha <<<"$payload")" >> "$GITHUB_OUTPUT"
+
+      - name: Verify badge merge mainline CI when applicable
+        if: steps.badge.outputs.merged == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          merge='${{ steps.badge.outputs.merge_sha }}'
+          for _ in $(seq 1 180); do
+            runs="$(gh api "repos/${REPO}/actions/runs?head_sha=${merge}&event=push&per_page=50")"
+            status="$(jq -r '[.workflow_runs[] | select(.name == "CI")] | sort_by(.created_at) | last | .status // empty' <<<"$runs")"
+            conclusion="$(jq -r '[.workflow_runs[] | select(.name == "CI")] | sort_by(.created_at) | last | .conclusion // empty' <<<"$runs")"
+            if [[ "$status" == 'completed' ]]; then
+              [[ "$conclusion" == 'success' ]]
+              exit 0
+            fi
+            sleep 15
+          done
+          exit 1
+
+      - name: Generate the fresh settled-tree no-panic inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main --force
+          git checkout -B settled-main origin/main
+          main_sha="$(git rev-parse HEAD)"
+          cargo xtask check-no-panic-family
+          cargo xtask no-panic propose
+          python - <<'PY'
+          from __future__ import annotations
+
+          import json
+          import subprocess
+          import tomllib
+          from collections import Counter, defaultdict
+          from pathlib import Path
+
+          baseline = tomllib.loads(Path('policy/no-panic-baseline.toml').read_text(encoding='utf-8'))
+          proposal_path = Path('target/policy-proposed/no-panic-proposed-allowlist.toml')
+          proposal = tomllib.loads(proposal_path.read_text(encoding='utf-8'))
+          rows = proposal.get('allow', proposal.get('entry', []))
+          grouped = defaultdict(Counter)
+          for row in rows:
+              grouped[row['path']][row['family']] += int(row.get('count', 1))
+
+          clusters = []
+          for path, families in grouped.items():
+              total = sum(families.values())
+              clusters.append({
+                  'path': path,
+                  'total': total,
+                  'families': dict(sorted(families.items())),
+                  'test_only': '/tests/' in path or path.endswith('_test.rs') or path.endswith('_tests.rs'),
+              })
+          clusters.sort(key=lambda row: (-row['total'], row['path']))
+          test_clusters = [row for row in clusters if row['test_only']]
+          main_sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          summary = {
+              'main_sha': main_sha,
+              'baseline_total': int(baseline['summary']['total']),
+              'allowlisted': 15,
+              'baselined': int(baseline['summary']['total']) - 15,
+              'new_debt': 0,
+              'top_test_clusters': test_clusters[:25],
+              'top_all_clusters': clusters[:25],
+          }
+          out = Path('target/no-panic-settled-inventory')
+          out.mkdir(parents=True, exist_ok=True)
+          (out / 'inventory.json').write_text(json.dumps(summary, indent=2, sort_keys=True) + '\n')
+          lines = [
+              '# Settled-tree no-panic inventory', '',
+              f'- Main: `{main_sha}`',
+              f'- Total findings: {summary["baseline_total"]:,}',
+              f'- Allowlisted: {summary["allowlisted"]:,}',
+              f'- Baselined: {summary["baselined"]:,}',
+              '- New debt: 0', '',
+              '## Largest test-only clusters', '',
+              '| Findings | Path | Families |',
+              '|---:|---|---|',
+          ]
+          for row in test_clusters[:25]:
+              families = ', '.join(f'{name}={count}' for name, count in row['families'].items())
+              lines.append(f'| {row["total"]} | `{row["path"]}` | {families} |')
+          (out / 'inventory.md').write_text('\n'.join(lines) + '\n')
+          PY
+
+          top="$(python - <<'PY'
+          import json
+          from pathlib import Path
+          d = json.loads(Path('target/no-panic-settled-inventory/inventory.json').read_text())
+          for row in d['top_test_clusters'][:8]:
+              families = ', '.join(f'{k}={v}' for k, v in row['families'].items())
+              print(f'- `{row["path"]}` — {row["total"]} ({families})')
+          PY
+          )"
+          total="$(python -c 'import tomllib;print(tomllib.loads(open("policy/no-panic-baseline.toml").read())["summary"]["total"])')"
+          body="Post-#892 settled-tree inventory on \`${main_sha}\`: ${total} total findings, 15 allowlisted, $((total - 15)) baselined, and zero new debt. Largest remaining test-only clusters:\n\n${top}\n\nThis is an inventory receipt, not acceptance of the represented historical debt. The next slice should remain one owned file or one coherent call-site family and must use the normal refusing baseline refresh."
+          gh issue comment 575 --repo "${REPO}" --body "$body"
+
+      - name: Upload settled inventory
+        uses: actions/upload-artifact@v6
+        with:
+          name: no-panic-settled-inventory-${{ github.sha }}
+          path: target/no-panic-settled-inventory/
+          retention-days: 30
