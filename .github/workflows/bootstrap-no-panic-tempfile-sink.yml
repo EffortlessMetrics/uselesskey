@@ -1,0 +1,294 @@
+name: Bootstrap tempfile sink no-panic slice
+
+on:
+  push:
+    branches:
+      - chore/no-panic-tempfile-sink-bootstrap
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bootstrap-no-panic-tempfile-sink
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: test/no-panic-tempfile-sink
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Convert tempfile sink tests to fallible errors
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path("crates/uselesskey/tests/tempfile_sink.rs")
+          text = path.read_text(encoding="utf-8")
+          original = text
+
+          unwrap_count = text.count(".unwrap()")
+          if unwrap_count != 71:
+              raise SystemExit(f"expected 71 unwrap calls, found {unwrap_count}")
+
+          text = text.replace(
+              "use std::collections::HashSet;\nuse std::path::PathBuf;\n",
+              "use std::collections::HashSet;\nuse std::fmt;\nuse std::path::PathBuf;\n",
+              1,
+          )
+          text = text.replace(
+              "use uselesskey::prelude::*;\n",
+              """use uselesskey::prelude::*;
+          use uselesskey_test_support::{TestResult, require_ok, require_some};
+
+          trait TestContext<T> {
+              fn test_context(self, message: impl fmt::Display) -> TestResult<T>;
+          }
+
+          impl<T, E: fmt::Display> TestContext<T> for Result<T, E> {
+              fn test_context(self, message: impl fmt::Display) -> TestResult<T> {
+                  require_ok(self, message)
+              }
+          }
+
+          impl<T> TestContext<T> for Option<T> {
+              fn test_context(self, message: impl fmt::Display) -> TestResult<T> {
+                  require_some(self, message)
+              }
+          }
+          """.replace("          ", ""),
+              1,
+          )
+
+          # Every test becomes fallible. Keep assertions intact; only setup and
+          # extraction failures become contextual test errors.
+          attrs_and_sig = re.compile(
+              r"((?:#\[[^\n]+\]\n)+)(fn\s+[A-Za-z0-9_]+\(\))\s*\{",
+              re.MULTILINE,
+          )
+          transformed_names = []
+
+          def rewrite_sig(match: re.Match[str]) -> str:
+              attrs = match.group(1)
+              sig = match.group(2)
+              if "#[test]" not in attrs:
+                  return match.group(0)
+              transformed_names.append(sig.split()[1].split("(")[0])
+              return f"{attrs}{sig} -> TestResult<()> {{"
+
+          text = attrs_and_sig.sub(rewrite_sig, text)
+          if not transformed_names:
+              raise SystemExit("no test functions transformed")
+
+          # Thread join failures do not implement Display. Map those explicitly;
+          # the remaining Result/Option calls use the shared test context trait.
+          text, joins = re.subn(
+              r"\.join\(\)\s*\.unwrap\(\)",
+              '.join().map_err(|_| std::io::Error::other("worker thread panicked"))?',
+              text,
+          )
+          text = text.replace(
+              ".unwrap()",
+              '.test_context("tempfile sink operation")?',
+          )
+
+          if ".unwrap()" in text:
+              raise SystemExit("unwrap calls remain after conversion")
+
+          # Locate each transformed test body and append Ok(()) at its outer
+          # closing brace. This scanner skips strings and comments so braces in
+          # messages do not disturb body matching.
+          def matching_brace(source: str, opening: int) -> int:
+              depth = 0
+              i = opening
+              n = len(source)
+              block_depth = 0
+              while i < n:
+                  if block_depth:
+                      if source.startswith("/*", i):
+                          block_depth += 1
+                          i += 2
+                          continue
+                      if source.startswith("*/", i):
+                          block_depth -= 1
+                          i += 2
+                          continue
+                      i += 1
+                      continue
+                  if source.startswith("//", i):
+                      newline = source.find("\n", i + 2)
+                      i = n if newline < 0 else newline + 1
+                      continue
+                  if source.startswith("/*", i):
+                      block_depth = 1
+                      i += 2
+                      continue
+                  if source[i] == '"':
+                      i += 1
+                      while i < n:
+                          if source[i] == "\\":
+                              i += 2
+                              continue
+                          if source[i] == '"':
+                              i += 1
+                              break
+                          i += 1
+                      continue
+                  if source[i] == "'" and i + 2 < n:
+                      # Skip ordinary char literals; lifetimes have no nearby
+                      # closing quote and therefore fall through harmlessly.
+                      end = i + 1
+                      if source[end] == "\\":
+                          end += 2
+                      else:
+                          end += 1
+                      if end < n and source[end] == "'":
+                          i = end + 1
+                          continue
+                  if source[i] == "{":
+                      depth += 1
+                  elif source[i] == "}":
+                      depth -= 1
+                      if depth == 0:
+                          return i
+                  i += 1
+              raise SystemExit("unmatched test function brace")
+
+          starts = []
+          for name in transformed_names:
+              marker = f"fn {name}() -> TestResult<()> {{"
+              pos = text.find(marker)
+              if pos < 0:
+                  raise SystemExit(f"missing transformed signature for {name}")
+              starts.append((name, text.find("{", pos)))
+
+          insertions = []
+          for name, opening in starts:
+              closing = matching_brace(text, opening)
+              body = text[opening + 1:closing].rstrip()
+              if body.endswith("Ok(())"):
+                  continue
+              insertions.append(closing)
+
+          for closing in reversed(insertions):
+              text = text[:closing] + "    Ok(())\n" + text[closing:]
+
+          if text == original:
+              raise SystemExit("conversion made no changes")
+
+          path.write_text(text, encoding="utf-8")
+          print(
+              f"converted {unwrap_count} unwrap calls across "
+              f"{len(transformed_names)} tests; explicit thread joins={joins}"
+          )
+          PY
+
+      - name: Format and verify the focused test owner
+        shell: bash
+        run: |
+          cargo fmt --all
+          cargo test -p uselesskey --test tempfile_sink --all-features
+          cargo clippy -p uselesskey --test tempfile_sink --all-features -- -D warnings
+
+      - name: Refresh the refusing historical baseline
+        shell: bash
+        run: |
+          python - <<'PY'
+          import subprocess
+          import tomllib
+          from pathlib import Path
+
+          before = tomllib.loads(
+              subprocess.check_output(
+                  ["git", "show", "HEAD:policy/no-panic-baseline.toml"],
+                  text=True,
+              )
+          )
+          assert before["summary"]["total"] == 3422, before["summary"]
+          assert before["summary"]["by_family"]["unwrap"] == 1248, before["summary"]
+          PY
+          cargo xtask no-panic baseline
+          cargo xtask check-no-panic-family
+          python - <<'PY'
+          import subprocess
+          import tomllib
+          from pathlib import Path
+
+          baseline_path = Path("policy/no-panic-baseline.toml")
+          after = tomllib.loads(baseline_path.read_text(encoding="utf-8"))
+          if after["summary"]["total"] != 3351:
+              raise SystemExit(f"unexpected total after refresh: {after['summary']}")
+          if after["summary"]["by_family"]["unwrap"] != 1177:
+              raise SystemExit(f"unexpected unwrap count after refresh: {after['summary']}")
+
+          stale_path = "crates/uselesskey/tests/tempfile_sink.rs"
+          represented = sum(
+              int(entry.get("count", 0))
+              for entry in after.get("entry", [])
+              if entry.get("path") == stale_path
+          )
+          if represented:
+              raise SystemExit(f"{stale_path} still has {represented} represented finding(s)")
+
+          before_text = subprocess.check_output(
+              ["git", "show", "HEAD:policy/no-panic-baseline.toml"],
+              text=True,
+          )
+          before = tomllib.loads(before_text)
+
+          def identities(doc):
+              return {
+                  (
+                      entry["path"],
+                      entry["family"],
+                      entry["selector_kind"],
+                      entry["selector_callee"],
+                      entry["snippet"],
+                  ): int(entry["count"])
+                  for entry in doc.get("entry", [])
+              }
+
+          old = identities(before)
+          new = identities(after)
+          added = sorted(set(new) - set(old))
+          increased = sorted(
+              key for key in set(old) & set(new) if new[key] > old[key]
+          )
+          if added or increased:
+              raise SystemExit(
+                  f"refusing refresh violation: added={added[:3]} increased={increased[:3]}"
+              )
+          removed = sum(old.values()) - sum(new.values())
+          if removed != 71:
+              raise SystemExit(f"expected 71 removed slots, observed {removed}")
+          print("baseline receipt: 3422 -> 3351; unwrap 1248 -> 1177; no additions/increases")
+          PY
+
+      - name: Verify repository hygiene
+        shell: bash
+        run: |
+          git diff --check
+          changed="$(git diff --name-only | sort)"
+          expected=$'crates/uselesskey/tests/tempfile_sink.rs\npolicy/no-panic-baseline.toml'
+          test "$changed" = "$expected"
+
+      - name: Commit verified slice
+        shell: bash
+        run: |
+          git config user.name "EffortlessSteven"
+          git config user.email "git@effortlesssteven.com"
+          git add crates/uselesskey/tests/tempfile_sink.rs policy/no-panic-baseline.toml
+          git commit -m "test: remove tempfile sink panic-family debt"
+          git push origin HEAD:test/no-panic-tempfile-sink
