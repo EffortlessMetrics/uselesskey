@@ -1,0 +1,164 @@
+name: Verify and land tempfile sink no-panic slice
+
+on:
+  push:
+    branches:
+      - chore/no-panic-tempfile-sink-land
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: land-no-panic-tempfile-sink
+  cancel-in-progress: false
+
+jobs:
+  verify-and-land:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: EffortlessMetrics/uselesskey
+      HEAD_BRANCH: test/no-panic-tempfile-sink
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: test/no-panic-tempfile-sink
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Prove bounded diff and baseline movement
+        shell: bash
+        run: |
+          git fetch origin main
+          test "$(git rev-list --count origin/main..HEAD)" -eq 1
+          changed="$(git diff --name-only origin/main...HEAD | sort)"
+          expected=$'crates/uselesskey/tests/tempfile_sink.rs\npolicy/no-panic-baseline.toml'
+          test "$changed" = "$expected"
+          test "$(grep -o '\.unwrap()' crates/uselesskey/tests/tempfile_sink.rs | wc -l)" -eq 0
+          python - <<'PY'
+          import subprocess
+          import tomllib
+          from pathlib import Path
+
+          source_path = "crates/uselesskey/tests/tempfile_sink.rs"
+          source = Path(source_path).read_text(encoding="utf-8")
+          if "TestResult" not in source or "TestContext" not in source:
+              raise SystemExit("fallible test support is not wired into tempfile_sink.rs")
+
+          base = tomllib.loads(
+              subprocess.check_output(
+                  ["git", "show", "origin/main:policy/no-panic-baseline.toml"],
+                  text=True,
+              )
+          )
+          head = tomllib.loads(
+              Path("policy/no-panic-baseline.toml").read_text(encoding="utf-8")
+          )
+          if base["summary"]["total"] != 3422:
+              raise SystemExit(f"unexpected main baseline: {base['summary']}")
+          if head["summary"]["total"] != 3351:
+              raise SystemExit(f"unexpected candidate baseline: {head['summary']}")
+          if base["summary"]["by_family"]["unwrap"] != 1248:
+              raise SystemExit(f"unexpected main unwrap count: {base['summary']}")
+          if head["summary"]["by_family"]["unwrap"] != 1177:
+              raise SystemExit(f"unexpected candidate unwrap count: {head['summary']}")
+
+          def identities(doc):
+              return {
+                  (
+                      entry["path"],
+                      entry["family"],
+                      entry["selector_kind"],
+                      entry["selector_callee"],
+                      entry["snippet"],
+                  ): int(entry["count"])
+                  for entry in doc.get("entry", [])
+              }
+
+          old = identities(base)
+          new = identities(head)
+          added = sorted(set(new) - set(old))
+          increased = sorted(
+              key for key in set(old) & set(new) if new[key] > old[key]
+          )
+          if added or increased:
+              raise SystemExit(
+                  f"candidate added or increased identities: added={added[:3]} increased={increased[:3]}"
+              )
+          removed = sum(old.values()) - sum(new.values())
+          if removed != 71:
+              raise SystemExit(f"expected 71 removed slots, observed {removed}")
+          if any(key[0] == source_path for key in new):
+              raise SystemExit(f"{source_path} remains represented in the baseline")
+          print("bounded receipt: 71 historical unwrap slots removed; no additions or increases")
+          PY
+
+      - name: Exact-head verification
+        shell: bash
+        run: |
+          cargo fmt --all -- --check
+          cargo test -p uselesskey --test tempfile_sink --all-features
+          cargo clippy -p uselesskey --test tempfile_sink --all-features -- -D warnings
+          cargo xtask check-no-panic-family
+          cargo xtask pr
+          git diff --check origin/main...HEAD
+
+      - name: Create or locate the pull request
+        id: pr
+        shell: bash
+        run: |
+          pr="$(gh pr list --repo "$REPO" --head "$HEAD_BRANCH" --base main --state open --json number --jq '.[0].number // empty')"
+          if [ -z "$pr" ]; then
+            gh pr create \
+              --repo "$REPO" \
+              --head "$HEAD_BRANCH" \
+              --base main \
+              --title "test: remove tempfile sink panic-family debt" \
+              --body-file - <<'EOF'
+          Advances #575 with the next historical-baseline slice from a fresh exact-main inventory.
+
+          This converts the tempfile/sink integration-test owner to fallible `uselesskey-test-support` errors while preserving its behavioral assertions. It removes the full 71-site `unwrap` cluster in `crates/uselesskey/tests/tempfile_sink.rs`, maps worker-thread failures into contextual test errors, and refreshes the historical baseline through the normal refusing command.
+
+          Verified movement:
+
+          - total panic-family findings: 3,422 → 3,351;
+          - historical `unwrap` findings: 1,248 → 1,177;
+          - represented findings in `tempfile_sink.rs`: 71 → 0;
+          - no baseline identity added or increased;
+          - no policy mode or lint-stage change.
+          EOF
+            pr="$(gh pr list --repo "$REPO" --head "$HEAD_BRANCH" --base main --state open --json number --jq '.[0].number')"
+          fi
+          test -n "$pr"
+          echo "number=$pr" >> "$GITHUB_OUTPUT"
+
+      - name: Recheck PR identity and merge exact head
+        shell: bash
+        run: |
+          pr="${{ steps.pr.outputs.number }}"
+          head_sha="$(git rev-parse HEAD)"
+          observed_sha="$(gh pr view "$pr" --repo "$REPO" --json headRefOid --jq .headRefOid)"
+          test "$observed_sha" = "$head_sha"
+          observed_files="$(gh pr view "$pr" --repo "$REPO" --json files --jq '.files[].path' | sort)"
+          expected=$'crates/uselesskey/tests/tempfile_sink.rs\npolicy/no-panic-baseline.toml'
+          test "$observed_files" = "$expected"
+          gh pr merge "$pr" \
+            --repo "$REPO" \
+            --squash \
+            --match-head-commit "$head_sha" \
+            --subject "test: remove tempfile sink panic-family debt (#$pr)" \
+            --body "Convert the tempfile/sink integration-test owner to fallible test errors and remove 71 historical unwrap slots through the refusing baseline refresh. Exact-head focused tests, Clippy, no-panic policy checks, the full PR gate, and diff hygiene passed; no baseline identity was added or increased."
+
+      - name: Record issue receipt
+        shell: bash
+        run: |
+          pr="${{ steps.pr.outputs.number }}"
+          gh issue comment 575 --repo "$REPO" --body "Merged #$pr: removed the 71 historical \\`unwrap\\` slots owned by \\`crates/uselesskey/tests/tempfile_sink.rs\\`. The refusing baseline moved from 3,422 to 3,351 total findings and from 1,248 to 1,177 \\`unwrap\\` findings, with no identity added or increased. Issue #575 remains open for the remaining historical baseline; this does not change the policy mode or lint stage."
