@@ -1,0 +1,30 @@
+name: Capture exact source snapshot
+
+on:
+  push:
+    branches:
+      - diagnostic/no-panic-inventory-2026-09-06
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Pack tracked workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          git ls-files -z | tar --null -T - -czf /tmp/uselesskey-source-${{ github.sha }}.tar.gz
+
+      - name: Upload workspace snapshot
+        uses: actions/upload-artifact@v6
+        with:
+          name: uselesskey-source-${{ github.sha }}
+          path: /tmp/uselesskey-source-${{ github.sha }}.tar.gz
+          if-no-files-found: error
+          retention-days: 3
