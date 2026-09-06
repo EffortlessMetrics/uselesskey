@@ -1,0 +1,1760 @@
+{
+  "schema_version": 1,
+  "source_sha": "dcf61671516b775f2aa15885c500caf3cbdd6c81",
+  "total_unique_identities": 3351,
+  "represented_findings": 3351,
+  "files": 232,
+  "by_family": {
+    "expect": 2059,
+    "get_unwrap": 1,
+    "panic_macro": 110,
+    "unreachable": 4,
+    "unwrap": 1177
+  },
+  "ranked_paths": [
+    {
+      "path": "crates/uselesskey-bdd-steps/src/lib.rs",
+      "findings": 759,
+      "families": {
+        "expect": 725,
+        "panic_macro": 4,
+        "unwrap": 30
+      }
+    },
+    {
+      "path": "xtask/src/main.rs",
+      "findings": 158,
+      "families": {
+        "expect": 86,
+        "panic_macro": 1,
+        "unwrap": 71
+      }
+    },
+    {
+      "path": "crates/uselesskey-x509/tests/x509_comprehensive.rs",
+      "findings": 113,
+      "families": {
+        "expect": 72,
+        "panic_macro": 10,
+        "unwrap": 31
+      }
+    },
+    {
+      "path": "crates/uselesskey-jsonwebtoken/tests/jwt_comprehensive.rs",
+      "findings": 53,
+      "families": {
+        "panic_macro": 25,
+        "unwrap": 28
+      }
+    },
+    {
+      "path": "crates/uselesskey-rustls/src/config.rs",
+      "findings": 51,
+      "families": {
+        "expect": 24,
+        "unwrap": 27
+      }
+    },
+    {
+      "path": "crates/uselesskey-interop-tests/tests/cross_adapter.rs",
+      "findings": 49,
+      "families": {
+        "expect": 29,
+        "unwrap": 20
+      }
+    },
+    {
+      "path": "crates/uselesskey-interop-tests/tests/cross_adapter_interop_matrix.rs",
+      "findings": 48,
+      "families": {
+        "expect": 27,
+        "unwrap": 21
+      }
+    },
+    {
+      "path": "crates/uselesskey-interop-tests/tests/cross_adapter_roundtrip.rs",
+      "findings": 43,
+      "families": {
+        "expect": 26,
+        "unwrap": 17
+      }
+    },
+    {
+      "path": "crates/uselesskey-interop-tests/tests/x509_tls_extended.rs",
+      "findings": 42,
+      "families": {
+        "expect": 1,
+        "unwrap": 41
+      }
+    },
+    {
+      "path": "tests/jwt_integration.rs",
+      "findings": 41,
+      "families": {
+        "expect": 33,
+        "panic_macro": 8
+      }
+    },
+    {
+      "path": "crates/uselesskey-aws-lc-rs/tests/integration_aws.rs",
+      "findings": 38,
+      "families": {
+        "expect": 30,
+        "unwrap": 8
+      }
+    },
+    {
+      "path": "tests/pem_der_format.rs",
+      "findings": 38,
+      "families": {
+        "expect": 23,
+        "panic_macro": 9,
+        "unwrap": 6
+      }
+    },
+    {
+      "path": "crates/uselesskey-interop-tests/tests/random_mode.rs",
+      "findings": 37,
+      "families": {
+        "expect": 25,
+        "unwrap": 12
+      }
+    },
+    {
+      "path": "crates/uselesskey-aws-lc-rs/tests/aws_lc_rs_comprehensive.rs",
+      "findings": 36,
+      "families": {
+        "expect": 22,
+        "panic_macro": 2,
+        "unwrap": 12
+      }
+    },
+    {
+      "path": "crates/uselesskey-test-server/src/lib.rs",
+      "findings": 36,
+      "families": {
+        "expect": 36
+      }
+    },
+    {
+      "path": "crates/uselesskey-jsonwebtoken/tests/jwt_extended.rs",
+      "findings": 35,
+      "families": {
+        "panic_macro": 2,
+        "unwrap": 33
+      }
+    },
+    {
+      "path": "crates/uselesskey/tests/integration_facade.rs",
+      "findings": 34,
+      "families": {
+        "unwrap": 34
+      }
+    },
+    {
+      "path": "crates/uselesskey-ring/tests/ring_comprehensive.rs",
+      "findings": 33,
+      "families": {
+        "expect": 19,
+        "panic_macro": 2,
+        "unwrap": 12
+      }
+    },
+    {
+      "path": "crates/uselesskey-interop-tests/tests/all_adapters.rs",
+      "findings": 32,
+      "families": {
+        "expect": 32
+      }
+    },
+    {
+      "path": "crates/uselesskey-token/tests/comprehensive_token.rs",
+      "findings": 32,
+      "families": {
+        "unwrap": 32
+      }
+    },
+    {
+      "path": "crates/uselesskey-jsonwebtoken/tests/snapshots_jwt.rs",
+      "findings": 31,
+      "families": {
+        "unwrap": 31
+      }
+    },
+    {
+      "path": "crates/uselesskey-ring/tests/ring_multi_scheme.rs",
+      "findings": 30,
+      "families": {
+        "expect": 22,
+        "unwrap": 8
+      }
+    },
+    {
+      "path": "tests/concurrency.rs",
+      "findings": 28,
+      "families": {
+        "expect": 1,
+        "panic_macro": 1,
+        "unwrap": 26
+      }
+    },
+    {
+      "path": "crates/uselesskey-rustls/tests/tls_data_transfer.rs",
+      "findings": 27,
+      "families": {
+        "expect": 3,
+        "panic_macro": 2,
+        "unwrap": 22
+      }
+    },
+    {
+      "path": "crates/uselesskey-token/tests/token_comprehensive.rs",
+      "findings": 26,
+      "families": {
+        "expect": 1,
+        "unwrap": 25
+      }
+    },
+    {
+      "path": "crates/uselesskey/tests/e2e_pipeline.rs",
+      "findings": 26,
+      "families": {
+        "expect": 8,
+        "unwrap": 18
+      }
+    },
+    {
+      "path": "crates/uselesskey-axum/tests/integration.rs",
+      "findings": 25,
+      "families": {
+        "expect": 5,
+        "unwrap": 20
+      }
+    },
+    {
+      "path": "crates/uselesskey-cli/tests/tls_profile.rs",
+      "findings": 25,
+      "families": {
+        "expect": 25
+      }
+    },
+    {
+      "path": "crates/uselesskey-jsonwebtoken/src/lib.rs",
+      "findings": 25,
+      "families": {
+        "expect": 7,
+        "unwrap": 18
+      }
+    },
+    {
+      "path": "crates/uselesskey-x509/tests/negative_x509.rs",
+      "findings": 25,
+      "families": {
+        "expect": 20,
+        "panic_macro": 1,
+        "unwrap": 4
+      }
+    },
+    {
+      "path": "crates/uselesskey-ecdsa/tests/jwk_private.rs",
+      "findings": 23,
+      "families": {
+        "expect": 11,
+        "unwrap": 12
+      }
+    },
+    {
+      "path": "crates/uselesskey-interop-tests/tests/cross_adapter_signing.rs",
+      "findings": 23,
+      "families": {
+        "expect": 23
+      }
+    },
+    {
+      "path": "crates/uselesskey-interop-tests/tests/cross_verify.rs",
+      "findings": 23,
+      "families": {
+        "expect": 23
+      }
+    },
+    {
+      "path": "crates/uselesskey-x509/src/chain_negative.rs",
+      "findings": 23,
+      "families": {
+        "expect": 17,
+        "unwrap": 6
+      }
+    },
+    {
+      "path": "tests/e2e_workflows.rs",
+      "findings": 23,
+      "families": {
+        "expect": 22,
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-aws-lc-rs/tests/aws_lc_rs_multi_scheme.rs",
+      "findings": 22,
+      "families": {
+        "expect": 11,
+        "panic_macro": 3,
+        "unwrap": 8
+      }
+    },
+    {
+      "path": "crates/uselesskey-rustcrypto/tests/adapter_integration.rs",
+      "findings": 22,
+      "families": {
+        "expect": 19,
+        "unwrap": 3
+      }
+    },
+    {
+      "path": "crates/uselesskey-x509/src/cert.rs",
+      "findings": 22,
+      "families": {
+        "expect": 12,
+        "panic_macro": 3,
+        "unwrap": 7
+      }
+    },
+    {
+      "path": "crates/uselesskey/tests/facade_integration.rs",
+      "findings": 22,
+      "families": {
+        "expect": 3,
+        "unwrap": 19
+      }
+    },
+    {
+      "path": "crates/uselesskey-pgp/src/keypair.rs",
+      "findings": 21,
+      "families": {
+        "expect": 14,
+        "unwrap": 7
+      }
+    },
+    {
+      "path": "crates/uselesskey-ring/tests/adapter_integration.rs",
+      "findings": 21,
+      "families": {
+        "expect": 10,
+        "unwrap": 11
+      }
+    },
+    {
+      "path": "crates/uselesskey/tests/feature_combinations.rs",
+      "findings": 21,
+      "families": {
+        "expect": 1,
+        "unwrap": 20
+      }
+    },
+    {
+      "path": "crates/uselesskey-rustls/tests/adapter_integration.rs",
+      "findings": 20,
+      "families": {
+        "expect": 2,
+        "panic_macro": 4,
+        "unwrap": 14
+      }
+    },
+    {
+      "path": "crates/uselesskey-rustls/tests/rustls_comprehensive.rs",
+      "findings": 20,
+      "families": {
+        "expect": 4,
+        "unwrap": 16
+      }
+    },
+    {
+      "path": "crates/uselesskey-ecdsa/tests/keypair.rs",
+      "findings": 19,
+      "families": {
+        "expect": 16,
+        "unwrap": 3
+      }
+    },
+    {
+      "path": "crates/uselesskey-ed25519/tests/jwk_private.rs",
+      "findings": 19,
+      "families": {
+        "expect": 7,
+        "unwrap": 12
+      }
+    },
+    {
+      "path": "crates/uselesskey-interop-tests/tests/cross_adapter_tls.rs",
+      "findings": 19,
+      "families": {
+        "expect": 7,
+        "unwrap": 12
+      }
+    },
+    {
+      "path": "crates/uselesskey-x509/src/chain.rs",
+      "findings": 19,
+      "families": {
+        "expect": 11,
+        "unwrap": 8
+      }
+    },
+    {
+      "path": "xtask/src/receipt.rs",
+      "findings": 19,
+      "families": {
+        "expect": 15,
+        "unwrap": 4
+      }
+    },
+    {
+      "path": "tests/governance.rs",
+      "findings": 18,
+      "families": {
+        "expect": 12,
+        "panic_macro": 5,
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-cli/tests/export_targets.rs",
+      "findings": 17,
+      "families": {
+        "expect": 17
+      }
+    },
+    {
+      "path": "crates/uselesskey-ecdsa/tests/coverage_gaps.rs",
+      "findings": 17,
+      "families": {
+        "expect": 7,
+        "unwrap": 10
+      }
+    },
+    {
+      "path": "crates/uselesskey-ecdsa/tests/mutation_hardening.rs",
+      "findings": 17,
+      "families": {
+        "expect": 1,
+        "unwrap": 16
+      }
+    },
+    {
+      "path": "crates/uselesskey-jsonwebtoken/tests/prop_tests.rs",
+      "findings": 17,
+      "families": {
+        "unwrap": 17
+      }
+    },
+    {
+      "path": "crates/uselesskey-rustcrypto/src/lib.rs",
+      "findings": 17,
+      "families": {
+        "expect": 16,
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-ssh/src/cert.rs",
+      "findings": 17,
+      "families": {
+        "expect": 14,
+        "unwrap": 3
+      }
+    },
+    {
+      "path": "tests/determinism_regression.rs",
+      "findings": 17,
+      "families": {
+        "unwrap": 17
+      }
+    },
+    {
+      "path": "crates/uselesskey-jsonwebtoken/tests/jwt_roundtrip_all_algos.rs",
+      "findings": 16,
+      "families": {
+        "panic_macro": 2,
+        "unwrap": 14
+      }
+    },
+    {
+      "path": "crates/uselesskey-x509/tests/x509_unit.rs",
+      "findings": 16,
+      "families": {
+        "expect": 12,
+        "unwrap": 4
+      }
+    },
+    {
+      "path": "crates/uselesskey-axum/src/lib.rs",
+      "findings": 15,
+      "families": {
+        "expect": 5,
+        "unwrap": 10
+      }
+    },
+    {
+      "path": "crates/uselesskey-jwk/src/srp/shape.rs",
+      "findings": 15,
+      "families": {
+        "expect": 15
+      }
+    },
+    {
+      "path": "crates/uselesskey-rsa/src/keypair.rs",
+      "findings": 15,
+      "families": {
+        "expect": 15
+      }
+    },
+    {
+      "path": "crates/uselesskey-rsa/tests/rsa_prop.rs",
+      "findings": 15,
+      "families": {
+        "expect": 4,
+        "unwrap": 11
+      }
+    },
+    {
+      "path": "crates/uselesskey-token/src/srp/shape.rs",
+      "findings": 15,
+      "families": {
+        "expect": 15
+      }
+    },
+    {
+      "path": "crates/uselesskey-webauthn/src/lib.rs",
+      "findings": 15,
+      "families": {
+        "expect": 9,
+        "panic_macro": 2,
+        "unreachable": 1,
+        "unwrap": 3
+      }
+    },
+    {
+      "path": "crates/uselesskey-ecdsa/tests/negative_validation.rs",
+      "findings": 14,
+      "families": {
+        "unwrap": 14
+      }
+    },
+    {
+      "path": "crates/uselesskey-jwk/tests/jwk_unit.rs",
+      "findings": 14,
+      "families": {
+        "expect": 6,
+        "unwrap": 8
+      }
+    },
+    {
+      "path": "crates/uselesskey-ring/src/lib.rs",
+      "findings": 14,
+      "families": {
+        "expect": 13,
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-bdd-steps/src/steps/core_keypair_steps.rs",
+      "findings": 13,
+      "families": {
+        "expect": 13
+      }
+    },
+    {
+      "path": "crates/uselesskey-ed25519/tests/keypair.rs",
+      "findings": 13,
+      "families": {
+        "expect": 10,
+        "unwrap": 3
+      }
+    },
+    {
+      "path": "crates/uselesskey-rsa/tests/coverage_gaps.rs",
+      "findings": 13,
+      "families": {
+        "expect": 1,
+        "unwrap": 12
+      }
+    },
+    {
+      "path": "crates/uselesskey-rustcrypto/tests/rustcrypto_cross_verify.rs",
+      "findings": 13,
+      "families": {
+        "expect": 7,
+        "panic_macro": 1,
+        "unwrap": 5
+      }
+    },
+    {
+      "path": "crates/uselesskey-token/src/token.rs",
+      "findings": 13,
+      "families": {
+        "expect": 5,
+        "unwrap": 8
+      }
+    },
+    {
+      "path": "crates/uselesskey-x509/tests/coverage_gaps.rs",
+      "findings": 13,
+      "families": {
+        "expect": 10,
+        "panic_macro": 2,
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey/examples/tempfile_paths.rs",
+      "findings": 12,
+      "families": {
+        "expect": 12
+      }
+    },
+    {
+      "path": "crates/uselesskey-aws-lc-rs/src/lib.rs",
+      "findings": 11,
+      "families": {
+        "expect": 11
+      }
+    },
+    {
+      "path": "crates/uselesskey-interop-tests/tests/pem_der_compat.rs",
+      "findings": 11,
+      "families": {
+        "expect": 11
+      }
+    },
+    {
+      "path": "crates/uselesskey-jsonwebtoken/tests/error_paths.rs",
+      "findings": 11,
+      "families": {
+        "unwrap": 11
+      }
+    },
+    {
+      "path": "crates/uselesskey-rustls/tests/negative.rs",
+      "findings": 11,
+      "families": {
+        "expect": 1,
+        "unwrap": 10
+      }
+    },
+    {
+      "path": "tests/cross_adapter.rs",
+      "findings": 11,
+      "families": {
+        "expect": 11
+      }
+    },
+    {
+      "path": "tests/msrv_check.rs",
+      "findings": 11,
+      "families": {
+        "expect": 7,
+        "panic_macro": 2,
+        "unwrap": 2
+      }
+    },
+    {
+      "path": "crates/uselesskey-ecdsa/src/keypair.rs",
+      "findings": 10,
+      "families": {
+        "expect": 10
+      }
+    },
+    {
+      "path": "crates/uselesskey-interop-tests/tests/interop.rs",
+      "findings": 10,
+      "families": {
+        "expect": 10
+      }
+    },
+    {
+      "path": "crates/uselesskey-pkcs11-mock/src/lib.rs",
+      "findings": 10,
+      "families": {
+        "expect": 5,
+        "panic_macro": 1,
+        "unwrap": 4
+      }
+    },
+    {
+      "path": "tests/kid_stability.rs",
+      "findings": 10,
+      "families": {
+        "unwrap": 10
+      }
+    },
+    {
+      "path": "xtask/src/policy.rs",
+      "findings": 10,
+      "families": {
+        "expect": 9,
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-rustcrypto/tests/rustcrypto_comprehensive.rs",
+      "findings": 9,
+      "families": {
+        "expect": 7,
+        "unwrap": 2
+      }
+    },
+    {
+      "path": "crates/uselesskey-token/tests/token_unit.rs",
+      "findings": 9,
+      "families": {
+        "expect": 4,
+        "unwrap": 5
+      }
+    },
+    {
+      "path": "crates/uselesskey/tests/dep_guard_policy.rs",
+      "findings": 9,
+      "families": {
+        "expect": 8,
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey/tests/determinism_regression.rs",
+      "findings": 9,
+      "families": {
+        "unwrap": 9
+      }
+    },
+    {
+      "path": "crates/uselesskey/tests/negative_comprehensive.rs",
+      "findings": 9,
+      "families": {
+        "expect": 6,
+        "unwrap": 3
+      }
+    },
+    {
+      "path": "tests/builder_patterns.rs",
+      "findings": 9,
+      "families": {
+        "expect": 3,
+        "unwrap": 6
+      }
+    },
+    {
+      "path": "tests/crypto_backend_integration.rs",
+      "findings": 9,
+      "families": {
+        "expect": 9
+      }
+    },
+    {
+      "path": "xtask/src/pr_bundles.rs",
+      "findings": 9,
+      "families": {
+        "expect": 5,
+        "unwrap": 4
+      }
+    },
+    {
+      "path": "crates/uselesskey-hmac/tests/coverage_gaps.rs",
+      "findings": 8,
+      "families": {
+        "expect": 3,
+        "unwrap": 5
+      }
+    },
+    {
+      "path": "crates/uselesskey-token/tests/negative_fixtures.rs",
+      "findings": 8,
+      "families": {
+        "expect": 3,
+        "unwrap": 5
+      }
+    },
+    {
+      "path": "crates/uselesskey/examples/adapter_jsonwebtoken.rs",
+      "findings": 8,
+      "families": {
+        "unwrap": 8
+      }
+    },
+    {
+      "path": "crates/uselesskey/examples/jwks_server_mock.rs",
+      "findings": 8,
+      "families": {
+        "unwrap": 8
+      }
+    },
+    {
+      "path": "crates/uselesskey/examples/x509_certificates.rs",
+      "findings": 8,
+      "families": {
+        "expect": 6,
+        "unwrap": 2
+      }
+    },
+    {
+      "path": "crates/uselesskey-core/tests/concurrency_stress.rs",
+      "findings": 7,
+      "families": {
+        "panic_macro": 1,
+        "unwrap": 6
+      }
+    },
+    {
+      "path": "crates/uselesskey-webhook/src/lib.rs",
+      "findings": 7,
+      "families": {
+        "expect": 2,
+        "unwrap": 5
+      }
+    },
+    {
+      "path": "tests/api_surface.rs",
+      "findings": 7,
+      "families": {
+        "unwrap": 7
+      }
+    },
+    {
+      "path": "crates/uselesskey-core/src/srp/cache.rs",
+      "findings": 6,
+      "families": {
+        "expect": 1,
+        "panic_macro": 1,
+        "unwrap": 4
+      }
+    },
+    {
+      "path": "crates/uselesskey-core/tests/factory_env.rs",
+      "findings": 6,
+      "families": {
+        "expect": 2,
+        "panic_macro": 3,
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-ed25519/tests/mutation_hardening.rs",
+      "findings": 6,
+      "families": {
+        "expect": 3,
+        "unwrap": 3
+      }
+    },
+    {
+      "path": "crates/uselesskey-hmac/src/secret.rs",
+      "findings": 6,
+      "families": {
+        "expect": 2,
+        "unwrap": 4
+      }
+    },
+    {
+      "path": "crates/uselesskey-ssh/src/key.rs",
+      "findings": 6,
+      "families": {
+        "expect": 3,
+        "unwrap": 3
+      }
+    },
+    {
+      "path": "crates/uselesskey-tonic/tests/thread_safety.rs",
+      "findings": 6,
+      "families": {
+        "expect": 6
+      }
+    },
+    {
+      "path": "crates/uselesskey/examples/jwk_generation.rs",
+      "findings": 6,
+      "families": {
+        "unwrap": 6
+      }
+    },
+    {
+      "path": "crates/uselesskey/examples/jwk_jwks.rs",
+      "findings": 6,
+      "families": {
+        "unwrap": 6
+      }
+    },
+    {
+      "path": "tests/key_rotation.rs",
+      "findings": 6,
+      "families": {
+        "expect": 5,
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "crates/materialize-buildrs-example/build.rs",
+      "findings": 5,
+      "families": {
+        "expect": 5
+      }
+    },
+    {
+      "path": "crates/materialize-shape-buildrs-example/build.rs",
+      "findings": 5,
+      "families": {
+        "expect": 5
+      }
+    },
+    {
+      "path": "crates/uselesskey-bdd-steps/src/steps/core_token_shape_steps.rs",
+      "findings": 5,
+      "families": {
+        "expect": 4,
+        "panic_macro": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-ed25519/tests/edge_cases.rs",
+      "findings": 5,
+      "families": {
+        "unwrap": 5
+      }
+    },
+    {
+      "path": "crates/uselesskey-ed25519/tests/negative_validation.rs",
+      "findings": 5,
+      "families": {
+        "unwrap": 5
+      }
+    },
+    {
+      "path": "crates/uselesskey-rsa/tests/edge_cases.rs",
+      "findings": 5,
+      "families": {
+        "unwrap": 5
+      }
+    },
+    {
+      "path": "crates/uselesskey-rsa/tests/mutation_hardening.rs",
+      "findings": 5,
+      "families": {
+        "expect": 1,
+        "unwrap": 4
+      }
+    },
+    {
+      "path": "crates/uselesskey-rsa/tests/negative_validation.rs",
+      "findings": 5,
+      "families": {
+        "expect": 1,
+        "unwrap": 4
+      }
+    },
+    {
+      "path": "crates/uselesskey-ssh/tests/ssh_fixtures.rs",
+      "findings": 5,
+      "families": {
+        "expect": 5
+      }
+    },
+    {
+      "path": "crates/uselesskey-tonic/tests/pem_structure.rs",
+      "findings": 5,
+      "families": {
+        "expect": 5
+      }
+    },
+    {
+      "path": "crates/uselesskey-tonic/tests/tonic_comprehensive.rs",
+      "findings": 5,
+      "families": {
+        "expect": 5
+      }
+    },
+    {
+      "path": "crates/uselesskey-x509/tests/error_paths.rs",
+      "findings": 5,
+      "families": {
+        "expect": 5
+      }
+    },
+    {
+      "path": "crates/uselesskey/tests/feature_isolation.rs",
+      "findings": 5,
+      "families": {
+        "unwrap": 5
+      }
+    },
+    {
+      "path": "fuzz/fuzz_targets/fuzz_jwk_serialization.rs",
+      "findings": 5,
+      "families": {
+        "expect": 4,
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-core/tests/edge_cases.rs",
+      "findings": 4,
+      "families": {
+        "panic_macro": 1,
+        "unwrap": 3
+      }
+    },
+    {
+      "path": "crates/uselesskey-ed25519/src/keypair.rs",
+      "findings": 4,
+      "families": {
+        "expect": 4
+      }
+    },
+    {
+      "path": "crates/uselesskey-feature-grid/src/lib.rs",
+      "findings": 4,
+      "families": {
+        "panic_macro": 4
+      }
+    },
+    {
+      "path": "crates/uselesskey-jwk/src/srp/kid.rs",
+      "findings": 4,
+      "families": {
+        "expect": 4
+      }
+    },
+    {
+      "path": "crates/uselesskey-pgp/src/native.rs",
+      "findings": 4,
+      "families": {
+        "expect": 4
+      }
+    },
+    {
+      "path": "crates/uselesskey-token/tests/comprehensive_token_prop.rs",
+      "findings": 4,
+      "families": {
+        "unwrap": 4
+      }
+    },
+    {
+      "path": "crates/uselesskey-token/tests/coverage_gaps.rs",
+      "findings": 4,
+      "families": {
+        "expect": 2,
+        "unwrap": 2
+      }
+    },
+    {
+      "path": "crates/uselesskey-tonic/tests/extended_tonic.rs",
+      "findings": 4,
+      "families": {
+        "expect": 4
+      }
+    },
+    {
+      "path": "crates/uselesskey/examples/deterministic_mode.rs",
+      "findings": 4,
+      "families": {
+        "unwrap": 4
+      }
+    },
+    {
+      "path": "crates/uselesskey/examples/negative_fixtures.rs",
+      "findings": 4,
+      "families": {
+        "expect": 2,
+        "unwrap": 2
+      }
+    },
+    {
+      "path": "crates/uselesskey/examples/negative_payload_shapes.rs",
+      "findings": 4,
+      "families": {
+        "expect": 3,
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey/tests/determinism_comprehensive.rs",
+      "findings": 4,
+      "families": {
+        "unwrap": 4
+      }
+    },
+    {
+      "path": "crates/materialize-shape-buildrs-example/src/lib.rs",
+      "findings": 3,
+      "families": {
+        "expect": 3
+      }
+    },
+    {
+      "path": "crates/uselesskey-aws-lc-rs/tests/prop_tests.rs",
+      "findings": 3,
+      "families": {
+        "expect": 3
+      }
+    },
+    {
+      "path": "crates/uselesskey-bdd-steps/src/steps/core_factory_steps.rs",
+      "findings": 3,
+      "families": {
+        "expect": 3
+      }
+    },
+    {
+      "path": "crates/uselesskey-bdd-steps/src/steps/core_id_steps.rs",
+      "findings": 3,
+      "families": {
+        "expect": 2,
+        "panic_macro": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-bdd-steps/src/steps/core_negative_steps.rs",
+      "findings": 3,
+      "families": {
+        "expect": 3
+      }
+    },
+    {
+      "path": "crates/uselesskey-bdd-steps/src/steps/core_seed_steps.rs",
+      "findings": 3,
+      "families": {
+        "expect": 3
+      }
+    },
+    {
+      "path": "crates/uselesskey-cli/src/lib.rs",
+      "findings": 3,
+      "families": {
+        "expect": 3
+      }
+    },
+    {
+      "path": "crates/uselesskey-core/src/srp/factory.rs",
+      "findings": 3,
+      "families": {
+        "expect": 1,
+        "panic_macro": 2
+      }
+    },
+    {
+      "path": "crates/uselesskey-core/tests/core_prop.rs",
+      "findings": 3,
+      "families": {
+        "unwrap": 3
+      }
+    },
+    {
+      "path": "crates/uselesskey-core/tests/determinism_regression.rs",
+      "findings": 3,
+      "families": {
+        "unwrap": 3
+      }
+    },
+    {
+      "path": "crates/uselesskey-core/tests/factory_text_seed.rs",
+      "findings": 3,
+      "families": {
+        "panic_macro": 2,
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-hmac/tests/hmac_unit.rs",
+      "findings": 3,
+      "families": {
+        "expect": 1,
+        "unwrap": 2
+      }
+    },
+    {
+      "path": "crates/uselesskey-jsonwebtoken/tests/negative_jwt.rs",
+      "findings": 3,
+      "families": {
+        "unwrap": 3
+      }
+    },
+    {
+      "path": "crates/uselesskey-pgp/tests/pgp_unit.rs",
+      "findings": 3,
+      "families": {
+        "unwrap": 3
+      }
+    },
+    {
+      "path": "crates/uselesskey-ring/tests/prop_tests_ring.rs",
+      "findings": 3,
+      "families": {
+        "expect": 3
+      }
+    },
+    {
+      "path": "crates/uselesskey-token/tests/comprehensive_snapshots.rs",
+      "findings": 3,
+      "families": {
+        "unwrap": 3
+      }
+    },
+    {
+      "path": "crates/uselesskey/examples/deterministic.rs",
+      "findings": 3,
+      "families": {
+        "unwrap": 3
+      }
+    },
+    {
+      "path": "crates/uselesskey/examples/tempfiles.rs",
+      "findings": 3,
+      "families": {
+        "expect": 3
+      }
+    },
+    {
+      "path": "crates/uselesskey/tests/facade_negative.rs",
+      "findings": 3,
+      "families": {
+        "unwrap": 3
+      }
+    },
+    {
+      "path": "fuzz/fuzz_targets/jwk_serde.rs",
+      "findings": 3,
+      "families": {
+        "expect": 3
+      }
+    },
+    {
+      "path": "fuzz/fuzz_targets/jwk_shape.rs",
+      "findings": 3,
+      "families": {
+        "expect": 1,
+        "get_unwrap": 1,
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "tests/determinism.rs",
+      "findings": 3,
+      "families": {
+        "unwrap": 3
+      }
+    },
+    {
+      "path": "tests/tls_integration.rs",
+      "findings": 3,
+      "families": {
+        "expect": 3
+      }
+    },
+    {
+      "path": "crates/uselesskey-bdd-steps/src/steps/core_kid_steps.rs",
+      "findings": 2,
+      "families": {
+        "expect": 2
+      }
+    },
+    {
+      "path": "crates/uselesskey-core/src/srp/negative/pem.rs",
+      "findings": 2,
+      "families": {
+        "expect": 1,
+        "unreachable": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-hmac/tests/mutation_hardening.rs",
+      "findings": 2,
+      "families": {
+        "expect": 1,
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-jwk/src/srp/builder.rs",
+      "findings": 2,
+      "families": {
+        "expect": 2
+      }
+    },
+    {
+      "path": "crates/uselesskey-jwk/tests/snapshots_jwk_facade.rs",
+      "findings": 2,
+      "families": {
+        "unwrap": 2
+      }
+    },
+    {
+      "path": "crates/uselesskey-rsa/tests/error_paths.rs",
+      "findings": 2,
+      "families": {
+        "unwrap": 2
+      }
+    },
+    {
+      "path": "crates/uselesskey-tonic/src/lib.rs",
+      "findings": 2,
+      "families": {
+        "expect": 2
+      }
+    },
+    {
+      "path": "crates/uselesskey-x509/src/chain/crl.rs",
+      "findings": 2,
+      "families": {
+        "expect": 2
+      }
+    },
+    {
+      "path": "crates/uselesskey-x509/src/srp/derive.rs",
+      "findings": 2,
+      "families": {
+        "expect": 1,
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey/examples/basic_usage.rs",
+      "findings": 2,
+      "families": {
+        "expect": 1,
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey/examples/tls_server.rs",
+      "findings": 2,
+      "families": {
+        "expect": 2
+      }
+    },
+    {
+      "path": "crates/uselesskey/tests/facade_e2e.rs",
+      "findings": 2,
+      "families": {
+        "expect": 2
+      }
+    },
+    {
+      "path": "crates/uselesskey/tests/multi_algorithm_isolation.rs",
+      "findings": 2,
+      "families": {
+        "unwrap": 2
+      }
+    },
+    {
+      "path": "crates/uselesskey/tests/security_tests.rs",
+      "findings": 2,
+      "families": {
+        "unwrap": 2
+      }
+    },
+    {
+      "path": "crates/uselesskey/tests/snapshots_facade.rs",
+      "findings": 2,
+      "families": {
+        "expect": 2
+      }
+    },
+    {
+      "path": "fuzz/fuzz_targets/core_keypair_material.rs",
+      "findings": 2,
+      "families": {
+        "expect": 2
+      }
+    },
+    {
+      "path": "fuzz/fuzz_targets/fuzz_label_edge_cases.rs",
+      "findings": 2,
+      "families": {
+        "unwrap": 2
+      }
+    },
+    {
+      "path": "fuzz/fuzz_targets/jwks_builder.rs",
+      "findings": 2,
+      "families": {
+        "expect": 1,
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "fuzz/fuzz_targets/jwks_builder_ordering.rs",
+      "findings": 2,
+      "families": {
+        "expect": 1,
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "tests/no_blob_policy.rs",
+      "findings": 2,
+      "families": {
+        "expect": 2
+      }
+    },
+    {
+      "path": "xtask/src/docs_sync.rs",
+      "findings": 2,
+      "families": {
+        "expect": 2
+      }
+    },
+    {
+      "path": "crates/materialize-buildrs-example/src/lib.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-aws-lc-rs/tests/testutil.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-core/src/srp/negative/der.rs",
+      "findings": 1,
+      "families": {
+        "unreachable": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-core/tests/snapshots_core.rs",
+      "findings": 1,
+      "families": {
+        "panic_macro": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-ecdsa/tests/edge_cases.rs",
+      "findings": 1,
+      "families": {
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-ecdsa/tests/format_roundtrip.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-ecdsa/tests/testutil.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-ed25519/tests/format_roundtrip.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-ed25519/tests/testutil.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-hmac/tests/cache_coherence.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-hmac/tests/edge_cases.rs",
+      "findings": 1,
+      "families": {
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-hmac/tests/negative_validation.rs",
+      "findings": 1,
+      "families": {
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-hmac/tests/testutil.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-jsonwebtoken/tests/testutil.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-jwk/tests/negative_fixtures.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-jwk/tests/negative_reexports.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-pgp/tests/testutil.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-ring/tests/testutil.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-rsa/tests/format_roundtrip.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-rsa/tests/testutil.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-rustcrypto/tests/testutil.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-rustls/src/testutil.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-rustls/tests/snapshots_rustls_pki.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-rustls/tests/testutil.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-token/tests/edge_cases.rs",
+      "findings": 1,
+      "families": {
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-token/tests/testutil.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-token/tests/token_prop.rs",
+      "findings": 1,
+      "families": {
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-tonic/tests/error_paths.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-tonic/tests/testutil.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-x509/src/chain/material.rs",
+      "findings": 1,
+      "families": {
+        "panic_macro": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-x509/src/chain/params.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-x509/src/srp/spec/chain_spec.rs",
+      "findings": 1,
+      "families": {
+        "unreachable": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-x509/src/testutil.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-x509/tests/snapshots_x509.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey-x509/tests/testutil.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey/benches/keygen.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey/examples/adapter_rustls.rs",
+      "findings": 1,
+      "families": {
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey/examples/basic_rsa.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey/examples/basic_token.rs",
+      "findings": 1,
+      "families": {
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey/examples/jwt_rs256_jwks.rs",
+      "findings": 1,
+      "families": {
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey/examples/token_generation.rs",
+      "findings": 1,
+      "families": {
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey/tests/cache_perf_tests.rs",
+      "findings": 1,
+      "families": {
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey/tests/facade.rs",
+      "findings": 1,
+      "families": {
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "crates/uselesskey/tests/testutil.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "fuzz/fuzz_targets/factory_concurrent_access.rs",
+      "findings": 1,
+      "families": {
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "fuzz/fuzz_targets/fuzz_factory_concurrent.rs",
+      "findings": 1,
+      "families": {
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "fuzz/fuzz_targets/fuzz_kid_generation.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "fuzz/fuzz_targets/jwk_builder.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "tests/cross_crate_determinism.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    },
+    {
+      "path": "tests/security_invariants.rs",
+      "findings": 1,
+      "families": {
+        "unwrap": 1
+      }
+    },
+    {
+      "path": "tests/testutil.rs",
+      "findings": 1,
+      "families": {
+        "expect": 1
+      }
+    }
+  ]
+}
