@@ -4,6 +4,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 14
     open-pull-requests-limit: 10
     ignore:
       # Suppress major-bump PRs for RNG crates during the dual-stack transition.
@@ -24,3 +26,5 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 14
