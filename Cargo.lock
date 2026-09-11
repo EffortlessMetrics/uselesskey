@@ -122,7 +122,7 @@ version = "1.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "40c48f72fd53cd289104fc64099abca73db4166ad86ea0b4341abe65af83dadc"
 dependencies = [
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -133,7 +133,7 @@ checksum = "291e6a250ff86cd4a820112fb8898808a366d8f9f58ce16d1f538353ad55747d"
 dependencies = [
  "anstyle",
  "once_cell_polyfill",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -321,6 +321,12 @@ name = "base64"
 version = "0.22.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
+
+[[package]]
+name = "base64"
+version = "0.23.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ac07cdecf99051d9a5238b80f35af32cdeba5b336e55d957b318b50137e18da5"
 
 [[package]]
 name = "base64ct"
@@ -1368,7 +1374,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -1883,7 +1889,7 @@ version = "0.1.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "96547c2556ec9d12fb1578c4eaf448b04993e7fb79cbaad930a656880a6bdfa0"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "bytes",
  "futures-channel",
  "futures-util",
@@ -2201,14 +2207,14 @@ version = "10.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eba32bfb4ffdeaca3e34431072faf01745c9b26d25504aa7a6cf5684334fc4fc"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "ed25519-dalek",
  "getrandom 0.2.17",
  "hmac 0.12.1",
  "js-sys",
  "p256 0.13.2",
  "p384 0.13.1",
- "pem",
+ "pem 3.0.6",
  "rand 0.8.5",
  "rsa 0.9.10",
  "serde",
@@ -2681,7 +2687,17 @@ version = "3.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d30c53c26bc5b31a98cd02d20f25a7c8567146caf63ed593a9d87b2775291be"
 dependencies = [
- "base64",
+ "base64 0.22.1",
+ "serde_core",
+]
+
+[[package]]
+name = "pem"
+version = "4.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d354a98a3d1251555de99e8fdd8afda05573c31b82f59063a7b0a29b5527f120"
+dependencies = [
+ "base64 0.23.1",
  "serde_core",
 ]
 
@@ -2763,7 +2779,7 @@ dependencies = [
  "aes-gcm",
  "aes-kw",
  "argon2",
- "base64",
+ "base64 0.22.1",
  "bitfields",
  "block-padding",
  "blowfish",
@@ -3228,11 +3244,11 @@ dependencies = [
 
 [[package]]
 name = "rcgen"
-version = "0.14.8"
+version = "0.14.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "57f6d249aad744e274e682777a50283a225a32705394ee6d5fcc01efa25e4055"
+checksum = "8774e05a7d0de114588e6a28fe7e71694b82614ed569d86d8b389dfbc98b8ad8"
 dependencies = [
- "pem",
+ "pem 4.0.0",
  "ring",
  "rustls-pki-types",
  "time",
@@ -3316,7 +3332,7 @@ version = "0.12.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eddd3ca559203180a307f12d114c268abf583f59b03cb906fd0b3ff8646c1147"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "bytes",
  "futures-core",
  "http",
@@ -3515,7 +3531,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -3907,7 +3923,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3a766e1110788c36f4fa1c2b71b387a7815aa65f88ce0229841826633d93723e"
 dependencies = [
  "libc",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -4089,7 +4105,7 @@ dependencies = [
  "getrandom 0.4.2",
  "once_cell",
  "rustix",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -4108,7 +4124,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "230a1b821ccbd75b185820a1f1ff7b14d21da1e442e22c0863ea5f08771a8874"
 dependencies = [
  "rustix",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -4330,7 +4346,7 @@ version = "0.14.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ac2a5518c70fa84342385732db33fb3f44bc4cc748936eb5833d2df34d6445ef"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "bytes",
  "h2",
  "http",
@@ -4577,7 +4593,7 @@ dependencies = [
  "criterion",
  "insta",
  "jsonwebtoken",
- "pem",
+ "pem 3.0.6",
  "proptest",
  "rustls-pki-types",
  "serde",
@@ -4646,7 +4662,7 @@ name = "uselesskey-bdd-steps"
 version = "0.10.0"
 dependencies = [
  "aws-lc-rs",
- "base64",
+ "base64 0.22.1",
  "cucumber",
  "ed25519-dalek",
  "hmac 0.13.0",
@@ -4693,7 +4709,7 @@ version = "0.10.0"
 dependencies = [
  "anyhow",
  "assert_cmd",
- "base64",
+ "base64 0.22.1",
  "clap",
  "insta",
  "predicates",
@@ -4718,7 +4734,7 @@ dependencies = [
 name = "uselesskey-core"
 version = "0.10.0"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "blake3",
  "dashmap",
  "insta",
@@ -4738,7 +4754,7 @@ dependencies = [
 name = "uselesskey-ecdsa"
 version = "0.10.0"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "elliptic-curve 0.14.0-rc.29",
  "insta",
  "p256 0.14.0-rc.8",
@@ -4757,7 +4773,7 @@ dependencies = [
 name = "uselesskey-ed25519"
 version = "0.10.0"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "ed25519-dalek",
  "insta",
  "pkcs8 0.10.2",
@@ -4790,7 +4806,7 @@ dependencies = [
 name = "uselesskey-hmac"
 version = "0.10.0"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "insta",
  "proptest",
  "rand_chacha 0.10.0",
@@ -4805,7 +4821,7 @@ dependencies = [
 name = "uselesskey-integration-tests"
 version = "0.0.0"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "blake3",
  "der-parser",
  "ed25519-dalek",
@@ -4841,7 +4857,7 @@ name = "uselesskey-interop-tests"
 version = "0.0.0"
 dependencies = [
  "aws-lc-rs",
- "base64",
+ "base64 0.22.1",
  "ed25519-dalek",
  "hmac 0.13.0",
  "insta",
@@ -4889,7 +4905,7 @@ dependencies = [
 name = "uselesskey-jwk"
 version = "0.10.0"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "blake3",
  "insta",
  "proptest",
@@ -4940,7 +4956,7 @@ dependencies = [
 name = "uselesskey-rsa"
 version = "0.10.0"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "insta",
  "proptest",
  "rand_chacha 0.10.0",
@@ -5043,7 +5059,7 @@ version = "0.10.0"
 name = "uselesskey-token"
 version = "0.10.0"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "insta",
  "proptest",
  "rand_chacha 0.10.0",
@@ -5080,7 +5096,7 @@ dependencies = [
 name = "uselesskey-webhook"
 version = "0.10.0"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "hex",
  "hmac 0.13.0",
  "insta",
@@ -5095,7 +5111,7 @@ dependencies = [
 name = "uselesskey-x509"
 version = "0.10.0"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "insta",
  "proptest",
  "rand_chacha 0.10.0",
@@ -5325,7 +5341,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -5696,7 +5712,7 @@ name = "xtask"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "base64",
+ "base64 0.22.1",
  "chrono",
  "clap",
  "indicatif",
