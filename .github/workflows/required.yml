@@ -1,6 +1,12 @@
 name: Uselesskey Required
 
 on:
+  pull_request:
+    types: [ready_for_review]
+    branches: [main]
+  merge_group:
+    types: [checks_requested]
+    branches: [main]
   workflow_dispatch:
     inputs:
       integration:
