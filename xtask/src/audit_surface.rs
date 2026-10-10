@@ -1,7 +1,6 @@
 use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
-use std::process::Command;
 
 use anyhow::{Context, Result};
 use serde::Serialize;
@@ -102,8 +101,8 @@ pub fn audit_surface_cmd() -> Result<()> {
 }
 
 fn cargo_tree(package: &str) -> Result<String> {
-    let output = Command::new("cargo")
-        .args(["tree", "-p", package, "--prefix", "none"])
+    let output = crate::cargo_policy::command("tree")?
+        .args(["-p", package, "--prefix", "none"])
         .output()
         .with_context(|| format!("failed to run cargo tree for {package}"))?;
     if !output.status.success() {
@@ -170,10 +169,9 @@ fn classify_lane(lane: &str, markers: &[String]) -> String {
 }
 
 fn workspace_deny_status() -> String {
-    match Command::new("cargo").args(["deny", "-V"]).output() {
-        Ok(output) if output.status.success() => match Command::new("cargo")
-            .args(["deny", "check", "advisories"])
-            .output()
+    match crate::cargo_policy::probe("deny", false).output() {
+        Ok(output) if output.status.success() => match crate::cargo_policy::command("deny")
+            .and_then(|mut command| command.args(["check", "advisories"]).output())
         {
             Ok(run) if run.status.success() => "ok".to_string(),
             Ok(_) => "failed".to_string(),

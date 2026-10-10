@@ -3,9 +3,11 @@
 The source in this branch prepares a reduced development/integration lifecycle.
 `scripts/verify-promotion-evidence.py` is a read-only, operator-assisted verifier.
 It does not write a check, dispatch a workflow, enqueue a PR, or grant merge
-authority. The shadow `required.yml` remains manual-only, and its dormant PR
-step still uses the older schema-only packet checker. Do not activate that step
-as sufficient admission merely because this new verifier exists.
+authority. The shadow `required.yml` remains manual-only. Its prepared PR step
+now requires [signed operator acceptance](signed-promotion-acceptance.md) with
+independently pinned public signers and this live evidence verifier. Missing
+signer configuration or evidence refuses admission. The actual control producer
+and native required-check attachment still need qualification before activation.
 
 Implementation ownership is in swarm [#682](https://github.com/EffortlessMetrics/uselesskey-swarm/issues/682)
 (development proof), [#683](https://github.com/EffortlessMetrics/uselesskey-swarm/issues/683)
@@ -49,9 +51,11 @@ It archives a complete invocation envelope and prints its exact digest and
 invocation identity. Bare xtask receipts, incomplete outcomes, undeclared skips,
 stale raw receipts, hidden index flags, and changed subjects cannot seal.
 
-Use swarm's `docs/ci/no-actions-development.md` for the plan contract. In
-particular, the old Rust selector can still select fuzz and tool-dependent
-coverage; this wrapper has not implemented the remaining selector reduction.
+Use swarm's `docs/ci/no-actions-development.md` for the plan contract. The paired
+producer contract requires an explicit bounded fuzz command for fuzz-owned
+changes and records explicit coverage as focused evidence. Qualify ordinary PR
+selection against the paired development candidate; installed tools must not
+silently select fuzz or coverage work.
 
 Preserve the envelope as exact UTF-8 bytes in its source repository's Git object
 database. Retain it through a dedicated evidence ref, or a documented retention

@@ -56,7 +56,7 @@ fn expect_err<T: std::fmt::Debug>(result: JwtResult<T>, ctx: &str) -> TestResult
 /// then `decode_header` (which must surface kid + alg + typ without
 /// touching the signature), and finally `decode` (which must preserve
 /// the same fields on the returned `TokenData`).
-#[allow(dead_code)] // false positive when no features are enabled
+#[allow(dead_code, reason = "helper is used only by algorithm feature tests")]
 fn assert_kid_round_trip(
     alg: Algorithm,
     kid: &str,

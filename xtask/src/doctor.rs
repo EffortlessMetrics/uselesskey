@@ -362,12 +362,14 @@ fn dirty_tree_check(root: &Path) -> DoctorCheck {
 }
 
 fn badge_drift_check(root: &Path) -> DoctorCheck {
-    let output = Command::new("cargo")
-        .args(["xtask", "badges", "--check"])
-        .current_dir(root)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output();
+    let output = crate::cargo_policy::command("xtask").and_then(|mut command| {
+        command
+            .args(["badges", "--check"])
+            .current_dir(root)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+    });
 
     match output {
         Ok(output) if output.status.success() => DoctorCheck {

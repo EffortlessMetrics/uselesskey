@@ -1,6 +1,6 @@
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::process::Stdio;
 
 use anyhow::{Context, Result, bail};
 
@@ -53,8 +53,8 @@ pub fn run(root: &Path) -> Result<()> {
 }
 
 fn run_cli(root: &Path, args: &[&str]) -> Result<()> {
-    let status = Command::new("cargo")
-        .args(["run", "--quiet", "-p", "uselesskey-cli", "--"])
+    let status = crate::cargo_policy::command("run")?
+        .args(["--quiet", "-p", "uselesskey-cli", "--"])
         .args(args)
         .current_dir(root)
         .stdin(Stdio::null())

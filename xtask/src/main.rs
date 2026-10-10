@@ -20,6 +20,7 @@ mod adoption_regression;
 mod audit_surface;
 mod bundle_proof;
 mod bundle_schema;
+mod cargo_policy;
 mod claim_proof;
 mod claim_report;
 mod contract_packs;
@@ -46,6 +47,10 @@ mod verification_pack;
     version
 )]
 struct Cli {
+    /// Require the existing lockfile for every qualified nested Cargo command.
+    /// Invoke via `cargo run --locked -p xtask -- --locked <COMMAND>` to also lock xtask's build.
+    #[arg(long, global = true)]
+    locked: bool,
     #[command(subcommand)]
     cmd: Cmd,
 }
@@ -634,6 +639,7 @@ impl MutationNightlyScope {
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
+    cargo_policy::initialize(cli.locked);
 
     match cli.cmd {
         Cmd::Perf { compare } => perf(compare),
@@ -994,8 +1000,8 @@ fn run(cmd: &mut Command) -> Result<()> {
 fn fmt(fix: bool) -> Result<()> {
     if cfg!(windows) {
         for package in workspace_package_names()? {
-            let mut cmd = Command::new("cargo");
-            cmd.args(["fmt", "-p", &package]);
+            let mut cmd = crate::cargo_policy::command("fmt")?;
+            cmd.args(["-p", &package]);
             if !fix {
                 cmd.args(["--", "--check"]);
             }
@@ -1003,15 +1009,15 @@ fn fmt(fix: bool) -> Result<()> {
         }
         Ok(())
     } else if fix {
-        run(Command::new("cargo").args(["fmt", "--all"]))
+        run(crate::cargo_policy::command("fmt")?.args(["--all"]))
     } else {
-        run(Command::new("cargo").args(["fmt", "--all", "--", "--check"]))
+        run(crate::cargo_policy::command("fmt")?.args(["--all", "--", "--check"]))
     }
 }
 
 fn workspace_package_names() -> Result<Vec<String>> {
-    let output = Command::new("cargo")
-        .args(["metadata", "--format-version", "1", "--no-deps"])
+    let output = crate::cargo_policy::command("metadata")?
+        .args(["--format-version", "1", "--no-deps"])
         .output()
         .context("failed to run `cargo metadata` for workspace package list")?;
 
@@ -1052,8 +1058,7 @@ fn workspace_package_names() -> Result<Vec<String>> {
 }
 
 fn clippy() -> Result<()> {
-    run(Command::new("cargo").args([
-        "clippy",
+    run(crate::cargo_policy::command("clippy")?.args([
         "--workspace",
         "--all-targets",
         "--all-features",
@@ -1064,8 +1069,7 @@ fn clippy() -> Result<()> {
 }
 
 fn test() -> Result<()> {
-    run(Command::new("cargo").args([
-        "test",
+    run(crate::cargo_policy::command("test")?.args([
         "--workspace",
         "--all-features",
         "--exclude",
@@ -1074,8 +1078,7 @@ fn test() -> Result<()> {
 }
 
 fn bdd() -> Result<()> {
-    run(Command::new("cargo").args([
-        "test",
+    run(crate::cargo_policy::command("test")?.args([
         "-p",
         "uselesskey-bdd",
         "--test",
@@ -1104,8 +1107,8 @@ fn bdd_matrix() -> Result<()> {
         let args = feature_set.cargo_args;
         let step_name = format!("bdd-matrix:{name}");
         let result = runner.step(&step_name, None, || {
-            let mut cmd = Command::new("cargo");
-            cmd.args(["test", "-p", "uselesskey-bdd", "--test", "bdd", "--release"]);
+            let mut cmd = crate::cargo_policy::command("test")?;
+            cmd.args(["-p", "uselesskey-bdd", "--test", "bdd", "--release"]);
             for arg in args {
                 cmd.arg(arg);
             }
@@ -1306,9 +1309,9 @@ fn verify_publish_order_is_topological() -> Result<()> {
     // `Could not locate working directory: No such file or directory`.
     let workspace_root = workspace_root_path();
     let workspace_manifest = workspace_root.join("Cargo.toml");
-    let output = Command::new("cargo")
+    let output = crate::cargo_policy::command("metadata")?
         .current_dir(&workspace_root)
-        .args(["metadata", "--format-version", "1", "--no-deps"])
+        .args(["--format-version", "1", "--no-deps"])
         .arg("--manifest-path")
         .arg(&workspace_manifest)
         .output()
@@ -1384,8 +1387,8 @@ fn publish_check() -> Result<()> {
     verify_publish_order_is_topological()?;
     verify_no_versioned_publish_false_deps()?;
     for name in PUBLISH_CRATES {
-        let output = Command::new("cargo")
-            .args(["publish", "--dry-run", "-p", name])
+        let output = crate::cargo_policy::command("publish")?
+            .args(["--dry-run", "-p", name])
             .output()
             .with_context(|| format!("failed to spawn cargo publish --dry-run for {name}"))?;
 
@@ -1393,7 +1396,7 @@ fn publish_check() -> Result<()> {
             continue;
         }
         let stderr = String::from_utf8_lossy(&output.stderr);
-        if is_unpublished_workspace_dep_error(&stderr) {
+        if !cargo_policy::locked() && is_unpublished_workspace_dep_error(&stderr) {
             eprintln!(
                 "  [warn] {name} publish check: skipped (workspace dep not yet on crates.io)"
             );
@@ -1544,8 +1547,7 @@ struct PerfLatestEntry {
 }
 
 fn perf(compare: bool) -> Result<()> {
-    run(Command::new("cargo").args([
-        "run",
+    run(crate::cargo_policy::command("run")?.args([
         "-p",
         "uselesskey-bench",
         "--release",
@@ -1776,8 +1778,8 @@ fn publish(from: Option<String>, resume: bool) -> Result<()> {
         let mut success = false;
         let mut already_published = false;
         for attempt in 1..=5 {
-            let output = Command::new("cargo")
-                .args(["publish", "-p", name])
+            let output = crate::cargo_policy::command("publish")?
+                .args(["-p", name])
                 .stdout(Stdio::null())
                 .stderr(Stdio::piped())
                 .output()
@@ -1854,8 +1856,7 @@ fn publish(from: Option<String>, resume: bool) -> Result<()> {
 }
 
 fn is_llvm_cov_installed() -> bool {
-    Command::new("cargo")
-        .args(["llvm-cov", "--version"])
+    crate::cargo_policy::probe("llvm-cov", false)
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status()
@@ -1881,9 +1882,8 @@ fn coverage() -> Result<()> {
 fn run_coverage(runner: &mut receipt::Runner) -> Result<()> {
     fs::create_dir_all("target/coverage")?;
     runner.step("coverage", None, || {
-        run(Command::new("cargo")
+        run(crate::cargo_policy::command("llvm-cov")?
             .args([
-                "llvm-cov",
                 "--workspace",
                 "--all-features",
                 "--lcov",
@@ -1893,8 +1893,8 @@ fn run_coverage(runner: &mut receipt::Runner) -> Result<()> {
             .env("PROPTEST_CASES", "16"))
     })?;
     runner.step("coverage:report", None, || {
-        run(Command::new("cargo")
-            .args(["llvm-cov", "report"])
+        run(crate::cargo_policy::command("llvm-cov")?
+            .args(["report"])
             .env("PROPTEST_CASES", "16"))
     })?;
 
@@ -1966,8 +1966,8 @@ fn run_publish_preflight(runner: &mut receipt::Runner, allow_dirty: bool) -> Res
     for name in PUBLISH_CRATES {
         let step_name = format!("preflight:package:{name}");
         if let Err(e) = runner.step(&step_name, None, || {
-            let mut cmd = Command::new("cargo");
-            cmd.args(["package", "--no-verify", "--exclude-lockfile", "-p", name]);
+            let mut cmd = crate::cargo_policy::command("package")?;
+            cmd.args(["--no-verify", "--exclude-lockfile", "-p", name]);
             if allow_dirty {
                 cmd.arg("--allow-dirty");
             }
@@ -1978,7 +1978,7 @@ fn run_publish_preflight(runner: &mut receipt::Runner, allow_dirty: bool) -> Res
             let stderr = String::from_utf8_lossy(&output.stderr);
             // Tolerate crates.io resolution errors for workspace siblings
             // that haven't been published to crates.io yet.
-            if is_unpublished_workspace_dep_error(&stderr) {
+            if !cargo_policy::locked() && is_unpublished_workspace_dep_error(&stderr) {
                 eprintln!("  [warn] {name}: skipped (workspace dep not yet on crates.io)");
                 return Ok(());
             }
@@ -1995,8 +1995,8 @@ fn run_publish_preflight(runner: &mut receipt::Runner, allow_dirty: bool) -> Res
 }
 
 fn check_crate_metadata() -> Result<()> {
-    let output = Command::new("cargo")
-        .args(["metadata", "--format-version", "1", "--no-deps"])
+    let output = crate::cargo_policy::command("metadata")?
+        .args(["--format-version", "1", "--no-deps"])
         .output()
         .context("failed to run `cargo metadata`")?;
 
@@ -2079,8 +2079,8 @@ fn check_doc_dependency_versions() -> Result<()> {
 }
 
 fn workspace_publish_versions() -> Result<BTreeMap<String, String>> {
-    let output = Command::new("cargo")
-        .args(["metadata", "--format-version", "1", "--no-deps"])
+    let output = crate::cargo_policy::command("metadata")?
+        .args(["--format-version", "1", "--no-deps"])
         .output()
         .context("failed to run `cargo metadata` for doc version checks")?;
 
@@ -2219,8 +2219,7 @@ impl MutationToolEnv {
 }
 
 fn ensure_cargo_mutants_installed() -> Result<()> {
-    let have = Command::new("cargo")
-        .args(["mutants", "--version"])
+    let have = crate::cargo_policy::probe("mutants", false)
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status()
@@ -2239,8 +2238,7 @@ fn mutation_command_for_crate(
     tool_env: &MutationToolEnv,
     in_diff: Option<&Path>,
 ) -> Result<Option<Command>> {
-    let mut cmd = Command::new("cargo");
-    cmd.arg("mutants");
+    let mut cmd = crate::cargo_policy::command("mutants")?;
 
     let needs_aws_lc_features = name == "uselesskey-aws-lc-rs";
     let use_all_features = if needs_aws_lc_features {
@@ -2920,8 +2918,8 @@ fn fuzz(target: Option<&str>, all: bool, list: bool, extra: &[String]) -> Result
     ensure_cargo_fuzz_available()?;
     let host = host_target_triple()?;
     for target in targets {
-        let mut cmd = Command::new("cargo");
-        cmd.args(["+nightly", "fuzz", "run", "--target", &host, &target]);
+        let mut cmd = crate::cargo_policy::command("+nightly")?;
+        cmd.args(["fuzz", "run", "--target", &host, &target]);
 
         for a in extra {
             cmd.arg(a);
@@ -2933,8 +2931,7 @@ fn fuzz(target: Option<&str>, all: bool, list: bool, extra: &[String]) -> Result
 }
 
 fn ensure_cargo_fuzz_available() -> Result<()> {
-    let status = Command::new("cargo")
-        .args(["fuzz", "--help"])
+    let status = crate::cargo_policy::probe("fuzz", true)
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status();
@@ -3227,8 +3224,8 @@ fn run_pr_lite_steps(
             &["cargo", "test", "-p", "xtask", "pr_lite"],
             &[],
             || {
-                let mut cmd = Command::new("cargo");
-                cmd.args(["test", "-p", "xtask", "pr_lite"]);
+                let mut cmd = crate::cargo_policy::command("test")?;
+                cmd.args(["-p", "xtask", "pr_lite"]);
                 run(&mut cmd)
             },
         )?;
@@ -3267,8 +3264,8 @@ fn run_pr_lite_steps(
             &["cargo", "check", "-p", "uselesskey-bdd"],
             &[],
             || {
-                let mut cmd = Command::new("cargo");
-                cmd.args(["check", "-p", "uselesskey-bdd"]);
+                let mut cmd = crate::cargo_policy::command("check")?;
+                cmd.args(["-p", "uselesskey-bdd"]);
                 run(&mut cmd)
             },
         )?;
@@ -3290,8 +3287,8 @@ fn run_pr_lite_steps(
                 &["cargo", "fuzz", "build"],
                 &[],
                 || {
-                    let mut cmd = Command::new("cargo");
-                    cmd.args(["fuzz", "build"]);
+                    let mut cmd = crate::cargo_policy::command("fuzz")?;
+                    cmd.args(["build"]);
                     run(&mut cmd)
                 },
             )?;
@@ -3325,8 +3322,7 @@ fn pr_lite_examples_touched(changed_paths: &[String]) -> bool {
 }
 
 fn cargo_fuzz_available() -> bool {
-    Command::new("cargo")
-        .args(["fuzz", "--help"])
+    crate::cargo_policy::probe("fuzz", true)
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status()
@@ -4101,8 +4097,7 @@ fn run_release_evidence_step(step: &ReleaseEvidenceStep) -> Result<()> {
     let Some((program, args)) = step.command.split_first() else {
         bail!("release evidence step {} has no command", step.name);
     };
-    let mut cmd = Command::new(program);
-    cmd.args(args);
+    let mut cmd = crate::cargo_policy::from_argv(program, args)?;
     run(&mut cmd)
 }
 
@@ -4376,8 +4371,7 @@ fn scanner_safe_reference_check() -> Result<()> {
     }
 
     // 1) Regenerate the bundle.
-    run(Command::new("cargo").args([
-        "run",
+    run(crate::cargo_policy::command("run")?.args([
         "-p",
         "uselesskey-cli",
         "--",
@@ -4389,8 +4383,7 @@ fn scanner_safe_reference_check() -> Result<()> {
     ]))?;
 
     // 2) Verify the bundle.
-    run(Command::new("cargo").args([
-        "run",
+    run(crate::cargo_policy::command("run")?.args([
         "-p",
         "uselesskey-cli",
         "--",
@@ -4400,8 +4393,7 @@ fn scanner_safe_reference_check() -> Result<()> {
     ]))?;
 
     // 3) Inspect the bundle.
-    run(Command::new("cargo").args([
-        "run",
+    run(crate::cargo_policy::command("run")?.args([
         "-p",
         "uselesskey-cli",
         "--",
@@ -4413,8 +4405,7 @@ fn scanner_safe_reference_check() -> Result<()> {
     ]))?;
 
     // 4) Export Kubernetes secret (encoded payload — kept under target/).
-    run(Command::new("cargo").args([
-        "run",
+    run(crate::cargo_policy::command("run")?.args([
         "-p",
         "uselesskey-cli",
         "--",
@@ -4431,8 +4422,7 @@ fn scanner_safe_reference_check() -> Result<()> {
     ]))?;
 
     // 5) Export Vault KV v2 JSON (encoded payload — kept under target/).
-    run(Command::new("cargo").args([
-        "run",
+    run(crate::cargo_policy::command("run")?.args([
         "-p",
         "uselesskey-cli",
         "--",
@@ -4454,8 +4444,8 @@ fn scanner_safe_reference_check() -> Result<()> {
     }
 
     // 7) Re-run no-blob and check-file-policy gates.
-    run(Command::new("cargo").args(["xtask", "no-blob"]))?;
-    run(Command::new("cargo").args(["xtask", "check-file-policy"]))?;
+    run(crate::cargo_policy::command("xtask")?.args(["no-blob"]))?;
+    run(crate::cargo_policy::command("xtask")?.args(["check-file-policy"]))?;
 
     println!("scanner-safe-reference: ok ({matched} files matched)");
     Ok(())
@@ -4707,8 +4697,8 @@ path = "src/main.rs"
     // (c) Add `uselesskey` with the feature set we want to smoke-test.
     let mode_label = if let Some(ref v) = version {
         let spec = format!("uselesskey@{v}");
-        run(Command::new("cargo")
-            .args(["add", &spec, "--features", "rsa,jwk,token"])
+        run(crate::cargo_policy::command("add")?
+            .args([&spec, "--features", "rsa,jwk,token"])
             .current_dir(&project_dir))?;
         format!("version={v}")
     } else {
@@ -4731,9 +4721,8 @@ path = "src/main.rs"
         } else {
             abs_path.clone()
         };
-        run(Command::new("cargo")
+        run(crate::cargo_policy::command("add")?
             .args([
-                "add",
                 "uselesskey",
                 "--path",
                 &facade_dir.display().to_string(),
@@ -4772,14 +4761,10 @@ fn main() {
     .with_context(|| format!("failed to write {}", main_src.display()))?;
 
     // (e) `cargo check` (debug profile).
-    run(Command::new("cargo")
-        .args(["check"])
-        .current_dir(&project_dir))?;
+    run(crate::cargo_policy::command("check")?.current_dir(&project_dir))?;
 
     // (f) `cargo build` to materialize the binary.
-    run(Command::new("cargo")
-        .args(["build"])
-        .current_dir(&project_dir))?;
+    run(crate::cargo_policy::command("build")?.current_dir(&project_dir))?;
 
     // (g) Run the built binary and capture stdout/stderr for diagnostic value.
     let bin_name = if cfg!(windows) {
@@ -4810,8 +4795,7 @@ fn main() {
         let cli_bundle = smoke_root.join("cli-bundle");
         let inspect_txt = smoke_root.join("inspect.txt");
 
-        let mut install = Command::new("cargo");
-        install.arg("install");
+        let mut install = crate::cargo_policy::command("install")?;
         if let Some(ref v) = version {
             install.args(["uselesskey-cli", "--version", v]);
         } else {
@@ -5358,13 +5342,8 @@ fn run_pr_plan(
 
     if plan.run_root_tests {
         runner.step("root-tests", None, || {
-            let mut cmd = Command::new("cargo");
-            cmd.args([
-                "test",
-                "-p",
-                "uselesskey-integration-tests",
-                "--all-features",
-            ]);
+            let mut cmd = crate::cargo_policy::command("test")?;
+            cmd.args(["-p", "uselesskey-integration-tests", "--all-features"]);
             run(&mut cmd)
         })?;
     } else {
@@ -5373,8 +5352,8 @@ fn run_pr_plan(
 
     if plan.run_xtask_tests {
         runner.step("xtask-tests", None, || {
-            let mut cmd = Command::new("cargo");
-            cmd.args(["test", "-p", "xtask"]);
+            let mut cmd = crate::cargo_policy::command("test")?;
+            cmd.args(["-p", "xtask"]);
             run(&mut cmd)
         })?;
     } else {
@@ -6698,8 +6677,8 @@ fn run_impacted_tests(
     for name in targets {
         let step_name = format!("test:{name}");
         runner.step(&step_name, None, || {
-            let mut cmd = Command::new("cargo");
-            cmd.args(["test", "-p", &name, "--all-features"]);
+            let mut cmd = crate::cargo_policy::command("test")?;
+            cmd.args(["-p", &name, "--all-features"]);
             run(&mut cmd)
         })?;
     }
@@ -6711,8 +6690,8 @@ fn run_feature_matrix(runner: &mut receipt::Runner) -> Result<()> {
         let label = feature_set.name;
         let step_name = format!("feature-matrix:{}", label);
         let result = runner.step(&step_name, None, || {
-            let mut cmd = Command::new("cargo");
-            cmd.args(["check", "-p", "uselesskey"]);
+            let mut cmd = crate::cargo_policy::command("check")?;
+            cmd.args(["-p", "uselesskey"]);
             for arg in feature_set.cargo_args {
                 cmd.arg(arg);
             }
@@ -6748,17 +6727,16 @@ fn fuzz_pr() -> Result<()> {
 
     // Compile every target to catch drift in newly added harnesses, but only run
     // bounded smoke fuzzing for targets that avoid expensive key-generation loops.
-    let mut build = Command::new("cargo");
-    build.args(["+nightly", "fuzz", "build", "--target", &host]);
+    let mut build = crate::cargo_policy::command("+nightly")?;
+    build.args(["fuzz", "build", "--target", &host]);
     run(&mut build)?;
 
     for target in targets
         .into_iter()
         .filter(|target| is_pr_fuzz_target(target))
     {
-        let mut cmd = Command::new("cargo");
+        let mut cmd = crate::cargo_policy::command("+nightly")?;
         cmd.args([
-            "+nightly",
             "fuzz",
             "run",
             "--target",
@@ -7352,29 +7330,28 @@ fn workspace_root_path() -> PathBuf {
 }
 
 fn nextest() -> Result<()> {
-    let status = Command::new("cargo")
-        .args(["nextest", "--version"])
+    let status = crate::cargo_policy::probe("nextest", false)
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status();
 
     match status {
         Ok(s) if s.success() => {
-            run(Command::new("cargo").args(["nextest", "run", "--workspace", "--all-features"]))
+            run(crate::cargo_policy::command("nextest-run")?
+                .args(["--workspace", "--all-features"]))
         }
         _ => bail!("cargo-nextest is not installed. Install with: cargo install cargo-nextest"),
     }
 }
 
 fn deny() -> Result<()> {
-    let status = Command::new("cargo")
-        .args(["deny", "--version"])
+    let status = crate::cargo_policy::probe("deny", false)
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status();
 
     match status {
-        Ok(s) if s.success() => run(Command::new("cargo").args(["deny", "check"])),
+        Ok(s) if s.success() => run(crate::cargo_policy::command("deny")?.args(["check"])),
         _ => bail!("cargo-deny is not installed. Install with: cargo install cargo-deny"),
     }
 }
@@ -7387,8 +7364,8 @@ fn deny() -> Result<()> {
 ///
 /// Any other `rand_core` line on normal edges is a topology regression.
 fn dep_guard() -> Result<()> {
-    let output = Command::new("cargo")
-        .args(["tree", "--depth", "0", "--duplicates", "--edges", "normal"])
+    let output = crate::cargo_policy::command("tree")?
+        .args(["--depth", "0", "--duplicates", "--edges", "normal"])
         .output()
         .context("failed to run `cargo tree --duplicates`")?;
 
@@ -7457,9 +7434,8 @@ fn lint_fix(check: bool, no_clippy: bool) -> Result<()> {
 
     if !no_clippy {
         // Best-effort clippy auto-fix, then strict verify.
-        let fix_status = Command::new("cargo")
+        let fix_status = crate::cargo_policy::command("clippy")?
             .args([
-                "clippy",
                 "--workspace",
                 "--all-targets",
                 "--all-features",
@@ -7501,12 +7477,15 @@ fn run_gate(runner: &mut receipt::Runner) -> Result<()> {
         public_surface::public_surface_cmd(PUBLISH_CRATES)
     })?;
     runner.step("check", None, || {
-        run(Command::new("cargo").args(["check", "--workspace", "--all-targets", "--all-features"]))
+        run(crate::cargo_policy::command("check")?.args([
+            "--workspace",
+            "--all-targets",
+            "--all-features",
+        ]))
     })?;
     runner.step("clippy", None, clippy)?;
     runner.step("test-compile", None, || {
-        run(Command::new("cargo").args([
-            "test",
+        run(crate::cargo_policy::command("test")?.args([
             "--workspace",
             "--all-features",
             "--exclude",

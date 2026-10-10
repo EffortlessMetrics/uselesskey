@@ -1,7 +1,6 @@
 use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
-use std::process::Command;
 use std::time::Instant;
 
 use anyhow::{Context, Result, bail};
@@ -171,8 +170,8 @@ pub fn economics_cmd() -> Result<()> {
 }
 
 fn dependency_count(package: &str) -> Result<usize> {
-    let output = Command::new("cargo")
-        .args(["tree", "-p", package, "--prefix", "none"])
+    let output = crate::cargo_policy::command("tree")?
+        .args(["-p", package, "--prefix", "none"])
         .output()
         .with_context(|| format!("failed to run cargo tree for {package}"))?;
     if !output.status.success() {
@@ -196,8 +195,7 @@ fn parse_package_names(tree: &str) -> BTreeSet<String> {
 fn run_cargo(args: &[&str]) -> Result<CommandRun> {
     let command = format!("cargo {}", args.join(" "));
     let start = Instant::now();
-    let output = Command::new("cargo")
-        .args(args)
+    let output = crate::cargo_policy::from_argv("cargo", args)?
         .output()
         .with_context(|| format!("failed to run `{command}`"))?;
     let duration_ms = start.elapsed().as_millis() as u64;

@@ -30,11 +30,13 @@ class IntegrationProofTests(unittest.TestCase):
         self.root = Path(self.temporary.name) / "source"
         self.root.mkdir()
         (self.root / "scripts").mkdir()
+        (self.root / "xtask/src").mkdir(parents=True)
         self.script = self.root / "scripts" / SCRIPT.name
         shutil.copyfile(SCRIPT, self.script)
         for name, content in {
             "Cargo.toml": "[workspace]\n",
             "Cargo.lock": "# test lock identity\nversion = 4\n",
+            "xtask/src/cargo_policy.rs": "// fixture policy identity\n",
             "rust-toolchain.toml": '[toolchain]\nchannel = "1.95"\n',
             "tracked.txt": "original\n",
             ".gitignore": "/target/\n",
@@ -75,7 +77,7 @@ class IntegrationProofTests(unittest.TestCase):
                 argv, 1 if self.tool_failure else 0,
                 stdout=f"{argv[0]} 1.95.0 fixture\nhost: fixture-target\n", stderr="",
             )
-        if argv[:2] == ("cargo", "xtask"):
+        if argv[:len(PROOF.LOCKED_XTASK)] == PROOF.LOCKED_XTASK:
             self.calls.append(argv)
             code = self.on_command(argv) if self.on_command else 0
             return subprocess.CompletedProcess(argv, code)
@@ -109,6 +111,45 @@ class IntegrationProofTests(unittest.TestCase):
         self.assertEqual(receipt["inputs"]["Cargo.lock"]["sha256"], PROOF.sha256_file(self.root / "Cargo.lock"))
         self.assertEqual(receipt["toolchain"]["rustc"]["command"], ["rustc", "-vV"])
         self.assertEqual(receipt["subject"]["kind"], "manual")
+
+    def test_every_cargo_invocation_locks_both_xtask_build_and_nested_commands(self) -> None:
+        self.assertEqual(self.execute(), 0)
+        self.assertEqual(len(self.calls), 15)
+        for argv in self.calls:
+            self.assertEqual(argv[:7], ("cargo", "run", "--locked", "-p", "xtask", "--", "--locked"))
+        receipt = self.receipt()
+        self.assertEqual(receipt["policy"]["dependency_resolution"]["mode"], "locked")
+        self.assertEqual(
+            receipt["inputs"]["xtask/src/cargo_policy.rs"]["sha256"],
+            PROOF.sha256_file(self.root / "xtask/src/cargo_policy.rs"),
+        )
+
+    def test_old_unlocked_receipt_cannot_receive_locked_policy_credit(self) -> None:
+        self.assertEqual(self.execute(), 0)
+        old = copy.deepcopy(self.receipt())
+        old["schema_version"] = 2
+        with self.assertRaisesRegex(PROOF.ProofError, "unsupported receipt schema"):
+            self.verify(old)
+        old["schema_version"] = PROOF.SCHEMA_VERSION
+        old["commands"][0]["command"] = ["cargo", "xtask", "fmt"]
+        with self.assertRaisesRegex(PROOF.ProofError, "changed command"):
+            self.verify(old)
+
+    def test_command_policy_rejects_removing_either_lock_boundary(self) -> None:
+        for argv in (
+            ("cargo", "xtask", "--locked", "fmt"),
+            ("cargo", "run", "--locked", "-p", "xtask", "--", "fmt"),
+        ):
+            with self.subTest(argv=argv), patch.object(PROOF, "COMMANDS", (("fmt", argv),)):
+                with self.assertRaisesRegex(PROOF.ProofError, "outer or nested locking"):
+                    PROOF.validate_command_contract()
+
+    def test_missing_nested_policy_input_stops_before_product_commands(self) -> None:
+        self.git("rm", "-q", "xtask/src/cargo_policy.rs")
+        self.git("commit", "-qm", "remove policy")
+        self.head = self.git("rev-parse", "HEAD")
+        self.assertEqual(self.execute(), 2)
+        self.assertEqual(self.calls, [])
 
     def test_wrong_subject_is_rejected_before_any_product_command(self) -> None:
         self.assertEqual(self.execute(expected_sha="f" * 40), 2)
@@ -155,7 +196,7 @@ class IntegrationProofTests(unittest.TestCase):
 
     def test_last_product_command_cannot_leave_a_changed_lockfile(self) -> None:
         def modify_last(argv):
-            if argv[2] == "spec-check":
+            if argv[len(PROOF.LOCKED_XTASK)] == "spec-check":
                 (self.root / "Cargo.lock").write_text("# changed\nversion = 4\n", encoding="utf-8")
             return 0
         self.on_command = modify_last
@@ -170,7 +211,7 @@ class IntegrationProofTests(unittest.TestCase):
         self.verify(self.receipt())
 
     def test_nonzero_command_stops_proof_and_cannot_verify(self) -> None:
-        self.on_command = lambda argv: 7 if argv[2] == "clippy" else 0
+        self.on_command = lambda argv: 7 if argv[len(PROOF.LOCKED_XTASK)] == "clippy" else 0
         self.assertEqual(self.execute(), 7)
         receipt = self.receipt()
         self.assertEqual(len(receipt["commands"]), 2)

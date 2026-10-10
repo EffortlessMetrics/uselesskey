@@ -1,7 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 use anyhow::{Context, Result, bail};
 use serde::Deserialize;
@@ -77,9 +76,9 @@ fn load_docs_metadata(root: &Path) -> Result<DocsMetadata> {
 }
 
 fn cargo_metadata(root: &Path) -> Result<CargoMetadata> {
-    let output = Command::new("cargo")
+    let output = crate::cargo_policy::command("metadata")?
         .current_dir(root)
-        .args(["metadata", "--format-version", "1", "--no-deps"])
+        .args(["--format-version", "1", "--no-deps"])
         .output()
         .context("failed to run `cargo metadata` for public-surface guard")?;
 

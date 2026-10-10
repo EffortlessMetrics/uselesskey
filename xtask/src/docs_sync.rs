@@ -2,7 +2,6 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write;
 use std::fs;
 use std::path::Path;
-use std::process::Command;
 
 use anyhow::{Context, Result, bail};
 use serde::Deserialize;
@@ -455,10 +454,9 @@ fn replace_block(input: &str, marker: &str, replacement: &str) -> Result<String>
 }
 
 fn compile_example(root: &Path, example: &ExampleEntry) -> Result<()> {
-    let mut cmd = Command::new("cargo");
+    let mut cmd = crate::cargo_policy::command("build")?;
     cmd.current_dir(root);
     cmd.args([
-        "build",
         "-p",
         "uselesskey",
         "--example",
@@ -472,10 +470,9 @@ fn compile_example(root: &Path, example: &ExampleEntry) -> Result<()> {
 }
 
 fn run_example(root: &Path, example: &ExampleEntry) -> Result<()> {
-    let mut cmd = Command::new("cargo");
+    let mut cmd = crate::cargo_policy::command("run")?;
     cmd.current_dir(root);
     cmd.args([
-        "run",
         "-p",
         "uselesskey",
         "--example",
@@ -729,9 +726,9 @@ fn validate_support_matrix(root: &Path, metadata: &DocsMetadata) -> Result<()> {
 }
 
 fn facade_feature_set(root: &Path) -> Result<BTreeSet<String>> {
-    let output = Command::new("cargo")
+    let output = crate::cargo_policy::command("metadata")?
         .current_dir(root)
-        .args(["metadata", "--format-version", "1", "--no-deps"])
+        .args(["--format-version", "1", "--no-deps"])
         .output()
         .context("failed to run `cargo metadata` for feature validation")?;
 
@@ -796,9 +793,9 @@ fn validate_allowed_value(
 }
 
 fn workspace_package_names(root: &Path) -> Result<Vec<String>> {
-    let output = Command::new("cargo")
+    let output = crate::cargo_policy::command("metadata")?
         .current_dir(root)
-        .args(["metadata", "--format-version", "1", "--no-deps"])
+        .args(["--format-version", "1", "--no-deps"])
         .output()
         .context("failed to run `cargo metadata` for workspace package list")?;
 

@@ -2,8 +2,11 @@
 
 Preparation status: the packet below is a schema-only declaration. It does not
 fetch source proof, establish live review acceptance, or prove this composed head.
-Use [promotion evidence preparation](../../docs/ci/promotion-evidence.md) and the
-separate #683/#685 admission/qualification owners before enabling automatic Ready.
+Use [promotion evidence preparation](../../docs/ci/promotion-evidence.md) and
+[signed acceptance](../../docs/ci/signed-promotion-acceptance.md), with the
+separate [swarm #683](https://github.com/EffortlessMetrics/uselesskey-swarm/issues/683)
+and [#685](https://github.com/EffortlessMetrics/uselesskey-swarm/issues/685)
+admission/qualification owners before enabling automatic Ready.
 
 This pull request integrates reviewed development work from `uselesskey-swarm` into canonical source.
 

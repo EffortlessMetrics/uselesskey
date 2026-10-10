@@ -63,10 +63,10 @@ def envelope(head, base, tree, paths=None, focused=False):
 
 
 def integration_receipt():
-    """Unsigned synthetic bytes exercise the real v2 consumer, not execution."""
+    """Unsigned synthetic bytes exercise the current consumer, not execution."""
     at = "1970-01-01T00:00:01+00:00"
     source = {"sha": HEAD, "tree": TREE, "tracked_clean": True}
-    return {"schema_version": 2, "invocation_id": "99999999-9999-4999-8999-999999999999",
+    return {"schema_version": INTEGRATION.SCHEMA_VERSION, "invocation_id": "99999999-9999-4999-8999-999999999999",
         "complete": True, "conclusion": "success",
         "subject": {"kind": "manual", "expected_sha": HEAD, "expected_base": BASE},
         "source": {"before": source, "after": source.copy(), "base_is_ancestor": True},

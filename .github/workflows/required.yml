@@ -23,7 +23,7 @@ env:
 
 jobs:
   required:
-    name: Uselesskey Required
+    name: ${{ github.event_name == 'workflow_dispatch' && 'Uselesskey Manual Qualification' || 'Uselesskey Required' }}
     runs-on: ubuntu-latest
     timeout-minutes: 240
 
@@ -59,24 +59,49 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/check-promotion-packet.py --self-test
+          python3 -B scripts/tests/test_promotion_evidence.py
+          python3 -B scripts/tests/test_signed_promotion.py
+          python3 -B scripts/test_run_integration_proof.py
           python3 scripts/run-integration-proof.py --self-test
           python3 scripts/run-integration-proof.py --list
 
-      - name: Validate exact-head promotion packet
+      - name: Verify signed acceptance and current promotion evidence
+        id: admission-proof
         if: ${{ github.event_name == 'pull_request' }}
         env:
           HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
-          PROMOTION_BODY: ${{ github.event.pull_request.body }}
           PROMOTION_HEAD: ${{ github.event.pull_request.head.sha }}
+          PROMOTION_BASE: ${{ github.event.pull_request.base.sha }}
+          PROMOTION_NUMBER: ${{ github.event.pull_request.number }}
+          ADMISSION_ALLOWED_SIGNERS: ${{ vars.USELESSKEY_ADMISSION_ALLOWED_SIGNERS }}
+          ADMISSION_SIGNERS_SHA256: ${{ vars.USELESSKEY_ADMISSION_SIGNERS_SHA256 }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           if [[ "$HEAD_REPOSITORY" != "$GITHUB_REPOSITORY" ]]; then
             echo "::error::promotion admission is limited to same-repository branches" >&2
             exit 1
           fi
-          python3 .admission-control/scripts/check-promotion-packet.py \
-            --body-env PROMOTION_BODY \
-            --expected-head "$PROMOTION_HEAD"
+          invocation_id="$(python3 -c 'import uuid; print(uuid.uuid4())')"
+          signers_file="$RUNNER_TEMP/uselesskey-signers-$invocation_id"
+          admission_report="$RUNNER_TEMP/uselesskey-admission-$invocation_id.json"
+          printf '%s' "$ADMISSION_ALLOWED_SIGNERS" > "$signers_file"
+          printf 'receipt_path=%s\n' "$admission_report" >> "$GITHUB_OUTPUT"
+          python3 -B .admission-control/scripts/verify-signed-promotion.py \
+            --repository "$GITHUB_REPOSITORY" --pr "$PROMOTION_NUMBER" \
+            --expected-head "$PROMOTION_HEAD" --expected-base "$PROMOTION_BASE" \
+            --from-acceptance-ref --allowed-signers "$signers_file" \
+            --expected-signers-sha256 "$ADMISSION_SIGNERS_SHA256" \
+            --output "$admission_report"
+
+      - name: Upload current admission observation
+        if: ${{ always() && steps.admission-proof.outputs.receipt_path != '' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: uselesskey-admission-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.admission-proof.outputs.receipt_path }}
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Install NASM
         if: ${{ github.event_name == 'merge_group' || (github.event_name == 'workflow_dispatch' && inputs.integration) }}

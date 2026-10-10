@@ -64,12 +64,26 @@ The runner preserves this exact sixteen-command portfolio: `fmt`, `clippy`,
 are `cargo xtask` commands. Every command must finish successfully. A partial
 ledger cannot become integration success.
 
+The runner builds xtask with `cargo run --locked -p xtask -- --locked` and
+enforces locked resolution at the actual nested Cargo boundary. Receipt schema
+3 and policy `uselesskey-bounded-integration-locked-v2` reject older unlocked
+receipts. Cargo-deny and nextest receive the flag at their own supported argument
+boundary. Dependency mutation, install fallback, unqualified external plugins,
+and package/publish commands are refused in this proof mode.
+
+Packaging needs a separate accepted dependency graph: native Cargo 1.95 testing
+showed that `cargo package --locked --offline --no-verify` can succeed without an
+input lockfile. A flag or workspace metadata preflight is therefore insufficient
+package proof. #684/#667 retain that qualification; standalone packaging remains
+available and its historical unpublished-sibling skip earns no locked-proof
+credit.
+
 | Obligation | Intended disposition |
 | --- | --- |
 | Change-specific regressions and affected consumers | Development H and composed H before admission; add missing consumer/build/example/package checks when the change requires them. |
 | Bounded integration | One complete portfolio on actual G; no full `cargo xtask ci` substitution. |
 | Mutation | Retired under accepted swarm ADR 0005 and PRs #618/#619; #667 owns canonical backflow. Earlier cron removal retaining manual tooling is intermediate only. |
-| Fuzzing | Explicit, scoped work when justified; remaining ordinary-PR selection is owned by #682. |
+| Fuzzing | Explicit bounded focused proof for fuzz-owned changes; ordinary PR execution no longer starts fuzz automatically. #682 owns the selector and receipt contract. |
 | Coverage and performance | Deliberate measurement with source/environment identity; no automatic Draft/PR/main/unchanged-source loop. |
 | External advisories | Record source, capture date and freshness requirement; unchanged code does not imply unchanged external vulnerability data. |
 | Package and release promises | Affected package/consumer proof before merge; complete release-candidate proof before publishing. Actual publishing remains canonical and separate. |
@@ -110,7 +124,7 @@ python3 "$TRUSTED_PROOF_RUNNER" --verify-receipt \
 Use shell error checking and accept both successful commands; no printed path
 alone is proof. A repeated invocation directory is refused. The receipt begins
 incomplete and records source head/tree/clean checks, control source/digest,
-Cargo.lock/toolchain-input digests, actual tool versions, ordered command outcomes,
+Cargo.lock/toolchain-input/Cargo-policy digests, actual tool versions, ordered command outcomes,
 and explicit failure/interruption state. Its environment `run_context` is recorded
 metadata, not authenticated GitHub provenance. Untracked files and external
 dependencies are outside a hermetic-build claim.
@@ -121,6 +135,12 @@ Missing artifacts fail. Manual shadow runs omit a base unless separately supplie
 through the CLI; they qualify their declared subject only and cannot silently
 serve as composed-H/B proof. Native run/attempt/artifact identity and required
 check credit remain #685 acceptance work.
+
+Manual dispatch reports `Uselesskey Manual Qualification`, never the future
+required context. Its self-test path cannot satisfy `Uselesskey Required` by
+name. Independently protected production controls and native check attachment
+still need qualification; a distinct manual name does not protect a
+candidate-editable workflow.
 
 ## Cutover transaction
 
@@ -164,7 +184,11 @@ implies permission to bypass a protection or supplies a missing check.
    Qualify the updater exception or replacement separately.
 8. Complete #682–#684 prerequisites and protect the control producer. Keep real
    promotions Draft until current source and composed-H proof, plan acceptance,
-   and review disposition are complete. The schema-only PR-body checker is insufficient.
+   and review disposition are complete. Configure the independently pinned public
+   signers and retained acceptance ref, then qualify the
+   [signed admission consumer](signed-promotion-acceptance.md) against live state.
+   The schema-only PR-body checker is insufficient; a signature does not replace
+   native proof custody or protected check production.
 9. Qualify actual Ready production, actor/token behavior and check attachment to
    P/H. Prove new commits, retargeting, body changes and substantive review activity
    invalidate acceptance before queue entry. A manual dispatch is not the native

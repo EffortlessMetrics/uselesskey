@@ -1,7 +1,6 @@
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 use anyhow::{Context, Result, bail};
 use serde::{Deserialize, Serialize};
@@ -165,8 +164,8 @@ fn run_handler(root: &Path, handler: &str) -> Result<HandlerReceipt> {
         bail!("handler `{handler}` has no command");
     };
 
-    let mut command = Command::new(program);
-    command.args(args).current_dir(root);
+    let mut command = crate::cargo_policy::from_argv(program, args)?;
+    command.current_dir(root);
     let status = command
         .status()
         .with_context(|| format!("run handler `{handler}`"))?;

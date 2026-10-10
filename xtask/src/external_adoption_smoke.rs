@@ -232,8 +232,8 @@ fn prepare_cli(
             let target_dir = work_dir.join("cargo-target/local-cli");
             fs::create_dir_all(&target_dir)
                 .with_context(|| format!("failed to create {}", target_dir.display()))?;
-            let mut cmd = Command::new("cargo");
-            cmd.args(["build", "--quiet", "--bin", "uselesskey", "--manifest-path"])
+            let mut cmd = crate::cargo_policy::command("build")?;
+            cmd.args(["--quiet", "--bin", "uselesskey", "--manifest-path"])
                 .arg(cli_dir.join("Cargo.toml"))
                 .env("CARGO_TARGET_DIR", &target_dir);
             run_command_step(
@@ -252,8 +252,8 @@ fn prepare_cli(
         }
         CliSource::Version(version) => {
             let cli_root = work_dir.join("cli-root");
-            let mut cmd = Command::new("cargo");
-            cmd.args(["install", "uselesskey-cli", "--version", version, "--root"])
+            let mut cmd = crate::cargo_policy::command("install")?;
+            cmd.args(["uselesskey-cli", "--version", version, "--root"])
                 .arg(&cli_root)
                 .arg("--locked");
             run_command_step(
@@ -305,8 +305,8 @@ fn run_external_example(
     let project_artifact = relative_artifact_from_path(&project_dir);
     let target_artifact = relative_artifact_from_path(&project_dir.join("target"));
 
-    let mut cmd = Command::new("cargo");
-    cmd.args(["test", "--quiet"])
+    let mut cmd = crate::cargo_policy::command("test")?;
+    cmd.args(["--quiet"])
         .current_dir(&project_dir)
         .env("CARGO_TARGET_DIR", project_dir.join("target"));
     run_command_step(

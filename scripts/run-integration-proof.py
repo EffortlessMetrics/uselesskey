@@ -18,25 +18,26 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = 2
-POLICY_ID = "uselesskey-bounded-integration-v1"
+SCHEMA_VERSION = 3
+POLICY_ID = "uselesskey-bounded-integration-locked-v2"
+LOCKED_XTASK = ("cargo", "run", "--locked", "-p", "xtask", "--", "--locked")
 
 COMMANDS: tuple[tuple[str, tuple[str, ...]], ...] = (
-    ("fmt", ("cargo", "xtask", "fmt")),
-    ("clippy", ("cargo", "xtask", "clippy")),
-    ("typos", ("cargo", "xtask", "typos")),
-    ("deny", ("cargo", "xtask", "deny")),
-    ("tests", ("cargo", "xtask", "test")),
-    ("feature-matrix", ("cargo", "xtask", "feature-matrix")),
-    ("dep-guard", ("cargo", "xtask", "dep-guard")),
-    ("docs-sync", ("cargo", "xtask", "docs-sync", "--check")),
-    ("public-surface", ("cargo", "xtask", "public-surface")),
-    ("bdd", ("cargo", "xtask", "bdd")),
-    ("no-blob", ("cargo", "xtask", "no-blob")),
-    ("no-panic", ("cargo", "xtask", "check-no-panic-family")),
-    ("file-policy", ("cargo", "xtask", "check-file-policy")),
-    ("lint-policy", ("cargo", "xtask", "check-lint-policy")),
-    ("spec-check", ("cargo", "xtask", "spec-check", "--strict")),
+    ("fmt", (*LOCKED_XTASK, "fmt")),
+    ("clippy", (*LOCKED_XTASK, "clippy")),
+    ("typos", (*LOCKED_XTASK, "typos")),
+    ("deny", (*LOCKED_XTASK, "deny")),
+    ("tests", (*LOCKED_XTASK, "test")),
+    ("feature-matrix", (*LOCKED_XTASK, "feature-matrix")),
+    ("dep-guard", (*LOCKED_XTASK, "dep-guard")),
+    ("docs-sync", (*LOCKED_XTASK, "docs-sync", "--check")),
+    ("public-surface", (*LOCKED_XTASK, "public-surface")),
+    ("bdd", (*LOCKED_XTASK, "bdd")),
+    ("no-blob", (*LOCKED_XTASK, "no-blob")),
+    ("no-panic", (*LOCKED_XTASK, "check-no-panic-family")),
+    ("file-policy", (*LOCKED_XTASK, "check-file-policy")),
+    ("lint-policy", (*LOCKED_XTASK, "check-lint-policy")),
+    ("spec-check", (*LOCKED_XTASK, "spec-check", "--strict")),
     ("diff-check", ("git", "diff", "--check")),
 )
 
@@ -45,7 +46,7 @@ FORBIDDEN_TOKENS = {
     "perf", "economics", "audit-surface", "publish", "publish-check",
     "publish-preflight", "release-evidence",
 }
-INPUT_PATHS = ("Cargo.lock", "rust-toolchain.toml")
+INPUT_PATHS = ("Cargo.lock", "rust-toolchain.toml", "xtask/src/cargo_policy.rs")
 
 
 class ProofError(RuntimeError):
@@ -84,6 +85,12 @@ def sha256_file(path: Path) -> str:
 def policy() -> dict[str, Any]:
     return {
         "id": POLICY_ID,
+        "dependency_resolution": {
+            "mode": "locked",
+            "outer_build": "cargo run --locked -p xtask",
+            "nested_commands": "xtask --locked",
+            "nested_policy_source": "xtask/src/cargo_policy.rs",
+        },
         "commands": [{"name": name, "command": list(argv)} for name, argv in COMMANDS],
     }
 
@@ -99,6 +106,11 @@ def validate_command_contract() -> None:
     require(len(names) == len(set(names)), "integration command names must be unique")
     for name, argv in COMMANDS:
         require(bool(name and argv and all(argv)), f"invalid command entry: {name!r}")
+        if argv[0] == "cargo":
+            require(
+                argv[:len(LOCKED_XTASK)] == LOCKED_XTASK and len(argv) > len(LOCKED_XTASK),
+                f"Cargo proof command lacks outer or nested locking: {name!r}",
+            )
         forbidden = {item.lower() for item in argv} & FORBIDDEN_TOKENS
         require(not forbidden, f"unbounded/deep-evidence command: {name!r}")
 
@@ -359,6 +371,8 @@ def run_proof(
         "conclusion": "running", "complete": False, "commands": [],
         "claim_boundary": [
             "bounded portfolio for the expected Git subject and unchanged tracked source",
+            "outer and qualified nested Cargo resolution require the recorded existing lockfile",
+            "locked resolution is not offline execution, host isolation, or independent execution attestation",
             "input and control digests identify evidence; they are not signatures or attestations",
             "run_context records ambient environment values; it does not authenticate a GitHub run",
             "native merge-group routing, required-check credit, and artifact custody require live qualification",

@@ -462,9 +462,10 @@ mod tests {
     fn key_handle_is_copy_and_usable_in_hash_collections() {
         let original = KeyHandle(42);
         let copied = original; // Copy, not move
-        // Exercising the explicit Clone impl is the point of this test, so
-        // suppress the Copy-friendly suggestion.
-        #[allow(clippy::clone_on_copy)]
+        #[allow(
+            clippy::clone_on_copy,
+            reason = "this test exercises the Clone implementation of a Copy type"
+        )]
         let cloned = original.clone();
 
         // Copy semantics: original is still usable after the copy/clone.

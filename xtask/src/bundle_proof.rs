@@ -1,6 +1,5 @@
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 use anyhow::{Context, Result, bail};
 
@@ -626,8 +625,7 @@ fn run_bundle_proof_command(
     let Some((program, args)) = command.split_first() else {
         bail!("bundle proof command {name} has no program");
     };
-    let mut cmd = Command::new(program);
-    cmd.args(args);
+    let mut cmd = crate::cargo_policy::from_argv(program, args)?;
     run_command(&mut cmd).with_context(|| format!("bundle proof step failed: {name}"))?;
     Ok(ReleaseEvidenceCommandReceipt {
         name: name.to_string(),

@@ -36,7 +36,9 @@ CONTROL_COMMANDS = DOC_COMMANDS | {
     "no-blob", "public-surface",
 }
 
-PRODUCT_COMMANDS = {"test", "bdd", "nextest"}
+PRODUCT_COMMANDS = {"test", "bdd", "nextest", "coverage"}
+
+FOCUSED_FUZZ_LIMITS = {"-runs": 1_000_000, "-max_total_time": 300, "-timeout": 300}
 
 INFORMATIONAL_ARGS = {"-h", "--help", "-V", "--version", "--list", "--no-run"}
 
@@ -103,6 +105,8 @@ def classify_paths(paths: list[str]) -> dict[str, Any]:
             or path.startswith("docs/schemas/") and suffix == ".json"
         ):
             classes.add("control")
+        elif path.startswith("fuzz/") and suffix != ".md":
+            classes.update({"product", "fuzz"})
         elif PurePosixPath(path).name in {"Cargo.toml", "Cargo.lock"} or (
             path.startswith(("crates/", "tests/", "fuzz/", "examples/"))
             and suffix in {".rs", ".feature", ".snap"}
@@ -121,8 +125,8 @@ def validate_focused(item: Any) -> None:
     if not isinstance(item["name"], str) or not re.fullmatch(r"[a-z][a-z0-9_-]*", item["name"]):
         raise ProofError("focused command name must be a stable lowercase identifier")
     kind, command = item["kind"], item["command"]
-    if kind not in ("product", "docs", "control"):
-        raise ProofError("focused command kind must be product, docs, or control")
+    if kind not in ("product", "docs", "control", "fuzz"):
+        raise ProofError("focused command kind must be product, docs, control, or fuzz")
     if (
         not isinstance(command, list) or not command
         or any(not isinstance(arg, str) or not arg or "\0" in arg for arg in command)
@@ -130,7 +134,10 @@ def validate_focused(item: Any) -> None:
     ):
         raise ProofError("focused proof must contain executable argv, not a listing or help request")
     recognized = False
-    if command[:2] == ["cargo", "test"]:
+    if kind == "fuzz":
+        validate_focused_fuzz(command)
+        recognized = True
+    elif command[:2] == ["cargo", "test"]:
         recognized = kind in {"product", "control"}
     elif len(command) >= 3 and command[:2] == ["cargo", "xtask"]:
         allowed = PRODUCT_COMMANDS if kind == "product" else DOC_COMMANDS if kind == "docs" else CONTROL_COMMANDS
@@ -142,6 +149,26 @@ def validate_focused(item: Any) -> None:
         recognized = args[:2] == ["-m", "unittest"] and len(args) > 2
     if not recognized:
         raise ProofError(f"unrecognized {kind} proof command; no arbitrary shell command is accepted")
+
+def validate_focused_fuzz(command: list[str]) -> None:
+    if (
+        len(command) != 9 or command[:4] != ["cargo", "xtask", "fuzz", "--target"]
+        or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", command[4]) is None
+        or command[5] != "--"
+    ):
+        raise ProofError("focused fuzz proof requires one explicit target and three libFuzzer limits")
+    limits: dict[str, int] = {}
+    for argument in command[6:]:
+        match = re.fullmatch(r"(-runs|-max_total_time|-timeout)=([1-9][0-9]{0,6})", argument)
+        if match is None:
+            raise ProofError("focused fuzz proof permits only positive run, total-time, and timeout limits")
+        name, raw = match.groups()
+        value = int(raw)
+        if name in limits or value > FOCUSED_FUZZ_LIMITS[name]:
+            raise ProofError("focused fuzz limits are duplicated or exceed the bounded proof policy")
+        limits[name] = value
+    if set(limits) != set(FOCUSED_FUZZ_LIMITS) or limits["-timeout"] > limits["-max_total_time"]:
+        raise ProofError("focused fuzz proof needs every limit and timeout no greater than total time")
 
 def parse_plan(data: bytes) -> dict[str, Any]:
     try:
@@ -187,6 +214,8 @@ def validate_profile(plan: dict[str, Any], classification: dict[str, Any]) -> No
     if plan["profile"] != classification["profile"]:
         raise ProofError("proof-plan profile does not match the changed-path classification")
     focused_kinds = {item["kind"] for item in plan["focused"]}
+    if "fuzz" in classification["classes"] and "fuzz" not in focused_kinds:
+        raise ProofError("fuzz-owned changes require explicit focused fuzz proof; ordinary PR proof does not run it")
     for kind in {"docs", "control"} & set(classification["classes"]):
         # Product/control proof can cover accompanying prose, but control changes need their own proof.
         if kind == "docs" and classification["profile"] != "docs":
@@ -260,7 +289,7 @@ def validate_xtask(
             and (name.startswith("test:") or name in {"tests", "bdd", "root-tests", "xtask-tests"})
             for name in plan["required_steps"]
         )
-        if not behavioral and not any(item["kind"] == "product" for item in plan["focused"]):
+        if not behavioral and not any(item["kind"] in {"product", "fuzz"} for item in plan["focused"]):
             raise ProofError("product changes require actual declared behavioral proof")
     return receipt
 
@@ -304,8 +333,8 @@ def validate_envelope(data: bytes) -> dict[str, Any]:
         not isinstance(classification["changed_paths"], list) or not classification["changed_paths"]
         or any(not isinstance(path, str) or not path for path in classification["changed_paths"])
         or not isinstance(classification["classes"], list) or not classification["classes"]
-        or any(kind not in ("product", "docs", "control") for kind in classification["classes"])
-        or set(classification["classes"]) - {"product", "docs", "control"}
+        or any(kind not in ("product", "docs", "control", "fuzz") for kind in classification["classes"])
+        or set(classification["classes"]) - {"product", "docs", "control", "fuzz"}
         or sorted(set(classification["classes"])) != classification["classes"]
         or sorted(set(classification["changed_paths"])) != classification["changed_paths"]
     ):

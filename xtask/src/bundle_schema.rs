@@ -333,9 +333,8 @@ fn prepare_output_dir(out: &Path) -> Result<()> {
 }
 
 fn generate_bundle(profile: &str, bundle_dir: &Path) -> Result<()> {
-    let mut cmd = Command::new("cargo");
+    let mut cmd = crate::cargo_policy::command("run")?;
     cmd.args([
-        "run",
         "-p",
         "uselesskey-cli",
         "--",
@@ -349,15 +348,8 @@ fn generate_bundle(profile: &str, bundle_dir: &Path) -> Result<()> {
 }
 
 fn generate_bundle_audit(bundle_dir: &Path, audit_dir: &Path) -> Result<()> {
-    let mut cmd = Command::new("cargo");
-    cmd.args([
-        "run",
-        "-p",
-        "uselesskey-cli",
-        "--",
-        "audit-bundle",
-        "--path",
-    ]);
+    let mut cmd = crate::cargo_policy::command("run")?;
+    cmd.args(["-p", "uselesskey-cli", "--", "audit-bundle", "--path"]);
     cmd.arg(bundle_dir);
     cmd.arg("--out");
     cmd.arg(audit_dir);
@@ -373,15 +365,8 @@ fn generate_bundle_audit_failure(
     let audit_dir = audit_path
         .parent()
         .context("generated failure audit path has parent directory")?;
-    let mut cmd = Command::new("cargo");
-    cmd.args([
-        "run",
-        "-p",
-        "uselesskey-cli",
-        "--",
-        "audit-bundle",
-        "--path",
-    ]);
+    let mut cmd = crate::cargo_policy::command("run")?;
+    cmd.args(["-p", "uselesskey-cli", "--", "audit-bundle", "--path"]);
     cmd.arg(bundle_dir);
     cmd.arg("--ci");
     cmd.arg("--out");

@@ -66,6 +66,42 @@ covered_by = ["lefthook run pre-commit"]
 # === Repo automation / scripts ==============================================
 
 [[allow]]
+glob = "scripts/promotion_acceptance.py"
+kind = "signed_promotion_acceptance"
+owner = "release/ci"
+surface = "ci"
+classification = "tooling"
+reason = "OpenSSH authentication, pinned public signer bytes, bounded Git retrieval and live acceptance verification."
+covered_by = ["python3 -B scripts/tests/test_signed_promotion.py", "cargo xtask check-file-policy"]
+
+[[allow]]
+glob = "scripts/sign-promotion-acceptance.py"
+kind = "operator_acceptance_signer"
+owner = "release/ci"
+surface = "ci"
+classification = "tooling"
+reason = "Local explicit-key signing of reviewed operator acceptance; no GitHub writes or proof execution."
+covered_by = ["python3 -B scripts/tests/test_signed_promotion.py", "cargo xtask check-file-policy"]
+
+[[allow]]
+glob = "scripts/verify-signed-promotion.py"
+kind = "signed_admission_verifier"
+owner = "release/ci"
+surface = "ci"
+classification = "tooling"
+reason = "Require independently pinned signer authentication and complete current promotion evidence in the dormant admission consumer."
+covered_by = ["python3 -B scripts/tests/test_signed_promotion.py", "cargo xtask check-file-policy"]
+
+[[allow]]
+glob = "scripts/tests/test_signed_promotion.py"
+kind = "signed_admission_regression"
+owner = "release/ci"
+surface = "ci"
+classification = "test"
+reason = "Real temporary OpenSSH keys and synthetic API state falsify forged, stale and incomplete acceptance."
+covered_by = ["python3 -B scripts/tests/test_signed_promotion.py", "cargo xtask check-file-policy"]
+
+[[allow]]
 glob = "scripts/verify-promotion-evidence.py"
 kind = "promotion_evidence_verifier"
 owner = "release/ci"

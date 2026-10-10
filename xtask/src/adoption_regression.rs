@@ -127,8 +127,8 @@ fn run_steps(
         ],
         &[],
         || {
-            let mut cmd = Command::new("cargo");
-            cmd.args(["test", "-p", "uselesskey-webhook", "--all-features"])
+            let mut cmd = crate::cargo_policy::command("test")?;
+            cmd.args(["-p", "uselesskey-webhook", "--all-features"])
                 .current_dir(root)
                 .stdin(Stdio::null());
             run_command(&mut cmd, quiet_stdout)
@@ -202,8 +202,8 @@ fn receipt_artifacts(include_external: bool) -> Vec<String> {
 
 fn user_path_smoke_step(root: &Path, quiet_stdout: bool) -> Result<()> {
     if quiet_stdout {
-        let mut cmd = Command::new("cargo");
-        cmd.args(["xtask", "user-path-smoke"])
+        let mut cmd = crate::cargo_policy::command("xtask")?;
+        cmd.args(["user-path-smoke"])
             .current_dir(root)
             .stdin(Stdio::null());
         run_command(&mut cmd, true)
@@ -215,8 +215,8 @@ fn user_path_smoke_step(root: &Path, quiet_stdout: bool) -> Result<()> {
 fn bundle_proof_step(root: &Path, profile: &str, quiet_stdout: bool) -> Result<()> {
     let out = root.join(BUNDLE_PROOF_DIR).join(profile);
     if quiet_stdout {
-        let mut cmd = Command::new("cargo");
-        cmd.args(["xtask", "bundle-proof", "--profile", profile, "--out"])
+        let mut cmd = crate::cargo_policy::command("xtask")?;
+        cmd.args(["bundle-proof", "--profile", profile, "--out"])
             .arg(&out)
             .current_dir(root)
             .stdin(Stdio::null());
@@ -228,10 +228,8 @@ fn bundle_proof_step(root: &Path, profile: &str, quiet_stdout: bool) -> Result<(
 
 fn no_blob_step(root: &Path, quiet_stdout: bool) -> Result<()> {
     if quiet_stdout {
-        let mut cmd = Command::new("cargo");
-        cmd.args(["xtask", "no-blob"])
-            .current_dir(root)
-            .stdin(Stdio::null());
+        let mut cmd = crate::cargo_policy::command("xtask")?;
+        cmd.args(["no-blob"]).current_dir(root).stdin(Stdio::null());
         run_command(&mut cmd, true)
     } else {
         no_blob_gate()
@@ -240,17 +238,10 @@ fn no_blob_step(root: &Path, quiet_stdout: bool) -> Result<()> {
 
 fn external_adoption_smoke_step(root: &Path, quiet_stdout: bool) -> Result<()> {
     if quiet_stdout {
-        let mut cmd = Command::new("cargo");
-        cmd.args([
-            "xtask",
-            "external-adoption-smoke",
-            "--path",
-            ".",
-            "--format",
-            "json",
-        ])
-        .current_dir(root)
-        .stdin(Stdio::null());
+        let mut cmd = crate::cargo_policy::command("xtask")?;
+        cmd.args(["external-adoption-smoke", "--path", ".", "--format", "json"])
+            .current_dir(root)
+            .stdin(Stdio::null());
         run_command(&mut cmd, true)
     } else {
         external_adoption_smoke::run(
@@ -277,9 +268,8 @@ fn runtime_scanner_safe_matrix(root: &Path, quiet_stdout: bool) -> Result<()> {
 
     for format in ["jwk", "jwks"] {
         let bundle_dir = out_root.join(format);
-        let mut cmd = Command::new("cargo");
+        let mut cmd = crate::cargo_policy::command("run")?;
         cmd.args([
-            "run",
             "--quiet",
             "-p",
             "uselesskey-cli",
