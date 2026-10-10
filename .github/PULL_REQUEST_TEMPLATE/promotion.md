@@ -1,5 +1,10 @@
 ## Promotion
 
+Preparation status: the packet below is a schema-only declaration. It does not
+fetch source proof, establish live review acceptance, or prove this composed head.
+Use [promotion evidence preparation](../../docs/ci/promotion-evidence.md) and the
+separate #683/#685 admission/qualification owners before enabling automatic Ready.
+
 This pull request integrates reviewed development work from `uselesskey-swarm` into canonical source.
 
 Keep it **Draft** until the final canonical head, every development proof, the review disposition, and blocker state are exact. Any commit after Ready invalidates the recorded `promotion_head`; return the pull request to Draft, refresh the packet, and earn admission again.

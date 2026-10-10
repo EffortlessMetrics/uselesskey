@@ -1,5 +1,11 @@
 # Test Evidence Lanes
 
+Migration status: this file describes the legacy lane catalog. The prepared
+[reduced lifecycle](lifecycle-cutover.md) supersedes its proposed operating policy;
+swarm ADR 0005 retires mutation tooling and schedules. #667 owns canonical source,
+policy and documentation backflow. Existing commands here are not evidence that
+retired lanes should be reactivated, or that the new lifecycle is already live.
+
 `uselesskey` is a fixture platform for secret-shaped test systems. CI evidence
 should be organized around that promise: deterministic fixtures, scanner-safe
 bundle defaults, realistic negative cases, and adapter contracts should be

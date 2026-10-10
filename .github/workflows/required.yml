@@ -112,24 +112,44 @@ jobs:
           nasm -v
 
       - name: Run bounded integration proof
+        id: integration-proof
         if: ${{ github.event_name == 'merge_group' || (github.event_name == 'workflow_dispatch' && inputs.integration) }}
+        env:
+          INTEGRATION_BASE_SHA: ${{ github.event.merge_group.base_sha }}
         run: |
           set -euo pipefail
-          if [[ "${GITHUB_EVENT_NAME}" == "merge_group" ]]; then
+          base_args=()
+          if [[ "$GITHUB_EVENT_NAME" == "merge_group" ]]; then
             proof_runner=".integration-control/scripts/run-integration-proof.py"
+            subject_kind="merge-group"
+            base_args=(--expected-base "$INTEGRATION_BASE_SHA")
           else
             proof_runner="scripts/run-integration-proof.py"
+            subject_kind="manual"
           fi
+          invocation_id="$(python3 -c 'import uuid; print(uuid.uuid4())')"
+          proof_receipt="$GITHUB_WORKSPACE/target/integration-proof/$invocation_id/receipt.json"
+          control_sha256="$(sha256sum "$proof_runner" | cut -d ' ' -f1)"
+          policy_sha256="$(python3 "$proof_runner" --policy-digest)"
+          printf 'invocation_id=%s\nreceipt_path=%s\n' "$invocation_id" "$proof_receipt" >> "$GITHUB_OUTPUT"
+          proof_args=(
+            --workspace "$GITHUB_WORKSPACE"
+            --expected-sha "$GITHUB_SHA"
+            --subject-kind "$subject_kind"
+            --invocation-id "$invocation_id"
+            --receipt "$proof_receipt"
+            --expected-control-sha256 "$control_sha256"
+            --expected-policy-sha256 "$policy_sha256"
+          )
           python3 "$proof_runner" --self-test
-          python3 "$proof_runner" --workspace "$GITHUB_WORKSPACE"
+          python3 "$proof_runner" "${proof_args[@]}" "${base_args[@]}"
+          python3 "$proof_runner" --verify-receipt "${proof_args[@]}" "${base_args[@]}"
 
-      - name: Upload integration receipts
-        if: ${{ always() && (github.event_name == 'merge_group' || (github.event_name == 'workflow_dispatch' && inputs.integration)) }}
+      - name: Upload current integration receipt
+        if: ${{ always() && steps.integration-proof.outputs.invocation_id != '' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: uselesskey-required-receipts-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            target/integration-proof/receipt.json
-            target/xtask/receipt.json
-          if-no-files-found: warn
+          name: uselesskey-required-receipts-${{ github.run_id }}-${{ github.run_attempt }}-${{ steps.integration-proof.outputs.invocation_id }}
+          path: ${{ steps.integration-proof.outputs.receipt_path }}
+          if-no-files-found: error
           retention-days: 30

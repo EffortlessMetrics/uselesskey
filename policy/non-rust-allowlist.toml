@@ -66,6 +66,51 @@ covered_by = ["lefthook run pre-commit"]
 # === Repo automation / scripts ==============================================
 
 [[allow]]
+glob = "scripts/verify-promotion-evidence.py"
+kind = "promotion_evidence_verifier"
+owner = "release/ci"
+surface = "ci"
+classification = "tooling"
+reason = "Read-only operator verifier for native PR state and immutable promotion evidence."
+covered_by = ["python3 -B -m unittest discover -s scripts/tests -p test_promotion_evidence.py", "cargo xtask check-file-policy"]
+
+[[allow]]
+glob = "scripts/development_proof_contract.py"
+kind = "development_proof_contract"
+owner = "release/ci"
+surface = "ci"
+classification = "tooling"
+reason = "Exact pure contract shared with the development envelope producer; no repository or process authority."
+covered_by = ["python3 -B -m unittest discover -s scripts/tests -p test_promotion_evidence.py", "cargo xtask check-file-policy"]
+
+[[allow]]
+glob = "scripts/tests/test_promotion_evidence.py"
+kind = "promotion_evidence_regression"
+owner = "release/ci"
+surface = "ci"
+classification = "test"
+reason = "Synthetic API/receipt tests falsify stale acceptance, incomplete proof, and incorrect subject/range binding."
+covered_by = ["python3 -B -m unittest discover -s scripts/tests -p test_promotion_evidence.py", "cargo xtask check-file-policy"]
+
+[[allow]]
+glob = "scripts/run-integration-proof.py"
+kind = "integration_proof_runner"
+owner = "release/ci"
+surface = "ci"
+classification = "tooling"
+reason = "Bounded integration runner and exact-invocation receipt validation."
+covered_by = ["python3 -B scripts/test_run_integration_proof.py", "cargo xtask check-file-policy"]
+
+[[allow]]
+glob = "scripts/test_run_integration_proof.py"
+kind = "integration_proof_regression"
+owner = "release/ci"
+surface = "ci"
+classification = "test"
+reason = "Real Git and substituted Rust tests for source, invocation, failure, and complete-portfolio receipt handling."
+covered_by = ["python3 -B scripts/test_run_integration_proof.py", "cargo xtask check-file-policy"]
+
+[[allow]]
 glob = "scripts/*.py"
 kind = "ci_helper_script"
 owner = "release/ci"
