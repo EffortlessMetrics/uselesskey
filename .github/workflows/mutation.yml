@@ -1,8 +1,6 @@
 name: Mutation
 
 on:
-  schedule:
-    - cron: "17 7 * * *"
   workflow_dispatch:
     inputs:
       scope:
@@ -44,7 +42,7 @@ jobs:
       - name: Install cargo-mutants
         run: cargo install cargo-mutants --locked
 
-      - name: Nightly mutation evidence
+      - name: Mutation evidence
         shell: bash
         run: |
           scope="${{ inputs.scope }}"
@@ -69,6 +67,6 @@ jobs:
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
-          name: mutation-nightly
+          name: mutation-evidence
           path: target/mutation
           if-no-files-found: warn
