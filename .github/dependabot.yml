@@ -1,16 +1,17 @@
 version: 2
 updates:
+  # Canonical source does not originate routine dependency implementation.
+  # Version-update candidates are owned by uselesskey-swarm and arrive here
+  # only through a reviewed promotion. Security alerts remain enabled, while
+  # automated security-fix PR generation is controlled in repository settings.
   - package-ecosystem: "cargo"
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
     ignore:
-      # Suppress major-bump PRs for RNG crates during the dual-stack transition.
-      # Three crates (uselesskey-rsa, uselesskey-pgp, uselesskey-x509) are stuck
-      # on the legacy rand_core 0.6 line because their upstream crypto deps
-      # (rsa 0.9, pgp 0.19) have not yet released versions using rand_core ≥0.9.
-      # Remove these ignores once the upstream blockers are resolved.
+      # Preserve the shared dependency-policy record even though version-update
+      # PR creation is disabled at the canonical boundary.
       - dependency-name: "rand"
         update-types:
           - "version-update:semver-major"
@@ -20,7 +21,9 @@ updates:
       - dependency-name: "rand_chacha"
         update-types:
           - "version-update:semver-major"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 0
