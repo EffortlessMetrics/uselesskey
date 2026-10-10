@@ -1,0 +1,135 @@
+name: Uselesskey Required
+
+on:
+  workflow_dispatch:
+    inputs:
+      integration:
+        description: Run the bounded integration proof instead of the control self-tests.
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: uselesskey-required-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  required:
+    name: Uselesskey Required
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+
+    steps:
+      - name: Checkout admission controls from the exact base
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: .admission-control
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Checkout exact integration revision
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Checkout integration controls from the exact queue base
+        if: ${{ github.event_name == 'merge_group' }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.merge_group.base_sha }}
+          path: .integration-control
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Validate control scripts
+        if: ${{ github.event_name == 'workflow_dispatch' && !inputs.integration }}
+        run: |
+          set -euo pipefail
+          python3 scripts/check-promotion-packet.py --self-test
+          python3 scripts/run-integration-proof.py --self-test
+          python3 scripts/run-integration-proof.py --list
+
+      - name: Validate exact-head promotion packet
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          PROMOTION_BODY: ${{ github.event.pull_request.body }}
+          PROMOTION_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          if [[ "$HEAD_REPOSITORY" != "$GITHUB_REPOSITORY" ]]; then
+            echo "::error::promotion admission is limited to same-repository branches" >&2
+            exit 1
+          fi
+          python3 .admission-control/scripts/check-promotion-packet.py \
+            --body-env PROMOTION_BODY \
+            --expected-head "$PROMOTION_HEAD"
+
+      - name: Install NASM
+        if: ${{ github.event_name == 'merge_group' || (github.event_name == 'workflow_dispatch' && inputs.integration) }}
+        run: sudo apt-get update && sudo apt-get install -y nasm
+
+      - name: Set up stable Rust
+        if: ${{ github.event_name == 'merge_group' || (github.event_name == 'workflow_dispatch' && inputs.integration) }}
+        uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - name: Restore Rust cache
+        if: ${{ github.event_name == 'merge_group' || (github.event_name == 'workflow_dispatch' && inputs.integration) }}
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
+        with:
+          cache-on-failure: true
+
+      - name: Install integration tools
+        if: ${{ github.event_name == 'merge_group' || (github.event_name == 'workflow_dispatch' && inputs.integration) }}
+        uses: taiki-e/install-action@742a3317eac7bd62f91cd888b4eead5e784ba833
+        with:
+          tool: typos-cli,cargo-deny
+
+      - name: Toolchain diagnostics
+        if: ${{ github.event_name == 'merge_group' || (github.event_name == 'workflow_dispatch' && inputs.integration) }}
+        run: |
+          set -euo pipefail
+          rustc -vV
+          cargo -vV
+          cargo deny --version
+          typos --version
+          nasm -v
+
+      - name: Run bounded integration proof
+        if: ${{ github.event_name == 'merge_group' || (github.event_name == 'workflow_dispatch' && inputs.integration) }}
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_EVENT_NAME}" == "merge_group" ]]; then
+            proof_runner=".integration-control/scripts/run-integration-proof.py"
+          else
+            proof_runner="scripts/run-integration-proof.py"
+          fi
+          python3 "$proof_runner" --self-test
+          python3 "$proof_runner" --workspace "$GITHUB_WORKSPACE"
+
+      - name: Upload integration receipts
+        if: ${{ always() && (github.event_name == 'merge_group' || (github.event_name == 'workflow_dispatch' && inputs.integration)) }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: uselesskey-required-receipts-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            target/integration-proof/receipt.json
+            target/xtask/receipt.json
+          if-no-files-found: warn
+          retention-days: 30
